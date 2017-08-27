@@ -7,22 +7,32 @@
 
 import csv
 from datetime import datetime
-import codecs, time
-
-
+import codecs, time, json
+#http://www.json.org/
+data_list=[]
+#need to make acfr parsers
 class parse_phins:
 	def __init__(self, filepath, filename, category, timezone, timeoffset, ftype, fileout):
 
-		# define headers used in phins
-		header_start = '$PIXSE'
-		header_time = 'TIME__'
-		header_atitu = 'ATITUD'
-		header_depth = 'DEPIN_'
-		header_speed = 'SPEED_'
-		header_speed_std = 'STDSPD'
+		# parser meta data
 		class_string = 'measurement'
 		sensor_string = 'phins'
 
+		#phins std models
+		depth_std_factor=0.01/100 #from catalogue # paroscientific		
+		velocity_std_factor=0.001 #from catalogue # rdi whn1200/600
+		velocity_std_offset=0.2 #from catalogue # rdi whn1200/600
+		altitude_std_factor=1/100 #acoustic velocity assumed 1% accurate
+
+		# define headers used in phins
+		header_start = '$PIXSE'
+		header_time = 'TIME__'		
+		header_heading = '$HEHDT'
+		header_attitude = 'ATITUD'
+		header_attitude_std = 'STDHRP'
+		header_dvl = 'LOGIN_'		
+		header_depth = 'DEPIN_'
+		header_altitude = 'LOGDVL'	
 
 
 		# read in date from filename
@@ -53,15 +63,16 @@ class parse_phins:
 			# print(filepath + filename)
 			# refHead='$HEHDT,';            
 			flag_got_time = 0
-			string_prev = ''
-			for line in filein.readlines():
-
+			string_prev = ''			
+			for line in filein.readlines():				
 				line_split = line.strip().split('*')
 				line_split_no_checksum = line_split[0].strip().split(',')
 				
 				# print(line_split_no_checksum)
 				# what are the uncertainties
-				if line_split_no_checksum[0] == header_start:
+				
+
+				if line_split_no_checksum[0] == header_start or line_split_no_checksum[0] == header_heading:
 					# get time stamp
 					if line_split_no_checksum[1]  == header_time:						
 						time_string=str(line_split_no_checksum[2])
@@ -74,138 +85,127 @@ class parse_phins:
 						time_tuple = dt_obj.timetuple()
 						epoch_time = time.mktime(time_tuple)
 						epoch_timestamp = epoch_time+msec_phins/1000+timeoffset						
-						flag_got_time = 1						
+						flag_got_time = 1	
+					
+					elif line_split_no_checksum[0] == header_heading:
+						heading=float(line_split_no_checksum[1])
+
 					else:
 						# get other data only if have a time stamp
 						if flag_got_time == 1:
 							if category == 'velocity':
 								frame_string = 'body'
-								if line_split_no_checksum[1]  == header_speed:
+								if line_split_no_checksum[1]  == header_dvl:
 									xx_velocity=float(line_split_no_checksum[2])
 									yy_velocity=float(line_split_no_checksum[3])
 									zz_velocity=float(line_split_no_checksum[4])
-									# print('speed',xvel_phins,yvel_phins,zvel_phins)
-								if line_split_no_checksum[1]  == header_speed_std:
-									xx_velocity_std=float(line_split_no_checksum[2])
-									yy_velocity_std=float(line_split_no_checksum[3])
-									zz_velocity_std=float(line_split_no_checksum[4])
-									# print('speed_std',xvel_std_phins,yvel_std_phins,zvel_std_phins)
+
+									xx_velocity_std=abs(xx_velocity)*velocity_std_factor+velocity_std_offset
+									yy_velocity_std=abs(yy_velocity)*velocity_std_factor+velocity_std_offset
+									zz_velocity_std=abs(zz_velocity)*velocity_std_factor+velocity_std_offset
+
+									velocity_time=str(line_split_no_checksum[6])
+									hour_dvl=int(velocity_time[0:1])
+									mins_dvl=int(velocity_time[2:3])
+									secs_dvl=int(velocity_time[4:5])
+									msec_dvl=int(velocity_time[7:10])						
+								
+									dt_obj_dvl = datetime(yyyy_phins,mm_phins,dd_phins,hour_dvl,mins_dvl,secs_dvl)
+									time_tuple_dvl = dt_obj_dvl.timetuple()
+									epoch_time_dvl = time.mktime(time_tuple_dvl)
+									epoch_timestamp_dvl = epoch_time_dvl+msec_dvl/1000+timeoffset
+									
 									flag_got_time = 0
 
 									# write out in the required format interlace at end
-									print(epoch_timestamp,',',class_string,',',sensor_string,',',frame_string,category,',','xx_velocity',',',xx_velocity,',',xx_velocity_std)
-									print(epoch_timestamp,',',class_string,',',sensor_string,',',frame_string,category,',','yy_velocity',',',yy_velocity,',',yy_velocity_std)
-									print(epoch_timestamp,',',class_string,',',sensor_string,',',frame_string,category,',','zz_velocity',',',zz_velocity,',',zz_velocity_std)
-									
-									
+									if ftype == 'oplab':
+										data = {'epoch_timestamp': float(epoch_timestamp),'epoch_timestamp_dvl': float(epoch_timestamp_dvl),'class': class_string,'sensor':sensor_string,'frame':frame_string,'category': category,'data': [{'xx_velocity':float(xx_velocity),'xx_velocity_std':float(xx_velocity_std)},{'yy_velocity':float(yy_velocity),'yy_velocity_std':float(yy_velocity_std)},{'zz_velocity':float(zz_velocity),'zz_velocity_std':float(zz_velocity_std)}]}
+										data_list.append(data)
+									if ftype == 'acfr':#to implement
+										data = {'add acfr_standard here'}
+										data_list.append(data)
 
-							# if ftype == 'velocity':
-							# 	if line_split_no_checksum[1]  == header_speed:
-							# 		xvel_phins=float(line_split_no_checksum[2])
-							# 		yvel_phins=float(line_split_no_checksum[3])
-							# 		zvel_phins=float(line_split_no_checksum[4])
-							# 		# print('speed',xvel_phins,yvel_phins,zvel_phins)
-							# 	if line_split_no_checksum[1]  == header_speed_std:
-							# 		xvel_std_phins=float(line_split_no_checksum[2])
-							# 		yvel_std_phins=float(line_split_no_checksum[3])
-							# 		zvel_std_phins=float(line_split_no_checksum[4])
-							# 		# print('speed_std',xvel_std_phins,yvel_std_phins,zvel_std_phins)
-							# 		flag_got_time = 0							
+							if category == 'orientation':
+								frame_string = 'inertial'
+								if line_split_no_checksum[1]  == header_attitude:
+									roll=float(line_split_no_checksum[2])
+									pitch=float(line_split_no_checksum[3])									
+									# print('speed',xvel_phins,yvel_phins,zvel_phins)
+								if line_split_no_checksum[1]  == header_attitude_std:
+									heading_std=float(line_split_no_checksum[2])
+									roll_std=float(line_split_no_checksum[3])
+									pitch_std=float(line_split_no_checksum[4])
+									flag_got_time = 0
+
+									# write out in the required format interlace at end
+									if ftype == 'oplab':
+										data = {'epoch_timestamp': float(epoch_timestamp),'class': class_string,'sensor':sensor_string,'frame':frame_string,'category': category,'data': [{'heading':float(heading),'heading_std':float(heading_std)},{'roll':float(roll),'roll_std':float(roll_std)},{'pitch':float(pitch),'pitch_std':float(pitch_std)}]}
+										data_list.append(data)
+									if ftype == 'acfr':#to implement
+										data = {'add acfr_standard here'}
+										data_list.append(data)
+
+
+							if category == 'depth':
+								frame_string = 'inertial'
+								if line_split_no_checksum[1]  == header_depth:
+									depth=float(line_split_no_checksum[2])
+
+									depth_std=depth*depth_std_factor
+
+									depth_time=str(line_split_no_checksum[3])	
+									hour_depth=int(depth_time[0:1])
+									mins_depth=int(depth_time[2:3])
+									secs_depth=int(depth_time[4:5])
+									msec_depth=int(depth_time[7:10])						
+								
+									dt_obj_depth = datetime(yyyy_phins,mm_phins,dd_phins,hour_depth,mins_depth,secs_depth)
+									time_tuple_depth = dt_obj_depth.timetuple()
+									epoch_time_depth = time.mktime(time_tuple_depth)
+									epoch_timestamp_depth = epoch_time_depth+msec_depth/1000+timeoffset
+
+									
+									flag_got_time = 0
+
+									# write out in the required format interlace at end
+									if ftype == 'oplab':
+										data = {'epoch_timestamp': float(epoch_timestamp),'epoch_timestamp_depth': float(epoch_timestamp_depth),'class': class_string,'sensor':sensor_string,'frame':frame_string,'category': category,'data': [{'depth':float(depth),'depth_std':float(depth_std)}]}
+										data_list.append(data)
+									if ftype == 'acfr':#to implement
+										data = {'add acfr_standard here'}
+										data_list.append(data)
+
+							if category == 'altitude':
+								frame_string = 'body'
+								if line_split_no_checksum[1]  == header_dvl:									
+									velocity_time=str(line_split_no_checksum[6])
+									hour_dvl=int(velocity_time[0:1])
+									mins_dvl=int(velocity_time[2:3])
+									secs_dvl=int(velocity_time[4:5])
+									msec_dvl=int(velocity_time[7:10])						
+								
+									dt_obj_dvl = datetime(yyyy_phins,mm_phins,dd_phins,hour_dvl,mins_dvl,secs_dvl)
+									time_tuple_dvl = dt_obj_dvl.timetuple()
+									epoch_time_dvl = time.mktime(time_tuple_dvl)
+									epoch_timestamp_dvl = epoch_time_dvl+msec_dvl/1000+timeoffset
+									
+								if line_split_no_checksum[1]  == header_altitude:
+									sound_velocity=float(line_split_no_checksum[2])
+									sound_velocity_correction=float(line_split_no_checksum[3])
+									altitude=float(line_split_no_checksum[4])
+
+									altitude_std=altitude*altitude_std_factor									
+									
+									flag_got_time = 0
+
+									# write out in the required format interlace at end
+									if ftype == 'oplab':
+										data = {'epoch_timestamp': float(epoch_timestamp),'epoch_timestamp_dvl': float(epoch_timestamp_dvl),'class': class_string,'sensor':sensor_string,'frame':frame_string,'category': category,'data': [{'altitude':float(altitude),'altitude_std':float(altitude_std)},{'sound_velocity':float(sound_velocity),'sound_velocity_correction':float(sound_velocity_correction)}]}
+										data_list.append(data)																	
+									if ftype == 'acfr':#to implement
+										data = {'add acfr_standard here'}
+										data_list.append(data)
+
 						else:
 							continue
-
-		# velocity_timezone 
-                # velocity_timeoffset        
-# calendar.timegm()
-                # # timeFormat='HHMMSS.FFF'
-                
-
-
-# dateFormat='yyyymmdd'
-# timeFormat='HHMMSS.FFF'
-# refHead='$HEHDT,';
-# refStat='$PIXSE,';
-# refTime='TIME__,';
-# refAtit='ATITUD,';
-# refDept='DEPIN_,';
-# refSped='LOGIN_,';
-
-# j=1;
-# jj=1;
-# date_shift=0;
-
-# k=length(refHead);
-# dateTime=NaN;
-# yaw=NaN;
-# for i=1:n
-#     [line]=sscanf(position{i,:},'%c');
-        
-#     header=line(1,1:k);
-    
-#     if header==refStat
-#         specifier=line(1,k+1:2*k);        
-#         switch specifier
-#             case refTime                
-               
-# %                
-#                 hh=line(1,2*k+1:2*k+2);      
-#                 mm=line(1,2*k+3:2*k+4);
-#                 ss=line(1,2*k+5:2*k+6);
-#                 msec=line(1,2*k+8:2*k+11);       
-                
-#                 dateTime=offsetTime(filename,hh,mm,ss,msec,gmtOffset,secondsOffset);                                                                              
-# %                 fprintf(fid, 'COMPASS:,%s,%s,',datestr(dateTime,dateFormat),datestr(dateTime,timeFormat));
-#             case refAtit
-#                 str=strsplit(line(1,:),'*');           
-#                 subStr=strsplit(str{1},',');
-#                 roll=str2num(subStr{3});
-#                 pitch=str2num(subStr{4});
-#                 if isnan(dateTime)==0 & isnan(yaw)==0
-#                     fprintf(fid, 'COMPASS:,%s,%s,r=%6.6f,p=%6.6f,y=%6.6f\n',datestr(dateTime,dateFormat),datestr(dateTime,timeFormat),roll,pitch,yaw);
-#                     dateTime=NaN;% not duplicate 
-#                     yaw=NaN;% not duplicate 
-#                 end
-#             case refDept
-#                 str=strsplit(line(1,:),'*');           
-#                 subStr=strsplit(str{1},',');
-#                 depth=str2num(subStr{3});
-#                 time=subStr{4};
-#                 hh=time(1,1:2);      
-#                 mm=time(1,3:4);      
-#                 ss=time(1,5:6);      
-#                 msec=time(1,8:10);  
-#                 dateTimeDepth=offsetTime(filename,hh,mm,ss,msec,gmtOffset,secondsOffset);
-# %                 datestr(dateTimeDepth)
-#                 fprintf(fid, 'DEPTH:,%s,%s,d=%6.6f\n',datestr(dateTimeDepth,dateFormat),datestr(dateTimeDepth,timeFormat),depth);                
-# %                 pause
-                
-#             case refSped
-#                 str=strsplit(line(1,:),'*');           
-#                 subStr=strsplit(str{1},',');                
-#                 uvel=str2num(subStr{3});
-#                 vvel=str2num(subStr{4});
-#                 wvel=str2num(subStr{5});
-#                 time=subStr{7};
-#                 hh=time(1,1:2);      
-#                 mm=time(1,3:4);      
-#                 ss=time(1,5:6);      
-#                 msec=time(1,8:10);  
-#                 dateTimeDVL=offsetTime(filename,hh,mm,ss,msec,gmtOffset,secondsOffset);   
-#                 fprintf(fid, 'DVL:,%s,%s,uvel=%6.6f,vvel=%6.6f,wvel=%6.6f\n',datestr(dateTimeDVL,dateFormat),datestr(dateTimeDVL,timeFormat),uvel,vvel,wvel);                                                
-#         end
-        
-#     else if header==refHead            
-#             str=strsplit(line(1,:),',');            
-#             yaw=str2num(str{2});       
-#         end
-#     end
-   
-    
-#        if isnan(dateTime)==0
-            
-# %             fprintf(fid, '%s,%s,%6.6f,%6.6f,%4.2f\n',date_(jj,:),time_(jj,:),lat_(jj),lon_(jj),depth_(jj));
-# %             jj=jj+1;
-#         end
-# end
-# close(fid)
-# return
+		json.dump(data_list,fileout)										

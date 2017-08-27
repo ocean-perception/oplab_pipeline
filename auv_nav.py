@@ -6,7 +6,7 @@
 # Date: 25/08/2017
 
 # Import librarys
-import sys, os, csv
+import sys, os, csv,json
 from lib_sensors.parse_phins import parse_phins
 
 def generate_paths(filepath,ftype):
@@ -19,33 +19,9 @@ def generate_paths(filepath,ftype):
     Returns:
         interleaved navigation and imaging data with output options:
             'acfr' - combined.auv.raw
-            'oplab' - nav_standard.dat
+            'oplab' - nav_standard.json
 
-            'nav_standard.dat'
-            
-            <Time>,<Class>,<Sensor >,<category>,<mean>,<uncertainty> 
-            
-            <Time> epoch time
-            <Class> is either a measurement or an EIF, EKF
-            <Measurment> is one of the following
-            <Measurment>
-            Category is one of the 3 things the measurement could be
-
-            <vehicle_angular_velocity> roll_velocity pitch_velocity yaw_velocity
-            <vehicle_velocity> xx_velocity yy_velocity zz_velocity
-            <earth_velocity> x_velocity y_velocity z_velocity
-
-            <earth_orientation> roll pitch yaw
-            <earth_position> x_position y_position depth
-            
-            Mean is the numerical value in SI units and degrees
-            Uncertainty is from the catalogue
-
-            Line may look like this 
-            1501974061.453 , measurement , phins , body velocity , xx_velocity , 0.351 , 0.033
-            1501974061.453 , measurement , phins , body velocity , yy_velocity , -0.114 , 0.038
-            1501974061.453 , measurement , phins , body velocity , zz_velocity , 0.214 , 0.021
-
+            'nav_standard.json'
             
     """
     # initiate data and processing flags
@@ -202,7 +178,7 @@ def generate_paths(filepath,ftype):
     # check for recognised formats and create nav file
     print('Checking output format')
     if ftype == 'oplab':# or (ftype is not 'acfr'):
-        filename='nav_standard.dat'    
+        filename='nav_standard.json'        
         proc_flag=2
     elif ftype == 'acfr':# or (ftype is not 'acfr'):
         filename='combined.auv.raw'
@@ -216,18 +192,35 @@ def generate_paths(filepath,ftype):
                 os.mkdir(outpath)
             except Exception as e:
                 print("Warning:",e)
+
     # create file (overwrite if exists)
         with open(outpath + '/' + filename,'w') as fileout:
-            csvread = csv.reader(fileout)
+            # read in, parse data and write data
+            if velocity_flag == 1:                
+                if velocity_format == "phins":
+                    parse_phins(filepath + velocity_filepath,velocity_filename,'velocity',velocity_timezone,velocity_timeoffset,ftype,fileout)
+            if orientation_flag == 1:                
+                if orientation_format == "phins":
+                    parse_phins(filepath + orientation_filepath,orientation_filename,'orientation',orientation_timezone,orientation_timeoffset,ftype,fileout)
+            if depth_flag == 1:                
+                if depth_format == "phins":
+                    parse_phins(filepath + depth_filepath,depth_filename,'depth',depth_timezone,depth_timeoffset,ftype,fileout)                    
+            if altitude_flag == 1:                
+                if altitude_format == "phins":
+                    parse_phins(filepath + altitude_filepath,altitude_filename,'altitude',altitude_timezone,altitude_timeoffset,ftype,fileout)
+            if usbl_flag == 1: # to implement
+                if altitude_format == "gaps":
+                    parse_gaps(filepath + usbl_filepath,usbl_filename,'usbl',usbl_timezone,usbl_timeoffset,ftype,fileout)
+            if images_flag == 1: # to implement
+                if altitude_format == "unagi":
+                    parse_acfr_images(filepath + image_filepath,image_filename,'images',image_timezone,image_timeoffset,ftype,fileout)
+
+        fileout.close()
+        #need to interlace
+
     else:
         print('Error: -o',ftype,'not recognised')
-        syntax_error()
-
-    # read in and parse data    
-    if velocity_flag == 1:                
-        if velocity_format == "phins":            
-            parse_phins(filepath + velocity_filepath,velocity_filename,'velocity',velocity_timezone,velocity_timeoffset,ftype,fileout)
-            
+        syntax_error()    
 
 
     #     print(velocity_format)
