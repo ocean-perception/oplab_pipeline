@@ -8,32 +8,84 @@
 # Import librarys
 import sys, os, csv,json
 from lib_sensors.parse_phins import parse_phins
+from lib_sensors.parse_gaps import parse_gaps
 
 def generate_paths(filepath,ftype):
 
-    """Read data (navigation and image) according to config.
+    """Parsers for navigation data for oplab standard and acfr standard formats
 
-    Arguments:
-        path to the "mission.cfg" file, output format 'acfr' or 'oplab'
+        inputs are 
 
-    Returns:
-        interleaved navigation and imaging data with output options:
-            'acfr' - combined.RAW.auv
-                PHINS_COMPASS: 1444452882.644 r: -2.29 p: 17.21 h: 1.75 std_r: 0 std_p: 0 std_h: 0
-                RDI: 1444452882.644 alt:200 r1:0 r2:0 r3:0 r4:0 h:1.75 p:17.21 r:-2.29 vx:0.403 vy:0 vz:0 nx:0 ny:0 nz:0 COG:0 SOG:0 bt_status:32768 h_true:0 p_gimbal:0 sv: 1500
-                PAROSCI: 1444452882.644 298.289
-                VIS: 1444452882.655 [1444452882.655] sx_073311_image0003805_AC.tif exp: 0
-                VIS: 1444452882.655 [1444452882.655] sx_073311_image0003805_FC.tif exp: 0
-                SSBL_FIX: 1444452883 ship_x: 402.988947 ship_y: 140.275056 target_x: 275.337171 target_y: 304.388346 target_z: 299.2 target_hr: 0 target_sr: 364.347071 target_bearing: 127.876747
+        nav_parser.py <options>
+            -i <path to mission.cfg>
+            -o <output type> 'acfr' or 'oplab'
 
-            'oplab' - nav_standard.json
-                [{"epoch_timestamp": 1501974125.926, "epoch_timestamp_dvl": 1501974125.875, "class": "measurement", "sensor": "phins", "frame": "body", "category": "velocity", "data": [{"xx_velocity": -0.075, "xx_velocity_std": 0.200075}, {"yy_velocity": 0.024, "yy_velocity_std": 0.200024}, {"zz_velocity": -0.316, "zz_velocity_std": 0.20031600000000002}]},
-                {"epoch_timestamp": 1501974002.1, "class": "measurement", "sensor": "phins", "frame": "inertial", "category": "orientation", "data": [{"heading": 243.777, "heading_std": 2.0}, {"roll": 4.595, "roll_std": 0.1}, {"pitch": 0.165, "pitch_std": 0.1}]},
-                {"epoch_timestamp": 1501974125.926, "epoch_timestamp_dvl": 1501974125.875, "class": "measurement", "sensor": "phins", "frame": "body", "category": "altitude", "data": [{"altitude": 31.53, "altitude_std": 0.3153}, {"sound_velocity": 1546.0, "sound_velocity_correction": 0.0}]},
-                {"epoch_timestamp": 1501974002.7, "epoch_timestamp_depth": 1501974002.674, "class": "measurement", "sensor": "phins", "frame": "inertial", "category": "depth", "data": [{"depth": -0.958, "depth_std": -9.58e-05}]}]
-            
-            
 
+        Arguments:
+            path to the "mission.cfg" file, output format 'acfr' or 'oplab'
+
+                origin {
+                    latitude = "26.674083";
+                    longitude = "127.868054";
+                    coordinate_reference_system = "wgs84";
+                }
+                velocity {
+                    format = "phins";
+                    filepath = "nav/phins/";
+                    filename = "20170816_phins.txt";
+                    timezone = "utc";
+                    timeoffset = "0.0";
+                }
+                orientation {
+                    format = "phins";
+                    filepath = "nav/phins/";
+                    filename = "20170816_phins.txt";
+                    timezone = "utc";
+                    timeoffset = "0.0";
+                }
+                depth {
+                    format = "phins";
+                    filepath = "nav/phins/";
+                    filename = "20170816_phins.txt";
+                    timezone = "utc";
+                    timeoffset = "0.0";
+                }
+                altitude {
+                    format = "phins";
+                    filepath = "nav/phins/";
+                    filename = "20170816_phins.txt";
+                    timezone = "utc";
+                    timeoffset = "0.0";
+                }
+                usbl {
+                    format = "gaps";
+                    filepath = "nav/gaps/";
+                    filename = "20170816091630-001.dat";
+                    timezone = "utc";
+                    timeoffset = "0.0";
+                }
+                images{
+                    format = "acfr_standard";
+                    filepath = "image/r20170816_023028_UG069_sesoko/i20170816_023028/";
+                    timezone = "utc";
+                    timeoffset = "0.0";
+                }
+
+        Returns:
+            interleaved navigation and imaging data with output options:
+                'acfr' - combined.RAW.auv
+                    PHINS_COMPASS: 1444452882.644 r: -2.29 p: 17.21 h: 1.75 std_r: 0 std_p: 0 std_h: 0
+                    RDI: 1444452882.644 alt:200 r1:0 r2:0 r3:0 r4:0 h:1.75 p:17.21 r:-2.29 vx:0.403 vy:0 vz:0 nx:0 ny:0 nz:0 COG:0 SOG:0 bt_status:32768 h_true:0 p_gimbal:0 sv: 1500
+                    PAROSCI: 1444452882.644 298.289
+                    VIS: 1444452882.655 [1444452882.655] sx_073311_image0003805_AC.tif exp: 0
+                    VIS: 1444452882.655 [1444452882.655] sx_073311_image0003805_FC.tif exp: 0
+                    SSBL_FIX: 1444452883 ship_x: 402.988947 ship_y: 140.275056 target_x: 275.337171 target_y: 304.388346 target_z: 299.2 target_hr: 0 target_sr: 364.347071 target_bearing: 127.876747
+
+                'oplab' - nav_standard.json
+                    [{"epoch_timestamp": 1501974125.926, "epoch_timestamp_dvl": 1501974125.875, "class": "measurement", "sensor": "phins", "frame": "body", "category": "velocity", "data": [{"xx_velocity": -0.075, "xx_velocity_std": 0.200075}, {"yy_velocity": 0.024, "yy_velocity_std": 0.200024}, {"zz_velocity": -0.316, "zz_velocity_std": 0.20031600000000002}]},
+                    {"epoch_timestamp": 1501974002.1, "class": "measurement", "sensor": "phins", "frame": "inertial", "category": "orientation", "data": [{"heading": 243.777, "heading_std": 2.0}, {"roll": 4.595, "roll_std": 0.1}, {"pitch": 0.165, "pitch_std": 0.1}]},
+                    {"epoch_timestamp": 1501974125.926, "epoch_timestamp_dvl": 1501974125.875, "class": "measurement", "sensor": "phins", "frame": "body", "category": "altitude", "data": [{"altitude": 31.53, "altitude_std": 0.3153}, {"sound_velocity": 1546.0, "sound_velocity_correction": 0.0}]},
+                    {"epoch_timestamp": 1501974002.7, "epoch_timestamp_depth": 1501974002.674, "class": "measurement", "sensor": "phins", "frame": "inertial", "category": "depth", "data": [{"depth": -0.958, "depth_std": -9.58e-05}]}]
             
     """
     # initiate data and processing flags
@@ -84,7 +136,7 @@ def generate_paths(filepath,ftype):
                     latitude_reference = float(setting)
                 elif label[0] == "longitude":
                     longitude_reference = float(setting)
-                elif label[0] == "longitude":
+                elif label[0] == "coordinate_reference_system":
                     coordinate_reference = str(setting)
             
             if heading[0] == "velocity":
@@ -141,7 +193,7 @@ def generate_paths(filepath,ftype):
 
 
             if heading[0] == "usbl":
-                usbl_flag=1
+                usbl_flag=1                
                 if label[0] == "format":
                     usbl_format = str(setting)
                 if label[0] == "filepath":
@@ -154,7 +206,7 @@ def generate_paths(filepath,ftype):
                     usbl_timeoffset = float(setting)
 
             if heading[0] == "images":
-                images_flag=1;
+                image_flag=1;
                 if label[0] == "format":
                     image_format = str(setting)
                 if label[0] == "filepath":
@@ -189,24 +241,30 @@ def generate_paths(filepath,ftype):
                     
     # check for recognised formats and create nav file
     print('Checking output format')
+
     if ftype == 'oplab':# or (ftype is not 'acfr'):
+        outpath = outpath + 'nav'
         filename='nav_standard.json'        
         proc_flag=2
-    elif ftype == 'acfr':# or (ftype is not 'acfr'):
-        outpath = outpath +'/' + dRAWLOGS_cv
+    
+    elif ftype == 'acfr':# or (ftype is not 'acfr'):        
+        outpath = outpath +'/dRAWLOGS_cv'
         filename='combined.RAW.auv'
         proc_flag=2    
+
+    else:
+        print('Error: -o',ftype,'not recognised')
+        syntax_error()    
     
     # check if output specified is recognised and make file path if not exist
     if proc_flag == 2:        
-        outpath = outpath + 'nav'
         if os.path.isdir(outpath) == 0:
             try:
                 os.mkdir(outpath)
             except Exception as e:
                 print("Warning:",e)
 
-    # create file (overwrite if exists)
+        # create file (overwrite if exists)
         with open(outpath + '/' + filename,'w') as fileout:
             # read in, parse data and write data
             if velocity_flag == 1:                
@@ -222,18 +280,16 @@ def generate_paths(filepath,ftype):
                 if altitude_format == "phins":
                     parse_phins(filepath + altitude_filepath,altitude_filename,'altitude',altitude_timezone,altitude_timeoffset,ftype,fileout)
             if usbl_flag == 1: # to implement
-                if altitude_format == "gaps":
-                    parse_gaps(filepath + usbl_filepath,usbl_filename,'usbl',usbl_timezone,usbl_timeoffset,ftype,fileout)
-            if images_flag == 1: # to implement
-                if altitude_format == "unagi":
+                if usbl_format == "gaps":
+                    parse_gaps(filepath + usbl_filepath,usbl_filename,'usbl',usbl_timezone,usbl_timeoffset,latitude_reference,longitude_reference,ftype,fileout)
+            if image_flag == 1: # to implement
+                if image_format == "unagi":
                     parse_acfr_images(filepath + image_filepath,image_filename,'images',image_timezone,image_timeoffset,ftype,fileout)
 
         fileout.close()
-        #need to interlace
+        
+        #interlace the data based on timestamps
 
-    else:
-        print('Error: -o',ftype,'not recognised')
-        syntax_error()    
 
 
     #     print(velocity_format)
