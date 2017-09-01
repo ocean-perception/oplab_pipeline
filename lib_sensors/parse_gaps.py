@@ -8,16 +8,17 @@
 import os
 from datetime import datetime
 import sys, math
-import time, json
+import time, json, glob
 #http://www.json.org/
 sys.path.append("..")
 from lib_coordinates.latlon_wgs84 import latlon_to_metres
 from lib_coordinates.latlon_wgs84 import metres_to_latlon
 
 data_list=[]
+data_list_in=[]
 #need to make acfr parsers
 class parse_gaps:
-	def __init__(self, filepath, filename, category, timezone, timeoffset, latitude_reference, longitude_reference, ftype, fileout):
+	def __init__(self, filepath, filename, category, timezone, timeoffset, latitude_reference, longitude_reference, ftype, outpath, fileoutname, fileout):
 
 		# parser meta data    
 		class_string = 'measurement'
@@ -227,4 +228,16 @@ class parse_gaps:
 							fileout.write(data)
 
 		if ftype == 'oplab':
-			json.dump(data_list,fileout)										
+			fileout.close()
+			for filein in glob.glob(outpath + '/' + fileoutname):
+				try:
+					with open(filein, 'rb') as json_file:						
+						data_in=json.load(json_file)						
+						for i in range(len(data_in)):
+							data_list.insert(0,data_in[len(data_in)-i-1])				        
+						
+				except ValueError:					
+					print('initialising JSON file')
+
+			with open(outpath + '/' + fileoutname,'w') as fileout:
+				json.dump(data_list, fileout)	
