@@ -56,7 +56,7 @@ class parse_phins:
 		timeoffset = -timezone_offset*60*60 + timeoffset 
 
 		# parse phins data
-		print('parsing phins standard data from')
+		print('parsing phins standard data')
 		with codecs.open(filepath + filename,'r',encoding='utf-8', errors='ignore') as filein:
 			flag_got_time = 0
 			data=''

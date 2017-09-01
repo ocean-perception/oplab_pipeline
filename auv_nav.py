@@ -9,6 +9,7 @@
 import sys, os, csv,json
 from lib_sensors.parse_phins import parse_phins
 from lib_sensors.parse_gaps import parse_gaps
+from lib_sensors.parse_acfr_images import parse_acfr_images
 
 def generate_paths(filepath,ftype):
 
@@ -211,6 +212,10 @@ def generate_paths(filepath,ftype):
                     image_format = str(setting)
                 if label[0] == "filepath":
                     image_filepath = str(setting)                
+                if label[0] == "camera1":
+                    camera1_label = str(setting)                
+                if label[0] == "camera2":
+                    camera2_label = str(setting)                                    
                 if label[0] == "timezone":
                     image_timezone = str(setting)
                 if label[0] == "timeoffset":
@@ -283,8 +288,8 @@ def generate_paths(filepath,ftype):
                 if usbl_format == "gaps":
                     parse_gaps(filepath + usbl_filepath,usbl_filename,'usbl',usbl_timezone,usbl_timeoffset,latitude_reference,longitude_reference,ftype,fileout)
             if image_flag == 1: # to implement
-                if image_format == "unagi":
-                    parse_acfr_images(filepath + image_filepath,image_filename,'images',image_timezone,image_timeoffset,ftype,fileout)
+                if image_format == "acfr_standard" or image_format == "unagi" :
+                    parse_acfr_images(filepath + image_filepath,image_format,camera1_label,camera2_label,'images',image_timezone,image_timeoffset,ftype,fileout)
 
         fileout.close()
         
