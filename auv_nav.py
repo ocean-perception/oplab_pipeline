@@ -274,26 +274,32 @@ def generate_paths(filepath,ftype):
 	
 		# create file (overwrite if exists)
 		with open(outpath + '/' + filename,'w') as fileout:
-		 	print('Loading raw data')
-		 	# read in, parse data and write data
-		 	if velocity_flag == 1:                
-		 		if velocity_format == "phins":
-		 			parse_phins(filepath + velocity_filepath,velocity_filename,'velocity',velocity_timezone,velocity_timeoffset,ftype,outpath,filename,fileout)
-		 	if orientation_flag == 1:                
-		 		if orientation_format == "phins":
-		 			parse_phins(filepath + orientation_filepath,orientation_filename,'orientation',orientation_timezone,orientation_timeoffset,ftype,outpath,filename,fileout)
-		 	if depth_flag == 1:                
-		 		if depth_format == "phins":
-		 			parse_phins(filepath + depth_filepath,depth_filename,'depth',depth_timezone,depth_timeoffset,ftype,outpath,filename,fileout)
-		 	if altitude_flag == 1:                
-		 		if altitude_format == "phins":
-		 			parse_phins(filepath + altitude_filepath,altitude_filename,'altitude',altitude_timezone,altitude_timeoffset,ftype,outpath,filename,fileout)
-		 	if usbl_flag == 1: # to implement
-		 		if usbl_format == "gaps":
-		 			parse_gaps(filepath + usbl_filepath,usbl_filename,'usbl',usbl_timezone,usbl_timeoffset,latitude_reference,longitude_reference,ftype,outpath,filename,fileout)
-		 	if image_flag == 1: # to implement
-		 		if image_format == "acfr_standard" or image_format == "unagi" :
-		 			parse_acfr_images(filepath + image_filepath,image_format,camera1_label,camera2_label,'images',image_timezone,image_timeoffset,ftype,outpath,filename,fileout)
+			print('Loading raw data')
+			# read in, parse data and write data
+			if velocity_flag == 1:
+				if velocity_format == "phins":
+					parse_phins(filepath + velocity_filepath,velocity_filename,'velocity',velocity_timezone,velocity_timeoffset,ftype,outpath,filename,fileout)
+					velocity_flag = 0
+			if orientation_flag == 1:                
+				if orientation_format == "phins":
+					parse_phins(filepath + orientation_filepath,orientation_filename,'orientation',orientation_timezone,orientation_timeoffset,ftype,outpath,filename,fileout)
+					orientation_flag = 0
+			if depth_flag == 1:                
+				if depth_format == "phins":
+					parse_phins(filepath + depth_filepath,depth_filename,'depth',depth_timezone,depth_timeoffset,ftype,outpath,filename,fileout)
+					depth_flag = 0
+			if altitude_flag == 1:                
+				if altitude_format == "phins":
+					parse_phins(filepath + altitude_filepath,altitude_filename,'altitude',altitude_timezone,altitude_timeoffset,ftype,outpath,filename,fileout)
+					altitude_flag = 0
+			if usbl_flag == 1: # to implement
+				if usbl_format == "gaps":
+					parse_gaps(filepath + usbl_filepath,usbl_filename,'usbl',usbl_timezone,usbl_timeoffset,latitude_reference,longitude_reference,ftype,outpath,filename,fileout)
+					usbl_flag = 0
+			if image_flag == 1: # to implement
+				if image_format == "acfr_standard" or image_format == "unagi" :
+					parse_acfr_images(filepath + image_filepath,image_format,camera1_label,camera2_label,'images',image_timezone,image_timeoffset,ftype,outpath,filename,fileout)
+					image_flag = 0
 
 		fileout.close()
 		

@@ -37,7 +37,7 @@ class parse_interlacer:
 					data_ordered.append((data[sorted_index[i]]))				
 
 				# write out interlaced json file
-				with open(outpath + '/interlace_' + filename,'w') as fileout:
+				with open(outpath + '/' + filename,'w') as fileout:
 					json.dump(data_ordered, fileout)
 
 		if ftype == 'acfr':
@@ -60,7 +60,7 @@ class parse_interlacer:
 
 			# write out interlaced acfr file
 
-			with open(outpath + '/interlace_' + filename,'w') as fileout:
+			with open(outpath + '/' + filename,'w') as fileout:
 				for i in range(len(data_original)):				
 					fileout.write(str(data_ordered[i]))
 
