@@ -53,10 +53,11 @@ class parse_gaps:
 		print(str(len(gaps_list)) + ' GAPS files found')
 		
 		# extract data from files
+		data_list=[]
 		for i in range(len(gaps_list)):
 			path_gaps = filepath + '/' + gaps_list[i]
 			with open(path_gaps) as gaps:
-				# initialise flag
+				# initialise flag				
 				flag_got_time = 0
 				for line in gaps.readlines():
 					line_split = line.strip().split('*') 

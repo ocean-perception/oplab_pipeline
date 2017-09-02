@@ -51,6 +51,7 @@ class parse_acfr_images:
 		camera1_filename = [ line for line in all_list if camera1_label in line]
 		camera2_filename = [ line for line in all_list if camera2_label in line]
 		
+		data_list=[]
 		for i in range(len(camera1_filename)):
 		
 			camera1_filename_split = camera1_filename[i].strip().split('_') 

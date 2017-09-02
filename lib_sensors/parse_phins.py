@@ -57,9 +57,10 @@ class parse_phins:
 
 		# parse phins data
 		print('Parsing phins standard data')
+		data_list=[]
 		with codecs.open(filepath + filename,'r',encoding='utf-8', errors='ignore') as filein:
 			flag_got_time = 0
-			data=''			
+			data=''
 			for line in filein.readlines():				
 				line_split = line.strip().split('*')
 				line_split_no_checksum = line_split[0].strip().split(',')
