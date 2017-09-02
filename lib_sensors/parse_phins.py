@@ -59,7 +59,7 @@ class parse_phins:
 		print('Parsing phins standard data')
 		with codecs.open(filepath + filename,'r',encoding='utf-8', errors='ignore') as filein:
 			flag_got_time = 0
-			data=''
+			data=''			
 			for line in filein.readlines():				
 				line_split = line.strip().split('*')
 				line_split_no_checksum = line_split[0].strip().split(',')
@@ -299,3 +299,4 @@ class parse_phins:
 
 			with open(outpath + '/' + fileoutname,'w') as fileout:
 				json.dump(data_list, fileout)	
+				del data_list

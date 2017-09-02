@@ -139,3 +139,4 @@ class parse_acfr_images:
 
 			with open(outpath + '/' + fileoutname,'w') as fileout:
 				json.dump(data_list, fileout)	
+				del data_list

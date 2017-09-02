@@ -282,16 +282,16 @@ def generate_paths(filepath,ftype):
 					velocity_flag = 0
 			if orientation_flag == 1:                
 				if orientation_format == "phins":
-					parse_phins(filepath + orientation_filepath,orientation_filename,'orientation',orientation_timezone,orientation_timeoffset,ftype,outpath,filename,fileout)
-					orientation_flag = 0
+			 		parse_phins(filepath + orientation_filepath,orientation_filename,'orientation',orientation_timezone,orientation_timeoffset,ftype,outpath,filename,fileout)
+			 		orientation_flag = 0
 			if depth_flag == 1:                
-				if depth_format == "phins":
-					parse_phins(filepath + depth_filepath,depth_filename,'depth',depth_timezone,depth_timeoffset,ftype,outpath,filename,fileout)
-					depth_flag = 0
+			 	if depth_format == "phins":
+			 		parse_phins(filepath + depth_filepath,depth_filename,'depth',depth_timezone,depth_timeoffset,ftype,outpath,filename,fileout)
+			 		depth_flag = 0
 			if altitude_flag == 1:                
-				if altitude_format == "phins":
-					parse_phins(filepath + altitude_filepath,altitude_filename,'altitude',altitude_timezone,altitude_timeoffset,ftype,outpath,filename,fileout)
-					altitude_flag = 0
+			  	if altitude_format == "phins":
+			  		parse_phins(filepath + altitude_filepath,altitude_filename,'altitude',altitude_timezone,altitude_timeoffset,ftype,outpath,filename,fileout)
+			  		altitude_flag = 0
 			if usbl_flag == 1: # to implement
 				if usbl_format == "gaps":
 					parse_gaps(filepath + usbl_filepath,usbl_filename,'usbl',usbl_timezone,usbl_timeoffset,latitude_reference,longitude_reference,ftype,outpath,filename,fileout)
