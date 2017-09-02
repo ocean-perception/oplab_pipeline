@@ -56,7 +56,7 @@ class parse_phins:
 		timeoffset = -timezone_offset*60*60 + timeoffset 
 
 		# parse phins data
-		print('parsing phins standard data')
+		print('Parsing phins standard data')
 		with codecs.open(filepath + filename,'r',encoding='utf-8', errors='ignore') as filein:
 			flag_got_time = 0
 			data=''
@@ -290,13 +290,12 @@ class parse_phins:
 			for filein in glob.glob(outpath + '/' + fileoutname):
 				try:
 					with open(filein, 'rb') as json_file:						
-						data_in=json.load(json_file)
-						
+						data_in=json.load(json_file)						
 						for i in range(len(data_in)):
 							data_list.insert(0,data_in[len(data_in)-i-1])				        
 						
 				except ValueError:					
-					print('initialising JSON file')
+					print('Initialising JSON file')
 
 			with open(outpath + '/' + fileoutname,'w') as fileout:
 				json.dump(data_list, fileout)	

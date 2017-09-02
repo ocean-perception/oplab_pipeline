@@ -15,8 +15,7 @@ from lib_coordinates.latlon_wgs84 import latlon_to_metres
 from lib_coordinates.latlon_wgs84 import metres_to_latlon
 
 data_list=[]
-data_list_in=[]
-#need to make acfr parsers
+
 class parse_gaps:
 	def __init__(self, filepath, filename, category, timezone, timeoffset, latitude_reference, longitude_reference, ftype, outpath, fileoutname, fileout):
 
@@ -237,7 +236,7 @@ class parse_gaps:
 							data_list.insert(0,data_in[len(data_in)-i-1])				        
 						
 				except ValueError:					
-					print('initialising JSON file')
+					print('Initialising JSON file')
 
 			with open(outpath + '/' + fileoutname,'w') as fileout:
 				json.dump(data_list, fileout)	

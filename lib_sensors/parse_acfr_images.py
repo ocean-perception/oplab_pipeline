@@ -8,7 +8,7 @@
 import os, operator, sys
 import codecs, time, json, glob
 from datetime import datetime
-# from operator import itemgetter
+
 epoch_timestamp_camera1 = []
 epoch_timestamp_camera2 = []
 values = []
@@ -16,7 +16,7 @@ data_list = []
 tolerance = 0.01 # stereo pair must be within 10ms of each other
 
 #http://www.json.org/
-#need to make acfr parsers
+
 class parse_acfr_images:
 	def __init__(self, filepath, sensor_string, camera1_label, camera2_label, category, timezone, timeoffset, ftype, outpath, fileoutname, fileout):
 
@@ -42,7 +42,7 @@ class parse_acfr_images:
 		# convert to seconds from utc
 		timeoffset = -timezone_offset*60*60 + timeoffset 
 
-		print('parsing ', sensor_string, ' images')
+		print('Parsing', sensor_string, 'images')
 		
 		# determine file paths
 		
@@ -135,7 +135,7 @@ class parse_acfr_images:
 							data_list.insert(0,data_in[len(data_in)-i-1])				        
 						
 				except ValueError:					
-					print('initialising JSON file')
+					print('Initialising JSON file')
 
 			with open(outpath + '/' + fileoutname,'w') as fileout:
 				json.dump(data_list, fileout)	
