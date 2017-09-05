@@ -17,7 +17,7 @@ from lib_coordinates.latlon_wgs84 import metres_to_latlon
 data_list=[]
 
 class parse_gaps:
-	def __init__(self, filepath, filename, category, timezone, timeoffset, latitude_reference, longitude_reference, ftype, outpath, fileoutname, fileout):
+	def __init__(self, filepath, category, timezone, timeoffset, latitude_reference, longitude_reference, ftype, outpath, fileoutname, fileout):
 
 		# parser meta data    
 		class_string = 'measurement'

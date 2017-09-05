@@ -1,5 +1,6 @@
 # auv_nav
-    """Parsers for navigation data for oplab standard and acfr standard formats
+    """ requires python3.6.2 or later
+        Parsers for navigation data for oplab standard and acfr standard formats
 
         inputs are 
 
@@ -47,13 +48,14 @@
                 usbl {
                     format = "gaps";
                     filepath = "nav/gaps/";
-                    filename = "20170816091630-001.dat";
                     timezone = "utc";
                     timeoffset = "0.0";
                 }
                 images{
                     format = "acfr_standard";
                     filepath = "image/r20170816_023028_UG069_sesoko/i20170816_023028/";
+                    camera1 = "LC";
+                    camera2 = "RC";
                     timezone = "utc";
                     timeoffset = "0.0";
                 }

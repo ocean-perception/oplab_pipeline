@@ -62,13 +62,14 @@ def generate_paths(filepath,ftype):
 				usbl {
 					format = "gaps";
 					filepath = "nav/gaps/";
-					filename = "20170816091630-001.dat";
 					timezone = "utc";
 					timeoffset = "0.0";
 				}
 				images{
 					format = "acfr_standard";
 					filepath = "image/r20170816_023028_UG069_sesoko/i20170816_023028/";
+					camera1= "LC";
+					camera2= "RC";
 					timezone = "utc";
 					timeoffset = "0.0";
 				}
@@ -201,8 +202,6 @@ def generate_paths(filepath,ftype):
 					usbl_format = str(setting)
 				if label[0] == "filepath":
 					usbl_filepath = str(setting)
-				if label[0] == "filename":
-					usbl_filename = str(setting)
 				if label[0] == "timezone":
 					usbl_timezone = str(setting)
 				if label[0] == "timeoffset":
@@ -294,7 +293,7 @@ def generate_paths(filepath,ftype):
 			  		altitude_flag = 0
 			if usbl_flag == 1: # to implement
 				if usbl_format == "gaps":
-					parse_gaps(filepath + usbl_filepath,usbl_filename,'usbl',usbl_timezone,usbl_timeoffset,latitude_reference,longitude_reference,ftype,outpath,filename,fileout)
+					parse_gaps(filepath + usbl_filepath,'usbl',usbl_timezone,usbl_timeoffset,latitude_reference,longitude_reference,ftype,outpath,filename,fileout)
 					usbl_flag = 0
 			if image_flag == 1: # to implement
 				if image_format == "acfr_standard" or image_format == "unagi" :
