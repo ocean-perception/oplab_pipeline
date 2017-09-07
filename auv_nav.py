@@ -5,22 +5,12 @@
 # Author: Blair Thornton
 # Date: 25/08/2017
 
-# Import librarys
-import sys, os, csv, json
-import yaml
-from lib_sensors.parse_phins import parse_phins
-from lib_sensors.parse_gaps import parse_gaps
-from lib_sensors.parse_acfr_images import parse_acfr_images
-from lib_sensors.parse_interlacer import parse_interlacer
-
-def generate_paths(filepath,ftype):
-
-    """Parsers for navigation data for oplab standard and acfr standard formats
+"""Parsers for navigation data for oplab standard and acfr standard formats
 
         inputs are 
 
         nav_parser.py <options>
-            -i <path to mission.cfg>
+            -i <path to mission.yaml>
             -o <output type> 'acfr' or 'oplab'
 
 
@@ -30,8 +20,9 @@ def generate_paths(filepath,ftype):
                 #YAML 1.0
                 origin:
                 - latitude: 26.674083
-                - longitude: 127.868054
-                - coordinate_reference_system: wgs84
+                - longitude: 127.868054               
+                - coordinate_reference_system: wgs84  
+                - date: 2017/08/17              
 
                 velocity:
                 - format: phins
@@ -78,6 +69,7 @@ def generate_paths(filepath,ftype):
 
         Returns:
             interleaved navigation and imaging data with output options:
+
                 'acfr' - combined.RAW.auv
                     PHINS_COMPASS: 1444452882.644 r: -2.29 p: 17.21 h: 1.75 std_r: 0 std_p: 0 std_h: 0
                     RDI: 1444452882.644 alt:200 r1:0 r2:0 r3:0 r4:0 h:1.75 p:17.21 r:-2.29 vx:0.403 vy:0 vz:0 nx:0 ny:0 nz:0 COG:0 SOG:0 bt_status:32768 h_true:0 p_gimbal:0 sv: 1500
@@ -93,7 +85,45 @@ def generate_paths(filepath,ftype):
                     {"epoch_timestamp": 1501974002.7, "epoch_timestamp_depth": 1501974002.674, "class": "measurement", "sensor": "phins", "frame": "inertial", "category": "depth", "data": [{"depth": -0.958, "depth_std": -9.58e-05}]},
                     {"epoch_timestamp": 1502840568.204, "class": "measurement", "sensor": "gaps", "frame": "inertial", "category": "usbl", "data_ship": [{"latitude": 26.66935735000014, "longitude": 127.86623359499968}, {"northings": -526.0556603025898, "eastings": -181.08730736724087}, {"heading": 174.0588800058365}], "data_target": [{"latitude": 26.669344833333334, "latitude_std": -1.7801748803947248e-06}, {"longitude": 127.86607166666667, "longitude_std": -1.992112444781924e-06}, {"northings": -527.4487693247576, "northings_std": 0.19816816183128352}, {"eastings": -197.19537408743128, "eastings_std": 0.19816816183128352}, {"depth": 28.8}]},{"epoch_timestamp": 1501983409.56, "class": "measurement", "sensor": "unagi", "frame": "body", "category": "image", "camera1": [{"epoch_timestamp": 1501983409.56, "filename": "PR_20170816_023649_560_LC16.tif"}], "camera2": [{"epoch_timestamp": 1501983409.56, "filename": "PR_20170816_023649_560_RC16.tif"}]}
                     ]
+
+            These are stored in a mirrored file location where the input raw data is stored as follows with the paths to raw data as defined in mission.yaml
+            
+            e.g. 
+                raw     /<YEAR> /<CRUISE>   /<DIVE> /mission.yaml
+                                                    /nav/gaps/
+                                                    /nav/phins/
+                                                    /image/r20170816_023028_UG069_sesoko/i20170816_023028/
+
+            For this example, the outputs would be stored in the follow location, where folders will be automatically generated
+
+            # for oplab
+                processed   /<YEAR> /<CRUISE>   /<DIVE> /nav            /nav_standard.json   
+            
+            # for acfr
+                processed   /<YEAR> /<CRUISE>   /<DIVE> /dRAWLOGS_cv    /combined.RAW.auv   
+                                                        /mission.cfg
+
+            An example dataset can be downloaded from the following link with the expected folder structure
+
+                https://drive.google.com/drive/folders/0BzYMMCBxpT8BUF9feFpEclBzV0k?usp=sharing
+
+            Download, extract and specify the folder location and run as
+                
+                python3 auv_nav.py -i ~/raw/2017/cruise/dive/ -o acfr
+                python3 auv_nav.py -i ~/raw/2017/cruise/dive/ -o oplab
     """
+
+# Import librarys
+import sys, os, csv, json
+import yaml
+from lib_sensors.parse_phins import parse_phins
+from lib_sensors.parse_gaps import parse_gaps
+from lib_sensors.parse_acfr_images import parse_acfr_images
+from lib_sensors.parse_interlacer import parse_interlacer
+
+def parse_data(filepath,ftype):
+
+
     # initiate data and processing flags
     
     
@@ -105,13 +135,7 @@ def generate_paths(filepath,ftype):
     depth_flag =0
     attitude_flag =0
     usbl_flag =0
-    image_flag =0
-
-    # read in the mission.cfg
-    # print('Loading mission.cfg')    
-    # mission = filepath+'mission.cfg'
-    # load_data = open(mission,'r').read().split('}')
-
+    image_flag =0    
 
 
     print('Loading mission.yaml')    
@@ -128,6 +152,7 @@ def generate_paths(filepath,ftype):
             latitude_reference = load_data['origin'][0]['latitude']
             longitude_reference = load_data['origin'][1]['longitude']
             coordinate_reference = load_data['origin'][2]['coordinate_reference_system']
+            date = load_data['origin'][3]['date']
 
         if 'velocity' in load_data:
             velocity_flag=1                    
@@ -209,6 +234,12 @@ def generate_paths(filepath,ftype):
         proc_flag=2
     
     elif ftype == 'acfr':# or (ftype is not 'acfr'):        
+        with open(outpath + '/' + 'mission.cfg','w') as fileout:
+            data = 'MAG_VAR_LAT ' + str(float(latitude_reference)) + '\n' + 'MAG_VAR_LNG ' + str(float(longitude_reference)) + '\n' + 'MAG_VAR_DATE "' + str(date) + '"\n' + 'MAG_VAR_DEG ' + str(float(0))
+            
+            fileout.write(data)
+            fileout.close()
+                       
         outpath = outpath +'dRAWLOGS_cv'
         filename='combined.RAW.auv'
         proc_flag=2    
@@ -270,7 +301,7 @@ def generate_paths(filepath,ftype):
 def syntax_error():
 # incorrect usage message
     print("     nav_parser.py <options>")
-    print("         -i <path to mission.cfg>")
+    print("         -i <path to mission.yaml>")
     print("         -o <output type> 'acfr' or 'oplab'")
     return -1
 
@@ -310,7 +341,7 @@ if __name__ == '__main__':
             flag_o=1
 
         if (flag_i ==1) and (flag_o ==1):
-            sys.exit(generate_paths(filepath,ftype))            
+            sys.exit(parse_data(filepath,ftype))            
         else:
             syntax_error()
             
