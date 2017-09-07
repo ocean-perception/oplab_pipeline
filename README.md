@@ -10,8 +10,8 @@
         Go to the folder where the downloaded file (at time of writting)
             http://pyyaml.org/download/pyyaml/PyYAML-3.12.tar.gz
 
-        is extracted and in a terminal type 
-        
+        is extracted and from in the extracted folder, execute the following terminal commands 
+
         $ python3 setup.py install
         $ python3 setup.py test
         
