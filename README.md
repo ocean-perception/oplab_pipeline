@@ -1,6 +1,17 @@
 # auv_nav
-    """ requires python3.6.2 or later
-        Parsers for navigation data for oplab standard and acfr standard formats
+    """ Requires python3.6.2 or later
+        Requires PyYAML which can be downloaded from http://pyyaml.org/wiki/PyYAML
+
+        Go to the folder where the downloaded file (at time of writting)
+            http://pyyaml.org/download/pyyaml/PyYAML-3.12.tar.gz
+        is extracted and in a terminal type 
+        $ python3 setup.py install
+        $ python3 setup.py test
+        
+
+        Functionality:
+
+        Parses and interleave navigation data for oplab standard and acfr standard formats. 
 
         inputs are 
 
@@ -9,56 +20,57 @@
             -o <output type> 'acfr' or 'oplab'
 
 
-        Arguments:
-            path to the "mission.cfg" file, output format 'acfr' or 'oplab'
+       Arguments:
+            path to the "mission.yaml" file, output format 'acfr' or 'oplab'
 
-                origin {
-                    latitude = "26.674083";
-                    longitude = "127.868054";
-                    coordinate_reference_system = "wgs84";
-                }
-                velocity {
-                    format = "phins";
-                    filepath = "nav/phins/";
-                    filename = "20170816_phins.txt";
-                    timezone = "utc";
-                    timeoffset = "0.0";
-                }
-                orientation {
-                    format = "phins";
-                    filepath = "nav/phins/";
-                    filename = "20170816_phins.txt";
-                    timezone = "utc";
-                    timeoffset = "0.0";
-                }
-                depth {
-                    format = "phins";
-                    filepath = "nav/phins/";
-                    filename = "20170816_phins.txt";
-                    timezone = "utc";
-                    timeoffset = "0.0";
-                }
-                altitude {
-                    format = "phins";
-                    filepath = "nav/phins/";
-                    filename = "20170816_phins.txt";
-                    timezone = "utc";
-                    timeoffset = "0.0";
-                }
-                usbl {
-                    format = "gaps";
-                    filepath = "nav/gaps/";
-                    timezone = "utc";
-                    timeoffset = "0.0";
-                }
-                images{
-                    format = "acfr_standard";
-                    filepath = "image/r20170816_023028_UG069_sesoko/i20170816_023028/";
-                    camera1 = "LC";
-                    camera2 = "RC";
-                    timezone = "utc";
-                    timeoffset = "0.0";
-                }
+                #YAML 1.0
+                origin:
+                - latitude: 26.674083
+                - longitude: 127.868054
+                - coordinate_reference_system: wgs84
+
+                velocity:
+                - format: phins
+                - filepath: nav/phins/
+                - filename: 20170817_phins.txt
+                - timezone: utc
+                - timeoffset: 0.0
+
+                orientation:
+                - format: phins
+                - filepath: nav/phins/
+                - filename: 20170817_phins.txt
+                - timezone: utc
+                - timeoffset: 0.0
+
+                depth:
+                - format: phins
+                - filepath: nav/phins/
+                - filename: 20170817_phins.txt
+                - timezone: utc
+                - timeoffset: 0.0
+
+                altitude:
+                - format: phins
+                - filepath: nav/phins/
+                - filename: 20170817_phins.txt
+                - timezone: utc
+                - timeoffset: 0.0
+
+                usbl:
+                - format: gaps
+                - filepath: nav/gaps/
+                - timezone: utc
+                - timeoffset: 0.0
+
+                image:
+                - format: acfr_standard
+                - filepath: image/r20170817_041459_UG117_sesoko/i20170817_041459/
+                - camera1: LC
+                - camera2: RC
+                - timezone: utc
+                - timeoffset: 0.0
+
 
         Returns:
             interleaved navigation and imaging data with output options:
