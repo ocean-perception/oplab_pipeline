@@ -123,13 +123,13 @@ class parse_phins:
 									if category == 'velocity':
 										frame_string = 'body'
 										if line_split_no_checksum[1]  == header_dvl:
-											xx_velocity=float(line_split_no_checksum[2])
-											yy_velocity=float(line_split_no_checksum[3])
-											zz_velocity=float(line_split_no_checksum[4])
+											x_velocity=float(line_split_no_checksum[2])
+											y_velocity=float(line_split_no_checksum[3])
+											z_velocity=float(line_split_no_checksum[4])
 
-											xx_velocity_std=abs(xx_velocity)*velocity_std_factor+velocity_std_offset
-											yy_velocity_std=abs(yy_velocity)*velocity_std_factor+velocity_std_offset
-											zz_velocity_std=abs(zz_velocity)*velocity_std_factor+velocity_std_offset
+											x_velocity_std=abs(x_velocity)*velocity_std_factor+velocity_std_offset
+											y_velocity_std=abs(y_velocity)*velocity_std_factor+velocity_std_offset
+											z_velocity_std=abs(z_velocity)*velocity_std_factor+velocity_std_offset
 
 											velocity_time=str(line_split_no_checksum[6])
 
@@ -157,7 +157,7 @@ class parse_phins:
 
 
 												# write out in the required format interlace at end										
-												data = {'epoch_timestamp': float(epoch_timestamp),'epoch_timestamp_dvl': float(epoch_timestamp_dvl),'class': class_string,'sensor':sensor_string,'frame':frame_string,'category': category,'data': [{'xx_velocity':float(xx_velocity),'xx_velocity_std':float(xx_velocity_std)},{'yy_velocity':float(yy_velocity),'yy_velocity_std':float(yy_velocity_std)},{'zz_velocity':float(zz_velocity),'zz_velocity_std':float(zz_velocity_std)}]}
+												data = {'epoch_timestamp': float(epoch_timestamp),'epoch_timestamp_dvl': float(epoch_timestamp_dvl),'class': class_string,'sensor':sensor_string,'frame':frame_string,'category': category,'data': [{'x_velocity':float(x_velocity),'x_velocity_std':float(x_velocity_std)},{'y_velocity':float(y_velocity),'y_velocity_std':float(y_velocity_std)},{'z_velocity':float(z_velocity),'z_velocity_std':float(z_velocity_std)}]}
 												data_list.append(data)
 											
 											else:
