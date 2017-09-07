@@ -66,7 +66,7 @@ class parse_phins:
 				line_split = line.strip().split('*')
 				line_split_no_checksum = line_split[0].strip().split(',')
 				
-				if line_split_no_checksum[0] == header_start or line_split_no_checksum[0] == header_heading:
+				if len(line_split) == 2 and (line_split_no_checksum[0] == header_start or line_split_no_checksum[0] == header_heading):
 					# get time stamp
 					# do a check sum as a lot of broken packets are found in phins data
 					check_sum= str(line_split[1])
@@ -387,8 +387,7 @@ class parse_phins:
 			fileout.close()
 			for filein in glob.glob(outpath + '/' + fileoutname):
 				try:
-					with open(filein, 'rb') as json_file:
-						print(filein)						
+					with open(filein, 'rb') as json_file:					
 						data_in=json.load(json_file)						
 						for i in range(len(data_in)):
 							data_list.insert(0,data_in[len(data_in)-i-1])				        
