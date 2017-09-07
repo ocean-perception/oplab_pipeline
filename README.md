@@ -17,7 +17,6 @@
 
         git add -A
         git commit -m 'Some message about the change'
-
         git push origin master
 
         Functionality:
