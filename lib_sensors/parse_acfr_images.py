@@ -48,8 +48,8 @@ class parse_acfr_images:
 		
 		all_list = os.listdir(filepath)
 
-		camera1_filename = [ line for line in all_list if camera1_label in line]
-		camera2_filename = [ line for line in all_list if camera2_label in line]
+		camera1_filename = [ line for line in all_list if camera1_label in line and '.txt' not in line]
+		camera2_filename = [ line for line in all_list if camera2_label in line and '.txt' not in line]
 		
 		data_list=[]
 		for i in range(len(camera1_filename)):
