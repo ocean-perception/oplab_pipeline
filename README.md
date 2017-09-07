@@ -18,7 +18,8 @@
         git add -A
         git commit -m 'Some message about the change'
 
-        git push origin 'branch-name'
+        git push origin master
+
         Functionality:
 
         Parses and interleave navigation data for oplab standard and acfr standard formats. 
