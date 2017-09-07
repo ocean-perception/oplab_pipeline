@@ -29,7 +29,7 @@
         inputs are 
 
         nav_parser.py <options>
-            -i <path to mission.cfg>
+            -i <path to mission.yaml>
             -o <output type> 'acfr' or 'oplab'
 
 
@@ -41,6 +41,7 @@
                 - latitude: 26.674083
                 - longitude: 127.868054
                 - coordinate_reference_system: wgs84
+                - date: 2017/08/17
 
                 velocity:
                 - format: phins
@@ -84,9 +85,9 @@
                 - timezone: utc
                 - timeoffset: 0.0
 
-
         Returns:
             interleaved navigation and imaging data with output options:
+
                 'acfr' - combined.RAW.auv
                     PHINS_COMPASS: 1444452882.644 r: -2.29 p: 17.21 h: 1.75 std_r: 0 std_p: 0 std_h: 0
                     RDI: 1444452882.644 alt:200 r1:0 r2:0 r3:0 r4:0 h:1.75 p:17.21 r:-2.29 vx:0.403 vy:0 vz:0 nx:0 ny:0 nz:0 COG:0 SOG:0 bt_status:32768 h_true:0 p_gimbal:0 sv: 1500
@@ -99,6 +100,35 @@
                     [{"epoch_timestamp": 1501974125.926, "epoch_timestamp_dvl": 1501974125.875, "class": "measurement", "sensor": "phins", "frame": "body", "category": "velocity", "data": [{"xx_velocity": -0.075, "xx_velocity_std": 0.200075}, {"yy_velocity": 0.024, "yy_velocity_std": 0.200024}, {"zz_velocity": -0.316, "zz_velocity_std": 0.20031600000000002}]},
                     {"epoch_timestamp": 1501974002.1, "class": "measurement", "sensor": "phins", "frame": "inertial", "category": "orientation", "data": [{"heading": 243.777, "heading_std": 2.0}, {"roll": 4.595, "roll_std": 0.1}, {"pitch": 0.165, "pitch_std": 0.1}]},
                     {"epoch_timestamp": 1501974125.926, "epoch_timestamp_dvl": 1501974125.875, "class": "measurement", "sensor": "phins", "frame": "body", "category": "altitude", "data": [{"altitude": 31.53, "altitude_std": 0.3153}, {"sound_velocity": 1546.0, "sound_velocity_correction": 0.0}]},
-                    {"epoch_timestamp": 1501974002.7, "epoch_timestamp_depth": 1501974002.674, "class": "measurement", "sensor": "phins", "frame": "inertial", "category": "depth", "data": [{"depth": -0.958, "depth_std": -9.58e-05}]},{"epoch_timestamp": 1502840568.204, "class": "measurement", "sensor": "gaps", "frame": "inertial", "category": "usbl", "data_ship": [{"latitude": 26.66935735000014, "longitude": 127.86623359499968}, {"northings": -526.0556603025898, "eastings": -181.08730736724087}, {"heading": 174.0588800058365}], "data_target": [{"latitude": 26.669344833333334, "latitude_std": -1.7801748803947248e-06}, {"longitude": 127.86607166666667, "longitude_std": -1.992112444781924e-06}, {"northings": -527.4487693247576, "northings_std": 0.19816816183128352}, {"eastings": -197.19537408743128, "eastings_std": 0.19816816183128352}, {"depth": 28.8}]},{"epoch_timestamp": 1501983409.56, "class": "measurement", "sensor": "unagi", "frame": "body", "category": "image", "camera1": [{"epoch_timestamp": 1501983409.56, "filename": "PR_20170816_023649_560_LC16.tif"}], "camera2": [{"epoch_timestamp": 1501983409.56, "filename": "PR_20170816_023649_560_RC16.tif"}]}]
+                    {"epoch_timestamp": 1501974002.7, "epoch_timestamp_depth": 1501974002.674, "class": "measurement", "sensor": "phins", "frame": "inertial", "category": "depth", "data": [{"depth": -0.958, "depth_std": -9.58e-05}]},
+                    {"epoch_timestamp": 1502840568.204, "class": "measurement", "sensor": "gaps", "frame": "inertial", "category": "usbl", "data_ship": [{"latitude": 26.66935735000014, "longitude": 127.86623359499968}, {"northings": -526.0556603025898, "eastings": -181.08730736724087}, {"heading": 174.0588800058365}], "data_target": [{"latitude": 26.669344833333334, "latitude_std": -1.7801748803947248e-06}, {"longitude": 127.86607166666667, "longitude_std": -1.992112444781924e-06}, {"northings": -527.4487693247576, "northings_std": 0.19816816183128352}, {"eastings": -197.19537408743128, "eastings_std": 0.19816816183128352}, {"depth": 28.8}]},{"epoch_timestamp": 1501983409.56, "class": "measurement", "sensor": "unagi", "frame": "body", "category": "image", "camera1": [{"epoch_timestamp": 1501983409.56, "filename": "PR_20170816_023649_560_LC16.tif"}], "camera2": [{"epoch_timestamp": 1501983409.56, "filename": "PR_20170816_023649_560_RC16.tif"}]}
+                    ]
+
+            These are stored in a mirrored file location where the input raw data is stored as follows with the paths to raw data as defined in mission.yaml
+            
+            e.g. 
+                raw     /<YEAR> /<CRUISE>   /<DIVE> /mission.yaml
+                                                    /nav/gaps/
+                                                    /nav/phins/
+                                                    /image/r20170816_023028_UG069_sesoko/i20170816_023028/
+
+            For this example, the outputs would be stored in the follow location, where folders will be automatically generated
+
+            # for oplab
+                processed   /<YEAR> /<CRUISE>   /<DIVE> /nav            /nav_standard.json   
+            
+            # for acfr
+                processed   /<YEAR> /<CRUISE>   /<DIVE> /dRAWLOGS_cv    /combined.RAW.auv   
+                                                        /mission.cfg
+
+            An example dataset can be downloaded from the following link with the expected folder structure
+
+                https://drive.google.com/drive/folders/0BzYMMCBxpT8BUF9feFpEclBzV0k?usp=sharing
+            
+            Download, extract and specify the folder location and run as
+                
+                python3 auv_nav.py -i ~/raw/2017/cruise/dive/ -o acfr
+                python3 auv_nav.py -i ~/raw/2017/cruise/dive/ -o oplab
+
             
     """
