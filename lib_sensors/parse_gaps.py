@@ -72,15 +72,17 @@ class parse_gaps:
 							 yyyy = int(line_split_no_checksum[5])
 							 mm = int(line_split_no_checksum[4])
 							 dd = int(line_split_no_checksum[3])
-
+							 print(line_split_no_checksum[3])
+							 # print(yyyy,mm,dd)
 							 # read in time
 							 time_string=str(line_split_no_checksum[2])
 							 hour=int(time_string[0:2])
 							 mins=int(time_string[2:4])
 							 secs=int(time_string[4:6])
 							 msec=int(time_string[7:10])
-
+							 #print(hour,mins,secs)
 							 dt_obj = datetime(yyyy,mm,dd,hour,mins,secs)
+							 print(yyyy,mm,dd,hour,mins,secs)
 							 time_tuple = dt_obj.timetuple()
 							 epoch_time = time.mktime(time_tuple)
 							 epoch_timestamp_ship_prior = epoch_time+msec/1000+timeoffset

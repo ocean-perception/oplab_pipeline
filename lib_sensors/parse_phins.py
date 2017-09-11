@@ -40,6 +40,7 @@ class parse_phins:
 		mm = int(filename[5:6])
 		dd = int(filename[7:8])
 
+		
 		# read in timezone
 		if isinstance(timezone, str):			
 			if timezone == 'utc' or  timezone == 'UTC':
@@ -105,6 +106,7 @@ class parse_phins:
 
 							if broken_packet_flag == 0:																						
 								dt_obj = datetime(yyyy,mm,dd,hour,mins,secs)
+								
 								time_tuple = dt_obj.timetuple()
 								epoch_time = time.mktime(time_tuple)
 								epoch_timestamp = epoch_time+msec/1000+timeoffset						
