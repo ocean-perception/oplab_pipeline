@@ -301,9 +301,9 @@ class parse_phins:
 											else:
 												print('Warning: Badly formatted packet (DVL TIME)')
 												print(line)
+												flag_got_time = 0
 
-											#reset flag for next data
-											flag_got_time = 0																
+																										
 										
 											
 
