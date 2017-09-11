@@ -123,6 +123,7 @@ class parse_gaps:
 								msec=int(time_string[7:10])
 
 								dt_obj = datetime(yyyy,mm,dd,hour,mins,secs)
+								
 								time_tuple = dt_obj.timetuple()
 								epoch_time = time.mktime(time_tuple)
 								epoch_timestamp = epoch_time+msec/1000+timeoffset

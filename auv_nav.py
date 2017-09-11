@@ -235,7 +235,7 @@ def parse_data(filepath,ftype):
     
     elif ftype == 'acfr':# or (ftype is not 'acfr'):        
         with open(outpath + '/' + 'mission.cfg','w') as fileout:
-            data = 'MAG_VAR_LAT ' + str(float(latitude_reference)) + '\n' + 'MAG_VAR_LNG ' + str(float(longitude_reference)) + '\n' + 'MAG_VAR_DATE "' + str(date) + '"\n' + 'MAG_VAR_DEG ' + str(float(0))
+            data = 'MAG_VAR_LAT ' + str(float(latitude_reference)) + '\n' + 'MAG_VAR_LNG ' + str(float(longitude_reference)) + '\n' + 'MAG_VAR_DATE "' + str(date) + '"\n' + 'MAGNETIC_VAR_DEG ' + str(float(0))
             
             fileout.write(data)
             fileout.close()

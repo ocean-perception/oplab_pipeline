@@ -37,8 +37,8 @@ class parse_phins:
 
 		# read in date from filename
 		yyyy = int(filename[0:4])
-		mm = int(filename[5:6])
-		dd = int(filename[7:8])
+		mm = int(filename[4:6])
+		dd = int(filename[6:8])
 
 		
 		# read in timezone
