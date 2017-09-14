@@ -88,8 +88,8 @@ class parse_acfr_images:
 
 			# read in date
 			yyyy = int(date_string[0:4])
-			mm = int(date_string[5:6])
-			dd = int(date_string[7:8])
+			mm = int(date_string[4:6])
+			dd = int(date_string[6:8])
 
 			# read in time			
 			hour=int(time_string[0:2])
