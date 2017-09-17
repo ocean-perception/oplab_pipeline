@@ -19,7 +19,7 @@
         To push updates, stage changes, commit and push to a branch, usually master
 
         git add -A
-        git commit -m 'Some message about the change'
+        git commit -m "Some message about the change"
         git push origin master
 
         Functionality:
