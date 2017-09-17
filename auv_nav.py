@@ -9,7 +9,7 @@
 
         inputs are 
 
-        nav_parser.py <options>
+        auv_nav.py <options>
             -i <path to mission.yaml>
             -o <output type> 'acfr' or 'oplab'
 
@@ -300,7 +300,7 @@ def parse_data(filepath,ftype):
 
 def syntax_error():
 # incorrect usage message
-    print("     nav_parser.py <options>")
+    print("     auv_nav.py <options>")
     print("         -i <path to mission.yaml>")
     print("         -o <output type> 'acfr' or 'oplab'")
     return -1
