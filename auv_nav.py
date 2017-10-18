@@ -19,52 +19,52 @@
 
                 #YAML 1.0
                 origin:
-                - latitude: 26.674083
-                - longitude: 127.868054               
-                - coordinate_reference_system: wgs84  
-                - date: 2017/08/17              
+                    latitude: 26.674083
+                    longitude: 127.868054               
+                    coordinate_reference_system: wgs84  
+                    date: 2017/08/17              
 
                 velocity:
-                - format: phins
-                - filepath: nav/phins/
-                - filename: 20170817_phins.txt
-                - timezone: utc
-                - timeoffset: 0.0
+                    format: phins
+                    filepath: nav/phins/
+                    filename: 20170817_phins.txt
+                    timezone: utc
+                    timeoffset: 0.0
 
                 orientation:
-                - format: phins
-                - filepath: nav/phins/
-                - filename: 20170817_phins.txt
-                - timezone: utc
-                - timeoffset: 0.0
+                    format: phins
+                    filepath: nav/phins/
+                    filename: 20170817_phins.txt
+                    timezone: utc
+                    timeoffset: 0.0
 
                 depth:
-                - format: phins
-                - filepath: nav/phins/
-                - filename: 20170817_phins.txt
-                - timezone: utc
-                - timeoffset: 0.0
+                    format: phins
+                    filepath: nav/phins/
+                    filename: 20170817_phins.txt
+                    timezone: utc
+                    timeoffset: 0.0
 
                 altitude:
-                - format: phins
-                - filepath: nav/phins/
-                - filename: 20170817_phins.txt
-                - timezone: utc
-                - timeoffset: 0.0
+                    format: phins
+                    filepath: nav/phins/
+                    filename: 20170817_phins.txt
+                    timezone: utc
+                    timeoffset: 0.0
 
                 usbl:
-                - format: gaps
-                - filepath: nav/gaps/
-                - timezone: utc
-                - timeoffset: 0.0
+                    format: gaps
+                    filepath: nav/gaps/
+                    timezone: utc
+                    timeoffset: 0.0
 
                 image:
-                - format: acfr_standard
-                - filepath: image/r20170817_041459_UG117_sesoko/i20170817_041459/
-                - camera1: LC
-                - camera2: RC
-                - timezone: utc
-                - timeoffset: 0.0
+                    format: acfr_standard
+                    filepath: image/r20170817_041459_UG117_sesoko/i20170817_041459/
+                    camera1: LC
+                    camera2: RC
+                    timezone: utc
+                    timeoffset: 0.0
 
 
         Returns:
@@ -149,58 +149,58 @@ def parse_data(filepath,ftype):
     for i in range(0,len(load_data)): 
         if 'origin' in load_data:
             origin_flag=1
-            latitude_reference = load_data['origin'][0]['latitude']
-            longitude_reference = load_data['origin'][1]['longitude']
-            coordinate_reference = load_data['origin'][2]['coordinate_reference_system']
-            date = load_data['origin'][3]['date']
+            latitude_reference = load_data['origin']['latitude']
+            longitude_reference = load_data['origin']['longitude']
+            coordinate_reference = load_data['origin']['coordinate_reference_system']
+            date = load_data['origin']['date']
 
         if 'velocity' in load_data:
             velocity_flag=1                    
-            velocity_format = load_data['velocity'][0]['format']
-            velocity_filepath = load_data['velocity'][1]['filepath']
-            velocity_filename = load_data['velocity'][2]['filename']
-            velocity_timezone = load_data['velocity'][3]['timezone']
-            velocity_timeoffset = load_data['velocity'][4]['timeoffset']
+            velocity_format = load_data['velocity']['format']
+            velocity_filepath = load_data['velocity']['filepath']
+            velocity_filename = load_data['velocity']['filename']
+            velocity_timezone = load_data['velocity']['timezone']
+            velocity_timeoffset = load_data['velocity']['timeoffset']
 
         if 'orientation' in load_data:
             orientation_flag=1                    
-            orientation_format = load_data['orientation'][0]['format']
-            orientation_filepath = load_data['orientation'][1]['filepath']
-            orientation_filename = load_data['orientation'][2]['filename']
-            orientation_timezone = load_data['orientation'][3]['timezone']
-            orientation_timeoffset = load_data['orientation'][4]['timeoffset']
+            orientation_format = load_data['orientation']['format']
+            orientation_filepath = load_data['orientation']['filepath']
+            orientation_filename = load_data['orientation']['filename']
+            orientation_timezone = load_data['orientation']['timezone']
+            orientation_timeoffset = load_data['orientation']['timeoffset']
     
         if 'depth' in load_data:
             depth_flag=1                    
-            depth_format = load_data['depth'][0]['format']
-            depth_filepath = load_data['depth'][1]['filepath']
-            depth_filename = load_data['depth'][2]['filename']
-            depth_timezone = load_data['depth'][3]['timezone']
-            depth_timeoffset = load_data['depth'][4]['timeoffset']
+            depth_format = load_data['depth']['format']
+            depth_filepath = load_data['depth']['filepath']
+            depth_filename = load_data['depth']['filename']
+            depth_timezone = load_data['depth']['timezone']
+            depth_timeoffset = load_data['depth']['timeoffset']
     
         if 'altitude' in load_data:
             altitude_flag=1                    
-            altitude_format = load_data['altitude'][0]['format']
-            altitude_filepath = load_data['altitude'][1]['filepath']
-            altitude_filename = load_data['altitude'][2]['filename']
-            altitude_timezone = load_data['altitude'][3]['timezone']
-            altitude_timeoffset = load_data['altitude'][4]['timeoffset']
+            altitude_format = load_data['altitude']['format']
+            altitude_filepath = load_data['altitude']['filepath']
+            altitude_filename = load_data['altitude']['filename']
+            altitude_timezone = load_data['altitude']['timezone']
+            altitude_timeoffset = load_data['altitude']['timeoffset']
 
         if 'usbl' in load_data:
             usbl_flag=1                    
-            usbl_format = load_data['usbl'][0]['format']
-            usbl_filepath = load_data['usbl'][1]['filepath']
-            usbl_timezone = load_data['usbl'][2]['timezone']
-            usbl_timeoffset = load_data['usbl'][3]['timeoffset']
+            usbl_format = load_data['usbl']['format']
+            usbl_filepath = load_data['usbl']['filepath']
+            usbl_timezone = load_data['usbl']['timezone']
+            usbl_timeoffset = load_data['usbl']['timeoffset']
 
         if 'image' in load_data:
             image_flag=1                    
-            image_format = load_data['image'][0]['format']
-            image_filepath = load_data['image'][1]['filepath']
-            camera1_label = load_data['image'][2]['camera1']
-            camera2_label = load_data['image'][3]['camera2']
-            image_timezone = load_data['image'][4]['timezone']
-            image_timeoffset = load_data['image'][5]['timeoffset']
+            image_format = load_data['image']['format']
+            image_filepath = load_data['image']['filepath']
+            camera1_label = load_data['image']['camera1']
+            camera2_label = load_data['image']['camera2']
+            image_timezone = load_data['image']['timezone']
+            image_timeoffset = load_data['image']['timeoffset']
 
 
     # generate output path
