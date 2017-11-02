@@ -1,6 +1,6 @@
-# parse_interlacer
+# body to inertial
 
-# Scripts to interlace data
+# Scripts to rotate a cordinate frame (e.g. body to inertial taking angles in degrees as input)
 
 # Author: Blair Thornton
 # Date: 01/09/2017

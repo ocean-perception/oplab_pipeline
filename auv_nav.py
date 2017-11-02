@@ -114,8 +114,9 @@
     """
 
 # Import librarys
-import sys, os, csv, json
-import yaml
+import sys, os, csv
+import yaml, json
+from lib_coordinates.body_to_inertial import body_to_inertial
 from lib_sensors.parse_phins import parse_phins
 from lib_sensors.parse_gaps import parse_gaps
 from lib_sensors.parse_acfr_images import parse_acfr_images
@@ -292,6 +293,94 @@ def parse_data(filepath,ftype):
         print('Interlacing data')
         parse_interlacer(ftype,outpath,filename)
         print('Output saved to ' + outpath + '/' + filename)
+
+
+         # load data
+        if ftype == 'oplab':# or (ftype is not 'acfr'):
+            print('Loading json file ' + outpath + '/' + filename)
+            with open(outpath + '/' + filename) as nav_standard:                
+                parsed_json_data = json.load(nav_standard)
+
+
+            velocity_time=[]
+            velocity_x=[]
+            velocity_y=[]
+            velocity_z=[]
+
+            orientation_time=[]
+            orientation_roll=[]
+            orientation_pitch=[]
+            orientation_yaw=[]
+
+            # i here is the number of the data packet
+            for i in range(len(parsed_json_data)):
+                
+                # if you look at the json file loaded in line 208, the header category is one of the following options
+                # parsed_json_data[i]['category'] looks for the i'th instant of the header 'category' and returns the value that has the label category
+                # which is specified according to the standard json format, i.e. {some data , "category" : "the thing being specified", some more data}
+                
+                # similarly parsed_json_data[i]['epoch_timestamp']
+                # i.e. {some data , "epoch_timestamp" : <a numerical value>, some more data}
+                # will return the value of time. 
+
+                # json standards allow you to have nested data, so e.g. 
+                # parsed_json_data[i]['data'][1]['acceleration_x']
+                # looks for a header 'data' and looks for the 2nd subheader ([0] would be the 1st), which should be 'acceleration_x' and returns it
+                    #    'oplab' - nav_standard.json
+                    # [{"epoch_timestamp": 1501974125.926, "epoch_timestamp_dvl": 1501974125.875, "class": "measurement", "sensor": "phins", "frame": "body", "category": "velocity", "data": [{"x_velocity": -0.075, "x_velocity_std": 0.200075}, {"y_velocity": 0.024, "y_velocity_std": 0.200024}, {"z_velocity": -0.316, "z_velocity_std": 0.20031600000000002}]},
+                    # {"epoch_timestamp": 1501974002.1, "class": "measurement", "sensor": "phins", "frame": "inertial", "category": "orientation", "data": [{"heading": 243.777, "heading_std": 2.0}, {"roll": 4.595, "roll_std": 0.1}, {"pitch": 0.165, "pitch_std": 0.1}]},
+                    # {"epoch_timestamp": 1501974125.926, "epoch_timestamp_dvl": 1501974125.875, "class": "measurement", "sensor": "phins", "frame": "body", "category": "altitude", "data": [{"altitude": 31.53, "altitude_std": 0.3153}, {"sound_velocity": 1546.0, "sound_velocity_correction": 0.0}]},
+                    # {"epoch_timestamp": 1501974002.7, "epoch_timestamp_depth": 1501974002.674, "class": "measurement", "sensor": "phins", "frame": "inertial", "category": "depth", "data": [{"depth": -0.958, "depth_std": -9.58e-05}]},
+                    # {"epoch_timestamp": 1502840568.204, "class": "measurement", "sensor": "gaps", "frame": "inertial", "category": "usbl", "data_ship": [{"latitude": 26.66935735000014, "longitude": 127.86623359499968}, {"northings": -526.0556603025898, "eastings": -181.08730736724087}, {"heading": 174.0588800058365}], "data_target": [{"latitude": 26.669344833333334, "latitude_std": -1.7801748803947248e-06}, {"longitude": 127.86607166666667, "longitude_std": -1.992112444781924e-06}, {"northings": -527.4487693247576, "northings_std": 0.19816816183128352}, {"eastings": -197.19537408743128, "eastings_std": 0.19816816183128352}, {"depth": 28.8}]},{"epoch_timestamp": 1501983409.56, "class": "measurement", "sensor": "unagi", "frame": "body", "category": "image", "camera1": [{"epoch_timestamp": 1501983409.56, "filename": "PR_20170816_023649_560_LC16.tif"}], "camera2": [{"epoch_timestamp": 1501983409.56, "filename": "PR_20170816_023649_560_RC16.tif"}]}
+                    # ]
+                if 'velocity' in parsed_json_data[i]['category']:
+                    velocity_time.append(parsed_json_data[i]['epoch_timestamp'])
+
+                    velocity_x.append(parsed_json_data[i]['data'][0]['x_velocity'])
+                    velocity_y.append(parsed_json_data[i]['data'][1]['y_velocity'])
+                    velocity_z.append(parsed_json_data[i]['data'][2]['z_velocity'])
+                
+                if 'orientation' in parsed_json_data[i]['category']:
+                    orientation_time.append(parsed_json_data[i]['epoch_timestamp'])
+                    orientation_roll.append(parsed_json_data[i]['data'][1]['roll'])
+                    orientation_pitch.append(parsed_json_data[i]['data'][2]['pitch'])
+                    orientation_yaw.append(parsed_json_data[i]['data'][0]['heading'])
+            
+            
+            # write values out to a csv file
+            with open(outpath + '/velocity.csv' ,'w') as fileout:
+               fileout.write('epoch_time, velocity_x, velocity_y, velocity_z \n')
+            for i in range(len(velocity_time)):        
+               with open(outpath + '/velocity.csv' ,'a') as fileout:
+                   fileout.write(str(velocity_time[i])+','+str(velocity_x[i])+','+str(velocity_y[i])+','+str(velocity_z[i])+'\n')
+                   fileout.close()
+
+            with open(outpath + '/orientation.csv' ,'w') as fileout:
+               fileout.write('epoch_time, roll, pitch, yaw \n')
+            for i in range(len(orientation_time)):        
+               with open(outpath + '/orientation.csv' ,'a') as fileout:
+                   fileout.write(str(orientation_time[i])+','+str(orientation_roll[i])+','+str(orientation_pitch[i])+','+str(orientation_yaw[i])+'\n')
+                   fileout.close()
+
+                        # # perform coordinate transformation to calculate the 
+            velocity_x_offset=[]
+            velocity_y_offset=[]
+            velocity_z_offset=[]    
+
+            for i in range(len(velocity_time)):        
+                #[x_offset,y_offset,z_offset] = body_to_inertial(orientation_roll[i], orientation_pitch[i], orientation_yaw[i]-45, velocity_x[i], velocity_y[i], velocity_z[i])
+                [x_offset,y_offset,z_offset] = body_to_inertial(0, 0, -45, velocity_x[i], velocity_y[i], velocity_z[i])
+                velocity_x_offset.append(x_offset)
+                velocity_y_offset.append(y_offset)
+                velocity_z_offset.append(z_offset)
+
+            with open(outpath + '/velocity_offset.csv' ,'w') as fileout:
+               fileout.write('epoch_time, velocity_north, velocity_east, velocity_depth \n')
+            for i in range(len(velocity_time)):        
+               with open(outpath + '/velocity_offset.csv' ,'a') as fileout:
+                   fileout.write(str(velocity_time[i])+','+str(velocity_x_offset[i])+','+str(velocity_y_offset[i])+','+str(velocity_z_offset[i])+'\n')
+                   fileout.close()
+
         print('Complete')
 
 
