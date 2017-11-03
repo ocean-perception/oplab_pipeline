@@ -11,6 +11,9 @@
 
         auv_nav.py <options>
             -i <path to mission.yaml>
+            -e <path to root processed folder where parsed data exists>
+            -s <start time in utc time> hhmmss (only for extract)")
+            -f <finish time in utc time> hhmmss (only for extract)")            
             -o <output type> 'acfr' or 'oplab'
 
 
@@ -116,6 +119,10 @@
 # Import librarys
 import sys, os, csv
 import yaml, json
+import shutil, math
+import calendar
+
+from datetime import datetime
 from lib_coordinates.body_to_inertial import body_to_inertial
 from lib_sensors.parse_phins import parse_phins
 from lib_sensors.parse_gaps import parse_gaps
@@ -145,8 +152,6 @@ def parse_data(filepath,ftype):
         load_data = yaml.load(stream)
     
     
-       
-    
     for i in range(0,len(load_data)): 
         if 'origin' in load_data:
             origin_flag=1
@@ -162,6 +167,7 @@ def parse_data(filepath,ftype):
             velocity_filename = load_data['velocity']['filename']
             velocity_timezone = load_data['velocity']['timezone']
             velocity_timeoffset = load_data['velocity']['timeoffset']
+            velocity_headingoffset = load_data['velocity']['headingoffset']
 
         if 'orientation' in load_data:
             orientation_flag=1                    
@@ -170,6 +176,7 @@ def parse_data(filepath,ftype):
             orientation_filename = load_data['orientation']['filename']
             orientation_timezone = load_data['orientation']['timezone']
             orientation_timeoffset = load_data['orientation']['timeoffset']
+            orientation_headingoffset = load_data['orientation']['headingoffset']
     
         if 'depth' in load_data:
             depth_flag=1                    
@@ -230,8 +237,10 @@ def parse_data(filepath,ftype):
     print('Checking output format')
 
     if ftype == 'oplab':# or (ftype is not 'acfr'):
+        shutil.copy2(mission, outpath) # save mission yaml to processed directory
         outpath = outpath + 'nav'
-        filename='nav_standard.json'        
+        filename='nav_standard.json'   
+        
         proc_flag=2
     
     elif ftype == 'acfr':# or (ftype is not 'acfr'):        
@@ -264,19 +273,19 @@ def parse_data(filepath,ftype):
             # read in, parse data and write data
             if velocity_flag == 1:
                 if velocity_format == "phins":
-                    parse_phins(filepath + velocity_filepath,velocity_filename,'velocity',velocity_timezone,velocity_timeoffset,ftype,outpath,filename,fileout)
+                    parse_phins(filepath + velocity_filepath,velocity_filename,'velocity',velocity_timezone,velocity_timeoffset,velocity_headingoffset,ftype,outpath,filename,fileout)
                     velocity_flag = 0
             if orientation_flag == 1:                
                 if orientation_format == "phins":
-                    parse_phins(filepath + orientation_filepath,orientation_filename,'orientation',orientation_timezone,orientation_timeoffset,ftype,outpath,filename,fileout)
+                    parse_phins(filepath + orientation_filepath,orientation_filename,'orientation',orientation_timezone,orientation_timeoffset,orientation_headingoffset,ftype,outpath,filename,fileout)
                     orientation_flag = 0
             if depth_flag == 1:                
                 if depth_format == "phins":
-                    parse_phins(filepath + depth_filepath,depth_filename,'depth',depth_timezone,depth_timeoffset,ftype,outpath,filename,fileout)
+                    parse_phins(filepath + depth_filepath,depth_filename,'depth',depth_timezone,depth_timeoffset,0,ftype,outpath,filename,fileout)
                     depth_flag = 0
             if altitude_flag == 1:                
                 if altitude_format == "phins":
-                    parse_phins(filepath + altitude_filepath,altitude_filename,'altitude',altitude_timezone,altitude_timeoffset,ftype,outpath,filename,fileout)
+                    parse_phins(filepath + altitude_filepath,altitude_filename,'altitude',altitude_timezone,0,altitude_timeoffset,ftype,outpath,filename,fileout)
                     altitude_flag = 0
             if usbl_flag == 1: # to implement
                 if usbl_format == "gaps":
@@ -294,12 +303,53 @@ def parse_data(filepath,ftype):
         parse_interlacer(ftype,outpath,filename)
         print('Output saved to ' + outpath + '/' + filename)
 
+        print('Complete parse data')
 
-         # load data
+
+def extract_data(filepath,ftype,start_time,finish_time):
+
+         # load data should at this point be able to specify time stamp range (see asv_nav)
         if ftype == 'oplab':# or (ftype is not 'acfr'):
+            outpath=filepath + 'nav'
+
+            filename='nav_standard.json'        
             print('Loading json file ' + outpath + '/' + filename)
             with open(outpath + '/' + filename) as nav_standard:                
                 parsed_json_data = json.load(nav_standard)
+
+            print('Loading mission.yaml')    
+            mission = filepath +'mission.yaml'
+            with open(mission,'r') as stream:
+                load_data = yaml.load(stream)
+        
+            for i in range(0,len(load_data)): 
+                if 'origin' in load_data:
+                    origin_flag=1
+                    latitude_reference = load_data['origin']['latitude']
+                    longitude_reference = load_data['origin']['longitude']
+                    coordinate_reference = load_data['origin']['coordinate_reference_system']
+                    date = load_data['origin']['date']
+
+            # setup the time window
+            yyyy = int(date[0:4])
+            mm =  int(date[5:7])
+            dd =  int(date[8:10])
+
+            hours = int(start_time[0:2])
+            mins = int(start_time[2:4])
+            secs = int(start_time[4:6])
+            
+            dt_obj = datetime(yyyy,mm,dd,hours,mins,secs)       
+            time_tuple = dt_obj.utctimetuple()
+            epoch_start_time = calendar.timegm(time_tuple) 
+            
+            hours = int(finish_time[0:2])
+            mins = int(finish_time[2:4])
+            secs = int(finish_time[4:6])        
+
+            dt_obj = datetime(yyyy,mm,dd,hours,mins,secs)
+            time_tuple = dt_obj.utctimetuple()
+            epoch_finish_time = calendar.timegm(time_tuple) 
 
 
             velocity_time=[]
@@ -314,51 +364,45 @@ def parse_data(filepath,ftype):
 
             # i here is the number of the data packet
             for i in range(len(parsed_json_data)):
-                
-                # if you look at the json file loaded in line 208, the header category is one of the following options
-                # parsed_json_data[i]['category'] looks for the i'th instant of the header 'category' and returns the value that has the label category
-                # which is specified according to the standard json format, i.e. {some data , "category" : "the thing being specified", some more data}
-                
-                # similarly parsed_json_data[i]['epoch_timestamp']
-                # i.e. {some data , "epoch_timestamp" : <a numerical value>, some more data}
-                # will return the value of time. 
 
-                # json standards allow you to have nested data, so e.g. 
-                # parsed_json_data[i]['data'][1]['acceleration_x']
-                # looks for a header 'data' and looks for the 2nd subheader ([0] would be the 1st), which should be 'acceleration_x' and returns it
-                    #    'oplab' - nav_standard.json
-                    # [{"epoch_timestamp": 1501974125.926, "epoch_timestamp_dvl": 1501974125.875, "class": "measurement", "sensor": "phins", "frame": "body", "category": "velocity", "data": [{"x_velocity": -0.075, "x_velocity_std": 0.200075}, {"y_velocity": 0.024, "y_velocity_std": 0.200024}, {"z_velocity": -0.316, "z_velocity_std": 0.20031600000000002}]},
-                    # {"epoch_timestamp": 1501974002.1, "class": "measurement", "sensor": "phins", "frame": "inertial", "category": "orientation", "data": [{"heading": 243.777, "heading_std": 2.0}, {"roll": 4.595, "roll_std": 0.1}, {"pitch": 0.165, "pitch_std": 0.1}]},
-                    # {"epoch_timestamp": 1501974125.926, "epoch_timestamp_dvl": 1501974125.875, "class": "measurement", "sensor": "phins", "frame": "body", "category": "altitude", "data": [{"altitude": 31.53, "altitude_std": 0.3153}, {"sound_velocity": 1546.0, "sound_velocity_correction": 0.0}]},
-                    # {"epoch_timestamp": 1501974002.7, "epoch_timestamp_depth": 1501974002.674, "class": "measurement", "sensor": "phins", "frame": "inertial", "category": "depth", "data": [{"depth": -0.958, "depth_std": -9.58e-05}]},
-                    # {"epoch_timestamp": 1502840568.204, "class": "measurement", "sensor": "gaps", "frame": "inertial", "category": "usbl", "data_ship": [{"latitude": 26.66935735000014, "longitude": 127.86623359499968}, {"northings": -526.0556603025898, "eastings": -181.08730736724087}, {"heading": 174.0588800058365}], "data_target": [{"latitude": 26.669344833333334, "latitude_std": -1.7801748803947248e-06}, {"longitude": 127.86607166666667, "longitude_std": -1.992112444781924e-06}, {"northings": -527.4487693247576, "northings_std": 0.19816816183128352}, {"eastings": -197.19537408743128, "eastings_std": 0.19816816183128352}, {"depth": 28.8}]},{"epoch_timestamp": 1501983409.56, "class": "measurement", "sensor": "unagi", "frame": "body", "category": "image", "camera1": [{"epoch_timestamp": 1501983409.56, "filename": "PR_20170816_023649_560_LC16.tif"}], "camera2": [{"epoch_timestamp": 1501983409.56, "filename": "PR_20170816_023649_560_RC16.tif"}]}
-                    # ]
-                if 'velocity' in parsed_json_data[i]['category']:
-                    velocity_time.append(parsed_json_data[i]['epoch_timestamp'])
+                epoch_timestamp=parsed_json_data[i]['epoch_timestamp']
 
-                    velocity_x.append(parsed_json_data[i]['data'][0]['x_velocity'])
-                    velocity_y.append(parsed_json_data[i]['data'][1]['y_velocity'])
-                    velocity_z.append(parsed_json_data[i]['data'][2]['z_velocity'])
-                
-                if 'orientation' in parsed_json_data[i]['category']:
-                    orientation_time.append(parsed_json_data[i]['epoch_timestamp'])
-                    orientation_roll.append(parsed_json_data[i]['data'][1]['roll'])
-                    orientation_pitch.append(parsed_json_data[i]['data'][2]['pitch'])
-                    orientation_yaw.append(parsed_json_data[i]['data'][0]['heading'])
+                if epoch_timestamp >= epoch_start_time and epoch_timestamp <= epoch_finish_time:                                      
+
+                    if 'velocity' in parsed_json_data[i]['category']:
+                        velocity_time.append(parsed_json_data[i]['epoch_timestamp'])
+
+                        velocity_x.append(parsed_json_data[i]['data'][0]['x_velocity'])
+                        velocity_y.append(parsed_json_data[i]['data'][1]['y_velocity'])
+                        velocity_z.append(parsed_json_data[i]['data'][2]['z_velocity'])
+                    
+                    if 'orientation' in parsed_json_data[i]['category']:
+                        orientation_time.append(parsed_json_data[i]['epoch_timestamp'])
+                        orientation_roll.append(parsed_json_data[i]['data'][1]['roll'])
+                        orientation_pitch.append(parsed_json_data[i]['data'][2]['pitch'])
+                        orientation_yaw.append(parsed_json_data[i]['data'][0]['heading'])
             
             
             # write values out to a csv file
-            with open(outpath + '/velocity.csv' ,'w') as fileout:
+            # create a directory with the time stamp
+            renavpath = filepath + 'json_renav_' + str(yyyy) + str(mm) + str(dd) + '_' + start_time + '_' + finish_time
+            if os.path.isdir(renavpath) == 0:
+                try:
+                    os.mkdir(renavpath)
+                except Exception as e:
+                    print("Warning:",e)
+
+            with open(renavpath + '/velocity.csv' ,'w') as fileout:
                fileout.write('epoch_time, velocity_x, velocity_y, velocity_z \n')
             for i in range(len(velocity_time)):        
-               with open(outpath + '/velocity.csv' ,'a') as fileout:
+               with open(renavpath + '/velocity.csv' ,'a') as fileout:
                    fileout.write(str(velocity_time[i])+','+str(velocity_x[i])+','+str(velocity_y[i])+','+str(velocity_z[i])+'\n')
                    fileout.close()
 
-            with open(outpath + '/orientation.csv' ,'w') as fileout:
+            with open(renavpath + '/orientation.csv' ,'w') as fileout:
                fileout.write('epoch_time, roll, pitch, yaw \n')
             for i in range(len(orientation_time)):        
-               with open(outpath + '/orientation.csv' ,'a') as fileout:
+               with open(renavpath + '/orientation.csv' ,'a') as fileout:
                    fileout.write(str(orientation_time[i])+','+str(orientation_roll[i])+','+str(orientation_pitch[i])+','+str(orientation_yaw[i])+'\n')
                    fileout.close()
 
@@ -369,19 +413,19 @@ def parse_data(filepath,ftype):
 
             for i in range(len(velocity_time)):        
                 #[x_offset,y_offset,z_offset] = body_to_inertial(orientation_roll[i], orientation_pitch[i], orientation_yaw[i]-45, velocity_x[i], velocity_y[i], velocity_z[i])
-                [x_offset,y_offset,z_offset] = body_to_inertial(0, 0, -45, velocity_x[i], velocity_y[i], velocity_z[i])
+                [x_offset,y_offset,z_offset] = body_to_inertial(orientation_roll[i], orientation_pitch[i], orientation_yaw[i], velocity_x[i], velocity_y[i], velocity_z[i])
                 velocity_x_offset.append(x_offset)
                 velocity_y_offset.append(y_offset)
                 velocity_z_offset.append(z_offset)
 
-            with open(outpath + '/velocity_offset.csv' ,'w') as fileout:
+            with open(renavpath + '/velocity_offset.csv' ,'w') as fileout:
                fileout.write('epoch_time, velocity_north, velocity_east, velocity_depth \n')
             for i in range(len(velocity_time)):        
-               with open(outpath + '/velocity_offset.csv' ,'a') as fileout:
+               with open(renavpath + '/velocity_offset.csv' ,'a') as fileout:
                    fileout.write(str(velocity_time[i])+','+str(velocity_x_offset[i])+','+str(velocity_y_offset[i])+','+str(velocity_z_offset[i])+'\n')
                    fileout.close()
 
-        print('Complete')
+        print('Complete extract data')
 
 
 
@@ -391,7 +435,10 @@ def syntax_error():
 # incorrect usage message
     print("     auv_nav.py <options>")
     print("         -i <path to mission.yaml>")
+    print("         -e <path to root processed folder where parsed data exists>")    
     print("         -o <output type> 'acfr' or 'oplab'")
+    print("         -s <start time in utc time> hhmmss (only for extract)")
+    print("         -f <finish time in utc time> hhmmss (only for extract)")
     return -1
 
     
@@ -402,35 +449,45 @@ if __name__ == '__main__':
     # initialise flags
     flag_i=0
     flag_o=0
+    flag_e=0
+
+    start_time='000000'
+    finish_time='235959'
+
     
     # read in filepath and ftype
     if (int((len(sys.argv)))) < 5:
         print('Error: not enough arguments')
         syntax_error()
     else:   
+        # read in filepath, start time and finish time from function call
+        for i in range(math.ceil(len(sys.argv)/2)):
 
-        option=sys.argv[1]
-        value=sys.argv[2]
+            option=option=sys.argv[2*i-1]
+            value=sys.argv[2*i]                 
 
-        if option == "-i":
-            filepath=value
-            flag_i=1
-        elif option == "-o":
-            ftype=value
-            flag_o=1
+        
+            if option == "-i":
+                filepath=value
+                flag_i=1
+            if option == "-e":
+                filepath=value
+                flag_e=1
+            if option == "-o":
+                ftype=value
+                flag_o=1        
+            
+            if option == "-s":
+                start_time=value                
+            if option == "-f":
+                finish_time=value   
 
-        option=sys.argv[3]
-        value=sys.argv[4]
-
-        if option == "-i":
-            filepath=value
-            flag_i=1
-        elif option == "-o":
-            ftype=value
-            flag_o=1
+        
 
         if (flag_i ==1) and (flag_o ==1):
-            sys.exit(parse_data(filepath,ftype))            
+            sys.exit(parse_data(filepath,ftype))   
+        if (flag_e ==1) and (flag_o ==1):
+            sys.exit(extract_data(filepath,ftype,start_time,finish_time))   
         else:
             syntax_error()
             
