@@ -6,13 +6,17 @@
 # Date: 31/08/2017
 
 from datetime import datetime
-import hashlib
+import hashlib, sys
 import codecs, time, json, glob
+
+
+sys.path.append("..")
+from lib_coordinates.body_to_inertial import body_to_inertial
 #http://www.json.org/
 data_list=[]
 #need to make acfr parsers
 class parse_phins:
-	def __init__(self, filepath, filename, category, timezone, timeoffset, ftype, outpath, fileoutname, fileout):
+	def __init__(self, filepath, filename, category, timezone, timeoffset, headingoffset, ftype, outpath, fileoutname, fileout):
 
 		# parser meta data
 		class_string = 'measurement'
@@ -129,6 +133,9 @@ class parse_phins:
 											y_velocity=float(line_split_no_checksum[3])
 											z_velocity=float(line_split_no_checksum[4])
 
+											# account for sensor rotational offset
+											[x_velocity,y_velocity,z_velocity] = body_to_inertial(0, 0, headingoffset, x_velocity, y_velocity, z_velocity)
+
 											x_velocity_std=abs(x_velocity)*velocity_std_factor+velocity_std_offset
 											y_velocity_std=abs(y_velocity)*velocity_std_factor+velocity_std_offset
 											z_velocity_std=abs(z_velocity)*velocity_std_factor+velocity_std_offset
@@ -186,6 +193,10 @@ class parse_phins:
 											roll_std=float(line_split_no_checksum[3])
 											pitch_std=float(line_split_no_checksum[4])
 											
+											# account for sensor rotational offset
+											[roll, pitch, heading] = body_to_inertial(0, 0, headingoffset, roll, pitch, heading)
+											[roll_std, pitch_std, heading_std] = body_to_inertial(0, 0, headingoffset, roll_std, pitch_std, heading_std)
+
 											#reset flag for next data
 											flag_got_time = 0
 
@@ -274,6 +285,9 @@ class parse_phins:
 											yy_velocity=float(line_split_no_checksum[3])
 											zz_velocity=float(line_split_no_checksum[4])
 
+											# account for sensor offset
+											[xx_velocity,yy_velocity,zz_velocity] = body_to_inertial(0, 0, headingoffset, xx_velocity, yy_velocity, zz_velocity)
+
 											velocity_time=str(line_split_no_checksum[6])
 											hour_dvl=int(velocity_time[0:2])
 											mins_dvl=int(velocity_time[2:4])
@@ -348,6 +362,10 @@ class parse_phins:
 
 											#reset flag for next data
 											flag_got_time = 0
+
+											# account for sensor rotational offset
+											[roll, pitch, heading] = body_to_inertial(0, 0, headingoffset, roll, pitch, heading)
+											[roll_std, pitch_std, heading_std] = body_to_inertial(0, 0, headingoffset, roll_std, pitch_std, heading_std)
 
 											# write out in the required format interlace at end
 											data = 'PHINS_COMPASS: ' + str(float(epoch_timestamp)) + ' r: ' + str(float(roll)) + ' p: ' + str(float(pitch)) + ' h: ' + str(float(heading)) + ' std_r: ' + str(float(roll_std)) + ' std_p: ' + str(float(pitch_std)) + ' std_h: ' + str(float(heading_std)) + '\n'
