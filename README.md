@@ -28,7 +28,7 @@
 
         inputs are 
 
-        nav_parser.py <options>
+        auv_nav.py <options>
             -i <path to mission.yaml>
             -o <output type> 'acfr' or 'oplab'
 
