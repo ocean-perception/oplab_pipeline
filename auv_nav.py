@@ -213,7 +213,7 @@ def parse_data(filepath,ftype):
 
     # generate output path
     print('Generating output paths')    
-    sub_path = filepath.split('/')        
+    sub_path = filepath.split(os.sep)        
     sub_out=sub_path
     outpath=sub_out[0]
 
@@ -224,7 +224,7 @@ def parse_data(filepath,ftype):
         else:
             sub_out[i] = sub_path[i]
         
-        outpath = outpath +'/' + sub_out[i]
+        outpath = outpath + os.sep + sub_out[i]
         # make the new directories after 'processed' if it doesnt already exist
         if proc_flag == 1:        
             if os.path.isdir(outpath) == 0:
@@ -244,7 +244,7 @@ def parse_data(filepath,ftype):
         proc_flag=2
     
     elif ftype == 'acfr':# or (ftype is not 'acfr'):        
-        with open(outpath + '/' + 'mission.cfg','w') as fileout:
+        with open(outpath + os.sep + 'mission.cfg','w') as fileout:
             data = 'MAG_VAR_LAT ' + str(float(latitude_reference)) + '\n' + 'MAG_VAR_LNG ' + str(float(longitude_reference)) + '\n' + 'MAG_VAR_DATE "' + str(date) + '"\n' + 'MAGNETIC_VAR_DEG ' + str(float(0))
             
             fileout.write(data)
@@ -268,7 +268,7 @@ def parse_data(filepath,ftype):
 
     
         # create file (overwrite if exists)
-        with open(outpath + '/' + filename,'w') as fileout:
+        with open(outpath + os.sep + filename,'w') as fileout:
             print('Loading raw data')
             # read in, parse data and write data
             if velocity_flag == 1:
@@ -301,7 +301,7 @@ def parse_data(filepath,ftype):
         #interlace the data based on timestamps
         print('Interlacing data')
         parse_interlacer(ftype,outpath,filename)
-        print('Output saved to ' + outpath + '/' + filename)
+        print('Output saved to ' + outpath + os.sep + filename)
 
         print('Complete parse data')
 
@@ -313,8 +313,8 @@ def extract_data(filepath,ftype,start_time,finish_time):
             outpath=filepath + 'nav'
 
             filename='nav_standard.json'        
-            print('Loading json file ' + outpath + '/' + filename)
-            with open(outpath + '/' + filename) as nav_standard:                
+            print('Loading json file ' + outpath + os.sep + filename)
+            with open(outpath + os.sep + filename) as nav_standard:                
                 parsed_json_data = json.load(nav_standard)
 
             print('Loading mission.yaml')    
@@ -392,17 +392,17 @@ def extract_data(filepath,ftype,start_time,finish_time):
                 except Exception as e:
                     print("Warning:",e)
 
-            with open(renavpath + '/velocity.csv' ,'w') as fileout:
+            with open(renavpath + os.sep + 'velocity.csv' ,'w') as fileout:
                fileout.write('epoch_time, velocity_x, velocity_y, velocity_z \n')
             for i in range(len(velocity_time)):        
-               with open(renavpath + '/velocity.csv' ,'a') as fileout:
+               with open(renavpath + os.sep + 'velocity.csv' ,'a') as fileout:
                    fileout.write(str(velocity_time[i])+','+str(velocity_x[i])+','+str(velocity_y[i])+','+str(velocity_z[i])+'\n')
                    fileout.close()
 
-            with open(renavpath + '/orientation.csv' ,'w') as fileout:
+            with open(renavpath + os.sep + 'orientation.csv' ,'w') as fileout:
                fileout.write('epoch_time, roll, pitch, yaw \n')
             for i in range(len(orientation_time)):        
-               with open(renavpath + '/orientation.csv' ,'a') as fileout:
+               with open(renavpath + os.sep + 'orientation.csv' ,'a') as fileout:
                    fileout.write(str(orientation_time[i])+','+str(orientation_roll[i])+','+str(orientation_pitch[i])+','+str(orientation_yaw[i])+'\n')
                    fileout.close()
 
@@ -418,10 +418,10 @@ def extract_data(filepath,ftype,start_time,finish_time):
                 velocity_y_offset.append(y_offset)
                 velocity_z_offset.append(z_offset)
 
-            with open(renavpath + '/velocity_offset.csv' ,'w') as fileout:
+            with open(renavpath + os.sep + 'velocity_offset.csv' ,'w') as fileout:
                fileout.write('epoch_time, velocity_north, velocity_east, velocity_depth \n')
             for i in range(len(velocity_time)):        
-               with open(renavpath + '/velocity_offset.csv' ,'a') as fileout:
+               with open(renavpath + os.sep + 'velocity_offset.csv' ,'a') as fileout:
                    fileout.write(str(velocity_time[i])+','+str(velocity_x_offset[i])+','+str(velocity_y_offset[i])+','+str(velocity_z_offset[i])+'\n')
                    fileout.close()
 

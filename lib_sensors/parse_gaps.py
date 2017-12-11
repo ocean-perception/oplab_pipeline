@@ -55,7 +55,7 @@ class parse_gaps:
 		# extract data from files
 		data_list=[]
 		for i in range(len(gaps_list)):
-			path_gaps = filepath + '/' + gaps_list[i]
+			path_gaps = filepath + os.sep + gaps_list[i]
 			with open(path_gaps) as gaps:
 				# initialise flag				
 				flag_got_time = 0
@@ -232,7 +232,7 @@ class parse_gaps:
 
 		if ftype == 'oplab':
 			fileout.close()
-			for filein in glob.glob(outpath + '/' + fileoutname):
+			for filein in glob.glob(outpath + os.sep + fileoutname):
 				try:
 					with open(filein, 'rb') as json_file:						
 						data_in=json.load(json_file)						
@@ -242,6 +242,6 @@ class parse_gaps:
 				except ValueError:					
 					print('Initialising JSON file')
 
-			with open(outpath + '/' + fileoutname,'w') as fileout:
+			with open(outpath + os.sep + fileoutname,'w') as fileout:
 				json.dump(data_list, fileout)	
 				del data_list

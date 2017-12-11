@@ -405,7 +405,7 @@ class parse_phins:
 
 		if ftype == 'oplab':
 			fileout.close()
-			for filein in glob.glob(outpath + '/' + fileoutname):
+			for filein in glob.glob(outpath + os.sep + fileoutname):
 				try:
 					with open(filein, 'rb') as json_file:					
 						data_in=json.load(json_file)						
@@ -415,6 +415,6 @@ class parse_phins:
 				except ValueError:					
 					print('Initialising JSON file')
 
-			with open(outpath + '/' + fileoutname,'w') as fileout:
+			with open(outpath + os.sep + fileoutname,'w') as fileout:
 				json.dump(data_list, fileout)	
 				del data_list
