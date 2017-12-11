@@ -17,7 +17,7 @@ class parse_interlacer:
 	def __init__(self, ftype, outpath, filename):
 
 		if ftype == 'oplab':
-				for filein in glob.glob(outpath + '/' + filename):
+				for filein in glob.glob(outpath + os.sep + filename):
 					try:
 						with open(filein, 'r') as json_file:						
 							data=json.load(json_file)
@@ -37,12 +37,12 @@ class parse_interlacer:
 					data_ordered.append((data[sorted_index[i]]))				
 
 				# write out interlaced json file
-				with open(outpath + '/' + filename,'w') as fileout:
+				with open(outpath + os.sep + filename,'w') as fileout:
 					json.dump(data_ordered, fileout)
 
 		if ftype == 'acfr':
 			try:
-				with open(outpath + '/' + filename, 'r') as acfr_file:	
+				with open(outpath + os.sep + filename, 'r') as acfr_file:	
 					for line in acfr_file.readlines():					
 						line_split = line.strip().split(':') 
 						line_split_tailed = line_split[1].strip().split(' ') 
@@ -60,7 +60,7 @@ class parse_interlacer:
 
 			# write out interlaced acfr file
 
-			with open(outpath + '/' + filename,'w') as fileout:
+			with open(outpath + os.sep + filename,'w') as fileout:
 				for i in range(len(data_original)):				
 					fileout.write(str(data_ordered[i]))
 
