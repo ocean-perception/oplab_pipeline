@@ -10,26 +10,27 @@ import math
 deg_to_rad = 3.141592654/180 
 
 class body_to_inertial:
-	def __init__(self, roll, pitch, yaw, value_x, value_y, value_z):
+	def __init__(self, roll, pitch, yaw, old_x, old_y, old_z):
 		return
 		
 		
 	
 
-	def __new__(cls,roll, pitch, yaw, value_x, value_y, value_z):
+	def __new__(cls,roll, pitch, yaw, old_x, old_y, old_z):
 
 		roll=roll*deg_to_rad
 		pitch=pitch*deg_to_rad
 		yaw=yaw*deg_to_rad
 
-		north=((math.cos(yaw)*math.cos(pitch))*value_x
-			+(-math.sin(yaw)*math.cos(roll)+math.cos(yaw)*math.sin(pitch)*math.sin(roll))*value_y
-    		+(math.sin(yaw)*math.sin(roll)+(math.cos(yaw)*math.cos(roll)*math.sin(pitch)))*value_z)
-		east=((math.sin(yaw)*math.cos(pitch))*value_x
-    		+(math.cos(yaw)*math.cos(roll)+math.sin(roll)*math.sin(pitch)*math.sin(yaw))*value_y
-    		+(-math.cos(yaw)*math.sin(roll)+math.sin(yaw)*math.cos(roll)*math.sin(pitch))*value_z)
-		down=((-math.sin(pitch)*value_x)
-    		+(math.cos(pitch)*math.sin(roll)) * value_y
-    		+(math.cos(pitch)*math.cos(roll))*value_z)
-		
-		return north,east,down
+		new_x=((math.cos(yaw)*math.cos(pitch))*old_x
+			+(-math.sin(yaw)*math.cos(roll)+math.cos(yaw)*math.sin(pitch)*math.sin(roll))*old_y
+    		+(math.sin(yaw)*math.sin(roll)+(math.cos(yaw)*math.cos(roll)*math.sin(pitch)))*old_z)
+		new_y=((math.sin(yaw)*math.cos(pitch))*old_x
+    		+(math.cos(yaw)*math.cos(roll)+math.sin(roll)*math.sin(pitch)*math.sin(yaw))*old_y
+    		+(-math.cos(yaw)*math.sin(roll)+math.sin(yaw)*math.cos(roll)*math.sin(pitch))*old_z)
+		new_z=((-math.sin(pitch)*old_x)
+    		+(math.cos(pitch)*math.sin(roll)) * old_y
+    		+(math.cos(pitch)*math.cos(roll))*old_z)
+				
+
+		return new_x,new_y,new_z

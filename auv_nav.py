@@ -11,10 +11,11 @@
 
         auv_nav.py <options>
             -i <path to mission.yaml>
+            -o <output type> 'acfr' or 'oplab'
             -e <path to root processed folder where parsed data exists>
             -s <start time in utc time> hhmmss (only for extract)")
-            -f <finish time in utc time> hhmmss (only for extract)")            
-            -o <output type> 'acfr' or 'oplab'
+            -f <finish time in utc time> hhmmss (only for extract)")                        
+            -p <plot option> (only for extract)
 
 
         Arguments:
@@ -29,10 +30,12 @@
 
                 velocity:
                     format: phins
+                    thread: dvl
                     filepath: nav/phins/
                     filename: 20170817_phins.txt
                     timezone: utc
                     timeoffset: 0.0
+                    headingoffset: -45.0
 
                 orientation:
                     format: phins
@@ -40,6 +43,7 @@
                     filename: 20170817_phins.txt
                     timezone: utc
                     timeoffset: 0.0
+                    headingoffset: -45.0
 
                 depth:
                     format: phins
@@ -121,6 +125,8 @@ import sys, os, csv
 import yaml, json
 import shutil, math
 import calendar
+
+import matplotlib.pyplot as plt
 
 from datetime import datetime
 from lib_coordinates.body_to_inertial import body_to_inertial
@@ -306,7 +312,7 @@ def parse_data(filepath,ftype):
         print('Complete parse data')
 
 
-def extract_data(filepath,ftype,start_time,finish_time):
+def extract_data(filepath,ftype,start_time,finish_time,plot):
 
          # load data should at this point be able to specify time stamp range (see asv_nav)
         if ftype == 'oplab':# or (ftype is not 'acfr'):
@@ -351,18 +357,41 @@ def extract_data(filepath,ftype,start_time,finish_time):
             time_tuple = dt_obj.utctimetuple()
             epoch_finish_time = calendar.timegm(time_tuple) 
 
-
-            velocity_time=[]
-            velocity_x=[]
-            velocity_y=[]
-            velocity_z=[]
+            body_velocity_time=[]
+            x_velocity=[]
+            y_velocity=[]
+            z_velocity=[]
 
             orientation_time=[]
-            orientation_roll=[]
-            orientation_pitch=[]
-            orientation_yaw=[]
+            roll=[]
+            pitch=[]
+            yaw=[]
 
-            # i here is the number of the data packet
+            inertia_velocity_time=[]
+            north_velocity=[]
+            east_velocity=[]
+            up_velocity=[]
+
+            depth_time=[]
+            depth=[]
+
+            altitude_time=[]
+            altitude=[]
+            
+            # placeholders for interpolated measurements
+            roll_interpolated=[]
+            pitch_interpolated=[]
+            yaw_interpolated=[]
+            # interpolate depth and add altitude for every altitude measurement
+            seafloor_depth=[] 
+
+            # placeholders for transformed coordinates
+            north_velocity_dvl=[]
+            east_velocity_dvl=[]
+            down_velocity_dvl=[]
+
+            # read in data from json file
+            # i here is the number of the data packet        
             for i in range(len(parsed_json_data)):
 
                 epoch_timestamp=parsed_json_data[i]['epoch_timestamp']
@@ -370,60 +399,265 @@ def extract_data(filepath,ftype,start_time,finish_time):
                 if epoch_timestamp >= epoch_start_time and epoch_timestamp <= epoch_finish_time:                                      
 
                     if 'velocity' in parsed_json_data[i]['category']:
-                        velocity_time.append(parsed_json_data[i]['epoch_timestamp'])
+                        if 'body' in parsed_json_data[i]['frame']:
+                            # confirm time stamps of dvl are aligned with main clock (within a second)
+                            if abs(parsed_json_data[i]['epoch_timestamp']-parsed_json_data[i]['epoch_timestamp_dvl']<1):
+                            
+                                body_velocity_time.append(parsed_json_data[i]['epoch_timestamp_dvl'])                            
+                                x_velocity.append(parsed_json_data[i]['data'][0]['x_velocity'])
+                                y_velocity.append(parsed_json_data[i]['data'][1]['y_velocity'])
+                                z_velocity.append(parsed_json_data[i]['data'][2]['z_velocity'])
+                                roll_interpolated.append(0)
+                                pitch_interpolated.append(0)
+                                yaw_interpolated.append(0)
 
-                        velocity_x.append(parsed_json_data[i]['data'][0]['x_velocity'])
-                        velocity_y.append(parsed_json_data[i]['data'][1]['y_velocity'])
-                        velocity_z.append(parsed_json_data[i]['data'][2]['z_velocity'])
+                        if 'inertial' in parsed_json_data[i]['frame']:
+                            inertia_velocity_time.append(parsed_json_data[i]['epoch_timestamp'])
+
+                            north_velocity.append(parsed_json_data[i]['data'][0]['north_velocity'])
+                            east_velocity.append(parsed_json_data[i]['data'][1]['east_velocity'])
+                            up_velocity.append(parsed_json_data[i]['data'][2]['up_velocity'])
                     
                     if 'orientation' in parsed_json_data[i]['category']:
                         orientation_time.append(parsed_json_data[i]['epoch_timestamp'])
-                        orientation_roll.append(parsed_json_data[i]['data'][1]['roll'])
-                        orientation_pitch.append(parsed_json_data[i]['data'][2]['pitch'])
-                        orientation_yaw.append(parsed_json_data[i]['data'][0]['heading'])
+                        roll.append(parsed_json_data[i]['data'][1]['roll'])
+                        pitch.append(parsed_json_data[i]['data'][2]['pitch'])
+                        yaw.append(parsed_json_data[i]['data'][0]['heading'])
+
+                    if 'depth' in parsed_json_data[i]['category']:
+                        depth_time.append(parsed_json_data[i]['epoch_timestamp'])
+                        depth.append(parsed_json_data[i]['data'][0]['depth'])
+
+                    if 'altitude' in parsed_json_data[i]['category']:
+                        altitude_time.append(parsed_json_data[i]['epoch_timestamp'])
+                        altitude.append(parsed_json_data[i]['data'][0]['altitude'])
+                        seafloor_depth.append(0)
             
+            # perform coordinate transformations and interpolations                
+            for i in range(len(body_velocity_time)):        
+                
+                # interpolate to find the appropriate orientation timefor the dvl measurements
+                j=0
+
+                while orientation_time[j]<body_velocity_time[i]:
+                    j=j+1
+
+                if j>=1:                
+                    roll_interpolated[i]=(roll[j]-roll[j-1])/(orientation_time[j]-orientation_time[j-1])*(body_velocity_time[i]-orientation_time[j-1])+roll[j-1]
+                    pitch_interpolated[i]=(pitch[j]-pitch[j-1])/(orientation_time[j]-orientation_time[j-1])*(body_velocity_time[i]-orientation_time[j-1])+pitch[j-1]
+
+                    if abs(yaw[j]-yaw[j-1])>180:                        
+                        if yaw[j]>yaw[j-1]:
+                            yaw_interpolated[i]=((yaw[j]-360)-yaw[j-1])/(orientation_time[j]-orientation_time[j-1])*(body_velocity_time[i]-orientation_time[j-1])+yaw[j-1]                            
+                        else:
+                            yaw_interpolated[i]=(yaw[j]-(yaw[j-1]-360))/(orientation_time[j]-orientation_time[j-1])*(body_velocity_time[i]-orientation_time[j-1])+yaw[j-1]
+
+                        if yaw_interpolated[i]<0:
+                            yaw_interpolated[i]=yaw_interpolated[i]+360
+                            
+
+                        elif yaw_interpolated[i]>360:
+                            yaw_interpolated[i]=yaw_interpolated[i]-360                        
+
+                    else:
+                        yaw_interpolated[i]=(yaw[j]-yaw[j-1])/(orientation_time[j]-orientation_time[j-1])*(body_velocity_time[i]-orientation_time[j-1])+yaw[j-1]
+                    
+
+
+                
+                #[x_offset,y_offset,z_offset] = body_to_inertial(orientation_roll[i], orientation_pitch[i], orientation_yaw[i]-45, velocity_x[i], velocity_y[i], velocity_z[i])
+                [x_offset,y_offset,z_offset] = body_to_inertial(roll_interpolated[i], pitch_interpolated[i], yaw_interpolated[i], x_velocity[i], y_velocity[i], z_velocity[i])
+                north_velocity_dvl.append(x_offset)
+                east_velocity_dvl.append(y_offset)
+                down_velocity_dvl.append(z_offset)
+
+                # interpolate to find the appropriate orientation timefor the dvl measurements
+                j=0
+
+                while depth_time[j]<altitude_time[i]:
+                    j=j+1
+
+                if j>=1:                
+                    seafloor_depth[i]=(depth[j]-depth[j-1])/(depth_time[j]-depth_time[j-1])*(altitude_time[i]-depth_time[j-1])+depth[j-1]+altitude[i]                
             
             # write values out to a csv file
             # create a directory with the time stamp
-            renavpath = filepath + 'json_renav_' + str(yyyy) + str(mm) + str(dd) + '_' + start_time + '_' + finish_time
+            renavpath = filepath + 'json_renav_' + str(yyyy) + str(mm) + str(dd) + '_' + start_time + '_' + finish_time 
             if os.path.isdir(renavpath) == 0:
                 try:
                     os.mkdir(renavpath)
                 except Exception as e:
                     print("Warning:",e)
 
-            with open(renavpath + os.sep + 'velocity.csv' ,'w') as fileout:
-               fileout.write('epoch_time, velocity_x, velocity_y, velocity_z \n')
-            for i in range(len(velocity_time)):        
-               with open(renavpath + os.sep + 'velocity.csv' ,'a') as fileout:
-                   fileout.write(str(velocity_time[i])+','+str(velocity_x[i])+','+str(velocity_y[i])+','+str(velocity_z[i])+'\n')
+            csvpath = renavpath + os.sep + 'csv'
+
+            if os.path.isdir(csvpath) == 0:
+                try:
+                    os.mkdir(csvpath)
+                except Exception as e:
+                    print("Warning:",e)            
+
+            with open(csvpath + os.sep + 'velocity_body.csv' ,'w') as fileout:
+               fileout.write('epoch_time_dvl (s), x_velocity (m/s), y_velocity (m/s), z_velocity (m/s)\n')
+            for i in range(len(body_velocity_time)):        
+               with open(csvpath + os.sep + 'velocity_body.csv' ,'a') as fileout:
+                   fileout.write(str(body_velocity_time[i])+','+str(x_velocity[i])+','+str(y_velocity[i])+','+str(z_velocity[i])+'\n')
                    fileout.close()
 
-            with open(renavpath + os.sep + 'orientation.csv' ,'w') as fileout:
-               fileout.write('epoch_time, roll, pitch, yaw \n')
+            with open(csvpath + os.sep + 'orientation.csv' ,'w') as fileout:
+               fileout.write('epoch_time (s), roll (degrees), pitch (degrees), yaw (degrees)\n')
             for i in range(len(orientation_time)):        
-               with open(renavpath + os.sep + 'orientation.csv' ,'a') as fileout:
-                   fileout.write(str(orientation_time[i])+','+str(orientation_roll[i])+','+str(orientation_pitch[i])+','+str(orientation_yaw[i])+'\n')
+               with open(csvpath + os.sep + 'orientation.csv' ,'a') as fileout:
+                   fileout.write(str(orientation_time[i])+','+str(roll[i])+','+str(pitch[i])+','+str(yaw[i])+'\n')
                    fileout.close()
 
-                        # # perform coordinate transformation to calculate the 
-            velocity_x_offset=[]
-            velocity_y_offset=[]
-            velocity_z_offset=[]    
+            with open(csvpath + os.sep + 'velocity_inertia.csv' ,'w') as fileout:
+               fileout.write('epoch_time (s), north_velocity (m/s), east_velocity (m/s), up_velocity (m/s)\n')
+            for i in range(len(inertia_velocity_time)):        
+               with open(csvpath + os.sep + 'velocity_inertia.csv' ,'a') as fileout:
+                   fileout.write(str(inertia_velocity_time[i])+','+str(north_velocity[i])+','+str(east_velocity[i])+','+str(up_velocity[i])+'\n')
+                   fileout.close()                    
 
-            for i in range(len(velocity_time)):        
-                #[x_offset,y_offset,z_offset] = body_to_inertial(orientation_roll[i], orientation_pitch[i], orientation_yaw[i]-45, velocity_x[i], velocity_y[i], velocity_z[i])
-                [x_offset,y_offset,z_offset] = body_to_inertial(orientation_roll[i], orientation_pitch[i], orientation_yaw[i], velocity_x[i], velocity_y[i], velocity_z[i])
-                velocity_x_offset.append(x_offset)
-                velocity_y_offset.append(y_offset)
-                velocity_z_offset.append(z_offset)
-
-            with open(renavpath + os.sep + 'velocity_offset.csv' ,'w') as fileout:
-               fileout.write('epoch_time, velocity_north, velocity_east, velocity_depth \n')
-            for i in range(len(velocity_time)):        
-               with open(renavpath + os.sep + 'velocity_offset.csv' ,'a') as fileout:
-                   fileout.write(str(velocity_time[i])+','+str(velocity_x_offset[i])+','+str(velocity_y_offset[i])+','+str(velocity_z_offset[i])+'\n')
+            with open(csvpath + os.sep + 'orientation_interpolated.csv' ,'w') as fileout:
+               fileout.write('epoch_time (s), roll (degrees), pitch (degrees), yaw (degrees)\n')
+            for i in range(len(body_velocity_time)):        
+               with open(csvpath + os.sep + 'orientation_interpolated.csv' ,'a') as fileout:
+                   fileout.write(str(body_velocity_time[i])+','+str(roll_interpolated[i])+','+str(pitch_interpolated[i])+','+str(yaw_interpolated[i])+'\n')
                    fileout.close()
+
+            with open(csvpath + os.sep + 'velocity_inertia_dvl.csv' ,'w') as fileout:
+               fileout.write('epoch_time (s), north_velocity (m/s), east_velocity (m/s), down_velocity (m/s)\n')
+            for i in range(len(body_velocity_time)):        
+               with open(csvpath + os.sep + 'velocity_inertia_dvl.csv' ,'a') as fileout:
+                   fileout.write(str(body_velocity_time[i])+','+str(north_velocity_dvl[i])+','+str(east_velocity_dvl[i])+','+str(down_velocity_dvl[i])+'\n')
+                   fileout.close()
+
+            with open(csvpath + os.sep + 'depth.csv' ,'w') as fileout:
+               fileout.write('epoch_time (s), depth (m)\n')
+            for i in range(len(depth_time)):        
+               with open(csvpath + os.sep + 'depth.csv' ,'a') as fileout:
+                   fileout.write(str(depth_time[i])+','+str(depth[i])+'\n')
+                   fileout.close()
+
+            with open(csvpath + os.sep + 'altitude.csv' ,'w') as fileout:
+               fileout.write('epoch_time (s), altitude (m), seafloor_depth (m)\n')
+            for i in range(len(altitude_time)):        
+               with open(csvpath + os.sep + 'altitude.csv' ,'a') as fileout:
+                   fileout.write(str(altitude_time[i])+','+str(altitude[i])+','+str(seafloor_depth[i])+'\n')
+                   fileout.close()
+
+            # plot data
+            if plot is True:
+                print('Plotting data')
+                plotpath = renavpath + os.sep + 'plots'
+                
+                if os.path.isdir(plotpath) == 0:
+                    try:
+                        os.mkdir(plotpath)
+                    except Exception as e:
+                        print("Warning:",e)
+
+                # orientation_interpolated
+                fig=plt.figure(figsize=(4,3))
+                ax = fig.add_subplot(111)
+                ax.plot(body_velocity_time, yaw_interpolated, 'ro',label='Interpolated dvl')
+                ax.plot(orientation_time, yaw,'b.',label='Original')                            
+                ax.set_xlabel('Epoch time, s')
+                ax.set_ylabel('Yaw, degrees')
+                ax.legend(loc='upper right', bbox_to_anchor=(1, -0.3))
+                ax.grid(True)                        
+                plt.savefig(plotpath + os.sep + 'orientation_yaw.pdf', dpi=600, bbox_inches='tight')
+                plt.close()
+
+                fig=plt.figure(figsize=(4,3))
+                ax = fig.add_subplot(111)
+                ax.plot(body_velocity_time, roll_interpolated, 'ro',label='Interpolated dvl')
+                ax.plot(orientation_time, roll,'b.',label='Original')                                     
+                ax.set_xlabel('Epoch time, s')
+                ax.set_ylabel('Roll, degrees')
+                ax.legend(loc='upper right', bbox_to_anchor=(1, -0.3))
+                ax.grid(True)                        
+                plt.savefig(plotpath + os.sep + 'orientation_roll.pdf', dpi=600, bbox_inches='tight')
+                plt.close()
+
+                fig=plt.figure(figsize=(4,3))
+                ax = fig.add_subplot(111)
+                ax.plot(body_velocity_time, pitch_interpolated, 'ro',label='Interpolated dvl')
+                ax.plot(orientation_time, pitch,'b.',label='Original')                            
+                ax.set_xlabel('Epoch time, s')
+                ax.set_ylabel('Pitch, degrees')
+                ax.legend(loc='upper right', bbox_to_anchor=(1, -0.3))
+                ax.grid(True)                        
+                plt.savefig(plotpath + os.sep + 'orientation_pitch.pdf', dpi=600, bbox_inches='tight')
+                plt.close()
+
+                # velocities in body frame
+                fig=plt.figure(figsize=(4,3))
+                ax = fig.add_subplot(111)
+                ax.plot(body_velocity_time,x_velocity, 'r.',label='Surge')
+                ax.plot(body_velocity_time,y_velocity, 'g.',label='Sway')
+                ax.plot(body_velocity_time,z_velocity, 'b.',label='Heave')
+                ax.set_xlabel('Epoch time, s')
+                ax.set_ylabel('Velocity, m/s')
+                ax.legend(loc='upper right', bbox_to_anchor=(1, -0.3))
+                ax.grid(True)                        
+                plt.savefig(plotpath + os.sep + 'velocity_body.pdf', dpi=600, bbox_inches='tight')
+                plt.close()
+
+                # velocities in inertial frame
+                fig=plt.figure(figsize=(4,3))
+                ax = fig.add_subplot(111)            
+                ax.plot(body_velocity_time,north_velocity_dvl, 'ro',label='DVL')
+                ax.plot(inertia_velocity_time,north_velocity, 'b.',label='Phins')
+                ax.set_xlabel('Epoch time, s')
+                ax.set_ylabel('Velocity, m/s')
+                ax.legend(loc='upper right', bbox_to_anchor=(1, -0.3))
+                ax.grid(True)                        
+                plt.savefig(plotpath + os.sep + 'velocity_inertia_north.pdf', dpi=600, bbox_inches='tight')
+                plt.close()
+
+                fig=plt.figure(figsize=(4,3))
+                ax = fig.add_subplot(111)            
+                ax.plot(body_velocity_time,east_velocity_dvl,'ro',label='DVL')
+                ax.plot(inertia_velocity_time,east_velocity,'b.',label='Phins')
+                ax.set_xlabel('Epoch time, s')
+                ax.set_ylabel('Velocity, m/s')
+                ax.legend(loc='upper right', bbox_to_anchor=(1, -0.3))
+                ax.grid(True)                        
+                plt.savefig(plotpath + os.sep + 'velocity_inertia_east.pdf', dpi=600, bbox_inches='tight')
+                plt.close()
+
+                fig=plt.figure(figsize=(4,3))
+                ax = fig.add_subplot(111)            
+                ax.plot(body_velocity_time,down_velocity_dvl,'r.',label='DVL')
+                ax.plot(inertia_velocity_time,up_velocity,'b.',label='Phins')
+                ax.set_xlabel('Epoch time, s')
+                ax.set_ylabel('Velocity, m/s')
+                ax.legend(loc='upper right', bbox_to_anchor=(1, -0.3))
+                ax.grid(True)                        
+                plt.savefig(plotpath + os.sep + 'velocity_inertia_updown.pdf', dpi=600, bbox_inches='tight')
+                plt.close()
+
+                # depth and altitude
+                fig=plt.figure(figsize=(4,3))
+                ax1 = fig.add_subplot(211)
+                ax1.plot(depth_time,depth,'b.',label='Vehicle')                        
+                ax1.plot(altitude_time,seafloor_depth,'r.',label='Seafloor')                            
+                ax1.set_xlabel('Epoch time, s')
+                ax1.set_ylabel('Depth, m')
+                plt.gca().invert_yaxis()
+                ax1.legend(loc='upper right', bbox_to_anchor=(1, -0.3))
+                ax1.grid(True)          
+
+                ax2 = fig.add_subplot(212)
+                ax2.plot(altitude_time,altitude,'r.',label='Altitude')              
+                ax2.set_xlabel('Epoch time, s')
+                ax2.set_ylabel('Altitude, m')
+                ax2.set_xlim(min(depth_time),max(depth_time))
+                ax2.grid(True)          
+
+                plt.savefig(plotpath + os.sep + 'depth_altitude.pdf', dpi=600, bbox_inches='tight')
+                plt.close()
 
         print('Complete extract data')
 
@@ -435,10 +669,11 @@ def syntax_error():
 # incorrect usage message
     print("     auv_nav.py <options>")
     print("         -i <path to mission.yaml>")
-    print("         -e <path to root processed folder where parsed data exists>")    
     print("         -o <output type> 'acfr' or 'oplab'")
+    print("         -e <path to root processed folder where parsed data exists>")    
     print("         -s <start time in utc time> hhmmss (only for extract)")
     print("         -f <finish time in utc time> hhmmss (only for extract)")
+    print("         -p <plot option> (only for extract)")
     return -1
 
     
@@ -453,6 +688,7 @@ if __name__ == '__main__':
 
     start_time='000000'
     finish_time='235959'
+    plot = False
 
     
     # read in filepath and ftype
@@ -475,19 +711,20 @@ if __name__ == '__main__':
                 flag_e=1
             if option == "-o":
                 ftype=value
-                flag_o=1        
-            
+                flag_o=1                    
             if option == "-s":
                 start_time=value                
             if option == "-f":
                 finish_time=value   
+            if option == "-p":
+                plot = True
 
         
 
         if (flag_i ==1) and (flag_o ==1):
             sys.exit(parse_data(filepath,ftype))   
         if (flag_e ==1) and (flag_o ==1):
-            sys.exit(extract_data(filepath,ftype,start_time,finish_time))   
+            sys.exit(extract_data(filepath,ftype,start_time,finish_time,plot))   
         else:
             syntax_error()
             

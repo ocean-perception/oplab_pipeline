@@ -5,6 +5,12 @@
         git clone --recursive https://github.com/ocean-perception/auv_nav.git
 
         Requires python3.6.2 or later
+        Requires matplotlib library which can be downloaded and installed from a terminal
+
+        $ pip3 install matplotlib
+
+        where further instructions can be found here https://matplotlib.org/2.0.2/users/installing.html
+
         Requires PyYAML which can be downloaded from http://pyyaml.org/wiki/PyYAML
 
         Go to the folder where the downloaded file (at time of writting)

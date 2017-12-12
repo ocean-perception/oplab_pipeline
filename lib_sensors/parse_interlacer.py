@@ -5,7 +5,7 @@
 # Author: Blair Thornton
 # Date: 01/09/2017
 
-import json, glob
+import json, glob, os
 #http://www.json.org/
 from array import array 
 from operator import itemgetter
