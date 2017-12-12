@@ -6,7 +6,7 @@
 # Date: 31/08/2017
 
 from datetime import datetime
-import hashlib, sys
+import hashlib, sys, os
 import codecs, time, json, glob
 
 
@@ -34,7 +34,12 @@ class parse_phins:
 		header_heading = '$HEHDT'
 		header_attitude = 'ATITUD'
 		header_attitude_std = 'STDHRP'
+
+		
 		header_dvl = 'LOGIN_'		
+		header_vel = 'SPEED_'
+		header_vel_std = 'STDSPD'
+
 		header_depth = 'DEPIN_'
 		header_altitude = 'LOGDVL'	
 
@@ -127,8 +132,13 @@ class parse_phins:
 								# routine for oplab data format
 								if ftype == 'oplab':
 									if category == 'velocity':
-										frame_string = 'body'
-										if line_split_no_checksum[1]  == header_dvl:
+
+										#print(flag_got_time,line_split_no_checksum[1])
+
+										if line_split_no_checksum[1]  == header_dvl: # and flag_got_time == 3:
+											
+											frame_string = 'body'
+												
 											x_velocity=float(line_split_no_checksum[2])
 											y_velocity=float(line_split_no_checksum[3])
 											z_velocity=float(line_split_no_checksum[4])
@@ -154,10 +164,10 @@ class parse_phins:
 
 											try:
 												msec_dvl=int(velocity_time[7:10])
-											
+												
 											except ValueError:											
 												broken_packet_flag = 1
-											
+												
 											if broken_packet_flag == 0:
 												dt_obj_dvl = datetime(yyyy,mm,dd,hour_dvl,mins_dvl,secs_dvl)
 												time_tuple_dvl = dt_obj_dvl.timetuple()
@@ -166,16 +176,43 @@ class parse_phins:
 
 
 												# write out in the required format interlace at end										
-												data = {'epoch_timestamp': float(epoch_timestamp),'epoch_timestamp_dvl': float(epoch_timestamp_dvl),'class': class_string,'sensor':sensor_string,'frame':frame_string,'category': category,'data': [{'x_velocity':float(x_velocity),'x_velocity_std':float(x_velocity_std)},{'y_velocity':float(y_velocity),'y_velocity_std':float(y_velocity_std)},{'z_velocity':float(z_velocity),'z_velocity_std':float(z_velocity_std)}]}
+												data = {'epoch_timestamp': float(epoch_timestamp),'epoch_timestamp_dvl': float(epoch_timestamp_dvl),'class': class_string,'sensor':sensor_string,'frame':frame_string,'category': category,'data': [{'x_velocity':float(x_velocity),'x_velocity_std':float(x_velocity_std)},{'y_velocity':float(y_velocity),'y_velocity_std':float(y_velocity_std)},{'z_velocity':float(z_velocity),'z_velocity_std':float(z_velocity_std)}]}												
+
 												data_list.append(data)
-											
+												
 											else:
 												print('Warning: Badly formatted packet (DVL TIME)')
 												print(line)
 
+											#set flag for next data
+											flag_got_time = 2
+
+										if line_split_no_checksum[1]  == header_vel and flag_got_time == 2:		
+
+											frame_string = 'inertial'
+																							
+											north_velocity=float(line_split_no_checksum[2])
+											east_velocity=float(line_split_no_checksum[3])
+											up_velocity=float(line_split_no_checksum[4])
+
+											#set flag for next data
+											flag_got_time = 3
+
+										if line_split_no_checksum[1]  == header_vel_std and flag_got_time == 3:																																	
+
+											north_velocity_std=float(line_split_no_checksum[2])
+											east_velocity_std=float(line_split_no_checksum[3])
+											up_velocity_std=float(line_split_no_checksum[4])												
+
+												# write out in the required format interlace at end										
+											data = {'epoch_timestamp': float(epoch_timestamp),'class': class_string,'sensor':sensor_string,'frame':frame_string,'category': category,'data': [{'north_velocity':float(north_velocity),'north_velocity_std':float(north_velocity_std)},{'east_velocity':float(east_velocity),'east_velocity_std':float(east_velocity_std)},{'up_velocity':float(up_velocity),'up_velocity_std':float(up_velocity_std)}]}
+											data_list.append(data)
+
 											#reset flag for next data
 											flag_got_time = 0
-
+																				
+										
+										
 
 									if category == 'orientation':
 										frame_string = 'inertial'
@@ -193,10 +230,11 @@ class parse_phins:
 											roll_std=float(line_split_no_checksum[3])
 											pitch_std=float(line_split_no_checksum[4])
 											
-											# account for sensor rotational offset
+											# account for sensor rotational offset										
 											[roll, pitch, heading] = body_to_inertial(0, 0, headingoffset, roll, pitch, heading)
 											[roll_std, pitch_std, heading_std] = body_to_inertial(0, 0, headingoffset, roll_std, pitch_std, heading_std)
 
+											heading=heading+headingoffset
 											#reset flag for next data
 											flag_got_time = 0
 
@@ -279,7 +317,8 @@ class parse_phins:
 
 								if ftype == 'acfr':
 									if category == 'velocity':
-																			
+										
+										# use measurements of velocity from DVL 																			
 										if line_split_no_checksum[1]  == header_dvl and flag_got_time == 1: 
 											xx_velocity=float(line_split_no_checksum[2])
 											yy_velocity=float(line_split_no_checksum[3])
@@ -319,9 +358,7 @@ class parse_phins:
 												print(line)
 												flag_got_time = 0
 
-																										
-										
-											
+										# use measurements of velocity from PHINS
 
 										if line_split_no_checksum[1]  == header_altitude and flag_got_time == 2:
 											sound_velocity=float(line_split_no_checksum[2])
