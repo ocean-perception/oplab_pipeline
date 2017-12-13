@@ -659,7 +659,9 @@ def extract_data(filepath,ftype,start_time,finish_time,plot):
                 plt.savefig(plotpath + os.sep + 'depth_altitude.pdf', dpi=600, bbox_inches='tight')
                 plt.close()
 
-        print('Complete extract data')
+                print('Complete plot data: ', plotpath)
+
+        print('Complete extract data: ', csvpath)
 
 
 
@@ -697,25 +699,23 @@ if __name__ == '__main__':
         syntax_error()
     else:   
         # read in filepath, start time and finish time from function call
-        for i in range(math.ceil(len(sys.argv)/2)):
+        for i in range(math.ceil(len(sys.argv))):
 
-            option=option=sys.argv[2*i-1]
-            value=sys.argv[2*i]                 
-
+            option=sys.argv[i]
         
             if option == "-i":
-                filepath=value
+                filepath=sys.argv[i+1]
                 flag_i=1
             if option == "-e":
-                filepath=value
+                filepath=sys.argv[i+1]
                 flag_e=1
             if option == "-o":
-                ftype=value
+                ftype=sys.argv[i+1]
                 flag_o=1                    
             if option == "-s":
-                start_time=value                
+                start_time=sys.argv[i+1]
             if option == "-f":
-                finish_time=value   
+                finish_time=sys.argv[i+1]
             if option == "-p":
                 plot = True
 
