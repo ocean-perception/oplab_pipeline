@@ -144,7 +144,9 @@ class parse_phins:
 											z_velocity=float(line_split_no_checksum[4])
 
 											# account for sensor rotational offset
+											# print('IN :',x_velocity, y_velocity, z_velocity)
 											[x_velocity,y_velocity,z_velocity] = body_to_inertial(0, 0, headingoffset, x_velocity, y_velocity, z_velocity)
+											# print('OUT:',x_velocity, y_velocity, z_velocity)
 
 											x_velocity_std=abs(x_velocity)*velocity_std_factor+velocity_std_offset
 											y_velocity_std=abs(y_velocity)*velocity_std_factor+velocity_std_offset
