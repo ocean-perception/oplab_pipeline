@@ -193,21 +193,21 @@ class parse_phins:
 
 											frame_string = 'inertial'
 																							
-											east_velocity=float(line_split_no_checksum[2])
+											east_velocity=-1*float(line_split_no_checksum[2]) # phins convention is west +ve
 											north_velocity=float(line_split_no_checksum[3])									
-											up_velocity=float(line_split_no_checksum[4])
+											down_velocity=-1*float(line_split_no_checksum[4]) # phins convention is up +ve
 
 											#set flag for next data
 											flag_got_time = 3
 
 										if line_split_no_checksum[1]  == header_vel_std and flag_got_time == 3:																																	
 
-											east_velocity_std=float(line_split_no_checksum[2])
+											east_velocity_std=-1*float(line_split_no_checksum[2]) # phins convention is west +ve
 											north_velocity_std=float(line_split_no_checksum[3])											
-											up_velocity_std=float(line_split_no_checksum[4])												
+											down_velocity_std=-1*float(line_split_no_checksum[4]) # phins convention is up +ve												
 
 												# write out in the required format interlace at end										
-											data = {'epoch_timestamp': float(epoch_timestamp),'class': class_string,'sensor':sensor_string,'frame':frame_string,'category': category,'data': [{'north_velocity':float(north_velocity),'north_velocity_std':float(north_velocity_std)},{'east_velocity':float(east_velocity),'east_velocity_std':float(east_velocity_std)},{'up_velocity':float(up_velocity),'up_velocity_std':float(up_velocity_std)}]}
+											data = {'epoch_timestamp': float(epoch_timestamp),'class': class_string,'sensor':sensor_string,'frame':frame_string,'category': category,'data': [{'north_velocity':float(north_velocity),'north_velocity_std':float(north_velocity_std)},{'east_velocity':float(east_velocity),'east_velocity_std':float(east_velocity_std)},{'down_velocity':float(down_velocity),'down_velocity_std':float(down_velocity_std)}]}
 											data_list.append(data)
 
 											#reset flag for next data
@@ -219,12 +219,12 @@ class parse_phins:
 									if category == 'orientation':
 										frame_string = 'inertial'
 										if line_split_no_checksum[0] == header_heading:
-											heading=float(line_split_no_checksum[1])
+											heading=float(line_split_no_checksum[1]) # phins +ve clockwise so no need to change
 											flag_got_time = 2
 
 										if line_split_no_checksum[1]  == header_attitude and flag_got_time == 2:
 											roll=float(line_split_no_checksum[2])
-											pitch=float(line_split_no_checksum[3])									
+											pitch=float(line_split_no_checksum[3]) # phins +ve nose up so no need to change								
 											flag_got_time = 3
 
 										if line_split_no_checksum[1]  == header_attitude_std and flag_got_time == 3:

@@ -370,7 +370,7 @@ def extract_data(filepath,ftype,start_time,finish_time,plot):
             inertia_velocity_time=[]
             north_velocity=[]
             east_velocity=[]
-            up_velocity=[]
+            down_velocity=[]
 
             depth_time=[]
             depth=[]
@@ -416,7 +416,7 @@ def extract_data(filepath,ftype,start_time,finish_time,plot):
 
                             north_velocity.append(parsed_json_data[i]['data'][0]['north_velocity'])
                             east_velocity.append(parsed_json_data[i]['data'][1]['east_velocity'])
-                            up_velocity.append(parsed_json_data[i]['data'][2]['up_velocity'])
+                            down_velocity.append(parsed_json_data[i]['data'][2]['down_velocity'])
                     
                     if 'orientation' in parsed_json_data[i]['category']:
                         orientation_time.append(parsed_json_data[i]['epoch_timestamp'])
@@ -441,7 +441,7 @@ def extract_data(filepath,ftype,start_time,finish_time,plot):
 
                 while orientation_time[j]<body_velocity_time[i]:
                     j=j+1
-
+                j=j-1
                 if j>=1:                
                     roll_interpolated[i]=(roll[j]-roll[j-1])/(orientation_time[j]-orientation_time[j-1])*(body_velocity_time[i]-orientation_time[j-1])+roll[j-1]
                     pitch_interpolated[i]=(pitch[j]-pitch[j-1])/(orientation_time[j]-orientation_time[j-1])*(body_velocity_time[i]-orientation_time[j-1])+pitch[j-1]
@@ -512,10 +512,10 @@ def extract_data(filepath,ftype,start_time,finish_time,plot):
                    fileout.close()
 
             with open(csvpath + os.sep + 'velocity_inertia.csv' ,'w') as fileout:
-               fileout.write('epoch_time (s), north_velocity (m/s), east_velocity (m/s), up_velocity (m/s)\n')
+               fileout.write('epoch_time (s), north_velocity (m/s), east_velocity (m/s), down_velocity (m/s)\n')
             for i in range(len(inertia_velocity_time)):        
                with open(csvpath + os.sep + 'velocity_inertia.csv' ,'a') as fileout:
-                   fileout.write(str(inertia_velocity_time[i])+','+str(north_velocity[i])+','+str(east_velocity[i])+','+str(up_velocity[i])+'\n')
+                   fileout.write(str(inertia_velocity_time[i])+','+str(north_velocity[i])+','+str(east_velocity[i])+','+str(down_velocity[i])+'\n')
                    fileout.close()                    
 
             with open(csvpath + os.sep + 'orientation_interpolated.csv' ,'w') as fileout:
@@ -564,7 +564,7 @@ def extract_data(filepath,ftype,start_time,finish_time,plot):
                 ax.plot(orientation_time, yaw,'b.',label='Original')                            
                 ax.set_xlabel('Epoch time, s')
                 ax.set_ylabel('Yaw, degrees')
-                ax.legend(loc='upper right', bbox_to_anchor=(1, -0.3))
+                ax.legend(loc='upper right', bbox_to_anchor=(1, -0.2))
                 ax.grid(True)                        
                 plt.savefig(plotpath + os.sep + 'orientation_yaw.pdf', dpi=600, bbox_inches='tight')
                 plt.close()
@@ -575,7 +575,7 @@ def extract_data(filepath,ftype,start_time,finish_time,plot):
                 ax.plot(orientation_time, roll,'b.',label='Original')                                     
                 ax.set_xlabel('Epoch time, s')
                 ax.set_ylabel('Roll, degrees')
-                ax.legend(loc='upper right', bbox_to_anchor=(1, -0.3))
+                ax.legend(loc='upper right', bbox_to_anchor=(1, -0.2))
                 ax.grid(True)                        
                 plt.savefig(plotpath + os.sep + 'orientation_roll.pdf', dpi=600, bbox_inches='tight')
                 plt.close()
@@ -586,7 +586,7 @@ def extract_data(filepath,ftype,start_time,finish_time,plot):
                 ax.plot(orientation_time, pitch,'b.',label='Original')                            
                 ax.set_xlabel('Epoch time, s')
                 ax.set_ylabel('Pitch, degrees')
-                ax.legend(loc='upper right', bbox_to_anchor=(1, -0.3))
+                ax.legend(loc='upper right', bbox_to_anchor=(1, -0.2))
                 ax.grid(True)                        
                 plt.savefig(plotpath + os.sep + 'orientation_pitch.pdf', dpi=600, bbox_inches='tight')
                 plt.close()
@@ -599,7 +599,7 @@ def extract_data(filepath,ftype,start_time,finish_time,plot):
                 ax.plot(body_velocity_time,z_velocity, 'b.',label='Heave')
                 ax.set_xlabel('Epoch time, s')
                 ax.set_ylabel('Velocity, m/s')
-                ax.legend(loc='upper right', bbox_to_anchor=(1, -0.3))
+                ax.legend(loc='upper right', bbox_to_anchor=(1, -0.2))
                 ax.grid(True)                        
                 plt.savefig(plotpath + os.sep + 'velocity_body.pdf', dpi=600, bbox_inches='tight')
                 plt.close()
@@ -611,7 +611,7 @@ def extract_data(filepath,ftype,start_time,finish_time,plot):
                 ax.plot(inertia_velocity_time,north_velocity, 'b.',label='Phins')
                 ax.set_xlabel('Epoch time, s')
                 ax.set_ylabel('Velocity, m/s')
-                ax.legend(loc='upper right', bbox_to_anchor=(1, -0.3))
+                ax.legend(loc='upper right', bbox_to_anchor=(1, -0.2))
                 ax.grid(True)                        
                 plt.savefig(plotpath + os.sep + 'velocity_inertia_north.pdf', dpi=600, bbox_inches='tight')
                 plt.close()
@@ -622,7 +622,7 @@ def extract_data(filepath,ftype,start_time,finish_time,plot):
                 ax.plot(inertia_velocity_time,east_velocity,'b.',label='Phins')
                 ax.set_xlabel('Epoch time, s')
                 ax.set_ylabel('Velocity, m/s')
-                ax.legend(loc='upper right', bbox_to_anchor=(1, -0.3))
+                ax.legend(loc='upper right', bbox_to_anchor=(1, -0.2))
                 ax.grid(True)                        
                 plt.savefig(plotpath + os.sep + 'velocity_inertia_east.pdf', dpi=600, bbox_inches='tight')
                 plt.close()
@@ -630,10 +630,10 @@ def extract_data(filepath,ftype,start_time,finish_time,plot):
                 fig=plt.figure(figsize=(4,3))
                 ax = fig.add_subplot(111)            
                 ax.plot(body_velocity_time,down_velocity_dvl,'r.',label='DVL')
-                ax.plot(inertia_velocity_time,up_velocity,'b.',label='Phins')
+                ax.plot(inertia_velocity_time,down_velocity,'b.',label='Phins')
                 ax.set_xlabel('Epoch time, s')
                 ax.set_ylabel('Velocity, m/s')
-                ax.legend(loc='upper right', bbox_to_anchor=(1, -0.3))
+                ax.legend(loc='upper right', bbox_to_anchor=(1, -0.2))
                 ax.grid(True)                        
                 plt.savefig(plotpath + os.sep + 'velocity_inertia_updown.pdf', dpi=600, bbox_inches='tight')
                 plt.close()
@@ -646,7 +646,7 @@ def extract_data(filepath,ftype,start_time,finish_time,plot):
                 ax1.set_xlabel('Epoch time, s')
                 ax1.set_ylabel('Depth, m')
                 plt.gca().invert_yaxis()
-                ax1.legend(loc='upper right', bbox_to_anchor=(1, -0.3))
+                ax1.legend(loc='upper right', bbox_to_anchor=(1, -0.2))
                 ax1.grid(True)          
 
                 ax2 = fig.add_subplot(212)
