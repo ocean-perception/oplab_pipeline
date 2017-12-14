@@ -193,8 +193,8 @@ class parse_phins:
 
 											frame_string = 'inertial'
 																							
-											north_velocity=float(line_split_no_checksum[2])
-											east_velocity=float(line_split_no_checksum[3])
+											east_velocity=float(line_split_no_checksum[2])
+											north_velocity=float(line_split_no_checksum[3])									
 											up_velocity=float(line_split_no_checksum[4])
 
 											#set flag for next data
@@ -202,8 +202,8 @@ class parse_phins:
 
 										if line_split_no_checksum[1]  == header_vel_std and flag_got_time == 3:																																	
 
-											north_velocity_std=float(line_split_no_checksum[2])
-											east_velocity_std=float(line_split_no_checksum[3])
+											east_velocity_std=float(line_split_no_checksum[2])
+											north_velocity_std=float(line_split_no_checksum[3])											
 											up_velocity_std=float(line_split_no_checksum[4])												
 
 												# write out in the required format interlace at end										
@@ -236,7 +236,11 @@ class parse_phins:
 											[roll, pitch, heading] = body_to_inertial(0, 0, headingoffset, roll, pitch, heading)
 											[roll_std, pitch_std, heading_std] = body_to_inertial(0, 0, headingoffset, roll_std, pitch_std, heading_std)
 
-											heading=heading+headingoffset
+											#heading=heading+headingoffset
+											if heading >360:
+												heading=heading-360
+											if heading < 0:
+												heading=heading+360
 											#reset flag for next data
 											flag_got_time = 0
 
