@@ -32,64 +32,74 @@
 
         Parses and interleave navigation data for oplab standard and acfr standard formats. 
 
+        Parsers for navigation data for oplab standard and acfr standard formats
+
         inputs are 
 
         auv_nav.py <options>
             -i <path to mission.yaml>
             -o <output type> 'acfr' or 'oplab'
+            -e <path to root processed folder where parsed data exists>
+            -s <start time in utc time> hhmmss (only for extract)")
+            -f <finish time in utc time> hhmmss (only for extract)")                        
+            -p <plot option> (only for extract)
 
 
-       Arguments:
+        Arguments:
             path to the "mission.yaml" file, output format 'acfr' or 'oplab'
 
                 #YAML 1.0
                 origin:
-                - latitude: 26.674083
-                - longitude: 127.868054
-                - coordinate_reference_system: wgs84
-                - date: 2017/08/17
+                    latitude: 26.674083
+                    longitude: 127.868054               
+                    coordinate_reference_system: wgs84  
+                    date: 2017/08/17              
 
                 velocity:
-                - format: phins
-                - filepath: nav/phins/
-                - filename: 20170817_phins.txt
-                - timezone: utc
-                - timeoffset: 0.0
+                    format: phins
+                    thread: dvl
+                    filepath: nav/phins/
+                    filename: 20170817_phins.txt
+                    timezone: utc
+                    timeoffset: 0.0
+                    headingoffset: -45.0
 
                 orientation:
-                - format: phins
-                - filepath: nav/phins/
-                - filename: 20170817_phins.txt
-                - timezone: utc
-                - timeoffset: 0.0
+                    format: phins
+                    filepath: nav/phins/
+                    filename: 20170817_phins.txt
+                    timezone: utc
+                    timeoffset: 0.0
+                    headingoffset: -45.0
 
                 depth:
-                - format: phins
-                - filepath: nav/phins/
-                - filename: 20170817_phins.txt
-                - timezone: utc
-                - timeoffset: 0.0
+                    format: phins
+                    filepath: nav/phins/
+                    filename: 20170817_phins.txt
+                    timezone: utc
+                    timeoffset: 0.0
 
                 altitude:
-                - format: phins
-                - filepath: nav/phins/
-                - filename: 20170817_phins.txt
-                - timezone: utc
-                - timeoffset: 0.0
+                    format: phins
+                    filepath: nav/phins/
+                    filename: 20170817_phins.txt
+                    timezone: utc
+                    timeoffset: 0.0
 
                 usbl:
-                - format: gaps
-                - filepath: nav/gaps/
-                - timezone: utc
-                - timeoffset: 0.0
+                    format: gaps
+                    filepath: nav/gaps/
+                    timezone: utc
+                    timeoffset: 0.0
 
                 image:
-                - format: acfr_standard
-                - filepath: image/r20170817_041459_UG117_sesoko/i20170817_041459/
-                - camera1: LC
-                - camera2: RC
-                - timezone: utc
-                - timeoffset: 0.0
+                    format: acfr_standard
+                    filepath: image/r20170817_041459_UG117_sesoko/i20170817_041459/
+                    camera1: LC
+                    camera2: RC
+                    timezone: utc
+                    timeoffset: 0.0
+
 
         Returns:
             interleaved navigation and imaging data with output options:
@@ -130,11 +140,22 @@
             An example dataset can be downloaded from the following link with the expected folder structure
 
                 https://drive.google.com/drive/folders/0BzYMMCBxpT8BUF9feFpEclBzV0k?usp=sharing
-            
+
             Download, extract and specify the folder location and run as
                 
                 python3 auv_nav.py -i ~/raw/2017/cruise/dive/ -o acfr
                 python3 auv_nav.py -i ~/raw/2017/cruise/dive/ -o oplab
+
+            The coordinate frames used are those defined in Thor Fossen Guidance, Navigation and Control of Ocean Vehicles
+            
+            i.e. Body frame:
+                    x-direction: +ve aft to fore
+                    y-direction: +ve port to starboard
+                    z-direction: +ve bottom to top
+            i.e. Intertial frame:
+                    north-direction: +ve north
+                    east-direction: +ve east
+                    down-direction: +ve depth downwards
 
             
     """

@@ -241,6 +241,7 @@ class parse_phins:
 												heading=heading-360
 											if heading < 0:
 												heading=heading+360
+
 											#reset flag for next data
 											flag_got_time = 0
 
@@ -328,7 +329,7 @@ class parse_phins:
 										if line_split_no_checksum[1]  == header_dvl and flag_got_time == 1: 
 											xx_velocity=float(line_split_no_checksum[2])
 											yy_velocity=float(line_split_no_checksum[3])
-											zz_velocity=float(line_split_no_checksum[4])
+											zz_velocity=-1*float(line_split_no_checksum[4]) # DVL convention is bottom to top +ve
 
 											# account for sensor offset
 											[xx_velocity,yy_velocity,zz_velocity] = body_to_inertial(0, 0, headingoffset, xx_velocity, yy_velocity, zz_velocity)
@@ -398,6 +399,7 @@ class parse_phins:
 											pitch=float(line_split_no_checksum[3])							
 											flag_got_time = 3		
 										
+
 										if line_split_no_checksum[1]  == header_attitude_std and flag_got_time == 3:
 											heading_std=float(line_split_no_checksum[2])
 											roll_std=float(line_split_no_checksum[3])
@@ -409,6 +411,13 @@ class parse_phins:
 											# account for sensor rotational offset
 											[roll, pitch, heading] = body_to_inertial(0, 0, headingoffset, roll, pitch, heading)
 											[roll_std, pitch_std, heading_std] = body_to_inertial(0, 0, headingoffset, roll_std, pitch_std, heading_std)
+											
+											#heading=heading+headingoffset
+											if heading >360:
+												heading=heading-360
+											if heading < 0:
+												heading=heading+360
+												
 
 											# write out in the required format interlace at end
 											data = 'PHINS_COMPASS: ' + str(float(epoch_timestamp)) + ' r: ' + str(float(roll)) + ' p: ' + str(float(pitch)) + ' h: ' + str(float(heading)) + ' std_r: ' + str(float(roll_std)) + ' std_p: ' + str(float(pitch_std)) + ' std_h: ' + str(float(heading_std)) + '\n'
