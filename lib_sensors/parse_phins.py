@@ -139,9 +139,9 @@ class parse_phins:
 											
 											frame_string = 'body'
 												
-											x_velocity=float(line_split_no_checksum[2])
-											y_velocity=float(line_split_no_checksum[3])
-											z_velocity=float(line_split_no_checksum[4])
+											x_velocity=float(line_split_no_checksum[2]) # DVL convention is +ve aft to forward
+											y_velocity=float(line_split_no_checksum[3]) # DVL convention is +ve port to starboard
+											z_velocity=-1*float(line_split_no_checksum[4]) # DVL convention is bottom to top +ve
 
 											# account for sensor rotational offset
 											# print('IN :',x_velocity, y_velocity, z_velocity)

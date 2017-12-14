@@ -118,6 +118,18 @@
                 
                 python3 auv_nav.py -i ~/raw/2017/cruise/dive/ -o acfr
                 python3 auv_nav.py -i ~/raw/2017/cruise/dive/ -o oplab
+
+            The coordinate frames used are those defined in Thor Fossen Guidance, Navigation and Control of Ocean Vehicles
+            
+            i.e. Body frame:
+                    x-direction: +ve aft to fore
+                    y-direction: +ve port to starboard
+                    z-direction: +ve bottom to top
+            i.e. Intertial frame:
+                    north-direction: +ve north
+                    east-direction: +ve east
+                    down-direction: +ve depth downwards
+
     """
 
 # Import librarys
