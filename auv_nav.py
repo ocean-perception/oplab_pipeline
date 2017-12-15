@@ -797,7 +797,27 @@ def extract_data(filepath,ftype,start_time,finish_time,plot):
                 plt.savefig(plotpath + os.sep + 'dead_reckoning_northings_eastings.pdf', dpi=600, bbox_inches='tight')
                 plt.close()                
 
+                # dead_reckoning northings time
+                fig=plt.figure(figsize=(4,3))
+                ax = fig.add_subplot(111)
+                ax.plot(body_velocity_time,northings_dead_reckoning,'b.')
+                ax.set_xlabel('Epoch time, s')
+                ax.set_ylabel('Northings, m')
+                ax.grid(True)                
+                plt.savefig(plotpath + os.sep + 'dead_reckoning_northings_time.pdf', dpi=600, bbox_inches='tight')
+                plt.close() 
+
+                # dead_reckoning eastings time
+                fig=plt.figure(figsize=(4,3))
+                ax = fig.add_subplot(111)
+                ax.plot(body_velocity_time,eastings_dead_reckoning,'b.')
+                ax.set_xlabel('Epoch time, s')
+                ax.set_ylabel('Eastings, m')
+                ax.grid(True)                
+                plt.savefig(plotpath + os.sep + 'dead_reckoning_eastings_time.pdf', dpi=600, bbox_inches='tight')
+                plt.close() 
                 print('Complete plot data: ', plotpath)
+                
 
         print('Complete extract data: ', csvpath)
 
