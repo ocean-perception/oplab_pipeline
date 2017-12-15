@@ -126,10 +126,13 @@
                     x-direction: +ve aft to fore
                     y-direction: +ve port to starboard
                     z-direction: +ve bottom to top
-            i.e. Intertial frame:
+            i.e. inertial frame:
                     north-direction: +ve north
                     east-direction: +ve east
                     down-direction: +ve depth downwards
+
+            Parameter naming conventions
+                    long and descriptive names should be used with all lower case letters. 
 
     """
 
@@ -195,8 +198,8 @@ def parse_data(filepath,ftype):
             orientation_format = load_data['orientation']['format']
             orientation_filepath = load_data['orientation']['filepath']
             orientation_filename = load_data['orientation']['filename']
-            orientation_timezone = load_data['orientation']['timezone']
-            orientation_timeoffset = load_data['orientation']['timeoffset']
+            time_orientationzone = load_data['orientation']['timezone']
+            time_orientationoffset = load_data['orientation']['timeoffset']
             orientation_headingoffset = load_data['orientation']['headingoffset']
     
         if 'depth' in load_data:
@@ -204,23 +207,23 @@ def parse_data(filepath,ftype):
             depth_format = load_data['depth']['format']
             depth_filepath = load_data['depth']['filepath']
             depth_filename = load_data['depth']['filename']
-            depth_timezone = load_data['depth']['timezone']
-            depth_timeoffset = load_data['depth']['timeoffset']
+            time_depthzone = load_data['depth']['timezone']
+            time_depthoffset = load_data['depth']['timeoffset']
     
         if 'altitude' in load_data:
             altitude_flag=1                    
             altitude_format = load_data['altitude']['format']
             altitude_filepath = load_data['altitude']['filepath']
             altitude_filename = load_data['altitude']['filename']
-            altitude_timezone = load_data['altitude']['timezone']
-            altitude_timeoffset = load_data['altitude']['timeoffset']
+            time_altitudezone = load_data['altitude']['timezone']
+            time_altitudeoffset = load_data['altitude']['timeoffset']
 
         if 'usbl' in load_data:
             usbl_flag=1                    
             usbl_format = load_data['usbl']['format']
             usbl_filepath = load_data['usbl']['filepath']
-            usbl_timezone = load_data['usbl']['timezone']
-            usbl_timeoffset = load_data['usbl']['timeoffset']
+            time_usblzone = load_data['usbl']['timezone']
+            time_usbloffset = load_data['usbl']['timeoffset']
 
         if 'image' in load_data:
             image_flag=1                    
@@ -298,19 +301,19 @@ def parse_data(filepath,ftype):
                     velocity_flag = 0
             if orientation_flag == 1:                
                 if orientation_format == "phins":
-                    parse_phins(filepath + orientation_filepath,orientation_filename,'orientation',orientation_timezone,orientation_timeoffset,orientation_headingoffset,ftype,outpath,filename,fileout)
+                    parse_phins(filepath + orientation_filepath,orientation_filename,'orientation',time_orientationzone,time_orientationoffset,orientation_headingoffset,ftype,outpath,filename,fileout)
                     orientation_flag = 0
             if depth_flag == 1:                
                 if depth_format == "phins":
-                    parse_phins(filepath + depth_filepath,depth_filename,'depth',depth_timezone,depth_timeoffset,0,ftype,outpath,filename,fileout)
+                    parse_phins(filepath + depth_filepath,depth_filename,'depth',time_depthzone,time_depthoffset,0,ftype,outpath,filename,fileout)
                     depth_flag = 0
             if altitude_flag == 1:                
                 if altitude_format == "phins":
-                    parse_phins(filepath + altitude_filepath,altitude_filename,'altitude',altitude_timezone,0,altitude_timeoffset,ftype,outpath,filename,fileout)
+                    parse_phins(filepath + altitude_filepath,altitude_filename,'altitude',time_altitudezone,0,time_altitudeoffset,ftype,outpath,filename,fileout)
                     altitude_flag = 0
             if usbl_flag == 1: # to implement
                 if usbl_format == "gaps":
-                    parse_gaps(filepath + usbl_filepath,'usbl',usbl_timezone,usbl_timeoffset,latitude_reference,longitude_reference,ftype,outpath,filename,fileout)
+                    parse_gaps(filepath + usbl_filepath,'usbl',time_usblzone,time_usbloffset,latitude_reference,longitude_reference,ftype,outpath,filename,fileout)
                     usbl_flag = 0
             if image_flag == 1: # to implement
                 if image_format == "acfr_standard" or image_format == "unagi" :
@@ -374,44 +377,52 @@ def extract_data(filepath,ftype,start_time,finish_time,plot):
             time_tuple = dt_obj.utctimetuple()
             epoch_finish_time = calendar.timegm(time_tuple) 
 
-            body_velocity_time=[]
+            time_velocity_body=[]
             x_velocity=[]
             y_velocity=[]
             z_velocity=[]
 
-            orientation_time=[]
+            time_orientation=[]
             roll=[]
             pitch=[]
             yaw=[]
 
-            inertia_velocity_time=[]
-            north_velocity=[]
-            east_velocity=[]
-            down_velocity=[]
-            northings_dead_reckoning=[]
-            eastings_dead_reckoning=[]
-            depth_dead_reckoning=[]
+            time_velocity_inertia=[]
+            north_velocity_inertia=[]
+            east_velocity_inertia=[]
+            down_velocity_inertia=[]
+            northings_inertia_dead_reckoning=[]
+            eastings_inertia_dead_reckoning=[]
+            depth_inertia_dead_reckoning=[]
 
-            depth_time=[]
+
+            time_depth=[]
             depth=[]
 
-            altitude_time=[]
+            time_altitude=[]
             altitude=[]
             
             # placeholders for interpolated measurements
             roll_interpolated=[]
             pitch_interpolated=[]
             yaw_interpolated=[]
+            roll_inertia_interpolated=[]
+            pitch_inertia_interpolated=[]
+            yaw_inertia_interpolated=[]
+
             # interpolate depth and add altitude for every altitude measurement
             seafloor_depth=[] 
 
             # placeholders for transformed coordinates
-            north_velocity_dvl=[]
-            east_velocity_dvl=[]
-            down_velocity_dvl=[]
+            north_velocity_inertia_dvl=[]
+            east_velocity_inertia_dvl=[]
+            down_velocity_inertia_dvl=[]
+            northings_dead_reckoning=[]
+            eastings_dead_reckoning=[]
+            depth_dead_reckoning=[]
 
             # placeholders for USBL
-            usbl_time=[]
+            time_usbl=[]
             latitude_usbl=[]
             longitude_usbl=[]
             northings_usbl=[]
@@ -426,13 +437,14 @@ def extract_data(filepath,ftype,start_time,finish_time,plot):
                 epoch_timestamp=parsed_json_data[i]['epoch_timestamp']
 
                 if epoch_timestamp >= epoch_start_time and epoch_timestamp <= epoch_finish_time:                                      
-
+                    
                     if 'velocity' in parsed_json_data[i]['category']:
                         if 'body' in parsed_json_data[i]['frame']:
                             # confirm time stamps of dvl are aligned with main clock (within a second)
                             if abs(parsed_json_data[i]['epoch_timestamp']-parsed_json_data[i]['epoch_timestamp_dvl']<1):
                             
-                                body_velocity_time.append(parsed_json_data[i]['epoch_timestamp_dvl'])                            
+                                time_velocity_body.append(parsed_json_data[i]['epoch_timestamp_dvl']) # dvl clock not necessarily synced by phins                           
+                                #time_velocity_body.append(parsed_json_data[i]['epoch_timestamp'])                            
                                 x_velocity.append(parsed_json_data[i]['data'][0]['x_velocity'])
                                 y_velocity.append(parsed_json_data[i]['data'][1]['y_velocity'])
                                 z_velocity.append(parsed_json_data[i]['data'][2]['z_velocity'])
@@ -445,29 +457,35 @@ def extract_data(filepath,ftype,start_time,finish_time,plot):
 
 
                         if 'inertial' in parsed_json_data[i]['frame']:
-                            inertia_velocity_time.append(parsed_json_data[i]['epoch_timestamp'])
+                            time_velocity_inertia.append(parsed_json_data[i]['epoch_timestamp'])
 
-                            north_velocity.append(parsed_json_data[i]['data'][0]['north_velocity'])
-                            east_velocity.append(parsed_json_data[i]['data'][1]['east_velocity'])
-                            down_velocity.append(parsed_json_data[i]['data'][2]['down_velocity'])
+                            north_velocity_inertia.append(parsed_json_data[i]['data'][0]['north_velocity'])
+                            east_velocity_inertia.append(parsed_json_data[i]['data'][1]['east_velocity'])
+                            down_velocity_inertia.append(parsed_json_data[i]['data'][2]['down_velocity'])
+                            roll_inertia_interpolated.append(0)
+                            pitch_inertia_interpolated.append(0)
+                            yaw_inertia_interpolated.append(0)
+                            northings_inertia_dead_reckoning.append(0)
+                            eastings_inertia_dead_reckoning.append(0)
+                            depth_inertia_dead_reckoning.append(0)
                     
                     if 'orientation' in parsed_json_data[i]['category']:
-                        orientation_time.append(parsed_json_data[i]['epoch_timestamp'])
+                        time_orientation.append(parsed_json_data[i]['epoch_timestamp'])
                         roll.append(parsed_json_data[i]['data'][1]['roll'])
                         pitch.append(parsed_json_data[i]['data'][2]['pitch'])
                         yaw.append(parsed_json_data[i]['data'][0]['heading'])
 
                     if 'depth' in parsed_json_data[i]['category']:
-                        depth_time.append(parsed_json_data[i]['epoch_timestamp'])
+                        time_depth.append(parsed_json_data[i]['epoch_timestamp'])
                         depth.append(parsed_json_data[i]['data'][0]['depth'])
 
                     if 'altitude' in parsed_json_data[i]['category']:
-                        altitude_time.append(parsed_json_data[i]['epoch_timestamp'])
+                        time_altitude.append(parsed_json_data[i]['epoch_timestamp'])
                         altitude.append(parsed_json_data[i]['data'][0]['altitude'])
                         seafloor_depth.append(0)
 
                     if 'usbl' in parsed_json_data[i]['category']:
-                        usbl_time.append(parsed_json_data[i]['epoch_timestamp'])
+                        time_usbl.append(parsed_json_data[i]['epoch_timestamp'])
                         latitude_usbl.append(parsed_json_data[i]['data_target'][0]['latitude'])
                         longitude_usbl.append(parsed_json_data[i]['data_target'][1]['longitude'])
                         northings_usbl.append(parsed_json_data[i]['data_target'][2]['northings'])
@@ -477,28 +495,27 @@ def extract_data(filepath,ftype,start_time,finish_time,plot):
             
 
             # perform coordinate transformations and interpolations                
-            for i in range(len(body_velocity_time)):        
+            for i in range(len(time_velocity_body)):        
                 
                 # interpolate to find the appropriate orientation timefor the dvl measurements
-                j=0
-
-                while orientation_time[j]<body_velocity_time[i]:
+                j=0               
+                while time_orientation[j]<time_velocity_body[i]:
                     j=j+1
                 
                 if j==1:
                     interpolate_remove_flag = True
                 else:
-                    roll_interpolated[i]=interpolate(body_velocity_time[i],orientation_time[j-1],orientation_time[j],roll[j-1],roll[j])
-                    pitch_interpolated[i]=interpolate(body_velocity_time[i],orientation_time[j-1],orientation_time[j],pitch[j-1],pitch[j])
+                    roll_interpolated[i]=interpolate(time_velocity_body[i],time_orientation[j-1],time_orientation[j],roll[j-1],roll[j])
+                    pitch_interpolated[i]=interpolate(time_velocity_body[i],time_orientation[j-1],time_orientation[j],pitch[j-1],pitch[j])
 
                     if abs(yaw[j]-yaw[j-1])>180:                        
                         if yaw[j]>yaw[j-1]:
-                            yaw_interpolated[i]=interpolate(body_velocity_time[i],orientation_time[j-1],orientation_time[j],yaw[j-1],yaw[j]-360)
-                            #yaw_interpolated[i]=((yaw[j]-360)-yaw[j-1])/(orientation_time[j]-orientation_time[j-1])*(body_velocity_time[i]-orientation_time[j-1])+yaw[j-1]                            
+                            yaw_interpolated[i]=interpolate(time_velocity_body[i],time_orientation[j-1],time_orientation[j],yaw[j-1],yaw[j]-360)
+                            #yaw_interpolated[i]=((yaw[j]-360)-yaw[j-1])/(time_orientation[j]-time_orientation[j-1])*(time_velocity_body[i]-time_orientation[j-1])+yaw[j-1]                            
                             
                         else:
-                            yaw_interpolated[i]=interpolate(body_velocity_time[i],orientation_time[j-1],orientation_time[j],yaw[j-1]-360,yaw[j])
-                            #yaw_interpolated[i]=(yaw[j]-(yaw[j-1]-360))/(orientation_time[j]-orientation_time[j-1])*(body_velocity_time[i]-orientation_time[j-1])+yaw[j-1]
+                            yaw_interpolated[i]=interpolate(time_velocity_body[i],time_orientation[j-1],time_orientation[j],yaw[j-1]-360,yaw[j])
+                            #yaw_interpolated[i]=(yaw[j]-(yaw[j-1]-360))/(time_orientation[j]-time_orientation[j-1])*(time_velocity_body[i]-time_orientation[j-1])+yaw[j-1]
                            
 
                         if yaw_interpolated[i]<0:
@@ -509,57 +526,114 @@ def extract_data(filepath,ftype,start_time,finish_time,plot):
                             yaw_interpolated[i]=yaw_interpolated[i]-360  
 
                     else:
-                        yaw_interpolated[i]=interpolate(body_velocity_time[i],orientation_time[j-1],orientation_time[j],yaw[j-1],yaw[j])
+                        yaw_interpolated[i]=interpolate(time_velocity_body[i],time_orientation[j-1],time_orientation[j],yaw[j-1],yaw[j])
                 
                 [x_offset,y_offset,z_offset] = body_to_inertial(roll_interpolated[i], pitch_interpolated[i], yaw_interpolated[i], x_velocity[i], y_velocity[i], z_velocity[i])
 
-                north_velocity_dvl.append(x_offset)
-                east_velocity_dvl.append(y_offset)
-                down_velocity_dvl.append(z_offset)
+                north_velocity_inertia_dvl.append(x_offset)
+                east_velocity_inertia_dvl.append(y_offset)
+                down_velocity_inertia_dvl.append(z_offset)
 
 
                 # interpolate to find the appropriate depth to compute seafloor depth for each altitude measurement
                 j=0
-                while depth_time[j]<altitude_time[i]:
+                while time_depth[j]<time_altitude[i]:
                     j=j+1
 
                 if j>=1:                
-                    #seafloor_depth[i]=(depth[j]-depth[j-1])/(depth_time[j]-depth_time[j-1])*(altitude_time[i]-depth_time[j-1])+depth[j-1]+altitude[i]  
-                    seafloor_depth[i]=interpolate(altitude_time[i],depth_time[j-1],depth_time[j],depth[j-1],depth[j])+altitude[i]
+                    #seafloor_depth[i]=(depth[j]-depth[j-1])/(time_depth[j]-time_depth[j-1])*(time_altitude[i]-time_depth[j-1])+depth[j-1]+altitude[i]  
+                    seafloor_depth[i]=interpolate(time_altitude[i],time_depth[j-1],time_depth[j],depth[j-1],depth[j])+altitude[i]
 
                 # interpolate to find the appropriate depth for dead_reckoning
                 j=0
-                while depth_time[j]<body_velocity_time[i]:
+                while time_depth[j]<time_velocity_body[i]:
                     j=j+1
 
                 if j>=1:                
-                    #seafloor_depth[i]=(depth[j]-depth[j-1])/(depth_time[j]-depth_time[j-1])*(altitude_time[i]-depth_time[j-1])+depth[j-1]+altitude[i]  
-                    depth_dead_reckoning[i]=interpolate(body_velocity_time[i],depth_time[j-1],depth_time[j],depth[j-1],depth[j])+altitude[i]
+                    #seafloor_depth[i]=(depth[j]-depth[j-1])/(time_depth[j]-time_depth[j-1])*(time_altitude[i]-time_depth[j-1])+depth[j-1]+altitude[i]  
+                    depth_dead_reckoning[i]=interpolate(time_velocity_body[i],time_depth[j-1],time_depth[j],depth[j-1],depth[j])+altitude[i]
+
+                        #dead reckoning solution
+            for i in range(len(time_velocity_body)):        
+                # dead reckoning solution
+                if i>1:                    
+                    [northings_dead_reckoning[i], eastings_dead_reckoning[i]]=dead_reckoning(time_velocity_body[i], time_velocity_body[i-1], north_velocity_inertia_dvl[i-1], east_velocity_inertia_dvl[i-1], northings_dead_reckoning[i-1], eastings_dead_reckoning[i-1])
 
 
-            #remove first term if first body_velocity_time is < orientation time
+            #remove first term if first time_velocity_body is < orientation time
             if interpolate_remove_flag == True:
 
-                del body_velocity_time[0]
+                del time_velocity_body[0]
                 del roll_interpolated[0]
                 del pitch_interpolated[0]
                 del yaw_interpolated[0]
                 del x_velocity[0]
                 del y_velocity[0]
                 del z_velocity[0]
-                del north_velocity_dvl[0]
-                del east_velocity_dvl[0]
-                del down_velocity_dvl[0]
+                del north_velocity_inertia_dvl[0]
+                del east_velocity_inertia_dvl[0]
+                del down_velocity_inertia_dvl[0]
                 del northings_dead_reckoning[0]
                 del eastings_dead_reckoning[0]
-           
+                del depth_dead_reckoning[0]
+                interpolate_remove_flag = False # reset flag
 
-            #dead reckoning solution
-            for i in range(len(body_velocity_time)):        
-                # dead reckoning solution
-                if i>1:                    
-                    [northings_dead_reckoning[i], eastings_dead_reckoning[i]]=dead_reckoning(body_velocity_time[i], body_velocity_time[i-1], north_velocity_dvl[i-1], east_velocity_dvl[i-1], northings_dead_reckoning[i-1], eastings_dead_reckoning[i-1])
-              
+            #interpolate state data to inertia time stamps
+            for i in range(len(time_velocity_inertia)):  
+                j=0               
+                while time_orientation[j]<time_velocity_inertia[i]:
+                    j=j+1
+                
+                if j==1:
+                    interpolate_remove_flag = True
+                else:
+                    roll_inertia_interpolated[i]=interpolate(time_velocity_inertia[i],time_orientation[j-1],time_orientation[j],roll[j-1],roll[j])
+                    pitch_inertia_interpolated[i]=interpolate(time_velocity_inertia[i],time_orientation[j-1],time_orientation[j],pitch[j-1],pitch[j])
+
+                    if abs(yaw[j]-yaw[j-1])>180:                        
+                        if yaw[j]>yaw[j-1]:
+                            yaw_inertia_interpolated[i]=interpolate(time_velocity_inertia[i],time_orientation[j-1],time_orientation[j],yaw[j-1],yaw[j]-360)
+                            #yaw_interpolated[i]=((yaw[j]-360)-yaw[j-1])/(time_orientation[j]-time_orientation[j-1])*(time_velocity_body[i]-time_orientation[j-1])+yaw[j-1]                            
+                            
+                        else:
+                            yaw_inertia_interpolated[i]=interpolate(time_velocity_inertia[i],time_orientation[j-1],time_orientation[j],yaw[j-1]-360,yaw[j])
+                            #yaw_interpolated[i]=(yaw[j]-(yaw[j-1]-360))/(time_orientation[j]-time_orientation[j-1])*(time_velocity_body[i]-time_orientation[j-1])+yaw[j-1]
+                           
+
+                        if yaw_inertia_interpolated[i]<0:
+                            yaw_inertia_interpolated[i]=yaw_inertia_interpolated[i]+360
+                            
+
+                        elif yaw_inertia_interpolated[i]>360:
+                            yaw_inertia_interpolated[i]=yaw_inertia_interpolated[i]-360  
+
+                    else:
+                        yaw_inertia_interpolated[i]=interpolate(time_velocity_inertia[i],time_orientation[j-1],time_orientation[j],yaw[j-1],yaw[j])
+                         
+                j=0
+                while time_depth[j]<time_velocity_inertia[i]:
+                    j=j+1
+
+                if j>=1:                
+                    depth_inertia_dead_reckoning[i]=interpolate(time_velocity_inertia[i],time_depth[j-1],time_depth[j],depth[j-1],depth[j])
+            
+
+            for i in range(len(time_velocity_inertia)):                     
+                    [northings_inertia_dead_reckoning[i], eastings_inertia_dead_reckoning[i]]=dead_reckoning(time_velocity_inertia[i], time_velocity_inertia[i-1], north_velocity_inertia[i-1], east_velocity_inertia[i-1], northings_inertia_dead_reckoning[i-1], eastings_inertia_dead_reckoning[i-1])
+                    
+            if interpolate_remove_flag == True:
+
+                del time_velocity_inertia[0]
+                del roll_inertia_interpolated[0]
+                del pitch_inertia_interpolated[0]
+                del yaw_inertia_interpolated[0]
+                del north_velocity_inertia[0]
+                del east_velocity_inertia[0]
+                del down_velocity_inertia[0]
+                del northings_inertia_dead_reckoning[0]
+                del eastings_inertia_dead_reckoning[0]
+                del depth_inertia_dead_reckoning[0]
+                interpolate_remove_flag = False # reset flag
 
             # write values out to a csv file
             # create a directory with the time stamp
@@ -578,67 +652,74 @@ def extract_data(filepath,ftype,start_time,finish_time,plot):
                 except Exception as e:
                     print("Warning:",e)            
 
-            with open(csvpath + os.sep + 'velocity_body.csv' ,'w') as fileout:
+            with open(csvpath + os.sep + 'body_velocity.csv' ,'w') as fileout:
                fileout.write('epoch_time (s), x_velocity (m/s), y_velocity (m/s), z_velocity (m/s)\n')
-            for i in range(len(body_velocity_time)):        
-               with open(csvpath + os.sep + 'velocity_body.csv' ,'a') as fileout:
-                   fileout.write(str(body_velocity_time[i])+','+str(x_velocity[i])+','+str(y_velocity[i])+','+str(z_velocity[i])+'\n')
+            for i in range(len(time_velocity_body)):        
+               with open(csvpath + os.sep + 'body_velocity.csv' ,'a') as fileout:
+                   fileout.write(str(time_velocity_body[i])+','+str(x_velocity[i])+','+str(y_velocity[i])+','+str(z_velocity[i])+'\n')
                    fileout.close()
 
             with open(csvpath + os.sep + 'orientation.csv' ,'w') as fileout:
                fileout.write('epoch_time (s), roll (degrees), pitch (degrees), yaw (degrees)\n')
-            for i in range(len(orientation_time)):        
+            for i in range(len(time_orientation)):        
                with open(csvpath + os.sep + 'orientation.csv' ,'a') as fileout:
-                   fileout.write(str(orientation_time[i])+','+str(roll[i])+','+str(pitch[i])+','+str(yaw[i])+'\n')
+                   fileout.write(str(time_orientation[i])+','+str(roll[i])+','+str(pitch[i])+','+str(yaw[i])+'\n')
                    fileout.close()
 
             with open(csvpath + os.sep + 'velocity_inertia.csv' ,'w') as fileout:
-               fileout.write('epoch_time (s), north_velocity (m/s), east_velocity (m/s), down_velocity (m/s)\n')
-            for i in range(len(inertia_velocity_time)):        
+               fileout.write('epoch_time (s), north_velocity_inertia (m/s), east_velocity_inertia (m/s), down_velocity_inertia (m/s)\n')
+            for i in range(len(time_velocity_inertia)):        
                with open(csvpath + os.sep + 'velocity_inertia.csv' ,'a') as fileout:
-                   fileout.write(str(inertia_velocity_time[i])+','+str(north_velocity[i])+','+str(east_velocity[i])+','+str(down_velocity[i])+'\n')
+                   fileout.write(str(time_velocity_inertia[i])+','+str(north_velocity_inertia[i])+','+str(east_velocity_inertia[i])+','+str(down_velocity_inertia[i])+'\n')
                    fileout.close()                    
 
-            with open(csvpath + os.sep + 'orientation_interpolated.csv' ,'w') as fileout:
+            with open(csvpath + os.sep + 'body_timing_interpolated_orientation.csv' ,'w') as fileout:
                fileout.write('epoch_time (s), roll (degrees), pitch (degrees), yaw (degrees)\n')
-            for i in range(len(body_velocity_time)):        
-               with open(csvpath + os.sep + 'orientation_interpolated.csv' ,'a') as fileout:
-                   fileout.write(str(body_velocity_time[i])+','+str(roll_interpolated[i])+','+str(pitch_interpolated[i])+','+str(yaw_interpolated[i])+'\n')
+            for i in range(len(time_velocity_body)):        
+               with open(csvpath + os.sep + 'body_timing_interpolated_orientation.csv' ,'a') as fileout:
+                   fileout.write(str(time_velocity_body[i])+','+str(roll_interpolated[i])+','+str(pitch_interpolated[i])+','+str(yaw_interpolated[i])+'\n')
                    fileout.close()
 
-            with open(csvpath + os.sep + 'velocity_inertia_dvl.csv' ,'w') as fileout:
-               fileout.write('epoch_time (s), north_velocity (m/s), east_velocity (m/s), down_velocity (m/s)\n')
-            for i in range(len(body_velocity_time)):        
-               with open(csvpath + os.sep + 'velocity_inertia_dvl.csv' ,'a') as fileout:
-                   fileout.write(str(body_velocity_time[i])+','+str(north_velocity_dvl[i])+','+str(east_velocity_dvl[i])+','+str(down_velocity_dvl[i])+'\n')
+            with open(csvpath + os.sep + 'inertia_dvl_velocity.csv' ,'w') as fileout:
+               fileout.write('epoch_time (s), north_velocity_inertia (m/s), east_velocity_inertia (m/s), down_velocity_inertia (m/s)\n')
+            for i in range(len(time_velocity_body)):        
+               with open(csvpath + os.sep + 'inertia_dvl_velocity.csv' ,'a') as fileout:
+                   fileout.write(str(time_velocity_body[i])+','+str(north_velocity_inertia_dvl[i])+','+str(east_velocity_inertia_dvl[i])+','+str(down_velocity_inertia_dvl[i])+'\n')
                    fileout.close()
 
             with open(csvpath + os.sep + 'dead_reckoning.csv' ,'w') as fileout:
                fileout.write('epoch_time (s), northings (m), eastings (m), depth (m), roll (degrees), pitch (degrees), yaw (degrees)\n')
-            for i in range(len(body_velocity_time)):        
+            for i in range(len(time_velocity_body)):        
                with open(csvpath + os.sep + 'dead_reckoning.csv' ,'a') as fileout:
-                   fileout.write(str(body_velocity_time[i])+','+str(northings_dead_reckoning[i])+','+str(eastings_dead_reckoning[i])+','+str(depth_dead_reckoning[i])+','+str(roll_interpolated[i])+','+str(pitch_interpolated[i])+','+str(yaw_interpolated[i])+'\n')
+                   fileout.write(str(time_velocity_body[i])+','+str(northings_dead_reckoning[i])+','+str(eastings_dead_reckoning[i])+','+str(depth_dead_reckoning[i])+','+str(roll_interpolated[i])+','+str(pitch_interpolated[i])+','+str(yaw_interpolated[i])+'\n')
+                   fileout.close()                  
+
+            with open(csvpath + os.sep + 'inertia_dead_reckoning.csv' ,'w') as fileout:
+               fileout.write('epoch_time (s), northings (m), eastings (m), depth (m), roll (degrees), pitch (degrees), yaw (degrees)\n')
+            for i in range(len(time_velocity_inertia)):        
+               with open(csvpath + os.sep + 'inertia_dead_reckoning.csv' ,'a') as fileout:
+                   fileout.write(str(time_velocity_inertia[i])+','+str(northings_inertia_dead_reckoning[i])+','+str(eastings_inertia_dead_reckoning[i])+','+str(depth_inertia_dead_reckoning[i])+','+str(roll_inertia_interpolated[i])+','+str(pitch_inertia_interpolated[i])+','+str(yaw_inertia_interpolated[i])+'\n')
                    fileout.close()                   
 
             with open(csvpath + os.sep + 'depth.csv' ,'w') as fileout:
                fileout.write('epoch_time (s), depth (m)\n')
-            for i in range(len(depth_time)):        
+            for i in range(len(time_depth)):        
                with open(csvpath + os.sep + 'depth.csv' ,'a') as fileout:
-                   fileout.write(str(depth_time[i])+','+str(depth[i])+'\n')
+                   fileout.write(str(time_depth[i])+','+str(depth[i])+'\n')
                    fileout.close()
 
             with open(csvpath + os.sep + 'altitude.csv' ,'w') as fileout:
                fileout.write('epoch_time (s), altitude (m), seafloor_depth (m)\n')
-            for i in range(len(altitude_time)):        
+            for i in range(len(time_altitude)):        
                with open(csvpath + os.sep + 'altitude.csv' ,'a') as fileout:
-                   fileout.write(str(altitude_time[i])+','+str(altitude[i])+','+str(seafloor_depth[i])+'\n')
+                   fileout.write(str(time_altitude[i])+','+str(altitude[i])+','+str(seafloor_depth[i])+'\n')
                    fileout.close()
 
             with open(csvpath + os.sep + 'usbl.csv' ,'w') as fileout:
                fileout.write('epoch_time (s), latitude_reference (degrees), longitude_reference (degrees), latitude (degrees), longitude (degrees), northings (m), eastings (m), depth (m)\n')
-            for i in range(len(usbl_time)):        
+            for i in range(len(time_usbl)):        
                with open(csvpath + os.sep + 'usbl.csv' ,'a') as fileout:
-                   fileout.write(str(usbl_time[i])+','+str(latitude_reference)+','+str(longitude_reference)+','+str(latitude_usbl[i])+','+str(longitude_usbl[i])+','+str(northings_usbl[i])+','+str(eastings_usbl[i])+','+str(depth_usbl[i])+'\n')
+                   fileout.write(str(time_usbl[i])+','+str(latitude_reference)+','+str(longitude_reference)+','+str(latitude_usbl[i])+','+str(longitude_usbl[i])+','+str(northings_usbl[i])+','+str(eastings_usbl[i])+','+str(depth_usbl[i])+'\n')
                    fileout.close()
 
             # plot data
@@ -655,8 +736,8 @@ def extract_data(filepath,ftype,start_time,finish_time,plot):
                 # orientation_interpolated
                 fig=plt.figure(figsize=(4,3))
                 ax = fig.add_subplot(111)
-                ax.plot(body_velocity_time, yaw_interpolated, 'ro',label='Interpolated dvl')
-                ax.plot(orientation_time, yaw,'b.',label='Original')                            
+                ax.plot(time_velocity_body, yaw_interpolated, 'ro',label='Interpolated dvl')
+                ax.plot(time_orientation, yaw,'b.',label='Original')                            
                 ax.set_xlabel('Epoch time, s')
                 ax.set_ylabel('Yaw, degrees')
                 ax.legend(loc='upper right', bbox_to_anchor=(1, -0.2))
@@ -666,8 +747,8 @@ def extract_data(filepath,ftype,start_time,finish_time,plot):
 
                 fig=plt.figure(figsize=(4,3))
                 ax = fig.add_subplot(111)
-                ax.plot(body_velocity_time, roll_interpolated, 'ro',label='Interpolated dvl')
-                ax.plot(orientation_time, roll,'b.',label='Original')                                     
+                ax.plot(time_velocity_body, roll_interpolated, 'ro',label='Interpolated dvl')
+                ax.plot(time_orientation, roll,'b.',label='Original')                                     
                 ax.set_xlabel('Epoch time, s')
                 ax.set_ylabel('Roll, degrees')
                 ax.legend(loc='upper right', bbox_to_anchor=(1, -0.2))
@@ -677,8 +758,8 @@ def extract_data(filepath,ftype,start_time,finish_time,plot):
 
                 fig=plt.figure(figsize=(4,3))
                 ax = fig.add_subplot(111)
-                ax.plot(body_velocity_time, pitch_interpolated, 'ro',label='Interpolated dvl')
-                ax.plot(orientation_time, pitch,'b.',label='Original')                            
+                ax.plot(time_velocity_body, pitch_interpolated, 'ro',label='Interpolated dvl')
+                ax.plot(time_orientation, pitch,'b.',label='Original')                            
                 ax.set_xlabel('Epoch time, s')
                 ax.set_ylabel('Pitch, degrees')
                 ax.legend(loc='upper right', bbox_to_anchor=(1, -0.2))
@@ -689,9 +770,9 @@ def extract_data(filepath,ftype,start_time,finish_time,plot):
                 # velocities in body frame
                 fig=plt.figure(figsize=(4,3))
                 ax = fig.add_subplot(111)
-                ax.plot(body_velocity_time,x_velocity, 'r.',label='Surge')
-                ax.plot(body_velocity_time,y_velocity, 'g.',label='Sway')
-                ax.plot(body_velocity_time,z_velocity, 'b.',label='Heave')
+                ax.plot(time_velocity_body,x_velocity, 'r.',label='Surge')
+                ax.plot(time_velocity_body,y_velocity, 'g.',label='Sway')
+                ax.plot(time_velocity_body,z_velocity, 'b.',label='Heave')
                 ax.set_xlabel('Epoch time, s')
                 ax.set_ylabel('Velocity, m/s')
                 ax.legend(loc='upper right', bbox_to_anchor=(1, -0.2))
@@ -702,8 +783,8 @@ def extract_data(filepath,ftype,start_time,finish_time,plot):
                 # velocities in inertial frame
                 fig=plt.figure(figsize=(4,3))
                 ax = fig.add_subplot(111)            
-                ax.plot(body_velocity_time,north_velocity_dvl, 'ro',label='DVL')
-                ax.plot(inertia_velocity_time,north_velocity, 'b.',label='Phins')
+                ax.plot(time_velocity_body,north_velocity_inertia_dvl, 'ro',label='DVL')
+                ax.plot(time_velocity_inertia,north_velocity_inertia, 'b.',label='Phins')
                 ax.set_xlabel('Epoch time, s')
                 ax.set_ylabel('Velocity, m/s')
                 ax.legend(loc='upper right', bbox_to_anchor=(1, -0.2))
@@ -713,8 +794,8 @@ def extract_data(filepath,ftype,start_time,finish_time,plot):
 
                 fig=plt.figure(figsize=(4,3))
                 ax = fig.add_subplot(111)            
-                ax.plot(body_velocity_time,east_velocity_dvl,'ro',label='DVL')
-                ax.plot(inertia_velocity_time,east_velocity,'b.',label='Phins')
+                ax.plot(time_velocity_body,east_velocity_inertia_dvl,'ro',label='DVL')
+                ax.plot(time_velocity_inertia,east_velocity_inertia,'b.',label='Phins')
                 ax.set_xlabel('Epoch time, s')
                 ax.set_ylabel('Velocity, m/s')
                 ax.legend(loc='upper right', bbox_to_anchor=(1, -0.2))
@@ -724,8 +805,8 @@ def extract_data(filepath,ftype,start_time,finish_time,plot):
 
                 fig=plt.figure(figsize=(4,3))
                 ax = fig.add_subplot(111)            
-                ax.plot(body_velocity_time,down_velocity_dvl,'r.',label='DVL')
-                ax.plot(inertia_velocity_time,down_velocity,'b.',label='Phins')
+                ax.plot(time_velocity_body,down_velocity_inertia_dvl,'r.',label='DVL')
+                ax.plot(time_velocity_inertia,down_velocity_inertia,'b.',label='Phins')
                 ax.set_xlabel('Epoch time, s')
                 ax.set_ylabel('Velocity, m/s')
                 ax.legend(loc='upper right', bbox_to_anchor=(1, -0.2))
@@ -736,8 +817,8 @@ def extract_data(filepath,ftype,start_time,finish_time,plot):
                 # depth and altitude
                 fig=plt.figure(figsize=(4,3))
                 ax1 = fig.add_subplot(211)
-                ax1.plot(depth_time,depth,'b.',label='Vehicle')                        
-                ax1.plot(altitude_time,seafloor_depth,'r.',label='Seafloor')                            
+                ax1.plot(time_depth,depth,'b.',label='Vehicle')                        
+                ax1.plot(time_altitude,seafloor_depth,'r.',label='Seafloor')                            
                 ax1.set_xlabel('Epoch time, s')
                 ax1.set_ylabel('Depth, m')
                 plt.gca().invert_yaxis()
@@ -745,10 +826,10 @@ def extract_data(filepath,ftype,start_time,finish_time,plot):
                 ax1.grid(True)          
 
                 ax2 = fig.add_subplot(212)
-                ax2.plot(altitude_time,altitude,'r.',label='Altitude')              
+                ax2.plot(time_altitude,altitude,'r.',label='Altitude')              
                 ax2.set_xlabel('Epoch time, s')
                 ax2.set_ylabel('Altitude, m')
-                ax2.set_xlim(min(depth_time),max(depth_time))
+                ax2.set_xlim(min(time_depth),max(time_depth))
                 ax2.grid(True)          
 
                 plt.savefig(plotpath + os.sep + 'depth_altitude.pdf', dpi=600, bbox_inches='tight')
@@ -757,8 +838,8 @@ def extract_data(filepath,ftype,start_time,finish_time,plot):
                 # usbl depth and time
                 fig=plt.figure(figsize=(4,3))
                 ax = fig.add_subplot(111)
-                ax.plot(usbl_time,depth_usbl,'b.',label='USBL') 
-                ax.plot(depth_time,depth,'ro',label='Vehicle') 
+                ax.plot(time_usbl,depth_usbl,'b.',label='USBL') 
+                ax.plot(time_depth,depth,'ro',label='Vehicle') 
                 ax.set_xlabel('Epoch time, s')
                 ax.set_ylabel('Depth, m')
                 ax.legend(loc='upper right', bbox_to_anchor=(1, -0.2))
@@ -787,6 +868,26 @@ def extract_data(filepath,ftype,start_time,finish_time,plot):
                 plt.savefig(plotpath + os.sep + 'usbl_northings_eastings.pdf', dpi=600, bbox_inches='tight')
                 plt.close()                
 
+                # usbl eastings time
+                fig=plt.figure(figsize=(4,3))
+                ax = fig.add_subplot(111)
+                ax.plot(time_usbl, eastings_usbl,'b.')
+                ax.set_xlabel('Epoch time, s')
+                ax.set_ylabel('Eastings, m')
+                ax.grid(True)                
+                plt.savefig(plotpath + os.sep + 'usbl_eastings_time.pdf', dpi=600, bbox_inches='tight')
+                plt.close()                
+
+                # usbl northings time
+                fig=plt.figure(figsize=(4,3))
+                ax = fig.add_subplot(111)
+                ax.plot(time_usbl, northings_usbl,'b.')
+                ax.set_xlabel('Epoch time, s')
+                ax.set_ylabel('Northings, m')
+                ax.grid(True)                
+                plt.savefig(plotpath + os.sep + 'usbl_northings_time.pdf', dpi=600, bbox_inches='tight')
+                plt.close()                
+
                 # dead_reckoning northings eastings
                 fig=plt.figure(figsize=(4,3))
                 ax = fig.add_subplot(111)
@@ -800,7 +901,7 @@ def extract_data(filepath,ftype,start_time,finish_time,plot):
                 # dead_reckoning northings time
                 fig=plt.figure(figsize=(4,3))
                 ax = fig.add_subplot(111)
-                ax.plot(body_velocity_time,northings_dead_reckoning,'b.')
+                ax.plot(time_velocity_body,northings_dead_reckoning,'b.')
                 ax.set_xlabel('Epoch time, s')
                 ax.set_ylabel('Northings, m')
                 ax.grid(True)                
@@ -810,11 +911,42 @@ def extract_data(filepath,ftype,start_time,finish_time,plot):
                 # dead_reckoning eastings time
                 fig=plt.figure(figsize=(4,3))
                 ax = fig.add_subplot(111)
-                ax.plot(body_velocity_time,eastings_dead_reckoning,'b.')
+                ax.plot(time_velocity_body,eastings_dead_reckoning,'b.')
                 ax.set_xlabel('Epoch time, s')
                 ax.set_ylabel('Eastings, m')
                 ax.grid(True)                
                 plt.savefig(plotpath + os.sep + 'dead_reckoning_eastings_time.pdf', dpi=600, bbox_inches='tight')
+                plt.close() 
+                print('Complete plot data: ', plotpath)
+
+                # inertia_dead_reckoning northings eastings
+                fig=plt.figure(figsize=(4,3))
+                ax = fig.add_subplot(111)
+                ax.plot(eastings_inertia_dead_reckoning,northings_inertia_dead_reckoning,'b.')
+                ax.set_xlabel('Eastings, m')
+                ax.set_ylabel('Northings, m')
+                ax.grid(True)                
+                plt.savefig(plotpath + os.sep + 'inertia_dead_reckoning_northings_eastings.pdf', dpi=600, bbox_inches='tight')
+                plt.close()                
+
+                # inertia_dead_reckoning northings time
+                fig=plt.figure(figsize=(4,3))
+                ax = fig.add_subplot(111)
+                ax.plot(time_velocity_inertia,northings_inertia_dead_reckoning,'b.')
+                ax.set_xlabel('Epoch time, s')
+                ax.set_ylabel('Northings, m')
+                ax.grid(True)                
+                plt.savefig(plotpath + os.sep + 'inertia_dead_reckoning_northings_time.pdf', dpi=600, bbox_inches='tight')
+                plt.close() 
+
+                # inertia_dead_reckoning eastings time
+                fig=plt.figure(figsize=(4,3))
+                ax = fig.add_subplot(111)
+                ax.plot(time_velocity_inertia,eastings_inertia_dead_reckoning,'b.')
+                ax.set_xlabel('Epoch time, s')
+                ax.set_ylabel('Eastings, m')
+                ax.grid(True)                
+                plt.savefig(plotpath + os.sep + 'inertia_dead_reckoning_eastings_time.pdf', dpi=600, bbox_inches='tight')
                 plt.close() 
                 print('Complete plot data: ', plotpath)
                 

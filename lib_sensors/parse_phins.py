@@ -140,7 +140,8 @@ class parse_phins:
 											frame_string = 'body'
 												
 											x_velocity=float(line_split_no_checksum[2]) # DVL convention is +ve aft to forward
-											y_velocity=float(line_split_no_checksum[3]) # DVL convention is +ve port to starboard
+											#y_velocity=float(line_split_no_checksum[3]) # DVL convention is +ve port to starboard so the minus shouldn't be necessary?
+											y_velocity=-1*float(line_split_no_checksum[3]) # DVL convention is +ve port to starboard so the minus shouldn't be necessary?
 											z_velocity=-1*float(line_split_no_checksum[4]) # DVL convention is bottom to top +ve
 
 											# account for sensor rotational offset
@@ -193,7 +194,8 @@ class parse_phins:
 
 											frame_string = 'inertial'
 																							
-											east_velocity=-1*float(line_split_no_checksum[2]) # phins convention is west +ve
+											#east_velocity=-1*float(line_split_no_checksum[2]) # phins convention is west +ve so a minus should be necessary
+											east_velocity=float(line_split_no_checksum[2]) # phins convention is west +ve so a minus should be necessary
 											north_velocity=float(line_split_no_checksum[3])									
 											down_velocity=-1*float(line_split_no_checksum[4]) # phins convention is up +ve
 
@@ -328,7 +330,8 @@ class parse_phins:
 										# use measurements of velocity from DVL 																			
 										if line_split_no_checksum[1]  == header_dvl and flag_got_time == 1: 
 											xx_velocity=float(line_split_no_checksum[2])
-											yy_velocity=float(line_split_no_checksum[3])
+											#yy_velocity=float(line_split_no_checksum[3])
+											yy_velocity=-1*float(line_split_no_checksum[3]) # according to the manual, the minus shouldn't be needed
 											zz_velocity=-1*float(line_split_no_checksum[4]) # DVL convention is bottom to top +ve
 
 											# account for sensor offset
