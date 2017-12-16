@@ -537,7 +537,8 @@ def extract_data(filepath,ftype,start_time,finish_time,plot):
 
                 # interpolate to find the appropriate depth to compute seafloor depth for each altitude measurement
                 j=0
-                while time_depth[j]<time_altitude[i]:
+                
+                while time_depth[j]<time_altitude[i] or j == len(time_depth):            
                     j=j+1
 
                 if j>=1:                
