@@ -151,6 +151,7 @@ from datetime import datetime
 from lib_calculus.interpolate import interpolate
 from lib_localisation.dead_reckoning import dead_reckoning
 from lib_coordinates.body_to_inertial import body_to_inertial
+from lib_visualise.parse_gaps import parse_gaps
 from lib_sensors.parse_phins import parse_phins
 from lib_sensors.parse_gaps import parse_gaps
 from lib_sensors.parse_acfr_images import parse_acfr_images
@@ -481,7 +482,7 @@ def extract_data(filepath,ftype,start_time,finish_time,plot):
                         yaw.append(parsed_json_data[i]['data'][0]['heading'])
 
                     if 'depth' in parsed_json_data[i]['category']:
-                        time_depth.append(parsed_json_data[i]['epoch_timestamp'])
+                        time_depth.append(parsed_json_data[i]['epoch_timestamp_depth'])
                         depth.append(parsed_json_data[i]['data'][0]['depth'])
 
                     if 'altitude' in parsed_json_data[i]['category']:
@@ -1126,6 +1127,7 @@ def extract_data(filepath,ftype,start_time,finish_time,plot):
             i=0
             j=0
             while i <= len(northings_usbl):
+                print(i,len(northings_usbl))
                 if time_usbl[i] < time_velocity_body[0]:
                     j=i
                 else:
@@ -1142,7 +1144,8 @@ def extract_data(filepath,ftype,start_time,finish_time,plot):
             # find initial position offset
             i=0
             j=0
-            while i <= len(northings_usbl):
+            while i < len(northings_usbl):
+                print(i,len(northings_usbl))
                 if time_usbl[i] < time_velocity_inertia[0]:
                     j=i
                 else:
