@@ -142,13 +142,14 @@ class parse_phins:
 											x_velocity=float(line_split_no_checksum[2]) # DVL convention is +ve aft to forward
 											#y_velocity=float(line_split_no_checksum[3]) # DVL convention is +ve port to starboard so the minus shouldn't be necessary?
 											y_velocity=float(line_split_no_checksum[3]) # DVL convention is +ve port to starboard
-											z_velocity=-1*float(line_split_no_checksum[4]) # DVL convention is bottom to top +ve
+											z_velocity=float(line_split_no_checksum[4]) # DVL convention is bottom to top +ve
 
 											# account for sensor rotational offset
 											# print('IN :',x_velocity, y_velocity, z_velocity)
 											[x_velocity,y_velocity,z_velocity] = body_to_inertial(0, 0, headingoffset, x_velocity, y_velocity, z_velocity)
 											# print('OUT:',x_velocity, y_velocity, z_velocity)
 											y_velocity=-1*y_velocity
+											z_velocity=-1*z_velocity
 
 											x_velocity_std=abs(x_velocity)*velocity_std_factor+velocity_std_offset
 											y_velocity_std=abs(y_velocity)*velocity_std_factor+velocity_std_offset
@@ -205,7 +206,7 @@ class parse_phins:
 
 										if line_split_no_checksum[1]  == header_vel_std and flag_got_time == 3:																																	
 
-											east_velocity_std=-1*float(line_split_no_checksum[2]) # phins convention is west +ve
+											east_velocity_std=float(line_split_no_checksum[2]) # phins convention is west +ve
 											north_velocity_std=float(line_split_no_checksum[3])											
 											down_velocity_std=-1*float(line_split_no_checksum[4]) # phins convention is up +ve												
 
@@ -333,10 +334,12 @@ class parse_phins:
 											xx_velocity=float(line_split_no_checksum[2])
 											yy_velocity=float(line_split_no_checksum[3])
 											#yy_velocity=-1*float(line_split_no_checksum[3]) # according to the manual, the minus shouldn't be needed
-											zz_velocity=-1*float(line_split_no_checksum[4]) # DVL convention is bottom to top +ve
+											zz_velocity=float(line_split_no_checksum[4]) # DVL convention is bottom to top +ve
 
 											# account for sensor offset
-											[xx_velocity,yy_velocity,zz_velocity] = body_to_inertial(0, 0, -headingoffset, xx_velocity, yy_velocity, zz_velocity)
+											[xx_velocity,yy_velocity,zz_velocity] = body_to_inertial(0, 0, headingoffset, xx_velocity, yy_velocity, zz_velocity)
+											yy_velocity=-1*yy_velocity
+											zz_velocity=-1*zz_velocity
 
 											velocity_time=str(line_split_no_checksum[6])
 											hour_dvl=int(velocity_time[0:2])
@@ -413,8 +416,8 @@ class parse_phins:
 											flag_got_time = 0
 
 											# account for sensor rotational offset
-											[roll, pitch, heading] = body_to_inertial(0, 0, -headingoffset, roll, pitch, heading)
-											[roll_std, pitch_std, heading_std] = body_to_inertial(0, 0, -headingoffset, roll_std, pitch_std, heading_std)
+											[roll, pitch, heading] = body_to_inertial(0, 0, headingoffset, roll, pitch, heading)
+											[roll_std, pitch_std, heading_std] = body_to_inertial(0, 0, headingoffset, roll_std, pitch_std, heading_std)
 											
 											#heading=heading+headingoffset
 											if heading >360:

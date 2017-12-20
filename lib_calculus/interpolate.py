@@ -14,7 +14,11 @@ class interpolate:
 
 	def __new__(cls, x_query, x_lower, x_upper, y_lower, y_upper):
 
-		y_query=(y_upper-y_lower)/(x_upper-x_lower)*(x_query-x_lower)+y_lower
+		if x_upper == x_lower:
+			y_query=y_lower
+
+		else:
+			y_query=(y_upper-y_lower)/(x_upper-x_lower)*(x_query-x_lower)+y_lower
 				
 
 		return y_query
