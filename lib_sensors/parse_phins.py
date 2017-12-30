@@ -227,8 +227,8 @@ class parse_phins:
 											flag_got_time = 2
 
 										if line_split_no_checksum[1]  == header_attitude and flag_got_time == 2:
-											roll=float(line_split_no_checksum[2])
-											pitch=float(line_split_no_checksum[3]) # phins +ve nose up so no need to change								
+											roll=-1*float(line_split_no_checksum[2])
+											pitch=-1*float(line_split_no_checksum[3]) # phins +ve nose up so no need to change								
 											flag_got_time = 3
 
 										if line_split_no_checksum[1]  == header_attitude_std and flag_got_time == 3:
@@ -386,8 +386,8 @@ class parse_phins:
 											flag_got_time = 4
 
 										if line_split_no_checksum[1]  == header_attitude and flag_got_time == 4:
-											roll=float(line_split_no_checksum[2])
-											pitch=float(line_split_no_checksum[3])									
+											roll=-1*float(line_split_no_checksum[2])
+											pitch=-1*float(line_split_no_checksum[3])									
 
 											#reset flag for next data
 											flag_got_time = 0
@@ -402,8 +402,8 @@ class parse_phins:
 											flag_got_time = 2
 
 										if line_split_no_checksum[1]  == header_attitude and flag_got_time ==2:
-											roll=float(line_split_no_checksum[2])
-											pitch=float(line_split_no_checksum[3])							
+											roll=-1*float(line_split_no_checksum[2])
+											pitch=-1*float(line_split_no_checksum[3])							
 											flag_got_time = 3		
 										
 
