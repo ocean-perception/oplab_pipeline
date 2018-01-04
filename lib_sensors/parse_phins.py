@@ -393,7 +393,7 @@ class parse_phins:
 											flag_got_time = 0
 
 											# write out in the required format interlace at end										
-											data = 'RDI: ' + str(float(epoch_timestamp_dvl)) + ' alt:' + str(float(altitude)) + ' r1:0 r2:0 r3:0 r4:0 h:' + str(float(heading)) + ' p:' + str(float(pitch)) + ' r:' + str(float(roll)) + ' vx:' + str(float(xx_velocity)) + ' vy:' + str(float(yy_velocity)) + ' vz:' + str(float(zz_velocity)) + ' nx:0 ny:0 nz:0 COG:0 SOG:0 bt_status:32768 h_true:0 p_gimbal:0 sv: ' + str(float(sound_velocity)) + '\n'
+											data = 'RDI: ' + str(float(epoch_timestamp_dvl)) + ' alt:' + str(float(altitude)) + ' r1:0 r2:0 r3:0 r4:0 h:' + str(float(heading)) + ' p:' + str(float(pitch)) + ' r:' + str(float(roll)) + ' vx:' + str(float(xx_velocity)) + ' vy:' + str(float(yy_velocity)) + ' vz:' + str(float(zz_velocity)) + ' nx:0 ny:0 nz:0 COG:0 SOG:0 bt_status:0 h_true:0 p_gimbal:0 sv: ' + str(float(sound_velocity)) + '\n'
 											fileout.write(data)
 
 									if category == 'orientation':
