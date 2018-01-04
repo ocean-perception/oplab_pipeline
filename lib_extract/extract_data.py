@@ -392,7 +392,8 @@ class extract_data:
                 k=k+1
 
                 if k>=1:                
-                    #seafloor_depth[i]=(depth[j]-depth[j-1])/(time_depth[j]-time_depth[j-1])*(time_altitude[i]-time_depth[j-1])+depth[j-1]+altitude[i]                      
+                    #seafloor_depth[i]=(depth[j]-depth[j-1])/(time_depth[j]-time_depth[j-1])*(time_altitude[i]-time_depth[j-1])+depth[j-1]+altitude[i] 
+                    #print(k,i,len(time_depth),len(time_velocity_body),len(altitude))                     
                     depth_dead_reckoning[i]=interpolate(time_velocity_body[i],time_depth[k-1],time_depth[k],depth[k-1],depth[k])+altitude[i]
                     
 
@@ -800,7 +801,7 @@ class extract_data:
             # interpolate unless end member, where extrapolate 
             if j==0:
                 j=j+1 
-                
+                            
             # compute the location interpolated USBL value            
             northings_usbl_interpolated=interpolate(time_velocity_body[0],time_usbl[j-1],time_usbl[j],northings_usbl[j-1],northings_usbl[j])
             eastings_usbl_interpolated=interpolate(time_velocity_body[0],time_usbl[j-1],time_usbl[j],eastings_usbl[j-1],eastings_usbl[j])
