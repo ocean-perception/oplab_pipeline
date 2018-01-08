@@ -12,6 +12,7 @@
         auv_nav.py <options>
             -i <path to mission.yaml>
             -o <output type> 'acfr' or 'oplab'
+            -v <path to root processed folder where parsed data exists>
             -e <path to root processed folder where parsed data exists>
             -s <start time in utc time> hhmmss (only for extract)")
             -f <finish time in utc time> hhmmss (only for extract)")                        
@@ -153,7 +154,7 @@ from lib_calculus.interpolate import interpolate
 from lib_localisation.dead_reckoning import dead_reckoning
 from lib_coordinates.body_to_inertial import body_to_inertial
 from lib_extract.extract_data import extract_data
-
+from lib_visualise.display_info import display_info
 # from lib_visualise.parse_gaps import parse_gaps
 from lib_sensors.parse_phins import parse_phins
 from lib_sensors.parse_gaps import parse_gaps
@@ -345,6 +346,7 @@ def syntax_error():
     print("     auv_nav.py <options>")
     print("         -i <path to mission.yaml>")
     print("         -o <output type> 'acfr' or 'oplab'")
+    print("         -v <path to root processed folder where parsed data exists>")
     print("         -e <path to root processed folder where parsed data exists>")    
     print("         -s <start time in utc time> hhmmss (only for extract)")
     print("         -f <finish time in utc time> hhmmss (only for extract)")
@@ -361,6 +363,7 @@ if __name__ == '__main__':
     flag_i=0
     flag_o=0
     flag_e=0
+    flag_v=0
 
     start_time='000000'
     finish_time='235959'
@@ -384,6 +387,9 @@ if __name__ == '__main__':
             if option == "-e":
                 filepath=sys.argv[i+1]
                 flag_e=1
+            if option == "-v":
+                filepath=sys.argv[i+1]
+                flag_v=1
             if option == "-o":
                 ftype=sys.argv[i+1]
                 flag_o=1                    
@@ -396,16 +402,15 @@ if __name__ == '__main__':
             if option == "-c":
                 csv_write = True
 
-        
-
         if (flag_i ==1) and (flag_o ==1):
             sys.exit(parse_data(filepath,ftype))   
         if (flag_e ==1) and (flag_o ==1):
             if csv_write == False and plot == False:
                 print('No extract option selected, default plot (-p) but no csv_write (-c to enable)')
                 plot = True
-            
             sys.exit(extract_data(filepath,ftype,start_time,finish_time,plot,csv_write))   
+        if (flag_v ==1) and (flag_o ==1):
+            sys.exit(display_info(filepath,ftype))
         else:
             syntax_error()
             
