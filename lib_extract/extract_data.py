@@ -189,7 +189,7 @@ class extract_data:
                         depth_usbl.append(parsed_json_data[i]['data_target'][4]['depth'])
 
             #make path for csv and plots
-            renavpath = filepath + 'json_renav_' + str(yyyy) + str(mm) + str(dd) + '_' + start_time + '_' + finish_time 
+            renavpath = filepath + 'json_renav_' + str(yyyy).zfill(4) + str(mm).zfill(2) + str(dd).zfill(2) + '_' + start_time + '_' + finish_time 
             if os.path.isdir(renavpath) == 0:
                 try:
                     os.mkdir(renavpath)
@@ -333,7 +333,7 @@ class extract_data:
                             longitude_usbl.append(0)
 
             # make folder to store csv and plots
-            renavpath = filepath + 'acfr_renav_' + str(yyyy) + str(mm) + str(dd) + '_' + start_time + '_' + finish_time 
+            renavpath = filepath + 'acfr_renav_' + str(yyyy).zfill(4) + str(mm).zfill(2) + str(dd).zfill(2) + '_' + start_time + '_' + finish_time 
             if os.path.isdir(renavpath) == 0:
                 try:
                     os.mkdir(renavpath)
