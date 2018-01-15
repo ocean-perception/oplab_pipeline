@@ -33,23 +33,32 @@ class extract_data:
         x_velocity=[]
         y_velocity=[]
         z_velocity=[]
+        x_velocity_std=[]
+        y_velocity_std=[]
+        z_velocity_std=[]
 
         time_orientation=[]
         roll=[]
         pitch=[]
         yaw=[]
+        roll_std=[] 
+        pitch_std=[]
+        yaw_std=[]
 
         time_velocity_inertia=[]
         north_velocity_inertia=[]
         east_velocity_inertia=[]
         down_velocity_inertia=[]
+        north_velocity_std_inertia=[]
+        east_velocity_std_inertia=[]
+        down_velocity_std_inertia=[]
         northings_inertia_dead_reckoning=[]
         eastings_inertia_dead_reckoning=[]
         depth_inertia_dead_reckoning=[]
 
-
         time_depth=[]
         depth=[]
+        depth_std=[]
 
         time_altitude=[]
         altitude=[]
@@ -79,7 +88,12 @@ class extract_data:
         longitude_usbl=[]
         northings_usbl=[]
         eastings_usbl=[]
+        latitude_std_usbl=[]
+        longitude_std_usbl=[]
+        northings_std_usbl=[]
+        eastings_std_usbl=[]
         depth_usbl=[]
+
 
 
 
@@ -144,6 +158,9 @@ class extract_data:
                                 x_velocity.append(parsed_json_data[i]['data'][0]['x_velocity'])
                                 y_velocity.append(parsed_json_data[i]['data'][1]['y_velocity'])
                                 z_velocity.append(parsed_json_data[i]['data'][2]['z_velocity'])
+                                x_velocity_std.append(parsed_json_data[i]['data'][0]['x_velocity_std'])
+                                y_velocity_std.append(parsed_json_data[i]['data'][1]['y_velocity_std'])
+                                z_velocity_std.append(parsed_json_data[i]['data'][2]['z_velocity_std'])
                                 roll_interpolated.append(0)
                                 pitch_interpolated.append(0)
                                 yaw_interpolated.append(0)
@@ -158,6 +175,9 @@ class extract_data:
                             north_velocity_inertia.append(parsed_json_data[i]['data'][0]['north_velocity'])
                             east_velocity_inertia.append(parsed_json_data[i]['data'][1]['east_velocity'])
                             down_velocity_inertia.append(parsed_json_data[i]['data'][2]['down_velocity'])
+                            north_velocity_std_inertia.append(parsed_json_data[i]['data'][0]['north_velocity_std'])
+                            east_velocity_std_inertia.append(parsed_json_data[i]['data'][1]['east_velocity_std'])
+                            down_velocity_std_inertia.append(parsed_json_data[i]['data'][2]['down_velocity_std'])
                             roll_inertia_interpolated.append(0)
                             pitch_inertia_interpolated.append(0)
                             yaw_inertia_interpolated.append(0)
@@ -170,10 +190,14 @@ class extract_data:
                         roll.append(parsed_json_data[i]['data'][1]['roll'])
                         pitch.append(parsed_json_data[i]['data'][2]['pitch'])
                         yaw.append(parsed_json_data[i]['data'][0]['heading'])
+                        roll_std.append(parsed_json_data[i]['data'][1]['roll_std'])
+                        pitch_std.append(parsed_json_data[i]['data'][2]['pitch_std'])
+                        yaw_std.append(parsed_json_data[i]['data'][0]['heading_std'])
 
                     if 'depth' in parsed_json_data[i]['category']:
                         time_depth.append(parsed_json_data[i]['epoch_timestamp_depth'])
                         depth.append(parsed_json_data[i]['data'][0]['depth'])
+                        depth_std.append(parsed_json_data[i]['data'][0]['depth_std'])
 
                     if 'altitude' in parsed_json_data[i]['category']:
                         time_altitude.append(parsed_json_data[i]['epoch_timestamp'])
@@ -187,6 +211,10 @@ class extract_data:
                         northings_usbl.append(parsed_json_data[i]['data_target'][2]['northings'])
                         eastings_usbl.append(parsed_json_data[i]['data_target'][3]['eastings'])
                         depth_usbl.append(parsed_json_data[i]['data_target'][4]['depth'])
+                        latitude_std_usbl.append(parsed_json_data[i]['data_target'][0]['latitude_std'])
+                        longitude_std_usbl.append(parsed_json_data[i]['data_target'][1]['longitude_std'])
+                        northings_std_usbl.append(parsed_json_data[i]['data_target'][2]['northings_std'])
+                        eastings_std_usbl.append(parsed_json_data[i]['data_target'][3]['eastings_std'])
 
             #make path for csv and plots
             renavpath = filepath + 'json_renav_' + str(yyyy).zfill(4) + str(mm).zfill(2) + str(dd).zfill(2) + '_' + start_time + '_' + finish_time 
@@ -493,6 +521,11 @@ class extract_data:
             del north_velocity_inertia[0]
             del east_velocity_inertia[0]
             del down_velocity_inertia[0]
+            
+            del north_velocity_std_inertia[0]
+            del east_velocity_std_inertia[0]
+            del down_velocity_std_inertia[0]
+
             del northings_inertia_dead_reckoning[0]
             del eastings_inertia_dead_reckoning[0]
             del depth_inertia_dead_reckoning[0]
@@ -682,7 +715,7 @@ class extract_data:
             fig=plt.figure(figsize=(4,3))
             ax1 = fig.add_subplot(211)
             ax1.plot(time_depth,depth,'b.',label='Vehicle')                        
-            ax1.plot(time_altitude,seafloor_depth,'r.',label='Seafloor')                            
+            ax1.plot(time_altitude,seafloor_depth,'r.',label='Seafloor')                         
             ax1.set_xlabel('Epoch time, s')
             ax1.set_ylabel('Depth, m')
             plt.gca().invert_yaxis()
@@ -751,6 +784,75 @@ class extract_data:
             ax.grid(True)                
             plt.savefig(plotpath + os.sep + 'usbl_northings_time.pdf', dpi=600, bbox_inches='tight')
             plt.close()                
+
+            # uncertainties plot
+            fig=plt.figure(figsize=(4,3))
+            ax = fig.add_subplot(111)
+            ax.plot(time_orientation,roll_std,'r.',label='roll_std')
+            ax.plot(time_orientation,pitch_std,'g.',label='pitch_std')
+            ax.plot(time_orientation,yaw_std,'b.',label='yaw_std')
+            ax.set_xlabel('Epoch time, s')
+            ax.set_ylabel('Angle, degrees')
+            ax.legend(loc='upper right', bbox_to_anchor=(1, -0.2))
+            ax.grid(True)                        
+            plt.savefig(plotpath + os.sep + 'orientation_std.pdf', dpi=600, bbox_inches='tight')
+            plt.close()
+
+            fig=plt.figure(figsize=(4,3))
+            ax = fig.add_subplot(111)
+            ax.plot(time_depth,depth_std,'b.')
+            ax.set_xlabel('Epoch time, s')
+            ax.set_ylabel('Depth, m')
+            ax.legend(loc='upper right', bbox_to_anchor=(1, -0.2))
+            ax.grid(True)                        
+            plt.savefig(plotpath + os.sep + 'depth_std.pdf', dpi=600, bbox_inches='tight')
+            plt.close()
+
+            fig=plt.figure(figsize=(4,3))
+            ax = fig.add_subplot(111)
+            ax.plot(time_velocity_body,x_velocity_std,'r.',label='x_velocity_std')
+            ax.plot(time_velocity_body,y_velocity_std,'g.',label='y_velocity_std')
+            ax.plot(time_velocity_body,z_velocity_std,'b.',label='z_velocity_std')
+            ax.set_xlabel('Epoch time, s')
+            ax.set_ylabel('Velocity, m/s')
+            ax.legend(loc='upper right', bbox_to_anchor=(1, -0.2))
+            ax.grid(True)                        
+            plt.savefig(plotpath + os.sep + 'velocity_body_std.pdf', dpi=600, bbox_inches='tight')
+            plt.close()
+
+            fig=plt.figure(figsize=(4,3))
+            ax = fig.add_subplot(111)
+            ax.plot(time_velocity_inertia,north_velocity_std_inertia,'r.',label='north_velocity_std_inertia')
+            ax.plot(time_velocity_inertia,east_velocity_std_inertia,'g.',label='east_velocity_std_inertia')
+            ax.plot(time_velocity_inertia,down_velocity_std_inertia,'b.',label='down_velocity_std_inertia')
+            ax.set_xlabel('Epoch time, s')
+            ax.set_ylabel('Velocity, m/s')
+            ax.legend(loc='upper right', bbox_to_anchor=(1, -0.2))
+            ax.grid(True)                        
+            plt.savefig(plotpath + os.sep + 'velocity_inertia_std.pdf', dpi=600, bbox_inches='tight')
+            plt.close()
+
+            fig=plt.figure(figsize=(4,3))
+            ax = fig.add_subplot(111)
+            ax.plot(time_usbl,latitude_std_usbl,'r.',label='latitude_std_usbl')
+            ax.plot(time_usbl,longitude_std_usbl,'g.',label='longitude_std_usbl')
+            ax.set_xlabel('Epoch time, s')
+            ax.set_ylabel('LatLong, degrees')
+            ax.legend(loc='upper right', bbox_to_anchor=(1, -0.2))
+            ax.grid(True)                        
+            plt.savefig(plotpath + os.sep + 'usbl_latitude_longitude_std.pdf', dpi=600, bbox_inches='tight')
+            plt.close()
+
+            fig=plt.figure(figsize=(4,3))
+            ax = fig.add_subplot(111)
+            ax.plot(time_usbl,northings_std_usbl,'r.',label='northings_std_usbl')
+            ax.plot(time_usbl,eastings_std_usbl,'g.',label='eastings_std_usbl')
+            ax.set_xlabel('Epoch time, s')
+            ax.set_ylabel('NorthEast, m')
+            ax.legend(loc='upper right', bbox_to_anchor=(1, -0.2))
+            ax.grid(True)                        
+            plt.savefig(plotpath + os.sep + 'usbl_northings_eastings_std.pdf', dpi=600, bbox_inches='tight')
+            plt.close()
 
             # dead_reckoning northings eastings
             fig=plt.figure(figsize=(4,3))
