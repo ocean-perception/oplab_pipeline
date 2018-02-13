@@ -56,18 +56,18 @@ class parse_phins:
 				timezone_offset = 0
 			elif timezone == 'jst' or  timezone == 'JST':
 				timezone_offset = 9;
-			else:
-				try:
-					timezone_offset=float(timezone)
-				except ValueError:
-					print('Error: timezone', timezone, 'in mission.cfg not recognised, please enter value from UTC in hours')
-					return
+		else:
+			try:
+				timezone_offset=float(timezone)
+			except ValueError:
+				print('Error: timezone', timezone, 'in mission.cfg not recognised, please enter value from UTC in hours')
+				return
 
 		# convert to seconds from utc
 		timeoffset = -timezone_offset*60*60 + timeoffset 
 
 		# parse phins data
-		print('Parsing phins standard data')
+		print('...... parsing phins standard data')
 		data_list=[]
 		with codecs.open(filepath + filename,'r',encoding='utf-8', errors='ignore') as filein:
 			flag_got_time = 0
@@ -182,7 +182,6 @@ class parse_phins:
 
 												# write out in the required format interlace at end										
 												data = {'epoch_timestamp': float(epoch_timestamp),'epoch_timestamp_dvl': float(epoch_timestamp_dvl),'class': class_string,'sensor':sensor_string,'frame':frame_string,'category': category,'data': [{'x_velocity':float(x_velocity),'x_velocity_std':float(x_velocity_std)},{'y_velocity':float(y_velocity),'y_velocity_std':float(y_velocity_std)},{'z_velocity':float(z_velocity),'z_velocity_std':float(z_velocity_std)}]}												
-
 												data_list.append(data)
 												
 											else:
@@ -190,9 +189,9 @@ class parse_phins:
 												print(line)
 
 											#set flag for next data
-											flag_got_time = 2
+											flag_got_time = flag_got_time + 1
 
-										if line_split_no_checksum[1]  == header_vel and flag_got_time == 2:		
+										if line_split_no_checksum[1]  == header_vel:		
 
 											frame_string = 'inertial'
 																							
@@ -202,20 +201,24 @@ class parse_phins:
 											down_velocity=-1*float(line_split_no_checksum[4]) # phins convention is up +ve
 
 											#set flag for next data
-											flag_got_time = 3
+											flag_got_time = flag_got_time + 1
 
-										if line_split_no_checksum[1]  == header_vel_std and flag_got_time == 3:																																	
+										if line_split_no_checksum[1]  == header_vel_std:
 
 											east_velocity_std=float(line_split_no_checksum[2]) # phins convention is west +ve
 											north_velocity_std=float(line_split_no_checksum[3])											
 											down_velocity_std=-1*float(line_split_no_checksum[4]) # phins convention is up +ve												
 
+											flag_got_time = flag_got_time + 1
+
+										if flag_got_time == 4:
 												# write out in the required format interlace at end										
 											data = {'epoch_timestamp': float(epoch_timestamp),'class': class_string,'sensor':sensor_string,'frame':frame_string,'category': category,'data': [{'north_velocity':float(north_velocity),'north_velocity_std':float(north_velocity_std)},{'east_velocity':float(east_velocity),'east_velocity_std':float(east_velocity_std)},{'down_velocity':float(down_velocity),'down_velocity_std':float(down_velocity_std)}]}
-											data_list.append(data)
+											data_list.append(data)											
 
 											#reset flag for next data
 											flag_got_time = 0
+
 																				
 										
 										
@@ -224,17 +227,20 @@ class parse_phins:
 										frame_string = 'inertial'
 										if line_split_no_checksum[0] == header_heading:
 											heading=float(line_split_no_checksum[1]) # phins +ve clockwise so no need to change
-											flag_got_time = 2
+											flag_got_time = flag_got_time + 1
 
-										if line_split_no_checksum[1]  == header_attitude and flag_got_time == 2:
+										if line_split_no_checksum[1]  == header_attitude:
 											roll=-1*float(line_split_no_checksum[2])
 											pitch=-1*float(line_split_no_checksum[3]) # phins +ve nose up so no need to change								
-											flag_got_time = 3
+											flag_got_time = flag_got_time + 1
 
-										if line_split_no_checksum[1]  == header_attitude_std and flag_got_time == 3:
+										if line_split_no_checksum[1]  == header_attitude_std:
 											heading_std=float(line_split_no_checksum[2])
 											roll_std=float(line_split_no_checksum[3])
 											pitch_std=float(line_split_no_checksum[4])
+											flag_got_time = flag_got_time + 1
+
+										if flag_got_time == 4:
 											
 											# account for sensor rotational offset										
 											[roll, pitch, heading] = body_to_inertial(0, 0, headingoffset, roll, pitch, heading)
@@ -245,13 +251,14 @@ class parse_phins:
 												heading=heading-360
 											if heading < 0:
 												heading=heading+360
+											
+											# write out in the required format interlace at end											
+											data = {'epoch_timestamp': float(epoch_timestamp),'class': class_string,'sensor':sensor_string,'frame':frame_string,'category': category,'data': [{'heading':float(heading),'heading_std':float(heading_std)},{'roll':float(roll),'roll_std':float(roll_std)},{'pitch':float(pitch),'pitch_std':float(pitch_std)}]}											
+											data_list.append(data)
 
 											#reset flag for next data
 											flag_got_time = 0
 
-											# write out in the required format interlace at end
-											data = {'epoch_timestamp': float(epoch_timestamp),'class': class_string,'sensor':sensor_string,'frame':frame_string,'category': category,'data': [{'heading':float(heading),'heading_std':float(heading_std)},{'roll':float(roll),'roll_std':float(roll_std)},{'pitch':float(pitch),'pitch_std':float(pitch_std)}]}
-											data_list.append(data)
 											
 
 									if category == 'depth':
@@ -280,7 +287,7 @@ class parse_phins:
 											data_list.append(data)
 
 									if category == 'altitude':
-										frame_string = 'body'
+										frame_string = 'body'										
 										if line_split_no_checksum[1]  == header_dvl:									
 											velocity_time=str(line_split_no_checksum[6])
 											hour_dvl=int(velocity_time[0:2])
@@ -306,31 +313,40 @@ class parse_phins:
 												epoch_time_dvl = time.mktime(time_tuple_dvl)
 												epoch_timestamp_dvl = epoch_time_dvl+msec_dvl/1000+timeoffset
 
-												flag_got_time = 2
+												flag_got_time = flag_got_time + 1
 											else:
 												print('Warning: Badly formatted packet (DVL TIME)(DVL ALTITUDE)')
 												print(line)
-												flag_got_time = 0 # reinitiate packet
+												flag_got_time = flag_got_time - 1 # reinitiate packet
 											
-										if line_split_no_checksum[1]  == header_altitude and flag_got_time == 2:
+										if line_split_no_checksum[1]  == header_altitude:
 											sound_velocity=float(line_split_no_checksum[2])
 											sound_velocity_correction=float(line_split_no_checksum[3])
 											altitude=float(line_split_no_checksum[4])
 
-											altitude_std=altitude*altitude_std_factor									
+											altitude_std=altitude*altitude_std_factor	
+											flag_got_time = flag_got_time + 1								
 											
+										if flag_got_time == 3:
 											#reset flag for next data
 											flag_got_time = 0
 
 											# write out in the required format interlace at end
-											data = {'epoch_timestamp': float(epoch_timestamp),'epoch_timestamp_dvl': float(epoch_timestamp_dvl),'class': class_string,'sensor':sensor_string,'frame':frame_string,'category': category,'data': [{'altitude':float(altitude),'altitude_std':float(altitude_std)},{'sound_velocity':float(sound_velocity),'sound_velocity_correction':float(sound_velocity_correction)}]}
+											data = {'epoch_timestamp': float(epoch_timestamp),'epoch_timestamp_dvl': float(epoch_timestamp_dvl),'class': class_string,'sensor':sensor_string,'frame':frame_string,'category': category,'data': [{'altitude':float(altitude),'altitude_std':float(altitude_std)},{'sound_velocity':float(sound_velocity),'sound_velocity_correction':float(sound_velocity_correction)}]}											
 											data_list.append(data)																	
 
 								if ftype == 'acfr':
 									if category == 'velocity':
+										# order of latitude and dvl swap for different files
+										if line_split_no_checksum[1]  == header_altitude :
+											
+											sound_velocity=float(line_split_no_checksum[2])
+											sound_velocity_correction=float(line_split_no_checksum[3])
+											altitude=float(line_split_no_checksum[4])										
+											flag_got_time = flag_got_time + 1
 										
-										# use measurements of velocity from DVL 																			
-										if line_split_no_checksum[1]  == header_dvl and flag_got_time == 1: 
+										if line_split_no_checksum[1]  == header_dvl: 
+											
 											xx_velocity=float(line_split_no_checksum[2])
 											yy_velocity=float(line_split_no_checksum[3])
 											#yy_velocity=-1*float(line_split_no_checksum[3]) # according to the manual, the minus shouldn't be needed
@@ -353,9 +369,10 @@ class parse_phins:
 											except ValueError:											
 												broken_packet_flag = 1
 
+											
 											try:
 												msec_dvl=int(velocity_time[7:10])
-											
+
 											except ValueError:											
 												broken_packet_flag = 1
 											
@@ -365,53 +382,53 @@ class parse_phins:
 												time_tuple_dvl = dt_obj_dvl.timetuple()
 												epoch_time_dvl = time.mktime(time_tuple_dvl)
 												epoch_timestamp_dvl = epoch_time_dvl+msec_dvl/1000+timeoffset
-												flag_got_time = 2
-												
+												flag_got_time = flag_got_time+1																								
+
 											else:
-												print('Warning: Badly formatted packet (DVL TIME)')
-												print(line)
-												flag_got_time = 0
+												print('Warning: Badly formatted packet (DVL TIME)')												
+												flag_got_time = flag_got_time-1
 
-										# use measurements of velocity from PHINS
-
-										if line_split_no_checksum[1]  == header_altitude and flag_got_time == 2:
-											sound_velocity=float(line_split_no_checksum[2])
-											sound_velocity_correction=float(line_split_no_checksum[3])
-											altitude=float(line_split_no_checksum[4])
-
-											flag_got_time = 3
 										
-										if line_split_no_checksum[0] == header_heading and flag_got_time == 3:
+										# use measurements of velocity from PHINS																			
+										
+										
+										if line_split_no_checksum[0] == header_heading:
 											heading=float(line_split_no_checksum[1])									
-											flag_got_time = 4
+											flag_got_time = flag_got_time + 1
 
-										if line_split_no_checksum[1]  == header_attitude and flag_got_time == 4:
+										if line_split_no_checksum[1]  == header_attitude:
 											roll=-1*float(line_split_no_checksum[2])
-											pitch=-1*float(line_split_no_checksum[3])									
+											pitch=-1*float(line_split_no_checksum[3])	
+											flag_got_time = flag_got_time + 1								
 
 											#reset flag for next data
+										if flag_got_time == 5:
+
 											flag_got_time = 0
 
-											# write out in the required format interlace at end										
+											#print(data)
+											# write out in the required format interlace at end																				
 											data = 'RDI: ' + str(float(epoch_timestamp_dvl)) + ' alt:' + str(float(altitude)) + ' r1:0 r2:0 r3:0 r4:0 h:' + str(float(heading)) + ' p:' + str(float(pitch)) + ' r:' + str(float(roll)) + ' vx:' + str(float(xx_velocity)) + ' vy:' + str(float(yy_velocity)) + ' vz:' + str(float(zz_velocity)) + ' nx:0 ny:0 nz:0 COG:0 SOG:0 bt_status:0 h_true:0 p_gimbal:0 sv: ' + str(float(sound_velocity)) + '\n'
 											fileout.write(data)
 
 									if category == 'orientation':
 										if line_split_no_checksum[0] == header_heading:
 											heading=float(line_split_no_checksum[1])
-											flag_got_time = 2
+											flag_got_time = flag_got_time +1
 
-										if line_split_no_checksum[1]  == header_attitude and flag_got_time ==2:
+										if line_split_no_checksum[1]  == header_attitude:
 											roll=-1*float(line_split_no_checksum[2])
 											pitch=-1*float(line_split_no_checksum[3])							
-											flag_got_time = 3		
+											flag_got_time = flag_got_time +1
 										
 
-										if line_split_no_checksum[1]  == header_attitude_std and flag_got_time == 3:
+										if line_split_no_checksum[1]  == header_attitude_std:
 											heading_std=float(line_split_no_checksum[2])
 											roll_std=float(line_split_no_checksum[3])
 											pitch_std=float(line_split_no_checksum[4])
+											flag_got_time = flag_got_time +1
 
+										if flag_got_time == 4:
 											#reset flag for next data
 											flag_got_time = 0
 
@@ -424,8 +441,8 @@ class parse_phins:
 												heading=heading-360
 											if heading < 0:
 												heading=heading+360
-												
-
+											
+											#print(data)												
 											# write out in the required format interlace at end
 											data = 'PHINS_COMPASS: ' + str(float(epoch_timestamp)) + ' r: ' + str(float(roll)) + ' p: ' + str(float(pitch)) + ' h: ' + str(float(heading)) + ' std_r: ' + str(float(roll_std)) + ' std_p: ' + str(float(pitch_std)) + ' std_h: ' + str(float(heading_std)) + '\n'
 											fileout.write(data)

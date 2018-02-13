@@ -37,12 +37,12 @@ class parse_gaps:
 				timezone_offset = 0
 			elif timezone == 'jst' or  timezone == 'JST':
 				timezone_offset = 9;
-			else:
-				try:
-					timezone_offset=float(timezone)
-				except ValueError:
-					print('Error: timezone', timezone, 'in mission.cfg not recognised, please enter value from UTC in hours')
-					return
+		else:
+			try:
+				timezone_offset=float(timezone)
+			except ValueError:
+				print('Error: timezone', timezone, 'in mission.cfg not recognised, please enter value from UTC in hours')
+				return
 
 		# convert to seconds from utc
 		timeoffset = -timezone_offset*60*60 + timeoffset 
@@ -62,55 +62,15 @@ class parse_gaps:
 				for line in gaps.readlines():
 					line_split = line.strip().split('*') 
 					line_split_no_checksum = line_split[0].strip().split(',')
-
+					
+					#print(line_split_no_checksum)
 					# keep on upating ship position to find the prior interpolation value of ship coordinates
 					if line_split_no_checksum[0] == header_absolute:
-						
+												
 						# start with a ship coordinate
-						if line_split_no_checksum[6] == '0' and flag_got_time != 3:
-							# read in date
-							 yyyy = int(line_split_no_checksum[5])
-							 mm = int(line_split_no_checksum[4])
-							 dd = int(line_split_no_checksum[3])
-
-							 # print(yyyy,mm,dd)
-							 # read in time
-							 time_string=str(line_split_no_checksum[2])
-							 hour=int(time_string[0:2])
-							 mins=int(time_string[2:4])
-							 secs=int(time_string[4:6])
-							 msec=int(time_string[7:10])
-							 #print(hour,mins,secs)
-							 dt_obj = datetime(yyyy,mm,dd,hour,mins,secs)
-							 
-							 time_tuple = dt_obj.timetuple()
-							 epoch_time = time.mktime(time_tuple)
-							 epoch_timestamp_ship_prior = epoch_time+msec/1000+timeoffset
-
-							 # get position
-							 latitude_string = line_split_no_checksum[7]
-							 latitude_degrees_ship_prior = int(latitude_string[0:2])
-							 latitude_minutes_ship_prior = float(latitude_string[2:10])
-							 latitude_prior=latitude_degrees_ship_prior+latitude_minutes_ship_prior/60.0							 							
-
-							 longitude_string = line_split_no_checksum[9]
-							 longitude_degrees_ship_prior = int(longitude_string[0:3])
-							 longitude_minutes_ship_prior = float(longitude_string[3:11])
-							 longitude_prior=longitude_degrees_ship_prior+longitude_minutes_ship_prior/60.0
-
-							 # flag raised to proceed
-							 flag_got_time = 1
-
-					if line_split_no_checksum[0] == header_heading and flag_got_time == 1:
-						heading_ship_prior = float(line_split_no_checksum[1])						
-						flag_got_time = 2
-
-					# only consider data where an underwater body is measured
-					if line_split_no_checksum[0] == header_absolute and flag_got_time == 2:
-						if line_split_no_checksum[6] != '0':
-							# check all 4 hydrophones are valid and needs to be a sensor measurement (not calculated
+						if line_split_no_checksum[6] != '0' and flag_got_time == 2:
 							if line_split_no_checksum[11] == 'F' and line_split_no_checksum[13] == '1': 
-								# read in date
+									# read in date
 								yyyy = int(line_split_no_checksum[5])
 								mm = int(line_split_no_checksum[4])
 								dd = int(line_split_no_checksum[3])
@@ -127,8 +87,8 @@ class parse_gaps:
 								time_tuple = dt_obj.timetuple()
 								epoch_time = time.mktime(time_tuple)
 								epoch_timestamp = epoch_time+msec/1000+timeoffset
-								 
-								# get position
+									 
+									# get position
 								latitude_string = line_split_no_checksum[7]
 								latitude_degrees = int(latitude_string[0:2])
 								latitude_minutes = float(latitude_string[2:10])
@@ -144,46 +104,95 @@ class parse_gaps:
 							else:
 								flag_got_time = 0
 
-					if line_split_no_checksum[0] == header_absolute and flag_got_time == 3:
-						# find next ship coordinate
 						if line_split_no_checksum[6] == '0':
+							if flag_got_time < 3:
+								
 							
 							# read in date
-							yyyy = int(line_split_no_checksum[5])
-							mm = int(line_split_no_checksum[4])
-							dd = int(line_split_no_checksum[3])
+							
+								yyyy = int(line_split_no_checksum[5])
+								mm = int(line_split_no_checksum[4])
+								dd = int(line_split_no_checksum[3])
 
-							# read in time
-							time_string=str(line_split_no_checksum[2])
-							hour=int(time_string[0:2])
-							mins=int(time_string[2:4])
-							secs=int(time_string[4:6])
-							msec=int(time_string[7:10])
+								 # print(yyyy,mm,dd)
+								 # read in time
+								time_string=str(line_split_no_checksum[2])
+								hour=int(time_string[0:2])
+								mins=int(time_string[2:4])
+								secs=int(time_string[4:6])
+								msec=int(time_string[7:10])
+								#print(hour,mins,secs)
+								dt_obj = datetime(yyyy,mm,dd,hour,mins,secs)
+								 
+								time_tuple = dt_obj.timetuple()
+								epoch_time = time.mktime(time_tuple)
+								epoch_timestamp_ship_prior = epoch_time+msec/1000+timeoffset
 
-							# calculate epoch time
-							dt_obj = datetime(yyyy,mm,dd,hour,mins,secs)
-							time_tuple = dt_obj.timetuple()
-							epoch_time = time.mktime(time_tuple)
-							epoch_timestamp_ship_posterior = epoch_time+msec/1000+timeoffset
+								# get position
+								latitude_string = line_split_no_checksum[7]
+								latitude_degrees_ship_prior = int(latitude_string[0:2])
+								latitude_minutes_ship_prior = float(latitude_string[2:10])
+								latitude_prior=latitude_degrees_ship_prior+latitude_minutes_ship_prior/60.0							 							
 
-							# get position
-							latitude_string = line_split_no_checksum[7]
-							latitude_degrees_ship_posterior = int(latitude_string[0:2])
-							latitude_minutes_ship_posterior = float(latitude_string[2:10])
-							latitude_posterior=latitude_degrees_ship_posterior+latitude_minutes_ship_posterior/60.0
+								longitude_string = line_split_no_checksum[9]
+								longitude_degrees_ship_prior = int(longitude_string[0:3])
+								longitude_minutes_ship_prior = float(longitude_string[3:11])
+								longitude_prior=longitude_degrees_ship_prior+longitude_minutes_ship_prior/60.0
 
-							longitude_string = line_split_no_checksum[9]
-							longitude_degrees_ship_posterior = int(longitude_string[0:3])
-							longitude_minutes_ship_posterior = float(longitude_string[3:11])
-							longitude_posterior=longitude_degrees_ship_posterior+longitude_minutes_ship_posterior/60.0
+								# flag raised to proceed								
+								if flag_got_time < 2:
+								    flag_got_time = flag_got_time + 1
 
-							# flag raised to proceed
-							flag_got_time = 4
+							elif flag_got_time >= 3:
+								if line_split_no_checksum[6] == '0':
+							
+								# read in date
+									yyyy = int(line_split_no_checksum[5])
+									mm = int(line_split_no_checksum[4])
+									dd = int(line_split_no_checksum[3])
 
-					if line_split_no_checksum[0] == header_heading and flag_got_time == 4:
+									# read in time
+									time_string=str(line_split_no_checksum[2])
+									hour=int(time_string[0:2])
+									mins=int(time_string[2:4])
+									secs=int(time_string[4:6])
+									msec=int(time_string[7:10])
 
-						heading_ship_posterior = float(line_split_no_checksum[1])
+									# calculate epoch time
+									dt_obj = datetime(yyyy,mm,dd,hour,mins,secs)
+									time_tuple = dt_obj.timetuple()
+									epoch_time = time.mktime(time_tuple)
+									epoch_timestamp_ship_posterior = epoch_time+msec/1000+timeoffset
+
+									# get position
+									latitude_string = line_split_no_checksum[7]
+									latitude_degrees_ship_posterior = int(latitude_string[0:2])
+									latitude_minutes_ship_posterior = float(latitude_string[2:10])
+									latitude_posterior=latitude_degrees_ship_posterior+latitude_minutes_ship_posterior/60.0
+
+									longitude_string = line_split_no_checksum[9]
+									longitude_degrees_ship_posterior = int(longitude_string[0:3])
+									longitude_minutes_ship_posterior = float(longitude_string[3:11])
+									longitude_posterior=longitude_degrees_ship_posterior+longitude_minutes_ship_posterior/60.0
+
+									# flag raised to proceed
+									flag_got_time = flag_got_time + 1
+
 						
+						
+					if line_split_no_checksum[0] == header_heading: 
+						if flag_got_time < 3:
+							heading_ship_prior = float(line_split_no_checksum[1])
+							if flag_got_time < 2:
+								    flag_got_time = flag_got_time + 1												
+										
+						else:					
+
+							heading_ship_posterior = float(line_split_no_checksum[1])
+							flag_got_time = flag_got_time + 1
+						
+					
+					if flag_got_time >= 5:
 						# interpolate for the ships location and heading					
 						inter_time=(epoch_timestamp-epoch_timestamp_ship_prior)/(epoch_timestamp_ship_posterior-epoch_timestamp_ship_prior)
 						longitude_ship = inter_time*(longitude_posterior-longitude_prior)+longitude_prior
@@ -219,16 +228,18 @@ class parse_gaps:
 						eastings_target = math.sin(bearing_target*math.pi/180.0)*lateral_distance_target
 						northings_target = math.cos(bearing_target*math.pi/180.0)*lateral_distance_target
 
-						# reset flag
-						flag_got_time = 0
-
-						if ftype == 'oplab':
+						if ftype == 'oplab':							
 							data = {'epoch_timestamp': float(epoch_timestamp), 'class': class_string, 'sensor': sensor_string, 'frame': frame_string, 'category': category, 'data_ship': [{'latitude': float(latitude_ship), 'longitude': float(longitude_ship)}, {'northings': float(northings_ship), 'eastings': float(eastings_ship)}, {'heading': float(heading_ship)}], 'data_target': [{'latitude': float(latitude), 'latitude_std': float(latitude_std)}, {'longitude': float(longitude), 'longitude_std': float(longitude_std)}, {'northings': float(northings_target), 'northings_std': float(distance_std)}, {'eastings': float(eastings_target), 'eastings_std': float(distance_std)}, {'depth': float(depth)}]}
 							data_list.append(data)
 
 						if ftype == 'acfr':
 							data = 'SSBL_FIX: ' + str(float(epoch_timestamp)) + ' ship_x: ' + str(float(northings_ship)) + ' ship_y: ' + str(float(eastings_ship)) + ' target_x: ' + str(float(northings_target)) + ' target_y: ' + str(float(eastings_target)) + ' target_z: ' + str(float(depth)) + ' target_hr: ' + str(float(lateral_distance)) + ' target_sr: ' + str(float(distance)) + ' target_bearing: ' + str(float(bearing)) + '\n'
 							fileout.write(data)
+
+						# reset flag						
+						flag_got_time = 0
+
+
 
 		if ftype == 'oplab':
 			fileout.close()
