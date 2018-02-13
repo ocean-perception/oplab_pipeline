@@ -19,7 +19,6 @@
             -p <plot option> (only for extract)
             -c <csv write option> (only for extract)
 
-
         Arguments:
             path to the "mission.yaml" file, output format 'acfr' or 'oplab'
 
@@ -85,7 +84,7 @@
                     PAROSCI: 1444452882.644 298.289
                     VIS: 1444452882.655 [1444452882.655] sx_073311_image0003805_AC.tif exp: 0
                     VIS: 1444452882.655 [1444452882.655] sx_073311_image0003805_FC.tif exp: 0
-                    SSBL_FIX: 1444452883 ship_x: 402.988947 ship_y: 140.275056 target_x: 275.337171 target_y: 304.388346 target_z: 299.2 target_hr: 0 target_sr: 364.347071 target_bearing: 127.876747
+                    usbl_FIX: 1444452883 ship_x: 402.988947 ship_y: 140.275056 target_x: 275.337171 target_y: 304.388346 target_z: 299.2 target_hr: 0 target_sr: 364.347071 target_bearing: 127.876747
 
                 'oplab' - nav_standard.json
                     [{"epoch_timestamp": 1501974125.926, "epoch_timestamp_dvl": 1501974125.875, "class": "measurement", "sensor": "phins", "frame": "body", "category": "velocity", "data": [{"x_velocity": -0.075, "x_velocity_std": 0.200075}, {"y_velocity": 0.024, "y_velocity_std": 0.200024}, {"z_velocity": -0.316, "z_velocity_std": 0.20031600000000002}]},
@@ -154,11 +153,14 @@ from lib_calculus.interpolate import interpolate
 from lib_localisation.dead_reckoning import dead_reckoning
 from lib_coordinates.body_to_inertial import body_to_inertial
 from lib_extract.extract_data import extract_data
-from lib_visualise.display_info import display_info
+# from lib_visualise.display_info import display_info
 # from lib_visualise.parse_gaps import parse_gaps
 from lib_sensors.parse_phins import parse_phins
+from lib_sensors.parse_ae2000 import parse_ae2000
 from lib_sensors.parse_gaps import parse_gaps
+from lib_sensors.parse_usbl_dump import parse_usbl_dump
 from lib_sensors.parse_acfr_images import parse_acfr_images
+from lib_sensors.parse_seaxerocks_images import parse_seaxerocks_images
 from lib_sensors.parse_interlacer import parse_interlacer
 
 def parse_data(filepath,ftype):
@@ -185,6 +187,7 @@ def parse_data(filepath,ftype):
     
     
     for i in range(0,len(load_data)): 
+
         if 'origin' in load_data:
             origin_flag=1
             latitude_reference = load_data['origin']['latitude']
@@ -226,12 +229,15 @@ def parse_data(filepath,ftype):
             time_altitudezone = load_data['altitude']['timezone']
             time_altitudeoffset = load_data['altitude']['timeoffset']
 
-        if 'usbl' in load_data:
+        if 'usbl' in load_data:            
             usbl_flag=1                    
             usbl_format = load_data['usbl']['format']
-            usbl_filepath = load_data['usbl']['filepath']
+            usbl_filepath = load_data['usbl']['filepath']                        
             time_usblzone = load_data['usbl']['timezone']
             time_usbloffset = load_data['usbl']['timeoffset']
+            if usbl_format == 'usbl_dump':
+            	usbl_filename = load_data['usbl']['filename']
+            	usbl_label = load_data['usbl']['label']
 
         if 'image' in load_data:
             image_flag=1                    
@@ -239,10 +245,16 @@ def parse_data(filepath,ftype):
             image_filepath = load_data['image']['filepath']
             camera1_label = load_data['image']['camera1']
             camera2_label = load_data['image']['camera2']
+            if image_format == 'seaxerocks_3':
+            	camera3_label = load_data['image']['camera3']
             image_timezone = load_data['image']['timezone']
             image_timeoffset = load_data['image']['timeoffset']
 
-
+    print('Loading vehicle.yaml')    
+    vehicle = filepath+'vehicle.yaml'
+    with open(vehicle,'r') as stream:
+        load_data = yaml.load(stream)
+    
     # generate output path
     print('Generating output paths')    
     sub_path = filepath.split(os.sep)        
@@ -270,6 +282,7 @@ def parse_data(filepath,ftype):
 
     if ftype == 'oplab':# or (ftype is not 'acfr'):
         shutil.copy2(mission, outpath) # save mission yaml to processed directory
+        shutil.copy2(vehicle, outpath) # save mission yaml to processed directory
         outpath = outpath + 'nav'
         filename='nav_standard.json'   
         
@@ -302,32 +315,56 @@ def parse_data(filepath,ftype):
         # create file (overwrite if exists)
         with open(outpath + os.sep + filename,'w') as fileout:
             print('Loading raw data')
-            # read in, parse data and write data
-            if velocity_flag == 1:
-                if velocity_format == "phins":
-                    parse_phins(filepath + velocity_filepath,velocity_filename,'velocity',velocity_timezone,velocity_timeoffset,velocity_headingoffset,ftype,outpath,filename,fileout)
-                    velocity_flag = 0
-            if orientation_flag == 1:                
-                if orientation_format == "phins":
-                    parse_phins(filepath + orientation_filepath,orientation_filename,'orientation',time_orientationzone,time_orientationoffset,orientation_headingoffset,ftype,outpath,filename,fileout)
-                    orientation_flag = 0
-            if depth_flag == 1:                
-                if depth_format == "phins":
-                    parse_phins(filepath + depth_filepath,depth_filename,'depth',time_depthzone,time_depthoffset,0,ftype,outpath,filename,fileout)
-                    depth_flag = 0
-            if altitude_flag == 1:                
-                if altitude_format == "phins":
-                    parse_phins(filepath + altitude_filepath,altitude_filename,'altitude',time_altitudezone,0,time_altitudeoffset,ftype,outpath,filename,fileout)
-                    altitude_flag = 0
-            if usbl_flag == 1: # to implement
-                if usbl_format == "gaps":
-                    parse_gaps(filepath + usbl_filepath,'usbl',time_usblzone,time_usbloffset,latitude_reference,longitude_reference,ftype,outpath,filename,fileout)
-                    usbl_flag = 0
-            if image_flag == 1: # to implement
+	
+            if image_flag == 1:
                 if image_format == "acfr_standard" or image_format == "unagi" :
                     parse_acfr_images(filepath + image_filepath,image_format,camera1_label,camera2_label,'images',image_timezone,image_timeoffset,ftype,outpath,filename,fileout)
-                    image_flag = 0
+                if image_format == "seaxerocks_3":
+                	parse_seaxerocks_images(filepath + image_filepath,image_format,camera1_label,camera2_label,camera3_label,'images',image_timezone,image_timeoffset,ftype,outpath,filename,fileout)
+                image_flag = 0
 
+            # read in, parse data and write data
+            if usbl_flag == 1:
+                print('... loading usbl')
+                if usbl_format == "gaps":                
+                    parse_gaps(filepath + usbl_filepath,'usbl',time_usblzone,time_usbloffset,latitude_reference,longitude_reference,ftype,outpath,filename,fileout)                
+                if usbl_format == "usbl_dump":                    
+                    parse_usbl_dump(filepath + usbl_filepath,usbl_filename,usbl_label,'usbl',time_usblzone,time_usbloffset,latitude_reference,longitude_reference,ftype,outpath,filename,fileout)                
+                usbl_flag = 0
+
+            if velocity_flag == 1:
+                print('... loading velocity')
+                if velocity_format == "phins":                    
+                    parse_phins(filepath + velocity_filepath,velocity_filename,'velocity',velocity_timezone,velocity_timeoffset,velocity_headingoffset,ftype,outpath,filename,fileout)
+                if velocity_format == "ae2000":                    
+                	parse_ae2000(filepath + velocity_filepath,velocity_filename,'velocity',velocity_timezone,velocity_timeoffset,velocity_headingoffset,ftype,outpath,filename,fileout)
+                velocity_flag = 0
+
+            if orientation_flag == 1:                
+                print('... loading orientation')
+                if orientation_format == "phins":                    
+                    parse_phins(filepath + orientation_filepath,orientation_filename,'orientation',time_orientationzone,time_orientationoffset,orientation_headingoffset,ftype,outpath,filename,fileout)
+                if orientation_format == "ae2000":                    
+                    parse_ae2000(filepath + orientation_filepath,orientation_filename,'orientation',time_orientationzone,time_orientationoffset,orientation_headingoffset,ftype,outpath,filename,fileout)
+                orientation_flag = 0
+
+            if depth_flag == 1:                                
+                print('... loading depth')
+                if depth_format == "phins":    
+                    parse_phins(filepath + depth_filepath,depth_filename,'depth',time_depthzone,time_depthoffset,0,ftype,outpath,filename,fileout)
+                if depth_format == "ae2000":    
+                    parse_ae2000(filepath + depth_filepath,depth_filename,'depth',time_depthzone,time_depthoffset,0,ftype,outpath,filename,fileout)
+                depth_flag = 0
+
+            if altitude_flag == 1:                
+                print('... loading altitude')
+                if altitude_format == "phins":                    
+                    parse_phins(filepath + altitude_filepath,altitude_filename,'altitude',time_altitudezone,0,time_altitudeoffset,ftype,outpath,filename,fileout)
+                if altitude_format == "ae2000":                    
+                    parse_ae2000(filepath + altitude_filepath,altitude_filename,'altitude',time_altitudezone,0,time_altitudeoffset,ftype,outpath,filename,fileout)
+                altitude_flag = 0
+
+    
         fileout.close()
         
         #interlace the data based on timestamps
@@ -350,8 +387,9 @@ def syntax_error():
     print("         -e <path to root processed folder where parsed data exists>")    
     print("         -s <start time in utc time> hhmmss (only for extract)")
     print("         -f <finish time in utc time> hhmmss (only for extract)")
-    print("         -p <plot option> (only for extract)")
-    print("         -c <csv write option> (only for extract)")
+    print("         -p <plot option>")
+    print("         -c <csv write option>")
+    
     return -1
 
     
@@ -360,10 +398,11 @@ if __name__ == '__main__':
 
 
     # initialise flags
-    flag_i=0
-    flag_o=0
-    flag_e=0
-    flag_v=0
+    flag_i=False
+    flag_o=False
+    flag_e=False
+    flag_v=False
+    flag_f=False
 
     start_time='000000'
     finish_time='235959'
@@ -371,8 +410,9 @@ if __name__ == '__main__':
     csv_write = False
 
     
+    
     # read in filepath and ftype
-    if (int((len(sys.argv)))) < 5:
+    if (int((len(sys.argv)))) < 3:
         print('Error: not enough arguments')
         syntax_error()
     else:   
@@ -383,16 +423,16 @@ if __name__ == '__main__':
         
             if option == "-i":
                 filepath=sys.argv[i+1]
-                flag_i=1
+                flag_i=True
             if option == "-e":
                 filepath=sys.argv[i+1]
-                flag_e=1
+                flag_e=True
             if option == "-v":
                 filepath=sys.argv[i+1]
-                flag_v=1
+                flag_v=True
             if option == "-o":
                 ftype=sys.argv[i+1]
-                flag_o=1                    
+                flag_o=True                 
             if option == "-s":
                 start_time=sys.argv[i+1]
             if option == "-f":
@@ -402,16 +442,42 @@ if __name__ == '__main__':
             if option == "-c":
                 csv_write = True
 
-        if (flag_i ==1) and (flag_o ==1):
-            sys.exit(parse_data(filepath,ftype))   
-        if (flag_e ==1) and (flag_o ==1):
-            if csv_write == False and plot == False:
-                print('No extract option selected, default plot (-p) but no csv_write (-c to enable)')
-                plot = True
-            sys.exit(extract_data(filepath,ftype,start_time,finish_time,plot,csv_write))   
-        if (flag_v ==1) and (flag_o ==1):
-            sys.exit(display_info(filepath,ftype))
+        if (flag_o ==False):
+            print('No ouput option selected, default "oplab", -o "acfr" for acfr_standard')
+            ftype='oplab'
+
+        if flag_i ==True:
+            sub_path = filepath.split(os.sep)        
+            for i in range(1,len(sub_path)):
+                if sub_path[i]=='raw':
+                    flag_f = True
+            
+            if flag_f == True:
+                sys.exit(parse_data(filepath,ftype))
+            else:
+                print('Check folder structure contains "raw"')
+
+        elif flag_e==True:
+            sub_path = filepath.split(os.sep)        
+            for i in range(1,len(sub_path)):
+                if sub_path[i]=='processed':
+                    flag_f = True
+
+            if (flag_f ==True):
+                if (flag_v ==True):
+                    sys.exit(display_info(filepath,ftype))
+
+                if (flag_e ==True):
+                    if (csv_write == False) and (plot == False):
+                        print('No extract option selected, default plot (-p) but no csv_write (-c to enable)')
+                        plot = True			
+
+                    sys.exit(extract_data(filepath,ftype,start_time,finish_time,plot,csv_write))
+            else:
+           	    print('Check folder structure contains "processed"')            			            
+
         else:
+            print('Error: incorrect use')
             syntax_error()
             
         
