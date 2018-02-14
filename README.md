@@ -21,7 +21,16 @@
 
         $ python3 setup.py install
         $ python3 setup.py test
-        
+
+        Requires prettytable library which can be downloaded and installed from a terminal
+
+        $ pip3 install prettytable
+
+        or download from https://pypi.python.org/pypi/PrettyTable and go to the folder where the downloaded file is extracted and from in the extracted folder, execute the following terminal commands
+
+        $ python3 setup.py install
+        $ python3 setup.py test
+
         To push updates, stage changes, commit and push to a branch, usually master
 
         git add -A
