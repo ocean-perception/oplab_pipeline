@@ -153,7 +153,7 @@ from lib_calculus.interpolate import interpolate
 from lib_localisation.dead_reckoning import dead_reckoning
 from lib_coordinates.body_to_inertial import body_to_inertial
 from lib_extract.extract_data import extract_data
-# from lib_visualise.display_info import display_info
+from lib_visualise.display_info import display_info
 # from lib_visualise.parse_gaps import parse_gaps
 from lib_sensors.parse_phins import parse_phins
 from lib_sensors.parse_ae2000 import parse_ae2000
@@ -457,6 +457,16 @@ if __name__ == '__main__':
             else:
                 print('Check folder structure contains "raw"')
 
+        elif flag_v == True:
+            sub_path = filepath.split(os.sep)        
+            for i in range(1,len(sub_path)):
+                if sub_path[i]=='processed':
+                    flag_f = True
+            if flag_f == True:
+                sys.exit(display_info(filepath,ftype))
+            else:
+                print('Check folder structure contains "processed"')
+
         elif flag_e==True:
             sub_path = filepath.split(os.sep)        
             for i in range(1,len(sub_path)):
@@ -464,15 +474,11 @@ if __name__ == '__main__':
                     flag_f = True
 
             if (flag_f ==True):
-                if (flag_v ==True):
-                    sys.exit(display_info(filepath,ftype))
+                if (csv_write == False) and (plot == False):
+                    print('No extract option selected, default plot (-p) but no csv_write (-c to enable)')
+                    plot = True			
 
-                if (flag_e ==True):
-                    if (csv_write == False) and (plot == False):
-                        print('No extract option selected, default plot (-p) but no csv_write (-c to enable)')
-                        plot = True			
-
-                    sys.exit(extract_data(filepath,ftype,start_time,finish_time,plot,csv_write))
+                sys.exit(extract_data(filepath,ftype,start_time,finish_time,plot,csv_write))
             else:
            	    print('Check folder structure contains "processed"')            			            
 

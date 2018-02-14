@@ -106,7 +106,7 @@ class display_info:
 			# Create a table of each data 'category' and 'frame' variation, with additional approximation of how 
 			# frequent the sensors collects data through calculating the difference between the first two epoch_timestamp.
 			print ('Creating table')
-			t = PrettyTable(['Category', 'No. of data', 'Details', 'Value'])
+			t = PrettyTable(['Category', 'No. of data', 'Details', 'Sample Value'])
 			epoch_timestamp_data_points = []
 			titles = []
 			for i in full_data_list:
@@ -156,13 +156,14 @@ class display_info:
 
 			start_end_text = 'Start time is: %s (UTC), %d (epoch)\nFinish time is: %s (UTC), %d (epoch)\n' % (time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(start_time)), start_time, time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(finish_time)), finish_time)
 			
-			t.align['Value'] = 'l'
+			t.align['Sample Value'] = 'l'
 			t.hrules = ALL
 			text_file = open(outpath + 'json_data_info.txt', 'w')
 			text_file.write(start_end_text)
 			text_file.write(t.get_string())
 			text_file.close()
-
+			print (start_end_text)
+			print (t)
 			print('Outputs saved to %s' %(outpath))
 		else:
 			print('ACFR ftype to be done')
