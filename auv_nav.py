@@ -14,10 +14,11 @@
             -o <output type> 'acfr' or 'oplab'
             -v <path to root processed folder where parsed data exists>
             -e <path to root processed folder where parsed data exists>
-            -s <start time in utc time> hhmmss (only for extract)")
-            -f <finish time in utc time> hhmmss (only for extract)")                        
+            -s <start time in utc time> hhmmss (only for extract)
+            -f <finish time in utc time> hhmmss (only for extract)                      
             -p <plot option> (only for extract)
             -c <csv write option> (only for extract)
+            -showplot <showplot option> (only for extract)
 
         Arguments:
             path to the "mission.yaml" file, output format 'acfr' or 'oplab'
@@ -387,8 +388,9 @@ def syntax_error():
     print("         -e <path to root processed folder where parsed data exists>")    
     print("         -s <start time in utc time> hhmmss (only for extract)")
     print("         -f <finish time in utc time> hhmmss (only for extract)")
-    print("         -p <plot option>")
-    print("         -c <csv write option>")
+    print("         -p <plot option> (only for extract)")
+    print("         -c <csv write option> (only for extract)")
+    print("         -showplot <showplot option> (only for extract)")
     
     return -1
 
@@ -408,8 +410,7 @@ if __name__ == '__main__':
     finish_time='235959'
     plot = False
     csv_write = False
-
-    
+    show_plot = False
     
     # read in filepath and ftype
     if (int((len(sys.argv)))) < 3:
@@ -441,6 +442,8 @@ if __name__ == '__main__':
                 plot = True
             if option == "-c":
                 csv_write = True
+            if option == "-showplot":
+                show_plot = True
 
         if (flag_o ==False):
             print('No ouput option selected, default "oplab", -o "acfr" for acfr_standard')
@@ -478,7 +481,7 @@ if __name__ == '__main__':
                     print('No extract option selected, default plot (-p) but no csv_write (-c to enable)')
                     plot = True			
 
-                sys.exit(extract_data(filepath,ftype,start_time,finish_time,plot,csv_write))
+                sys.exit(extract_data(filepath,ftype,start_time,finish_time,plot,csv_write,show_plot))
             else:
            	    print('Check folder structure contains "processed"')            			            
 
