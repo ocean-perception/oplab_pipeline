@@ -65,14 +65,14 @@ class parse_seaxerocks_images:
 			for line in filein.readlines():
 				stereo_index_timestamps=line.strip().split(',')	
 
+
 				date_string = stereo_index_timestamps[1]
 				time_string = stereo_index_timestamps[2]
 				ms_time_string = stereo_index_timestamps[3]
 
 				# read in date
 				if date_string != 'date':#ignore header					
-					stereo_index.append(stereo_index_timestamps[0])
-				
+					stereo_index.append(stereo_index_timestamps[0])					
 					yyyy = int(date_string[0:4])
 					mm = int(date_string[4:6])
 					dd = int(date_string[6:8])
@@ -90,10 +90,10 @@ class parse_seaxerocks_images:
 					epoch_timestamp_stereo.append(float(epoch_time+msec/1000+timeoffset))
 					
 							
-
-		camera1_list = os.listdir(filepath+camera1_label)
-		camera2_list = os.listdir(filepath+camera2_label)
+		camera1_list = sorted(os.listdir(filepath+camera1_label))
+		camera2_list = sorted(os.listdir(filepath+camera2_label))
 		
+	
 		
 		for i in range(len(camera1_list)):
 			camera1_image=camera1_list[i].split('.')
@@ -107,8 +107,8 @@ class parse_seaxerocks_images:
 			if camera1_index[i]==stereo_index[j]:	# find corresponding timestamp even if some images are deletec			
 				epoch_timestamp_camera1.append(epoch_timestamp_stereo[j])
 				epoch_timestamp_camera2.append(epoch_timestamp_stereo[j])
-				camera1_acfr_filename.append('image' + str(camera1_index[i]) + 'FC.png')
-				camera2_acfr_filename.append('image' + str(camera2_index[i]) + 'AC.png')
+				camera1_acfr_filename.append('image' + str(camera1_index[i]) + '_FC.png')
+				camera2_acfr_filename.append('image' + str(camera2_index[i]) + '_AC.png')
 				j=j+1
 			elif stereo_index[j] > camera1_index[i]:
 				j=j+1
@@ -117,7 +117,6 @@ class parse_seaxerocks_images:
 		
 		camera1_filename = [ line for line in camera1_list]
 		camera2_filename = [ line for line in camera2_list]
-
 
 		for i in range(len(camera1_list)):
 			if ftype == 'acfr':	
@@ -128,9 +127,7 @@ class parse_seaxerocks_images:
 
 			if ftype == 'oplab':					
 				data = {'epoch_timestamp': float(epoch_timestamp_camera1[i]), 'class': class_string, 'sensor': sensor_string, 'frame': frame_string, 'category': category_stereo, 'camera1': [{'epoch_timestamp': float(epoch_timestamp_camera1[i]), 'filename': str(camera1_label+'/'+camera1_filename[i])}], 'camera2':  [{'epoch_timestamp': float(epoch_timestamp_camera2[i]), 'filename': str(camera2_label+'/'+camera2_filename[i])}]}
-				data_list.append(data)
-				
-		
+					
 
 		with codecs.open(filepath+camera3_label+'/'+'FileTime.csv','r',encoding='utf-8', errors='ignore') as filein:
 			for line in filein.readlines():
@@ -163,7 +160,7 @@ class parse_seaxerocks_images:
 		
 		for i in range(len(camera3_list)): 
 			if '.csv' not in camera3_list[i]:				
-				images_filenames=os.listdir(filepath+camera3_label+'/'+camera3_list[i])
+				images_filenames=sorted(os.listdir(filepath+camera3_label+'/'+camera3_list[i]))
 				for j in range(len(images_filenames)):
 					camera3_filename.append(camera3_list[i]+'/'+images_filenames[j])
 					camera3_image=images_filenames[j].split('.')
