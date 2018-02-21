@@ -50,10 +50,11 @@
             -o <output type> 'acfr' or 'oplab'
             -v <path to root processed folder where parsed data exists>
             -e <path to root processed folder where parsed data exists>
-            -s <start time in utc time> hhmmss (only for extract)")
-            -f <finish time in utc time> hhmmss (only for extract)")                        
+            -s <start time in utc time> hhmmss (only for extract)
+            -f <finish time in utc time> hhmmss (only for extract)
             -p <plot option> (only for extract)
             -c <csv write option> (only for extract)
+            -showplot <showplot option> (only for extract)
 
 
         Arguments:

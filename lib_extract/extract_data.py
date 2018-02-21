@@ -14,7 +14,6 @@ import time, codecs
 import operator
 #import hashlib, glob
 
-
 import matplotlib.pyplot as plt
 
 from datetime import datetime
@@ -26,10 +25,12 @@ from lib_localisation.usbl_offset import usbl_offset
 from lib_coordinates.body_to_inertial import body_to_inertial
 
 class extract_data:
-    def __init__(self,filepath,ftype,start_time,finish_time,plot,csv_write):
+    def __init__(self,filepath,ftype,start_time,finish_time,plot,csv_write,show_plot):
 
         interpolate_remove_flag = False
-        show_plot = True
+
+        epoch_start_time = 0
+        epoch_finish_time = 0
 
     # velocity body placeholders (DVL)
         time_velocity_body=[]
@@ -117,7 +118,7 @@ class extract_data:
         filename_camera2=[]
         time_camera3=[]
         filename_camera3=[]
-    # placeholders for DR relative to left camera
+    # placeholders for DR relative to camera1
         camera1_dead_reckoning_northings=[]
         camera1_dead_reckoning_eastings=[]
         camera1_dead_reckoning_depth=[]
@@ -448,7 +449,6 @@ class extract_data:
             eastings_dead_reckoning.append(0)
             depth_dead_reckoning.append(0)
 
-            ###still need this? maybe plot it compare to time_altitude and depth etc.
             while time_orientation[i]>time_altitude[n+1] and n<len(time_altitude)-1:
                 n += 1
             
@@ -489,6 +489,7 @@ class extract_data:
             del north_velocity_inertia_dvl[0]
             del east_velocity_inertia_dvl[0]
             del down_velocity_inertia_dvl[0]
+            del altitude_interpolated[0]
             del northings_dead_reckoning[0]
             del eastings_dead_reckoning[0]
             del depth_dead_reckoning[0]
@@ -613,11 +614,11 @@ class extract_data:
                     print("Warning:",e)
 
             with open(csvpath + os.sep + 'camera1.csv' ,'w') as fileout:
-                fileout.write('filename, northings(m), eastings(m), depth(m), roll, pitch, yaw\n')
+                fileout.write('Imagefilename, Northing [m], Easting [m], Depth [m], Roll [deg], Pitch [deg], Heading [deg], Altitude [m]\n')
             for i in range(len(time_camera1)):
                 with open(csvpath + os.sep + 'camera1.csv' ,'a') as fileout:
                     try:
-                        fileout.write(str(filename_camera1[i])+','+str(camera1_dead_reckoning_northings[i])+','+str(camera1_dead_reckoning_eastings[i])+','+str(camera1_dead_reckoning_depth[i])+','+str(camera1_roll[i])+','+str(camera1_pitch[i])+','+str(camera1_yaw[i])+'\n')
+                        fileout.write(str(filename_camera1[i])+','+str(camera1_dead_reckoning_northings[i])+','+str(camera1_dead_reckoning_eastings[i])+','+str(camera1_dead_reckoning_depth[i])+','+str(camera1_roll[i])+','+str(camera1_pitch[i])+','+str(camera1_yaw[i])+','+str(altitude_interpolated[i])+'\n')
                         fileout.close()
                     except IndexError:
                         break
@@ -874,7 +875,6 @@ class extract_data:
             plt.savefig(plotpath + os.sep + 'dead_reckoning_eastings_time.pdf', dpi=600, bbox_inches='tight')
             plt.close() 
 
-
             print('Complete plot data: ', plotpath)
 
         # camera1_dead_reckoning
@@ -961,7 +961,6 @@ class extract_data:
                 plt.show()
             plt.close()
 
-            print('Complete plot data: ', plotpath)         
+            print('Complete plot data: ', plotpath)        
 
         print('Completed data extraction: ', renavpath)
-        
