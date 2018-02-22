@@ -321,7 +321,7 @@ def parse_data(filepath,ftype):
                 if image_format == "acfr_standard" or image_format == "unagi" :
                     parse_acfr_images(filepath + image_filepath,image_format,camera1_label,camera2_label,'images',image_timezone,image_timeoffset,ftype,outpath,filename,fileout)
                 if image_format == "seaxerocks_3":
-                	parse_seaxerocks_images(filepath + image_filepath,image_format,camera1_label,camera2_label,camera3_label,'images',image_timezone,image_timeoffset,ftype,outpath,filename,fileout)
+                	parse_seaxerocks_images(filepath + image_filepath,image_format,date,camera1_label,camera2_label,camera3_label,'images',image_timezone,image_timeoffset,ftype,outpath,filename,fileout)
                 image_flag = 0
 
             # read in, parse data and write data
