@@ -1,3 +1,7 @@
+                
+
+
+
 # parse_seaxerocks_images
 
 # Scripts to parse sexerocks image acquisition data
@@ -12,7 +16,7 @@ from datetime import datetime
 #http://www.json.org/
 
 class parse_seaxerocks_images:
-	def __init__(self, filepath, sensor_string, camera1_label, camera2_label, camera3_label, category, timezone, timeoffset, ftype, outpath, fileoutname, fileout):
+	def __init__(self, filepath, sensor_string, date, camera1_label, camera2_label, camera3_label, category, timezone, timeoffset, ftype, outpath, fileoutname, fileout):
 
 		# parser meta data
 		class_string = 'measurement'
@@ -32,8 +36,6 @@ class parse_seaxerocks_images:
 		camera1_index = []
 		camera2_index = []
 		camera3_index = []
-		camera1_acfr_filename = []
-		camera2_acfr_filename = []
 		camera1_filename = []
 		camera2_filename = []
 		camera3_filename = []
@@ -107,22 +109,24 @@ class parse_seaxerocks_images:
 			if camera1_index[i]==stereo_index[j]:	# find corresponding timestamp even if some images are deletec			
 				epoch_timestamp_camera1.append(epoch_timestamp_stereo[j])
 				epoch_timestamp_camera2.append(epoch_timestamp_stereo[j])
-				camera1_acfr_filename.append('image' + str(camera1_index[i]) + '_FC.png')
-				camera2_acfr_filename.append('image' + str(camera2_index[i]) + '_AC.png')
+				if ftype == 'acfr':					
+					camera1_filename.append('sx3_' + date[2:4] + date[5:7] + date[8:10] + '_image' + str(camera1_index[i]) + '_FC.png')
+					camera2_filename.append('sx3_' + date[2:4] + date[5:7] + date[8:10] + '_image' + str(camera2_index[i]) + '_AC.png')
 				j=j+1
 			elif stereo_index[j] > camera1_index[i]:
 				j=j+1
 			else:
 				j=j-1
 		
-		camera1_filename = [ line for line in camera1_list]
-		camera2_filename = [ line for line in camera2_list]
+		if ftype == 'oplab':
+			camera1_filename = [ line for line in camera1_list]
+			camera2_filename = [ line for line in camera2_list]
 
 		for i in range(len(camera1_list)):
 			if ftype == 'acfr':	
-				data = 'VIS: ' + str(float(epoch_timestamp_camera1[i])) + ' [' + str(float(epoch_timestamp_camera1[i])) + '] ' + str(camera1_acfr_filename[i]) + ' exp: 0\n'
+				data = 'VIS: ' + str(float(epoch_timestamp_camera1[i])) + ' [' + str(float(epoch_timestamp_camera1[i])) + '] ' + str(camera1_filename[i]) + ' exp: 0\n'
 				fileout.write(data)
-				data = 'VIS: ' + str(float(epoch_timestamp_camera2[i])) + ' [' + str(float(epoch_timestamp_camera2[i])) + '] ' + str(camera2_acfr_filename[i]) + ' exp: 0\n'
+				data = 'VIS: ' + str(float(epoch_timestamp_camera2[i])) + ' [' + str(float(epoch_timestamp_camera2[i])) + '] ' + str(camera2_filename[i]) + ' exp: 0\n'
 				fileout.write(data)
 
 			if ftype == 'oplab':					
