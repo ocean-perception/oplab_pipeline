@@ -30,6 +30,7 @@ class parse_gaps:
 
 		# gaps std models
 		distance_std_factor = 0.6/100 # usbl catalogue gaps spec
+		broken_packet_flag = False
 
 		# read in timezone
 		if isinstance(timezone, str):			
@@ -41,7 +42,7 @@ class parse_gaps:
 			try:
 				timezone_offset=float(timezone)
 			except ValueError:
-				print('Error: timezone', timezone, 'in mission.cfg not recognised, please enter value from UTC in hours')
+				print('Error: timezone', timezone, 'in mission.yaml not recognised, please enter value from UTC in hours')
 				return
 
 		# convert to seconds from utc
@@ -56,13 +57,14 @@ class parse_gaps:
 		data_list=[]
 		for i in range(len(gaps_list)):
 			path_gaps = filepath + os.sep + gaps_list[i]
-			with open(path_gaps) as gaps:
+			
+			with open(path_gaps, errors = 'ignore') as gaps:
 				# initialise flag				
 				flag_got_time = 0
 				for line in gaps.readlines():
 					line_split = line.strip().split('*') 
 					line_split_no_checksum = line_split[0].strip().split(',')
-					
+					broken_packet_flag = False
 					#print(line_split_no_checksum)
 					# keep on upating ship position to find the prior interpolation value of ship coordinates
 					if line_split_no_checksum[0] == header_absolute:
@@ -80,7 +82,13 @@ class parse_gaps:
 								hour=int(time_string[0:2])
 								mins=int(time_string[2:4])
 								secs=int(time_string[4:6])
-								msec=int(time_string[7:10])
+
+								try:								    
+									msec=int(time_string[7:10])
+								except ValueError as verr:
+									broken_packet_flag=True
+									pass
+
 
 								dt_obj = datetime(yyyy,mm,dd,hour,mins,secs)
 								
@@ -117,11 +125,17 @@ class parse_gaps:
 								 # print(yyyy,mm,dd)
 								 # read in time
 								time_string=str(line_split_no_checksum[2])
+								# print(time_string)
 								hour=int(time_string[0:2])
 								mins=int(time_string[2:4])
 								secs=int(time_string[4:6])
-								msec=int(time_string[7:10])
-								#print(hour,mins,secs)
+								
+								try:								    
+									msec=int(time_string[7:10])
+								except ValueError as verr:
+									broken_packet_flag=True
+									pass
+
 								dt_obj = datetime(yyyy,mm,dd,hour,mins,secs)
 								 
 								time_tuple = dt_obj.timetuple()
@@ -228,13 +242,21 @@ class parse_gaps:
 						eastings_target = math.sin(bearing_target*math.pi/180.0)*lateral_distance_target
 						northings_target = math.cos(bearing_target*math.pi/180.0)*lateral_distance_target
 
-						if ftype == 'oplab':							
-							data = {'epoch_timestamp': float(epoch_timestamp), 'class': class_string, 'sensor': sensor_string, 'frame': frame_string, 'category': category, 'data_ship': [{'latitude': float(latitude_ship), 'longitude': float(longitude_ship)}, {'northings': float(northings_ship), 'eastings': float(eastings_ship)}, {'heading': float(heading_ship)}], 'data_target': [{'latitude': float(latitude), 'latitude_std': float(latitude_std)}, {'longitude': float(longitude), 'longitude_std': float(longitude_std)}, {'northings': float(northings_target), 'northings_std': float(distance_std)}, {'eastings': float(eastings_target), 'eastings_std': float(distance_std)}, {'depth': float(depth)}]}
-							data_list.append(data)
+						if broken_packet_flag == False:																						
 
-						if ftype == 'acfr':
-							data = 'SSBL_FIX: ' + str(float(epoch_timestamp)) + ' ship_x: ' + str(float(northings_ship)) + ' ship_y: ' + str(float(eastings_ship)) + ' target_x: ' + str(float(northings_target)) + ' target_y: ' + str(float(eastings_target)) + ' target_z: ' + str(float(depth)) + ' target_hr: ' + str(float(lateral_distance)) + ' target_sr: ' + str(float(distance)) + ' target_bearing: ' + str(float(bearing)) + '\n'
-							fileout.write(data)
+							if ftype == 'oplab':							
+								data = {'epoch_timestamp': float(epoch_timestamp), 'class': class_string, 'sensor': sensor_string, 'frame': frame_string, 'category': category, 'data_ship': [{'latitude': float(latitude_ship), 'longitude': float(longitude_ship)}, {'northings': float(northings_ship), 'eastings': float(eastings_ship)}, {'heading': float(heading_ship)}], 'data_target': [{'latitude': float(latitude), 'latitude_std': float(latitude_std)}, {'longitude': float(longitude), 'longitude_std': float(longitude_std)}, {'northings': float(northings_target), 'northings_std': float(distance_std)}, {'eastings': float(eastings_target), 'eastings_std': float(distance_std)}, {'depth': float(depth)}]}
+								data_list.append(data)
+
+							if ftype == 'acfr':
+								data = 'SSBL_FIX: ' + str(float(epoch_timestamp)) + ' ship_x: ' + str(float(northings_ship)) + ' ship_y: ' + str(float(eastings_ship)) + ' target_x: ' + str(float(northings_target)) + ' target_y: ' + str(float(eastings_target)) + ' target_z: ' + str(float(depth)) + ' target_hr: ' + str(float(lateral_distance)) + ' target_sr: ' + str(float(distance)) + ' target_bearing: ' + str(float(bearing)) + '\n'
+								fileout.write(data)
+
+						else:
+	 					    print('Warning: Badly formatted packet (GAPS TIME)')
+	 					    print(line)
+	 					    print('Moving on')
+								#print(hour,mins,secs)
 
 						# reset flag						
 						flag_got_time = 0
