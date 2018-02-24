@@ -1,7 +1,3 @@
-                
-
-
-
 # parse_seaxerocks_images
 
 # Scripts to parse sexerocks image acquisition data
