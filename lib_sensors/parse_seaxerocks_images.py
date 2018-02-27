@@ -126,8 +126,8 @@ class parse_seaxerocks_images:
 				fileout.write(data)
 
 			if ftype == 'oplab':					
-				data = {'epoch_timestamp': float(epoch_timestamp_camera1[i]), 'class': class_string, 'sensor': sensor_string, 'frame': frame_string, 'category': category_stereo, 'camera1': [{'epoch_timestamp': float(epoch_timestamp_camera1[i]), 'filename': str(camera1_label+'/'+camera1_filename[i])}], 'camera2':  [{'epoch_timestamp': float(epoch_timestamp_camera2[i]), 'filename': str(camera2_label+'/'+camera2_filename[i])}]}
-				fileout.write(data)
+				data = {'epoch_timestamp': float(epoch_timestamp_camera1[i]), 'class': class_string, 'sensor': sensor_string, 'frame': frame_string, 'category': category_stereo, 'camera1': [{'epoch_timestamp': float(epoch_timestamp_camera1[i]), 'filename': str(camera1_label+'/'+camera1_filename[i])}], 'camera2':  [{'epoch_timestamp': float(epoch_timestamp_camera2[i]), 'filename': str(camera2_label+'/'+camera2_filename[i])}]}				
+				data_list.append(data)
 				
 
 		with codecs.open(filepath+camera3_label+'/'+'FileTime.csv','r',encoding='utf-8', errors='ignore') as filein:

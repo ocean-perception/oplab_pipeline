@@ -133,6 +133,21 @@ class parse_ae2000:
 									# write out in the required format interlace at end											
 								data = {'epoch_timestamp': float(epoch_timestamp),'class': class_string,'sensor':sensor_string,'frame':frame_string,'category': category,'data': [{'heading':float(heading),'heading_std':float(heading_std)},{'roll':float(roll),'roll_std':float(roll_std)},{'pitch':float(pitch),'pitch_std':float(pitch_std)}]}											
 								data_list.append(data)
+
+								frame_string = 'body'
+								sub_category = 'angular_rate'
+
+								roll_rate=float(line_split[5])
+								pitch_rate=float(line_split[6])
+								heading_rate=float(line_split[7])
+
+								heading_rate_std=-9999
+								roll_rate_std=-9999
+								pitch_rate_std=-9999
+
+								data = {'epoch_timestamp': float(epoch_timestamp),'class': class_string,'sensor':sensor_string,'frame':frame_string,'category': sub_category,'data': [{'heading_rate':float(heading_rate),'heading_rate_std':float(heading_rate_std)},{'roll_rate':float(roll_rate),'roll_rate_std':float(roll_rate_std)},{'pitch_rate':float(pitch_rate),'pitch_rate_std':float(pitch_rate_std)}]}									
+								data_list.append(data)
+
 												
 							if category == 'depth':
 								frame_string = 'inertial'

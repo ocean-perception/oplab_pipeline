@@ -317,12 +317,7 @@ def parse_data(filepath,ftype):
         with open(outpath + os.sep + filename,'w') as fileout:
             print('Loading raw data')
 	
-            if image_flag == 1:
-                if image_format == "acfr_standard" or image_format == "unagi" :
-                    parse_acfr_images(filepath + image_filepath,image_format,camera1_label,camera2_label,'images',image_timezone,image_timeoffset,ftype,outpath,filename,fileout)
-                if image_format == "seaxerocks_3":
-                	parse_seaxerocks_images(filepath + image_filepath,image_format,date,camera1_label,camera2_label,camera3_label,'images',image_timezone,image_timeoffset,ftype,outpath,filename,fileout)
-                image_flag = 0
+
 
             # read in, parse data and write data
             if usbl_flag == 1:
@@ -364,7 +359,12 @@ def parse_data(filepath,ftype):
                 if altitude_format == "ae2000":                    
                     parse_ae2000(filepath + altitude_filepath,altitude_filename,'altitude',time_altitudezone,0,time_altitudeoffset,ftype,outpath,filename,fileout)
                 altitude_flag = 0
-
+            if image_flag == 1:
+                if image_format == "acfr_standard" or image_format == "unagi" :
+                    parse_acfr_images(filepath + image_filepath,image_format,camera1_label,camera2_label,'images',image_timezone,image_timeoffset,ftype,outpath,filename,fileout)
+                if image_format == "seaxerocks_3":
+                    parse_seaxerocks_images(filepath + image_filepath,image_format,date,camera1_label,camera2_label,camera3_label,'images',image_timezone,image_timeoffset,ftype,outpath,filename,fileout)
+                image_flag = 0
     
         fileout.close()
         
@@ -456,7 +456,7 @@ if __name__ == '__main__':
                     flag_f = True
             
             if flag_f == True:
-                sys.exit(parse_data(filepath,ftype))
+                parse_data(filepath,ftype)
             else:
                 print('Check folder structure contains "raw"')
 
@@ -466,7 +466,7 @@ if __name__ == '__main__':
                 if sub_path[i]=='processed':
                     flag_f = True
             if flag_f == True:
-                sys.exit(display_info(filepath,ftype))
+                display_info(filepath,ftype)
             else:
                 print('Check folder structure contains "processed"')
 
@@ -481,7 +481,7 @@ if __name__ == '__main__':
                     print('No extract option selected, default plot (-p) but no csv_write (-c to enable)')
                     plot = True			
 
-                sys.exit(extract_data(filepath,ftype,start_time,finish_time,plot,csv_write,show_plot))
+                extract_data(filepath,ftype,start_time,finish_time,plot,csv_write,show_plot)
             else:
            	    print('Check folder structure contains "processed"')            			            
 
