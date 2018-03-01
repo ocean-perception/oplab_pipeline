@@ -224,7 +224,7 @@ class parse_phins:
 										
 
 									if category == 'orientation':
-										frame_string = 'inertial'
+										frame_string = 'body'
 										if line_split_no_checksum[0] == header_heading:
 											heading=float(line_split_no_checksum[1]) # phins +ve clockwise so no need to change
 											flag_got_time = flag_got_time + 1
