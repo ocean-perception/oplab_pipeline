@@ -48,14 +48,13 @@
         auv_nav.py <options>
             -i <path to mission.yaml>
             -o <output type> 'acfr' or 'oplab'
-            -v <path to root processed folder where parsed data exists>
-            -e <path to root processed folder where parsed data exists>
-            -s <start time in utc time> hhmmss (only for extract)
-            -f <finish time in utc time> hhmmss (only for extract)
-            -p <plot option> (only for extract)
-            -c <csv write option> (only for extract)
+            -v <path to root processed folder where parsed data exists> to generate brief visualization summaries for json file data
+            -e <path to root processed folder where parsed data exists> to extract useful info from json file data
+            -start <start time in utc time> hhmmss (only for extract)
+            -finish <finish time in utc time> hhmmss (only for extract)                      
+            -plot <plot option> (only for extract)
+            -csv <csv write option> (only for extract)
             -showplot <showplot option> (only for extract)
-
 
         Arguments:
             path to the "mission.yaml" file, output format 'acfr' or 'oplab'
@@ -163,7 +162,7 @@
             i.e. Body frame:
                     x-direction: +ve aft to fore
                     y-direction: +ve port to starboard
-                    z-direction: +ve bottom to top
+                    z-direction: +ve top to bottom
             i.e. Intertial frame:
                     north-direction: +ve north
                     east-direction: +ve east

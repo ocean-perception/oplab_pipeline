@@ -12,12 +12,12 @@
         auv_nav.py <options>
             -i <path to mission.yaml>
             -o <output type> 'acfr' or 'oplab'
-            -v <path to root processed folder where parsed data exists>
-            -e <path to root processed folder where parsed data exists>
-            -s <start time in utc time> hhmmss (only for extract)
-            -f <finish time in utc time> hhmmss (only for extract)                      
-            -p <plot option> (only for extract)
-            -c <csv write option> (only for extract)
+            -v <path to root processed folder where parsed data exists> to generate brief visualization summaries for json file data
+            -e <path to root processed folder where parsed data exists> to extract useful info from json file data
+            -start <start time in utc time> hhmmss (only for extract)
+            -finish <finish time in utc time> hhmmss (only for extract)                      
+            -plot <plot option> (only for extract)
+            -csv <csv write option> (only for extract)
             -showplot <showplot option> (only for extract)
 
         Arguments:
@@ -127,7 +127,7 @@
             i.e. Body frame:
                     x-direction: +ve aft to fore
                     y-direction: +ve port to starboard
-                    z-direction: +ve bottom to top
+                    z-direction: +ve top to bottom
             i.e. inertial frame:
                     north-direction: +ve north
                     east-direction: +ve east
@@ -237,8 +237,8 @@ def parse_data(filepath,ftype):
             time_usblzone = load_data['usbl']['timezone']
             time_usbloffset = load_data['usbl']['timeoffset']
             if usbl_format == 'usbl_dump':
-            	usbl_filename = load_data['usbl']['filename']
-            	usbl_label = load_data['usbl']['label']
+                usbl_filename = load_data['usbl']['filename']
+                usbl_label = load_data['usbl']['label']
 
         if 'image' in load_data:
             image_flag=1                    
@@ -247,7 +247,7 @@ def parse_data(filepath,ftype):
             camera1_label = load_data['image']['camera1']
             camera2_label = load_data['image']['camera2']
             if image_format == 'seaxerocks_3':
-            	camera3_label = load_data['image']['camera3']
+                camera3_label = load_data['image']['camera3']
             image_timezone = load_data['image']['timezone']
             image_timeoffset = load_data['image']['timeoffset']
 
@@ -316,11 +316,8 @@ def parse_data(filepath,ftype):
         # create file (overwrite if exists)
         with open(outpath + os.sep + filename,'w') as fileout:
             print('Loading raw data')
-	
-
-
+    
             # read in, parse data and write data
-
             if image_flag == 1:
                 if image_format == "acfr_standard" or image_format == "unagi" :
                     parse_acfr_images(filepath + image_filepath,image_format,camera1_label,camera2_label,'images',image_timezone,image_timeoffset,ftype,outpath,filename,fileout)
@@ -341,7 +338,7 @@ def parse_data(filepath,ftype):
                 if velocity_format == "phins":                    
                     parse_phins(filepath + velocity_filepath,velocity_filename,'velocity',velocity_timezone,velocity_timeoffset,velocity_headingoffset,ftype,outpath,filename,fileout)
                 if velocity_format == "ae2000":                    
-                	parse_ae2000(filepath + velocity_filepath,velocity_filename,'velocity',velocity_timezone,velocity_timeoffset,velocity_headingoffset,ftype,outpath,filename,fileout)
+                    parse_ae2000(filepath + velocity_filepath,velocity_filename,'velocity',velocity_timezone,velocity_timeoffset,velocity_headingoffset,ftype,outpath,filename,fileout)
                 velocity_flag = 0
 
             if orientation_flag == 1:                
@@ -367,7 +364,6 @@ def parse_data(filepath,ftype):
                 if altitude_format == "ae2000":                    
                     parse_ae2000(filepath + altitude_filepath,altitude_filename,'altitude',time_altitudezone,0,time_altitudeoffset,ftype,outpath,filename,fileout)
                 altitude_flag = 0
-
     
         fileout.close()
         
@@ -387,12 +383,12 @@ def syntax_error():
     print("     auv_nav.py <options>")
     print("         -i <path to mission.yaml>")
     print("         -o <output type> 'acfr' or 'oplab'")
-    print("         -v <path to root processed folder where parsed data exists>")
-    print("         -e <path to root processed folder where parsed data exists>")    
-    print("         -s <start time in utc time> hhmmss (only for extract)")
-    print("         -f <finish time in utc time> hhmmss (only for extract)")
-    print("         -p <plot option> (only for extract)")
-    print("         -c <csv write option> (only for extract)")
+    print("         -v <path to root processed folder where parsed data exists> to generate brief visualization summaries for json file data")
+    print("         -e <path to root processed folder where parsed data exists> to extract useful info from json file data")    
+    print("         -start <start time in utc time> hhmmss (only for extract)")
+    print("         -finish <finish time in utc time> hhmmss (only for extract)")
+    print("         -plot <plot option> (only for extract)")
+    print("         -csv <csv write option> (only for extract)")
     print("         -showplot <showplot option> (only for extract)")
     
     return -1
@@ -405,8 +401,9 @@ if __name__ == '__main__':
     # initialise flags
     flag_i=False
     flag_o=False
-    flag_e=False
     flag_v=False
+    flag_e=False
+    
     flag_f=False
 
     start_time='000000'
@@ -428,25 +425,28 @@ if __name__ == '__main__':
             if option == "-i":
                 filepath=sys.argv[i+1]
                 flag_i=True
-            if option == "-e":
-                filepath=sys.argv[i+1]
-                flag_e=True
-            if option == "-v":
+            elif option == "-o":
+                ftype=sys.argv[i+1]
+                flag_o=True    
+            elif option == "-v":
                 filepath=sys.argv[i+1]
                 flag_v=True
-            if option == "-o":
-                ftype=sys.argv[i+1]
-                flag_o=True                 
-            if option == "-s":
+            elif option == "-e":
+                filepath=sys.argv[i+1]
+                flag_e=True
+            elif option == "-start":
                 start_time=sys.argv[i+1]
-            if option == "-f":
+            elif option == "-finish":
                 finish_time=sys.argv[i+1]
-            if option == "-p":
-                plot = True
-            if option == "-c":
-                csv_write = True
-            if option == "-showplot":
-                show_plot = True
+            elif option == "-plot":
+                plot=True
+            elif option == "-csv":
+                csv_write=True
+            elif option == "-showplot":
+                show_plot=True
+            elif option[0] == '-':
+                print('Error: incorrect use')
+                sys.exit(syntax_error())
 
         if (flag_o ==False):
             print('No ouput option selected, default "oplab", -o "acfr" for acfr_standard')
@@ -457,7 +457,6 @@ if __name__ == '__main__':
             for i in range(1,len(sub_path)):
                 if sub_path[i]=='raw':
                     flag_f = True
-            
             if flag_f == True:
                 parse_data(filepath,ftype)
             else:
@@ -478,18 +477,14 @@ if __name__ == '__main__':
             for i in range(1,len(sub_path)):
                 if sub_path[i]=='processed':
                     flag_f = True
-
             if (flag_f ==True):
                 if (csv_write == False) and (plot == False):
-                    print('No extract option selected, default plot (-p) but no csv_write (-c to enable)')
-                    plot = True			
-
+                    print('No extract option selected, default plot (-p) enabled but without csv_write -> type (-csv) to enable')
+                    plot = True
                 extract_data(filepath,ftype,start_time,finish_time,plot,csv_write,show_plot)
             else:
-           	    print('Check folder structure contains "processed"')            			            
+                print('Check folder structure contains "processed"')                                    
 
         else:
             print('Error: incorrect use')
             syntax_error()
-            
-        

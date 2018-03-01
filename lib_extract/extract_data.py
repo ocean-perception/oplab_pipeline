@@ -1,5 +1,7 @@
 # extract_data
 
+# Assumes filename_camera of 1, 2, and 3 contains the image number between the last 11 and 4 characters for appropriate csv pose estimate files output. e.g. 'Xviii/Cam51707923/0094853.raw'
+
 # Scripts to extract data from nav_standard.json, and combined.auv.raw an save csv files and, if plot is True, save plots
 
 # Author: Blair Thornton
@@ -15,6 +17,7 @@ import operator
 #import hashlib, glob
 
 import matplotlib.pyplot as plt
+from matplotlib.widgets import Slider
 
 from datetime import datetime
 
@@ -111,20 +114,36 @@ class extract_data:
         northings_std_usbl=[]
         eastings_std_usbl=[]
 
-    # camera placeholders
+    # camera1 placeholders
         time_camera1=[]
         filename_camera1=[]
-        time_camera2=[]
-        filename_camera2=[]
-        time_camera3=[]
-        filename_camera3=[]
-    # placeholders for DR relative to camera1
         camera1_dead_reckoning_northings=[]
         camera1_dead_reckoning_eastings=[]
         camera1_dead_reckoning_depth=[]
         camera1_roll=[]
         camera1_pitch=[]
         camera1_yaw=[]
+        camera1_altitude=[]
+    # camera2 placeholders
+        time_camera2=[]
+        filename_camera2=[]
+        camera2_dead_reckoning_northings=[]
+        camera2_dead_reckoning_eastings=[]
+        camera2_dead_reckoning_depth=[]
+        camera2_roll=[]
+        camera2_pitch=[]
+        camera2_yaw=[]
+        camera2_altitude=[]
+    # camera3 placeholders
+        time_camera3=[]
+        filename_camera3=[]
+        camera3_dead_reckoning_northings=[]
+        camera3_dead_reckoning_eastings=[]
+        camera3_dead_reckoning_depth=[]
+        camera3_roll=[]
+        camera3_pitch=[]
+        camera3_yaw=[]
+        camera3_altitude=[]
         
     # OPLAB
         if ftype == 'oplab':# or (ftype is not 'acfr'):
@@ -154,12 +173,40 @@ class extract_data:
             with open(vehicle,'r') as stream:
                 load_data = yaml.load(stream)
         
-            for i in range(0,len(load_data)): 
-                if 'phins' in load_data:
+            for i in range(0,len(load_data)):
+                if 'origin' in load_data:
+                    origin_x_offset = load_data['origin']['x_offset']
+                    origin_y_offset = load_data['origin']['y_offset']
+                    origin_z_offset = load_data['origin']['z_offset']
+                if 'camera1' in load_data:
+                    camera1_x_offset = load_data['camera1']['x_offset']
+                    camera1_y_offset = load_data['camera1']['y_offset']
+                    camera1_z_offset = load_data['camera1']['z_offset']
+                if 'camera2' in load_data:
+                    camera2_x_offset = load_data['camera2']['x_offset']
+                    camera2_y_offset = load_data['camera2']['y_offset']
+                    camera2_z_offset = load_data['camera2']['z_offset']
+                if 'camera3' in load_data:
+                    camera3_x_offset = load_data['camera1']['x_offset']
+                    camera3_y_offset = load_data['camera1']['y_offset']
+                    camera3_z_offset = load_data['camera1']['z_offset']
+                if 'usbl' in load_data:
+                    usbl_x_offset = load_data['usbl']['x_offset']
+                    usbl_y_offset = load_data['usbl']['y_offset']
+                    usbl_z_offset = load_data['usbl']['z_offset']
+                if 'dvl' in load_data:
+                    dvl_x_offset = load_data['dvl']['x_offset']
+                    dvl_y_offset = load_data['dvl']['y_offset']
+                    dvl_z_offset = load_data['dvl']['z_offset']
+                if 'depth' in load_data:
+                    depth_x_offset = load_data['depth']['x_offset']
+                    depth_y_offset = load_data['depth']['y_offset']
+                    depth_z_offset = load_data['depth']['z_offset']
+                if 'ins' in load_data:
                     # origin_flag=1
-                    phins_x_offset = load_data['phins']['x_offset']
-                    phins_y_offset = load_data['phins']['y_offset']
-                    phins_z_offset = load_data['phins']['z_offset']
+                    ins_x_offset = load_data['ins']['x_offset']
+                    ins_y_offset = load_data['ins']['y_offset']
+                    ins_z_offset = load_data['ins']['z_offset']
             
             yyyy = int(date[0:4])
             mm =  int(date[5:7])
@@ -405,7 +452,7 @@ class extract_data:
             print('Writing outputs to: ' + renavpath)
 
 
-    # perform coordinate transformations and interpolations of state data to velocity_body time stamps
+    # perform coordinate transformations and interpolations of state data to velocity_body time stamps with sensor position offset
         #Assumes the first measurement of velocity_body is the beginning of mission. May not be robust to non-continuous measurements..any (sudden start and stop) will affect it?
         # 
         j=0        
@@ -431,6 +478,7 @@ class extract_data:
             
             time_dead_reckoning.append(time_orientation[i])
 
+            #change these to roll_dvl_dr?....
             roll_ins_dead_reckoning.append(roll[i])
             pitch_ins_dead_reckoning.append(pitch[i])
             yaw_ins_dead_reckoning.append(yaw[i])
@@ -460,6 +508,7 @@ class extract_data:
             # interpolate to find the appropriate depth for dead_reckoning
             depth_dead_reckoning[i-start_interpolate_index]=interpolate(time_orientation[i],time_depth[k-1],time_depth[k],depth[k-1],depth[k])
 
+
         j=0
         # interpolate to find the appropriate depth to compute seafloor depth for each altitude measurement
         for i in range(len(time_altitude)):        
@@ -472,8 +521,18 @@ class extract_data:
         # northings eastings dead reckoning solution
         for i in range(len(time_dead_reckoning)):
             # dead reckoning solution
-            if i>1:                    
+            if i>1:
                 [northings_dead_reckoning[i], eastings_dead_reckoning[i]]=dead_reckoning(time_dead_reckoning[i], time_dead_reckoning[i-1], north_velocity_inertia_dvl[i-1], east_velocity_inertia_dvl[i-1], northings_dead_reckoning[i-1], eastings_dead_reckoning[i-1])
+        # offset sensor to plot origin/centre of vehicle
+        eastings_dead_reckoning_dvl = []
+        northings_dead_reckoning_dvl = []
+        for i in range(len(time_dead_reckoning)):
+            eastings_dead_reckoning_dvl.append(eastings_dead_reckoning[i])
+            northings_dead_reckoning_dvl.append(northings_dead_reckoning[i])
+            [x_offset, y_offset, z_offset] = body_to_inertial(roll_ins_dead_reckoning[i], pitch_ins_dead_reckoning[i], yaw_ins_dead_reckoning[i], origin_x_offset - dvl_x_offset, origin_y_offset - dvl_y_offset, origin_z_offset - depth_z_offset)
+            northings_dead_reckoning[i] = northings_dead_reckoning[i] + x_offset
+            eastings_dead_reckoning[i] = eastings_dead_reckoning[i] + y_offset
+            depth_dead_reckoning[i] = depth_dead_reckoning[i] + z_offset
 
         #remove first term if first time_orientation is < velocity_body time
         if interpolate_remove_flag == True:
@@ -492,10 +551,13 @@ class extract_data:
             del altitude_interpolated[0]
             del northings_dead_reckoning[0]
             del eastings_dead_reckoning[0]
+            del northings_dead_reckoning_dvl[0]
+            del eastings_dead_reckoning_dvl[0]
             del depth_dead_reckoning[0]
             interpolate_remove_flag = False # reset flag
+        print('Complete interpolation and coordinate transfomations for velocity_body')
     
-    # perform interpolations of state data to velocity_inertia time stamps
+    # perform interpolations of state data to velocity_inertia time stamps (without sensor offset and correct imu to dvl flipped interpolation)
         #initialise counters for interpolation
         j=0
         k=0
@@ -552,6 +614,8 @@ class extract_data:
             del eastings_inertia_dead_reckoning[0]
             del depth_inertia_dead_reckoning[0]
             interpolate_remove_flag = False # reset flag
+        print('Complete interpolation and coordinate transfomations for velocity_inertia')
+
 
     # offset velocity body DR by initial usbl estimate
         # compare time_dead_reckoning and time_usbl
@@ -562,6 +626,9 @@ class extract_data:
             northings_dead_reckoning[i]=northings_dead_reckoning[i]+northings_usbl_interpolated
             eastings_dead_reckoning[i]=eastings_dead_reckoning[i]+eastings_usbl_interpolated
 
+            northings_dead_reckoning_dvl[i]=northings_dead_reckoning_dvl[i]+northings_usbl_interpolated
+            eastings_dead_reckoning_dvl[i]=eastings_dead_reckoning_dvl[i]+eastings_usbl_interpolated
+
     # offset velocity inertial DR by initial usbl estimate
         # compare time_velocity_inertia and time_usbl
         # find initial position offset
@@ -569,37 +636,122 @@ class extract_data:
         # offset the deadreackoning by this initial estimate
         for i in range(len(northings_inertia_dead_reckoning)):                
             northings_inertia_dead_reckoning[i]=northings_inertia_dead_reckoning[i]+northings_usbl_interpolated
-            eastings_inertia_dead_reckoning[i]=eastings_inertia_dead_reckoning[i]+eastings_usbl_interpolated
+            eastings_inertia_dead_reckoning[i]=eastings_inertia_dead_reckoning[i]+eastings_usbl_interpolated        
 
-    # perform interpolations of state data to camera time stamps
-        j=0
-        for i in range(len(time_camera1)):
-            if j>=len(time_dead_reckoning)-1:
-                break
-            while time_dead_reckoning[j] < time_camera1[i]:
-                if j+1>len(time_dead_reckoning)-1 or time_dead_reckoning[j+1]>time_camera1[-1]:
+    # perform interpolations of state data to camera1 time stamps
+        if len(time_camera1) > 1:
+            j=0
+            n=0
+            for i in range(len(time_camera1)):
+                if j>=len(time_dead_reckoning)-1:
                     break
-                j += 1
-            camera1_roll.append(interpolate(time_camera1[i],time_dead_reckoning[j-1],time_dead_reckoning[j],roll_ins_dead_reckoning[j-1],roll_ins_dead_reckoning[j]))
-            camera1_pitch.append(interpolate(time_camera1[i],time_dead_reckoning[j-1],time_dead_reckoning[j],pitch_ins_dead_reckoning[j-1],pitch_ins_dead_reckoning[j]))
-            if abs(yaw_ins_dead_reckoning[j]-yaw_ins_dead_reckoning[j-1])>180:                        
-                if yaw_ins_dead_reckoning[j]>yaw_ins_dead_reckoning[j-1]:
-                    camera1_yaw.append(interpolate(time_camera1[i],time_dead_reckoning[j-1],time_dead_reckoning[j],yaw_ins_dead_reckoning[j-1],yaw_ins_dead_reckoning[j]-360))                       
+                    #print ('Warning: dead_reckoning data less than camera data')?
+                while time_dead_reckoning[j] < time_camera1[i]:
+                    if j+1>len(time_dead_reckoning)-1 or time_dead_reckoning[j+1]>time_camera1[-1]:
+                        break
+                    j += 1
+                #if j>=1: ?
+                camera1_roll.append(interpolate(time_camera1[i],time_dead_reckoning[j-1],time_dead_reckoning[j],roll_ins_dead_reckoning[j-1],roll_ins_dead_reckoning[j]))
+                camera1_pitch.append(interpolate(time_camera1[i],time_dead_reckoning[j-1],time_dead_reckoning[j],pitch_ins_dead_reckoning[j-1],pitch_ins_dead_reckoning[j]))
+                if abs(yaw_ins_dead_reckoning[j]-yaw_ins_dead_reckoning[j-1])>180:                        
+                    if yaw_ins_dead_reckoning[j]>yaw_ins_dead_reckoning[j-1]:
+                        camera1_yaw.append(interpolate(time_camera1[i],time_dead_reckoning[j-1],time_dead_reckoning[j],yaw_ins_dead_reckoning[j-1],yaw_ins_dead_reckoning[j]-360))                       
+                    else:
+                        camera1_yaw.append(interpolate(time_camera1[i],time_dead_reckoning[j-1],time_dead_reckoning[j],yaw_ins_dead_reckoning[j-1]-360,yaw_ins_dead_reckoning[j]))    
+                    if camera1_yaw[i]<0:
+                        camera1_yaw[i]=camera1_yaw[i]+360
+                    elif camera1_yaw[i]>360:
+                        camera1_yaw[i]=camera1_yaw[i]-360  
                 else:
-                    camera1_yaw.append(interpolate(time_camera1[i],time_dead_reckoning[j-1],time_dead_reckoning[j],yaw_ins_dead_reckoning[j-1]-360,yaw_ins_dead_reckoning[j]))    
-                if camera1_yaw[i]<0:
-                    camera1_yaw[i]=camera1_yaw[i]+360
-                elif camera1_yaw[i]>360:
-                    camera1_yaw[i]=camera1_yaw[i]-360  
-            else:
-                camera1_yaw.append(interpolate(time_camera1[i],time_dead_reckoning[j-1],time_dead_reckoning[j],yaw_ins_dead_reckoning[j-1],yaw_ins_dead_reckoning[j]))
-                    
-            [x_offset,y_offset,z_offset] = body_to_inertial(camera1_roll[i],camera1_pitch[i],camera1_yaw[i],-phins_x_offset,-phins_y_offset,-phins_z_offset)
-            camera1_dead_reckoning_northings.append(interpolate(time_camera1[i],time_dead_reckoning[j-1],time_dead_reckoning[j],northings_dead_reckoning[j-1],northings_dead_reckoning[j])+x_offset)
-            camera1_dead_reckoning_eastings.append(interpolate(time_camera1[i],time_dead_reckoning[j-1],time_dead_reckoning[j],eastings_dead_reckoning[j-1],eastings_dead_reckoning[j])+y_offset)
-            camera1_dead_reckoning_depth.append(interpolate(time_camera1[i],time_dead_reckoning[j-1],time_dead_reckoning[j],depth_dead_reckoning[j-1],depth_dead_reckoning[j])+z_offset)
-    
-        print('Complete interpolation and coordinate transfomations for DR visualisation')
+                    camera1_yaw.append(interpolate(time_camera1[i],time_dead_reckoning[j-1],time_dead_reckoning[j],yaw_ins_dead_reckoning[j-1],yaw_ins_dead_reckoning[j]))
+                
+                while time_altitude[n+1]<time_camera1[i] and n<len(time_altitude)-1:
+                    n += 1
+                camera1_altitude.append(interpolate(time_camera1[i],time_altitude[n],time_altitude[n+1],altitude[n],altitude[n+1]))
+
+                [x_offset,y_offset,z_offset] = body_to_inertial(camera1_roll[i],camera1_pitch[i],camera1_yaw[i], origin_x_offset - camera1_x_offset, origin_y_offset - camera1_y_offset, origin_z_offset - camera1_z_offset)
+                
+                camera1_dead_reckoning_northings.append(interpolate(time_camera1[i],time_dead_reckoning[j-1],time_dead_reckoning[j],northings_dead_reckoning[j-1],northings_dead_reckoning[j])-x_offset)
+                camera1_dead_reckoning_eastings.append(interpolate(time_camera1[i],time_dead_reckoning[j-1],time_dead_reckoning[j],eastings_dead_reckoning[j-1],eastings_dead_reckoning[j])-y_offset)
+                camera1_dead_reckoning_depth.append(interpolate(time_camera1[i],time_dead_reckoning[j-1],time_dead_reckoning[j],depth_dead_reckoning[j-1],depth_dead_reckoning[j])-z_offset)
+        
+            print('Complete interpolation and coordinate transfomations for camera1')
+
+    # perform interpolations of state data to camera2 time stamps
+        if len(time_camera2) > 1:
+            j=0
+            n=0
+            for i in range(len(time_camera2)):
+                if j>=len(time_dead_reckoning)-1:
+                    break
+                    #print ('Warning: dead_reckoning data less than camera data')?
+                while time_dead_reckoning[j] < time_camera2[i]:
+                    if j+1>len(time_dead_reckoning)-1 or time_dead_reckoning[j+1]>time_camera2[-1]:
+                        break
+                    j += 1
+                #if j>=1: ?
+                camera2_roll.append(interpolate(time_camera2[i],time_dead_reckoning[j-1],time_dead_reckoning[j],roll_ins_dead_reckoning[j-1],roll_ins_dead_reckoning[j]))
+                camera2_pitch.append(interpolate(time_camera2[i],time_dead_reckoning[j-1],time_dead_reckoning[j],pitch_ins_dead_reckoning[j-1],pitch_ins_dead_reckoning[j]))
+                if abs(yaw_ins_dead_reckoning[j]-yaw_ins_dead_reckoning[j-1])>180:                        
+                    if yaw_ins_dead_reckoning[j]>yaw_ins_dead_reckoning[j-1]:
+                        camera2_yaw.append(interpolate(time_camera2[i],time_dead_reckoning[j-1],time_dead_reckoning[j],yaw_ins_dead_reckoning[j-1],yaw_ins_dead_reckoning[j]-360))                       
+                    else:
+                        camera2_yaw.append(interpolate(time_camera2[i],time_dead_reckoning[j-1],time_dead_reckoning[j],yaw_ins_dead_reckoning[j-1]-360,yaw_ins_dead_reckoning[j]))    
+                    if camera2_yaw[i]<0:
+                        camera2_yaw[i]=camera2_yaw[i]+360
+                    elif camera2_yaw[i]>360:
+                        camera2_yaw[i]=camera2_yaw[i]-360  
+                else:
+                    camera2_yaw.append(interpolate(time_camera2[i],time_dead_reckoning[j-1],time_dead_reckoning[j],yaw_ins_dead_reckoning[j-1],yaw_ins_dead_reckoning[j]))
+                
+                while time_altitude[n+1]<time_camera2[i] and n<len(time_altitude)-1:
+                    n += 1
+                camera2_altitude.append(interpolate(time_camera2[i],time_altitude[n],time_altitude[n+1],altitude[n],altitude[n+1]))
+
+                [x_offset,y_offset,z_offset] = body_to_inertial(camera2_roll[i],camera2_pitch[i],camera2_yaw[i], origin_x_offset - camera2_x_offset, origin_y_offset - camera2_y_offset, origin_z_offset - camera2_z_offset)
+                
+                camera2_dead_reckoning_northings.append(interpolate(time_camera2[i],time_dead_reckoning[j-1],time_dead_reckoning[j],northings_dead_reckoning[j-1],northings_dead_reckoning[j])-x_offset)
+                camera2_dead_reckoning_eastings.append(interpolate(time_camera2[i],time_dead_reckoning[j-1],time_dead_reckoning[j],eastings_dead_reckoning[j-1],eastings_dead_reckoning[j])-y_offset)
+                camera2_dead_reckoning_depth.append(interpolate(time_camera2[i],time_dead_reckoning[j-1],time_dead_reckoning[j],depth_dead_reckoning[j-1],depth_dead_reckoning[j])-z_offset)
+        
+            print('Complete interpolation and coordinate transfomations for camera1')
+
+    # perform interpolations of state data to camera3 time stamps
+        if len(time_camera3) > 1: #simplify these sections (loop through list or raise flag...)
+            j=0
+            n=0
+            for i in range(len(time_camera3)):
+                if j>=len(time_dead_reckoning)-1:
+                    break
+                while time_dead_reckoning[j] < time_camera3[i]:
+                    if j+1>len(time_dead_reckoning)-1 or time_dead_reckoning[j+1]>time_camera3[-1]:
+                        break
+                    j += 1
+                camera3_roll.append(interpolate(time_camera3[i],time_dead_reckoning[j-1],time_dead_reckoning[j],roll_ins_dead_reckoning[j-1],roll_ins_dead_reckoning[j]))
+                camera3_pitch.append(interpolate(time_camera3[i],time_dead_reckoning[j-1],time_dead_reckoning[j],pitch_ins_dead_reckoning[j-1],pitch_ins_dead_reckoning[j]))
+                if abs(yaw_ins_dead_reckoning[j]-yaw_ins_dead_reckoning[j-1])>180:                        
+                    if yaw_ins_dead_reckoning[j]>yaw_ins_dead_reckoning[j-1]:
+                        camera3_yaw.append(interpolate(time_camera3[i],time_dead_reckoning[j-1],time_dead_reckoning[j],yaw_ins_dead_reckoning[j-1],yaw_ins_dead_reckoning[j]-360))                       
+                    else:
+                        camera3_yaw.append(interpolate(time_camera3[i],time_dead_reckoning[j-1],time_dead_reckoning[j],yaw_ins_dead_reckoning[j-1]-360,yaw_ins_dead_reckoning[j]))    
+                    if camera3_yaw[i]<0:
+                        camera3_yaw[i]=camera3_yaw[i]+360
+                    elif camera3_yaw[i]>360:
+                        camera3_yaw[i]=camera3_yaw[i]-360  
+                else:
+                    camera3_yaw.append(interpolate(time_camera3[i],time_dead_reckoning[j-1],time_dead_reckoning[j],yaw_ins_dead_reckoning[j-1],yaw_ins_dead_reckoning[j]))
+                
+                while time_altitude[n+1]<time_camera3[i] and n<len(time_altitude)-1:
+                    n += 1
+                camera3_altitude.append(interpolate(time_camera3[i],time_altitude[n],time_altitude[n+1],altitude[n],altitude[n+1]))
+
+                [x_offset,y_offset,z_offset] = body_to_inertial(camera3_roll[i],camera3_pitch[i],camera3_yaw[i], origin_x_offset - camera3_x_offset, origin_y_offset - camera3_y_offset, origin_z_offset - camera3_z_offset)
+                
+                camera3_dead_reckoning_northings.append(interpolate(time_camera3[i],time_dead_reckoning[j-1],time_dead_reckoning[j],northings_dead_reckoning[j-1],northings_dead_reckoning[j])-x_offset)
+                camera3_dead_reckoning_eastings.append(interpolate(time_camera3[i],time_dead_reckoning[j-1],time_dead_reckoning[j],eastings_dead_reckoning[j-1],eastings_dead_reckoning[j])-y_offset)
+                camera3_dead_reckoning_depth.append(interpolate(time_camera3[i],time_dead_reckoning[j-1],time_dead_reckoning[j],depth_dead_reckoning[j-1],depth_dead_reckoning[j])-z_offset)
+                
+            print('Complete interpolation and coordinate transfomations for camera3')
 
     # write values out to a csv file
         # create a directory with the time stamp
@@ -613,15 +765,47 @@ class extract_data:
                 except Exception as e:
                     print("Warning:",e)
 
-            with open(csvpath + os.sep + 'camera1.csv' ,'w') as fileout:
-                fileout.write('Imagefilename, Northing [m], Easting [m], Depth [m], Roll [deg], Pitch [deg], Heading [deg], Altitude [m]\n')
-            for i in range(len(time_camera1)):
-                with open(csvpath + os.sep + 'camera1.csv' ,'a') as fileout:
-                    try:
-                        fileout.write(str(filename_camera1[i])+','+str(camera1_dead_reckoning_northings[i])+','+str(camera1_dead_reckoning_eastings[i])+','+str(camera1_dead_reckoning_depth[i])+','+str(camera1_roll[i])+','+str(camera1_pitch[i])+','+str(camera1_yaw[i])+','+str(altitude_interpolated[i])+'\n')
-                        fileout.close()
-                    except IndexError:
-                        break
+            if len(time_camera1) > 1:
+                with open(csvpath + os.sep + 'camera1.csv' ,'w') as fileout:
+                    fileout.write('Imagenumber, Northing [m], Easting [m], Depth [m], Roll [deg], Pitch [deg], Heading [deg], Altitude [m]\n')
+                for i in range(len(time_camera1)):
+                    with open(csvpath + os.sep + 'camera1.csv' ,'a') as fileout:
+                        try:
+                            imagenumber = filename_camera1[i][-11:-4]
+                            if imagenumber.isdigit():
+                                imagenumber=int(imagenumber)
+                            fileout.write(str(imagenumber)+','+str(camera1_dead_reckoning_northings[i])+','+str(camera1_dead_reckoning_eastings[i])+','+str(camera1_dead_reckoning_depth[i])+','+str(camera1_roll[i])+','+str(camera1_pitch[i])+','+str(camera1_yaw[i])+','+str(camera1_altitude[i])+'\n')
+                            fileout.close()
+                        except IndexError:
+                            break
+
+            if len(time_camera2) > 1:
+                with open(csvpath + os.sep + 'camera2.csv' ,'w') as fileout:
+                    fileout.write('Imagenumber, Northing [m], Easting [m], Depth [m], Roll [deg], Pitch [deg], Heading [deg], Altitude [m]\n')
+                for i in range(len(time_camera2)):
+                    with open(csvpath + os.sep + 'camera2.csv' ,'a') as fileout:
+                        try:
+                            imagenumber = filename_camera2[i][-11:-4]
+                            if imagenumber.isdigit():
+                                imagenumber=int(imagenumber)
+                            fileout.write(str(imagenumber)+','+str(camera2_dead_reckoning_northings[i])+','+str(camera2_dead_reckoning_eastings[i])+','+str(camera2_dead_reckoning_depth[i])+','+str(camera2_roll[i])+','+str(camera2_pitch[i])+','+str(camera2_yaw[i])+','+str(camera2_altitude[i])+'\n')
+                            fileout.close()
+                        except IndexError:
+                            break
+
+            if len(time_camera3) > 1:
+                with open(csvpath + os.sep + 'camera3.csv' ,'w') as fileout:
+                    fileout.write('Imagenumber, Northing [m], Easting [m], Depth [m], Roll [deg], Pitch [deg], Heading [deg], Altitude [m]\n')
+                for i in range(len(time_camera3)):
+                    with open(csvpath + os.sep + 'camera3.csv' ,'a') as fileout:
+                        try:
+                            imagenumber = filename_camera3[i][-11:-4]
+                            if imagenumber.isdigit():
+                                imagenumber = int(imagenumber)
+                            fileout.write(str(imagenumber)+','+str(camera3_dead_reckoning_northings[i])+','+str(camera3_dead_reckoning_eastings[i])+','+str(camera3_dead_reckoning_depth[i])+','+str(camera3_roll[i])+','+str(camera3_pitch[i])+','+str(camera3_yaw[i])+','+str(camera3_altitude[i])+'\n')
+                            fileout.close()
+                        except IndexError:
+                            break            
 
             print('Complete extraction of data: ', csvpath)
         
@@ -881,10 +1065,12 @@ class extract_data:
             fig=plt.figure(figsize=(4,3))
             ax = fig.add_subplot(111)
             ax.plot(camera1_dead_reckoning_eastings,camera1_dead_reckoning_northings,'y.',label='Camera1')
-            ax.plot(eastings_dead_reckoning,northings_dead_reckoning,'r.',label='DVL')
+            ax.plot(eastings_dead_reckoning,northings_dead_reckoning,'r.',label='Centre')
+            ax.plot(eastings_dead_reckoning_dvl,northings_dead_reckoning_dvl,'g.',label='DVL')
             ax.set_xlabel('Eastings, m')
             ax.set_ylabel('Northings, m')
-            ax.grid(True)                
+            ax.legend(loc='upper right', bbox_to_anchor=(1, -0.2))
+            ax.grid(True)   
             plt.savefig(plotpath + os.sep + 'camera1_dead_reckoning_northings_eastings.pdf', dpi=600, bbox_inches='tight')
             if show_plot==True:
                 plt.show()
@@ -961,6 +1147,29 @@ class extract_data:
                 plt.show()
             plt.close()
 
-            print('Complete plot data: ', plotpath)        
+            print('Complete plot data: ', plotpath)
+
+            #maybe plot a arrow showing vehicle heading at each step***!!
+            # if show_plot==True:
+            #     fig=plt.figure()
+            #     ax=fig.add_subplot(111)
+            #     axamp=plt.axes([0.2,0.01,0.65,0.03])
+            #     sts=Slider(axamp,'Time Stamp',0,len(time_dead_reckoning),valinit=0)#output the timestamp, anad change the gap between jumps
+            #     def update(val):
+            #         ts=sts.val
+            #         ax.clear()
+            #         xnew=[]
+            #         ynew=[]
+            #         for i in range(len(time_dead_reckoning)):
+            #             if i < ts:
+            #                 xnew.append(eastings_dead_reckoning[i])
+            #                 ynew.append(northings_dead_reckoning[i])
+            #             else:
+            #                 pass
+            #         ax.scatter(xnew,ynew)
+            #     sts.on_changed(update)
+            #     plt.show()
+            #     plt.close()
+
 
         print('Completed data extraction: ', renavpath)
