@@ -320,6 +320,14 @@ def parse_data(filepath,ftype):
 
 
             # read in, parse data and write data
+
+            if image_flag == 1:
+                if image_format == "acfr_standard" or image_format == "unagi" :
+                    parse_acfr_images(filepath + image_filepath,image_format,camera1_label,camera2_label,'images',image_timezone,image_timeoffset,ftype,outpath,filename,fileout)
+                if image_format == "seaxerocks_3":
+                    parse_seaxerocks_images(filepath + image_filepath,image_format,date,camera1_label,camera2_label,camera3_label,'images',image_timezone,image_timeoffset,ftype,outpath,filename,fileout)
+                image_flag = 0
+
             if usbl_flag == 1:
                 print('... loading usbl')
                 if usbl_format == "gaps":                
@@ -359,12 +367,7 @@ def parse_data(filepath,ftype):
                 if altitude_format == "ae2000":                    
                     parse_ae2000(filepath + altitude_filepath,altitude_filename,'altitude',time_altitudezone,0,time_altitudeoffset,ftype,outpath,filename,fileout)
                 altitude_flag = 0
-            if image_flag == 1:
-                if image_format == "acfr_standard" or image_format == "unagi" :
-                    parse_acfr_images(filepath + image_filepath,image_format,camera1_label,camera2_label,'images',image_timezone,image_timeoffset,ftype,outpath,filename,fileout)
-                if image_format == "seaxerocks_3":
-                    parse_seaxerocks_images(filepath + image_filepath,image_format,date,camera1_label,camera2_label,camera3_label,'images',image_timezone,image_timeoffset,ftype,outpath,filename,fileout)
-                image_flag = 0
+
     
         fileout.close()
         
