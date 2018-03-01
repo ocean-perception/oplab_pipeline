@@ -112,7 +112,7 @@ class parse_ae2000:
 								data_list.append(data)											
 
 							if category == 'orientation':
-								frame_string = 'inertial'
+								frame_string = 'body'
 									
 								roll=float(line_split[2])
 								pitch=float(line_split[3])
