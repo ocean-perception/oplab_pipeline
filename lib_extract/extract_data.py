@@ -238,8 +238,8 @@ class extract_data:
                     if 'velocity' in parsed_json_data[i]['category']:
                         if 'body' in parsed_json_data[i]['frame']:
                             # confirm time stamps of dvl are aligned with main clock (within a second)
-                            if abs(parsed_json_data[i]['epoch_timestamp']-parsed_json_data[i]['epoch_timestamp_dvl']<1):
-                            
+                            # if 'epoch_timestamp_dvl' in parsed_json_data[i]:
+                            if abs(parsed_json_data[i]['epoch_timestamp']-parsed_json_data[i]['epoch_timestamp_dvl'])<1:
                                 time_velocity_body.append(parsed_json_data[i]['epoch_timestamp_dvl']) # dvl clock not necessarily synced by phins                      
                                 x_velocity.append(parsed_json_data[i]['data'][0]['x_velocity'])
                                 y_velocity.append(parsed_json_data[i]['data'][1]['y_velocity'])
@@ -247,7 +247,6 @@ class extract_data:
                                 x_velocity_std.append(parsed_json_data[i]['data'][0]['x_velocity_std'])
                                 y_velocity_std.append(parsed_json_data[i]['data'][1]['y_velocity_std'])
                                 z_velocity_std.append(parsed_json_data[i]['data'][2]['z_velocity_std'])
-
 
                         if 'inertial' in parsed_json_data[i]['frame']:
                             time_velocity_inertia.append(parsed_json_data[i]['epoch_timestamp'])
@@ -463,6 +462,9 @@ class extract_data:
         while time_orientation[start_interpolate_index]<time_velocity_body[0]:
             start_interpolate_index += 1
 
+        # if start_interpolate_index==0:
+        # do something? because time_orientation may be way before time_velocity_body
+
         if start_interpolate_index==1:
             interpolate_remove_flag = True
 
@@ -472,10 +474,9 @@ class extract_data:
             if time_orientation[i]>time_velocity_body[-1]:
                 break
 
-            while time_orientation[i]>time_velocity_body[j+1] and j<len(time_velocity_body)-1:
+            while j<len(time_velocity_body)-1 and time_orientation[i]>time_velocity_body[j+1]:
                 j += 1
 
-            
             time_dead_reckoning.append(time_orientation[i])
 
             #change these to roll_dvl_dr?....
@@ -497,13 +498,13 @@ class extract_data:
             eastings_dead_reckoning.append(0)
             depth_dead_reckoning.append(0)
 
-            while time_orientation[i]>time_altitude[n+1] and n<len(time_altitude)-1:
+            while n<len(time_altitude)-1 and time_orientation[i]>time_altitude[n+1]:
                 n += 1
             
                 # print(n,len(altitude))
             altitude_interpolated.append(interpolate(time_orientation[i],time_velocity_body[n],time_velocity_body[n+1],altitude[n],altitude[n+1]))
 
-            while time_depth[k]<time_orientation[i] and k < len(time_depth)-1:
+            while k < len(time_depth)-1 and time_depth[k]<time_orientation[i]:
                 k+= 1
             # interpolate to find the appropriate depth for dead_reckoning
             depth_dead_reckoning[i-start_interpolate_index]=interpolate(time_orientation[i],time_depth[k-1],time_depth[k],depth[k-1],depth[k])
@@ -512,7 +513,7 @@ class extract_data:
         j=0
         # interpolate to find the appropriate depth to compute seafloor depth for each altitude measurement
         for i in range(len(time_altitude)):        
-            while time_depth[j]<time_altitude[i] and j < len(time_depth)-1:
+            while j < len(time_depth)-1 and time_depth[j]<time_altitude[i]:
                 j=j+1
 
             if j>=1:                
@@ -564,7 +565,7 @@ class extract_data:
     
         for i in range(len(time_velocity_inertia)):  
                            
-            while time_orientation[j]<time_velocity_inertia[i] and j< len(time_orientation)-1:
+            while j< len(time_orientation)-1 and time_orientation[j]<time_velocity_inertia[i]:
                 j=j+1
             
             if j==1:
@@ -589,7 +590,7 @@ class extract_data:
                 else:
                     yaw_inertia_interpolated[i]=interpolate(time_velocity_inertia[i],time_orientation[j-1],time_orientation[j],yaw[j-1],yaw[j])
             
-            while time_depth[k]<time_velocity_inertia[i] and k< len(time_depth)-1:
+            while k< len(time_depth)-1 and time_depth[k]<time_velocity_inertia[i]:
                 k=k+1
 
             if k>=1:                
@@ -642,116 +643,162 @@ class extract_data:
         if len(time_camera1) > 1:
             j=0
             n=0
-            for i in range(len(time_camera1)):
-                if j>=len(time_dead_reckoning)-1:
-                    break
-                    #print ('Warning: dead_reckoning data less than camera data')?
-                while time_dead_reckoning[j] < time_camera1[i]:
-                    if j+1>len(time_dead_reckoning)-1 or time_dead_reckoning[j+1]>time_camera1[-1]:
-                        break
-                    j += 1
-                #if j>=1: ?
-                camera1_roll.append(interpolate(time_camera1[i],time_dead_reckoning[j-1],time_dead_reckoning[j],roll_ins_dead_reckoning[j-1],roll_ins_dead_reckoning[j]))
-                camera1_pitch.append(interpolate(time_camera1[i],time_dead_reckoning[j-1],time_dead_reckoning[j],pitch_ins_dead_reckoning[j-1],pitch_ins_dead_reckoning[j]))
-                if abs(yaw_ins_dead_reckoning[j]-yaw_ins_dead_reckoning[j-1])>180:                        
-                    if yaw_ins_dead_reckoning[j]>yaw_ins_dead_reckoning[j-1]:
-                        camera1_yaw.append(interpolate(time_camera1[i],time_dead_reckoning[j-1],time_dead_reckoning[j],yaw_ins_dead_reckoning[j-1],yaw_ins_dead_reckoning[j]-360))                       
+            if time_camera1[0]>time_dead_reckoning[-1] or time_camera1[-1]<time_dead_reckoning[0]: #Check if camera activates before dvl and orientation sensors.
+                print('Camera1 timestamps does not overlap with dead reckoning data, check timestamp_history.pdf via -v option.')
+            else:
+                camera1_overlap_flag = 0
+                for i in range(len(time_camera1)):
+                    if time_camera1[i]<time_dead_reckoning[0]:
+                        camera1_overlap_flag = 1
+                        pass
                     else:
-                        camera1_yaw.append(interpolate(time_camera1[i],time_dead_reckoning[j-1],time_dead_reckoning[j],yaw_ins_dead_reckoning[j-1]-360,yaw_ins_dead_reckoning[j]))    
-                    if camera1_yaw[i]<0:
-                        camera1_yaw[i]=camera1_yaw[i]+360
-                    elif camera1_yaw[i]>360:
-                        camera1_yaw[i]=camera1_yaw[i]-360  
-                else:
-                    camera1_yaw.append(interpolate(time_camera1[i],time_dead_reckoning[j-1],time_dead_reckoning[j],yaw_ins_dead_reckoning[j-1],yaw_ins_dead_reckoning[j]))
-                
-                while time_altitude[n+1]<time_camera1[i] and n<len(time_altitude)-1:
-                    n += 1
-                camera1_altitude.append(interpolate(time_camera1[i],time_altitude[n],time_altitude[n+1],altitude[n],altitude[n+1]))
+                        del time_camera1[:i]
+                        break
+                for i in range(len(time_camera1)):
+                    if j>=len(time_dead_reckoning)-1:
+                        del time_camera1[i:]
+                        camera1_overlap_flag = 1
+                        break
+                    while time_dead_reckoning[j] < time_camera1[i]:
+                        if j+1>len(time_dead_reckoning)-1 or time_dead_reckoning[j+1]>time_camera1[-1]:
+                            break
+                        j += 1
+                    #if j>=1: ?
+                    camera1_roll.append(interpolate(time_camera1[i],time_dead_reckoning[j-1],time_dead_reckoning[j],roll_ins_dead_reckoning[j-1],roll_ins_dead_reckoning[j]))
+                    camera1_pitch.append(interpolate(time_camera1[i],time_dead_reckoning[j-1],time_dead_reckoning[j],pitch_ins_dead_reckoning[j-1],pitch_ins_dead_reckoning[j]))
+                    if abs(yaw_ins_dead_reckoning[j]-yaw_ins_dead_reckoning[j-1])>180:                        
+                        if yaw_ins_dead_reckoning[j]>yaw_ins_dead_reckoning[j-1]:
+                            camera1_yaw.append(interpolate(time_camera1[i],time_dead_reckoning[j-1],time_dead_reckoning[j],yaw_ins_dead_reckoning[j-1],yaw_ins_dead_reckoning[j]-360))                       
+                        else:
+                            camera1_yaw.append(interpolate(time_camera1[i],time_dead_reckoning[j-1],time_dead_reckoning[j],yaw_ins_dead_reckoning[j-1]-360,yaw_ins_dead_reckoning[j]))    
+                        if camera1_yaw[i]<0:
+                            camera1_yaw[i]=camera1_yaw[i]+360
+                        elif camera1_yaw[i]>360:
+                            camera1_yaw[i]=camera1_yaw[i]-360  
+                    else:
+                        camera1_yaw.append(interpolate(time_camera1[i],time_dead_reckoning[j-1],time_dead_reckoning[j],yaw_ins_dead_reckoning[j-1],yaw_ins_dead_reckoning[j]))
+                    
+                    # while n<len(time_altitude)-1 and time_altitude[n+1]<time_camera1[i]:
+                    #     n += 1
+                    # camera1_altitude.append(interpolate(time_camera1[i],time_altitude[n],time_altitude[n+1],altitude[n],altitude[n+1]))
+                    camera1_altitude.append(interpolate(time_camera1[i],time_dead_reckoning[j-1],time_dead_reckoning[j],altitude_interpolated[j-1],altitude_interpolated[j]))
 
-                [x_offset,y_offset,z_offset] = body_to_inertial(camera1_roll[i],camera1_pitch[i],camera1_yaw[i], origin_x_offset - camera1_x_offset, origin_y_offset - camera1_y_offset, origin_z_offset - camera1_z_offset)
-                
-                camera1_dead_reckoning_northings.append(interpolate(time_camera1[i],time_dead_reckoning[j-1],time_dead_reckoning[j],northings_dead_reckoning[j-1],northings_dead_reckoning[j])-x_offset)
-                camera1_dead_reckoning_eastings.append(interpolate(time_camera1[i],time_dead_reckoning[j-1],time_dead_reckoning[j],eastings_dead_reckoning[j-1],eastings_dead_reckoning[j])-y_offset)
-                camera1_dead_reckoning_depth.append(interpolate(time_camera1[i],time_dead_reckoning[j-1],time_dead_reckoning[j],depth_dead_reckoning[j-1],depth_dead_reckoning[j])-z_offset)
-        
-            print('Complete interpolation and coordinate transfomations for camera1')
+                    [x_offset,y_offset,z_offset] = body_to_inertial(camera1_roll[i],camera1_pitch[i],camera1_yaw[i], origin_x_offset - camera1_x_offset, origin_y_offset - camera1_y_offset, origin_z_offset - camera1_z_offset)
+                    
+                    camera1_dead_reckoning_northings.append(interpolate(time_camera1[i],time_dead_reckoning[j-1],time_dead_reckoning[j],northings_dead_reckoning[j-1],northings_dead_reckoning[j])-x_offset)
+                    camera1_dead_reckoning_eastings.append(interpolate(time_camera1[i],time_dead_reckoning[j-1],time_dead_reckoning[j],eastings_dead_reckoning[j-1],eastings_dead_reckoning[j])-y_offset)
+                    camera1_dead_reckoning_depth.append(interpolate(time_camera1[i],time_dead_reckoning[j-1],time_dead_reckoning[j],depth_dead_reckoning[j-1],depth_dead_reckoning[j])-z_offset)
+                if camera1_overlap_flag == 1:
+                    print('Camera1 data more than dead reckoning data. Only processed overlapping data and ignored the rest.')
+                print('Complete interpolation and coordinate transfomations for camera1')
 
     # perform interpolations of state data to camera2 time stamps
         if len(time_camera2) > 1:
             j=0
             n=0
-            for i in range(len(time_camera2)):
-                if j>=len(time_dead_reckoning)-1:
-                    break
-                    #print ('Warning: dead_reckoning data less than camera data')?
-                while time_dead_reckoning[j] < time_camera2[i]:
-                    if j+1>len(time_dead_reckoning)-1 or time_dead_reckoning[j+1]>time_camera2[-1]:
-                        break
-                    j += 1
-                #if j>=1: ?
-                camera2_roll.append(interpolate(time_camera2[i],time_dead_reckoning[j-1],time_dead_reckoning[j],roll_ins_dead_reckoning[j-1],roll_ins_dead_reckoning[j]))
-                camera2_pitch.append(interpolate(time_camera2[i],time_dead_reckoning[j-1],time_dead_reckoning[j],pitch_ins_dead_reckoning[j-1],pitch_ins_dead_reckoning[j]))
-                if abs(yaw_ins_dead_reckoning[j]-yaw_ins_dead_reckoning[j-1])>180:                        
-                    if yaw_ins_dead_reckoning[j]>yaw_ins_dead_reckoning[j-1]:
-                        camera2_yaw.append(interpolate(time_camera2[i],time_dead_reckoning[j-1],time_dead_reckoning[j],yaw_ins_dead_reckoning[j-1],yaw_ins_dead_reckoning[j]-360))                       
+            if time_camera2[0]>time_dead_reckoning[-1] or time_camera2[-1]<time_dead_reckoning[0]: #Check if camera activates before dvl and orientation sensors.
+                print('Camera2 timestamps does not overlap with dead reckoning data, check timestamp_history.pdf via -v option.')
+            else:
+                camera2_overlap_flag = 0
+                for i in range(len(time_camera2)):
+                    if time_camera2[i]<time_dead_reckoning[0]:
+                        camera2_overlap_flag = 1
+                        pass
                     else:
-                        camera2_yaw.append(interpolate(time_camera2[i],time_dead_reckoning[j-1],time_dead_reckoning[j],yaw_ins_dead_reckoning[j-1]-360,yaw_ins_dead_reckoning[j]))    
-                    if camera2_yaw[i]<0:
-                        camera2_yaw[i]=camera2_yaw[i]+360
-                    elif camera2_yaw[i]>360:
-                        camera2_yaw[i]=camera2_yaw[i]-360  
-                else:
-                    camera2_yaw.append(interpolate(time_camera2[i],time_dead_reckoning[j-1],time_dead_reckoning[j],yaw_ins_dead_reckoning[j-1],yaw_ins_dead_reckoning[j]))
-                
-                while time_altitude[n+1]<time_camera2[i] and n<len(time_altitude)-1:
-                    n += 1
-                camera2_altitude.append(interpolate(time_camera2[i],time_altitude[n],time_altitude[n+1],altitude[n],altitude[n+1]))
+                        del time_camera2[:i]
+                        break
+                for i in range(len(time_camera2)):
+                    if j>=len(time_dead_reckoning)-1:
+                        del time_camera2[i:]
+                        camera2_overlap_flag = 1
+                        break
+                    while time_dead_reckoning[j] < time_camera2[i]:
+                        if j+1>len(time_dead_reckoning)-1 or time_dead_reckoning[j+1]>time_camera2[-1]:
+                            break
+                        j += 1
+                    #if j>=1: ?
+                    camera2_roll.append(interpolate(time_camera2[i],time_dead_reckoning[j-1],time_dead_reckoning[j],roll_ins_dead_reckoning[j-1],roll_ins_dead_reckoning[j]))
+                    camera2_pitch.append(interpolate(time_camera2[i],time_dead_reckoning[j-1],time_dead_reckoning[j],pitch_ins_dead_reckoning[j-1],pitch_ins_dead_reckoning[j]))
+                    if abs(yaw_ins_dead_reckoning[j]-yaw_ins_dead_reckoning[j-1])>180:                        
+                        if yaw_ins_dead_reckoning[j]>yaw_ins_dead_reckoning[j-1]:
+                            camera2_yaw.append(interpolate(time_camera2[i],time_dead_reckoning[j-1],time_dead_reckoning[j],yaw_ins_dead_reckoning[j-1],yaw_ins_dead_reckoning[j]-360))                       
+                        else:
+                            camera2_yaw.append(interpolate(time_camera2[i],time_dead_reckoning[j-1],time_dead_reckoning[j],yaw_ins_dead_reckoning[j-1]-360,yaw_ins_dead_reckoning[j]))    
+                        if camera2_yaw[i]<0:
+                            camera2_yaw[i]=camera2_yaw[i]+360
+                        elif camera2_yaw[i]>360:
+                            camera2_yaw[i]=camera2_yaw[i]-360  
+                    else:
+                        camera2_yaw.append(interpolate(time_camera2[i],time_dead_reckoning[j-1],time_dead_reckoning[j],yaw_ins_dead_reckoning[j-1],yaw_ins_dead_reckoning[j]))
+                    
+                    # while n<len(time_altitude)-1 and time_altitude[n+1]<time_camera2[i]:
+                    #     n += 1
+                    # camera2_altitude.append(interpolate(time_camera2[i],time_altitude[n],time_altitude[n+1],altitude[n],altitude[n+1]))
+                    camera2_altitude.append(interpolate(time_camera2[i],time_dead_reckoning[j-1],time_dead_reckoning[j],altitude_interpolated[j-1],altitude_interpolated[j]))
 
-                [x_offset,y_offset,z_offset] = body_to_inertial(camera2_roll[i],camera2_pitch[i],camera2_yaw[i], origin_x_offset - camera2_x_offset, origin_y_offset - camera2_y_offset, origin_z_offset - camera2_z_offset)
-                
-                camera2_dead_reckoning_northings.append(interpolate(time_camera2[i],time_dead_reckoning[j-1],time_dead_reckoning[j],northings_dead_reckoning[j-1],northings_dead_reckoning[j])-x_offset)
-                camera2_dead_reckoning_eastings.append(interpolate(time_camera2[i],time_dead_reckoning[j-1],time_dead_reckoning[j],eastings_dead_reckoning[j-1],eastings_dead_reckoning[j])-y_offset)
-                camera2_dead_reckoning_depth.append(interpolate(time_camera2[i],time_dead_reckoning[j-1],time_dead_reckoning[j],depth_dead_reckoning[j-1],depth_dead_reckoning[j])-z_offset)
-        
-            print('Complete interpolation and coordinate transfomations for camera1')
+                    [x_offset,y_offset,z_offset] = body_to_inertial(camera2_roll[i],camera2_pitch[i],camera2_yaw[i], origin_x_offset - camera2_x_offset, origin_y_offset - camera2_y_offset, origin_z_offset - camera2_z_offset)
+                    
+                    camera2_dead_reckoning_northings.append(interpolate(time_camera2[i],time_dead_reckoning[j-1],time_dead_reckoning[j],northings_dead_reckoning[j-1],northings_dead_reckoning[j])-x_offset)
+                    camera2_dead_reckoning_eastings.append(interpolate(time_camera2[i],time_dead_reckoning[j-1],time_dead_reckoning[j],eastings_dead_reckoning[j-1],eastings_dead_reckoning[j])-y_offset)
+                    camera2_dead_reckoning_depth.append(interpolate(time_camera2[i],time_dead_reckoning[j-1],time_dead_reckoning[j],depth_dead_reckoning[j-1],depth_dead_reckoning[j])-z_offset)
+                if camera2_overlap_flag == 1:
+                    print('Camera2 data more than dead reckoning data. Only processed overlapping data and ignored the rest.')
+                print('Complete interpolation and coordinate transfomations for camera2')
 
     # perform interpolations of state data to camera3 time stamps
         if len(time_camera3) > 1: #simplify these sections (loop through list or raise flag...)
             j=0
             n=0
-            for i in range(len(time_camera3)):
-                if j>=len(time_dead_reckoning)-1:
-                    break
-                while time_dead_reckoning[j] < time_camera3[i]:
-                    if j+1>len(time_dead_reckoning)-1 or time_dead_reckoning[j+1]>time_camera3[-1]:
-                        break
-                    j += 1
-                camera3_roll.append(interpolate(time_camera3[i],time_dead_reckoning[j-1],time_dead_reckoning[j],roll_ins_dead_reckoning[j-1],roll_ins_dead_reckoning[j]))
-                camera3_pitch.append(interpolate(time_camera3[i],time_dead_reckoning[j-1],time_dead_reckoning[j],pitch_ins_dead_reckoning[j-1],pitch_ins_dead_reckoning[j]))
-                if abs(yaw_ins_dead_reckoning[j]-yaw_ins_dead_reckoning[j-1])>180:                        
-                    if yaw_ins_dead_reckoning[j]>yaw_ins_dead_reckoning[j-1]:
-                        camera3_yaw.append(interpolate(time_camera3[i],time_dead_reckoning[j-1],time_dead_reckoning[j],yaw_ins_dead_reckoning[j-1],yaw_ins_dead_reckoning[j]-360))                       
+            if time_camera3[0]>time_dead_reckoning[-1] or time_camera3[-1]<time_dead_reckoning[0]: #Check if camera activates before dvl and orientation sensors.
+                print('Camera3 timestamps does not overlap with dead reckoning data, check timestamp_history.pdf via -v option.')
+            else:
+                camera3_overlap_flag = 0
+                for i in range(len(time_camera3)):
+                    if time_camera3[i]<time_dead_reckoning[0]:
+                        camera3_overlap_flag = 1
+                        pass
                     else:
-                        camera3_yaw.append(interpolate(time_camera3[i],time_dead_reckoning[j-1],time_dead_reckoning[j],yaw_ins_dead_reckoning[j-1]-360,yaw_ins_dead_reckoning[j]))    
-                    if camera3_yaw[i]<0:
-                        camera3_yaw[i]=camera3_yaw[i]+360
-                    elif camera3_yaw[i]>360:
-                        camera3_yaw[i]=camera3_yaw[i]-360  
-                else:
-                    camera3_yaw.append(interpolate(time_camera3[i],time_dead_reckoning[j-1],time_dead_reckoning[j],yaw_ins_dead_reckoning[j-1],yaw_ins_dead_reckoning[j]))
-                
-                while time_altitude[n+1]<time_camera3[i] and n<len(time_altitude)-1:
-                    n += 1
-                camera3_altitude.append(interpolate(time_camera3[i],time_altitude[n],time_altitude[n+1],altitude[n],altitude[n+1]))
+                        del time_camera3[:i]
+                        break
+                for i in range(len(time_camera3)):
+                    if j>=len(time_dead_reckoning)-1:
+                        camera3_overlap_flag = 1
+                        del time_camera3[i:]
+                        break
+                    while time_dead_reckoning[j] < time_camera3[i]:
+                        if j+1>len(time_dead_reckoning)-1 or time_dead_reckoning[j+1]>time_camera3[-1]:
+                            break
+                        j += 1
+                    camera3_roll.append(interpolate(time_camera3[i],time_dead_reckoning[j-1],time_dead_reckoning[j],roll_ins_dead_reckoning[j-1],roll_ins_dead_reckoning[j]))
+                    camera3_pitch.append(interpolate(time_camera3[i],time_dead_reckoning[j-1],time_dead_reckoning[j],pitch_ins_dead_reckoning[j-1],pitch_ins_dead_reckoning[j]))
+                    if abs(yaw_ins_dead_reckoning[j]-yaw_ins_dead_reckoning[j-1])>180:                        
+                        if yaw_ins_dead_reckoning[j]>yaw_ins_dead_reckoning[j-1]:
+                            camera3_yaw.append(interpolate(time_camera3[i],time_dead_reckoning[j-1],time_dead_reckoning[j],yaw_ins_dead_reckoning[j-1],yaw_ins_dead_reckoning[j]-360))                       
+                        else:
+                            camera3_yaw.append(interpolate(time_camera3[i],time_dead_reckoning[j-1],time_dead_reckoning[j],yaw_ins_dead_reckoning[j-1]-360,yaw_ins_dead_reckoning[j]))    
+                        if camera3_yaw[i]<0:
+                            camera3_yaw[i]=camera3_yaw[i]+360
+                        elif camera3_yaw[i]>360:
+                            camera3_yaw[i]=camera3_yaw[i]-360  
+                    else:
+                        camera3_yaw.append(interpolate(time_camera3[i],time_dead_reckoning[j-1],time_dead_reckoning[j],yaw_ins_dead_reckoning[j-1],yaw_ins_dead_reckoning[j]))
+                    
+                    # while n<len(time_altitude)-1 and time_altitude[n+1]<time_camera3[i]:
+                    #     n += 1
+                    # camera3_altitude.append(interpolate(time_camera3[i],time_altitude[n],time_altitude[n+1],altitude[n],altitude[n+1]))
 
-                [x_offset,y_offset,z_offset] = body_to_inertial(camera3_roll[i],camera3_pitch[i],camera3_yaw[i], origin_x_offset - camera3_x_offset, origin_y_offset - camera3_y_offset, origin_z_offset - camera3_z_offset)
+                    camera3_altitude.append(interpolate(time_camera3[i],time_dead_reckoning[j-1],time_dead_reckoning[j],altitude_interpolated[j-1],altitude_interpolated[j]))
+
+                    [x_offset,y_offset,z_offset] = body_to_inertial(camera3_roll[i],camera3_pitch[i],camera3_yaw[i], origin_x_offset - camera3_x_offset, origin_y_offset - camera3_y_offset, origin_z_offset - camera3_z_offset)
+                    
+                    camera3_dead_reckoning_northings.append(interpolate(time_camera3[i],time_dead_reckoning[j-1],time_dead_reckoning[j],northings_dead_reckoning[j-1],northings_dead_reckoning[j])-x_offset)
+                    camera3_dead_reckoning_eastings.append(interpolate(time_camera3[i],time_dead_reckoning[j-1],time_dead_reckoning[j],eastings_dead_reckoning[j-1],eastings_dead_reckoning[j])-y_offset)
+                    camera3_dead_reckoning_depth.append(interpolate(time_camera3[i],time_dead_reckoning[j-1],time_dead_reckoning[j],depth_dead_reckoning[j-1],depth_dead_reckoning[j])-z_offset)
                 
-                camera3_dead_reckoning_northings.append(interpolate(time_camera3[i],time_dead_reckoning[j-1],time_dead_reckoning[j],northings_dead_reckoning[j-1],northings_dead_reckoning[j])-x_offset)
-                camera3_dead_reckoning_eastings.append(interpolate(time_camera3[i],time_dead_reckoning[j-1],time_dead_reckoning[j],eastings_dead_reckoning[j-1],eastings_dead_reckoning[j])-y_offset)
-                camera3_dead_reckoning_depth.append(interpolate(time_camera3[i],time_dead_reckoning[j-1],time_dead_reckoning[j],depth_dead_reckoning[j-1],depth_dead_reckoning[j])-z_offset)
-                
-            print('Complete interpolation and coordinate transfomations for camera3')
+                if camera3_overlap_flag == 1:
+                    print('Camera3 data more than dead reckoning data. Only processed overlapping data and ignored the rest.')
+
+                print('Complete interpolation and coordinate transfomations for camera3')
 
     # write values out to a csv file
         # create a directory with the time stamp
@@ -765,7 +812,34 @@ class extract_data:
                 except Exception as e:
                     print("Warning:",e)
 
+            # For plotly+dash+pandas
+            if len(time_dead_reckoning) > 1:
+                print("Writing outputs to auv_centre.csv ...")
+                with open(csvpath + os.sep + 'auv_centre.csv' ,'w') as fileout:
+                    fileout.write('Timestamp, Northing [m], Easting [m], Depth [m], Roll [deg], Pitch [deg], Heading [deg], Altitude [m]\n')
+                for i in range(len(time_dead_reckoning)):
+                    with open(csvpath + os.sep + 'auv_centre.csv' ,'a') as fileout:
+                        try:
+                            fileout.write(str(time_dead_reckoning[i])+','+str(northings_dead_reckoning[i])+','+str(eastings_dead_reckoning[i])+','+str(depth_dead_reckoning[i])+','+str(roll_ins_dead_reckoning[i])+','+str(pitch_ins_dead_reckoning[i])+','+str(yaw_ins_dead_reckoning[i])+','+str(altitude_interpolated[i])+'\n')
+                            fileout.close()
+                        except IndexError:
+                            break
+
+            # For plotly+dash+pandas
+            if len(time_usbl) > 1:
+                print("Writing outputs to usbl.csv ...")
+                with open(csvpath + os.sep + 'usbl.csv' ,'w') as fileout:
+                    fileout.write('Timestamp, Northing [m], Easting [m], Depth [m]\n')
+                for i in range(len(time_usbl)):
+                    with open(csvpath + os.sep + 'usbl.csv' ,'a') as fileout:
+                        try:
+                            fileout.write(str(time_usbl[i])+','+str(northings_usbl[i])+','+str(eastings_usbl[i])+','+str(depth_usbl[i])+'\n')
+                            fileout.close()
+                        except IndexError:
+                            break
+
             if len(time_camera1) > 1:
+                print("Writing outputs to camera1.csv ...")
                 with open(csvpath + os.sep + 'camera1.csv' ,'w') as fileout:
                     fileout.write('Imagenumber, Northing [m], Easting [m], Depth [m], Roll [deg], Pitch [deg], Heading [deg], Altitude [m]\n')
                 for i in range(len(time_camera1)):
@@ -780,6 +854,7 @@ class extract_data:
                             break
 
             if len(time_camera2) > 1:
+                print("Writing outputs to camera2.csv ...")
                 with open(csvpath + os.sep + 'camera2.csv' ,'w') as fileout:
                     fileout.write('Imagenumber, Northing [m], Easting [m], Depth [m], Roll [deg], Pitch [deg], Heading [deg], Altitude [m]\n')
                 for i in range(len(time_camera2)):
@@ -794,6 +869,7 @@ class extract_data:
                             break
 
             if len(time_camera3) > 1:
+                print("Writing outputs to camera3.csv ...")
                 with open(csvpath + os.sep + 'camera3.csv' ,'w') as fileout:
                     fileout.write('Imagenumber, Northing [m], Easting [m], Depth [m], Roll [deg], Pitch [deg], Heading [deg], Altitude [m]\n')
                 for i in range(len(time_camera3)):
@@ -805,13 +881,13 @@ class extract_data:
                             fileout.write(str(imagenumber)+','+str(camera3_dead_reckoning_northings[i])+','+str(camera3_dead_reckoning_eastings[i])+','+str(camera3_dead_reckoning_depth[i])+','+str(camera3_roll[i])+','+str(camera3_pitch[i])+','+str(camera3_yaw[i])+','+str(camera3_altitude[i])+'\n')
                             fileout.close()
                         except IndexError:
-                            break            
+                            break
 
             print('Complete extraction of data: ', csvpath)
         
-    # plot data
+    # plot data ### PLOT THESE ALL IN PLOTLY, Maybe with range slider
         if plot is True:
-            print('Plotting data')
+            print('Plotting data ...')
             plotpath = renavpath + os.sep + 'plots'
             
             if os.path.isdir(plotpath) == 0:
@@ -833,127 +909,127 @@ class extract_data:
             plt.savefig(plotpath + os.sep + 'orientation.pdf', dpi=600, bbox_inches='tight')
             plt.close()
 
-        # velocity_interpolated (x,y,z)
-            fig=plt.figure(figsize=(4,3))
-            ax = fig.add_subplot(111)
-            ax.plot(time_dead_reckoning,x_velocity_interpolated, 'r.',label='Surge') #time_velocity_body,x_velocity, 'r.',label='Surge')
-            ax.plot(time_dead_reckoning,y_velocity_interpolated, 'g.',label='Sway')#time_velocity_body,y_velocity, 'g.',label='Sway')
-            ax.plot(time_dead_reckoning,z_velocity_interpolated, 'b.',label='Heave')#time_velocity_body,z_velocity, 'b.',label='Heave')
-            ax.set_xlabel('Epoch time, s')
-            ax.set_ylabel('Velocity, m/s')
-            ax.legend(loc='upper right', bbox_to_anchor=(1, -0.2))
-            ax.grid(True)                        
-            plt.savefig(plotpath + os.sep + 'velocity_body.pdf', dpi=600, bbox_inches='tight')
-            plt.close()
+            print('...')
 
         # velocity_body (north,east,down) compared to velocity_inertial
-            fig=plt.figure(figsize=(4,3))
-            ax = fig.add_subplot(111)            
-            ax.plot(time_dead_reckoning,north_velocity_inertia_dvl, 'ro',label='DVL')#time_velocity_body,north_velocity_inertia_dvl, 'ro',label='DVL')
-            ax.plot(time_velocity_inertia,north_velocity_inertia, 'b.',label='Phins')
-            ax.set_xlabel('Epoch time, s')
-            ax.set_ylabel('Velocity, m/s')
-            ax.legend(loc='upper right', bbox_to_anchor=(1, -0.2))
-            ax.grid(True)                        
-            plt.savefig(plotpath + os.sep + 'velocity_inertia_north.pdf', dpi=600, bbox_inches='tight')
-            plt.close()
-
-            fig=plt.figure(figsize=(4,3))
-            ax = fig.add_subplot(111)            
-            ax.plot(time_dead_reckoning,east_velocity_inertia_dvl,'ro',label='DVL')
-            ax.plot(time_velocity_inertia,east_velocity_inertia,'b.',label='Phins')
-            ax.set_xlabel('Epoch time, s')
-            ax.set_ylabel('Velocity, m/s')
-            ax.legend(loc='upper right', bbox_to_anchor=(1, -0.2))
-            ax.grid(True)                        
-            plt.savefig(plotpath + os.sep + 'velocity_inertia_east.pdf', dpi=600, bbox_inches='tight')
-            plt.close()
-
-            fig=plt.figure(figsize=(4,3))
-            ax = fig.add_subplot(111)            
-            ax.plot(time_dead_reckoning,down_velocity_inertia_dvl,'r.',label='DVL')#time_velocity_body,down_velocity_inertia_dvl,'r.',label='DVL')
-            ax.plot(time_velocity_inertia,down_velocity_inertia,'b.',label='Phins')
-            ax.set_xlabel('Epoch time, s')
-            ax.set_ylabel('Velocity, m/s')
-            ax.legend(loc='upper right', bbox_to_anchor=(1, -0.2))
-            ax.grid(True)                        
-            plt.savefig(plotpath + os.sep + 'velocity_inertia_down.pdf', dpi=600, bbox_inches='tight')
-            plt.close()
-
-        # depth and altitude
-            fig=plt.figure(figsize=(4,3))
-            ax1 = fig.add_subplot(211)
-            ax1.plot(time_depth,depth,'b.',label='Vehicle')                        
-            ax1.plot(time_altitude,seafloor_depth,'r.',label='Seafloor')                         
+            fig=plt.figure(figsize=(10,7))
+            ax1 = fig.add_subplot(321)            
+            ax1.plot(time_dead_reckoning,north_velocity_inertia_dvl, 'ro',label='DVL')#time_velocity_body,north_velocity_inertia_dvl, 'ro',label='DVL')
+            ax1.plot(time_velocity_inertia,north_velocity_inertia, 'b.',label='Phins')
             ax1.set_xlabel('Epoch time, s')
-            ax1.set_ylabel('Depth, m')
-            plt.gca().invert_yaxis()
-            ax1.legend(loc='upper right', bbox_to_anchor=(1, -0.2))
-            ax1.grid(True)          
-            ax2 = fig.add_subplot(212)
-            ax2.plot(time_altitude,altitude,'r.',label='Altitude')              
+            ax1.set_ylabel('Velocity, m/s')
+            ax1.legend()
+            ax1.grid(True)
+            ax1.set_title('north velocity')
+            ax2 = fig.add_subplot(323)            
+            ax2.plot(time_dead_reckoning,east_velocity_inertia_dvl,'ro',label='DVL')
+            ax2.plot(time_velocity_inertia,east_velocity_inertia,'b.',label='Phins')
             ax2.set_xlabel('Epoch time, s')
-            ax2.set_ylabel('Altitude, m')
-            ax2.set_xlim(min(time_depth),max(time_depth))
-            ax2.grid(True)          
-            plt.savefig(plotpath + os.sep + 'depth_altitude.pdf', dpi=600, bbox_inches='tight')
+            ax2.set_ylabel('Velocity, m/s')
+            ax2.legend()
+            ax2.grid(True)
+            ax2.set_title('east velocity')
+            ax3 = fig.add_subplot(325)            
+            ax3.plot(time_dead_reckoning,down_velocity_inertia_dvl,'ro',label='DVL')#time_velocity_body,down_velocity_inertia_dvl,'r.',label='DVL')
+            ax3.plot(time_velocity_inertia,down_velocity_inertia,'b.',label='Phins')
+            ax3.set_xlabel('Epoch time, s')
+            ax3.set_ylabel('Velocity, m/s')
+            ax3.legend()
+            ax3.grid(True)
+            ax3.set_title('down velocity')
+            ax4 = fig.add_subplot(322)
+            ax4.plot(time_dead_reckoning,x_velocity_interpolated, 'r.',label='Surge') #time_velocity_body,x_velocity, 'r.',label='Surge')
+            ax4.set_xlabel('Epoch time, s')
+            ax4.set_ylabel('Velocity, m/s')
+            ax4.legend()
+            ax4.grid(True)
+            ax4.set_title('x velocity')
+            ax5 = fig.add_subplot(324)
+            ax5.plot(time_dead_reckoning,y_velocity_interpolated, 'g.',label='Sway')#time_velocity_body,y_velocity, 'g.',label='Sway')
+            ax5.set_xlabel('Epoch time, s')
+            ax5.set_ylabel('Velocity, m/s')
+            ax5.legend()
+            ax5.grid(True)
+            ax5.set_title('y velocity')
+            ax6 = fig.add_subplot(326)
+            ax6.plot(time_dead_reckoning,z_velocity_interpolated, 'b.',label='Heave')#time_velocity_body,z_velocity, 'b.',label='Heave')
+            ax6.set_xlabel('Epoch time, s')
+            ax6.set_ylabel('Velocity, m/s')
+            ax6.legend()
+            ax6.grid(True)
+            ax6.set_title('z velocity')
+            fig.tight_layout()
+            plt.savefig(plotpath + os.sep + 'velocity_vs_time.pdf', dpi=600, bbox_inches='tight')
             plt.close()
 
-        # usbl 
-            #usbl depth and time
-            fig=plt.figure(figsize=(4,3))
-            ax = fig.add_subplot(111)
-            ax.plot(time_usbl,depth_usbl,'b.',label='USBL') 
-            ax.plot(time_depth,depth,'ro',label='Vehicle') 
-            ax.set_xlabel('Epoch time, s')
-            ax.set_ylabel('Depth, m')
-            ax.legend(loc='upper right', bbox_to_anchor=(1, -0.2))
-            ax.grid(True)                        
-            plt.savefig(plotpath + os.sep + 'usbl_depth_vehicle.pdf', dpi=600, bbox_inches='tight')
+            print('...')
+
+        # time_dead_reckoning northings eastings depth vs time
+            fig=plt.figure(figsize=(12,7))
+            ax1 = fig.add_subplot(221)
+            ax1.plot(time_dead_reckoning,northings_dead_reckoning_dvl,'r.',label='DVL')#time_velocity_body,northings_dead_reckoning,'r.',label='DVL')
+            ax1.plot(time_velocity_inertia,northings_inertia_dead_reckoning,'g.',label='PHINS')
+            ax1.plot(time_usbl, northings_usbl,'b.',label='USBL')
+            ax1.plot(time_dead_reckoning,northings_dead_reckoning,'c.',label='Centre')#time_velocity_body,northings_dead_reckoning,'b.')
+            ax1.set_xlabel('Epoch time, s')
+            ax1.set_ylabel('Northings, m')
+            ax1.grid(True)
+            ax1.legend()#loc='upper right', bbox_to_anchor=(1, -0.2))
+            ax1.set_title('Northings')
+            ax2 = fig.add_subplot(222)
+            ax2.plot(time_dead_reckoning,eastings_dead_reckoning_dvl,'r.',label='DVL')#time_velocity_body,northings_dead_reckoning,'r.',label='DVL')
+            ax2.plot(time_velocity_inertia,eastings_inertia_dead_reckoning,'g.',label='PHINS')
+            ax2.plot(time_usbl, eastings_usbl,'b.',label='USBL')
+            ax2.plot(time_dead_reckoning,eastings_dead_reckoning,'c.',label='Centre')#time_velocity_body,eastings_dead_reckoning,'b.')
+            ax2.set_xlabel('Epoch time, s')
+            ax2.set_ylabel('Eastings, m')
+            ax2.grid(True)
+            ax2.legend()
+            ax2.set_title('Eastings')
+            ax3 = fig.add_subplot(223)
+            ax3.plot(time_usbl,depth_usbl,'b.',label='USBL depth') 
+            ax3.plot(time_depth,depth,'g-',label='Depth Sensor') 
+            ax3.plot(time_altitude,seafloor_depth,'r-',label='Seafloor') 
+            ax3.plot(time_dead_reckoning,depth_dead_reckoning,'c-',label='Depth DR')#time_velocity_body,eastings_dead_reckoning,'b.')
+            ax3.set_xlabel('Epoch time, s')
+            ax3.set_ylabel('Depth, m')
+            plt.gca().invert_yaxis()
+            ax3.grid(True)
+            ax3.legend()
+            ax3.set_title('Depth')
+            ax4 = fig.add_subplot(224)
+            ax4.plot(time_altitude,altitude,'r.',label='Altitude')              
+            ax4.set_xlabel('Epoch time, s')
+            ax4.set_ylabel('Altitude, m')
+            ax4.set_xlim(min(time_depth),max(time_depth))
+            ax4.grid(True)
+            ax4.legend()
+            fig.tight_layout()
+            plt.savefig(plotpath + os.sep + 'dead_reckoning_vs_time.pdf', dpi=600, bbox_inches='tight')
             plt.close()
 
-            # usbl latitude longitude
-            fig=plt.figure(figsize=(4,3))
-            ax = fig.add_subplot(111)
-            ax.plot(longitude_usbl,latitude_usbl,'b.')                 
-            ax.set_xlabel('Longitude, degrees')
-            ax.set_ylabel('Latitude, degrees')
-            ax.grid(True)                        
-            plt.savefig(plotpath + os.sep + 'usbl_latitude_longitude.pdf', dpi=600, bbox_inches='tight')
+            print('...')
+
+        # usbl latitude longitude
+            fig=plt.figure(figsize=(10,5))
+            ax1 = fig.add_subplot(121)
+            ax1.plot(longitude_usbl,latitude_usbl,'b.')                 
+            ax1.set_xlabel('Longitude, degrees')
+            ax1.set_ylabel('Latitude, degrees')
+            ax1.grid(True)
+            ax2 = fig.add_subplot(122)
+            ax2.plot(eastings_usbl,northings_usbl,'b.',label='Reference ['+str(latitude_reference)+','+str(longitude_reference)+']')                 
+            ax2.set_xlabel('Eastings, m')
+            ax2.set_ylabel('Northings, m')
+            ax2.grid(True)
+            ax2.legend()
+            fig.tight_layout()
+            plt.savefig(plotpath + os.sep + 'usbl_LatLong_vs_NorthEast.pdf', dpi=600, bbox_inches='tight')
             plt.close()
 
-            # usbl northings eastings
-            fig=plt.figure(figsize=(4,3))
-            ax = fig.add_subplot(111)
-            ax.plot(eastings_usbl,northings_usbl,'b.',label='Reference ['+str(latitude_reference)+','+str(longitude_reference)+']')                 
-            ax.set_xlabel('Eastings, m')
-            ax.set_ylabel('Northings, m')
-            ax.grid(True)
-            ax.legend(loc='upper right', bbox_to_anchor=(1, -0.2))           
-            plt.savefig(plotpath + os.sep + 'usbl_northings_eastings.pdf', dpi=600, bbox_inches='tight')
-            plt.close()
-
-            # usbl eastings time
-            fig=plt.figure(figsize=(4,3))
-            ax = fig.add_subplot(111)
-            ax.plot(time_usbl, eastings_usbl,'b.')
-            ax.set_xlabel('Epoch time, s')
-            ax.set_ylabel('Eastings, m')
-            ax.grid(True)                
-            plt.savefig(plotpath + os.sep + 'usbl_eastings_time.pdf', dpi=600, bbox_inches='tight')
-            plt.close()
-
-            # usbl northings time
-            fig=plt.figure(figsize=(4,3))
-            ax = fig.add_subplot(111)
-            ax.plot(time_usbl, northings_usbl,'b.')
-            ax.set_xlabel('Epoch time, s')
-            ax.set_ylabel('Northings, m')
-            ax.grid(True)                
-            plt.savefig(plotpath + os.sep + 'usbl_northings_time.pdf', dpi=600, bbox_inches='tight')
-            plt.close()
-
-        # uncertainties plot
+            print('...')
+        # uncertainties plot. 
+        #Ultimately include this in plotly error plot! MEANINGLESS THIS WAY. https://plot.ly/python/line-charts/#filled-lines Something like that?
             for i in range(len(roll_std)):
                 if i == 0:
                     pass
@@ -961,188 +1037,72 @@ class extract_data:
                     roll_std[i]=roll_std[i] + roll_std[i-1]
                     pitch_std[i]=pitch_std[i] + pitch_std[i-1]
                     yaw_std[i]=yaw_std[i] + yaw_std[i-1]
+            #SUM UP FOR THE REST TOO? IS THIS THE RIGHT WAY?
 
-            fig=plt.figure(figsize=(4,3))
-            ax = fig.add_subplot(111)
-            ax.plot(time_orientation,roll_std,'r.',label='roll_std')
-            ax.plot(time_orientation,pitch_std,'g.',label='pitch_std')
-            ax.plot(time_orientation,yaw_std,'b.',label='yaw_std')
-            ax.set_xlabel('Epoch time, s')
-            ax.set_ylabel('Angle, degrees')
-            ax.legend(loc='upper right', bbox_to_anchor=(1, -0.2))
-            ax.grid(True)                        
-            plt.savefig(plotpath + os.sep + 'orientation_std.pdf', dpi=600, bbox_inches='tight')
+            fig=plt.figure(figsize=(15,7))
+            ax1 = fig.add_subplot(231)
+            ax1.plot(time_orientation,roll_std,'r.',label='roll_std')
+            ax1.plot(time_orientation,pitch_std,'g.',label='pitch_std')
+            ax1.plot(time_orientation,yaw_std,'b.',label='yaw_std')
+            ax1.set_xlabel('Epoch time, s')
+            ax1.set_ylabel('Angle, degrees')
+            ax1.legend()
+            ax1.grid(True)
+            ax2 = fig.add_subplot(234)
+            ax2.plot(time_depth,depth_std,'b.',label='depth_std')
+            ax2.set_xlabel('Epoch time, s')
+            ax2.set_ylabel('Depth, m')
+            ax2.legend()
+            ax2.grid(True)
+            ax3 = fig.add_subplot(232)
+            ax3.plot(time_velocity_body,x_velocity_std,'r.',label='x_velocity_std')
+            ax3.plot(time_velocity_body,y_velocity_std,'g.',label='y_velocity_std')
+            ax3.plot(time_velocity_body,z_velocity_std,'b.',label='z_velocity_std')
+            ax3.set_xlabel('Epoch time, s')
+            ax3.set_ylabel('Velocity, m/s')
+            ax3.legend()
+            ax3.grid(True)
+            ax4 = fig.add_subplot(235)
+            ax4.plot(time_velocity_inertia,north_velocity_std_inertia,'r.',label='north_velocity_std_inertia')
+            ax4.plot(time_velocity_inertia,east_velocity_std_inertia,'g.',label='east_velocity_std_inertia')
+            ax4.plot(time_velocity_inertia,down_velocity_std_inertia,'b.',label='down_velocity_std_inertia')
+            ax4.set_xlabel('Epoch time, s')
+            ax4.set_ylabel('Velocity, m/s')
+            ax4.legend()
+            ax4.grid(True)
+            ax5 = fig.add_subplot(233)
+            ax5.plot(time_usbl,latitude_std_usbl,'r.',label='latitude_std_usbl')
+            ax5.plot(time_usbl,longitude_std_usbl,'g.',label='longitude_std_usbl')
+            ax5.set_xlabel('Epoch time, s')
+            ax5.set_ylabel('LatLong, degrees')
+            ax5.legend()
+            ax5.grid(True)
+            ax6 = fig.add_subplot(236)
+            ax6.plot(time_usbl,northings_std_usbl,'r.',label='northings_std_usbl')
+            ax6.plot(time_usbl,eastings_std_usbl,'g.',label='eastings_std_usbl')
+            ax6.set_xlabel('Epoch time, s')
+            ax6.set_ylabel('NorthEast, m')
+            ax6.legend()
+            ax6.grid(True)
+            fig.tight_layout()                  
+            plt.savefig(plotpath + os.sep + 'uncertainties_plot.pdf', dpi=600, bbox_inches='tight')
             plt.close()
 
-            fig=plt.figure(figsize=(4,3))
-            ax = fig.add_subplot(111)
-            ax.plot(time_depth,depth_std,'b.')
-            ax.set_xlabel('Epoch time, s')
-            ax.set_ylabel('Depth, m')
-            ax.grid(True)                        
-            plt.savefig(plotpath + os.sep + 'depth_std.pdf', dpi=600, bbox_inches='tight')
-            plt.close()
+            print('...')
 
-            fig=plt.figure(figsize=(4,3))
-            ax = fig.add_subplot(111)
-            ax.plot(time_velocity_body,x_velocity_std,'r.',label='x_velocity_std')
-            ax.plot(time_velocity_body,y_velocity_std,'g.',label='y_velocity_std')
-            ax.plot(time_velocity_body,z_velocity_std,'b.',label='z_velocity_std')
-            ax.set_xlabel('Epoch time, s')
-            ax.set_ylabel('Velocity, m/s')
-            ax.legend(loc='upper right', bbox_to_anchor=(1, -0.2))
-            ax.grid(True)                        
-            plt.savefig(plotpath + os.sep + 'velocity_body_std.pdf', dpi=600, bbox_inches='tight')
-            plt.close()
-
-            fig=plt.figure(figsize=(4,3))
-            ax = fig.add_subplot(111)
-            ax.plot(time_velocity_inertia,north_velocity_std_inertia,'r.',label='north_velocity_std_inertia')
-            ax.plot(time_velocity_inertia,east_velocity_std_inertia,'g.',label='east_velocity_std_inertia')
-            ax.plot(time_velocity_inertia,down_velocity_std_inertia,'b.',label='down_velocity_std_inertia')
-            ax.set_xlabel('Epoch time, s')
-            ax.set_ylabel('Velocity, m/s')
-            ax.legend(loc='upper right', bbox_to_anchor=(1, -0.2))
-            ax.grid(True)                        
-            plt.savefig(plotpath + os.sep + 'velocity_inertia_std.pdf', dpi=600, bbox_inches='tight')
-            plt.close()
-
-            fig=plt.figure(figsize=(4,3))
-            ax = fig.add_subplot(111)
-            ax.plot(time_usbl,latitude_std_usbl,'r.',label='latitude_std_usbl')
-            ax.plot(time_usbl,longitude_std_usbl,'g.',label='longitude_std_usbl')
-            ax.set_xlabel('Epoch time, s')
-            ax.set_ylabel('LatLong, degrees')
-            ax.legend(loc='upper right', bbox_to_anchor=(1, -0.2))
-            ax.grid(True)                        
-            plt.savefig(plotpath + os.sep + 'usbl_latitude_longitude_std.pdf', dpi=600, bbox_inches='tight')
-            plt.close()
-
-            fig=plt.figure(figsize=(4,3))
-            ax = fig.add_subplot(111)
-            ax.plot(time_usbl,northings_std_usbl,'r.',label='northings_std_usbl')
-            ax.plot(time_usbl,eastings_std_usbl,'g.',label='eastings_std_usbl')
-            ax.set_xlabel('Epoch time, s')
-            ax.set_ylabel('NorthEast, m')
-            ax.legend(loc='upper right', bbox_to_anchor=(1, -0.2))
-            ax.grid(True)                        
-            plt.savefig(plotpath + os.sep + 'usbl_northings_eastings_std.pdf', dpi=600, bbox_inches='tight')
-            plt.close()
-
-        # dead_reckoning northings eastings
-            fig=plt.figure(figsize=(4,3))
-            ax = fig.add_subplot(111)
-            ax.plot(eastings_dead_reckoning,northings_dead_reckoning,'b.')
-            ax.set_xlabel('Eastings, m')
-            ax.set_ylabel('Northings, m')
-            ax.grid(True)                
-            plt.savefig(plotpath + os.sep + 'dead_reckoning_northings_eastings.pdf', dpi=600, bbox_inches='tight')
-            plt.close()                
-
-        # dead_reckoning northings time
-            fig=plt.figure(figsize=(4,3))
-            ax = fig.add_subplot(111)
-            ax.plot(time_dead_reckoning,northings_dead_reckoning,'b.')#time_velocity_body,northings_dead_reckoning,'b.')
-            ax.set_xlabel('Epoch time, s')
-            ax.set_ylabel('Northings, m')
-            ax.grid(True)                
-            plt.savefig(plotpath + os.sep + 'dead_reckoning_northings_time.pdf', dpi=600, bbox_inches='tight')
-            plt.close() 
-
-        # dead_reckoning eastings time
-            fig=plt.figure(figsize=(4,3))
-            ax = fig.add_subplot(111)
-            ax.plot(time_dead_reckoning,eastings_dead_reckoning,'b.')#time_velocity_body,eastings_dead_reckoning,'b.')
-            ax.set_xlabel('Epoch time, s')
-            ax.set_ylabel('Eastings, m')
-            ax.grid(True)                
-            plt.savefig(plotpath + os.sep + 'dead_reckoning_eastings_time.pdf', dpi=600, bbox_inches='tight')
-            plt.close() 
-
-            print('Complete plot data: ', plotpath)
-
-        # camera1_dead_reckoning
-            fig=plt.figure(figsize=(4,3))
+        # DR
+            fig=plt.figure()
             ax = fig.add_subplot(111)
             ax.plot(camera1_dead_reckoning_eastings,camera1_dead_reckoning_northings,'y.',label='Camera1')
             ax.plot(eastings_dead_reckoning,northings_dead_reckoning,'r.',label='Centre')
             ax.plot(eastings_dead_reckoning_dvl,northings_dead_reckoning_dvl,'g.',label='DVL')
+            ax.plot(eastings_inertia_dead_reckoning,northings_inertia_dead_reckoning,'m.',label='PHINS')
+            ax.plot(eastings_usbl, northings_usbl,'c.',label='USBL')
             ax.set_xlabel('Eastings, m')
             ax.set_ylabel('Northings, m')
-            ax.legend(loc='upper right', bbox_to_anchor=(1, -0.2))
+            ax.legend()#loc='upper right', bbox_to_anchor=(1, -0.2))
             ax.grid(True)   
-            plt.savefig(plotpath + os.sep + 'camera1_dead_reckoning_northings_eastings.pdf', dpi=600, bbox_inches='tight')
-            if show_plot==True:
-                plt.show()
-            plt.close()
-
-        # inertia_dead_reckoning northings eastings
-            fig=plt.figure(figsize=(4,3))
-            ax = fig.add_subplot(111)
-            ax.plot(eastings_inertia_dead_reckoning,northings_inertia_dead_reckoning,'b.')
-            ax.set_xlabel('Eastings, m')
-            ax.set_ylabel('Northings, m')
-            ax.grid(True)                
-            plt.savefig(plotpath + os.sep + 'inertia_dead_reckoning_northings_eastings.pdf', dpi=600, bbox_inches='tight')
-            plt.close()                
-
-        # inertia_dead_reckoning northings time
-            fig=plt.figure(figsize=(4,3))
-            ax = fig.add_subplot(111)
-            ax.plot(time_velocity_inertia,northings_inertia_dead_reckoning,'b.')
-            ax.set_xlabel('Epoch time, s')
-            ax.set_ylabel('Northings, m')
-            ax.grid(True)                
-            plt.savefig(plotpath + os.sep + 'inertia_dead_reckoning_northings_time.pdf', dpi=600, bbox_inches='tight')
-            plt.close() 
-
-        # inertia_dead_reckoning eastings time
-            fig=plt.figure(figsize=(4,3))
-            ax = fig.add_subplot(111)
-            ax.plot(time_velocity_inertia,eastings_inertia_dead_reckoning,'b.')
-            ax.set_xlabel('Epoch time, s')
-            ax.set_ylabel('Eastings, m')
-            ax.grid(True)                
-            plt.savefig(plotpath + os.sep + 'inertia_dead_reckoning_eastings_time.pdf', dpi=600, bbox_inches='tight')
-            plt.close() 
-
-            fig=plt.figure(figsize=(4,3))
-            ax = fig.add_subplot(111)
-            ax.plot(time_dead_reckoning,northings_dead_reckoning,'r.',label='DVL')#time_velocity_body,northings_dead_reckoning,'r.',label='DVL')
-            ax.plot(time_velocity_inertia,northings_inertia_dead_reckoning,'g.',label='PHINS')
-            ax.plot(time_usbl, northings_usbl,'b.',label='USBL')
-            ax.set_xlabel('Epoch time, s')
-            ax.set_ylabel('Northings, m')
-            ax.grid(True)                
-            ax.legend(loc='upper right', bbox_to_anchor=(1, -0.2))
-            plt.savefig(plotpath + os.sep + 'body_inertia_usbl_northings_time.pdf', dpi=600, bbox_inches='tight')
-            plt.close() 
-
-        # dvl, inertia. usbl eastings time
-            fig=plt.figure(figsize=(4,3))
-            ax = fig.add_subplot(111)
-            ax.plot(time_dead_reckoning,eastings_dead_reckoning,'r.',label='DVL')#time_velocity_body,eastings_dead_reckoning,'r.',label='DVL')
-            ax.plot(time_velocity_inertia,eastings_inertia_dead_reckoning,'g.',label='PHINS')
-            ax.plot(time_usbl, eastings_usbl,'b.',label='USBL')
-            ax.set_xlabel('Epoch time, s')
-            ax.set_ylabel('Eastings, m')
-            ax.grid(True)                
-            ax.legend(loc='upper right', bbox_to_anchor=(1, -0.2))
-            plt.savefig(plotpath + os.sep + 'body_inertia_usbl_eastings_time.pdf', dpi=600, bbox_inches='tight')
-            plt.close() 
-
-        # inertia_dead_reckoning northings eastings
-            fig=plt.figure(figsize=(4,3))
-            ax = fig.add_subplot(111)
-            ax.plot(camera1_dead_reckoning_eastings,camera1_dead_reckoning_northings,'y.',label='Camera1')
-            ax.plot(eastings_dead_reckoning,northings_dead_reckoning,'r.',label='DVL')
-            ax.plot(eastings_inertia_dead_reckoning,northings_inertia_dead_reckoning,'g.',label='PHINS')
-            ax.plot(eastings_usbl, northings_usbl,'b.',label='USBL')
-            ax.set_xlabel('Eastings, m')
-            ax.set_ylabel('Northings, m')
-            ax.grid(True) 
-            ax.legend(loc='upper right', bbox_to_anchor=(1, -0.2))               
-            plt.savefig(plotpath + os.sep + 'body_inertia_usbl_northings_eastings.pdf', dpi=600, bbox_inches='tight')
+            plt.savefig(plotpath + os.sep + 'camera1_centre_DVL_PHINS_DR.pdf', dpi=600, bbox_inches='tight')
             if show_plot==True:
                 plt.show()
             plt.close()
