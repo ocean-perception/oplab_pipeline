@@ -146,7 +146,7 @@ class display_info:
 				plt.xticks(rotation = 'vertical')
 				n += 1
 			plt.axis([start_time, finish_time, 0, 1])
-			x_formatter = ticker.FuncFormatter(lambda x, pos:'{0:s}'.format(time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(x))))
+			x_formatter = ticker.FuncFormatter(lambda x, pos:'{0:s}'.format(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(x))))#gmtime(x))))
 			# x_formatter = ticker.ScalarFormatter(useOffset=False)
 			# x_formatter = ticker.FormatStrFormatter('%0.0f')
 			ax[0].xaxis.set_major_formatter(x_formatter)
@@ -156,7 +156,7 @@ class display_info:
 			f.savefig(outpath + 'timestamp_history.pdf')
 			plt.close()
 
-			start_end_text = 'Start time is: %s (UTC), %d (epoch)\nFinish time is: %s (UTC), %d (epoch)\n' % (time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(start_time)), start_time, time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(finish_time)), finish_time)
+			start_end_text = 'Start time is: %s (local time), %d (epoch)\nFinish time is: %s (local time), %d (epoch)\n' % (time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time)), start_time, time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(finish_time)), finish_time) #changed from gmtime to localtime
 			
 			t.align['Sample Value'] = 'l'
 			t.hrules = ALL
