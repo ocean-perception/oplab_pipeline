@@ -15,41 +15,95 @@ class usbl_offset:
 				
 
     def __new__(cls, time_dead_reckoning, northings_dead_reckoning, eastings_dead_reckoning, time_usbl, northings_usbl, eastings_usbl):
-    
-        i=0
-        j=0
+
+# ===============Average Offset===================================================
+        start_dead_reckoning=0
+        start_usbl=0
+
+        end_dead_reckoning=0
+        end_usbl=0
+
         threshold = 20  # what to consider a big jump in time      
         exit_flag = False
 
+        # Find suitable start points
         if time_usbl[0] < time_dead_reckoning[0]:# if 
             print('usbl starts before dead_reckoning')
             while exit_flag == False:
-                #print(i,j,time_dead_reckoning[i],time_usbl[j],time_usbl[j+1],time_dead_reckoning[i] - time_usbl[j],time_dead_reckoning[i] - time_usbl[j+1])
-                if time_dead_reckoning[i] - time_usbl[j+1] > 0:
-                    j=j+1
+                #print(start_dead_reckoning,start_usbl,time_dead_reckoning[start_dead_reckoning],time_usbl[start_usbl],time_usbl[start_usbl+1],time_dead_reckoning[start_dead_reckoning] - time_usbl[start_usbl],time_dead_reckoning[start_dead_reckoning] - time_usbl[start_usbl+1])
+                if time_dead_reckoning[start_dead_reckoning] - time_usbl[start_usbl+1] > 0:
+                    start_usbl=start_usbl+1
                 else:
-                    if time_dead_reckoning[i] - time_usbl[j] < threshold and time_usbl[j+1] - time_usbl[j] < threshold:
+                    if time_dead_reckoning[start_dead_reckoning] - time_usbl[start_usbl] < threshold and time_usbl[start_usbl+1] - time_usbl[start_usbl] < threshold:
+                        start_usbl+=1
                         exit_flag = True
                     else:
-                        i=i+1
-
+                        start_dead_reckoning=start_dead_reckoning+1
         else:
             print('usbl starts after dead_reckoning')
             while exit_flag == False:                 
-                if time_dead_reckoning[i]-time_usbl[j]<0:                    
-                    i=i+1
+                if time_dead_reckoning[start_dead_reckoning]-time_usbl[start_usbl]<0:                    
+                    start_dead_reckoning=start_dead_reckoning+1
 
                 else:                                    
-                    if time_dead_reckoning[i]-time_usbl[j]<threshold and time_usbl[j+1]-time_usbl[j]<threshold:
+                    if time_dead_reckoning[start_dead_reckoning]-time_usbl[start_usbl]<threshold and time_usbl[start_usbl+1]-time_usbl[start_usbl]<threshold:
+                        start_usbl+=1
                         exit_flag = True                     
                     else:# if the jump is too big, ignore and try another usbl fix
-                        j=j+1     
+                        start_usbl=start_usbl+1
 
-        northings_usbl_interpolated=interpolate(time_dead_reckoning[i],time_usbl[j],time_usbl[j+1],northings_usbl[j],northings_usbl[j+1])
-        eastings_usbl_interpolated=interpolate(time_dead_reckoning[i],time_usbl[j],time_usbl[j+1],eastings_usbl[j],eastings_usbl[j+1])
+        northings_dead_reckoning_interpolated=[]
+        eastings_dead_reckoning_interpolated=[]
 
-        #offset by the deadreackoning position that has been interpolated to 
-        northings_usbl_interpolated=northings_usbl_interpolated-northings_dead_reckoning[i]
-        eastings_usbl_interpolated=eastings_usbl_interpolated-eastings_dead_reckoning[i]
+        for j_usbl in range(start_usbl, len(time_usbl)):
+            if start_dead_reckoning+1>len(time_dead_reckoning):
+                break
+            while time_dead_reckoning[start_dead_reckoning+1]<time_usbl[j_usbl]:
+                start_dead_reckoning += 1
+            northings_dead_reckoning_interpolated.append(interpolate(time_usbl[j_usbl],time_dead_reckoning[start_dead_reckoning],time_dead_reckoning[start_dead_reckoning+1],northings_dead_reckoning[start_dead_reckoning],northings_dead_reckoning[start_dead_reckoning+1]))
+            eastings_dead_reckoning_interpolated.append(interpolate(time_usbl[j_usbl],time_dead_reckoning[start_dead_reckoning],time_dead_reckoning[start_dead_reckoning+1],eastings_dead_reckoning[start_dead_reckoning],eastings_dead_reckoning[start_dead_reckoning+1]))
+
+        northings_offset = sum(northings_usbl[start_usbl:start_usbl+len(northings_dead_reckoning_interpolated)])/len(northings_usbl[start_usbl:(start_usbl+len(northings_dead_reckoning_interpolated))]) - sum(northings_dead_reckoning_interpolated)/len(northings_dead_reckoning_interpolated)
+        eastings_offset = sum(eastings_usbl[start_usbl:(start_usbl+len(eastings_dead_reckoning_interpolated))])/len(eastings_usbl[start_usbl:start_usbl+len(eastings_dead_reckoning_interpolated)]) - sum(eastings_dead_reckoning_interpolated)/len(eastings_dead_reckoning_interpolated)
+
+        return northings_offset, eastings_offset
+
+# ===============Initial Offset===================================================
+
+        # start_dead_reckoning=0
+        # start_usbl=0
+        # threshold = 20  # what to consider a big jump in time      
+        # exit_flag = False
+
+        # if time_usbl[0] < time_dead_reckoning[0]:# if 
+        #     print('usbl starts before dead_reckoning')
+        #     while exit_flag == False:
+        #         #print(start_dead_reckoning,start_usbl,time_dead_reckoning[start_dead_reckoning],time_usbl[start_usbl],time_usbl[start_usbl+1],time_dead_reckoning[start_dead_reckoning] - time_usbl[start_usbl],time_dead_reckoning[start_dead_reckoning] - time_usbl[start_usbl+1])
+        #         if time_dead_reckoning[start_dead_reckoning] - time_usbl[start_usbl+1] > 0:
+        #             start_usbl=start_usbl+1
+        #         else:
+        #             if time_dead_reckoning[start_dead_reckoning] - time_usbl[start_usbl] < threshold and time_usbl[start_usbl+1] - time_usbl[start_usbl] < threshold:
+        #                 exit_flag = True
+        #             else:
+        #                 start_dead_reckoning=start_dead_reckoning+1
+
+        # else:
+        #     print('usbl starts after dead_reckoning')
+        #     while exit_flag == False:                 
+        #         if time_dead_reckoning[start_dead_reckoning]-time_usbl[start_usbl]<0:                    
+        #             start_dead_reckoning=start_dead_reckoning+1
+
+        #         else:                                    
+        #             if time_dead_reckoning[start_dead_reckoning]-time_usbl[start_usbl]<threshold and time_usbl[start_usbl+1]-time_usbl[start_usbl]<threshold:
+        #                 exit_flag = True                     
+        #             else:# if the jump is too big, ignore and try another usbl fix
+        #                 start_usbl=start_usbl+1     
+
+        # northings_usbl_interpolated=interpolate(time_dead_reckoning[start_dead_reckoning],time_usbl[start_usbl],time_usbl[start_usbl+1],northings_usbl[start_usbl],northings_usbl[start_usbl+1])
+        # eastings_usbl_interpolated=interpolate(time_dead_reckoning[start_dead_reckoning],time_usbl[start_usbl],time_usbl[start_usbl+1],eastings_usbl[start_usbl],eastings_usbl[start_usbl+1])
+
+        # #offset by the deadreackoning position that has been interpolated to 
+        # northings_usbl_interpolated=northings_usbl_interpolated-northings_dead_reckoning[start_dead_reckoning]
+        # eastings_usbl_interpolated=eastings_usbl_interpolated-eastings_dead_reckoning[start_dead_reckoning]
        
-        return northings_usbl_interpolated,eastings_usbl_interpolated
+        # return northings_usbl_interpolated,eastings_usbl_interpolated
