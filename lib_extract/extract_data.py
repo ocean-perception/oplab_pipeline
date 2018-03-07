@@ -838,6 +838,32 @@ class extract_data:
                         except IndexError:
                             break
 
+            # For plotly+dash+pandas
+            if len(time_velocity_inertia) > 1:
+                print("Writing outputs to PHINS.csv ...")
+                with open(csvpath + os.sep + 'PHINS.csv' ,'w') as fileout:
+                    fileout.write('Timestamp, Northing [m], Easting [m], Depth [m]\n')
+                for i in range(len(time_velocity_inertia)):
+                    with open(csvpath + os.sep + 'PHINS.csv' ,'a') as fileout:
+                        try:
+                            fileout.write(str(time_velocity_inertia[i])+','+str(northings_inertia_dead_reckoning[i])+','+str(eastings_inertia_dead_reckoning[i])+','+str(depth_inertia_dead_reckoning[i])+'\n')
+                            fileout.close()
+                        except IndexError:
+                            break
+
+            # For plotly+dash+pandas
+            if len(time_dead_reckoning) > 1:
+                print("Writing outputs to DVL.csv ...")
+                with open(csvpath + os.sep + 'DVL.csv' ,'w') as fileout:
+                    fileout.write('Timestamp, Northing [m], Easting [m], Depth [m], Roll [deg], Pitch [deg], Heading [deg]\n')
+                for i in range(len(time_dead_reckoning)):
+                    with open(csvpath + os.sep + 'DVL.csv' ,'a') as fileout:
+                        try:
+                            fileout.write(str(time_dead_reckoning[i])+','+str(northings_dead_reckoning_dvl[i])+','+str(eastings_dead_reckoning_dvl[i])+','+str([i])+str(roll_ins_dead_reckoning[i])+','+str(pitch_ins_dead_reckoning[i])+','+str(yaw_ins_dead_reckoning[i])+'\n')
+                            fileout.close()
+                        except IndexError:
+                            break
+
             if len(time_camera1) > 1:
                 print("Writing outputs to camera1.csv ...")
                 with open(csvpath + os.sep + 'camera1.csv' ,'w') as fileout:
