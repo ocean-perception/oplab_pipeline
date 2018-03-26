@@ -297,12 +297,15 @@ class extract_data:
                     if 'image' in parsed_json_data[i]['category']:
                         time_camera1.append(parsed_json_data[i]['camera1'][0]['epoch_timestamp'])#LC
                         filename_camera1.append(parsed_json_data[i]['camera1'][0]['filename'])
+                        serial_camera1=parsed_json_data[i]['camera1'][0]['serial']
                         time_camera2.append(parsed_json_data[i]['camera2'][0]['epoch_timestamp'])
                         filename_camera2.append(parsed_json_data[i]['camera2'][0]['filename'])
+                        serial_camera2=parsed_json_data[i]['camera2'][0]['serial']
 
                     if 'laser' in parsed_json_data[i]['category']:
                         time_camera3.append(parsed_json_data[i]['epoch_timestamp'])#LC
                         filename_camera3.append(parsed_json_data[i]['filename'])
+                        serial_camera3=parsed_json_data[i]['serial']
 
 
         # make path for csv and plots
@@ -865,11 +868,11 @@ class extract_data:
                             break
 
             if len(time_camera1) > 1:
-                print("Writing outputs to camera1.csv ...")
-                with open(csvpath + os.sep + 'camera1.csv' ,'w') as fileout:
+                print("Writing outputs to {}.csv ...".format(serial_camera1))
+                with open(csvpath + os.sep + '{}.csv'.format(serial_camera1) ,'w') as fileout:
                     fileout.write('Imagenumber, Northing [m], Easting [m], Depth [m], Roll [deg], Pitch [deg], Heading [deg], Altitude [m]\n')
                 for i in range(len(time_camera1)):
-                    with open(csvpath + os.sep + 'camera1.csv' ,'a') as fileout:
+                    with open(csvpath + os.sep + '{}.csv'.format(serial_camera1) ,'a') as fileout:
                         try:
                             imagenumber = filename_camera1[i][-11:-4]
                             if imagenumber.isdigit():
@@ -880,11 +883,11 @@ class extract_data:
                             break
 
             if len(time_camera2) > 1:
-                print("Writing outputs to camera2.csv ...")
-                with open(csvpath + os.sep + 'camera2.csv' ,'w') as fileout:
+                print("Writing outputs to {}.csv ...".format(serial_camera2))
+                with open(csvpath + os.sep + '{}.csv'.format(serial_camera2) ,'w') as fileout:
                     fileout.write('Imagenumber, Northing [m], Easting [m], Depth [m], Roll [deg], Pitch [deg], Heading [deg], Altitude [m]\n')
                 for i in range(len(time_camera2)):
-                    with open(csvpath + os.sep + 'camera2.csv' ,'a') as fileout:
+                    with open(csvpath + os.sep + '{}.csv'.format(serial_camera2) ,'a') as fileout:
                         try:
                             imagenumber = filename_camera2[i][-11:-4]
                             if imagenumber.isdigit():
@@ -895,11 +898,11 @@ class extract_data:
                             break
 
             if len(time_camera3) > 1:
-                print("Writing outputs to camera3.csv ...")
-                with open(csvpath + os.sep + 'camera3.csv' ,'w') as fileout:
+                print("Writing outputs to {}.csv ...".format(serial_camera3))
+                with open(csvpath + os.sep + '{}.csv'.format(serial_camera3) ,'w') as fileout:
                     fileout.write('Imagenumber, Northing [m], Easting [m], Depth [m], Roll [deg], Pitch [deg], Heading [deg], Altitude [m]\n')
                 for i in range(len(time_camera3)):
-                    with open(csvpath + os.sep + 'camera3.csv' ,'a') as fileout:
+                    with open(csvpath + os.sep + '{}.csv'.format(serial_camera3) ,'a') as fileout:
                         try:
                             imagenumber = filename_camera3[i][-11:-4]
                             if imagenumber.isdigit():
