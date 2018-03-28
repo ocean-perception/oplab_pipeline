@@ -1,6 +1,6 @@
 # extract_data
 
-# Assumes filename_camera of 1, 2, and 3 contains the image number between the last 11 and 4 characters for appropriate csv pose estimate files output. e.g. 'Xviii/Cam51707923/0094853.raw'
+# Assumes filename_camera of 1, 2, and 3 contains the image number between the last 11 and 4 characters for appropriate csv pose estimate files output. e.g. 'Xviii/Cam51707923/0094853.raw' or 'LM165\001\image0001011.tif'
 
 # Scripts to extract data from nav_standard.json, and combined.auv.raw an save csv files and, if plot is True, save plots
 
@@ -149,6 +149,8 @@ class extract_data:
         if ftype == 'oplab':# or (ftype is not 'acfr'):
             outpath=filepath + 'nav'
 
+            image_flag = 0
+
             filename='nav_standard.json'        
             print('Loading json file ' + outpath + os.sep + filename)
             with open(outpath + os.sep + filename) as nav_standard:                
@@ -165,7 +167,15 @@ class extract_data:
                     latitude_reference = load_data['origin']['latitude']
                     longitude_reference = load_data['origin']['longitude']
                     coordinate_reference = load_data['origin']['coordinate_reference_system']
-                    date = load_data['origin']['date']          
+                    date = load_data['origin']['date']
+                if 'image' in load_data:
+                    image_flag=1
+                    if 'camera1' in load_data['image']:
+                        serial_camera1 = '_'.join(load_data['image']['camera1'].split('/'))
+                    if 'camera2' in load_data['image']:
+                        serial_camera2 = '_'.join(load_data['image']['camera2'].split('/'))
+                    if 'camera3' in load_data['image']:
+                        serial_camera3 = '_'.join(load_data['image']['camera3'].split('/'))
 
         # compute the offset of sensors
             print('Loading vehicle.yaml')    
@@ -203,7 +213,6 @@ class extract_data:
                     depth_y_offset = load_data['depth']['y_offset']
                     depth_z_offset = load_data['depth']['z_offset']
                 if 'ins' in load_data:
-                    # origin_flag=1
                     ins_x_offset = load_data['ins']['x_offset']
                     ins_y_offset = load_data['ins']['y_offset']
                     ins_z_offset = load_data['ins']['z_offset']
@@ -297,15 +306,17 @@ class extract_data:
                     if 'image' in parsed_json_data[i]['category']:
                         time_camera1.append(parsed_json_data[i]['camera1'][0]['epoch_timestamp'])#LC
                         filename_camera1.append(parsed_json_data[i]['camera1'][0]['filename'])
-                        serial_camera1=parsed_json_data[i]['camera1'][0]['serial']
                         time_camera2.append(parsed_json_data[i]['camera2'][0]['epoch_timestamp'])
                         filename_camera2.append(parsed_json_data[i]['camera2'][0]['filename'])
-                        serial_camera2=parsed_json_data[i]['camera2'][0]['serial']
+                        if image_flag == 0:
+                            serial_camera2=parsed_json_data[i]['camera2'][0]['serial']
+                            serial_camera1=parsed_json_data[i]['camera1'][0]['serial']
 
                     if 'laser' in parsed_json_data[i]['category']:
                         time_camera3.append(parsed_json_data[i]['epoch_timestamp'])#LC
                         filename_camera3.append(parsed_json_data[i]['filename'])
-                        serial_camera3=parsed_json_data[i]['serial']
+                        if image_flag == 0:
+                            serial_camera3=parsed_json_data[i]['serial']
 
 
         # make path for csv and plots
@@ -866,7 +877,7 @@ class extract_data:
                             fileout.close()
                         except IndexError:
                             break
-
+### Image file naming step not very robust, needs improvement
             if len(time_camera1) > 1:
                 print("Writing outputs to {}.csv ...".format(serial_camera1))
                 with open(csvpath + os.sep + '{}.csv'.format(serial_camera1) ,'w') as fileout:
@@ -876,8 +887,10 @@ class extract_data:
                         try:
                             imagenumber = filename_camera1[i][-11:-4]
                             if imagenumber.isdigit():
-                                imagenumber=int(imagenumber)
-                            fileout.write(str(imagenumber)+','+str(camera1_dead_reckoning_northings[i])+','+str(camera1_dead_reckoning_eastings[i])+','+str(camera1_dead_reckoning_depth[i])+','+str(camera1_roll[i])+','+str(camera1_pitch[i])+','+str(camera1_yaw[i])+','+str(camera1_altitude[i])+'\n')
+                                image_filename=int(imagenumber)
+                            else:
+                                image_filename=filename_camera1[i]
+                            fileout.write(str(image_filename)+','+str(camera1_dead_reckoning_northings[i])+','+str(camera1_dead_reckoning_eastings[i])+','+str(camera1_dead_reckoning_depth[i])+','+str(camera1_roll[i])+','+str(camera1_pitch[i])+','+str(camera1_yaw[i])+','+str(camera1_altitude[i])+'\n')
                             fileout.close()
                         except IndexError:
                             break
@@ -891,8 +904,10 @@ class extract_data:
                         try:
                             imagenumber = filename_camera2[i][-11:-4]
                             if imagenumber.isdigit():
-                                imagenumber=int(imagenumber)
-                            fileout.write(str(imagenumber)+','+str(camera2_dead_reckoning_northings[i])+','+str(camera2_dead_reckoning_eastings[i])+','+str(camera2_dead_reckoning_depth[i])+','+str(camera2_roll[i])+','+str(camera2_pitch[i])+','+str(camera2_yaw[i])+','+str(camera2_altitude[i])+'\n')
+                                image_filename=int(imagenumber)
+                            else:
+                                image_filename=filename_camera2[i]
+                            fileout.write(str(image_filename)+','+str(camera2_dead_reckoning_northings[i])+','+str(camera2_dead_reckoning_eastings[i])+','+str(camera2_dead_reckoning_depth[i])+','+str(camera2_roll[i])+','+str(camera2_pitch[i])+','+str(camera2_yaw[i])+','+str(camera2_altitude[i])+'\n')
                             fileout.close()
                         except IndexError:
                             break
@@ -906,8 +921,10 @@ class extract_data:
                         try:
                             imagenumber = filename_camera3[i][-11:-4]
                             if imagenumber.isdigit():
-                                imagenumber = int(imagenumber)
-                            fileout.write(str(imagenumber)+','+str(camera3_dead_reckoning_northings[i])+','+str(camera3_dead_reckoning_eastings[i])+','+str(camera3_dead_reckoning_depth[i])+','+str(camera3_roll[i])+','+str(camera3_pitch[i])+','+str(camera3_yaw[i])+','+str(camera3_altitude[i])+'\n')
+                                image_filename=int(imagenumber)
+                            else:
+                                image_filename=filename_camera3[i]
+                            fileout.write(str(image_filename)+','+str(camera3_dead_reckoning_northings[i])+','+str(camera3_dead_reckoning_eastings[i])+','+str(camera3_dead_reckoning_depth[i])+','+str(camera3_roll[i])+','+str(camera3_pitch[i])+','+str(camera3_yaw[i])+','+str(camera3_altitude[i])+'\n')
                             fileout.close()
                         except IndexError:
                             break
