@@ -17,9 +17,10 @@
             -start <start time in utc time> hhmmss (only for extract)
             -finish <finish time in utc time> hhmmss (only for extract)                      
             -plot <plot option> (only for extract)
-            -csv <csv write option> (only for extract)
             -showplot <showplot option> (only for extract)
-
+            -plotly <plotly option> (only for extract)
+            -csv <csv write option> (only for extract)
+            
         Arguments:
             path to the "mission.yaml" file, output format 'acfr' or 'oplab'
 
@@ -388,8 +389,9 @@ def syntax_error():
     print("         -start <start time in utc time> hhmmss (only for extract)")
     print("         -finish <finish time in utc time> hhmmss (only for extract)")
     print("         -plot <plot option> (only for extract)")
-    print("         -csv <csv write option> (only for extract)")
     print("         -showplot <showplot option> (only for extract)")
+    print("         -plotly <plotly option> (only for extract)")
+    print("         -csv <csv write option> (only for extract)")
     
     return -1
 
@@ -409,6 +411,7 @@ if __name__ == '__main__':
     start_time='000000'
     finish_time='235959'
     plot = False
+    plotly = False
     csv_write = False
     show_plot = False
     
@@ -440,6 +443,8 @@ if __name__ == '__main__':
                 finish_time=sys.argv[i+1]
             elif option == "-plot":
                 plot=True
+            elif option == "-plotly":
+                plotly=True
             elif option == "-csv":
                 csv_write=True
             elif option == "-showplot":
@@ -478,10 +483,10 @@ if __name__ == '__main__':
                 if sub_path[i]=='processed':
                     flag_f = True
             if (flag_f ==True):
-                if (csv_write == False) and (plot == False):
+                if (csv_write == False) and (plot == False) and (plotly == False):
                     print('No extract option selected, default plot (-p) enabled but without csv_write -> type (-csv) to enable')
                     plot = True
-                extract_data(filepath,ftype,start_time,finish_time,plot,csv_write,show_plot)
+                extract_data(filepath,ftype,start_time,finish_time,plot,csv_write,show_plot,plotly)
             else:
                 print('Check folder structure contains "processed"')                                    
 

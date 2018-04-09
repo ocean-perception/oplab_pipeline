@@ -16,6 +16,10 @@ import time, codecs
 import operator
 #import hashlib, glob
 
+from plotly import tools
+import plotly.offline as py
+import plotly.graph_objs as go
+
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 
@@ -28,7 +32,7 @@ from lib_localisation.usbl_offset import usbl_offset
 from lib_coordinates.body_to_inertial import body_to_inertial
 
 class extract_data:
-    def __init__(self,filepath,ftype,start_time,finish_time,plot,csv_write,show_plot):
+    def __init__(self,filepath,ftype,start_time,finish_time,plot,csv_write,show_plot,plotly):
 
         interpolate_remove_flag = False
 
@@ -826,7 +830,7 @@ class extract_data:
                 except Exception as e:
                     print("Warning:",e)
 
-            # For plotly+dash+pandas
+            # Useful for plotly+dash+pandas
             if len(time_dead_reckoning) > 1:
                 print("Writing outputs to auv_centre.csv ...")
                 with open(csvpath + os.sep + 'auv_centre.csv' ,'w') as fileout:
@@ -839,7 +843,6 @@ class extract_data:
                         except IndexError:
                             break
 
-            # For plotly+dash+pandas
             if len(time_usbl) > 1:
                 print("Writing outputs to usbl.csv ...")
                 with open(csvpath + os.sep + 'usbl.csv' ,'w') as fileout:
@@ -852,7 +855,6 @@ class extract_data:
                         except IndexError:
                             break
 
-            # For plotly+dash+pandas
             if len(time_velocity_inertia) > 1:
                 print("Writing outputs to PHINS.csv ...")
                 with open(csvpath + os.sep + 'PHINS.csv' ,'w') as fileout:
@@ -865,7 +867,6 @@ class extract_data:
                         except IndexError:
                             break
 
-            # For plotly+dash+pandas
             if len(time_dead_reckoning) > 1:
                 print("Writing outputs to DVL.csv ...")
                 with open(csvpath + os.sep + 'DVL.csv' ,'w') as fileout:
@@ -931,7 +932,7 @@ class extract_data:
 
             print('Complete extraction of data: ', csvpath)
         
-    # plot data ### PLOT THESE ALL IN PLOTLY, Maybe with range slider
+    # plot data
         if plot is True:
             print('Plotting data ...')
             plotpath = renavpath + os.sep + 'plots'
@@ -943,6 +944,8 @@ class extract_data:
                     print("Warning:",e)
 
         # orientation
+            print('...plotting orientation_vs_time...')
+            
             fig=plt.figure(figsize=(4,3))
             ax = fig.add_subplot(111)
             ax.plot(time_orientation, yaw,'r.',label='Yaw')   
@@ -952,12 +955,12 @@ class extract_data:
             ax.set_ylabel('Degrees')
             ax.legend(loc='upper right', bbox_to_anchor=(1, -0.2))
             ax.grid(True)                        
-            plt.savefig(plotpath + os.sep + 'orientation.pdf', dpi=600, bbox_inches='tight')
+            plt.savefig(plotpath + os.sep + 'orientation_vs_time.pdf', dpi=600, bbox_inches='tight')
             plt.close()
 
-            print('...')
-
         # velocity_body (north,east,down) compared to velocity_inertial
+            print('...plotting velocity_vs_time...')
+            
             fig=plt.figure(figsize=(10,7))
             ax1 = fig.add_subplot(321)            
             ax1.plot(time_dead_reckoning,north_velocity_inertia_dvl, 'ro',label='DVL')#time_velocity_body,north_velocity_inertia_dvl, 'ro',label='DVL')
@@ -1008,9 +1011,9 @@ class extract_data:
             plt.savefig(plotpath + os.sep + 'velocity_vs_time.pdf', dpi=600, bbox_inches='tight')
             plt.close()
 
-            print('...')
-
         # time_dead_reckoning northings eastings depth vs time
+            print('...plotting deadreckoning_vs_time...')
+            
             fig=plt.figure(figsize=(12,7))
             ax1 = fig.add_subplot(221)
             ax1.plot(time_dead_reckoning,northings_dead_reckoning_dvl,'r.',label='DVL')#time_velocity_body,northings_dead_reckoning,'r.',label='DVL')
@@ -1051,12 +1054,12 @@ class extract_data:
             ax4.grid(True)
             ax4.legend()
             fig.tight_layout()
-            plt.savefig(plotpath + os.sep + 'dead_reckoning_vs_time.pdf', dpi=600, bbox_inches='tight')
+            plt.savefig(plotpath + os.sep + 'deadreckoning_vs_time.pdf', dpi=600, bbox_inches='tight')
             plt.close()
 
-            print('...')
-
         # usbl latitude longitude
+            print('...plotting usbl_LatLong_vs_NorthEast...')
+
             fig=plt.figure(figsize=(10,5))
             ax1 = fig.add_subplot(121)
             ax1.plot(longitude_usbl,latitude_usbl,'b.')                 
@@ -1073,9 +1076,8 @@ class extract_data:
             plt.savefig(plotpath + os.sep + 'usbl_LatLong_vs_NorthEast.pdf', dpi=600, bbox_inches='tight')
             plt.close()
 
-            print('...')
         # uncertainties plot. 
-        #Ultimately include this in plotly error plot! MEANINGLESS THIS WAY. https://plot.ly/python/line-charts/#filled-lines Something like that?
+            #Ultimately include this in plotly error plot! MEANINGLESS THIS WAY. https://plot.ly/python/line-charts/#filled-lines Something like that?
             for i in range(len(roll_std)):
                 if i == 0:
                     pass
@@ -1083,7 +1085,8 @@ class extract_data:
                     roll_std[i]=roll_std[i] + roll_std[i-1]
                     pitch_std[i]=pitch_std[i] + pitch_std[i-1]
                     yaw_std[i]=yaw_std[i] + yaw_std[i-1]
-            #SUM UP FOR THE REST TOO? IS THIS THE RIGHT WAY?
+            # Sum up for the rest too? check if this is the correct way
+            print('...plotting uncertainties_plot...')
 
             fig=plt.figure(figsize=(15,7))
             ax1 = fig.add_subplot(231)
@@ -1137,6 +1140,7 @@ class extract_data:
             print('...')
 
         # DR
+            print('...plotting camera1_centre_DVL_PHINS_DR...')
             fig=plt.figure()
             ax = fig.add_subplot(111)
             ax.plot(camera1_dead_reckoning_eastings,camera1_dead_reckoning_northings,'y.',label='Camera1')
@@ -1155,7 +1159,6 @@ class extract_data:
 
             print('Complete plot data: ', plotpath)
 
-            #maybe plot a arrow showing vehicle heading at each step***!!
             # if show_plot==True:
             #     fig=plt.figure()
             #     ax=fig.add_subplot(111)
@@ -1177,5 +1180,288 @@ class extract_data:
             #     plt.show()
             #     plt.close()
 
+    # plotly data
+        if plotly is True:
+
+            print('Plotting plotly data ...')
+            plotlypath = renavpath + os.sep + 'plotly_plots'
+            
+            if os.path.isdir(plotlypath) == 0:
+                try:
+                    os.mkdir(plotlypath)
+                except Exception as e:
+                    print("Warning:",e)
+
+            def create_trace(x_list,y_list,trace_name,trace_color):
+                trace = go.Scattergl(
+                    x=x_list,
+                    y=y_list,
+                    name=trace_name,
+                    mode='lines+markers',
+                    marker=dict(color=trace_color),#'rgba(152, 0, 0, .8)'),#,size = 10, line = dict(width = 2,color = 'rgb(0, 0, 0)'),
+                    line=dict(color=trace_color)#rgb(205, 12, 24)'))#, width = 4, dash = 'dot')
+                    # legendgroup='group11'
+                )
+                return trace
+            
+        # orientation
+            print('...plotting orientation_vs_time...')
+
+            trace11a = create_trace(time_orientation, yaw, 'Yaw', 'red')
+            trace11b = create_trace(time_orientation, roll, 'Roll', 'blue')
+            trace11c = create_trace(time_orientation, pitch, 'Pitch', 'green')
+            layout = go.Layout(
+                title='Orientation vs Time',
+                hovermode='closest',
+                xaxis=dict(title='Epoch time, s', tickformat='.3f'),
+                yaxis=dict(title='Degrees'),
+                dragmode='pan',
+                )
+            config={'scrollZoom': True}
+            fig = go.Figure(data=[trace11a, trace11b, trace11c], layout=layout)
+            py.plot(fig, config=config, filename=plotlypath + os.sep + 'orientation_vs_time.html', auto_open=False)
+
+        # velocity_body (north,east,down) compared to velocity_inertial
+            print('...plotting velocity_vs_time...')
+
+            trace11a = create_trace(time_dead_reckoning, north_velocity_inertia_dvl, 'DVL north velocity', 'red')
+            trace11b = create_trace(time_velocity_inertia, north_velocity_inertia, 'Phins north velocity', 'blue')
+            # plot1=[trace11a, trace11b]
+            trace21a = create_trace(time_dead_reckoning, east_velocity_inertia_dvl, 'DVL east velocity', 'red')
+            trace21b = create_trace(time_velocity_inertia, east_velocity_inertia, 'Phins east velocity', 'blue')
+            trace31a = create_trace(time_dead_reckoning, down_velocity_inertia_dvl, 'DVL down velocity', 'red')
+            trace31b = create_trace(time_velocity_inertia, down_velocity_inertia, 'Phis down velocity', 'blue')
+            trace12a = create_trace(time_dead_reckoning, x_velocity_interpolated, 'DVL x velocity', 'red')
+            trace22a = create_trace(time_dead_reckoning, y_velocity_interpolated, 'DVL y velocity', 'red')
+            trace32a = create_trace(time_dead_reckoning, z_velocity_interpolated, 'DVL z velocity', 'red')
+            fig = tools.make_subplots(rows=3, cols=2, subplot_titles=('DVL vs Phins - north Velocity', 'DVL - x velocity / surge', 
+                                                                    'DVL vs Phins - east Velocity', 'DVL - y velocity / sway', 
+                                                                    'DVL vs Phins - down Velocity', 'DVL - z velocity / heave')
+                                                                    )
+            fig.append_trace(trace11a, 1, 1)
+            fig.append_trace(trace11b, 1, 1)
+            fig.append_trace(trace21a, 2, 1)
+            fig.append_trace(trace21b, 2, 1)
+            fig.append_trace(trace31a, 3, 1)
+            fig.append_trace(trace31b, 3, 1)
+            fig.append_trace(trace12a, 1, 2)
+            fig.append_trace(trace22a, 2, 2)
+            fig.append_trace(trace32a, 3, 2)
+            fig['layout']['xaxis1'].update(title='Epoch time, s', tickformat='.3f')#xaxis 1 title')
+            fig['layout']['xaxis2'].update(title='Epoch time, s', tickformat='.3f')#, range=[10, 50])
+            fig['layout']['xaxis3'].update(title='Epoch time, s', tickformat='.3f')#, showgrid=False)
+            fig['layout']['xaxis4'].update(title='Epoch time, s', tickformat='.3f')#, type='log')
+            fig['layout']['xaxis5'].update(title='Epoch time, s', tickformat='.3f')
+            fig['layout']['xaxis6'].update(title='Epoch time, s', tickformat='.3f')
+            # def define_layout():
+            #   for i in XX:
+            #       fig['layout']['xaxis{}'.format(plot_number)].update(title=axis_title) ...
+            fig['layout']['yaxis1'].update(title='Velocity, m/s')
+            fig['layout']['yaxis2'].update(title='Velocity, m/s')
+            fig['layout']['yaxis3'].update(title='Velocity, m/s')
+            fig['layout']['yaxis4'].update(title='Velocity, m/s')
+            fig['layout']['yaxis5'].update(title='Velocity, m/s')
+            fig['layout']['yaxis6'].update(title='Velocity, m/s')
+            fig['layout'].update(title='Velocity vs Time Plots (Left column: Inertial frame - north east down | Right column: Body frame - x y z)', dragmode='pan', hovermode='closest')#, hoverlabel={'namelength':'-1'})
+            config={'scrollZoom': True}
+            py.plot(fig, config=config, filename=plotlypath + os.sep + 'velocity_vs_time.html', auto_open=False)
+
+        # time_dead_reckoning northings eastings depth vs time
+            print('...plotting deadreckoning_vs_time...')
+
+            trace11a = create_trace(time_dead_reckoning, northings_dead_reckoning_dvl, 'Northing DVL', 'red')
+            trace11b = create_trace(time_velocity_inertia, northings_inertia_dead_reckoning, 'Northing Phins', 'green')
+            trace11c = create_trace(time_usbl, northings_usbl, 'Northing USBL', 'blue')
+            trace11d = create_trace(time_dead_reckoning, northings_dead_reckoning, 'Northing Centre', 'orange')
+            trace12a = create_trace(time_dead_reckoning, eastings_dead_reckoning_dvl, 'Easting DVL', 'red')
+            trace12b = create_trace(time_velocity_inertia, eastings_inertia_dead_reckoning, 'Easting Phins', 'green')
+            trace12c = create_trace(time_usbl, eastings_usbl, 'Easting USBL', 'blue')
+            trace12d = create_trace(time_dead_reckoning, eastings_dead_reckoning, 'Easting Centre', 'orange')
+            trace21a = create_trace(time_altitude, seafloor_depth, 'Depth  Seafloor (Depth Sensor + Altitude)', 'red')
+            trace21b = create_trace(time_depth, depth, 'Depth Sensor', 'purple')
+            trace21c = create_trace(time_usbl, depth_usbl, 'Depth USBL', 'blue')
+            trace21d = create_trace(time_dead_reckoning, depth_dead_reckoning, 'Depth Centre', 'orange')
+            trace22a = create_trace(time_altitude, altitude, 'Altitude', 'red')
+            fig = tools.make_subplots(rows=2,cols=2, subplot_titles=('Northings', 'Eastings', 'Depth', 'Altitude'))
+            fig.append_trace(trace11a, 1, 1)
+            fig.append_trace(trace11b, 1, 1)
+            fig.append_trace(trace11c, 1, 1)
+            fig.append_trace(trace11d, 1, 1)
+            fig.append_trace(trace12a, 1, 2)
+            fig.append_trace(trace12b, 1, 2)
+            fig.append_trace(trace12c, 1, 2)
+            fig.append_trace(trace12d, 1, 2)
+            fig.append_trace(trace21a, 2, 1)
+            fig.append_trace(trace21b, 2, 1)
+            fig.append_trace(trace21c, 2, 1)
+            fig.append_trace(trace21d, 2, 1)
+            fig.append_trace(trace22a, 2, 2)
+            fig['layout']['xaxis1'].update(title='Epoch time, s', tickformat='.3f')
+            fig['layout']['xaxis2'].update(title='Epoch time, s', tickformat='.3f')
+            fig['layout']['xaxis3'].update(title='Epoch time, s', tickformat='.3f')
+            fig['layout']['xaxis4'].update(title='Epoch time, s', tickformat='.3f')
+            fig['layout']['yaxis1'].update(title='Northing, m')
+            fig['layout']['yaxis2'].update(title='Easting, m')
+            fig['layout']['yaxis3'].update(title='Depth, m', autorange='reversed')
+            fig['layout']['yaxis4'].update(title='Altitude, m')
+            fig['layout'].update(title='Deadreckoning vs Time', dragmode='pan', hovermode='closest')#, hoverlabel={'namelength':'-1'})
+            config={'scrollZoom': True}
+            py.plot(fig, config=config, filename=plotlypath + os.sep + 'deadreckoning_vs_time.html', auto_open=False)
+
+        # # usbl latitude longitude
+        #     fig=plt.figure(figsize=(10,5))
+        #     ax1 = fig.add_subplot(121)
+        #     ax1.plot(longitude_usbl,latitude_usbl,'b.')                 
+        #     ax1.set_xlabel('Longitude, degrees')
+        #     ax1.set_ylabel('Latitude, degrees')
+        #     ax1.grid(True)
+        #     ax2 = fig.add_subplot(122)
+        #     ax2.plot(eastings_usbl,northings_usbl,'b.',label='Reference ['+str(latitude_reference)+','+str(longitude_reference)+']')                 
+        #     ax2.set_xlabel('Eastings, m')
+        #     ax2.set_ylabel('Northings, m')
+        #     ax2.grid(True)
+        #     ax2.legend()
+        #     fig.tight_layout()
+        #     plt.savefig(plotpath + os.sep + 'usbl_LatLong_vs_NorthEast.pdf', dpi=600, bbox_inches='tight')
+        #     plt.close()
+
+        # # uncertainties plot. 
+        #     #https://plot.ly/python/line-charts/#filled-lines Something like that?
+
+        # # DR plotly slider**
+            print('...plotting auv_path...')
+
+            minTimestamp = 99999999999999
+            maxTimestamp = -99999999999999
+            for i in [time_camera1, time_dead_reckoning, time_velocity_inertia, time_usbl]:
+                if min(i) < minTimestamp:
+                    minTimestamp = min(i)
+                if max(i) > maxTimestamp:
+                    maxTimestamp = max(i)
+
+            # slider plot
+            # time_gap = 240
+            time_gap = int((maxTimestamp - minTimestamp)/40)
+            epoch_timestamps_slider = list(range(int(minTimestamp), int(maxTimestamp), int(time_gap)))
+
+            figure = {
+                'data': [],
+                'layout': {},
+                'frames': []
+            }
+
+            #RANGESLIDER!?
+            sliders_dict = {
+                'active': 0,
+                'yanchor': 'top',
+                'xanchor': 'left',
+                'currentvalue': {
+                    'font': {'size': 20},
+                    'prefix': 'epoch_timestamp:',
+                    'visible': True,
+                    'xanchor': 'right'
+                },
+                'transition': {'duration': 300, 'easing': 'cubic-in-out'},
+                'pad': {'b': 10, 't': 50},
+                'len': 0.9,
+                'x': 0.1,
+                'y': 0,
+                'steps': []
+            }
+
+            # fill in most of layout
+            figure['layout']['xaxis'] = {'title': 'Eastings,m'} #'range': [-30, 60], 'title': 'Eastings,m'} 
+            figure['layout']['yaxis'] = {'title': 'Northings,m'} #'range': [-20, 90], 'title': 'Northings,m'}
+            figure['layout']['hovermode'] = 'closest'
+            figure['layout']['dragmode'] = 'pan'
+            figure['layout']['updatemenus'] = [
+                {
+                    'buttons': [
+                        {
+                            'args': [None, {'frame': {'duration': 500, 'redraw': False},
+                                     'fromcurrent': True, 'transition': {'duration': 300, 'easing': 'quadratic-in-out'}}],
+                            'label': 'Play',
+                            'method': 'animate'
+                        },
+                        {
+                            'args': [[None], {'frame': {'duration': 0, 'redraw': False}, 'mode': 'immediate',
+                            'transition': {'duration': 0}}],
+                            'label': 'Pause',
+                            'method': 'animate'
+                        }
+                    ],
+                    'direction': 'left',
+                    'pad': {'r': 10, 't': 87},
+                    'showactive': False,
+                    'type': 'buttons',
+                    'x': 0.1,
+                    'xanchor': 'right',
+                    'y': 0,
+                    'yanchor': 'top'
+                }
+            ]
+
+            #make data
+            def make_data(name,eastings,northings):
+                mode='lines'
+                if 'USBL' in name:
+                    mode='lines+markers'
+                data_dict = {
+                    'x': eastings,
+                    'y': northings,
+                    'mode':'{}'.format(mode),
+                    'name': '{}'.format(name)
+                }
+                figure['data'].append(data_dict)
+
+            make_data('Camera1',camera1_dead_reckoning_eastings,camera1_dead_reckoning_northings)
+            make_data('Centre',eastings_dead_reckoning,northings_dead_reckoning)
+            make_data('DVL',eastings_dead_reckoning_dvl,northings_dead_reckoning_dvl)
+            make_data('Phins',eastings_inertia_dead_reckoning,northings_inertia_dead_reckoning)
+            make_data('USBL',eastings_usbl,northings_usbl)
+
+            config={'scrollZoom': True}
+
+            py.plot(figure, config=config, filename=plotlypath + os.sep + 'auv_path.html',auto_open=False)
+
+            def make_frame(data,tstamp):
+                temp_index=0#next(x[0] for x in enumerate(data[0]) if x[1] > tstamp)
+                for i in range(len(data[1])):
+                    if data[1][i] > tstamp:
+                        temp_index=i
+                        break
+                if temp_index == 0:
+                    temp_index += 1
+                eastings=data[2][:temp_index-1]
+                northings=data[3][:temp_index-1]
+                data_dict = {
+                    'x': eastings,
+                    'y': northings,
+                    'name': '{}'.format(data[0])
+                }
+                frame['data'].append(data_dict)
+
+            #make frames
+            for i in epoch_timestamps_slider:
+                frame = {'data': [], 'name': str(i)}
+                
+                for j in [['Camera1',time_camera1,camera1_dead_reckoning_eastings,camera1_dead_reckoning_northings],['Centre',time_dead_reckoning,eastings_dead_reckoning,northings_dead_reckoning],['DVL',time_dead_reckoning,eastings_dead_reckoning_dvl,northings_dead_reckoning_dvl],['Phins',time_velocity_inertia,eastings_inertia_dead_reckoning,northings_inertia_dead_reckoning],['USBL',time_usbl,eastings_usbl,northings_usbl]]:
+                    make_frame(j,i)
+                figure['frames'].append(frame)
+                slider_step = {'args': [
+                    [i],
+                    {'frame': {'duration': 300, 'redraw': False},
+                     'mode': 'immediate',
+                   'transition': {'duration': 300}}
+                 ],
+                 'label': i,
+                 'method': 'animate'}
+                sliders_dict['steps'].append(slider_step)
+
+            figure['layout']['sliders'] = [sliders_dict]
+
+            py.plot(figure, config=config, filename=plotlypath + os.sep + 'auv_path_slider.html',auto_open=False)
+
+            print('Complete plot data: ', plotlypath)
 
         print('Completed data extraction: ', renavpath)
