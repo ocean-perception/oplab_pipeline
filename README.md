@@ -5,31 +5,31 @@
         git clone --recursive https://github.com/ocean-perception/auv_nav.git
 
         Requires python3.6.2 or later
-        Requires matplotlib library which can be downloaded and installed from a terminal
-
-        $ pip3 install matplotlib
-
-        where further instructions can be found here https://matplotlib.org/2.0.2/users/installing.html
-
-        Requires PyYAML which can be downloaded from http://pyyaml.org/wiki/PyYAML
-
-        Go to the folder where the downloaded file (at time of writting)
         
-            http://pyyaml.org/download/pyyaml/PyYAML-3.12.tar.gz
+        Libraries required:
 
-        is extracted and from in the extracted folder, execute the following terminal commands 
+        1) matplotlib (https://matplotlib.org/2.0.2/users/installing.html)
+            a) download and install from a terminal
+                $ pip3 install matplotlib
 
-        $ python3 setup.py install
-        $ python3 setup.py test
+        2) PyYAML
+            a) download from http://pyyaml.org/wiki/PyYAML and go to the folder where the downloaded file http://pyyaml.org/download/pyyaml/PyYAML-3.12.tar.gz (at time of writing) is extracted and from in the extracted folder, execute the following terminal commands
+                $ python3 setup.py install
+                $ python3 setup.py test
 
-        Requires prettytable library which can be downloaded and installed from a terminal
+        3) prettytable
+            a) download and install from a terminal
+                $ pip3 install prettytable
+            b) or download from https://pypi.python.org/pypi/PrettyTable and go to the folder where the downloaded file is extracted and from in the extracted folder, execute the following terminal commands
+                $ python3 setup.py install
+                $ python3 setup.py test
 
-        $ pip3 install prettytable
-
-        or download from https://pypi.python.org/pypi/PrettyTable and go to the folder where the downloaded file is extracted and from in the extracted folder, execute the following terminal commands
-
-        $ python3 setup.py install
-        $ python3 setup.py test
+        4) plotly
+            a) download and install from a terminal
+                $ pip3 install plotly
+            b) or download from https://pypi.python.org/pypi/plotly and go to the folder where the downloaded file is extracted and from in the extracted folder, execute the following terminal commands
+                $ python3 setup.py install
+                $ python3 setup.py test
 
         To push updates, stage changes, commit and push to a branch, usually master
 
@@ -53,8 +53,9 @@
             -start <start time in utc time> hhmmss (only for extract)
             -finish <finish time in utc time> hhmmss (only for extract)                      
             -plot <plot option> (only for extract)
-            -csv <csv write option> (only for extract)
             -showplot <showplot option> (only for extract)
+            -plotly <plotly option> (only for extract)
+            -csv <csv write option> (only for extract)
 
         Arguments:
             path to the "mission.yaml" file, output format 'acfr' or 'oplab'
@@ -168,5 +169,7 @@
                     east-direction: +ve east
                     down-direction: +ve depth downwards
 
-            
+            Parameter naming conventions
+                    long and descriptive names should be used with all lower case letters. 
+
     """
