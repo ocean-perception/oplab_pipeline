@@ -1425,15 +1425,14 @@ class extract_data:
             py.plot(figure, config=config, filename=plotlypath + os.sep + 'auv_path.html',auto_open=False)
 
             def make_frame(data,tstamp):
-                temp_index=0#next(x[0] for x in enumerate(data[0]) if x[1] > tstamp)
+                temp_index=-1#next(x[0] for x in enumerate(data[0]) if x[1] > tstamp)
                 for i in range(len(data[1])):
-                    if data[1][i] > tstamp:
+                    if data[1][i] <= tstamp:
                         temp_index=i
+                    else:
                         break
-                if temp_index == 0:
-                    temp_index += 1
-                eastings=data[2][:temp_index-1]
-                northings=data[3][:temp_index-1]
+                eastings=data[2][:temp_index+1]
+                northings=data[3][:temp_index+1]
                 data_dict = {
                     'x': eastings,
                     'y': northings,
