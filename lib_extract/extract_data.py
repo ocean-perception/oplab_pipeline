@@ -47,8 +47,9 @@ class extract_data:
         x_velocity_std=[] #x_velocity_body_std
         y_velocity_std=[] #y_velocity_body_std
         z_velocity_std=[] #z_velocity_body_std
+        velocity_body_sensor_name = ''
 
-    # velocity inertia placeholders
+    # velocity inertial placeholders
         time_velocity_inertia=[] #time_velocity_inertial
         north_velocity_inertia=[] #north_velocity_inertial
         east_velocity_inertia=[] #east_velocity_inertial
@@ -62,6 +63,7 @@ class extract_data:
         northings_inertia_dead_reckoning=[] #northings_inertial_dead_reckoning
         eastings_inertia_dead_reckoning=[] #eastings_inertial_dead_reckoning
         depth_inertia_dead_reckoning=[] #depth_inertial_dead_reckoning
+        velocity_inertial_sensor_name = ''
         
     # orientation placeholders (INS)
         time_orientation=[]
@@ -71,6 +73,8 @@ class extract_data:
         roll_std=[]
         pitch_std=[]
         yaw_std=[]
+        orientation_sensor_name = ''
+
     # placeholders for interpolated velocity body measurements based on orientation and transformed coordinates
         time_dead_reckoning=[] #time_velocity_body_dead_reckoning?
 
@@ -100,11 +104,13 @@ class extract_data:
         time_depth=[]
         depth=[]
         depth_std=[]
+        depth_sensor_name = ''
 
     # altitude placeholders
         time_altitude=[]
         altitude=[]
         seafloor_depth=[] # interpolate depth and add altitude for every altitude measurement
+        altitude_sensor_name = ''
 
     # USBL placeholders
         time_usbl=[]
@@ -117,6 +123,7 @@ class extract_data:
         depth_usbl=[]
         northings_std_usbl=[]
         eastings_std_usbl=[]
+        usbl_sensor_name = ''
 
     # camera1 placeholders
         time_camera1=[]
@@ -128,6 +135,7 @@ class extract_data:
         camera1_pitch=[]
         camera1_yaw=[]
         camera1_altitude=[]
+        camera1_sensor_name = '' # original serial_camera1
     # camera2 placeholders
         time_camera2=[]
         filename_camera2=[]
@@ -138,6 +146,8 @@ class extract_data:
         camera2_pitch=[]
         camera2_yaw=[]
         camera2_altitude=[]
+        camera2_sensor_name = ''
+
     # camera3 placeholders
         time_camera3=[]
         filename_camera3=[]
@@ -148,12 +158,11 @@ class extract_data:
         camera3_pitch=[]
         camera3_yaw=[]
         camera3_altitude=[]
+        camera3_sensor_name = ''
         
     # OPLAB
         if ftype == 'oplab':# or (ftype is not 'acfr'):
             outpath=filepath + 'nav'
-
-            image_flag = 0
 
             filename='nav_standard.json'        
             print('Loading json file ' + outpath + os.sep + filename)
@@ -164,7 +173,8 @@ class extract_data:
             mission = filepath +'mission.yaml'
             with open(mission,'r') as stream:
                 load_data = yaml.load(stream)
-        
+            
+            # assigns sensor names from mission.yaml instead of json data packet, because TS don't have serial yet.
             for i in range(0,len(load_data)): 
                 if 'origin' in load_data:
                     origin_flag=1
@@ -172,16 +182,27 @@ class extract_data:
                     longitude_reference = load_data['origin']['longitude']
                     coordinate_reference = load_data['origin']['coordinate_reference_system']
                     date = load_data['origin']['date']
+                if 'velocity' in load_data:
+                    velocity_body_sensor_name = load_data['velocity']['format']
+                    velocity_inertial_sensor_name = load_data['velocity']['format']
+                if 'orientation' in load_data:
+                    orientation_sensor_name = load_data['orientation']['format']
+                if 'depth' in load_data:
+                    depth_sensor_name = load_data['depth']['format']
+                if 'altitude' in load_data:
+                    altitude_sensor_name = load_data['altitude']['format']
+                if 'usbl' in load_data:
+                    usbl_sensor_name = load_data['usbl']['format']
                 if 'image' in load_data:
-                    image_flag=1
                     if 'camera1' in load_data['image']:
-                        serial_camera1 = '_'.join(load_data['image']['camera1'].split('/'))
+                        camera1_sensor_name = '_'.join(load_data['image']['camera1'].split('/'))
                     if 'camera2' in load_data['image']:
-                        serial_camera2 = '_'.join(load_data['image']['camera2'].split('/'))
+                        camera2_sensor_name = '_'.join(load_data['image']['camera2'].split('/'))
                     if 'camera3' in load_data['image']:
-                        serial_camera3 = '_'.join(load_data['image']['camera3'].split('/'))
+                        camera3_sensor_name = '_'.join(load_data['image']['camera3'].split('/'))
+                
 
-        # compute the offset of sensors
+        # getting information of sensor position offset from origin/centre reference point
             print('Loading vehicle.yaml')    
             vehicle = filepath +'vehicle.yaml'
             with open(vehicle,'r') as stream:
@@ -312,15 +333,10 @@ class extract_data:
                         filename_camera1.append(parsed_json_data[i]['camera1'][0]['filename'])
                         time_camera2.append(parsed_json_data[i]['camera2'][0]['epoch_timestamp'])
                         filename_camera2.append(parsed_json_data[i]['camera2'][0]['filename'])
-                        if image_flag == 0:
-                            serial_camera2=parsed_json_data[i]['camera2'][0]['serial']
-                            serial_camera1=parsed_json_data[i]['camera1'][0]['serial']
 
                     if 'laser' in parsed_json_data[i]['category']:
                         time_camera3.append(parsed_json_data[i]['epoch_timestamp'])#LC
                         filename_camera3.append(parsed_json_data[i]['filename'])
-                        if image_flag == 0:
-                            serial_camera3=parsed_json_data[i]['serial']
 
 
         # make path for csv and plots
@@ -540,8 +556,9 @@ class extract_data:
         # northings eastings dead reckoning solution
         for i in range(len(time_dead_reckoning)):
             # dead reckoning solution
-            if i>1:
+            if i>=1:
                 [northings_dead_reckoning[i], eastings_dead_reckoning[i]]=dead_reckoning(time_dead_reckoning[i], time_dead_reckoning[i-1], north_velocity_inertia_dvl[i-1], east_velocity_inertia_dvl[i-1], northings_dead_reckoning[i-1], eastings_dead_reckoning[i-1])
+
         # offset sensor to plot origin/centre of vehicle
         eastings_dead_reckoning_dvl = []
         northings_dead_reckoning_dvl = []
@@ -614,7 +631,8 @@ class extract_data:
             if k>=1:                
                 depth_inertia_dead_reckoning[i]=interpolate(time_velocity_inertia[i],time_depth[k-1],time_depth[k],depth[k-1],depth[k])
         
-        for i in range(len(time_velocity_inertia)):                     
+        for i in range(len(time_velocity_inertia)):
+            if i >= 1:                     
                 [northings_inertia_dead_reckoning[i], eastings_inertia_dead_reckoning[i]]=dead_reckoning(time_velocity_inertia[i], time_velocity_inertia[i-1], north_velocity_inertia[i-1], east_velocity_inertia[i-1], northings_inertia_dead_reckoning[i-1], eastings_inertia_dead_reckoning[i-1])
 
         if interpolate_remove_flag == True:
@@ -856,11 +874,11 @@ class extract_data:
                             break
 
             if len(time_velocity_inertia) > 1:
-                print("Writing outputs to PHINS.csv ...")
-                with open(csvpath + os.sep + 'PHINS.csv' ,'w') as fileout:
+                print("Writing outputs to {}.csv ...".format(velocity_inertial_sensor_name))
+                with open(csvpath + os.sep + '{}.csv'.format(velocity_inertial_sensor_name), 'w') as fileout:
                     fileout.write('Timestamp, Northing [m], Easting [m], Depth [m]\n')
                 for i in range(len(time_velocity_inertia)):
-                    with open(csvpath + os.sep + 'PHINS.csv' ,'a') as fileout:
+                    with open(csvpath + os.sep + '{}.csv'.format(velocity_inertial_sensor_name) ,'a') as fileout:
                         try:
                             fileout.write(str(time_velocity_inertia[i])+','+str(northings_inertia_dead_reckoning[i])+','+str(eastings_inertia_dead_reckoning[i])+','+str(depth_inertia_dead_reckoning[i])+'\n')
                             fileout.close()
@@ -879,12 +897,13 @@ class extract_data:
                         except IndexError:
                             break
 ### Image file naming step not very robust, needs improvement
+            #*** maybe add timestamp at the last column of image.csv
             if len(time_camera1) > 1:
-                print("Writing outputs to {}.csv ...".format(serial_camera1))
-                with open(csvpath + os.sep + '{}.csv'.format(serial_camera1) ,'w') as fileout:
+                print("Writing outputs to {}.csv ...".format(camera1_sensor_name))
+                with open(csvpath + os.sep + '{}.csv'.format(camera1_sensor_name) ,'w') as fileout:
                     fileout.write('Imagenumber, Northing [m], Easting [m], Depth [m], Roll [deg], Pitch [deg], Heading [deg], Altitude [m]\n')
                 for i in range(len(time_camera1)):
-                    with open(csvpath + os.sep + '{}.csv'.format(serial_camera1) ,'a') as fileout:
+                    with open(csvpath + os.sep + '{}.csv'.format(camera1_sensor_name) ,'a') as fileout:
                         try:
                             imagenumber = filename_camera1[i][-11:-4]
                             if imagenumber.isdigit():
@@ -897,11 +916,11 @@ class extract_data:
                             break
 
             if len(time_camera2) > 1:
-                print("Writing outputs to {}.csv ...".format(serial_camera2))
-                with open(csvpath + os.sep + '{}.csv'.format(serial_camera2) ,'w') as fileout:
+                print("Writing outputs to {}.csv ...".format(camera2_sensor_name))
+                with open(csvpath + os.sep + '{}.csv'.format(camera2_sensor_name) ,'w') as fileout:
                     fileout.write('Imagenumber, Northing [m], Easting [m], Depth [m], Roll [deg], Pitch [deg], Heading [deg], Altitude [m]\n')
                 for i in range(len(time_camera2)):
-                    with open(csvpath + os.sep + '{}.csv'.format(serial_camera2) ,'a') as fileout:
+                    with open(csvpath + os.sep + '{}.csv'.format(camera2_sensor_name) ,'a') as fileout:
                         try:
                             imagenumber = filename_camera2[i][-11:-4]
                             if imagenumber.isdigit():
@@ -914,11 +933,11 @@ class extract_data:
                             break
 
             if len(time_camera3) > 1:
-                print("Writing outputs to {}.csv ...".format(serial_camera3))
-                with open(csvpath + os.sep + '{}.csv'.format(serial_camera3) ,'w') as fileout:
+                print("Writing outputs to {}.csv ...".format(camera1_sensor_name))
+                with open(csvpath + os.sep + '{}.csv'.format(camera1_sensor_name) ,'w') as fileout:
                     fileout.write('Imagenumber, Northing [m], Easting [m], Depth [m], Roll [deg], Pitch [deg], Heading [deg], Altitude [m]\n')
                 for i in range(len(time_camera3)):
-                    with open(csvpath + os.sep + '{}.csv'.format(serial_camera3) ,'a') as fileout:
+                    with open(csvpath + os.sep + '{}.csv'.format(camera1_sensor_name) ,'a') as fileout:
                         try:
                             imagenumber = filename_camera3[i][-11:-4]
                             if imagenumber.isdigit():
@@ -964,7 +983,7 @@ class extract_data:
             fig=plt.figure(figsize=(10,7))
             ax1 = fig.add_subplot(321)            
             ax1.plot(time_dead_reckoning,north_velocity_inertia_dvl, 'ro',label='DVL')#time_velocity_body,north_velocity_inertia_dvl, 'ro',label='DVL')
-            ax1.plot(time_velocity_inertia,north_velocity_inertia, 'b.',label='Phins')
+            ax1.plot(time_velocity_inertia,north_velocity_inertia, 'b.',label=velocity_inertial_sensor_name)
             ax1.set_xlabel('Epoch time, s')
             ax1.set_ylabel('Velocity, m/s')
             ax1.legend()
@@ -972,7 +991,7 @@ class extract_data:
             ax1.set_title('north velocity')
             ax2 = fig.add_subplot(323)            
             ax2.plot(time_dead_reckoning,east_velocity_inertia_dvl,'ro',label='DVL')
-            ax2.plot(time_velocity_inertia,east_velocity_inertia,'b.',label='Phins')
+            ax2.plot(time_velocity_inertia,east_velocity_inertia,'b.',label=velocity_inertial_sensor_name)
             ax2.set_xlabel('Epoch time, s')
             ax2.set_ylabel('Velocity, m/s')
             ax2.legend()
@@ -980,7 +999,7 @@ class extract_data:
             ax2.set_title('east velocity')
             ax3 = fig.add_subplot(325)            
             ax3.plot(time_dead_reckoning,down_velocity_inertia_dvl,'ro',label='DVL')#time_velocity_body,down_velocity_inertia_dvl,'r.',label='DVL')
-            ax3.plot(time_velocity_inertia,down_velocity_inertia,'b.',label='Phins')
+            ax3.plot(time_velocity_inertia,down_velocity_inertia,'b.',label=velocity_inertial_sensor_name)
             ax3.set_xlabel('Epoch time, s')
             ax3.set_ylabel('Velocity, m/s')
             ax3.legend()
@@ -1017,7 +1036,7 @@ class extract_data:
             fig=plt.figure(figsize=(12,7))
             ax1 = fig.add_subplot(221)
             ax1.plot(time_dead_reckoning,northings_dead_reckoning_dvl,'r.',label='DVL')#time_velocity_body,northings_dead_reckoning,'r.',label='DVL')
-            ax1.plot(time_velocity_inertia,northings_inertia_dead_reckoning,'g.',label='PHINS')
+            ax1.plot(time_velocity_inertia,northings_inertia_dead_reckoning,'g.',label=velocity_inertial_sensor_name)
             ax1.plot(time_usbl, northings_usbl,'b.',label='USBL')
             ax1.plot(time_dead_reckoning,northings_dead_reckoning,'c.',label='Centre')#time_velocity_body,northings_dead_reckoning,'b.')
             ax1.set_xlabel('Epoch time, s')
@@ -1027,7 +1046,7 @@ class extract_data:
             ax1.set_title('Northings')
             ax2 = fig.add_subplot(222)
             ax2.plot(time_dead_reckoning,eastings_dead_reckoning_dvl,'r.',label='DVL')#time_velocity_body,northings_dead_reckoning,'r.',label='DVL')
-            ax2.plot(time_velocity_inertia,eastings_inertia_dead_reckoning,'g.',label='PHINS')
+            ax2.plot(time_velocity_inertia,eastings_inertia_dead_reckoning,'g.',label=velocity_inertial_sensor_name)
             ax2.plot(time_usbl, eastings_usbl,'b.',label='USBL')
             ax2.plot(time_dead_reckoning,eastings_dead_reckoning,'c.',label='Centre')#time_velocity_body,eastings_dead_reckoning,'b.')
             ax2.set_xlabel('Epoch time, s')
@@ -1077,15 +1096,15 @@ class extract_data:
             plt.close()
 
         # uncertainties plot. 
-            #Ultimately include this in plotly error plot! MEANINGLESS THIS WAY. https://plot.ly/python/line-charts/#filled-lines Something like that?
-            for i in range(len(roll_std)):
-                if i == 0:
-                    pass
-                else:
-                    roll_std[i]=roll_std[i] + roll_std[i-1]
-                    pitch_std[i]=pitch_std[i] + pitch_std[i-1]
-                    yaw_std[i]=yaw_std[i] + yaw_std[i-1]
+            # Meaningless this way? https://plot.ly/python/line-charts/#filled-lines Something like that?
             # Sum up for the rest too? check if this is the correct way
+            # for i in range(len(roll_std)):
+            #     if i == 0:
+            #         pass
+            #     else:
+            #         roll_std[i]=roll_std[i] + roll_std[i-1]
+            #         pitch_std[i]=pitch_std[i] + pitch_std[i-1]
+            #         yaw_std[i]=yaw_std[i] + yaw_std[i-1]
             print('...plotting uncertainties_plot...')
 
             fig=plt.figure(figsize=(15,7))
@@ -1140,19 +1159,19 @@ class extract_data:
             print('...')
 
         # DR
-            print('...plotting camera1_centre_DVL_PHINS_DR...')
+            print('...plotting camera1_centre_DVL_{}_DR...'.format(velocity_inertial_sensor_name))
             fig=plt.figure()
             ax = fig.add_subplot(111)
             ax.plot(camera1_dead_reckoning_eastings,camera1_dead_reckoning_northings,'y.',label='Camera1')
             ax.plot(eastings_dead_reckoning,northings_dead_reckoning,'r.',label='Centre')
             ax.plot(eastings_dead_reckoning_dvl,northings_dead_reckoning_dvl,'g.',label='DVL')
-            ax.plot(eastings_inertia_dead_reckoning,northings_inertia_dead_reckoning,'m.',label='PHINS')
+            ax.plot(eastings_inertia_dead_reckoning,northings_inertia_dead_reckoning,'m.',label=velocity_inertial_sensor_name)
             ax.plot(eastings_usbl, northings_usbl,'c.',label='USBL')
             ax.set_xlabel('Eastings, m')
             ax.set_ylabel('Northings, m')
             ax.legend()#loc='upper right', bbox_to_anchor=(1, -0.2))
             ax.grid(True)   
-            plt.savefig(plotpath + os.sep + 'camera1_centre_DVL_PHINS_DR.pdf', dpi=600, bbox_inches='tight')
+            plt.savefig(plotpath + os.sep + 'camera1_centre_DVL_{}_DR.pdf'.format(velocity_inertial_sensor_name), dpi=600, bbox_inches='tight')
             if show_plot==True:
                 plt.show()
             plt.close()
@@ -1225,19 +1244,16 @@ class extract_data:
             print('...plotting velocity_vs_time...')
 
             trace11a = create_trace(time_dead_reckoning, north_velocity_inertia_dvl, 'DVL north velocity', 'red')
-            trace11b = create_trace(time_velocity_inertia, north_velocity_inertia, 'Phins north velocity', 'blue')
+            trace11b = create_trace(time_velocity_inertia, north_velocity_inertia, '{} north velocity'.format(velocity_inertial_sensor_name), 'blue')
             # plot1=[trace11a, trace11b]
             trace21a = create_trace(time_dead_reckoning, east_velocity_inertia_dvl, 'DVL east velocity', 'red')
-            trace21b = create_trace(time_velocity_inertia, east_velocity_inertia, 'Phins east velocity', 'blue')
+            trace21b = create_trace(time_velocity_inertia, east_velocity_inertia, '{} east velocity'.format(velocity_inertial_sensor_name), 'blue')
             trace31a = create_trace(time_dead_reckoning, down_velocity_inertia_dvl, 'DVL down velocity', 'red')
-            trace31b = create_trace(time_velocity_inertia, down_velocity_inertia, 'Phis down velocity', 'blue')
+            trace31b = create_trace(time_velocity_inertia, down_velocity_inertia, '{} down velocity'.format(velocity_inertial_sensor_name), 'blue')
             trace12a = create_trace(time_dead_reckoning, x_velocity_interpolated, 'DVL x velocity', 'red')
             trace22a = create_trace(time_dead_reckoning, y_velocity_interpolated, 'DVL y velocity', 'red')
             trace32a = create_trace(time_dead_reckoning, z_velocity_interpolated, 'DVL z velocity', 'red')
-            fig = tools.make_subplots(rows=3, cols=2, subplot_titles=('DVL vs Phins - north Velocity', 'DVL - x velocity / surge', 
-                                                                    'DVL vs Phins - east Velocity', 'DVL - y velocity / sway', 
-                                                                    'DVL vs Phins - down Velocity', 'DVL - z velocity / heave')
-                                                                    )
+            fig = tools.make_subplots(rows=3, cols=2, subplot_titles=('DVL vs {} - north Velocity'.format(velocity_inertial_sensor_name), 'DVL - x velocity / surge', 'DVL vs {} - east Velocity'.format(velocity_inertial_sensor_name), 'DVL - y velocity / sway', 'DVL vs {} - down Velocity'.format(velocity_inertial_sensor_name), 'DVL - z velocity / heave'))
             fig.append_trace(trace11a, 1, 1)
             fig.append_trace(trace11b, 1, 1)
             fig.append_trace(trace21a, 2, 1)
@@ -1270,11 +1286,11 @@ class extract_data:
             print('...plotting deadreckoning_vs_time...')
 
             trace11a = create_trace(time_dead_reckoning, northings_dead_reckoning_dvl, 'Northing DVL', 'red')
-            trace11b = create_trace(time_velocity_inertia, northings_inertia_dead_reckoning, 'Northing Phins', 'green')
+            trace11b = create_trace(time_velocity_inertia, northings_inertia_dead_reckoning, 'Northing {}'.format(velocity_inertial_sensor_name), 'green')
             trace11c = create_trace(time_usbl, northings_usbl, 'Northing USBL', 'blue')
             trace11d = create_trace(time_dead_reckoning, northings_dead_reckoning, 'Northing Centre', 'orange')
             trace12a = create_trace(time_dead_reckoning, eastings_dead_reckoning_dvl, 'Easting DVL', 'red')
-            trace12b = create_trace(time_velocity_inertia, eastings_inertia_dead_reckoning, 'Easting Phins', 'green')
+            trace12b = create_trace(time_velocity_inertia, eastings_inertia_dead_reckoning, 'Easting {}'.format(velocity_inertial_sensor_name), 'green')
             trace12c = create_trace(time_usbl, eastings_usbl, 'Easting USBL', 'blue')
             trace12d = create_trace(time_dead_reckoning, eastings_dead_reckoning, 'Easting Centre', 'orange')
             trace21a = create_trace(time_altitude, seafloor_depth, 'Depth  Seafloor (Depth Sensor + Altitude)', 'red')
@@ -1308,27 +1324,56 @@ class extract_data:
             config={'scrollZoom': True}
             py.plot(fig, config=config, filename=plotlypath + os.sep + 'deadreckoning_vs_time.html', auto_open=False)
 
-        # # usbl latitude longitude
-        #     fig=plt.figure(figsize=(10,5))
-        #     ax1 = fig.add_subplot(121)
-        #     ax1.plot(longitude_usbl,latitude_usbl,'b.')                 
-        #     ax1.set_xlabel('Longitude, degrees')
-        #     ax1.set_ylabel('Latitude, degrees')
-        #     ax1.grid(True)
-        #     ax2 = fig.add_subplot(122)
-        #     ax2.plot(eastings_usbl,northings_usbl,'b.',label='Reference ['+str(latitude_reference)+','+str(longitude_reference)+']')                 
-        #     ax2.set_xlabel('Eastings, m')
-        #     ax2.set_ylabel('Northings, m')
-        #     ax2.grid(True)
-        #     ax2.legend()
-        #     fig.tight_layout()
-        #     plt.savefig(plotpath + os.sep + 'usbl_LatLong_vs_NorthEast.pdf', dpi=600, bbox_inches='tight')
-        #     plt.close()
+        # Uncertainty plotly
+            trace11a = create_trace(time_orientation, roll_std, 'roll std', 'red')
+            trace11b = create_trace(time_orientation, pitch_std, 'pitch std', 'green')
+            trace11c = create_trace(time_orientation, yaw_std, 'yaw std', 'blue')
+            trace12a = create_trace(time_velocity_body, x_velocity_std, 'x velocity std', 'red')
+            trace12b = create_trace(time_velocity_body, y_velocity_std, 'y velocity std', 'green')
+            trace12c = create_trace(time_velocity_body, z_velocity_std, 'z velocity std', 'blue')
+            trace13a = create_trace(time_usbl, latitude_std_usbl, 'latitude std usbl', 'red')
+            trace13b = create_trace(time_usbl, longitude_std_usbl, 'longitude std usbl', 'green')
+            trace21a = create_trace(time_depth, depth_std, 'depth std', 'red')
+            trace22a = create_trace(time_velocity_inertia, north_velocity_std_inertia, 'north velocity std inertial', 'red')
+            trace22b = create_trace(time_velocity_inertia, east_velocity_std_inertia, 'east velocity std inertial', 'green')
+            trace22c = create_trace(time_velocity_inertia, down_velocity_std_inertia, 'down velocity std inertial', 'blue')
+            trace23a = create_trace(time_usbl, northings_std_usbl, 'northing std usbl', 'red')
+            trace23b = create_trace(time_usbl, eastings_std_usbl, 'easting std usbl', 'green')
+            fig = tools.make_subplots(rows=2, cols=3, subplot_titles=('Orientation uncertainties', 'DVL uncertainties', 'USBL uncertainties', 'Depth uncertainties', '{} uncertainties'.format(velocity_inertial_sensor_name), 'USBL uncertainties'))
+            fig.append_trace(trace11a, 1, 1)
+            fig.append_trace(trace11b, 1, 1)
+            fig.append_trace(trace11c, 1, 1)
+            fig.append_trace(trace12a, 1, 2)
+            fig.append_trace(trace12b, 1, 2)
+            fig.append_trace(trace12c, 1, 2)
+            fig.append_trace(trace13a, 1, 3)
+            fig.append_trace(trace13b, 1, 3)
+            fig.append_trace(trace21a, 2, 1)
+            fig.append_trace(trace22a, 2, 2)
+            fig.append_trace(trace22b, 2, 2)
+            fig.append_trace(trace22c, 2, 2)
+            fig.append_trace(trace23a, 2, 3)
+            fig.append_trace(trace23b, 2, 3)
+            fig['layout']['xaxis1'].update(title='Epoch time, s', tickformat='.3f')#xaxis 1 title')
+            fig['layout']['xaxis2'].update(title='Epoch time, s', tickformat='.3f')#, range=[10, 50])
+            fig['layout']['xaxis3'].update(title='Epoch time, s', tickformat='.3f')#, showgrid=False)
+            fig['layout']['xaxis4'].update(title='Epoch time, s', tickformat='.3f')#, type='log')
+            fig['layout']['xaxis5'].update(title='Epoch time, s', tickformat='.3f')
+            fig['layout']['xaxis6'].update(title='Epoch time, s', tickformat='.3f')
+            fig['layout']['yaxis1'].update(title='Angle, degrees')
+            fig['layout']['yaxis2'].update(title='Velocity, m/s')
+            fig['layout']['yaxis3'].update(title='LatLong, degrees')
+            fig['layout']['yaxis4'].update(title='Depth, m')
+            fig['layout']['yaxis5'].update(title='Velocity, m/s')
+            fig['layout']['yaxis6'].update(title='NorthEast, m')
+            fig['layout'].update(title='Uncertainty Plots', dragmode='pan', hovermode='closest')
+            config={'scrollZoom': True}
+            py.plot(fig, config=config, filename=plotlypath + os.sep + 'uncertainties_plot.html', auto_open=False)
 
         # # uncertainties plot. 
         #     #https://plot.ly/python/line-charts/#filled-lines Something like that?
 
-        # # DR plotly slider**
+        # # DR plotly slider *include toggle button that switches between lat long and north east
             print('...plotting auv_path...')
 
             minTimestamp = 99999999999999
@@ -1417,7 +1462,7 @@ class extract_data:
             make_data('Camera1',camera1_dead_reckoning_eastings,camera1_dead_reckoning_northings)
             make_data('Centre',eastings_dead_reckoning,northings_dead_reckoning)
             make_data('DVL',eastings_dead_reckoning_dvl,northings_dead_reckoning_dvl)
-            make_data('Phins',eastings_inertia_dead_reckoning,northings_inertia_dead_reckoning)
+            make_data(velocity_inertial_sensor_name,eastings_inertia_dead_reckoning,northings_inertia_dead_reckoning)
             make_data('USBL',eastings_usbl,northings_usbl)
 
             config={'scrollZoom': True}
@@ -1444,7 +1489,7 @@ class extract_data:
             for i in epoch_timestamps_slider:
                 frame = {'data': [], 'name': str(i)}
                 
-                for j in [['Camera1',time_camera1,camera1_dead_reckoning_eastings,camera1_dead_reckoning_northings],['Centre',time_dead_reckoning,eastings_dead_reckoning,northings_dead_reckoning],['DVL',time_dead_reckoning,eastings_dead_reckoning_dvl,northings_dead_reckoning_dvl],['Phins',time_velocity_inertia,eastings_inertia_dead_reckoning,northings_inertia_dead_reckoning],['USBL',time_usbl,eastings_usbl,northings_usbl]]:
+                for j in [['Camera1',time_camera1,camera1_dead_reckoning_eastings,camera1_dead_reckoning_northings],['Centre',time_dead_reckoning,eastings_dead_reckoning,northings_dead_reckoning],['DVL',time_dead_reckoning,eastings_dead_reckoning_dvl,northings_dead_reckoning_dvl],[velocity_inertial_sensor_name,time_velocity_inertia,eastings_inertia_dead_reckoning,northings_inertia_dead_reckoning],['USBL',time_usbl,eastings_usbl,northings_usbl]]:
                     make_frame(j,i)
                 figure['frames'].append(frame)
                 slider_step = {'args': [
