@@ -385,7 +385,7 @@ def syntax_error():
     print("         -i <path to mission.yaml>")
     print("         -o <output type> 'acfr' or 'oplab'")
     print("         -v <path to root processed folder where parsed data exists> to generate brief visualization summaries for json file data")
-    print("         -e <path to root processed folder where parsed data exists> to extract useful info from json file data")    
+    print("         -e <path to root processed folder where parsed data exists> to extract useful info from json file data")
     print("         -start <start time in utc time> hhmmss (only for extract)")
     print("         -finish <finish time in utc time> hhmmss (only for extract)")
     print("         -plot <plot option> (only for extract)")
@@ -484,7 +484,7 @@ if __name__ == '__main__':
                     flag_f = True
             if (flag_f ==True):
                 if (csv_write == False) and (plot == False) and (plotly == False):
-                    print('No extract option selected, default plot (-p) enabled but without csv_write -> type (-csv) to enable')
+                    print('No extract option selected, default -plot enabled. Type -csv and -plotly to enable csv and plotly output.')
                     plot = True
                 extract_data(filepath,ftype,start_time,finish_time,plot,csv_write,show_plot,plotly)
             else:
