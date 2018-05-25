@@ -484,7 +484,7 @@ class extract_data:
         for i in range(len(dead_reckoning_dvl_list)):
             # dead reckoning solution
             if i>=1:
-                [dead_reckoning_dvl_list[i].northings_dr, dead_reckoning_dvl_list[i].eastings_dr]=dead_reckoning(dead_reckoning_dvl_list[i].timestamp, dead_reckoning_dvl_list[i-1].timestamp, dead_reckoning_dvl_list[i-1].north_velocity, dead_reckoning_dvl_list[i-1].east_velocity, dead_reckoning_dvl_list[i-1].northings_dr, dead_reckoning_dvl_list[i-1].eastings_dr)
+                [dead_reckoning_dvl_list[i].northings_dr, dead_reckoning_dvl_list[i].eastings_dr]=dead_reckoning(dead_reckoning_dvl_list[i].timestamp, dead_reckoning_dvl_list[i-1].timestamp, dead_reckoning_dvl_list[i].north_velocity, dead_reckoning_dvl_list[i-1].north_velocity, dead_reckoning_dvl_list[i].east_velocity, dead_reckoning_dvl_list[i-1].east_velocity, dead_reckoning_dvl_list[i-1].northings_dr, dead_reckoning_dvl_list[i-1].eastings_dr)
 
         # offset sensor to plot origin/centre of vehicle
         dead_reckoning_centre_list = copy.deepcopy(dead_reckoning_dvl_list) #[:] #.copy()
@@ -543,7 +543,7 @@ class extract_data:
         
         for i in range(len(velocity_inertial_list)):
             if i >= 1:                     
-                [velocity_inertial_list[i].northings_dr, velocity_inertial_list[i].eastings_dr]=dead_reckoning(velocity_inertial_list[i].timestamp, velocity_inertial_list[i-1].timestamp, velocity_inertial_list[i-1].north_velocity, velocity_inertial_list[i-1].east_velocity, velocity_inertial_list[i-1].northings_dr, velocity_inertial_list[i-1].eastings_dr)
+                [velocity_inertial_list[i].northings_dr, velocity_inertial_list[i].eastings_dr]=dead_reckoning(velocity_inertial_list[i].timestamp, velocity_inertial_list[i-1].timestamp, velocity_inertial_list[i].north_velocity, velocity_inertial_list[i-1].north_velocity, velocity_inertial_list[i].east_velocity, velocity_inertial_list[i-1].east_velocity, velocity_inertial_list[i-1].northings_dr, velocity_inertial_list[i-1].eastings_dr)
 
         if interpolate_remove_flag == True:
             del velocity_inertial_list[0]
