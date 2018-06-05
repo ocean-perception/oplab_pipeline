@@ -144,9 +144,9 @@ class extract_data:
                     camera2_y_offset = load_data['camera2']['y_offset']
                     camera2_z_offset = load_data['camera2']['z_offset']
                 if 'camera3' in load_data:
-                    camera3_x_offset = load_data['camera1']['x_offset']
-                    camera3_y_offset = load_data['camera1']['y_offset']
-                    camera3_z_offset = load_data['camera1']['z_offset']
+                    camera3_x_offset = load_data['camera3']['x_offset']
+                    camera3_y_offset = load_data['camera3']['y_offset']
+                    camera3_z_offset = load_data['camera3']['z_offset']
                 if 'usbl' in load_data:
                     usbl_x_offset = load_data['usbl']['x_offset']
                     usbl_y_offset = load_data['usbl']['y_offset']
