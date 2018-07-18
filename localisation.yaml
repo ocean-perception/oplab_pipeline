@@ -1,0 +1,26 @@
+usbl_filter:
+  max_auv_speed: 10
+
+particle_filter:
+  mode: usbl
+  dvl_sensor_noise_factor: 2
+  imu_sensor_noise_factor: 2
+  usbl_measurement_noise_factor: 2
+  particles_number: 100
+  particles_plot_time_interval: 300
+
+csv_output:
+  dead_reckoning: 
+    auv_centre: False
+    auv_dvl: True
+    camera_1: True
+    camera_2: True
+    camera_3: True
+    chemical: True
+  particle_filter:
+    auv_centre: False
+    auv_dvl: True
+    camera_1: True
+    camera_2: True
+    camera_3: True
+    chemical: True
