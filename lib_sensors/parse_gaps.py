@@ -17,7 +17,7 @@ from lib_coordinates.latlon_wgs84 import metres_to_latlon
 data_list=[]
 
 class parse_gaps:
-	def __init__(self, filepath, category, timezone, timeoffset, latitude_reference, longitude_reference, ftype, outpath, fileoutname, fileout):
+	def __init__(self, filepath, category, timezone, timeoffset, distance_std_offset, distance_std_factor, latitude_reference, longitude_reference, ftype, outpath, fileoutname, fileout):
 
 		# parser meta data    
 		class_string = 'measurement'
@@ -25,11 +25,12 @@ class parse_gaps:
 		frame_string = 'inertial'
 
 		# define headers used in phins
-		header_absolute = '<< $PTSAG' #georeferenced strings
-		header_heading = '<< $HEHDT'
+		header_absolute = '$PTSAG'# '<< $PTSAG' #georeferenced strings
+		header_heading = '$HEHDT'# '<< $HEHDT'
 
 		# gaps std models
-		distance_std_factor = 0.6/100 # usbl catalogue gaps spec
+		# distance_std_factor = 1/100 # 0.6/100 # usbl catalogue gaps spec
+		# distance_std_offset = 5
 		broken_packet_flag = False
 
 		# read in timezone
@@ -67,7 +68,7 @@ class parse_gaps:
 					broken_packet_flag = False
 					#print(line_split_no_checksum)
 					# keep on upating ship position to find the prior interpolation value of ship coordinates
-					if line_split_no_checksum[0] == header_absolute:
+					if header_absolute in line_split_no_checksum[0]: # line_split_no_checksum[0] == header_absolute:
 												
 						# start with a ship coordinate
 						if line_split_no_checksum[6] != '0' and flag_got_time == 2:
@@ -194,7 +195,7 @@ class parse_gaps:
 
 						
 						
-					if line_split_no_checksum[0] == header_heading: 
+					if header_heading in line_split_no_checksum[0]: # line_split_no_checksum[0] == header_heading: 
 						if flag_got_time < 3:
 							heading_ship_prior = float(line_split_no_checksum[1])
 							if flag_got_time < 2:
@@ -225,7 +226,7 @@ class parse_gaps:
 						lateral_distance,bearing = latlon_to_metres(latitude, longitude, latitude_ship, longitude_ship)
 
 						distance = math.sqrt(lateral_distance * lateral_distance + depth * depth)
-						distance_std = distance_std_factor*distance
+						distance_std = distance_std_factor*distance + distance_std_offset
 
 						# determine uncertainty in terms of latitude and longitude
 						latitude_offset,longitude_offset = metres_to_latlon(latitude, longitude, distance_std, distance_std)
