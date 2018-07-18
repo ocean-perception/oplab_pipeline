@@ -14,12 +14,15 @@
             -o <output type> 'acfr' or 'oplab'
             -v <path to root processed folder where parsed data exists> to generate brief visualization summaries for json file data
             -e <path to root processed folder where parsed data exists> to extract useful info from json file data
-            -start <start time in utc time> hhmmss (only for extract)
-            -finish <finish time in utc time> hhmmss (only for extract)                      
+            -start <start date & time in utc time> yyyymmddhhmmss (only for extract)
+            -finish <finish date & time in utc time> yyyymmddhhmmss (only for extract)                      
             -plot <plot option> (only for extract)
             -showplot <showplot option> (only for extract)
             -plotly <plotly option> (only for extract)
             -csv <csv write option> (only for extract)
+            -PF <perform particle filter option> (only for extract)
+            -N <number of particles in particle filter option> (only for extract)
+            -Ninterval <time interval of particles plot option in seconds> (only for extract)
             
         Arguments:
             path to the "mission.yaml" file, output format 'acfr' or 'oplab'
@@ -164,13 +167,11 @@ from lib_sensors.parse_usbl_dump import parse_usbl_dump
 from lib_sensors.parse_acfr_images import parse_acfr_images
 from lib_sensors.parse_seaxerocks_images import parse_seaxerocks_images
 from lib_sensors.parse_interlacer import parse_interlacer
+from lib_sensors.parse_chemical import parse_chemical
 
 def parse_data(filepath,ftype):
 
-
     # initiate data and processing flags
-    
-    
     proc_flag = 0
     
     origin_flag=0
@@ -179,83 +180,79 @@ def parse_data(filepath,ftype):
     depth_flag =0
     attitude_flag =0
     usbl_flag =0
-    image_flag =0    
+    image_flag =0
+    chemical_flag = 0
 
-
+    # load mission.yaml config file
     print('Loading mission.yaml')    
-    mission = filepath+'mission.yaml'
+    mission = filepath + 'mission.yaml'
     with open(mission,'r') as stream:
         load_data = yaml.load(stream)
-    
-    
-    for i in range(0,len(load_data)): 
-
-        if 'origin' in load_data:
-            origin_flag=1
-            latitude_reference = load_data['origin']['latitude']
-            longitude_reference = load_data['origin']['longitude']
-            coordinate_reference = load_data['origin']['coordinate_reference_system']
-            date = load_data['origin']['date']
-
-        if 'velocity' in load_data:
-            velocity_flag=1                    
-            velocity_format = load_data['velocity']['format']
-            velocity_filepath = load_data['velocity']['filepath']
-            velocity_filename = load_data['velocity']['filename']
-            velocity_timezone = load_data['velocity']['timezone']
-            velocity_timeoffset = load_data['velocity']['timeoffset']
-            velocity_headingoffset = load_data['velocity']['headingoffset']
-
-        if 'orientation' in load_data:
-            orientation_flag=1                    
-            orientation_format = load_data['orientation']['format']
-            orientation_filepath = load_data['orientation']['filepath']
-            orientation_filename = load_data['orientation']['filename']
-            time_orientationzone = load_data['orientation']['timezone']
-            time_orientationoffset = load_data['orientation']['timeoffset']
-            orientation_headingoffset = load_data['orientation']['headingoffset']
-    
-        if 'depth' in load_data:
-            depth_flag=1                    
-            depth_format = load_data['depth']['format']
-            depth_filepath = load_data['depth']['filepath']
-            depth_filename = load_data['depth']['filename']
-            time_depthzone = load_data['depth']['timezone']
-            time_depthoffset = load_data['depth']['timeoffset']
-    
-        if 'altitude' in load_data:
-            altitude_flag=1                    
-            altitude_format = load_data['altitude']['format']
-            altitude_filepath = load_data['altitude']['filepath']
-            altitude_filename = load_data['altitude']['filename']
-            time_altitudezone = load_data['altitude']['timezone']
-            time_altitudeoffset = load_data['altitude']['timeoffset']
-
-        if 'usbl' in load_data:            
-            usbl_flag=1                    
-            usbl_format = load_data['usbl']['format']
-            usbl_filepath = load_data['usbl']['filepath']                        
-            time_usblzone = load_data['usbl']['timezone']
-            time_usbloffset = load_data['usbl']['timeoffset']
-            if usbl_format == 'usbl_dump':
-                usbl_filename = load_data['usbl']['filename']
-                usbl_label = load_data['usbl']['label']
-
-        if 'image' in load_data:
-            image_flag=1                    
-            image_format = load_data['image']['format']
-            image_filepath = load_data['image']['filepath']
-            camera1_label = load_data['image']['camera1']
-            camera2_label = load_data['image']['camera2']
-            if image_format == 'seaxerocks_3':
-                camera3_label = load_data['image']['camera3']
-            image_timezone = load_data['image']['timezone']
-            image_timeoffset = load_data['image']['timeoffset']
-
-    print('Loading vehicle.yaml')    
-    vehicle = filepath+'vehicle.yaml'
-    with open(vehicle,'r') as stream:
-        load_data = yaml.load(stream)
+    # for i in range(0,len(load_data)): 
+    if 'origin' in load_data:
+        origin_flag=1
+        latitude_reference = load_data['origin']['latitude']
+        longitude_reference = load_data['origin']['longitude']
+        coordinate_reference = load_data['origin']['coordinate_reference_system']
+        date = load_data['origin']['date']
+    if 'velocity' in load_data:
+        velocity_flag=1                    
+        velocity_format = load_data['velocity']['format']
+        velocity_filepath = load_data['velocity']['filepath']
+        velocity_filename = load_data['velocity']['filename']
+        velocity_timezone = load_data['velocity']['timezone']
+        velocity_timeoffset = load_data['velocity']['timeoffset']
+        velocity_headingoffset = load_data['velocity']['headingoffset']
+    if 'orientation' in load_data:
+        orientation_flag=1                    
+        orientation_format = load_data['orientation']['format']
+        orientation_filepath = load_data['orientation']['filepath']
+        orientation_filename = load_data['orientation']['filename']
+        time_orientationzone = load_data['orientation']['timezone']
+        time_orientationoffset = load_data['orientation']['timeoffset']
+        orientation_headingoffset = load_data['orientation']['headingoffset']
+    if 'depth' in load_data:
+        depth_flag=1                    
+        depth_format = load_data['depth']['format']
+        depth_filepath = load_data['depth']['filepath']
+        depth_filename = load_data['depth']['filename']
+        time_depthzone = load_data['depth']['timezone']
+        time_depthoffset = load_data['depth']['timeoffset']
+    if 'altitude' in load_data:
+        altitude_flag=1                    
+        altitude_format = load_data['altitude']['format']
+        altitude_filepath = load_data['altitude']['filepath']
+        altitude_filename = load_data['altitude']['filename']
+        time_altitudezone = load_data['altitude']['timezone']
+        time_altitudeoffset = load_data['altitude']['timeoffset']
+    if 'usbl' in load_data:            
+        usbl_flag=1                    
+        usbl_format = load_data['usbl']['format']
+        usbl_filepath = load_data['usbl']['filepath']                        
+        time_usblzone = load_data['usbl']['timezone']
+        time_usbloffset = load_data['usbl']['timeoffset']
+        usbl_stdoffset = load_data['usbl']['stdoffset']
+        usbl_stdfactor = load_data['usbl']['stdfactor']
+        if usbl_format == 'usbl_dump':
+            usbl_filename = load_data['usbl']['filename']
+            usbl_label = load_data['usbl']['label']
+    if 'image' in load_data:
+        image_flag=1                    
+        image_format = load_data['image']['format']
+        image_filepath = load_data['image']['filepath']
+        camera1_label = load_data['image']['camera1']
+        camera2_label = load_data['image']['camera2']
+        if image_format == 'seaxerocks_3':
+            camera3_label = load_data['image']['camera3']
+        image_timezone = load_data['image']['timezone']
+        image_timeoffset = load_data['image']['timeoffset']
+    if 'chemical' in load_data:
+        chemical_flag=1
+        chemical_format = load_data['chemical']['format']
+        chemical_filepath = load_data['chemical']['filepath']
+        chemical_filename = load_data['chemical']['filename']
+        chemical_timezone = load_data['chemical']['timezone']
+        chemical_data = load_data['chemical']['data']
     
     # generate output path
     print('Generating output paths')    
@@ -284,7 +281,7 @@ def parse_data(filepath,ftype):
 
     if ftype == 'oplab':# or (ftype is not 'acfr'):
         shutil.copy2(mission, outpath) # save mission yaml to processed directory
-        shutil.copy2(vehicle, outpath) # save mission yaml to processed directory
+        shutil.copy2(vehicle, outpath) # save vehicle yaml to processed directory
         outpath = outpath + 'nav'
         filename='nav_standard.json'   
         
@@ -329,9 +326,9 @@ def parse_data(filepath,ftype):
             if usbl_flag == 1:
                 print('... loading usbl')
                 if usbl_format == "gaps":                
-                    parse_gaps(filepath + usbl_filepath,'usbl',time_usblzone,time_usbloffset,latitude_reference,longitude_reference,ftype,outpath,filename,fileout)                
+                    parse_gaps(filepath + usbl_filepath,'usbl',time_usblzone,time_usbloffset,usbl_stdoffset,usbl_stdfactor,latitude_reference,longitude_reference,ftype,outpath,filename,fileout)                
                 if usbl_format == "usbl_dump":                    
-                    parse_usbl_dump(filepath + usbl_filepath,usbl_filename,usbl_label,'usbl',time_usblzone,time_usbloffset,latitude_reference,longitude_reference,ftype,outpath,filename,fileout)                
+                    parse_usbl_dump(filepath + usbl_filepath,usbl_filename,usbl_label,'usbl',time_usblzone,time_usbloffset,usbl_stdoffset,usbl_stdfactor,latitude_reference,longitude_reference,ftype,outpath,filename,fileout)                
                 usbl_flag = 0
 
             if velocity_flag == 1:
@@ -365,19 +362,21 @@ def parse_data(filepath,ftype):
                 if altitude_format == "ae2000":                    
                     parse_ae2000(filepath + altitude_filepath,altitude_filename,'altitude',time_altitudezone,0,time_altitudeoffset,ftype,outpath,filename,fileout)
                 altitude_flag = 0
+
+            if chemical_flag == 1:
+                print('... loading chemical')
+                if chemical_format == 'date_time_intensity':
+                    parse_chemical(filepath + chemical_filepath, chemical_filename, chemical_timezone, chemical_data, ftype, outpath, filename, fileout)
+                chemical_flag = 0
     
         fileout.close()
         
         #interlace the data based on timestamps
         print('Interlacing data')
         parse_interlacer(ftype,outpath,filename)
-        print('Output saved to ' + outpath + os.sep + filename)
+        print('Output saved to ' + outpath + filename)
 
         print('Complete parse data')
-
-
-
-    
 
 def syntax_error():
 # incorrect usage message
@@ -386,16 +385,15 @@ def syntax_error():
     print("         -o <output type> 'acfr' or 'oplab'")
     print("         -v <path to root processed folder where parsed data exists> to generate brief visualization summaries for json file data")
     print("         -e <path to root processed folder where parsed data exists> to extract useful info from json file data")
-    print("         -start <start time in utc time> hhmmss (only for extract)")
-    print("         -finish <finish time in utc time> hhmmss (only for extract)")
+    print("         -start <start date & time in utc time> yyyymmddhhmmss (only for extract)")
+    print("         -finish <finish date & time in utc time> yyyymmddhhmmss (only for extract)")
     print("         -plot <plot option> (only for extract)")
-    print("         -showplot <showplot option> (only for extract)")
     print("         -plotly <plotly option> (only for extract)")
     print("         -csv <csv write option> (only for extract)")
+    print("         -DR <output DR files option> (only for extract)")
+    print("         -PF <perform particle filter fusion option> (only for extract)")
     
     return -1
-
-    
 
 if __name__ == '__main__':
 
@@ -408,12 +406,17 @@ if __name__ == '__main__':
     
     flag_f=False
 
-    start_time='000000'
-    finish_time='235959'
+    start_datetime=''
+    finish_datetime=''
+
     plot = False
+
     plotly = False
+    
     csv_write = False
-    show_plot = False
+
+    output_DR=False
+    perform_particle_filter = False
     
     # read in filepath and ftype
     if (int((len(sys.argv)))) < 3:
@@ -438,17 +441,19 @@ if __name__ == '__main__':
                 filepath=sys.argv[i+1]
                 flag_e=True
             elif option == "-start":
-                start_time=sys.argv[i+1]
+                start_datetime=sys.argv[i+1]
             elif option == "-finish":
-                finish_time=sys.argv[i+1]
+                finish_datetime=sys.argv[i+1]
             elif option == "-plot":
                 plot=True
             elif option == "-plotly":
                 plotly=True
             elif option == "-csv":
                 csv_write=True
-            elif option == "-showplot":
-                show_plot=True
+            elif option == "-DR":
+                output_DR=True
+            elif option == "-PF":
+                perform_particle_filter=True
             elif option[0] == '-':
                 print('Error: incorrect use')
                 sys.exit(syntax_error())
@@ -463,7 +468,7 @@ if __name__ == '__main__':
                 if sub_path[i]=='raw':
                     flag_f = True
             if flag_f == True:
-                parse_data(filepath,ftype)
+                parse_data(filepath + os.sep,ftype)
             else:
                 print('Check folder structure contains "raw"')
 
@@ -473,7 +478,7 @@ if __name__ == '__main__':
                 if sub_path[i]=='processed':
                     flag_f = True
             if flag_f == True:
-                display_info(filepath,ftype)
+                display_info(filepath + os.sep,ftype)
             else:
                 print('Check folder structure contains "processed"')
 
@@ -484,9 +489,9 @@ if __name__ == '__main__':
                     flag_f = True
             if (flag_f ==True):
                 if (csv_write == False) and (plot == False) and (plotly == False):
-                    print('No extract option selected, default -plot enabled. Type -csv and -plotly to enable csv and plotly output.')
+                    print('No extract option selected, default -plot enabled. Other available options are -csv, -plotly, -showplot, -PF, -N, -Ninterval')
                     plot = True
-                extract_data(filepath,ftype,start_time,finish_time,plot,csv_write,show_plot,plotly)
+                extract_data(filepath + os.sep,ftype,start_datetime,finish_datetime,plot,csv_write,plotly,output_DR,perform_particle_filter)
             else:
                 print('Check folder structure contains "processed"')                                    
 
