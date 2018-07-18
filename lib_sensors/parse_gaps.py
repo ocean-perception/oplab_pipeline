@@ -52,7 +52,7 @@ class parse_gaps:
 		# determine file paths
 		all_list = os.listdir(filepath)
 		gaps_list = [ line for line in all_list if '.dat' in line]
-		print(str(len(gaps_list)) + ' GAPS files found')
+		print(str(len(gaps_list)) + ' GAPS file(s) found')
 		
 		# extract data from files
 		data_list=[]

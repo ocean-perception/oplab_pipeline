@@ -53,7 +53,7 @@ class parse_ae2000:
 		timeoffset = -timezone_offset*60*60 + timeoffset 
 
 		# parse phins data
-		print('...... parsing ae2000 logs')
+		print('  Parsing ae2000 logs...')
 		data_list=[]
 		df = pd.read_csv(filepath + filename)
 		
@@ -230,7 +230,9 @@ class parse_ae2000:
 						continue
 			# else:
 			# 	print('no bottom lock')
+		print('  ...done parsing ae2000 logs.')
 
+		print('  Writing converted ae2000 data to file...')
 		if ftype == 'oplab':
 			fileout.close()
 			for filein in glob.glob(outpath + os.sep + fileoutname):
@@ -241,8 +243,9 @@ class parse_ae2000:
 							data_list.insert(0,data_in[len(data_in)-i-1])				        
 						
 				except ValueError:					
-					print('Initialising JSON file')
+					print('An error occurred while initialising JSON file')
 
 			with open(outpath + os.sep + fileoutname,'w') as fileout:
 				json.dump(data_list, fileout)	
 				del data_list
+		print('  ...done writing converted ae2000 data to file.')
