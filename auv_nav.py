@@ -281,6 +281,7 @@ def parse_data(filepath,ftype):
 
     if ftype == 'oplab':# or (ftype is not 'acfr'):
         shutil.copy2(mission, outpath) # save mission yaml to processed directory
+        vehicle = filepath + 'vehicle.yaml'
         shutil.copy2(vehicle, outpath) # save vehicle yaml to processed directory
         outpath = outpath + 'nav'
         filename='nav_standard.json'   
@@ -324,56 +325,63 @@ def parse_data(filepath,ftype):
                 image_flag = 0
 
             if usbl_flag == 1:
-                print('... loading usbl')
+                print('Loading usbl data...')
                 if usbl_format == "gaps":                
                     parse_gaps(filepath + usbl_filepath,'usbl',time_usblzone,time_usbloffset,usbl_stdoffset,usbl_stdfactor,latitude_reference,longitude_reference,ftype,outpath,filename,fileout)                
                 if usbl_format == "usbl_dump":                    
                     parse_usbl_dump(filepath + usbl_filepath,usbl_filename,usbl_label,'usbl',time_usblzone,time_usbloffset,usbl_stdoffset,usbl_stdfactor,latitude_reference,longitude_reference,ftype,outpath,filename,fileout)                
                 usbl_flag = 0
+                print('...done loading usbl data.')
 
             if velocity_flag == 1:
-                print('... loading velocity')
+                print('Loading velocity data...')
                 if velocity_format == "phins":                    
                     parse_phins(filepath + velocity_filepath,velocity_filename,'velocity',velocity_timezone,velocity_timeoffset,velocity_headingoffset,ftype,outpath,filename,fileout)
                 if velocity_format == "ae2000":                    
                     parse_ae2000(filepath + velocity_filepath,velocity_filename,'velocity',velocity_timezone,velocity_timeoffset,velocity_headingoffset,ftype,outpath,filename,fileout)
                 velocity_flag = 0
+                print('...done loading velocity data.')
 
             if orientation_flag == 1:                
-                print('... loading orientation')
+                print('Loading orientation data...')
                 if orientation_format == "phins":                    
                     parse_phins(filepath + orientation_filepath,orientation_filename,'orientation',time_orientationzone,time_orientationoffset,orientation_headingoffset,ftype,outpath,filename,fileout)
                 if orientation_format == "ae2000":                    
                     parse_ae2000(filepath + orientation_filepath,orientation_filename,'orientation',time_orientationzone,time_orientationoffset,orientation_headingoffset,ftype,outpath,filename,fileout)
                 orientation_flag = 0
+                print('...done done loading orientation data.')
 
             if depth_flag == 1:                                
-                print('... loading depth')
+                print('Loading depth data...')
                 if depth_format == "phins":    
                     parse_phins(filepath + depth_filepath,depth_filename,'depth',time_depthzone,time_depthoffset,0,ftype,outpath,filename,fileout)
                 if depth_format == "ae2000":    
                     parse_ae2000(filepath + depth_filepath,depth_filename,'depth',time_depthzone,time_depthoffset,0,ftype,outpath,filename,fileout)
                 depth_flag = 0
+                print('...done loading depth data.')
 
             if altitude_flag == 1:                
-                print('... loading altitude')
+                print('Loading altitude data...')
                 if altitude_format == "phins":                    
                     parse_phins(filepath + altitude_filepath,altitude_filename,'altitude',time_altitudezone,0,time_altitudeoffset,ftype,outpath,filename,fileout)
                 if altitude_format == "ae2000":                    
                     parse_ae2000(filepath + altitude_filepath,altitude_filename,'altitude',time_altitudezone,0,time_altitudeoffset,ftype,outpath,filename,fileout)
                 altitude_flag = 0
+                print('...done loading altitude data.')
 
             if chemical_flag == 1:
-                print('... loading chemical')
+                print('Loading chemical data...')
                 if chemical_format == 'date_time_intensity':
                     parse_chemical(filepath + chemical_filepath, chemical_filename, chemical_timezone, chemical_data, ftype, outpath, filename, fileout)
                 chemical_flag = 0
+                print('...done loading chemical data.')
     
         fileout.close()
         
         #interlace the data based on timestamps
-        print('Interlacing data')
+        print('Interlacing data...')
         parse_interlacer(ftype,outpath,filename)
+        print('...done interlacing data.')
         print('Output saved to ' + outpath + filename)
 
         print('Complete parse data')
