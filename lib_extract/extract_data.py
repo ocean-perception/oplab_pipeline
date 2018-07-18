@@ -1240,11 +1240,30 @@ class extract_data:
             # might not be robust in the future
             minTimestamp = 99999999999999
             maxTimestamp = -99999999999999
-            for i in [[i.timestamp for i in camera1_list], [i.timestamp for i in dead_reckoning_centre_list], [i.timestamp for i in velocity_inertial_list], [i.timestamp for i in usbl_list]]:
-                if min(i) < minTimestamp:
-                    minTimestamp = min(i)
-                if max(i) > maxTimestamp:
-                    maxTimestamp = max(i)
+
+            plotly_list = []
+            if len(camera1_list) > 1:
+                plotly_list.append(['Camera1', camera1_list])
+            if len(dead_reckoning_centre_list) > 1:
+                plotly_list.append(['Centre', dead_reckoning_centre_list])
+            if len(dead_reckoning_dvl_list) > 1:
+                plotly_list.append(['DVL',dead_reckoning_dvl_list])
+            if len(velocity_inertial_list) > 1:
+                plotly_list.append([velocity_inertial_sensor_name, velocity_inertial_list])
+            if len(usbl_list) > 1:
+                plotly_list.append(['USBL', usbl_list])
+
+            for i in plotly_list:
+                timestamp_list = [j.timestamp for j in i[1]]
+                if min(timestamp_list) < minTimestamp:
+                    minTimestamp = min(timestamp_list)
+                if max(timestamp_list) > maxTimestamp:
+                    maxTimestamp = max(timestamp_list)
+            # for i in [[i.timestamp for i in camera1_list], [i.timestamp for i in dead_reckoning_centre_list], [i.timestamp for i in velocity_inertial_list], [i.timestamp for i in usbl_list]]:
+            #     if min(i) < minTimestamp:
+            #         minTimestamp = min(i)
+            #     if max(i) > maxTimestamp:
+            #         maxTimestamp = max(i)
 
             # slider plot
             # time_gap = 240
@@ -1321,11 +1340,13 @@ class extract_data:
                 }
                 figure['data'].append(data_dict)
 
-            make_data('Camera1',[i.eastings for i in camera1_list],[i.northings for i in camera1_list])
-            make_data('Centre',[i.eastings for i in dead_reckoning_centre_list],[i.northings for i in dead_reckoning_centre_list])
-            make_data('DVL',[i.eastings for i in dead_reckoning_dvl_list],[i.northings for i in dead_reckoning_dvl_list])
-            make_data(velocity_inertial_sensor_name,[i.eastings for i in velocity_inertial_list],[i.northings for i in velocity_inertial_list])
-            make_data('USBL',[i.eastings for i in usbl_list],[i.northings for i in usbl_list])
+            for i in plotly_list:
+                make_data(i[0], [j.eastings for j in i[1]], [j.northings for j in i[1]])
+            # make_data('Camera1',[i.eastings for i in camera1_list],[i.northings for i in camera1_list])
+            # make_data('Centre',[i.eastings for i in dead_reckoning_centre_list],[i.northings for i in dead_reckoning_centre_list])
+            # make_data('DVL',[i.eastings for i in dead_reckoning_dvl_list],[i.northings for i in dead_reckoning_dvl_list])
+            # make_data(velocity_inertial_sensor_name,[i.eastings for i in velocity_inertial_list],[i.northings for i in velocity_inertial_list])
+            # make_data('USBL',[i.eastings for i in usbl_list],[i.northings for i in usbl_list])
             if len(pf_fusion_dvl_list) > 1:
                 make_data('PF_Fusion_DVL', [i.eastings for i in pf_fusion_dvl_list], [i.northings for i in pf_fusion_dvl_list])
                 # pf_timestamps_interval = []
@@ -1395,8 +1416,10 @@ class extract_data:
             for i in epoch_timestamps_slider:
                 frame = {'data': [], 'name': str(i)}
                 
-                for j in [['Camera1',[i.timestamp for i in camera1_list],[i.eastings for i in camera1_list],[i.northings for i in camera1_list]],['Centre',[i.timestamp for i in dead_reckoning_centre_list],[i.eastings for i in dead_reckoning_centre_list],[i.northings for i in dead_reckoning_centre_list]],['DVL',[i.timestamp for i in dead_reckoning_dvl_list],[i.eastings for i in dead_reckoning_dvl_list],[i.northings for i in dead_reckoning_dvl_list]],[velocity_inertial_sensor_name,[i.timestamp for i in velocity_inertial_list],[i.eastings for i in velocity_inertial_list],[i.northings for i in velocity_inertial_list]],['USBL',[i.timestamp for i in usbl_list],[i.eastings for i in usbl_list],[i.northings for i in usbl_list]]]:
-                    make_frame(j,i)
+                for j in plotly_list:
+                    make_frame([j[0],[k.timestamp for k in j[1]], [k.eastings for k in j[1]], [k.northings for k in j[1]]],i)
+                # for j in [['Camera1',[i.timestamp for i in camera1_list],[i.eastings for i in camera1_list],[i.northings for i in camera1_list]],['Centre',[i.timestamp for i in dead_reckoning_centre_list],[i.eastings for i in dead_reckoning_centre_list],[i.northings for i in dead_reckoning_centre_list]],['DVL',[i.timestamp for i in dead_reckoning_dvl_list],[i.eastings for i in dead_reckoning_dvl_list],[i.northings for i in dead_reckoning_dvl_list]],[velocity_inertial_sensor_name,[i.timestamp for i in velocity_inertial_list],[i.eastings for i in velocity_inertial_list],[i.northings for i in velocity_inertial_list]],['USBL',[i.timestamp for i in usbl_list],[i.eastings for i in usbl_list],[i.northings for i in usbl_list]]]:
+                #     make_frame(j,i)
                 if len(pf_fusion_dvl_list) > 1:
                     make_frame(['PF_Fusion_DVL',[i.timestamp for i in pf_fusion_dvl_list],[i.eastings for i in pf_fusion_dvl_list],[i.northings for i in pf_fusion_dvl_list]],i)
                 # if len(pf_eastings) > 1:
