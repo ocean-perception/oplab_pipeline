@@ -111,7 +111,8 @@ class parse_seaxerocks_images:
         camera1_list = sorted(os.listdir(filepath+camera1_label))
         camera2_list = sorted(os.listdir(filepath+camera2_label))
         
-    
+        camera1_list = [ line for line in camera1_list if '.raw' in line]
+        camera2_list = [ line for line in camera2_list if '.raw' in line]
         
         for i in range(len(camera1_list)):
             camera1_image=camera1_list[i].split('.')
@@ -177,26 +178,27 @@ class parse_seaxerocks_images:
                     epoch_time = time.mktime(time_tuple)
                     
                     epoch_timestamp_laser.append(float(epoch_time+msec/1000+timeoffset))                    
-        camera3_list = os.listdir(filepath+camera3_label)
+        
+        camera3_list = sorted(os.listdir(filepath+camera3_label))
+        camera3_list = [ line for line in camera3_list if '.' not in line] # do not consider any other files, only consider folder - assuming all the folders only contain intended images
         
         for i in range(len(camera3_list)): 
-            if '.csv' not in camera3_list[i]:               
-                images_filenames=sorted(os.listdir(filepath+camera3_label+'/'+camera3_list[i]))
-                for j in range(len(images_filenames)):
-                    camera3_filename.append(camera3_list[i]+'/'+images_filenames[j])
-                    camera3_image=images_filenames[j].split('.')
-                    camera3_image_index=camera3_image[0].split('image')
-                    camera3_index.append(camera3_image_index[1])
+            images_filenames=sorted(os.listdir(filepath+camera3_label+'/'+camera3_list[i]))
+            for j in range(len(images_filenames)):
+                camera3_filename.append(camera3_list[i]+'/'+images_filenames[j])
+                camera3_image=images_filenames[j].split('.')
+                camera3_image_index=camera3_image[0].split('image')
+                camera3_index.append(camera3_image_index[1])
 
         j=0
         for i in range(len(camera3_filename)):# find corresponding timestamp even if some images are deletec
             if camera3_index[i]==laser_index[j]:                
                 epoch_timestamp_camera3.append(epoch_timestamp_laser[j])
                 j=j+1
-            elif laser_index[j] > camera3_index[i]:
+            elif laser_index[j] > camera3_index[i]: # Jin: incomplete! it means that laser data is missing for this image file, so no epoch_timestamp data, and do what when this happens?
                 j=j+1
             else:
-                j=j-1
+                j=j-1 # Jin: incomplete and possibly wrong! it means that this laser data is extra, with no accompanying image file, so it should be j+1 till index match?
 
             if ftype == 'oplab':                    
                 data = {'epoch_timestamp': float(epoch_timestamp_camera3[i]), 'class': class_string, 'sensor': sensor_string, 'frame': frame_string, 'category': category_laser,  'serial' : camera3_serial, 'filename': str(camera3_filename[i])}
