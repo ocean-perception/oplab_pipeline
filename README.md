@@ -67,9 +67,8 @@ Optional arguments:
 
 For OPLAB output format:
 1. Parse raw data into json file format 'nav_standard.json'
-```
-python3 auv_nav.py -i '\\oplab-surf\reconstruction\raw\2017\SSK17-01\ts_un_006' -o oplab
-```
+
+`python3 auv_nav.py -i '\\oplab-surf\reconstruction\raw\2017\SSK17-01\ts_un_006' -o oplab`
 
 2. Visualise information in nav_standard.json output
 ```
