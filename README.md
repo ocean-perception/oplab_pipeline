@@ -1,5 +1,5 @@
 # auv_nav
-# Downloading and Updating the code #
+## Downloading and Updating the code ##
 
 To download the code, go to directory you want it to be in, open a terminal/command prompt there and type 
 ```
@@ -13,7 +13,7 @@ git commit -m "Some message about the change"
 git push origin master
 ```
 
-# Libraries Required #
+## Libraries Required ##
 
 *Requires [python3.6.2](https://www.python.org/downloads/release/python-362/) or later*
 
@@ -68,7 +68,7 @@ Optional arguments:
 For OPLAB output format:
 1. Parse raw data into json file format 'nav_standard.json'
 
-  `python3 auv_nav.py -i '\\oplab-surf\reconstruction\raw\2017\SSK17-01\ts_un_006' -o oplab`
+    `python3 auv_nav.py -i '\\oplab-surf\reconstruction\raw\2017\SSK17-01\ts_un_006' -o oplab`
 
 2. Visualise information in nav_standard.json output
 
@@ -87,22 +87,23 @@ For OPLAB output format:
 
 3. Extract information from nav_standard.json output (start and finish time can be selected based on output in step 2)
 
-`python3 auv_nav.py -e '\\oplab-surf\reconstruction\processed\2017\SSK17-01\ts_un_006' -o oplab -start 20170817032000 -finish 20170817071000 -plotly -csv -PF -DR`
+    `python3 auv_nav.py -e '\\oplab-surf\reconstruction\processed\2017\SSK17-01\ts_un_006' -o oplab -start 20170817032000 -finish 20170817071000 -plotly -csv -PF -DR`
 
 For ACFR output format:
 1. Parse raw data into combined.RAW.auv and mission.cfg
-  `python3 auv_nav.py -i '\\oplab-surf\reconstruction\raw\2017\SSK17-01\ts_un_006' -o acfr`
 
-Example of output:
-```
-'acfr' - combined.RAW.auv
-    PHINS_COMPASS: 1444452882.644 r: -2.29 p: 17.21 h: 1.75 std_r: 0 std_p: 0 std_h: 0
-    RDI: 1444452882.644 alt:200 r1:0 r2:0 r3:0 r4:0 h:1.75 p:17.21 r:-2.29 vx:0.403 vy:0 vz:0 nx:0 ny:0 nz:0 COG:0 SOG:0 bt_status:32768 h_true:0 p_gimbal:0 sv: 1500
-    PAROSCI: 1444452882.644 298.289
-    VIS: 1444452882.655 [1444452882.655] sx_073311_image0003805_AC.tif exp: 0
-    VIS: 1444452882.655 [1444452882.655] sx_073311_image0003805_FC.tif exp: 0
-    SSBL_FIX: 1444452883 ship_x: 402.988947 ship_y: 140.275056 target_x: 275.337171 target_y: 304.388346 target_z: 299.2 target_hr: 0 target_sr: 364.347071 target_bearing: 127.876747
-```
+    `python3 auv_nav.py -i '\\oplab-surf\reconstruction\raw\2017\SSK17-01\ts_un_006' -o acfr`
+
+    Example of output:
+    ```
+    'acfr' - combined.RAW.auv
+        PHINS_COMPASS: 1444452882.644 r: -2.29 p: 17.21 h: 1.75 std_r: 0 std_p: 0 std_h: 0
+        RDI: 1444452882.644 alt:200 r1:0 r2:0 r3:0 r4:0 h:1.75 p:17.21 r:-2.29 vx:0.403 vy:0 vz:0 nx:0 ny:0 nz:0 COG:0 SOG:0 bt_status:32768 h_true:0 p_gimbal:0 sv: 1500
+        PAROSCI: 1444452882.644 298.289
+        VIS: 1444452882.655 [1444452882.655] sx_073311_image0003805_AC.tif exp: 0
+        VIS: 1444452882.655 [1444452882.655] sx_073311_image0003805_FC.tif exp: 0
+        SSBL_FIX: 1444452883 ship_x: 402.988947 ship_y: 140.275056 target_x: 275.337171 target_y: 304.388346 target_z: 299.2 target_hr: 0 target_sr: 364.347071 target_bearing: 127.876747
+    ```
 
 # Folder Structure #
 
