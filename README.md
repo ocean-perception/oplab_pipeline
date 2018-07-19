@@ -43,24 +43,24 @@ Parses and interleave navigation data for oplab standard and acfr standard forma
 
 Required arguments (only run one of them at a time):
 
-| Parameter             | Value     | Description   |
-| :-------------------- |:---------:| :-------------|
-| -i --rawinputpath     | Path to root raw folder  | Parses the raw data
-| -v --visualizeoutput  | Path to root processed folder where parsed data exist | Generate brief summaries of the output data
-| -e --extractdata      | Path to root processed folder where parsed data exist | Extract useful information from output files
+| Parameter                 | Value           | Description   |
+| :------------------------ |:--------------- | :-------------|
+| -i --rawinputpath         | Path to root raw folder  | Parses the raw data
+| -v --visualizeoutput      | Path to root processed folder where parsed data exist | Generate brief summaries of the output data
+| -e --extractdata          | Path to root processed folder where parsed data exist | Extract useful information from output files
 
 Optional arguments:
 
-| Parameter         | Value |Default | Description   |
-| :-----------------|:-----:|:------:| :-------------|
-| -o --outputformat | oplab/acfr | oplab | to select oplab or acfr format
-| -start --startdatetime | YYYYMMDDhhmmss | 20170817000000 (YYYYMMDD is automatically selected) | to select start date time of data to be processed
-| -finish --finishdatetime | YYYYMMDDhhmmss | 20170817235959 (YYYYMMDD is automatically selected) | to select finish date time of data to be processed
-| -plot --plotpdfoption | none | False | to select whether to output pdf plots
-| -plotly --plothtmloption | none | True | to select whether to output html interactive plots using plotly library
-| -csv --csvoption | none | False | to select whether to output csv files which contain navigation information for multiple sensors (can be further configured in [localisaion.yaml](localisation.yaml))
-| -DR --deadreckoning | none | False | to select whether to output dead reckoning csv outputs
-| -PF --particlefilter | none | False | to select whether to perform particle filter data fusion (can be further configured in [localisaion.yaml](localisation.yaml))
+| Parameter                 | Value           |Default | Description   |
+| :------------------------ |:--------------- |:------ | :-------------|
+| -o --outputformat         | oplab/acfr | oplab | to select oplab or acfr format
+| -start --startdatetime    | YYYYMMDDhhmmss | 20170817000000 (YYYYMMDD is automatically selected) | to select start date time of data to be processed
+| -finish --finishdatetime  | YYYYMMDDhhmmss | 20170817235959 (YYYYMMDD is automatically selected) | to select finish date time of data to be processed
+| -plot --plotpdfoption     | none | False | to select whether to output pdf plots
+| -plotly --plothtmloption  | none | True | to select whether to output html interactive plots using plotly library
+| -csv --csvoption          | none | False | to select whether to output csv files which contain navigation information for multiple sensors (can be further configured in [localisaion.yaml](localisation.yaml))
+| -DR --deadreckoning       | none | False | to select whether to output dead reckoning csv outputs
+| -PF --particlefilter      | none | False | to select whether to perform particle filter data fusion (can be further configured in [localisaion.yaml](localisation.yaml))
 
 **Example commands to run**
 For OPLAB output format:
