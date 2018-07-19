@@ -17,7 +17,7 @@ from lib_coordinates.latlon_wgs84 import metres_to_latlon
 data_list=[]
 
 class parse_gaps:
-	def __init__(self, filepath, category, timezone, timeoffset, distance_std_offset, distance_std_factor, latitude_reference, longitude_reference, ftype, outpath, fileoutname, fileout):
+	def __init__(self, filepath, category, timezone, timeoffset, latitude_reference, longitude_reference, ftype, outpath, fileoutname, fileout):
 
 		# parser meta data    
 		class_string = 'measurement'
@@ -29,7 +29,7 @@ class parse_gaps:
 		header_heading = '$HEHDT'# '<< $HEHDT'
 
 		# gaps std models
-		# distance_std_factor = 1/100 # 0.6/100 # usbl catalogue gaps spec
+		distance_std_factor = 0.6/100 # usbl catalogue gaps spec
 		# distance_std_offset = 5
 		broken_packet_flag = False
 
@@ -226,7 +226,7 @@ class parse_gaps:
 						lateral_distance,bearing = latlon_to_metres(latitude, longitude, latitude_ship, longitude_ship)
 
 						distance = math.sqrt(lateral_distance * lateral_distance + depth * depth)
-						distance_std = distance_std_factor*distance + distance_std_offset
+						distance_std = distance_std_factor*distance
 
 						# determine uncertainty in terms of latitude and longitude
 						latitude_offset,longitude_offset = metres_to_latlon(latitude, longitude, distance_std, distance_std)
@@ -246,7 +246,7 @@ class parse_gaps:
 						if broken_packet_flag == False:																						
 
 							if ftype == 'oplab':							
-								data = {'epoch_timestamp': float(epoch_timestamp), 'class': class_string, 'sensor': sensor_string, 'frame': frame_string, 'category': category, 'data_ship': [{'latitude': float(latitude_ship), 'longitude': float(longitude_ship)}, {'northings': float(northings_ship), 'eastings': float(eastings_ship)}, {'heading': float(heading_ship)}], 'data_target': [{'latitude': float(latitude), 'latitude_std': float(latitude_std)}, {'longitude': float(longitude), 'longitude_std': float(longitude_std)}, {'northings': float(northings_target), 'northings_std': float(distance_std)}, {'eastings': float(eastings_target), 'eastings_std': float(distance_std)}, {'depth': float(depth)}]}
+								data = {'epoch_timestamp': float(epoch_timestamp), 'class': class_string, 'sensor': sensor_string, 'frame': frame_string, 'category': category, 'data_ship': [{'latitude': float(latitude_ship), 'longitude': float(longitude_ship)}, {'northings': float(northings_ship), 'eastings': float(eastings_ship)}, {'heading': float(heading_ship)}], 'data_target': [{'latitude': float(latitude), 'latitude_std': float(latitude_std)}, {'longitude': float(longitude), 'longitude_std': float(longitude_std)}, {'northings': float(northings_target), 'northings_std': float(distance_std)}, {'eastings': float(eastings_target), 'eastings_std': float(distance_std)}, {'depth': float(depth)}, {'distance_to_ship': float(distance)}]}
 								data_list.append(data)
 
 							if ftype == 'acfr':

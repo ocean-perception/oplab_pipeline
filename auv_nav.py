@@ -228,11 +228,9 @@ def parse_data(filepath,ftype):
     if 'usbl' in load_data:            
         usbl_flag=1                    
         usbl_format = load_data['usbl']['format']
-        usbl_filepath = load_data['usbl']['filepath']                        
+        usbl_filepath = load_data['usbl']['filepath']
         time_usblzone = load_data['usbl']['timezone']
         time_usbloffset = load_data['usbl']['timeoffset']
-        usbl_stdoffset = load_data['usbl']['stdoffset']
-        usbl_stdfactor = load_data['usbl']['stdfactor']
         if usbl_format == 'usbl_dump':
             usbl_filename = load_data['usbl']['filename']
             usbl_label = load_data['usbl']['label']
@@ -327,9 +325,9 @@ def parse_data(filepath,ftype):
             if usbl_flag == 1:
                 print('Loading usbl data...')
                 if usbl_format == "gaps":                
-                    parse_gaps(filepath + os.sep + usbl_filepath,'usbl',time_usblzone,time_usbloffset,usbl_stdoffset,usbl_stdfactor,latitude_reference,longitude_reference,ftype,outpath,filename,fileout)                
+                    parse_gaps(filepath + os.sep + usbl_filepath,'usbl',time_usblzone,time_usbloffset,latitude_reference,longitude_reference,ftype,outpath,filename,fileout)                
                 if usbl_format == "usbl_dump":                    
-                    parse_usbl_dump(filepath + os.sep + usbl_filepath,usbl_filename,usbl_label,'usbl',time_usblzone,time_usbloffset,usbl_stdoffset,usbl_stdfactor,latitude_reference,longitude_reference,ftype,outpath,filename,fileout)                
+                    parse_usbl_dump(filepath + os.sep + usbl_filepath,usbl_filename,usbl_label,'usbl',time_usblzone,time_usbloffset,latitude_reference,longitude_reference,ftype,outpath,filename,fileout)                
                 usbl_flag = 0
 
             if velocity_flag == 1:
