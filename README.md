@@ -1,7 +1,9 @@
 # auv_nav
 # Downloading and Updating the code #
 To download the code, go to directory you want it to be in, open a terminal/command prompt there and type 
-```git clone --recursive https://github.com/ocean-perception/auv_nav.git```
+```
+git clone --recursive https://github.com/ocean-perception/auv_nav.git
+```
 
 To push updates, stage changes, commit and push to a branch, usually master
 ```
@@ -29,7 +31,9 @@ python3 setup.py install
 python3 setup.py test
 ```
 * ... or executing this command for whl files 
-```pip3 install pandas-0.22.0-cp36-cp36m-win_amd64.whl```
+```
+pip3 install pandas-0.22.0-cp36-cp36m-win_amd64.whl
+```
 
 # Functionality #
 
@@ -38,6 +42,7 @@ Parses and interleave navigation data for oplab standard and acfr standard forma
 **Arguments**
 
 Required arguments (only run one of them at a time):
+
 | Parameter             | Value     | Description   |
 | :-------------------- |:---------:| :-------------|
 | -i --rawinputpath     | Path to root raw folder  | Parses the raw data
@@ -45,6 +50,7 @@ Required arguments (only run one of them at a time):
 | -e --extractdata      | Path to root processed folder where parsed data exist | Extract useful information from output files
 
 Optional arguments:
+
 | Parameter         | Value |Default | Description   |
 | :-----------------|:-----:|:------:| :-------------|
 | -o --outputformat | oplab/acfr | oplab | to select oplab or acfr format
