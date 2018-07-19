@@ -399,22 +399,15 @@ if __name__ == '__main__':
 
 
     # initialise flags
-    flag_i=False
-    flag_o=False
-    flag_v=False
-    flag_e=False
-    
-    flag_f=False
-
+    flag_i=False # input path set flag
+    flag_o=False # output type set flag
+    flag_v=False # visualisation flag
+    flag_e=False # extraction of information flag
     start_datetime=''
     finish_datetime=''
-
-    plot = False
-
-    plotly = False
-    
-    csv_write = False
-
+    plot = False # plot data
+    plotly = False # ??
+    csv_write = False  # write data to csv file
     output_DR=False
     perform_particle_filter = False
     
@@ -459,35 +452,38 @@ if __name__ == '__main__':
                 sys.exit(syntax_error())
 
         if (flag_o ==False):
-            print('No ouput option selected, default "oplab", -o "acfr" for acfr_standard')
+            print('No ouput option specified. Using the default output option "oplab"')
             ftype='oplab'
 
         if flag_i ==True:
-            sub_path = filepath.split(os.sep)        
+            sub_path = filepath.split(os.sep)     
+            flag_r=False # path is a subfolder of a folder called "raw"
             for i in range(1,len(sub_path)):
                 if sub_path[i]=='raw':
-                    flag_f = True
-            if flag_f == True:
+                    flag_r = True
+            if flag_r == True:
                 parse_data(filepath,ftype)
             else:
                 print('Check folder structure contains "raw"')
 
         elif flag_v == True:
-            sub_path = filepath.split(os.sep)        
+            sub_path = filepath.split(os.sep)  
+            flag_p=False # path is a subfolder of a folder called "processed"      
             for i in range(1,len(sub_path)):
                 if sub_path[i]=='processed':
-                    flag_f = True
-            if flag_f == True:
+                    flag_p = True
+            if flag_p == True:
                 display_info(filepath + os.sep,ftype)
             else:
                 print('Check folder structure contains "processed"')
 
         elif flag_e==True:
-            sub_path = filepath.split(os.sep)        
+            sub_path = filepath.split(os.sep)  
+            flag_p=False # path is a subfolder of a folder called "processed"      
             for i in range(1,len(sub_path)):
                 if sub_path[i]=='processed':
-                    flag_f = True
-            if (flag_f ==True):
+                    flag_p = True
+            if (flag_p ==True):
                 if (csv_write == False) and (plot == False) and (plotly == False):
                     print('No extract option selected, default -plotly enabled. Other available options are -csv, -plot, -PF, -DR')
                     plotly = True
