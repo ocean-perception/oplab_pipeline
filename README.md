@@ -63,8 +63,10 @@ Optional arguments:
 | -PF --particlefilter      | none | False | to select whether to perform particle filter data fusion (can be further configured in [localisaion.yaml](localisation.yaml))
 
 **Example commands to run**
+
 For OPLAB output format:
 1. Parse raw data into json file format 'nav_standard.json'
+
 `python3 auv_nav.py -i '\\oplab-surf\reconstruction\raw\2017\SSK17-01\ts_un_006' -o oplab`
 2. Visualise information in nav_standard.json output
 `python3 auv_nav.py -v '\\oplab-surf\reconstruction\processed\2017\SSK17-01\ts_un_006' -o oplab`
