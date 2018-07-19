@@ -1,6 +1,7 @@
 # auv_nav
 # Downloading and Updating the code #
-To install, go to directory you want it to be installed in and in a terminal/command prompt, type `git clone --recursive https://github.com/ocean-perception/auv_nav.git` 
+To download the code, go to directory you want it to be in, open a terminal/command prompt there and type 
+```git clone --recursive https://github.com/ocean-perception/auv_nav.git```
 
 To push updates, stage changes, commit and push to a branch, usually master
 ```
@@ -23,10 +24,12 @@ git push origin master
 
 Some of the packages above are in [third_party](third_party) which can be installed by:
 * executing the following terminal commands within the folder...
-    `python3 setup.py install`
-    `python3 setup.py test`
+```
+python3 setup.py install
+python3 setup.py test
+```
 * ... or executing this command for whl files 
-    `pip3 install pandas-0.22.0-cp36-cp36m-win_amd64.whl`
+```pip3 install pandas-0.22.0-cp36-cp36m-win_amd64.whl```
 
 # Functionality #
 
