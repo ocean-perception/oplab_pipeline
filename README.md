@@ -68,12 +68,11 @@ Optional arguments:
 For OPLAB output format:
 1. Parse raw data into json file format 'nav_standard.json'
 
-`python3 auv_nav.py -i '\\oplab-surf\reconstruction\raw\2017\SSK17-01\ts_un_006' -o oplab`
+  `python3 auv_nav.py -i '\\oplab-surf\reconstruction\raw\2017\SSK17-01\ts_un_006' -o oplab`
 
 2. Visualise information in nav_standard.json output
-```
-python3 auv_nav.py -v '\\oplab-surf\reconstruction\processed\2017\SSK17-01\ts_un_006' -o oplab
-```
+
+  `python3 auv_nav.py -v '\\oplab-surf\reconstruction\processed\2017\SSK17-01\ts_un_006' -o oplab`
 
 Example of output:
 ```
@@ -87,15 +86,12 @@ Example of output:
 ```
 
 3. Extract information from nav_standard.json output (start and finish time can be selected based on output in step 2)
-```
-python3 auv_nav.py -e '\\oplab-surf\reconstruction\processed\2017\SSK17-01\ts_un_006' -o oplab -start 20170817032000 -finish 20170817071000 -plotly -csv -PF -DR
-```
+
+`python3 auv_nav.py -e '\\oplab-surf\reconstruction\processed\2017\SSK17-01\ts_un_006' -o oplab -start 20170817032000 -finish 20170817071000 -plotly -csv -PF -DR`
 
 For ACFR output format:
 1. Parse raw data into combined.RAW.auv and mission.cfg
-```
-python3 auv_nav.py -i '\\oplab-surf\reconstruction\raw\2017\SSK17-01\ts_un_006' -o acfr
-```
+  `python3 auv_nav.py -i '\\oplab-surf\reconstruction\raw\2017\SSK17-01\ts_un_006' -o acfr`
 
 Example of output:
 ```
