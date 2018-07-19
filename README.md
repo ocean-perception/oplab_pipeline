@@ -36,7 +36,7 @@ python3 setup.py test
 pip3 install pandas-0.22.0-cp36-cp36m-win_amd64.whl
 ```
 
-# Functionality #
+## Functionality ##
 
 Parses and interleave navigation data for oplab standard and acfr standard formats. 
 
@@ -105,7 +105,7 @@ For ACFR output format:
         SSBL_FIX: 1444452883 ship_x: 402.988947 ship_y: 140.275056 target_x: 275.337171 target_y: 304.388346 target_z: 299.2 target_hr: 0 target_sr: 364.347071 target_bearing: 127.876747
     ```
 
-# Folder Structure #
+## Folder Structure ##
 
 The output files are stored in a mirrored file location where the input raw data is stored as follows with the paths to raw data as defined in mission.yaml
 ```
@@ -125,7 +125,7 @@ e.g.
                                         /mission.cfg
 ```
 
-# Example of Required YAML Configuration Files #
+## Example of Required YAML Configuration Files ##
 
 These files need to be in the root raw folder. Further examples can be found in [sample_yaml](sample_yaml)
 
@@ -224,7 +224,7 @@ camera2:
   z_offset: 0.18
 ```
 
-# Example Dataset for testing #
+## Example Dataset for testing ##
 An example dataset can be downloaded from the following link with the expected folder structure: https://drive.google.com/drive/folders/0BzYMMCBxpT8BUF9feFpEclBzV0k?usp=sharing
 
 Download, extract and specify the folder location and run as
