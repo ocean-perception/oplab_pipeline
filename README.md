@@ -57,20 +57,24 @@ Optional arguments:
 | -o --outputformat         | oplab/acfr | oplab | to select oplab or acfr format
 | -start --startdatetime    | YYYYMMDDhhmmss | 20170817000000 (YYYYMMDD is automatically selected) | to select start date time of data to be processed
 | -finish --finishdatetime  | YYYYMMDDhhmmss | 20170817235959 (YYYYMMDD is automatically selected) | to select finish date time of data to be processed
-| -plot --plotpdfoption     | none | False | to select whether to output pdf plots
-| -plotly --plothtmloption  | none | True | to select whether to output html interactive plots using plotly library
-| -csv --csvoption          | none | False | to select whether to output csv files which contain navigation information for multiple sensors (can be further configured in [localisaion.yaml](localisation.yaml))
-| -DR --deadreckoning       | none | False | to select whether to output dead reckoning csv outputs
-| -PF --particlefilter      | none | False | to select whether to perform particle filter data fusion (can be further configured in [localisaion.yaml](localisation.yaml))
+| -plot --plotpdfoption     | - | False | to select whether to output pdf plots
+| -plotly --plothtmloption  | - | True | to select whether to output html interactive plots using plotly library
+| -csv --csvoption          | - | False | to select whether to output csv files which contain navigation information for multiple sensors (can be further configured in [localisaion.yaml](localisation.yaml))
+| -DR --deadreckoning       | - | False | to select whether to output dead reckoning csv outputs
+| -PF --particlefilter      | - | False | to select whether to perform particle filter data fusion (can be further configured in [localisaion.yaml](localisation.yaml))
 
 **Example commands to run**
 
 For OPLAB output format:
 1. Parse raw data into json file format 'nav_standard.json'
-`python3 auv_nav.py -i '\\oplab-surf\reconstruction\raw\2017\SSK17-01\ts_un_006' -o oplab`
+```
+python3 auv_nav.py -i '\\oplab-surf\reconstruction\raw\2017\SSK17-01\ts_un_006' -o oplab
+```
 
 2. Visualise information in nav_standard.json output
-`python3 auv_nav.py -v '\\oplab-surf\reconstruction\processed\2017\SSK17-01\ts_un_006' -o oplab`
+```
+python3 auv_nav.py -v '\\oplab-surf\reconstruction\processed\2017\SSK17-01\ts_un_006' -o oplab
+```
 
 Example of output:
 ```
@@ -84,11 +88,15 @@ Example of output:
 ```
 
 3. Extract information from nav_standard.json output (start and finish time can be selected based on output in step 2)
-`python3 auv_nav.py -e '\\oplab-surf\reconstruction\processed\2017\SSK17-01\ts_un_006' -o oplab -start 20170817032000 -finish 20170817071000 -plotly -csv -PF -DR`
+```
+python3 auv_nav.py -e '\\oplab-surf\reconstruction\processed\2017\SSK17-01\ts_un_006' -o oplab -start 20170817032000 -finish 20170817071000 -plotly -csv -PF -DR
+```
 
 For ACFR output format:
 1. Parse raw data into combined.RAW.auv and mission.cfg
-`python3 auv_nav.py -i '\\oplab-surf\reconstruction\raw\2017\SSK17-01\ts_un_006' -o acfr`
+```
+python3 auv_nav.py -i '\\oplab-surf\reconstruction\raw\2017\SSK17-01\ts_un_006' -o acfr
+```
 
 Example of output:
 ```
