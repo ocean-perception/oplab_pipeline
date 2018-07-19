@@ -20,10 +20,10 @@ from lib_coordinates.latlon_wgs84 import latlon_to_metres
 # create an equation for each noise, and def them for sensors in ae2000, or ts1, or ts2. read from mission yaml which sensor used, and automatically pick the one desired.
 
 class particle_filter:
-    def __init__(self, usbl_data, dvl_imu_data, N, measurement_update_flag, dvl_noise_factor, imu_noise_factor, usbl_noise_factor):
+    def __init__(self, usbl_data, dvl_imu_data, N, measurement_update_flag, dvl_noise_sigma_factor, imu_noise_sigma_factor, usbl_noise_sigma_factor, usbl_noise_std_factor, usbl_noise_std_offset):
         return
 
-    def __new__(self, usbl_data, dvl_imu_data, N, measurement_update_flag, dvl_noise_factor, imu_noise_factor, usbl_noise_factor):
+    def __new__(self, usbl_data, dvl_imu_data, N, measurement_update_flag, dvl_noise_sigma_factor, imu_noise_sigma_factor, usbl_noise_sigma_factor, usbl_noise_std_factor, usbl_noise_std_offset):
 
         def eval(r, p):
         	    sum = 0.0;
@@ -36,20 +36,21 @@ class particle_filter:
 
         # ========== Start Noise models ========== #
         def usbl_noise(usbl_datapoint): # measurement noise
-            # distance = usbl_datapoint.distance # lateral_distance,bearing = latlon_to_metres(usbl_datapoint.latitude, usbl_datapoint.longitude, usbl_datapoint.latitude_ship, usbl_datapoint.longitude_ship) # distance = math.sqrt(lateral_distance**2 + usbl_datapoint.depth**2)
-            # error = 5 + 0.01*distance # 5 is for the differential GPS, and the distance std factor 0.01 is used as 0.006 is too sall and unrealistic # This is moved to parse_gaps and parse_usbl_dump
-            error = usbl_datapoint.northings_std * usbl_noise_factor
+            distance = usbl_datapoint.distance_to_ship # lateral_distance,bearing = latlon_to_metres(usbl_datapoint.latitude, usbl_datapoint.longitude, usbl_datapoint.latitude_ship, usbl_datapoint.longitude_ship) 
+            # distance = math.sqrt(lateral_distance**2 + usbl_datapoint.depth**2)
+            error = usbl_noise_sigma_factor*(usbl_noise_std_offset + usbl_noise_std_factor*distance) # 5 is for the differential GPS, and the distance std factor 0.01 is used as 0.006 is too sall and unrealistic # This is moved to parse_gaps and parse_usbl_dump
+            # error = usbl_datapoint.northings_std * usbl_noise_sigma_factor
             return error
 
         def dvl_noise(dvl_imu_datapoint): # sensor1 noise
             # dvl_noise = (-0.0125*((velocity)**2)+0.2*(velocity)+0.2125)/100) assuming noise of x_velocity = y_velocity = z_velocity
-            x_velocity_estimate = random.gauss(dvl_imu_datapoint.x_velocity, dvl_noise_factor*(-0.0125*((dvl_imu_datapoint.x_velocity)**2)+0.2*(dvl_imu_datapoint.x_velocity)+0.2125)/100)
-            y_velocity_estimate = random.gauss(dvl_imu_datapoint.y_velocity, dvl_noise_factor*(-0.0125*((dvl_imu_datapoint.y_velocity)**2)+0.2*(dvl_imu_datapoint.y_velocity)+0.2125)/100)
-            z_velocity_estimate = random.gauss(dvl_imu_datapoint.z_velocity, dvl_noise_factor*(-0.0125*((dvl_imu_datapoint.z_velocity)**2)+0.2*(dvl_imu_datapoint.z_velocity)+0.2125)/100)
+            x_velocity_estimate = random.gauss(dvl_imu_datapoint.x_velocity, dvl_noise_sigma_factor*(-0.0125*((dvl_imu_datapoint.x_velocity)**2)+0.2*(dvl_imu_datapoint.x_velocity)+0.2125)/100)
+            y_velocity_estimate = random.gauss(dvl_imu_datapoint.y_velocity, dvl_noise_sigma_factor*(-0.0125*((dvl_imu_datapoint.y_velocity)**2)+0.2*(dvl_imu_datapoint.y_velocity)+0.2125)/100)
+            z_velocity_estimate = random.gauss(dvl_imu_datapoint.z_velocity, dvl_noise_sigma_factor*(-0.0125*((dvl_imu_datapoint.z_velocity)**2)+0.2*(dvl_imu_datapoint.z_velocity)+0.2125)/100)
             return x_velocity_estimate, y_velocity_estimate, z_velocity_estimate
 
         def imu_noise(previous_dvlimu_data_point, current_dvlimu_data_point, particle_list_data): #sensor2 noise
-            imu_noise = 0.003 * imu_noise_factor # each time_step + 0.003. assuming noise of roll = pitch = yaw
+            imu_noise = 0.003 * imu_noise_sigma_factor # each time_step + 0.003. assuming noise of roll = pitch = yaw
             if particle_list_data == 0: # for initiation
                 roll_estimate = random.gauss(current_dvlimu_data_point.roll, imu_noise)
                 pitch_estimate = random.gauss(current_dvlimu_data_point.pitch, imu_noise)

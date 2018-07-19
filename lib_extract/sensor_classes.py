@@ -76,6 +76,8 @@ class usbl:
 
 		self.depth = 0
 
+		self.distance_to_ship = 0
+
 class camera:
 	def __init__(self):
 		self.timestamp = 0
