@@ -1,5 +1,6 @@
 # auv_nav
 # Downloading and Updating the code #
+
 To download the code, go to directory you want it to be in, open a terminal/command prompt there and type 
 ```
 git clone --recursive https://github.com/ocean-perception/auv_nav.git
@@ -88,6 +89,7 @@ Example of output:
 For ACFR output format:
 1. Parse raw data into combined.RAW.auv and mission.cfg
 `python3 auv_nav.py -i '\\oplab-surf\reconstruction\raw\2017\SSK17-01\ts_un_006' -o acfr`
+
 Example of output:
 ```
 'acfr' - combined.RAW.auv
@@ -99,6 +101,8 @@ Example of output:
     SSBL_FIX: 1444452883 ship_x: 402.988947 ship_y: 140.275056 target_x: 275.337171 target_y: 304.388346 target_z: 299.2 target_hr: 0 target_sr: 364.347071 target_bearing: 127.876747
 ```
 
+# Folder Structure #
+
 The output files are stored in a mirrored file location where the input raw data is stored as follows with the paths to raw data as defined in mission.yaml
 ```
 e.g. 
@@ -107,14 +111,17 @@ e.g.
                                     /nav/gaps/
                                     /nav/phins/
                                     /image/r20170816_023028_UG069_sesoko/i20170816_023028/
+```
+
 For this example, the outputs would be stored in the follow location, where folders will be automatically generated
+```
 e.g.
     processed /<YEAR> /<CRUISE> /<DIVE> /nav/nav_standard.json
                                         /dRAWLOGS_cv/combined.RAW.auv
                                         /mission.cfg
 ```
 
-**Example of required yaml configuration files**
+# Example of Required YAML Configuration Files #
 
 These files need to be in the root raw folder. Further examples can be found in [sample_yaml](sample_yaml)
 
