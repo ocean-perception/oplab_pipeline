@@ -1,0 +1,50 @@
+#YAML 1.0
+origin:
+  latitude: 26.674083
+  longitude: 127.868054
+  coordinate_reference_system: wgs84
+  date: 2016/07/18
+
+velocity:
+  format: phins
+  filepath: nav/phins/
+  filename: 20160718_phins.txt
+  timezone: utc
+  timeoffset: 0.0
+  headingoffset: -45.0
+
+orientation:
+  format: phins
+  filepath: nav/phins/
+  filename: 20160718_phins.txt
+  timezone: utc
+  timeoffset: 0.0
+  headingoffset: -45.0
+
+depth:
+  format: phins
+  filepath: nav/phins/
+  filename: 20160718_phins.txt
+  timezone: utc
+  timeoffset: 0.0
+
+altitude:
+  format: phins
+  filepath: nav/phins/
+  filename: 20160718_phins.txt
+  timezone: utc
+  timeoffset: 0.0
+
+usbl:
+  format: gaps
+  filepath: nav/gaps/
+  timezone: utc
+  timeoffset: 0.0
+
+image:
+  format: acfr_standard
+  filepath: image/r20160718_005944_TS019_box1/i20160718_021400/
+  camera1: FC
+  camera2: AC
+  timezone: utc
+  timeoffset: 0.0

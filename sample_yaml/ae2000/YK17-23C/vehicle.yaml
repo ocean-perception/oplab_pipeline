@@ -1,0 +1,41 @@
+#YAML 1.0
+origin: #centre of robot
+  x_offset: 0
+  y_offset: 0
+  z_offset: 0
+
+# distance with reference to origin/centre of robot
+usbl:
+  x_offset: 0 # uncertain
+  y_offset: 0 # uncertain
+  z_offset: -0.289 # uncertain
+
+ins:
+  x_offset: -0.09 # uncertain
+  y_offset: 0 # uncertain
+  z_offset: 0 # uncertain
+
+dvl:
+  x_offset: -0.780625
+  y_offset: 0
+  z_offset: 0.204
+
+depth:
+  x_offset: 0 # uncertain
+  y_offset: 0 # uncertain
+  z_offset: 0 # uncertain
+
+camera1: # Front Camera
+  x_offset: 0.262875
+  y_offset: 0
+  z_offset: 0.5 # uncertain
+
+camera2: #Back Camera
+  x_offset: 0.012875
+  y_offset: 0
+  z_offset: 0.5 # uncertain
+
+camera3: # Laser
+  x_offset: 0.147875
+  y_offset: 0
+  z_offset: 0.5 # uncertain

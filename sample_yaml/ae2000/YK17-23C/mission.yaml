@@ -1,0 +1,53 @@
+#YAML 1.0
+origin:
+  latitude: 22.745000
+  longitude: 153.266667
+  coordinate_reference_system: wgs84
+  date: 2017/11/23
+
+velocity:
+  format: ae2000
+  filepath: nav/ae_log/
+  filename: pos171123064542.csv
+  timezone: jst
+  timeoffset: 0.0
+  headingoffset: .0
+
+orientation:
+  format: ae2000
+  filepath: nav/ae_log/
+  filename: pos171123064542.csv
+  timezone: jst
+  timeoffset: 0.0
+  headingoffset: .0
+
+depth:
+  format: ae2000
+  filepath: nav/ae_log/
+  filename: pos171123064542.csv
+  timezone: jst
+  timeoffset: 0.0
+
+altitude:
+  format: ae2000
+  filepath: nav/ae_log/
+  filename: pos171123064542.csv
+  timezone: jst
+  timeoffset: 0.0
+
+usbl:
+  format: usbl_dump
+  filepath: nav/ssbl/
+  filename: 20171123_AE2000f_LOG.csv
+  timezone: 9
+  timeoffset: 0.0
+  label: T1
+
+image:
+  format: seaxerocks_3
+  filepath: image/SeaXeroxData20171123_095119/
+  camera1: Xviii/Cam51707923
+  camera2: Xviii/Cam51707925
+  camera3: LM165
+  timezone: jst
+  timeoffset: 0.0
