@@ -66,10 +66,11 @@ Optional arguments:
 
 For OPLAB output format:
 1. Parse raw data into json file format 'nav_standard.json'
-
 `python3 auv_nav.py -i '\\oplab-surf\reconstruction\raw\2017\SSK17-01\ts_un_006' -o oplab`
+
 2. Visualise information in nav_standard.json output
 `python3 auv_nav.py -v '\\oplab-surf\reconstruction\processed\2017\SSK17-01\ts_un_006' -o oplab`
+
 Example of output:
 ```
 'oplab' - nav_standard.json
@@ -80,6 +81,7 @@ Example of output:
     {"epoch_timestamp": 1502840568.204, "class": "measurement", "sensor": "gaps", "frame": "inertial", "category": "usbl", "data_ship": [{"latitude": 26.66935735000014, "longitude": 127.86623359499968}, {"northings": -526.0556603025898, "eastings": -181.08730736724087}, {"heading": 174.0588800058365}], "data_target": [{"latitude": 26.669344833333334, "latitude_std": -1.7801748803947248e-06}, {"longitude": 127.86607166666667, "longitude_std": -1.992112444781924e-06}, {"northings": -527.4487693247576, "northings_std": 0.19816816183128352}, {"eastings": -197.19537408743128, "eastings_std": 0.19816816183128352}, {"depth": 28.8}]},{"epoch_timestamp": 1501983409.56, "class": "measurement", "sensor": "unagi", "frame": "body", "category": "image", "camera1": [{"epoch_timestamp": 1501983409.56, "filename": "PR_20170816_023649_560_LC16.tif"}], "camera2": [{"epoch_timestamp": 1501983409.56, "filename": "PR_20170816_023649_560_RC16.tif"}]}
     ]
 ```
+
 3. Extract information from nav_standard.json output (start and finish time can be selected based on output in step 2)
 `python3 auv_nav.py -e '\\oplab-surf\reconstruction\processed\2017\SSK17-01\ts_un_006' -o oplab -start 20170817032000 -finish 20170817071000 -plotly -csv -PF -DR`
 
@@ -98,6 +100,7 @@ Example of output:
 ```
 
 The output files are stored in a mirrored file location where the input raw data is stored as follows with the paths to raw data as defined in mission.yaml
+```
 e.g. 
     raw /<YEAR> /<CRUISE> /<DIVE>   /mission.yaml
                                     /vehicle.yaml
@@ -109,6 +112,7 @@ e.g.
     processed /<YEAR> /<CRUISE> /<DIVE> /nav/nav_standard.json
                                         /dRAWLOGS_cv/combined.RAW.auv
                                         /mission.cfg
+```
 
 **Example of required yaml configuration files**
 
@@ -208,7 +212,6 @@ camera2:
   y_offset: -0.1
   z_offset: 0.18
 ```
-
 
 # Example Dataset for testing #
 An example dataset can be downloaded from the following link with the expected folder structure: https://drive.google.com/drive/folders/0BzYMMCBxpT8BUF9feFpEclBzV0k?usp=sharing
