@@ -7,22 +7,21 @@
 
 """Parsers for navigation data for oplab standard and acfr standard formats
 
-        inputs are 
-
-        auv_nav.py <options>
-            -i <path to mission.yaml>
-            -o <output type> 'acfr' or 'oplab'
-            -v <path to root processed folder where parsed data exists> to generate brief visualization summaries for json file data
-            -e <path to root processed folder where parsed data exists> to extract useful info from json file data
-            -start <start date & time in utc time> yyyymmddhhmmss (only for extract)
-            -finish <finish date & time in utc time> yyyymmddhhmmss (only for extract)                      
-            -plot <plot option> (only for extract)
-            -showplot <showplot option> (only for extract)
-            -plotly <plotly option> (only for extract)
-            -csv <csv write option> (only for extract)
+    Input command
+    auv_nav.py [arguments]
+        required arguments (select one of these at a time):
+            -i [path to root raw folder]
+            -v [path to root processed folder where parsed data exists]
+            -e [path to root processed folder where parsed data exists]
+        optional arguments:
+            -o [output format 'oplab' or 'acfr']
+            -start [start date & time in YYYYMMDDhhmmss] (only for extract)
+            -finish [finish date & time] YYYYMMDDhhmmss] (only for extract)                      
+            -plot <output pdf plots option> (only for extract)
+            -plotly <output interactive plots using plotly option> (only for extract)
+            -csv <output csv files option> (only for extract)
+            -DR <output dead reckoning files option> (only for extract)
             -PF <perform particle filter option> (only for extract)
-            -N <number of particles in particle filter option> (only for extract)
-            -Ninterval <time interval of particles plot option in seconds> (only for extract)
             
         Arguments:
             path to the "mission.yaml" file, output format 'acfr' or 'oplab'
@@ -379,18 +378,20 @@ def parse_data(filepath,ftype):
 
 def syntax_error():
 # incorrect usage message
-    print("     auv_nav.py <options>")
-    print("         -i <path to mission.yaml>")
-    print("         -o <output type> 'acfr' or 'oplab'")
-    print("         -v <path to root processed folder where parsed data exists> to generate brief visualization summaries for json file data")
-    print("         -e <path to root processed folder where parsed data exists> to extract useful info from json file data")
-    print("         -start <start date & time in utc time> yyyymmddhhmmss (only for extract)")
-    print("         -finish <finish date & time in utc time> yyyymmddhhmmss (only for extract)")
-    print("         -plot <plot option> (only for extract)")
-    print("         -plotly <plotly option> (only for extract)")
-    print("         -csv <csv write option> (only for extract)")
-    print("         -DR <output DR files option> (only for extract)")
-    print("         -PF <perform particle filter fusion option> (only for extract)")
+    print ("    auv_nav.py [arguments]")
+    print ("        required arguments (select one of these at a time):")
+    print ("            -i [path to root raw folder]")
+    print ("            -v [path to root processed folder where parsed data exists]")
+    print ("            -e [path to root processed folder where parsed data exists]")
+    print ("        optional arguments:")
+    print ("            -o [output format 'oplab' or 'acfr']")
+    print ("            -start [start date & time in YYYYMMDDhhmmss] (only for extract)")
+    print ("            -finish [finish date & time] YYYYMMDDhhmmss] (only for extract)")
+    print ("            -plot <output pdf plots option> (only for extract)")
+    print ("            -plotly <output interactive plots using plotly option> (only for extract)")
+    print ("            -csv <output csv files option> (only for extract)")
+    print ("            -DR <output dead reckoning files option> (only for extract)")
+    print ("            -PF <perform particle filter option> (only for extract)")
     
     return -1
 
@@ -488,8 +489,8 @@ if __name__ == '__main__':
                     flag_f = True
             if (flag_f ==True):
                 if (csv_write == False) and (plot == False) and (plotly == False):
-                    print('No extract option selected, default -plot enabled. Other available options are -csv, -plotly, -showplot, -PF, -N, -Ninterval')
-                    plot = True
+                    print('No extract option selected, default -plotly enabled. Other available options are -csv, -plot, -PF, -DR')
+                    plotly = True
                 extract_data(filepath + os.sep,ftype,start_datetime,finish_datetime,plot,csv_write,plotly,output_DR,perform_particle_filter)
             else:
                 print('Check folder structure contains "processed"')                                    
