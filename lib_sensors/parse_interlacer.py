@@ -9,12 +9,26 @@ import json, glob, os
 #http://www.json.org/
 from array import array 
 from operator import itemgetter
-data = array('f')
-value = []
-data_original = []
-data_ordered = []
-class parse_interlacer:
-	def __init__(self, ftype, outpath, filename):
+
+# foo_list = []	# debug
+
+#class parse_interlacer:
+#	def __init__(self, ftype, outpath, filename):
+def parse_interlacer(ftype, outpath, filename):
+		data = array('f')
+		value = []
+		data_original = []
+		data_ordered = []
+
+		# debug
+		# bar_list=[]
+		# print("Length of foo_list:", len(foo_list)) # prints 0 on first run, 2 on second run
+		# print("Length of bar_list:", len(bar_list)) # prints 0 on first run, always
+		# foo_list.append("foo_list is part of the module.") 
+		# foo_list.append("What is added now will be there when this module is called next time.")
+		# bar_list.append("bar_list is a local variable.")
+		# bar_list.append("It will start empty when the module is called next time, regardless of what we do with it this time.")
+		# end debug
 
 		if ftype == 'oplab':
 				for filein in glob.glob(outpath + os.sep + filename):
