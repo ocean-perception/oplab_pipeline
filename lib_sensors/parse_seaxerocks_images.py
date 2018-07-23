@@ -83,14 +83,14 @@ class parse_seaxerocks_images:
             for line in filein.readlines():
                 stereo_index_timestamps=line.strip().split(',') 
 
-
+                index_string = stereo_index_timestamps[0]
                 date_string = stereo_index_timestamps[1]
                 time_string = stereo_index_timestamps[2]
                 ms_time_string = stereo_index_timestamps[3]
 
                 # read in date
                 if date_string != 'date':#ignore header                 
-                    stereo_index.append(stereo_index_timestamps[0])                 
+                    stereo_index.append(index_string)                 
                     yyyy = int(date_string[0:4])
                     mm = int(date_string[4:6])
                     dd = int(date_string[6:8])
@@ -107,12 +107,13 @@ class parse_seaxerocks_images:
                     
                     epoch_timestamp_stereo.append(float(epoch_time+msec/1000+timeoffset))
                     
-                            
-        camera1_list = sorted(os.listdir(filepath+camera1_label))
-        camera2_list = sorted(os.listdir(filepath+camera2_label))
+        camera1_list = ["{}.raw".format(i) for i in stereo_index]
+        camera2_list = ["{}.raw".format(i) for i in stereo_index]
+        # camera1_list = sorted(os.listdir(filepath+camera1_label))
+        # camera2_list = sorted(os.listdir(filepath+camera2_label))
         
-        camera1_list = [ line for line in camera1_list if '.raw' in line]
-        camera2_list = [ line for line in camera2_list if '.raw' in line]
+        # camera1_list = [ line for line in camera1_list if '.raw' in line]
+        # camera2_list = [ line for line in camera2_list if '.raw' in line]
         
         for i in range(len(camera1_list)):
             camera1_image=camera1_list[i].split('.')
@@ -155,13 +156,14 @@ class parse_seaxerocks_images:
             for line in filein.readlines():
                 laser_index_timestamps=line.strip().split(',')  
 
+                index_string = laser_index_timestamps[0]
                 date_string = laser_index_timestamps[1]
                 time_string = laser_index_timestamps[2]
                 ms_time_string = laser_index_timestamps[3]
 
                 # read in date
                 if date_string != 'date':#ignore header                 
-                    laser_index.append(laser_index_timestamps[0])
+                    laser_index.append(index_string)
                 
                     yyyy = int(date_string[0:4])
                     mm = int(date_string[4:6])
@@ -179,26 +181,30 @@ class parse_seaxerocks_images:
                     
                     epoch_timestamp_laser.append(float(epoch_time+msec/1000+timeoffset))                    
         
-        camera3_list = sorted(os.listdir(filepath+camera3_label))
-        camera3_list = [ line for line in camera3_list if '.' not in line] # do not consider any other files, only consider folder - assuming all the folders only contain intended images
+        camera3_list = ["{}".format(i) for i in laser_index] # try use pandas for all parsers, should be faster
+        # camera3_list = sorted(os.listdir(filepath+camera3_label))
+        # camera3_list = [ line for line in camera3_list if '.' not in line] # do not consider any other files, only consider folder - assuming all the folders only contain intended images
         
-        for i in range(len(camera3_list)): 
-            images_filenames=sorted(os.listdir(filepath+camera3_label+'/'+camera3_list[i]))
-            for j in range(len(images_filenames)):
-                camera3_filename.append(camera3_list[i]+'/'+images_filenames[j])
-                camera3_image=images_filenames[j].split('.')
-                camera3_image_index=camera3_image[0].split('image')
-                camera3_index.append(camera3_image_index[1])
+        for i in range(len(camera3_list)):
+            camera3_filename.append('{}/image{}'.format(camera3_list[i][:3], camera3_list[i])) # let out format (e.g. '.jpg' or '.tif')
+            camera3_index.append(camera3_list[i])
+        # for i in range(len(camera3_list)): 
+        #     images_filenames=sorted(os.listdir(filepath+camera3_label+'/'+camera3_list[i]))
+        #     for j in range(len(images_filenames)):
+        #         camera3_filename.append(camera3_list[i]+'/'+images_filenames[j])
+        #         camera3_image=images_filenames[j].split('.')
+        #         camera3_image_index=camera3_image[0].split('image')
+        #         camera3_index.append(camera3_image_index[1])
 
         j=0
-        for i in range(len(camera3_filename)):# find corresponding timestamp even if some images are deletec
+        for i in range(len(camera3_filename)):# original comment: find corresponding timestamp even if some images are deletec
             if camera3_index[i]==laser_index[j]:                
                 epoch_timestamp_camera3.append(epoch_timestamp_laser[j])
                 j=j+1
-            elif laser_index[j] > camera3_index[i]: # Jin: incomplete! it means that laser data is missing for this image file, so no epoch_timestamp data, and do what when this happens?
+            elif laser_index[j] > camera3_index[i]: # Jin: incomplete? it means that laser data is missing for this image file, so no epoch_timestamp data, and do what when this happens?
                 j=j+1
             else:
-                j=j-1 # Jin: incomplete and possibly wrong! it means that this laser data is extra, with no accompanying image file, so it should be j+1 till index match?
+                j=j-1 # Jin: incomplete and possibly wrong? it means that this laser data is extra, with no accompanying image file, so it should be j+1 till index match?
 
             if ftype == 'oplab':                    
                 data = {'epoch_timestamp': float(epoch_timestamp_camera3[i]), 'class': class_string, 'sensor': sensor_string, 'frame': frame_string, 'category': category_laser,  'serial' : camera3_serial, 'filename': str(camera3_filename[i])}
