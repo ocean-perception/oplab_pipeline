@@ -243,13 +243,14 @@ def parse_data(filepath,ftype):
             camera3_label = load_data['image']['camera3']
         image_timezone = load_data['image']['timezone']
         image_timeoffset = load_data['image']['timeoffset']
-    if 'chemical' in load_data:
-        chemical_flag=1
-        chemical_format = load_data['chemical']['format']
-        chemical_filepath = load_data['chemical']['filepath']
-        chemical_filename = load_data['chemical']['filename']
-        chemical_timezone = load_data['chemical']['timezone']
-        chemical_data = load_data['chemical']['data']
+    # if 'chemical' in load_data:
+    #     chemical_flag=1
+    #     chemical_format = load_data['chemical']['format']
+    #     chemical_filepath = load_data['chemical']['filepath']
+    #     chemical_filename = load_data['chemical']['filename']
+    #     chemical_timezone = load_data['chemical']['timezone']
+    #     chemical_timeoffset = load_data['chemical']['timeoffset']
+    #     chemical_data = load_data['chemical']['data']
     
     # generate output path
     print('Generating output paths')    
@@ -361,11 +362,11 @@ def parse_data(filepath,ftype):
                     parse_ae2000(filepath + os.sep + altitude_filepath,altitude_filename,'altitude',time_altitudezone,0,time_altitudeoffset,ftype,outpath,filename,fileout)
                 altitude_flag = 0
 
-            if chemical_flag == 1:
-                print('Loading chemical data...')
-                if chemical_format == 'date_time_intensity':
-                    parse_chemical(filepath + os.sep + chemical_filepath, chemical_filename, chemical_timezone, chemical_data, ftype, outpath, filename, fileout)
-                chemical_flag = 0
+            # if chemical_flag == 1:
+            #     print('Loading chemical data...')
+            #     if chemical_format == 'date_time_intensity':
+            #         parse_chemical(filepath + os.sep + chemical_filepath, chemical_filename, chemical_timezone, chemical_timeoffset, chemical_data, ftype, outpath, filename, fileout)
+            #     chemical_flag = 0
     
         fileout.close()
         
