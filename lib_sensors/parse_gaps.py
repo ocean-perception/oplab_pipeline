@@ -30,7 +30,7 @@ class parse_gaps:
 
 		# gaps std models
 		distance_std_factor = 0.6/100 # usbl catalogue gaps spec
-		# distance_std_offset = 5
+		distance_std_offset = 5
 		broken_packet_flag = False
 
 		# read in timezone
@@ -226,7 +226,7 @@ class parse_gaps:
 						lateral_distance,bearing = latlon_to_metres(latitude, longitude, latitude_ship, longitude_ship)
 
 						distance = math.sqrt(lateral_distance * lateral_distance + depth * depth)
-						distance_std = distance_std_factor*distance
+						distance_std = distance_std_factor*distance + distance_std_offset
 
 						# determine uncertainty in terms of latitude and longitude
 						latitude_offset,longitude_offset = metres_to_latlon(latitude, longitude, distance_std, distance_std)

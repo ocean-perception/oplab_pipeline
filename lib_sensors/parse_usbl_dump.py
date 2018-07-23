@@ -27,7 +27,7 @@ class parse_usbl_dump:
 		
 		# gaps std models
 		distance_std_factor = 1/100 # 1% uncertainty often quoted by ship's crew
-		# distance_std_offset = 5
+		distance_std_offset = 5
 
 		# read in timezone
 		if isinstance(timezone, str):			
@@ -112,7 +112,7 @@ class parse_usbl_dump:
 						distance_full = line_split[11].split('=')														
 						distance= float(distance_full[1])
 						
-						distance_std = distance_std_factor*distance
+						distance_std = distance_std_factor*distance + distance_std_offset
 
 						lateral_distance_full = line_split[9].split('=')														
 						lateral_distance= float(lateral_distance_full[1])

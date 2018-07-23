@@ -20,10 +20,10 @@ from lib_coordinates.latlon_wgs84 import latlon_to_metres
 # create an equation for each noise, and def them for sensors in ae2000, or ts1, or ts2. read from mission yaml which sensor used, and automatically pick the one desired.
 
 class particle_filter:
-    def __init__(self, usbl_data, dvl_imu_data, N, measurement_update_flag, dvl_noise_sigma_factor, imu_noise_sigma_factor, usbl_noise_sigma_factor, usbl_noise_std_factor, usbl_noise_std_offset):
+    def __init__(self, usbl_data, dvl_imu_data, N, measurement_update_flag, dvl_noise_sigma_factor, imu_noise_sigma_factor, usbl_noise_sigma_factor):
         return
 
-    def __new__(self, usbl_data, dvl_imu_data, N, measurement_update_flag, dvl_noise_sigma_factor, imu_noise_sigma_factor, usbl_noise_sigma_factor, usbl_noise_std_factor, usbl_noise_std_offset):
+    def __new__(self, usbl_data, dvl_imu_data, N, measurement_update_flag, dvl_noise_sigma_factor, imu_noise_sigma_factor, usbl_noise_sigma_factor):
 
         def eval(r, p):
         	    sum = 0.0;
@@ -36,10 +36,10 @@ class particle_filter:
 
         # ========== Start Noise models ========== #
         def usbl_noise(usbl_datapoint): # measurement noise
-            distance = usbl_datapoint.distance_to_ship # lateral_distance,bearing = latlon_to_metres(usbl_datapoint.latitude, usbl_datapoint.longitude, usbl_datapoint.latitude_ship, usbl_datapoint.longitude_ship) 
+            # distance = usbl_datapoint.distance_to_ship # lateral_distance,bearing = latlon_to_metres(usbl_datapoint.latitude, usbl_datapoint.longitude, usbl_datapoint.latitude_ship, usbl_datapoint.longitude_ship) 
             # distance = math.sqrt(lateral_distance**2 + usbl_datapoint.depth**2)
-            error = usbl_noise_sigma_factor*(usbl_noise_std_offset + usbl_noise_std_factor*distance) # 5 is for the differential GPS, and the distance std factor 0.01 is used as 0.006 is too sall and unrealistic # This is moved to parse_gaps and parse_usbl_dump
-            # error = usbl_datapoint.northings_std * usbl_noise_sigma_factor
+            # error = usbl_noise_sigma_factor*(usbl_noise_std_offset + usbl_noise_std_factor*distance) # 5 is for the differential GPS, and the distance std factor 0.01 is used as 0.006 is too sall and unrealistic # This is moved to parse_gaps and parse_usbl_dump
+            error = usbl_datapoint.northings_std * usbl_noise_sigma_factor
             return error
 
         def dvl_noise(dvl_imu_datapoint): # sensor1 noise

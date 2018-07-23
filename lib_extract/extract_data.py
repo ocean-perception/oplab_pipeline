@@ -336,8 +336,6 @@ class extract_data:
                 dvl_noise_sigma_factor = load_localisation['particle_filter']['dvl_noise_sigma_factor']
                 imu_noise_sigma_factor = load_localisation['particle_filter']['imu_noise_sigma_factor']
                 usbl_noise_sigma_factor = load_localisation['particle_filter']['usbl_noise_sigma_factor']
-                usbl_noise_std_factor = load_localisation['particle_filter']['usbl_noise_std_factor']
-                usbl_noise_std_offset = load_localisation['particle_filter']['usbl_noise_std_offset']
                 particles_number = load_localisation['particle_filter']['particles_number']
                 particles_time_interval = load_localisation['particle_filter']['particles_plot_time_interval']
             if 'csv_output' in load_localisation:
@@ -618,7 +616,7 @@ class extract_data:
     # particle filter data fusion of usbl_data and dvl_imu_data
         if perform_particle_filter == True:
             pf_start_time = time.time()
-            [pf_fusion_dvl_list, pf_usbl_datapoints, pf_particles_list, pf_northings_std, pf_eastings_std, pf_yaw_std] = particle_filter(copy.deepcopy(usbl_list), copy.deepcopy(dead_reckoning_dvl_list), particles_number, True, dvl_noise_sigma_factor, imu_noise_sigma_factor, usbl_noise_sigma_factor, usbl_noise_std_factor, usbl_noise_std_offset)
+            [pf_fusion_dvl_list, pf_usbl_datapoints, pf_particles_list, pf_northings_std, pf_eastings_std, pf_yaw_std] = particle_filter(copy.deepcopy(usbl_list), copy.deepcopy(dead_reckoning_dvl_list), particles_number, True, dvl_noise_sigma_factor, imu_noise_sigma_factor, usbl_noise_sigma_factor)
             pf_end_time = time.time()
             pf_elapesed_time = pf_end_time - pf_start_time
             print ("particle filter with {} particles took {} seconds".format(particles_number,pf_elapesed_time)) # maybe save this as text alongside plotly outputs

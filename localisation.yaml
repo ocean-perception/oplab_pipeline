@@ -6,8 +6,6 @@ particle_filter:
   dvl_noise_sigma_factor: 2
   imu_noise_sigma_factor: 2
   usbl_noise_sigma_factor: 2
-  usbl_noise_std_factor: 0.01
-  usbl_noise_std_offset: 5
   particles_number: 100
   particles_plot_time_interval: 300
 
