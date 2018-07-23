@@ -3,7 +3,7 @@ import time, json, glob, os
 import pandas as pd
 
 class parse_chemical: # read xlsx file, calibrate values, convert to epoch timestamps, output to json file
-    def __init__(self, filepath, filename, timezone, config_data, ftype, outpath, fileoutname, fileout):
+    def __init__(self, filepath, filename, timezone, timeoffset, config_data, ftype, outpath, fileoutname, fileout):
         if ftype == 'oplab':
             def calibrate(x1, x2, y1, y2, x):
                 m = (y2-y1)/(x2-x1)
