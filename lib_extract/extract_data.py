@@ -380,7 +380,7 @@ class extract_data:
                     if str(line_split[0]) == 'MAG_VAR_DATE':
                         date = str(line_split[1])                
 
-            # # setup the time window
+        # setup the time window
             if start_datetime == '':
                 yyyy = int(date[1:5])
                 mm =  int(date[6:8])
@@ -442,7 +442,6 @@ class extract_data:
                                 value=line_split[i].split(':')
                                 if value[0] == 'alt':
                                     altitude.altitude = float(value[1])
-                                    altitude.seafloor_depth = 0
                                 if value[0] == 'vx':
                                     velocity_body.x_velocity = float(value[1])
                                 if value[0] == 'vy':
@@ -504,6 +503,18 @@ class extract_data:
                                     usbl.depth = float(line_split[i+1])
 
                             usbl_list.append(usbl)
+
+                    if str(line_split[0]) == 'VIS:':
+                        if 'FC' in line_split[3]:
+                            camera1 = sens_cls.camera()
+                            camera1.timestamp = float(line_split[1])
+                            camera1.filename = float(line_split[3])
+                            camera1_list.append(camera1)
+                        if 'AC' in line_split[3]:
+                            camera2 = sens_cls.camera()
+                            camera2.timestamp = float(line_split[1])
+                            camera2.filename = float(line_split[3])
+                            camera2_list.append(camera2)
 
             # make folder to store csv and plots
             renavpath = filepath + 'acfr_renav_' + start_datetime[0:8] + '_' + start_datetime[8:14] + '_' + finish_datetime[0:8] + '_' + finish_datetime[8:14]
@@ -641,50 +652,52 @@ class extract_data:
     
     # perform interpolations of state data to velocity_inertial time stamps (without sensor offset and correct imu to dvl flipped interpolation) and perform deadreckoning
         #initialise counters for interpolation
-        j=0
-        k=0
-    
-        for i in range(len(velocity_inertial_list)):
-                           
-            while j< len(orientation_list)-1 and orientation_list[j].timestamp<velocity_inertial_list[i].timestamp:
-                j=j+1
-            
-            if j==1:
-                interpolate_remove_flag = True
-            else:
-                velocity_inertial_list[i].roll=interpolate(velocity_inertial_list[i].timestamp,orientation_list[j-1].timestamp,orientation_list[j].timestamp,orientation_list[j-1].roll,orientation_list[j].roll)
-                velocity_inertial_list[i].pitch=interpolate(velocity_inertial_list[i].timestamp,orientation_list[j-1].timestamp,orientation_list[j].timestamp,orientation_list[j-1].pitch,orientation_list[j].pitch)
+        if len(velocity_inertial_list)>0:
 
-                if abs(orientation_list[j].yaw-orientation_list[j-1].yaw)>180:                        
-                    if orientation_list[j].yaw>orientation_list[j-1].yaw:
-                        velocity_inertial_list[i].yaw=interpolate(velocity_inertial_list[i].timestamp,orientation_list[j-1].timestamp,orientation_list[j].timestamp,orientation_list[j-1].yaw,orientation_list[j].yaw-360)
-                        
-                    else:
-                        velocity_inertial_list[i].yaw=interpolate(velocity_inertial_list[i].timestamp,orientation_list[j-1].timestamp,orientation_list[j].timestamp,orientation_list[j-1].yaw-360,orientation_list[j].yaw)
-                       
-                    if velocity_inertial_list[i].yaw<0:
-                        velocity_inertial_list[i].yaw+=360
-                        
-                    elif velocity_inertial_list[i].yaw>360:
-                        velocity_inertial_list[i].yaw-=360  
-
-                else:
-                    velocity_inertial_list[i].yaw=interpolate(velocity_inertial_list[i].timestamp,orientation_list[j-1].timestamp,orientation_list[j].timestamp,orientation_list[j-1].yaw,orientation_list[j].yaw)
-            
-            while k< len(depth_list)-1 and depth_list[k].timestamp<velocity_inertial_list[i].timestamp:
-                k=k+1
-
-            if k>=1:                
-                velocity_inertial_list[i].depth=interpolate(velocity_inertial_list[i].timestamp,depth_list[k-1].timestamp,depth_list[k].timestamp,depth_list[k-1].depth,depth_list[k].depth) # depth directly interpolated from depth sensor
+            j=0
+            k=0
         
-        for i in range(len(velocity_inertial_list)):
-            if i >= 1:                     
-                [velocity_inertial_list[i].northings, velocity_inertial_list[i].eastings]=dead_reckoning(velocity_inertial_list[i].timestamp, velocity_inertial_list[i-1].timestamp, velocity_inertial_list[i].north_velocity, velocity_inertial_list[i-1].north_velocity, velocity_inertial_list[i].east_velocity, velocity_inertial_list[i-1].east_velocity, velocity_inertial_list[i-1].northings, velocity_inertial_list[i-1].eastings)
+            for i in range(len(velocity_inertial_list)):
+                               
+                while j< len(orientation_list)-1 and orientation_list[j].timestamp<velocity_inertial_list[i].timestamp:
+                    j=j+1
+                
+                if j==1:
+                    interpolate_remove_flag = True
+                else:
+                    velocity_inertial_list[i].roll=interpolate(velocity_inertial_list[i].timestamp,orientation_list[j-1].timestamp,orientation_list[j].timestamp,orientation_list[j-1].roll,orientation_list[j].roll)
+                    velocity_inertial_list[i].pitch=interpolate(velocity_inertial_list[i].timestamp,orientation_list[j-1].timestamp,orientation_list[j].timestamp,orientation_list[j-1].pitch,orientation_list[j].pitch)
 
-        if interpolate_remove_flag == True:
-            del velocity_inertial_list[0]
-            interpolate_remove_flag = False # reset flag
-        print('Complete interpolation and coordinate transfomations for velocity_inertial')
+                    if abs(orientation_list[j].yaw-orientation_list[j-1].yaw)>180:                        
+                        if orientation_list[j].yaw>orientation_list[j-1].yaw:
+                            velocity_inertial_list[i].yaw=interpolate(velocity_inertial_list[i].timestamp,orientation_list[j-1].timestamp,orientation_list[j].timestamp,orientation_list[j-1].yaw,orientation_list[j].yaw-360)
+                            
+                        else:
+                            velocity_inertial_list[i].yaw=interpolate(velocity_inertial_list[i].timestamp,orientation_list[j-1].timestamp,orientation_list[j].timestamp,orientation_list[j-1].yaw-360,orientation_list[j].yaw)
+                           
+                        if velocity_inertial_list[i].yaw<0:
+                            velocity_inertial_list[i].yaw+=360
+                            
+                        elif velocity_inertial_list[i].yaw>360:
+                            velocity_inertial_list[i].yaw-=360  
+
+                    else:
+                        velocity_inertial_list[i].yaw=interpolate(velocity_inertial_list[i].timestamp,orientation_list[j-1].timestamp,orientation_list[j].timestamp,orientation_list[j-1].yaw,orientation_list[j].yaw)
+                
+                while k< len(depth_list)-1 and depth_list[k].timestamp<velocity_inertial_list[i].timestamp:
+                    k=k+1
+
+                if k>=1:                
+                    velocity_inertial_list[i].depth=interpolate(velocity_inertial_list[i].timestamp,depth_list[k-1].timestamp,depth_list[k].timestamp,depth_list[k-1].depth,depth_list[k].depth) # depth directly interpolated from depth sensor
+            
+            for i in range(len(velocity_inertial_list)):
+                if i >= 1:                     
+                    [velocity_inertial_list[i].northings, velocity_inertial_list[i].eastings]=dead_reckoning(velocity_inertial_list[i].timestamp, velocity_inertial_list[i-1].timestamp, velocity_inertial_list[i].north_velocity, velocity_inertial_list[i-1].north_velocity, velocity_inertial_list[i].east_velocity, velocity_inertial_list[i-1].east_velocity, velocity_inertial_list[i-1].northings, velocity_inertial_list[i-1].eastings)
+
+            if interpolate_remove_flag == True:
+                del velocity_inertial_list[0]
+                interpolate_remove_flag = False # reset flag
+            print('Complete interpolation and coordinate transfomations for velocity_inertial')
 
     # offset velocity DR by average usbl estimate
         # offset velocity body DR by average usbl estimate
@@ -699,11 +712,12 @@ class extract_data:
             dead_reckoning_dvl_list[i].latitude, dead_reckoning_dvl_list[i].longitude = metres_to_latlon(latitude_reference, longitude_reference, dead_reckoning_dvl_list[i].eastings, dead_reckoning_dvl_list[i].northings)
 
         # offset velocity inertial DR by average usbl estimate
-        [northings_usbl_interpolated,eastings_usbl_interpolated] = usbl_offset([i.timestamp for i in velocity_inertial_list],[i.northings for i in velocity_inertial_list],[i.eastings for i in velocity_inertial_list],[i.timestamp for i in usbl_list],[i.northings for i in usbl_list],[i.eastings for i in usbl_list])
-        for i in range(len(velocity_inertial_list)):                
-            velocity_inertial_list[i].northings+=northings_usbl_interpolated
-            velocity_inertial_list[i].eastings+=eastings_usbl_interpolated
-            velocity_inertial_list[i].latitude, velocity_inertial_list[i].longitude = metres_to_latlon(latitude_reference, longitude_reference, velocity_inertial_list[i].eastings, velocity_inertial_list[i].northings)
+        if len(velocity_inertial_list) > 0:
+            [northings_usbl_interpolated,eastings_usbl_interpolated] = usbl_offset([i.timestamp for i in velocity_inertial_list],[i.northings for i in velocity_inertial_list],[i.eastings for i in velocity_inertial_list],[i.timestamp for i in usbl_list],[i.northings for i in usbl_list],[i.eastings for i in usbl_list])
+            for i in range(len(velocity_inertial_list)):                
+                velocity_inertial_list[i].northings+=northings_usbl_interpolated
+                velocity_inertial_list[i].eastings+=eastings_usbl_interpolated
+                velocity_inertial_list[i].latitude, velocity_inertial_list[i].longitude = metres_to_latlon(latitude_reference, longitude_reference, velocity_inertial_list[i].eastings, velocity_inertial_list[i].northings)
 
     # perform interpolations of state data to camera{1/2/3} time stamps for both DR and PF
         def camera_setup(camera_list, camera_name, camera_offsets, _centre_list):
@@ -861,7 +875,8 @@ class extract_data:
             fig=plt.figure(figsize=(10,7))
             ax1 = fig.add_subplot(321)            
             ax1.plot([i.timestamp for i in dead_reckoning_dvl_list],[i.north_velocity for i in dead_reckoning_dvl_list], 'ro',label='DVL')#time_velocity_body,north_velocity_inertia_dvl, 'ro',label='DVL')
-            ax1.plot([i.timestamp for i in velocity_inertial_list],[i.north_velocity for i in velocity_inertial_list], 'b.',label=velocity_inertial_sensor_name)
+            if len(velocity_inertial_list) > 0:
+                ax1.plot([i.timestamp for i in velocity_inertial_list],[i.north_velocity for i in velocity_inertial_list], 'b.',label=velocity_inertial_sensor_name)
             ax1.set_xlabel('Epoch time, s')
             ax1.set_ylabel('Velocity, m/s')
             ax1.legend()
@@ -869,7 +884,8 @@ class extract_data:
             ax1.set_title('north velocity')
             ax2 = fig.add_subplot(323)            
             ax2.plot([i.timestamp for i in dead_reckoning_dvl_list],[i.east_velocity for i in dead_reckoning_dvl_list],'ro',label='DVL')
-            ax2.plot([i.timestamp for i in velocity_inertial_list],[i.east_velocity for i in velocity_inertial_list],'b.',label=velocity_inertial_sensor_name)
+            if len(velocity_inertial_list) > 0:
+                ax2.plot([i.timestamp for i in velocity_inertial_list],[i.east_velocity for i in velocity_inertial_list],'b.',label=velocity_inertial_sensor_name)
             ax2.set_xlabel('Epoch time, s')
             ax2.set_ylabel('Velocity, m/s')
             ax2.legend()
@@ -877,7 +893,8 @@ class extract_data:
             ax2.set_title('east velocity')
             ax3 = fig.add_subplot(325)            
             ax3.plot([i.timestamp for i in dead_reckoning_dvl_list],[i.down_velocity for i in dead_reckoning_dvl_list],'ro',label='DVL')#time_velocity_body,down_velocity_inertia_dvl,'r.',label='DVL')
-            ax3.plot([i.timestamp for i in velocity_inertial_list],[i.down_velocity for i in velocity_inertial_list],'b.',label=velocity_inertial_sensor_name)
+            if len(velocity_inertial_list) > 0:
+                ax3.plot([i.timestamp for i in velocity_inertial_list],[i.down_velocity for i in velocity_inertial_list],'b.',label=velocity_inertial_sensor_name)
             ax3.set_xlabel('Epoch time, s')
             ax3.set_ylabel('Velocity, m/s')
             ax3.legend()
@@ -914,7 +931,8 @@ class extract_data:
             fig=plt.figure(figsize=(12,7))
             ax1 = fig.add_subplot(221)
             ax1.plot([i.timestamp for i in dead_reckoning_dvl_list],[i.northings for i in dead_reckoning_dvl_list],'r.',label='DVL')#time_velocity_body,northings_dead_reckoning,'r.',label='DVL')
-            ax1.plot([i.timestamp for i in velocity_inertial_list],[i.northings for i in velocity_inertial_list],'g.',label=velocity_inertial_sensor_name)
+            if len(velocity_inertial_list) > 0:
+                ax1.plot([i.timestamp for i in velocity_inertial_list],[i.northings for i in velocity_inertial_list],'g.',label=velocity_inertial_sensor_name)
             ax1.plot([i.timestamp for i in usbl_list], [i.northings for i in usbl_list],'b.',label='USBL')
             ax1.plot([i.timestamp for i in dead_reckoning_centre_list],[i.northings for i in dead_reckoning_centre_list],'c.',label='Centre')#time_velocity_body,northings_dead_reckoning,'b.')
             ax1.set_xlabel('Epoch time, s')
@@ -924,7 +942,8 @@ class extract_data:
             ax1.set_title('Northings')
             ax2 = fig.add_subplot(222)
             ax2.plot([i.timestamp for i in dead_reckoning_dvl_list],[i.eastings for i in dead_reckoning_dvl_list],'r.',label='DVL')#time_velocity_body,northings_dead_reckoning,'r.',label='DVL')
-            ax2.plot([i.timestamp for i in velocity_inertial_list],[i.eastings for i in velocity_inertial_list],'g.',label=velocity_inertial_sensor_name)
+            if len(velocity_inertial_list) > 0:
+                ax2.plot([i.timestamp for i in velocity_inertial_list],[i.eastings for i in velocity_inertial_list],'g.',label=velocity_inertial_sensor_name)
             ax2.plot([i.timestamp for i in usbl_list], [i.eastings for i in usbl_list],'b.',label='USBL')
             ax2.plot([i.timestamp for i in dead_reckoning_centre_list],[i.eastings for i in dead_reckoning_centre_list],'c.',label='Centre')#time_velocity_body,eastings_dead_reckoning,'b.')
             ax2.set_xlabel('Epoch time, s')
@@ -1001,9 +1020,10 @@ class extract_data:
             ax3.legend()
             ax3.grid(True)
             ax4 = fig.add_subplot(235)
-            ax4.plot([i.timestamp for i in velocity_inertial_list],[i.north_velocity_std for i in velocity_inertial_list],'r.',label='north_velocity_std_inertia')
-            ax4.plot([i.timestamp for i in velocity_inertial_list],[i.east_velocity_std for i in velocity_inertial_list],'g.',label='east_velocity_std_inertia')
-            ax4.plot([i.timestamp for i in velocity_inertial_list],[i.down_velocity_std for i in velocity_inertial_list],'b.',label='down_velocity_std_inertia')
+            if len(velocity_inertial_list) > 0:
+                ax4.plot([i.timestamp for i in velocity_inertial_list],[i.north_velocity_std for i in velocity_inertial_list],'r.',label='north_velocity_std_inertia')
+                ax4.plot([i.timestamp for i in velocity_inertial_list],[i.east_velocity_std for i in velocity_inertial_list],'g.',label='east_velocity_std_inertia')
+                ax4.plot([i.timestamp for i in velocity_inertial_list],[i.down_velocity_std for i in velocity_inertial_list],'b.',label='down_velocity_std_inertia')
             ax4.set_xlabel('Epoch time, s')
             ax4.set_ylabel('Velocity, m/s')
             ax4.legend()
@@ -1033,7 +1053,8 @@ class extract_data:
             ax.plot([i.eastings for i in camera1_list],[i.northings for i in camera1_list],'y.',label='Camera1')
             ax.plot([i.eastings for i in dead_reckoning_centre_list],[i.northings for i in dead_reckoning_centre_list],'r.',label='Centre')
             ax.plot([i.eastings for i in dead_reckoning_dvl_list],[i.northings for i in dead_reckoning_dvl_list],'g.',label='DVL')
-            ax.plot([i.eastings for i in velocity_inertial_list],[i.northings for i in velocity_inertial_list],'m.',label=velocity_inertial_sensor_name)
+            if len(velocity_inertial_list) > 0:
+                ax.plot([i.eastings for i in velocity_inertial_list],[i.northings for i in velocity_inertial_list],'m.',label=velocity_inertial_sensor_name)
             ax.plot([i.eastings for i in usbl_list], [i.northings for i in usbl_list],'c.',label='USBL')
             ax.plot([i.eastings for i in pf_fusion_dvl_list], [i.northings for i in pf_fusion_dvl_list], 'g', label='PF fusion_DVL')
             ax.set_xlabel('Eastings, m')
@@ -1090,22 +1111,24 @@ class extract_data:
             print('...plotting velocity_vs_time...')
 
             trace11a = create_trace([i.timestamp for i in dead_reckoning_dvl_list], [i.north_velocity for i in dead_reckoning_dvl_list], 'DVL north velocity', 'red')
-            trace11b = create_trace([i.timestamp for i in velocity_inertial_list], [i.north_velocity for i in velocity_inertial_list], '{} north velocity'.format(velocity_inertial_sensor_name), 'blue')
+            if len(velocity_inertial_list) > 0:
+                trace11b = create_trace([i.timestamp for i in velocity_inertial_list], [i.north_velocity for i in velocity_inertial_list], '{} north velocity'.format(velocity_inertial_sensor_name), 'blue')
+                trace21b = create_trace([i.timestamp for i in velocity_inertial_list], [i.east_velocity for i in velocity_inertial_list], '{} east velocity'.format(velocity_inertial_sensor_name), 'blue')
+                trace31b = create_trace([i.timestamp for i in velocity_inertial_list], [i.down_velocity for i in velocity_inertial_list], '{} down velocity'.format(velocity_inertial_sensor_name), 'blue')
             # plot1=[trace11a, trace11b]
             trace21a = create_trace([i.timestamp for i in dead_reckoning_dvl_list], [i.east_velocity for i in dead_reckoning_dvl_list], 'DVL east velocity', 'red')
-            trace21b = create_trace([i.timestamp for i in velocity_inertial_list], [i.east_velocity for i in velocity_inertial_list], '{} east velocity'.format(velocity_inertial_sensor_name), 'blue')
             trace31a = create_trace([i.timestamp for i in dead_reckoning_dvl_list], [i.down_velocity for i in dead_reckoning_dvl_list], 'DVL down velocity', 'red')
-            trace31b = create_trace([i.timestamp for i in velocity_inertial_list], [i.down_velocity for i in velocity_inertial_list], '{} down velocity'.format(velocity_inertial_sensor_name), 'blue')
             trace12a = create_trace([i.timestamp for i in dead_reckoning_centre_list], [i.x_velocity for i in dead_reckoning_centre_list], 'DVL x velocity', 'red')
             trace22a = create_trace([i.timestamp for i in dead_reckoning_centre_list], [i.y_velocity for i in dead_reckoning_centre_list], 'DVL y velocity', 'red')
             trace32a = create_trace([i.timestamp for i in dead_reckoning_centre_list], [i.z_velocity for i in dead_reckoning_centre_list], 'DVL z velocity', 'red')
             fig = tools.make_subplots(rows=3, cols=2, subplot_titles=('DVL vs {} - north Velocity'.format(velocity_inertial_sensor_name), 'DVL - x velocity / surge', 'DVL vs {} - east Velocity'.format(velocity_inertial_sensor_name), 'DVL - y velocity / sway', 'DVL vs {} - down Velocity'.format(velocity_inertial_sensor_name), 'DVL - z velocity / heave'))
             fig.append_trace(trace11a, 1, 1)
-            fig.append_trace(trace11b, 1, 1)
+            if len(velocity_inertial_list) > 0:
+                fig.append_trace(trace11b, 1, 1)
+                fig.append_trace(trace21b, 2, 1)
+                fig.append_trace(trace31b, 3, 1)
             fig.append_trace(trace21a, 2, 1)
-            fig.append_trace(trace21b, 2, 1)
             fig.append_trace(trace31a, 3, 1)
-            fig.append_trace(trace31b, 3, 1)
             fig.append_trace(trace12a, 1, 2)
             fig.append_trace(trace22a, 2, 2)
             fig.append_trace(trace32a, 3, 2)
@@ -1132,11 +1155,12 @@ class extract_data:
             print('...plotting deadreckoning_vs_time...')
 
             trace11a = create_trace([i.timestamp for i in dead_reckoning_dvl_list], [i.northings for i in dead_reckoning_dvl_list], 'Northing DVL', 'red')
-            trace11b = create_trace([i.timestamp for i in velocity_inertial_list], [i.northings for i in velocity_inertial_list], 'Northing {}'.format(velocity_inertial_sensor_name), 'green')
+            if len(velocity_inertial_list)>0:
+                trace11b = create_trace([i.timestamp for i in velocity_inertial_list], [i.northings for i in velocity_inertial_list], 'Northing {}'.format(velocity_inertial_sensor_name), 'green')
+                trace12b = create_trace([i.timestamp for i in velocity_inertial_list], [i.eastings for i in velocity_inertial_list], 'Easting {}'.format(velocity_inertial_sensor_name), 'green')
             trace11c = create_trace([i.timestamp for i in usbl_list], [i.northings for i in usbl_list], 'Northing USBL', 'blue')
             trace11d = create_trace([i.timestamp for i in dead_reckoning_centre_list], [i.northings for i in dead_reckoning_centre_list], 'Northing Centre', 'orange')
             trace12a = create_trace([i.timestamp for i in dead_reckoning_dvl_list], [i.eastings for i in dead_reckoning_dvl_list], 'Easting DVL', 'red')
-            trace12b = create_trace([i.timestamp for i in velocity_inertial_list], [i.eastings for i in velocity_inertial_list], 'Easting {}'.format(velocity_inertial_sensor_name), 'green')
             trace12c = create_trace([i.timestamp for i in usbl_list], [i.eastings for i in usbl_list], 'Easting USBL', 'blue')
             trace12d = create_trace([i.timestamp for i in dead_reckoning_centre_list], [i.eastings for i in dead_reckoning_centre_list], 'Easting Centre', 'orange')
             trace21a = create_trace([i.timestamp for i in altitude_list], [i.seafloor_depth for i in altitude_list], 'Depth  Seafloor (Depth Sensor + Altitude)', 'red')
@@ -1146,11 +1170,12 @@ class extract_data:
             trace22a = create_trace([i.timestamp for i in altitude_list], [i.altitude for i in altitude_list], 'Altitude', 'red')
             fig = tools.make_subplots(rows=2,cols=2, subplot_titles=('Northings', 'Eastings', 'Depth', 'Altitude'))
             fig.append_trace(trace11a, 1, 1)
-            fig.append_trace(trace11b, 1, 1)
+            if len(velocity_inertial_list)>0:
+                fig.append_trace(trace11b, 1, 1)
+                fig.append_trace(trace12b, 1, 2)
             fig.append_trace(trace11c, 1, 1)
             fig.append_trace(trace11d, 1, 1)
             fig.append_trace(trace12a, 1, 2)
-            fig.append_trace(trace12b, 1, 2)
             fig.append_trace(trace12c, 1, 2)
             fig.append_trace(trace12d, 1, 2)
             fig.append_trace(trace21a, 2, 1)
@@ -1195,9 +1220,10 @@ class extract_data:
             trace13a = create_trace([i.timestamp for i in usbl_list], [i.latitude_std for i in usbl_list], 'latitude std usbl', 'red')
             trace13b = create_trace([i.timestamp for i in usbl_list], [i.longitude_std for i in usbl_list], 'longitude std usbl', 'green')
             trace21a = create_trace([i.timestamp for i in depth_list], [i.depth_std for i in depth_list], 'depth std', 'red')
-            trace22a = create_trace([i.timestamp for i in velocity_inertial_list], [i.north_velocity_std for i in velocity_inertial_list], 'north velocity std inertial', 'red')
-            trace22b = create_trace([i.timestamp for i in velocity_inertial_list], [i.east_velocity_std for i in velocity_inertial_list], 'east velocity std inertial', 'green')
-            trace22c = create_trace([i.timestamp for i in velocity_inertial_list], [i.down_velocity_std for i in velocity_inertial_list], 'down velocity std inertial', 'blue')
+            if len(velocity_inertial_list)>0:
+                trace22a = create_trace([i.timestamp for i in velocity_inertial_list], [i.north_velocity_std for i in velocity_inertial_list], 'north velocity std inertial', 'red')
+                trace22b = create_trace([i.timestamp for i in velocity_inertial_list], [i.east_velocity_std for i in velocity_inertial_list], 'east velocity std inertial', 'green')
+                trace22c = create_trace([i.timestamp for i in velocity_inertial_list], [i.down_velocity_std for i in velocity_inertial_list], 'down velocity std inertial', 'blue')
             trace23a = create_trace([i.timestamp for i in usbl_list], [i.northings_std for i in usbl_list], 'northing std usbl', 'red')
             trace23b = create_trace([i.timestamp for i in usbl_list], [i.eastings_std for i in usbl_list], 'easting std usbl', 'green')
             fig = tools.make_subplots(rows=2, cols=3, subplot_titles=('Orientation uncertainties', 'DVL uncertainties', 'USBL uncertainties', 'Depth uncertainties', '{} uncertainties'.format(velocity_inertial_sensor_name), 'USBL uncertainties'))
@@ -1210,9 +1236,10 @@ class extract_data:
             fig.append_trace(trace13a, 1, 3)
             fig.append_trace(trace13b, 1, 3)
             fig.append_trace(trace21a, 2, 1)
-            fig.append_trace(trace22a, 2, 2)
-            fig.append_trace(trace22b, 2, 2)
-            fig.append_trace(trace22c, 2, 2)
+            if len(velocity_inertial_list)>0:
+                fig.append_trace(trace22a, 2, 2)
+                fig.append_trace(trace22b, 2, 2)
+                fig.append_trace(trace22c, 2, 2)
             fig.append_trace(trace23a, 2, 3)
             fig.append_trace(trace23b, 2, 3)
             fig['layout']['xaxis1'].update(title='Epoch time, s', tickformat='.3f')#xaxis 1 title')

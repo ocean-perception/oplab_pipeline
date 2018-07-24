@@ -39,7 +39,13 @@ class particle_filter:
             # distance = usbl_datapoint.distance_to_ship # lateral_distance,bearing = latlon_to_metres(usbl_datapoint.latitude, usbl_datapoint.longitude, usbl_datapoint.latitude_ship, usbl_datapoint.longitude_ship) 
             # distance = math.sqrt(lateral_distance**2 + usbl_datapoint.depth**2)
             # error = usbl_noise_sigma_factor*(usbl_noise_std_offset + usbl_noise_std_factor*distance) # 5 is for the differential GPS, and the distance std factor 0.01 is used as 0.006 is too sall and unrealistic # This is moved to parse_gaps and parse_usbl_dump
-            error = usbl_datapoint.northings_std * usbl_noise_sigma_factor
+            if usbl_datapoint.northings_std != 0:
+                error = usbl_datapoint.northings_std * usbl_noise_sigma_factor
+            else:
+                usbl_noise_std_offset = 5
+                usbl_noise_std_factor = 0.01
+                distance = math.sqrt(usbl_datapoint.northings**2 + usbl_datapoint.eastings**2 + usbl_datapoint.depth**2)
+                error = usbl_noise_sigma_factor*(usbl_noise_std_offset + usbl_noise_std_factor*distance)
             return error
 
         def dvl_noise(dvl_imu_datapoint): # sensor1 noise
