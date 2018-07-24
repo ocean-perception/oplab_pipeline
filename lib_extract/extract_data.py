@@ -47,35 +47,35 @@ class extract_data:
 
         # velocity body placeholders (DVL)
         velocity_body_list=[]
-        velocity_body_sensor_name=''
+        velocity_body_sensor_name='vel_body'
         # velocity inertial placeholders
         velocity_inertial_list=[]
-        velocity_inertial_sensor_name=''
+        velocity_inertial_sensor_name='vel_inertial'
         # orientation placeholders (INS)
         orientation_list=[]
-        orientation_sensor_name=''
+        orientation_sensor_name='ins'
         # depth placeholders
         depth_list=[]
-        depth_sensor_name=''
+        depth_sensor_name='depth'
         # altitude placeholders
         altitude_list=[]
-        altitude_sensor_name = ''
+        altitude_sensor_name = 'alt'
         # USBL placeholders
         usbl_list=[]
-        usbl_sensor_name = ''
+        usbl_sensor_name = 'usbl'
 
         # camera1 placeholders
         camera1_list=[]
         camera1_pf_list=[]
-        camera1_sensor_name = '' # original serial_camera1
+        camera1_sensor_name = 'cam1' # original serial_camera1
         # camera2 placeholders
         camera2_list=[]
         camera2_pf_list=[]
-        camera2_sensor_name = ''
+        camera2_sensor_name = 'cam2'
         # camera3 placeholders
         camera3_list=[]
         camera3_pf_list=[]
-        camera3_sensor_name = ''
+        camera3_sensor_name = 'cam3'
 
         # placeholders for interpolated velocity body measurements based on orientation and transformed coordinates
         dead_reckoning_centre_list=[]
@@ -99,6 +99,74 @@ class extract_data:
                 dt_obj = datetime(yyyy,mm,dd,hours,mins,secs)       
                 time_tuple = dt_obj.timetuple()
                 return time.mktime(time_tuple)
+
+    # load localisaion.yaml for particle filter and other setup
+        print('Loading localisation.yaml')    
+        localisation = 'localisation.yaml'
+        with open(localisation,'r') as stream:
+            load_localisation = yaml.load(stream)
+        if 'usbl_filter' in load_localisation:
+            max_auv_speed = load_localisation['usbl_filter']['max_auv_speed']
+        if 'particle_filter' in load_localisation:
+            dvl_noise_sigma_factor = load_localisation['particle_filter']['dvl_noise_sigma_factor']
+            imu_noise_sigma_factor = load_localisation['particle_filter']['imu_noise_sigma_factor']
+            usbl_noise_sigma_factor = load_localisation['particle_filter']['usbl_noise_sigma_factor']
+            particles_number = load_localisation['particle_filter']['particles_number']
+            particles_time_interval = load_localisation['particle_filter']['particles_plot_time_interval']
+        if 'csv_output' in load_localisation:
+            csv_auv_centre = load_localisation['csv_output']['dead_reckoning']['auv_centre']
+            csv_auv_dvl = load_localisation['csv_output']['dead_reckoning']['auv_dvl']
+            csv_camera_1 = load_localisation['csv_output']['dead_reckoning']['camera_1']
+            csv_camera_2 = load_localisation['csv_output']['dead_reckoning']['camera_2']
+            csv_camera_3 = load_localisation['csv_output']['dead_reckoning']['camera_3']
+            csv_chemical = load_localisation['csv_output']['dead_reckoning']['chemical']
+            csv_pf_auv_centre = load_localisation['csv_output']['particle_filter']['auv_centre']
+            csv_pf_auv_dvl = load_localisation['csv_output']['particle_filter']['auv_dvl']
+            csv_pf_camera_1 = load_localisation['csv_output']['particle_filter']['camera_1']
+            csv_pf_camera_2 = load_localisation['csv_output']['particle_filter']['camera_2']
+            csv_pf_camera_3 = load_localisation['csv_output']['particle_filter']['camera_3']
+            csv_pf_chemical = load_localisation['csv_output']['particle_filter']['chemical']
+    # get information of sensor position offset from origin/centre reference point from vehicle.yaml
+        print('Loading vehicle.yaml')    
+        vehicle = filepath +'vehicle.yaml'
+        with open(vehicle,'r') as stream:
+            vehicle_data = yaml.load(stream)
+        if 'origin' in vehicle_data:
+            origin_x_offset = vehicle_data['origin']['x_offset']
+            origin_y_offset = vehicle_data['origin']['y_offset']
+            origin_z_offset = vehicle_data['origin']['z_offset']
+        if 'camera1' in vehicle_data:
+            camera1_x_offset = vehicle_data['camera1']['x_offset']
+            camera1_y_offset = vehicle_data['camera1']['y_offset']
+            camera1_z_offset = vehicle_data['camera1']['z_offset']
+        if 'camera2' in vehicle_data:
+            camera2_x_offset = vehicle_data['camera2']['x_offset']
+            camera2_y_offset = vehicle_data['camera2']['y_offset']
+            camera2_z_offset = vehicle_data['camera2']['z_offset']
+        if 'camera3' in vehicle_data:
+            camera3_x_offset = vehicle_data['camera3']['x_offset']
+            camera3_y_offset = vehicle_data['camera3']['y_offset']
+            camera3_z_offset = vehicle_data['camera3']['z_offset']
+        if 'usbl' in vehicle_data:
+            usbl_x_offset = vehicle_data['usbl']['x_offset']
+            usbl_y_offset = vehicle_data['usbl']['y_offset']
+            usbl_z_offset = vehicle_data['usbl']['z_offset']
+        if 'dvl' in vehicle_data:
+            dvl_x_offset = vehicle_data['dvl']['x_offset']
+            dvl_y_offset = vehicle_data['dvl']['y_offset']
+            dvl_z_offset = vehicle_data['dvl']['z_offset']
+        if 'depth' in vehicle_data:
+            depth_x_offset = vehicle_data['depth']['x_offset']
+            depth_y_offset = vehicle_data['depth']['y_offset']
+            depth_z_offset = vehicle_data['depth']['z_offset']
+        if 'ins' in vehicle_data:
+            ins_x_offset = vehicle_data['ins']['x_offset']
+            ins_y_offset = vehicle_data['ins']['y_offset']
+            ins_z_offset = vehicle_data['ins']['z_offset']
+        if 'chemical' in vehicle_data:
+            chemical_x_offset = vehicle_data['chemical']['x_offset']
+            chemical_y_offset = vehicle_data['chemical']['y_offset']
+            chemical_z_offset = vehicle_data['chemical']['z_offset']
 
     # OPLAB mode
         if ftype == 'oplab':# or (ftype is not 'acfr'):
@@ -138,48 +206,6 @@ class extract_data:
                     camera2_sensor_name = '_'.join(mission_data['image']['camera2'].split('/'))
                 if 'camera3' in mission_data['image']:
                     camera3_sensor_name = '_'.join(mission_data['image']['camera3'].split('/'))
-                
-        # get information of sensor position offset from origin/centre reference point from vehicle.yaml
-            print('Loading vehicle.yaml')    
-            vehicle = filepath +'vehicle.yaml'
-            with open(vehicle,'r') as stream:
-                vehicle_data = yaml.load(stream)
-            if 'origin' in vehicle_data:
-                origin_x_offset = vehicle_data['origin']['x_offset']
-                origin_y_offset = vehicle_data['origin']['y_offset']
-                origin_z_offset = vehicle_data['origin']['z_offset']
-            if 'camera1' in vehicle_data:
-                camera1_x_offset = vehicle_data['camera1']['x_offset']
-                camera1_y_offset = vehicle_data['camera1']['y_offset']
-                camera1_z_offset = vehicle_data['camera1']['z_offset']
-            if 'camera2' in vehicle_data:
-                camera2_x_offset = vehicle_data['camera2']['x_offset']
-                camera2_y_offset = vehicle_data['camera2']['y_offset']
-                camera2_z_offset = vehicle_data['camera2']['z_offset']
-            if 'camera3' in vehicle_data:
-                camera3_x_offset = vehicle_data['camera3']['x_offset']
-                camera3_y_offset = vehicle_data['camera3']['y_offset']
-                camera3_z_offset = vehicle_data['camera3']['z_offset']
-            if 'usbl' in vehicle_data:
-                usbl_x_offset = vehicle_data['usbl']['x_offset']
-                usbl_y_offset = vehicle_data['usbl']['y_offset']
-                usbl_z_offset = vehicle_data['usbl']['z_offset']
-            if 'dvl' in vehicle_data:
-                dvl_x_offset = vehicle_data['dvl']['x_offset']
-                dvl_y_offset = vehicle_data['dvl']['y_offset']
-                dvl_z_offset = vehicle_data['dvl']['z_offset']
-            if 'depth' in vehicle_data:
-                depth_x_offset = vehicle_data['depth']['x_offset']
-                depth_y_offset = vehicle_data['depth']['y_offset']
-                depth_z_offset = vehicle_data['depth']['z_offset']
-            if 'ins' in vehicle_data:
-                ins_x_offset = vehicle_data['ins']['x_offset']
-                ins_y_offset = vehicle_data['ins']['y_offset']
-                ins_z_offset = vehicle_data['ins']['z_offset']
-            if 'chemical' in vehicle_data:
-                chemical_x_offset = vehicle_data['chemical']['x_offset']
-                chemical_y_offset = vehicle_data['chemical']['y_offset']
-                chemical_z_offset = vehicle_data['chemical']['z_offset']
 
         # setup start and finish date time
             if start_datetime == '':
@@ -324,33 +350,6 @@ class extract_data:
             camera2_pf_list = copy.deepcopy(camera2_list)
             camera3_pf_list = copy.deepcopy(camera3_list)
             chemical_pf_list = copy.deepcopy(chemical_list)
-        
-        # load localisaion.yaml for particle filter and other setup
-            print('Loading localisation.yaml')    
-            localisation = 'localisation.yaml'
-            with open(localisation,'r') as stream:
-                load_localisation = yaml.load(stream)
-            if 'usbl_filter' in load_localisation:
-                max_auv_speed = load_localisation['usbl_filter']['max_auv_speed']
-            if 'particle_filter' in load_localisation:
-                dvl_noise_sigma_factor = load_localisation['particle_filter']['dvl_noise_sigma_factor']
-                imu_noise_sigma_factor = load_localisation['particle_filter']['imu_noise_sigma_factor']
-                usbl_noise_sigma_factor = load_localisation['particle_filter']['usbl_noise_sigma_factor']
-                particles_number = load_localisation['particle_filter']['particles_number']
-                particles_time_interval = load_localisation['particle_filter']['particles_plot_time_interval']
-            if 'csv_output' in load_localisation:
-                csv_auv_centre = load_localisation['csv_output']['dead_reckoning']['auv_centre']
-                csv_auv_dvl = load_localisation['csv_output']['dead_reckoning']['auv_dvl']
-                csv_camera_1 = load_localisation['csv_output']['dead_reckoning']['camera_1']
-                csv_camera_2 = load_localisation['csv_output']['dead_reckoning']['camera_2']
-                csv_camera_3 = load_localisation['csv_output']['dead_reckoning']['camera_3']
-                csv_chemical = load_localisation['csv_output']['dead_reckoning']['chemical']
-                csv_pf_auv_centre = load_localisation['csv_output']['particle_filter']['auv_centre']
-                csv_pf_auv_dvl = load_localisation['csv_output']['particle_filter']['auv_dvl']
-                csv_pf_camera_1 = load_localisation['csv_output']['particle_filter']['camera_1']
-                csv_pf_camera_2 = load_localisation['csv_output']['particle_filter']['camera_2']
-                csv_pf_camera_3 = load_localisation['csv_output']['particle_filter']['camera_3']
-                csv_pf_chemical = load_localisation['csv_output']['particle_filter']['chemical']
 
         # make path for processed outputs
             renavpath = filepath + 'json_renav_' + start_datetime[0:8] + '_' + start_datetime[8:14] + '_' + finish_datetime[0:8] + '_' + finish_datetime[8:14]
@@ -374,9 +373,9 @@ class extract_data:
                 for line in filein.readlines():             
                     line_split = line.strip().split(' ')
                     if str(line_split[0]) == 'MAG_VAR_LAT':
-                        latitude_reference = str(line_split[1])                  
+                        latitude_reference = float(line_split[1])                  
                     if str(line_split[0]) == 'MAG_VAR_LNG':
-                        longitude_reference = str(line_split[1])                
+                        longitude_reference = float(line_split[1])                
                     if str(line_split[0]) == 'MAG_VAR_DATE':
                         date = str(line_split[1])                
 
@@ -508,13 +507,17 @@ class extract_data:
                         if 'FC' in line_split[3]:
                             camera1 = sens_cls.camera()
                             camera1.timestamp = float(line_split[1])
-                            camera1.filename = float(line_split[3])
+                            camera1.filename = line_split[3]
                             camera1_list.append(camera1)
                         if 'AC' in line_split[3]:
                             camera2 = sens_cls.camera()
                             camera2.timestamp = float(line_split[1])
-                            camera2.filename = float(line_split[3])
+                            camera2.filename = line_split[3]
                             camera2_list.append(camera2)
+            camera1_pf_list = copy.deepcopy(camera1_list)
+            camera2_pf_list = copy.deepcopy(camera2_list)
+            # camera3_pf_list = copy.deepcopy(camera3_list)
+            # chemical_pf_list = copy.deepcopy(chemical_list)        
 
             # make folder to store csv and plots
             renavpath = filepath + 'acfr_renav_' + start_datetime[0:8] + '_' + start_datetime[8:14] + '_' + finish_datetime[0:8] + '_' + finish_datetime[8:14]
