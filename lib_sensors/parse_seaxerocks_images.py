@@ -186,7 +186,7 @@ class parse_seaxerocks_images:
         # camera3_list = [ line for line in camera3_list if '.' not in line] # do not consider any other files, only consider folder - assuming all the folders only contain intended images
         
         for i in range(len(camera3_list)):
-            camera3_filename.append('{}/image{}'.format(camera3_list[i][:3], camera3_list[i])) # let out format (e.g. '.jpg' or '.tif')
+            camera3_filename.append('{}/image{}.xxx'.format(camera3_list[i][:3], camera3_list[i])) # let out format (e.g. '.jpg' or '.tif')
             camera3_index.append(camera3_list[i])
         # for i in range(len(camera3_list)): 
         #     images_filenames=sorted(os.listdir(filepath+camera3_label+'/'+camera3_list[i]))
