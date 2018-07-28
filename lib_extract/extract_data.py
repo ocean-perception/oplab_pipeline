@@ -598,7 +598,8 @@ class extract_data:
             else:
                 return False
         
-        for i in range(len(usbl_list)):
+        
+        for i in range(len(depth_interpolated)):
             if depth_filter(i) is True:
                 usbl_temp_list.append(usbl_list[i])
             i+=1
