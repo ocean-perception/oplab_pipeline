@@ -19,6 +19,7 @@ import operator
 import copy
 
 from plotly import tools
+from pathlib import Path
 import plotly.offline as py
 import plotly.graph_objs as go
 
@@ -102,30 +103,45 @@ class extract_data:
 
     # load localisaion.yaml for particle filter and other setup
         print('Loading localisation.yaml')    
-        localisation = 'localisation.yaml'
+        localisation = filepath + 'localisation.yaml'
+        localisation_file = Path(localisation)
+
+        if localisation_file.exists():
+            print("Loading existng localisation.yaml at {}".format(localisation))
+        else:
+            default_localisation = 'default_yaml' + os.sep + 'localisation.yaml'
+            print("Cannot find {}, generating default from {}".format(localisation,default_localisation))
+            shutil.copy2(default_localisation, filepath) # save mission yaml to processed directory    
+        
         with open(localisation,'r') as stream:
             load_localisation = yaml.load(stream)
-        if 'usbl_filter' in load_localisation:
-            max_auv_speed = load_localisation['usbl_filter']['max_auv_speed']
-        if 'particle_filter' in load_localisation:
-            dvl_noise_sigma_factor = load_localisation['particle_filter']['dvl_noise_sigma_factor']
-            imu_noise_sigma_factor = load_localisation['particle_filter']['imu_noise_sigma_factor']
-            usbl_noise_sigma_factor = load_localisation['particle_filter']['usbl_noise_sigma_factor']
-            particles_number = load_localisation['particle_filter']['particles_number']
-            particles_time_interval = load_localisation['particle_filter']['particles_plot_time_interval']
-        if 'csv_output' in load_localisation:
-            csv_auv_centre = load_localisation['csv_output']['dead_reckoning']['auv_centre']
-            csv_auv_dvl = load_localisation['csv_output']['dead_reckoning']['auv_dvl']
-            csv_camera_1 = load_localisation['csv_output']['dead_reckoning']['camera_1']
-            csv_camera_2 = load_localisation['csv_output']['dead_reckoning']['camera_2']
-            csv_camera_3 = load_localisation['csv_output']['dead_reckoning']['camera_3']
-            csv_chemical = load_localisation['csv_output']['dead_reckoning']['chemical']
-            csv_pf_auv_centre = load_localisation['csv_output']['particle_filter']['auv_centre']
-            csv_pf_auv_dvl = load_localisation['csv_output']['particle_filter']['auv_dvl']
-            csv_pf_camera_1 = load_localisation['csv_output']['particle_filter']['camera_1']
-            csv_pf_camera_2 = load_localisation['csv_output']['particle_filter']['camera_2']
-            csv_pf_camera_3 = load_localisation['csv_output']['particle_filter']['camera_3']
-            csv_pf_chemical = load_localisation['csv_output']['particle_filter']['chemical']
+            if 'usbl_filter' in load_localisation:
+                max_auv_speed = load_localisation['usbl_filter']['max_auv_speed']
+                sigma_factor = load_localisation['usbl_filter']['sigma_factor']
+            if 'particle_filter' in load_localisation:
+                dvl_noise_sigma_factor = load_localisation['particle_filter']['dvl_noise_sigma_factor']
+                imu_noise_sigma_factor = load_localisation['particle_filter']['imu_noise_sigma_factor']
+                usbl_noise_sigma_factor = load_localisation['particle_filter']['usbl_noise_sigma_factor']
+                particles_number = load_localisation['particle_filter']['particles_number']
+                particles_time_interval = load_localisation['particle_filter']['particles_plot_time_interval']
+            if 'csv_output' in load_localisation:
+                csv_auv_centre = load_localisation['csv_output']['dead_reckoning']['auv_centre']
+                csv_auv_dvl = load_localisation['csv_output']['dead_reckoning']['auv_dvl']
+                csv_camera_1 = load_localisation['csv_output']['dead_reckoning']['camera_1']
+                csv_camera_2 = load_localisation['csv_output']['dead_reckoning']['camera_2']
+                csv_camera_3 = load_localisation['csv_output']['dead_reckoning']['camera_3']
+                csv_chemical = load_localisation['csv_output']['dead_reckoning']['chemical']
+                csv_pf_auv_centre = load_localisation['csv_output']['particle_filter']['auv_centre']
+                csv_pf_auv_dvl = load_localisation['csv_output']['particle_filter']['auv_dvl']
+                csv_pf_camera_1 = load_localisation['csv_output']['particle_filter']['camera_1']
+                csv_pf_camera_2 = load_localisation['csv_output']['particle_filter']['camera_2']
+                csv_pf_camera_3 = load_localisation['csv_output']['particle_filter']['camera_3']
+                csv_pf_chemical = load_localisation['csv_output']['particle_filter']['chemical']
+        
+            
+
+
+
     # get information of sensor position offset from origin/centre reference point from vehicle.yaml
         print('Loading vehicle.yaml')    
         vehicle = filepath +'vehicle.yaml'
@@ -317,6 +333,7 @@ class extract_data:
                         usbl.eastings = parsed_json_data[i]['data_target'][3]['eastings']
                         usbl.eastings_std = parsed_json_data[i]['data_target'][3]['eastings_std']
                         usbl.depth = parsed_json_data[i]['data_target'][4]['depth']
+                        usbl.depth_std = parsed_json_data[i]['data_target'][4]['depth_std']
                         usbl.distance_to_ship = parsed_json_data[i]['data_target'][5]['distance_to_ship']
                         # usbl.latitude_ship = parsed_json_data[i]['data_ship'][0]['latitude']
                         # usbl.longitude_ship = parsed_json_data[i]['data_ship'][0]['longitude']
@@ -362,7 +379,7 @@ class extract_data:
             print('Complete parse of:' + outpath + os.sep + filename)
             print('Writing outputs to: ' + renavpath)
             # copy to renav folder renavpath + os.sep + 'localisation.yaml'
-            shutil.copy2(localisation, renavpath) # save mission yaml to processed directory
+            # shutil.copy2(localisation, renavpath) # save mission yaml to processed directory
 
     # ACFR mode
         if ftype == 'acfr':# or (ftype is not 'acfr'):
@@ -540,24 +557,98 @@ class extract_data:
                 altitude_list[i].seafloor_depth=interpolate(altitude_list[i].timestamp,depth_list[j-1].timestamp,depth_list[j].timestamp,depth_list[j-1].depth,depth_list[j].depth)+altitude_list[i].altitude
 
     # filter usbl data outliers
-        # not very robust, need to define max_speed carefully. Maybe use kmeans clustering? features = gradient/value compared to nearest few neighbours, k = 2, select group with least std/larger value?
+    # interpolate to find the appropriate depth to compute seafloor depth for each altitude measurement
+        
+        depth_interpolated = []
+        depth_std_interpolated = []
         usbl_temp_list = []
-        def speed(ii, n):
-            value = abs((usbl_list[ii].northings - usbl_list[ii-n].northings)**2 + (usbl_list[ii].eastings - usbl_list[ii-n].eastings)**2/(usbl_list[ii].timestamp-usbl_list[ii-n].timestamp))
-            return value
-        # to pick a good starting point. Any thing that says auv is at 5m/s reject
-        i=2
-        while not speed(i, -2)<max_auv_speed and speed(i, -1)<max_auv_speed and speed(i, 1)<max_auv_speed and speed(i, 2)<max_auv_speed:
-            i+= 1
-        i-=2
-        usbl_temp_list.append(usbl_list[i])
-        while i+2 < len(usbl_list):
-            if speed(i, -1) < max_auv_speed:
-                i+=1
-                usbl_temp_list.append(usbl_list[i])
+
+        j=0
+
+        for i in range(len(usbl_list)):        
+            while j < len(depth_list)-1 and depth_list[j].timestamp<usbl_list[i].timestamp:
+                j=j+1
+
+            if j>=1:                
+                depth_interpolated.append(interpolate(usbl_list[i].timestamp,depth_list[j-1].timestamp,depth_list[j].timestamp,depth_list[j-1].depth,depth_list[j].depth))
+                depth_std_interpolated.append(interpolate(usbl_list[i].timestamp,depth_list[j-1].timestamp,depth_list[j].timestamp,depth_list[j-1].depth_std,depth_list[j].depth_std))
+
+        # not very robust, need to define max_speed carefully. Maybe use kmeans clustering? features = gradient/value compared to nearest few neighbours, k = 2, select group with least std/larger value?        
+        
+        # first filter by depth as bad USBL data tends to get the depth wrong. This should be a function of the range to the target.
+        
+        # the usbl and vehicle sensor depths should be within 2 std (95% prob) of each other. If more than that apart reject
+        def depth_filter(i):
+            j=0
+            
+            depth_difference=abs((usbl_list[i].depth-usbl_z_offset)-(depth_interpolated[i]-depth_z_offset))
+            depth_uncertainty_envelope=abs(usbl_list[i].depth_std)+abs(depth_std_interpolated[i])
+     
+            if  depth_difference <= sigma_factor*depth_uncertainty_envelope:
+                return True
             else:
-                i+=2
-        print ("Length of original usbl list = {}, Length of filtered usbl list = {}".format(len(usbl_list), len(usbl_temp_list)))
+                return False
+
+        def distance_filter(i,n):          
+            lateral_distance = ((usbl_list[i].northings - usbl_list[i+n].northings)**2 + (usbl_list[i].eastings - usbl_list[i+n].eastings)**2)**0.5
+            lateral_distance_uncertainty_envelope = (((usbl_list[i].northings_std)**2+(usbl_list[i].eastings_std)**2)**0.5+((usbl_list[i+n].northings_std)**2+(usbl_list[i+n].eastings_std)**2)**0.5)+abs(usbl_list[i].timestamp-usbl_list[i+n].timestamp)*max_auv_speed
+
+            if lateral_distance <= sigma_factor*lateral_distance_uncertainty_envelope:
+                return True
+            else:
+                return False
+        
+        for i in range(len(usbl_list)):
+            if depth_filter(i) is True:
+                usbl_temp_list.append(usbl_list[i])
+            i+=1
+
+        print ("Length of original usbl list = {}, Length of depth filtered usbl list = {}".format(len(usbl_list), len(usbl_temp_list)))
+        usbl_list = usbl_temp_list
+        usbl_temp_list = []
+
+        # the 2 usbl readings should be within maximum possible distance travelled by the vehicle at max speed taking into account the 2 std uncertainty (95%) in the USBL lateral measurements
+        
+
+        
+        continuity_condition = 2
+        #want to check continuity over several readings to get rid of just outliers and not good data around them. Curent approach has a lot of redundncy and can be improved when someone has the bandwidth
+        i=continuity_condition
+        n=-continuity_condition        
+        while i < len(usbl_list)-continuity_condition:
+            
+            if distance_filter(i,n) is False:                
+                n=-continuity_condition
+                i+=1
+            else:
+                n+=1
+                if n is 0:
+                    n+=1
+                if n>continuity_condition:                        
+                    usbl_temp_list.append(usbl_list[i])
+                    n=-continuity_condition
+                    i+=1
+
+            
+        print ("Length of depth filtered usbl list = {}, Length of depth and distance filtered usbl list = {}".format(len(usbl_list), len(usbl_temp_list)))
+        usbl_list = usbl_temp_list
+                       
+        #def speed(ii, n):
+        #    value = abs((usbl_list[ii].northings - usbl_list[ii-n].northings)**2 + (usbl_list[ii].eastings - usbl_list[ii-n].eastings)**2/(usbl_list[ii].timestamp-usbl_list[ii-n].timestamp))
+        #    return value
+        # to pick a good starting point. Any thing that says auv is at 5m/s reject
+        #i=2
+        #while not speed(i, -2)<max_auv_speed and speed(i, -1)<max_auv_speed and speed(i, 1)<max_auv_speed and speed(i, 2)<max_auv_speed:
+        #    i+= 1
+        #i-=2
+        #usbl_temp_list.append(usbl_list[i])
+        #while i+2 < len(usbl_list):
+        #    if speed(i, -1) < max_auv_speed:
+        #        i+=1
+        #        usbl_temp_list.append(usbl_list[i])
+        #    else:
+        #        i+=2
+        #print ("Length of original usbl list = {}, Length of filtered usbl list = {}".format(len(usbl_list), len(usbl_temp_list)))
         usbl_list = usbl_temp_list
 
     # perform coordinate transformations and interpolations of state data to velocity_body time stamps with sensor position offset and perform dead reckoning

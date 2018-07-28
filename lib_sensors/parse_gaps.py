@@ -29,8 +29,8 @@ class parse_gaps:
 		header_heading = '$HEHDT'# '<< $HEHDT'
 
 		# gaps std models
-		distance_std_factor = 0.6/100 # usbl catalogue gaps spec
-		distance_std_offset = 5
+		distance_std_factor = 1/100 # usbl catalogue gaps spec
+		distance_std_offset = 2 # 2m lateral error on DGPS to be added
 		broken_packet_flag = False
 
 		# read in timezone
@@ -246,7 +246,7 @@ class parse_gaps:
 						if broken_packet_flag == False:																						
 
 							if ftype == 'oplab':							
-								data = {'epoch_timestamp': float(epoch_timestamp), 'class': class_string, 'sensor': sensor_string, 'frame': frame_string, 'category': category, 'data_ship': [{'latitude': float(latitude_ship), 'longitude': float(longitude_ship)}, {'northings': float(northings_ship), 'eastings': float(eastings_ship)}, {'heading': float(heading_ship)}], 'data_target': [{'latitude': float(latitude), 'latitude_std': float(latitude_std)}, {'longitude': float(longitude), 'longitude_std': float(longitude_std)}, {'northings': float(northings_target), 'northings_std': float(distance_std)}, {'eastings': float(eastings_target), 'eastings_std': float(distance_std)}, {'depth': float(depth)}, {'distance_to_ship': float(distance)}]}
+								data = {'epoch_timestamp': float(epoch_timestamp), 'class': class_string, 'sensor': sensor_string, 'frame': frame_string, 'category': category, 'data_ship': [{'latitude': float(latitude_ship), 'longitude': float(longitude_ship)}, {'northings': float(northings_ship), 'eastings': float(eastings_ship)}, {'heading': float(heading_ship)}], 'data_target': [{'latitude': float(latitude), 'latitude_std': float(latitude_std)}, {'longitude': float(longitude), 'longitude_std': float(longitude_std)}, {'northings': float(northings_target), 'northings_std': float(distance_std)}, {'eastings': float(eastings_target), 'eastings_std': float(distance_std)}, {'depth': float(depth), 'depth_std': float(distance_std)}, {'distance_to_ship': float(distance)}]}
 								data_list.append(data)
 
 							if ftype == 'acfr':

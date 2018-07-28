@@ -1,5 +1,6 @@
 usbl_filter:
-  max_auv_speed: 10
+  max_auv_speed: 2
+  sigma_factor: 2
 
 particle_filter:
   mode: usbl
