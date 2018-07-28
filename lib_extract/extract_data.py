@@ -37,6 +37,7 @@ from lib_extract import sensor_classes as sens_cls
 from lib_particle_filter.particle_filter import particle_filter
 
 class extract_data:
+    #def __init__(self,filepath,ftype,start_datetime,finish_datetime):
     def __init__(self,filepath,ftype,start_datetime,finish_datetime,plot,csv_write,plotly,output_DR,perform_particle_filter):
     
     # placeholders
@@ -111,7 +112,7 @@ class extract_data:
         else:
             default_localisation = 'default_yaml' + os.sep + 'localisation.yaml'
             print("Cannot find {}, generating default from {}".format(localisation,default_localisation))
-            shutil.copy2(default_localisation, filepath) # save mission yaml to processed directory    
+            shutil.copy2(default_localisation, filepath) # save localisation yaml to processed directory
         
         with open(localisation,'r') as stream:
             load_localisation = yaml.load(stream)
@@ -125,12 +126,13 @@ class extract_data:
                 particles_number = load_localisation['particle_filter']['particles_number']
                 particles_time_interval = load_localisation['particle_filter']['particles_plot_time_interval']
             if 'csv_output' in load_localisation:
-                csv_auv_centre = load_localisation['csv_output']['dead_reckoning']['auv_centre']
-                csv_auv_dvl = load_localisation['csv_output']['dead_reckoning']['auv_dvl']
-                csv_camera_1 = load_localisation['csv_output']['dead_reckoning']['camera_1']
-                csv_camera_2 = load_localisation['csv_output']['dead_reckoning']['camera_2']
-                csv_camera_3 = load_localisation['csv_output']['dead_reckoning']['camera_3']
-                csv_chemical = load_localisation['csv_output']['dead_reckoning']['chemical']
+                csv_dr_auv_centre = load_localisation['csv_output']['dead_reckoning']['auv_centre']
+                csv_dr_auv_dvl = load_localisation['csv_output']['dead_reckoning']['auv_dvl']
+                csv_dr_camera_1 = load_localisation['csv_output']['dead_reckoning']['camera_1']
+                csv_dr_camera_2 = load_localisation['csv_output']['dead_reckoning']['camera_2']
+                csv_dr_camera_3 = load_localisation['csv_output']['dead_reckoning']['camera_3']
+                csv_dr_chemical = load_localisation['csv_output']['dead_reckoning']['chemical']
+
                 csv_pf_auv_centre = load_localisation['csv_output']['particle_filter']['auv_centre']
                 csv_pf_auv_dvl = load_localisation['csv_output']['particle_filter']['auv_dvl']
                 csv_pf_camera_1 = load_localisation['csv_output']['particle_filter']['camera_1']
@@ -720,20 +722,25 @@ class extract_data:
         ### correct for altitude and depth offset too!
 
     # particle filter data fusion of usbl_data and dvl_imu_data
-        if perform_particle_filter == True:
-            pf_start_time = time.time()
-            [pf_fusion_dvl_list, pf_usbl_datapoints, pf_particles_list, pf_northings_std, pf_eastings_std, pf_yaw_std] = particle_filter(copy.deepcopy(usbl_list), copy.deepcopy(dead_reckoning_dvl_list), particles_number, True, dvl_noise_sigma_factor, imu_noise_sigma_factor, usbl_noise_sigma_factor)
-            pf_end_time = time.time()
-            pf_elapesed_time = pf_end_time - pf_start_time
-            print ("particle filter with {} particles took {} seconds".format(particles_number,pf_elapesed_time)) # maybe save this as text alongside plotly outputs
-            for i in range(len(pf_fusion_dvl_list)):
-                pf_fusion_dvl_list[i].latitude, pf_fusion_dvl_list[i].longitude = metres_to_latlon(latitude_reference, longitude_reference, pf_fusion_dvl_list[i].eastings, pf_fusion_dvl_list[i].northings)
-            pf_fusion_centre_list = copy.deepcopy(pf_fusion_dvl_list)
-            for i in range(len(pf_fusion_centre_list)):
-                [x_offset, y_offset, z_offset] = body_to_inertial(pf_fusion_centre_list[i].roll, pf_fusion_centre_list[i].pitch, pf_fusion_centre_list[i].yaw, origin_x_offset - dvl_x_offset, origin_y_offset - dvl_y_offset, origin_z_offset - dvl_z_offset)
-                pf_fusion_centre_list[i].northings += x_offset
-                pf_fusion_centre_list[i].eastings += y_offset
+        # if perform_particle_filter == True:
+        pf_start_time = time.time()
+        [pf_fusion_dvl_list, pf_usbl_datapoints, pf_particles_list, pf_northings_std, pf_eastings_std, pf_yaw_std] = particle_filter(copy.deepcopy(usbl_list), copy.deepcopy(dead_reckoning_dvl_list), particles_number, True, dvl_noise_sigma_factor, imu_noise_sigma_factor, usbl_noise_sigma_factor)
+        pf_end_time = time.time()
+        pf_elapesed_time = pf_end_time - pf_start_time
+        print ("particle filter with {} particles took {} seconds".format(particles_number,pf_elapesed_time)) # maybe save this as text alongside plotly outputs
+        for i in range(len(pf_fusion_centre_list)):
+            pf_fusion_dvl_list[i].latitude, pf_fusion_dvl_list[i].longitude = metres_to_latlon(latitude_reference, longitude_reference, pf_fusion_dvl_list[i].eastings, pf_fusion_dvl_list[i].northings)
+        pf_fusion_centre_list = copy.deepcopy(pf_fusion_dvl_list)
+        for i in range(len(pf_fusion_centre_list)):
+            [x_offset, y_offset, z_offset] = body_to_inertial(pf_fusion_centre_list[i].roll, pf_fusion_centre_list[i].pitch, pf_fusion_centre_list[i].yaw, origin_x_offset - dvl_x_offset, origin_y_offset - dvl_y_offset, origin_z_offset - dvl_z_offset)
+            pf_fusion_centre_list[i].northings += x_offset
+            pf_fusion_centre_list[i].eastings += y_offset
                 # pf_fusion_centre_list[i].depth += z_offset
+        pf_fusion_camera1_list = copy.deepcopy(pf_fusion_dvl_list)
+        for i in range(len(pf_fusion_camera1_list)):
+            [x_offset, y_offset, z_offset] = body_to_inertial(pf_fusion_camera1_list[i].roll, pf_fusion_camera1_list[i].pitch, pf_fusion_camera1_list[i].yaw, camera1_x_offset - dvl_x_offset, origin_y_offset - camera1_y_offset, origin_z_offset - camera1_z_offset)
+            pf_fusion_camera1_list[i].northings += x_offset
+            pf_fusion_camera1_list[i].eastings += y_offset
             ### correct for altitude and depth offset too!
 
         #remove first term if first time_orientation is < velocity_body time
@@ -1162,501 +1169,559 @@ class extract_data:
             print('Complete plot data: ', plotpath)
 
     # plotly data in html
-        if plotly is True:
+        #if plotly is True:
 
-            print('Plotting plotly data ...')
-            plotlypath = renavpath + os.sep + 'plotly_plots'
-            
-            if os.path.isdir(plotlypath) == 0:
-                try:
-                    os.mkdir(plotlypath)
-                except Exception as e:
-                    print("Warning:",e)
+        print('Plotting plotly data ...')
+        plotlypath = renavpath + os.sep + 'dynamic_plots'
+        
+        if os.path.isdir(plotlypath) == 0:
+            try:
+                os.mkdir(plotlypath)
+            except Exception as e:
+                print("Warning:",e)
 
-            def create_trace(x_list,y_list,trace_name,trace_color):
-                trace = go.Scattergl(
-                    x=x_list,
-                    y=y_list,
-                    name=trace_name,
-                    mode='lines+markers',
-                    marker=dict(color=trace_color),#'rgba(152, 0, 0, .8)'),#,size = 10, line = dict(width = 2,color = 'rgb(0, 0, 0)'),
-                    line=dict(color=trace_color)#rgb(205, 12, 24)'))#, width = 4, dash = 'dot')
-                    # legendgroup='group11'
-                )
-                return trace
+        def create_trace(x_list,y_list,trace_name,trace_color):
+            trace = go.Scattergl(
+                x=x_list,
+                y=y_list,
+                name=trace_name,
+                mode='lines+markers',
+                marker=dict(color=trace_color),#'rgba(152, 0, 0, .8)'),#,size = 10, line = dict(width = 2,color = 'rgb(0, 0, 0)'),
+                line=dict(color=trace_color)#rgb(205, 12, 24)'))#, width = 4, dash = 'dot')
+                # legendgroup='group11'
+            )
+            return trace
             
         # orientation
-            print('...plotting orientation_vs_time...')
+        print('...plotting orientation_vs_time...')
 
-            trace11a = create_trace([i.timestamp for i in orientation_list], [i.yaw for i in orientation_list], 'Yaw', 'red')
-            trace11b = create_trace([i.timestamp for i in orientation_list], [i.roll for i in orientation_list], 'Roll', 'blue')
-            trace11c = create_trace([i.timestamp for i in orientation_list], [i.pitch for i in orientation_list], 'Pitch', 'green')
-            layout = go.Layout(
-                title='Orientation vs Time',
-                hovermode='closest',
-                xaxis=dict(title='Epoch time, s', tickformat='.3f'),
-                yaxis=dict(title='Degrees'),
-                dragmode='pan',
+        trace11a = create_trace([i.timestamp for i in orientation_list], [i.yaw for i in orientation_list], 'Yaw', 'red')
+        trace11b = create_trace([i.timestamp for i in orientation_list], [i.roll for i in orientation_list], 'Roll', 'blue')
+        trace11c = create_trace([i.timestamp for i in orientation_list], [i.pitch for i in orientation_list], 'Pitch', 'green')
+        layout = go.Layout(
+            title='Orientation vs Time',
+            hovermode='closest',
+            xaxis=dict(title='Epoch time, s', tickformat='.3f'),
+            yaxis=dict(title='Degrees'),
+            dragmode='pan',
                 )
-            config={'scrollZoom': True}
-            fig = go.Figure(data=[trace11a, trace11b, trace11c], layout=layout)
-            py.plot(fig, config=config, filename=plotlypath + os.sep + 'orientation_vs_time.html', auto_open=False)
+        config={'scrollZoom': True}
+        fig = go.Figure(data=[trace11a, trace11b, trace11c], layout=layout)
+        py.plot(fig, config=config, filename=plotlypath + os.sep + 'orientation_vs_time.html', auto_open=False)
 
         # velocity_body (north,east,down) compared to velocity_inertial
-            print('...plotting velocity_vs_time...')
+        print('...plotting velocity_vs_time...')
 
-            trace11a = create_trace([i.timestamp for i in dead_reckoning_dvl_list], [i.north_velocity for i in dead_reckoning_dvl_list], 'DVL north velocity', 'red')
-            if len(velocity_inertial_list) > 0:
-                trace11b = create_trace([i.timestamp for i in velocity_inertial_list], [i.north_velocity for i in velocity_inertial_list], '{} north velocity'.format(velocity_inertial_sensor_name), 'blue')
-                trace21b = create_trace([i.timestamp for i in velocity_inertial_list], [i.east_velocity for i in velocity_inertial_list], '{} east velocity'.format(velocity_inertial_sensor_name), 'blue')
-                trace31b = create_trace([i.timestamp for i in velocity_inertial_list], [i.down_velocity for i in velocity_inertial_list], '{} down velocity'.format(velocity_inertial_sensor_name), 'blue')
-            # plot1=[trace11a, trace11b]
-            trace21a = create_trace([i.timestamp for i in dead_reckoning_dvl_list], [i.east_velocity for i in dead_reckoning_dvl_list], 'DVL east velocity', 'red')
-            trace31a = create_trace([i.timestamp for i in dead_reckoning_dvl_list], [i.down_velocity for i in dead_reckoning_dvl_list], 'DVL down velocity', 'red')
-            trace12a = create_trace([i.timestamp for i in dead_reckoning_centre_list], [i.x_velocity for i in dead_reckoning_centre_list], 'DVL x velocity', 'red')
-            trace22a = create_trace([i.timestamp for i in dead_reckoning_centre_list], [i.y_velocity for i in dead_reckoning_centre_list], 'DVL y velocity', 'red')
-            trace32a = create_trace([i.timestamp for i in dead_reckoning_centre_list], [i.z_velocity for i in dead_reckoning_centre_list], 'DVL z velocity', 'red')
-            fig = tools.make_subplots(rows=3, cols=2, subplot_titles=('DVL vs {} - north Velocity'.format(velocity_inertial_sensor_name), 'DVL - x velocity / surge', 'DVL vs {} - east Velocity'.format(velocity_inertial_sensor_name), 'DVL - y velocity / sway', 'DVL vs {} - down Velocity'.format(velocity_inertial_sensor_name), 'DVL - z velocity / heave'))
-            fig.append_trace(trace11a, 1, 1)
-            if len(velocity_inertial_list) > 0:
-                fig.append_trace(trace11b, 1, 1)
-                fig.append_trace(trace21b, 2, 1)
-                fig.append_trace(trace31b, 3, 1)
-            fig.append_trace(trace21a, 2, 1)
-            fig.append_trace(trace31a, 3, 1)
-            fig.append_trace(trace12a, 1, 2)
-            fig.append_trace(trace22a, 2, 2)
-            fig.append_trace(trace32a, 3, 2)
-            fig['layout']['xaxis1'].update(title='Epoch time, s', tickformat='.3f')#xaxis 1 title')
-            fig['layout']['xaxis2'].update(title='Epoch time, s', tickformat='.3f')#, range=[10, 50])
-            fig['layout']['xaxis3'].update(title='Epoch time, s', tickformat='.3f')#, showgrid=False)
-            fig['layout']['xaxis4'].update(title='Epoch time, s', tickformat='.3f')#, type='log')
-            fig['layout']['xaxis5'].update(title='Epoch time, s', tickformat='.3f')
-            fig['layout']['xaxis6'].update(title='Epoch time, s', tickformat='.3f')
-            # def define_layout():
-            #   for i in XX:
-            #       fig['layout']['xaxis{}'.format(plot_number)].update(title=axis_title) ...
-            fig['layout']['yaxis1'].update(title='Velocity, m/s')
-            fig['layout']['yaxis2'].update(title='Velocity, m/s')
-            fig['layout']['yaxis3'].update(title='Velocity, m/s')
-            fig['layout']['yaxis4'].update(title='Velocity, m/s')
-            fig['layout']['yaxis5'].update(title='Velocity, m/s')
-            fig['layout']['yaxis6'].update(title='Velocity, m/s')
-            fig['layout'].update(title='Velocity vs Time Plots (Left column: Inertial frame - north east down | Right column: Body frame - x y z)', dragmode='pan', hovermode='closest')#, hoverlabel={'namelength':'-1'})
-            config={'scrollZoom': True}
-            py.plot(fig, config=config, filename=plotlypath + os.sep + 'velocity_vs_time.html', auto_open=False)
-
-        # time_dead_reckoning northings eastings depth vs time
-            print('...plotting deadreckoning_vs_time...')
-
-            trace11a = create_trace([i.timestamp for i in dead_reckoning_dvl_list], [i.northings for i in dead_reckoning_dvl_list], 'Northing DVL', 'red')
-            if len(velocity_inertial_list)>0:
-                trace11b = create_trace([i.timestamp for i in velocity_inertial_list], [i.northings for i in velocity_inertial_list], 'Northing {}'.format(velocity_inertial_sensor_name), 'green')
-                trace12b = create_trace([i.timestamp for i in velocity_inertial_list], [i.eastings for i in velocity_inertial_list], 'Easting {}'.format(velocity_inertial_sensor_name), 'green')
-            trace11c = create_trace([i.timestamp for i in usbl_list], [i.northings for i in usbl_list], 'Northing USBL', 'blue')
-            trace11d = create_trace([i.timestamp for i in dead_reckoning_centre_list], [i.northings for i in dead_reckoning_centre_list], 'Northing Centre', 'orange')
-            trace12a = create_trace([i.timestamp for i in dead_reckoning_dvl_list], [i.eastings for i in dead_reckoning_dvl_list], 'Easting DVL', 'red')
-            trace12c = create_trace([i.timestamp for i in usbl_list], [i.eastings for i in usbl_list], 'Easting USBL', 'blue')
-            trace12d = create_trace([i.timestamp for i in dead_reckoning_centre_list], [i.eastings for i in dead_reckoning_centre_list], 'Easting Centre', 'orange')
-            trace21a = create_trace([i.timestamp for i in altitude_list], [i.seafloor_depth for i in altitude_list], 'Depth  Seafloor (Depth Sensor + Altitude)', 'red')
-            trace21b = create_trace([i.timestamp for i in depth_list], [i.depth for i in depth_list], 'Depth Sensor', 'purple')
-            trace21c = create_trace([i.timestamp for i in usbl_list], [i.depth for i in usbl_list], 'Depth USBL', 'blue')
-            trace21d = create_trace([i.timestamp for i in dead_reckoning_centre_list], [i.depth for i in dead_reckoning_centre_list], 'Depth Centre', 'orange')
-            trace22a = create_trace([i.timestamp for i in altitude_list], [i.altitude for i in altitude_list], 'Altitude', 'red')
-            fig = tools.make_subplots(rows=2,cols=2, subplot_titles=('Northings', 'Eastings', 'Depth', 'Altitude'))
-            fig.append_trace(trace11a, 1, 1)
-            if len(velocity_inertial_list)>0:
-                fig.append_trace(trace11b, 1, 1)
-                fig.append_trace(trace12b, 1, 2)
-            fig.append_trace(trace11c, 1, 1)
-            fig.append_trace(trace11d, 1, 1)
-            fig.append_trace(trace12a, 1, 2)
-            fig.append_trace(trace12c, 1, 2)
-            fig.append_trace(trace12d, 1, 2)
-            fig.append_trace(trace21a, 2, 1)
-            fig.append_trace(trace21b, 2, 1)
-            fig.append_trace(trace21c, 2, 1)
-            fig.append_trace(trace21d, 2, 1)
-            fig.append_trace(trace22a, 2, 2)
-            fig['layout']['xaxis1'].update(title='Epoch time, s', tickformat='.3f')
-            fig['layout']['xaxis2'].update(title='Epoch time, s', tickformat='.3f')
-            fig['layout']['xaxis3'].update(title='Epoch time, s', tickformat='.3f')
-            fig['layout']['xaxis4'].update(title='Epoch time, s', tickformat='.3f')
-            fig['layout']['yaxis1'].update(title='Northing, m')
-            fig['layout']['yaxis2'].update(title='Easting, m')
-            fig['layout']['yaxis3'].update(title='Depth, m', autorange='reversed')
-            fig['layout']['yaxis4'].update(title='Altitude, m')
-            fig['layout'].update(title='Deadreckoning vs Time', dragmode='pan', hovermode='closest')#, hoverlabel={'namelength':'-1'})
-            config={'scrollZoom': True}
-            py.plot(fig, config=config, filename=plotlypath + os.sep + 'deadreckoning_vs_time.html', auto_open=False)
-
-        # pf uncertainty plotly # maybe make a slider plot for this, or a dot projection slider
-            trace11a = create_trace([i.timestamp for i in pf_fusion_dvl_list], pf_northings_std, 'northings_std (m)', 'red')
-            trace11b = create_trace([i.timestamp for i in pf_fusion_dvl_list], pf_eastings_std, 'eastings_std (m)', 'blue')
-            trace11c = create_trace([i.timestamp for i in pf_fusion_dvl_list], pf_yaw_std, 'yaw_std (deg)', 'green')
-            layout = go.Layout(
-                title='Particle Filter Uncertainty Plot',
-                hovermode='closest',
-                xaxis=dict(title='Epoch time, s', tickformat='.3f'),
-                yaxis=dict(title='Degrees or Metres'),
-                dragmode='pan',
-                )
-            config={'scrollZoom': True}
-            fig = go.Figure(data=[trace11a, trace11b, trace11c], layout=layout)
-            py.plot(fig, config=config, filename=plotlypath + os.sep + 'pf_uncertainty.html', auto_open=False)
-
-        # Uncertainty plotly --- https://plot.ly/python/line-charts/#filled-lines Something like that?
-            trace11a = create_trace([i.timestamp for i in orientation_list], [i.roll_std for i in orientation_list], 'roll std', 'red')
-            trace11b = create_trace([i.timestamp for i in orientation_list], [i.pitch_std for i in orientation_list], 'pitch std', 'green')
-            trace11c = create_trace([i.timestamp for i in orientation_list], [i.yaw_std for i in orientation_list], 'yaw std', 'blue')
-            trace12a = create_trace([i.timestamp for i in velocity_body_list], [i.x_velocity_std for i in velocity_body_list], 'x velocity std', 'red')
-            trace12b = create_trace([i.timestamp for i in velocity_body_list], [i.y_velocity_std for i in velocity_body_list], 'y velocity std', 'green')
-            trace12c = create_trace([i.timestamp for i in velocity_body_list], [i.z_velocity_std for i in velocity_body_list], 'z velocity std', 'blue')
-            trace13a = create_trace([i.timestamp for i in usbl_list], [i.latitude_std for i in usbl_list], 'latitude std usbl', 'red')
-            trace13b = create_trace([i.timestamp for i in usbl_list], [i.longitude_std for i in usbl_list], 'longitude std usbl', 'green')
-            trace21a = create_trace([i.timestamp for i in depth_list], [i.depth_std for i in depth_list], 'depth std', 'red')
-            if len(velocity_inertial_list)>0:
-                trace22a = create_trace([i.timestamp for i in velocity_inertial_list], [i.north_velocity_std for i in velocity_inertial_list], 'north velocity std inertial', 'red')
-                trace22b = create_trace([i.timestamp for i in velocity_inertial_list], [i.east_velocity_std for i in velocity_inertial_list], 'east velocity std inertial', 'green')
-                trace22c = create_trace([i.timestamp for i in velocity_inertial_list], [i.down_velocity_std for i in velocity_inertial_list], 'down velocity std inertial', 'blue')
-            trace23a = create_trace([i.timestamp for i in usbl_list], [i.northings_std for i in usbl_list], 'northing std usbl', 'red')
-            trace23b = create_trace([i.timestamp for i in usbl_list], [i.eastings_std for i in usbl_list], 'easting std usbl', 'green')
-            fig = tools.make_subplots(rows=2, cols=3, subplot_titles=('Orientation uncertainties', 'DVL uncertainties', 'USBL uncertainties', 'Depth uncertainties', '{} uncertainties'.format(velocity_inertial_sensor_name), 'USBL uncertainties'))
-            fig.append_trace(trace11a, 1, 1)
+        trace11a = create_trace([i.timestamp for i in dead_reckoning_dvl_list], [i.north_velocity for i in dead_reckoning_dvl_list], 'DVL north velocity', 'red')
+        if len(velocity_inertial_list) > 0:
+            trace11b = create_trace([i.timestamp for i in velocity_inertial_list], [i.north_velocity for i in velocity_inertial_list], '{} north velocity'.format(velocity_inertial_sensor_name), 'blue')
+            trace21b = create_trace([i.timestamp for i in velocity_inertial_list], [i.east_velocity for i in velocity_inertial_list], '{} east velocity'.format(velocity_inertial_sensor_name), 'blue')
+            trace31b = create_trace([i.timestamp for i in velocity_inertial_list], [i.down_velocity for i in velocity_inertial_list], '{} down velocity'.format(velocity_inertial_sensor_name), 'blue')
+        # plot1=[trace11a, trace11b]
+        trace21a = create_trace([i.timestamp for i in dead_reckoning_dvl_list], [i.east_velocity for i in dead_reckoning_dvl_list], 'DVL east velocity', 'red')
+        trace31a = create_trace([i.timestamp for i in dead_reckoning_dvl_list], [i.down_velocity for i in dead_reckoning_dvl_list], 'DVL down velocity', 'red')
+        trace12a = create_trace([i.timestamp for i in dead_reckoning_centre_list], [i.x_velocity for i in dead_reckoning_centre_list], 'DVL x velocity', 'red')
+        trace22a = create_trace([i.timestamp for i in dead_reckoning_centre_list], [i.y_velocity for i in dead_reckoning_centre_list], 'DVL y velocity', 'red')
+        trace32a = create_trace([i.timestamp for i in dead_reckoning_centre_list], [i.z_velocity for i in dead_reckoning_centre_list], 'DVL z velocity', 'red')
+        fig = tools.make_subplots(rows=3, cols=2, subplot_titles=('DVL vs {} - north Velocity'.format(velocity_inertial_sensor_name), 'DVL - x velocity / surge', 'DVL vs {} - east Velocity'.format(velocity_inertial_sensor_name), 'DVL - y velocity / sway', 'DVL vs {} - down Velocity'.format(velocity_inertial_sensor_name), 'DVL - z velocity / heave'))
+        fig.append_trace(trace11a, 1, 1)
+        if len(velocity_inertial_list) > 0:
             fig.append_trace(trace11b, 1, 1)
-            fig.append_trace(trace11c, 1, 1)
-            fig.append_trace(trace12a, 1, 2)
+            fig.append_trace(trace21b, 2, 1)
+            fig.append_trace(trace31b, 3, 1)
+        fig.append_trace(trace21a, 2, 1)
+        fig.append_trace(trace31a, 3, 1)
+        fig.append_trace(trace12a, 1, 2)
+        fig.append_trace(trace22a, 2, 2)
+        fig.append_trace(trace32a, 3, 2)
+        fig['layout']['xaxis1'].update(title='Epoch time, s', tickformat='.3f')#xaxis 1 title')
+        fig['layout']['xaxis2'].update(title='Epoch time, s', tickformat='.3f')#, range=[10, 50])
+        fig['layout']['xaxis3'].update(title='Epoch time, s', tickformat='.3f')#, showgrid=False)
+        fig['layout']['xaxis4'].update(title='Epoch time, s', tickformat='.3f')#, type='log')
+        fig['layout']['xaxis5'].update(title='Epoch time, s', tickformat='.3f')
+        fig['layout']['xaxis6'].update(title='Epoch time, s', tickformat='.3f')
+        # def define_layout():
+        #   for i in XX:
+        #       fig['layout']['xaxis{}'.format(plot_number)].update(title=axis_title) ...
+        fig['layout']['yaxis1'].update(title='Velocity, m/s')
+        fig['layout']['yaxis2'].update(title='Velocity, m/s')
+        fig['layout']['yaxis3'].update(title='Velocity, m/s')
+        fig['layout']['yaxis4'].update(title='Velocity, m/s')
+        fig['layout']['yaxis5'].update(title='Velocity, m/s')
+        fig['layout']['yaxis6'].update(title='Velocity, m/s')
+        fig['layout'].update(title='Velocity vs Time Plots (Left column: Inertial frame - north east down | Right column: Body frame - x y z)', dragmode='pan', hovermode='closest')#, hoverlabel={'namelength':'-1'})
+        config={'scrollZoom': True}
+        py.plot(fig, config=config, filename=plotlypath + os.sep + 'velocity_vs_time.html', auto_open=False)
+
+    # time_dead_reckoning northings eastings depth vs time
+        print('...plotting deadreckoning_vs_time...')
+
+        trace11a = create_trace([i.timestamp for i in dead_reckoning_dvl_list], [i.northings for i in dead_reckoning_dvl_list], 'Northing DVL', 'red')
+        if len(velocity_inertial_list)>0:
+            trace11b = create_trace([i.timestamp for i in velocity_inertial_list], [i.northings for i in velocity_inertial_list], 'Northing {}'.format(velocity_inertial_sensor_name), 'green')
+            trace12b = create_trace([i.timestamp for i in velocity_inertial_list], [i.eastings for i in velocity_inertial_list], 'Easting {}'.format(velocity_inertial_sensor_name), 'green')
+        trace11c = create_trace([i.timestamp for i in usbl_list], [i.northings for i in usbl_list], 'Northing USBL', 'blue')
+        trace11d = create_trace([i.timestamp for i in dead_reckoning_centre_list], [i.northings for i in dead_reckoning_centre_list], 'Northing Centre', 'orange')
+        trace12a = create_trace([i.timestamp for i in dead_reckoning_dvl_list], [i.eastings for i in dead_reckoning_dvl_list], 'Easting DVL', 'red')
+        trace12c = create_trace([i.timestamp for i in usbl_list], [i.eastings for i in usbl_list], 'Easting USBL', 'blue')
+        trace12d = create_trace([i.timestamp for i in dead_reckoning_centre_list], [i.eastings for i in dead_reckoning_centre_list], 'Easting Centre', 'orange')
+        trace21a = create_trace([i.timestamp for i in altitude_list], [i.seafloor_depth for i in altitude_list], 'Depth  Seafloor (Depth Sensor + Altitude)', 'red')
+        trace21b = create_trace([i.timestamp for i in depth_list], [i.depth for i in depth_list], 'Depth Sensor', 'purple')
+        trace21c = create_trace([i.timestamp for i in usbl_list], [i.depth for i in usbl_list], 'Depth USBL', 'blue')
+        trace21d = create_trace([i.timestamp for i in dead_reckoning_centre_list], [i.depth for i in dead_reckoning_centre_list], 'Depth Centre', 'orange')
+        trace22a = create_trace([i.timestamp for i in altitude_list], [i.altitude for i in altitude_list], 'Altitude', 'red')
+        fig = tools.make_subplots(rows=2,cols=2, subplot_titles=('Northings', 'Eastings', 'Depth', 'Altitude'))
+        fig.append_trace(trace11a, 1, 1)
+        if len(velocity_inertial_list)>0:
+            fig.append_trace(trace11b, 1, 1)
             fig.append_trace(trace12b, 1, 2)
-            fig.append_trace(trace12c, 1, 2)
-            fig.append_trace(trace13a, 1, 3)
-            fig.append_trace(trace13b, 1, 3)
-            fig.append_trace(trace21a, 2, 1)
-            if len(velocity_inertial_list)>0:
-                fig.append_trace(trace22a, 2, 2)
-                fig.append_trace(trace22b, 2, 2)
-                fig.append_trace(trace22c, 2, 2)
-            fig.append_trace(trace23a, 2, 3)
-            fig.append_trace(trace23b, 2, 3)
-            fig['layout']['xaxis1'].update(title='Epoch time, s', tickformat='.3f')#xaxis 1 title')
-            fig['layout']['xaxis2'].update(title='Epoch time, s', tickformat='.3f')#, range=[10, 50])
-            fig['layout']['xaxis3'].update(title='Epoch time, s', tickformat='.3f')#, showgrid=False)
-            fig['layout']['xaxis4'].update(title='Epoch time, s', tickformat='.3f')#, type='log')
-            fig['layout']['xaxis5'].update(title='Epoch time, s', tickformat='.3f')
-            fig['layout']['xaxis6'].update(title='Epoch time, s', tickformat='.3f')
-            fig['layout']['yaxis1'].update(title='Angle, degrees')
-            fig['layout']['yaxis2'].update(title='Velocity, m/s')
-            fig['layout']['yaxis3'].update(title='LatLong, degrees')
-            fig['layout']['yaxis4'].update(title='Depth, m')
-            fig['layout']['yaxis5'].update(title='Velocity, m/s')
-            fig['layout']['yaxis6'].update(title='NorthEast, m')
-            fig['layout'].update(title='Uncertainty Plots', dragmode='pan', hovermode='closest')
-            config={'scrollZoom': True}
-            py.plot(fig, config=config, filename=plotlypath + os.sep + 'uncertainties_plot.html', auto_open=False)
+        fig.append_trace(trace11c, 1, 1)
+        fig.append_trace(trace11d, 1, 1)
+        fig.append_trace(trace12a, 1, 2)
+        fig.append_trace(trace12c, 1, 2)
+        fig.append_trace(trace12d, 1, 2)
+        fig.append_trace(trace21a, 2, 1)
+        fig.append_trace(trace21b, 2, 1)
+        fig.append_trace(trace21c, 2, 1)
+        fig.append_trace(trace21d, 2, 1)
+        fig.append_trace(trace22a, 2, 2)
+        fig['layout']['xaxis1'].update(title='Epoch time, s', tickformat='.3f')
+        fig['layout']['xaxis2'].update(title='Epoch time, s', tickformat='.3f')
+        fig['layout']['xaxis3'].update(title='Epoch time, s', tickformat='.3f')
+        fig['layout']['xaxis4'].update(title='Epoch time, s', tickformat='.3f')
+        fig['layout']['yaxis1'].update(title='Northing, m')
+        fig['layout']['yaxis2'].update(title='Easting, m')
+        fig['layout']['yaxis3'].update(title='Depth, m', autorange='reversed')
+        fig['layout']['yaxis4'].update(title='Altitude, m')
+        fig['layout'].update(title='Deadreckoning vs Time', dragmode='pan', hovermode='closest')#, hoverlabel={'namelength':'-1'})
+        config={'scrollZoom': True}
+        py.plot(fig, config=config, filename=plotlypath + os.sep + 'deadreckoning_vs_time.html', auto_open=False)
 
-        # # DR plotly slider *include toggle button that switches between lat long and north east
-            print('...plotting auv_path...')
+    # pf uncertainty plotly # maybe make a slider plot for this, or a dot projection slider
+        trace11a = create_trace([i.timestamp for i in pf_fusion_dvl_list], pf_northings_std, 'northings_std (m)', 'red')
+        trace11b = create_trace([i.timestamp for i in pf_fusion_dvl_list], pf_eastings_std, 'eastings_std (m)', 'blue')
+        trace11c = create_trace([i.timestamp for i in pf_fusion_dvl_list], pf_yaw_std, 'yaw_std (deg)', 'green')
+        layout = go.Layout(
+            title='Particle Filter Uncertainty Plot',
+            hovermode='closest',
+            xaxis=dict(title='Epoch time, s', tickformat='.3f'),
+            yaxis=dict(title='Degrees or Metres'),
+            dragmode='pan',
+            )
+        config={'scrollZoom': True}
+        fig = go.Figure(data=[trace11a, trace11b, trace11c], layout=layout)
+        py.plot(fig, config=config, filename=plotlypath + os.sep + 'pf_uncertainty.html', auto_open=False)
 
-            # might not be robust in the future
-            minTimestamp = 99999999999999
-            maxTimestamp = -99999999999999
+    # Uncertainty plotly --- https://plot.ly/python/line-charts/#filled-lines Something like that?
+        trace11a = create_trace([i.timestamp for i in orientation_list], [i.roll_std for i in orientation_list], 'roll std', 'red')
+        trace11b = create_trace([i.timestamp for i in orientation_list], [i.pitch_std for i in orientation_list], 'pitch std', 'green')
+        trace11c = create_trace([i.timestamp for i in orientation_list], [i.yaw_std for i in orientation_list], 'yaw std', 'blue')
+        trace12a = create_trace([i.timestamp for i in velocity_body_list], [i.x_velocity_std for i in velocity_body_list], 'x velocity std', 'red')
+        trace12b = create_trace([i.timestamp for i in velocity_body_list], [i.y_velocity_std for i in velocity_body_list], 'y velocity std', 'green')
+        trace12c = create_trace([i.timestamp for i in velocity_body_list], [i.z_velocity_std for i in velocity_body_list], 'z velocity std', 'blue')
+        trace13a = create_trace([i.timestamp for i in usbl_list], [i.latitude_std for i in usbl_list], 'latitude std usbl', 'red')
+        trace13b = create_trace([i.timestamp for i in usbl_list], [i.longitude_std for i in usbl_list], 'longitude std usbl', 'green')
+        trace21a = create_trace([i.timestamp for i in depth_list], [i.depth_std for i in depth_list], 'depth std', 'red')
+        if len(velocity_inertial_list)>0:
+            trace22a = create_trace([i.timestamp for i in velocity_inertial_list], [i.north_velocity_std for i in velocity_inertial_list], 'north velocity std inertial', 'red')
+            trace22b = create_trace([i.timestamp for i in velocity_inertial_list], [i.east_velocity_std for i in velocity_inertial_list], 'east velocity std inertial', 'green')
+            trace22c = create_trace([i.timestamp for i in velocity_inertial_list], [i.down_velocity_std for i in velocity_inertial_list], 'down velocity std inertial', 'blue')
+        trace23a = create_trace([i.timestamp for i in usbl_list], [i.northings_std for i in usbl_list], 'northing std usbl', 'red')
+        trace23b = create_trace([i.timestamp for i in usbl_list], [i.eastings_std for i in usbl_list], 'easting std usbl', 'green')
+        fig = tools.make_subplots(rows=2, cols=3, subplot_titles=('Orientation uncertainties', 'DVL uncertainties', 'USBL uncertainties', 'Depth uncertainties', '{} uncertainties'.format(velocity_inertial_sensor_name), 'USBL uncertainties'))
+        fig.append_trace(trace11a, 1, 1)
+        fig.append_trace(trace11b, 1, 1)
+        fig.append_trace(trace11c, 1, 1)
+        fig.append_trace(trace12a, 1, 2)
+        fig.append_trace(trace12b, 1, 2)
+        fig.append_trace(trace12c, 1, 2)
+        fig.append_trace(trace13a, 1, 3)
+        fig.append_trace(trace13b, 1, 3)
+        fig.append_trace(trace21a, 2, 1)
+        if len(velocity_inertial_list)>0:
+            fig.append_trace(trace22a, 2, 2)
+            fig.append_trace(trace22b, 2, 2)
+            fig.append_trace(trace22c, 2, 2)
+        fig.append_trace(trace23a, 2, 3)
+        fig.append_trace(trace23b, 2, 3)
+        fig['layout']['xaxis1'].update(title='Epoch time, s', tickformat='.3f')#xaxis 1 title')
+        fig['layout']['xaxis2'].update(title='Epoch time, s', tickformat='.3f')#, range=[10, 50])
+        fig['layout']['xaxis3'].update(title='Epoch time, s', tickformat='.3f')#, showgrid=False)
+        fig['layout']['xaxis4'].update(title='Epoch time, s', tickformat='.3f')#, type='log')
+        fig['layout']['xaxis5'].update(title='Epoch time, s', tickformat='.3f')
+        fig['layout']['xaxis6'].update(title='Epoch time, s', tickformat='.3f')
+        fig['layout']['yaxis1'].update(title='Angle, degrees')
+        fig['layout']['yaxis2'].update(title='Velocity, m/s')
+        fig['layout']['yaxis3'].update(title='LatLong, degrees')
+        fig['layout']['yaxis4'].update(title='Depth, m')
+        fig['layout']['yaxis5'].update(title='Velocity, m/s')
+        fig['layout']['yaxis6'].update(title='NorthEast, m')
+        fig['layout'].update(title='Uncertainty Plots', dragmode='pan', hovermode='closest')
+        config={'scrollZoom': True}
+        py.plot(fig, config=config, filename=plotlypath + os.sep + 'uncertainties_plot.html', auto_open=False)
 
-            plotly_list = []
-            if len(camera1_list) > 1:
-                plotly_list.append(['Camera1', camera1_list])
-            if len(dead_reckoning_centre_list) > 1:
-                plotly_list.append(['Centre', dead_reckoning_centre_list])
-            if len(dead_reckoning_dvl_list) > 1:
-                plotly_list.append(['DVL',dead_reckoning_dvl_list])
-            if len(velocity_inertial_list) > 1:
-                plotly_list.append([velocity_inertial_sensor_name, velocity_inertial_list])
-            if len(usbl_list) > 1:
-                plotly_list.append(['USBL', usbl_list])
+    # # DR plotly slider *include toggle button that switches between lat long and north east
+        print('...plotting auv_path...')
 
-            for i in plotly_list:
-                timestamp_list = [j.timestamp for j in i[1]]
-                if min(timestamp_list) < minTimestamp:
-                    minTimestamp = min(timestamp_list)
-                if max(timestamp_list) > maxTimestamp:
-                    maxTimestamp = max(timestamp_list)
-            # for i in [[i.timestamp for i in camera1_list], [i.timestamp for i in dead_reckoning_centre_list], [i.timestamp for i in velocity_inertial_list], [i.timestamp for i in usbl_list]]:
-            #     if min(i) < minTimestamp:
-            #         minTimestamp = min(i)
-            #     if max(i) > maxTimestamp:
-            #         maxTimestamp = max(i)
+        # might not be robust in the future
+        minTimestamp = 99999999999999
+        maxTimestamp = -99999999999999
 
-            # slider plot
-            # time_gap = 240
-            time_gap = int((maxTimestamp - minTimestamp)/40)
-            epoch_timestamps_slider = list(range(int(minTimestamp), int(maxTimestamp), int(time_gap)))
+        plotly_list = []
+        if len(camera1_list) > 1:
+            plotly_list.append(['dr_camera1', camera1_list])
+        if len(dead_reckoning_centre_list) > 1:
+            plotly_list.append(['dr_centre', dead_reckoning_centre_list])
+        #if len(dead_reckoning_dvl_list) > 1:
+        #    plotly_list.append(['DVL',dead_reckoning_dvl_list])
+        #if len(velocity_inertial_list) > 1:
+        #    plotly_list.append([velocity_inertial_sensor_name, velocity_inertial_list])
+        if len(usbl_list) > 1:
+            plotly_list.append(['usbl', usbl_list])
 
-            figure = {
-                'data': [],
-                'layout': {},
-                'frames': []
-            }
+        for i in plotly_list:
+            timestamp_list = [j.timestamp for j in i[1]]
+            if min(timestamp_list) < minTimestamp:
+                minTimestamp = min(timestamp_list)
+            if max(timestamp_list) > maxTimestamp:
+                maxTimestamp = max(timestamp_list)
+        # for i in [[i.timestamp for i in camera1_list], [i.timestamp for i in dead_reckoning_centre_list], [i.timestamp for i in velocity_inertial_list], [i.timestamp for i in usbl_list]]:
+        #     if min(i) < minTimestamp:
+        #         minTimestamp = min(i)
+        #     if max(i) > maxTimestamp:
+        #         maxTimestamp = max(i)
 
-            #RANGESLIDER!?
-            sliders_dict = {
-                'active': 0,
-                'yanchor': 'top',
-                'xanchor': 'left',
-                'currentvalue': {
-                    'font': {'size': 20},
-                    'prefix': 'epoch_timestamp:',
-                    'visible': True,
-                    'xanchor': 'right'
-                },
-                'transition': {'duration': 300, 'easing': 'cubic-in-out'},
-                'pad': {'b': 10, 't': 50},
-                'len': 0.9,
+        # slider plot
+        # time_gap = 240
+        time_gap = int((maxTimestamp - minTimestamp)/40)
+        epoch_timestamps_slider = list(range(int(minTimestamp), int(maxTimestamp), int(time_gap)))
+
+        figure = {
+            'data': [],
+            'layout': {},
+            'frames': []
+        }
+
+        #RANGESLIDER!?
+        sliders_dict = {
+            'active': 0,
+            'yanchor': 'top',
+            'xanchor': 'left',
+            'currentvalue': {
+                'font': {'size': 20},
+                'prefix': 'epoch_timestamp:',
+                'visible': True,
+                'xanchor': 'right'
+            },
+            'transition': {'duration': 300, 'easing': 'cubic-in-out'},
+            'pad': {'b': 10, 't': 50},
+            'len': 0.9,
+            'x': 0.1,
+            'y': 0,
+            'steps': []
+        }
+
+        # fill in most of layout
+        figure['layout']['xaxis'] = {'title': 'Eastings,m'} #'range': [-30, 60], 'title': 'Eastings,m'} 
+        figure['layout']['yaxis'] = {'title': 'Northings,m'} #'range': [-20, 90], 'title': 'Northings,m'}
+        figure['layout']['hovermode'] = 'closest'
+        figure['layout']['dragmode'] = 'pan'
+        figure['layout']['updatemenus'] = [
+            {
+                'buttons': [
+                    {
+                        'args': [None, {'frame': {'duration': 500, 'redraw': False},
+                                 'fromcurrent': True, 'transition': {'duration': 300, 'easing': 'quadratic-in-out'}}],
+                        'label': 'Play',
+                        'method': 'animate'
+                    },
+                    {
+                        'args': [[None], {'frame': {'duration': 0, 'redraw': False}, 'mode': 'immediate',
+                        'transition': {'duration': 0}}],
+                        'label': 'Pause',
+                        'method': 'animate'
+                    }
+                ],
+                'direction': 'left',
+                'pad': {'r': 10, 't': 87},
+                'showactive': False,
+                'type': 'buttons',
                 'x': 0.1,
+                'xanchor': 'right',
                 'y': 0,
-                'steps': []
+                'yanchor': 'top'
             }
+        ]
 
-            # fill in most of layout
-            figure['layout']['xaxis'] = {'title': 'Eastings,m'} #'range': [-30, 60], 'title': 'Eastings,m'} 
-            figure['layout']['yaxis'] = {'title': 'Northings,m'} #'range': [-20, 90], 'title': 'Northings,m'}
-            figure['layout']['hovermode'] = 'closest'
-            figure['layout']['dragmode'] = 'pan'
-            figure['layout']['updatemenus'] = [
-                {
-                    'buttons': [
-                        {
-                            'args': [None, {'frame': {'duration': 500, 'redraw': False},
-                                     'fromcurrent': True, 'transition': {'duration': 300, 'easing': 'quadratic-in-out'}}],
-                            'label': 'Play',
-                            'method': 'animate'
-                        },
-                        {
-                            'args': [[None], {'frame': {'duration': 0, 'redraw': False}, 'mode': 'immediate',
-                            'transition': {'duration': 0}}],
-                            'label': 'Pause',
-                            'method': 'animate'
-                        }
-                    ],
-                    'direction': 'left',
-                    'pad': {'r': 10, 't': 87},
-                    'showactive': False,
-                    'type': 'buttons',
-                    'x': 0.1,
-                    'xanchor': 'right',
-                    'y': 0,
-                    'yanchor': 'top'
-                }
-            ]
+        #make data
+        def make_data(name,eastings,northings,mode='lines'):
+            # mode='lines'
+            if 'usbl' in name:
+                mode='lines+markers'
+            data_dict = {
+                'x': eastings,
+                'y': northings,
+                'mode':'{}'.format(mode),
+                'name': '{}'.format(name)
+            }
+            figure['data'].append(data_dict)
 
-            #make data
-            def make_data(name,eastings,northings,mode='lines'):
-                # mode='lines'
-                if 'USBL' in name:
-                    mode='lines+markers'
-                data_dict = {
-                    'x': eastings,
-                    'y': northings,
-                    'mode':'{}'.format(mode),
-                    'name': '{}'.format(name)
-                }
-                figure['data'].append(data_dict)
+        for i in plotly_list:
+            make_data(i[0], [j.eastings for j in i[1]], [j.northings for j in i[1]])
+        # make_data('Camera1',[i.eastings for i in camera1_list],[i.northings for i in camera1_list])
+        # make_data('Centre',[i.eastings for i in dead_reckoning_centre_list],[i.northings for i in dead_reckoning_centre_list])
+        # make_data('DVL',[i.eastings for i in dead_reckoning_dvl_list],[i.northings for i in dead_reckoning_dvl_list])
+        # make_data(velocity_inertial_sensor_name,[i.eastings for i in velocity_inertial_list],[i.northings for i in velocity_inertial_list])
+        # make_data('USBL',[i.eastings for i in usbl_list],[i.northings for i in usbl_list])
+        if len(pf_fusion_centre_list) > 1:
 
-            for i in plotly_list:
-                make_data(i[0], [j.eastings for j in i[1]], [j.northings for j in i[1]])
-            # make_data('Camera1',[i.eastings for i in camera1_list],[i.northings for i in camera1_list])
-            # make_data('Centre',[i.eastings for i in dead_reckoning_centre_list],[i.northings for i in dead_reckoning_centre_list])
-            # make_data('DVL',[i.eastings for i in dead_reckoning_dvl_list],[i.northings for i in dead_reckoning_dvl_list])
-            # make_data(velocity_inertial_sensor_name,[i.eastings for i in velocity_inertial_list],[i.northings for i in velocity_inertial_list])
-            # make_data('USBL',[i.eastings for i in usbl_list],[i.northings for i in usbl_list])
-            if len(pf_fusion_dvl_list) > 1:
-                make_data('PF_Fusion_DVL', [i.eastings for i in pf_fusion_dvl_list], [i.northings for i in pf_fusion_dvl_list])
-                # pf_timestamps_interval = []
-                pf_eastings_interval = []
-                pf_northings_interval = []
-                for i in pf_particles_list[0]:
-                    # pf_timestamps_interval.append(pf_particles_list[0][0].timestamps[0])
-                    pf_eastings_interval.append(i.eastings[0])
-                    pf_northings_interval.append(i.northings[0])
-                timestamp_value_tracker = pf_particles_list[0][0].timestamps[0]
-                for i in range(len(pf_particles_list)):
-                    # timestamp_index_tracker = 0
-                    for j in range(len(pf_particles_list[i][0].timestamps)):# for j in pf_particles_list[i]:
-                        if pf_particles_list[i][0].timestamps[j] - timestamp_value_tracker > particles_time_interval: # 5 minutes interval
-                            for k in pf_particles_list[i]:    # pf_timestamps_interval.append()
-                                # pf_timestamps_interval.append(k.timestamps[j])
-                                pf_eastings_interval.append(k.eastings[j])
-                                pf_northings_interval.append(k.northings[j])
-                            timestamp_value_tracker = pf_particles_list[i][0].timestamps[j]
-                make_data('particles_intervals', pf_eastings_interval, pf_northings_interval, mode='markers')
-                ### ===== for checking and visualization purposes =====
-                # make_data('USBL_1', [pf_usbl_datapoints[0].eastings], [pf_usbl_datapoints[0].northings], mode='markers')
-                # make_data('PF_Initialization', [i.eastings[0] for i in pf_particles_list[0]], [i.northings[0] for i in pf_particles_list[0]], mode='markers')
-                # make_data('PF_First_Propagation', [i.eastings[-1] for i in pf_particles_list[0]], [i.northings[-1] for i in pf_particles_list[0]], mode='markers')
-                # make_data('USBL_2', [pf_usbl_datapoints[1].eastings], [pf_usbl_datapoints[1].northings], mode='markers')
-                # make_data('PF_First Resampling', [i.eastings[0] for i in pf_particles_list[1]], [i.northings[0] for i in pf_particles_list[1]], mode='markers')
-                # make_data('PF_Second_Propagation', [i.eastings[-1] for i in pf_particles_list[1]], [i.northings[-1] for i in pf_particles_list[1]], mode='markers')
-                # make_data('USBL_3', [pf_usbl_datapoints[2].eastings], [pf_usbl_datapoints[2].northings], mode='markers')
-                # make_data('PF_Second Resampling', [i.eastings[0] for i in pf_particles_list[2]], [i.northings[0] for i in pf_particles_list[2]], mode='markers')
-                # make_data('PF_Third_Propagation', [i.eastings[-1] for i in pf_particles_list[2]], [i.northings[-1] for i in pf_particles_list[2]], mode='markers')
-                # make_data('USBL_4', [pf_usbl_datapoints[3].eastings], [pf_usbl_datapoints[3].northings], mode='markers')
-                # make_data('PF_Third Resampling', [i.eastings[0] for i in pf_particles_list[3]], [i.northings[0] for i in pf_particles_list[3]], mode='markers')
-                # temp_list_eastings = []
-                # temp_list_northings = []
-                # for i in range(3, len(pf_particles_list)):
-                #     for j in pf_particles_list[i]:
-                #         temp_list_eastings.append(j.eastings[-1])
-                #         temp_list_northings.append(j.northings[-1])
-                #     temp_list_eastings.append(pf_particles_list[i][0].eastings[0])
-                #     temp_list_northings.append(pf_particles_list[i][0].northings[0])
-                # make_data('PF_particles', temp_list_eastings, temp_list_northings, mode='markers')
-                # make_data('PF_Final-1_Propagation', [i.eastings[-1] for i in pf_particles_list[-2]], [i.northings[-1] for i in pf_particles_list[-2]], mode='markers')
-                # make_data('PF_Final Resampling', [i.eastings[0] for i in pf_particles_list[-1]], [i.northings[0] for i in pf_particles_list[-1]], mode='markers')
-                # make_data('PF_Final_Propagation', [i.eastings[-1] for i in pf_particles_list[-1]], [i.northings[-1] for i in pf_particles_list[-1]], mode='markers')
-                ### ===== for checking and visualization purposes =====
-            config={'scrollZoom': True}
+            make_data('pf_camera1', [i.eastings for i in pf_fusion_camera1_list], [i.northings for i in pf_fusion_camera1_list])
+            # pf_timestamps_interval = []
+            pf_eastings_interval = []
+            pf_northings_interval = []
+            for i in pf_particles_list[0]:
+                # pf_timestamps_interval.append(pf_particles_list[0][0].timestamps[0])
+                pf_eastings_interval.append(i.eastings[0])
+                pf_northings_interval.append(i.northings[0])
+            timestamp_value_tracker = pf_particles_list[0][0].timestamps[0]
 
-            py.plot(figure, config=config, filename=plotlypath + os.sep + 'auv_path.html',auto_open=False)
+            make_data('pf_centre', [i.eastings for i in pf_fusion_centre_list], [i.northings for i in pf_fusion_centre_list])
+            # pf_timestamps_interval = []
+            pf_eastings_interval = []
+            pf_northings_interval = []
+            for i in pf_particles_list[0]:
+                # pf_timestamps_interval.append(pf_particles_list[0][0].timestamps[0])
+                pf_eastings_interval.append(i.eastings[0])
+                pf_northings_interval.append(i.northings[0])
+            timestamp_value_tracker = pf_particles_list[0][0].timestamps[0]
+            
+            for i in range(len(pf_particles_list)):
+                # timestamp_index_tracker = 0
+                for j in range(len(pf_particles_list[i][0].timestamps)):# for j in pf_particles_list[i]:
+                    if pf_particles_list[i][0].timestamps[j] - timestamp_value_tracker > particles_time_interval: # 
+                        for k in pf_particles_list[i]:    # pf_timestamps_interval.append()
+                            # pf_timestamps_interval.append(k.timestamps[j])
+                            pf_eastings_interval.append(k.eastings[j])
+                            pf_northings_interval.append(k.northings[j])
+                        timestamp_value_tracker = pf_particles_list[i][0].timestamps[j]
+            make_data('pf_centre_distribution', pf_eastings_interval, pf_northings_interval, mode='markers')
+     
+            
+                 ### ===== for checking and visualization purposes =====
+            # make_data('USBL_1', [pf_usbl_datapoints[0].eastings], [pf_usbl_datapoints[0].northings], mode='markers')
+            # make_data('PF_Initialization', [i.eastings[0] for i in pf_particles_list[0]], [i.northings[0] for i in pf_particles_list[0]], mode='markers')
+            # make_data('PF_First_Propagation', [i.eastings[-1] for i in pf_particles_list[0]], [i.northings[-1] for i in pf_particles_list[0]], mode='markers')
+            # make_data('USBL_2', [pf_usbl_datapoints[1].eastings], [pf_usbl_datapoints[1].northings], mode='markers')
+            # make_data('PF_First Resampling', [i.eastings[0] for i in pf_particles_list[1]], [i.northings[0] for i in pf_particles_list[1]], mode='markers')
+            # make_data('PF_Second_Propagation', [i.eastings[-1] for i in pf_particles_list[1]], [i.northings[-1] for i in pf_particles_list[1]], mode='markers')
+            # make_data('USBL_3', [pf_usbl_datapoints[2].eastings], [pf_usbl_datapoints[2].northings], mode='markers')
+            # make_data('PF_Second Resampling', [i.eastings[0] for i in pf_particles_list[2]], [i.northings[0] for i in pf_particles_list[2]], mode='markers')
+            # make_data('PF_Third_Propagation', [i.eastings[-1] for i in pf_particles_list[2]], [i.northings[-1] for i in pf_particles_list[2]], mode='markers')
+            # make_data('USBL_4', [pf_usbl_datapoints[3].eastings], [pf_usbl_datapoints[3].northings], mode='markers')
+            # make_data('PF_Third Resampling', [i.eastings[0] for i in pf_particles_list[3]], [i.northings[0] for i in pf_particles_list[3]], mode='markers')
+            # temp_list_eastings = []
+            # temp_list_northings = []
+            # for i in range(3, len(pf_particles_list)):
+            #     for j in pf_particles_list[i]:
+            #         temp_list_eastings.append(j.eastings[-1])
+            #         temp_list_northings.append(j.northings[-1])
+            #     temp_list_eastings.append(pf_particles_list[i][0].eastings[0])
+            #     temp_list_northings.append(pf_particles_list[i][0].northings[0])
+            # make_data('PF_particles', temp_list_eastings, temp_list_northings, mode='markers')
+            # make_data('PF_Final-1_Propagation', [i.eastings[-1] for i in pf_particles_list[-2]], [i.northings[-1] for i in pf_particles_list[-2]], mode='markers')
+            # make_data('PF_Final Resampling', [i.eastings[0] for i in pf_particles_list[-1]], [i.northings[0] for i in pf_particles_list[-1]], mode='markers')
+            # make_data('PF_Final_Propagation', [i.eastings[-1] for i in pf_particles_list[-1]], [i.northings[-1] for i in pf_particles_list[-1]], mode='markers')
+            ### ===== for checking and visualization purposes =====
+        config={'scrollZoom': True}
 
-            def make_frame(data,tstamp):
-                temp_index=-1#next(x[0] for x in enumerate(data[0]) if x[1] > tstamp)
-                for i in range(len(data[1])):
-                    if data[1][i] <= tstamp:
-                        temp_index=i
-                    else:
-                        break
-                eastings=data[2][:temp_index+1]
-                northings=data[3][:temp_index+1]
-                data_dict = {
-                    'x': eastings,
-                    'y': northings,
-                    'name': '{}'.format(data[0])
-                }
-                frame['data'].append(data_dict)
+        py.plot(figure, config=config, filename=plotlypath + os.sep + 'auv_path.html',auto_open=False)
 
-            #make frames
-            for i in epoch_timestamps_slider:
-                frame = {'data': [], 'name': str(i)}
-                
-                for j in plotly_list:
-                    make_frame([j[0],[k.timestamp for k in j[1]], [k.eastings for k in j[1]], [k.northings for k in j[1]]],i)
-                # for j in [['Camera1',[i.timestamp for i in camera1_list],[i.eastings for i in camera1_list],[i.northings for i in camera1_list]],['Centre',[i.timestamp for i in dead_reckoning_centre_list],[i.eastings for i in dead_reckoning_centre_list],[i.northings for i in dead_reckoning_centre_list]],['DVL',[i.timestamp for i in dead_reckoning_dvl_list],[i.eastings for i in dead_reckoning_dvl_list],[i.northings for i in dead_reckoning_dvl_list]],[velocity_inertial_sensor_name,[i.timestamp for i in velocity_inertial_list],[i.eastings for i in velocity_inertial_list],[i.northings for i in velocity_inertial_list]],['USBL',[i.timestamp for i in usbl_list],[i.eastings for i in usbl_list],[i.northings for i in usbl_list]]]:
-                #     make_frame(j,i)
-                if len(pf_fusion_dvl_list) > 1:
-                    make_frame(['PF_Fusion_DVL',[i.timestamp for i in pf_fusion_dvl_list],[i.eastings for i in pf_fusion_dvl_list],[i.northings for i in pf_fusion_dvl_list]],i)
-                # if len(pf_eastings) > 1:
-                #     for j in [['PF_Fusion',pf_timestamps,pf_eastings,pf_northings]]:#,['PF_Initialization', [i.timestamps[0] for i in pf_particles_list[0]], [i.eastings[0] for i in pf_particles_list[0]], [i.northings for i in pf_particles_list[0]]],['PF_Final Resampling',[i.timestamps[0] for i in pf_particles_list[-1]], [i.eastings[0] for i in pf_particles_list[-1]], [i.northings for i in pf_particles_list[-1]]]]:
-                        # make_frame(j,i)
-                figure['frames'].append(frame)
-                slider_step = {'args': [
-                    [i],
-                    {'frame': {'duration': 300, 'redraw': False},
-                     'mode': 'immediate',
-                   'transition': {'duration': 300}}
-                 ],
-                 'label': i,
-                 'method': 'animate'}
-                sliders_dict['steps'].append(slider_step)
+        def make_frame(data,tstamp):
+            temp_index=-1#next(x[0] for x in enumerate(data[0]) if x[1] > tstamp)
+            for i in range(len(data[1])):
+                if data[1][i] <= tstamp:
+                    temp_index=i
+                else:
+                    break
+            eastings=data[2][:temp_index+1]
+            northings=data[3][:temp_index+1]
+            data_dict = {
+                'x': eastings,
+                'y': northings,
+                'name': '{}'.format(data[0])
+            }
+            frame['data'].append(data_dict)
 
-            figure['layout']['sliders'] = [sliders_dict]
+        #make frames
+        for i in epoch_timestamps_slider:
+            frame = {'data': [], 'name': str(i)}
+            
+            for j in plotly_list:
+                make_frame([j[0],[k.timestamp for k in j[1]], [k.eastings for k in j[1]], [k.northings for k in j[1]]],i)
+            # for j in [['Camera1',[i.timestamp for i in camera1_list],[i.eastings for i in camera1_list],[i.northings for i in camera1_list]],['Centre',[i.timestamp for i in dead_reckoning_centre_list],[i.eastings for i in dead_reckoning_centre_list],[i.northings for i in dead_reckoning_centre_list]],['DVL',[i.timestamp for i in dead_reckoning_dvl_list],[i.eastings for i in dead_reckoning_dvl_list],[i.northings for i in dead_reckoning_dvl_list]],[velocity_inertial_sensor_name,[i.timestamp for i in velocity_inertial_list],[i.eastings for i in velocity_inertial_list],[i.northings for i in velocity_inertial_list]],['USBL',[i.timestamp for i in usbl_list],[i.eastings for i in usbl_list],[i.northings for i in usbl_list]]]:
+            #     make_frame(j,i)
+            if len(pf_fusion_camera1_list) > 1:
+                make_frame(['pf_camera1',[i.timestamp for i in pf_fusion_camera1_list],[i.eastings for i in pf_fusion_camera1_list],[i.northings for i in pf_fusion_camera1_list]],i)
 
-            py.plot(figure, config=config, filename=plotlypath + os.sep + 'auv_path_slider.html',auto_open=False)
+            if len(pf_fusion_centre_list) > 1:
+                make_frame(['pf_centre',[i.timestamp for i in pf_fusion_centre_list],[i.eastings for i in pf_fusion_centre_list],[i.northings for i in pf_fusion_centre_list]],i)
 
-            print('Complete plot data: ', plotlypath)
+            
+
+            # if len(pf_eastings) > 1:
+            #     for j in [['PF_Fusion',pf_timestamps,pf_eastings,pf_northings]]:#,['PF_Initialization', [i.timestamps[0] for i in pf_particles_list[0]], [i.eastings[0] for i in pf_particles_list[0]], [i.northings for i in pf_particles_list[0]]],['PF_Final Resampling',[i.timestamps[0] for i in pf_particles_list[-1]], [i.eastings[0] for i in pf_particles_list[-1]], [i.northings for i in pf_particles_list[-1]]]]:
+                    # make_frame(j,i)
+            figure['frames'].append(frame)
+            slider_step = {'args': [
+                [i],
+                {'frame': {'duration': 300, 'redraw': False},
+                 'mode': 'immediate',
+               'transition': {'duration': 300}}
+             ],
+             'label': i,
+             'method': 'animate'}
+            sliders_dict['steps'].append(slider_step)
+
+        figure['layout']['sliders'] = [sliders_dict]
+
+        py.plot(figure, config=config, filename=plotlypath + os.sep + 'auv_path_slider.html',auto_open=False)
+
+        print('Complete plot data: ', plotlypath)
 
     # write values out to a csv file
         # create a directory with the time stamp
-        if csv_write is True:
+        
+        #if csv_write is True:        
 
-            csvpath = renavpath + os.sep + 'csv'
-            drcsvpath = renavpath + os.sep + 'csv' + os.sep + 'dead_reckoning'
-            pfcsvpath = renavpath + os.sep + 'csv' + os.sep + 'particle_filter'
+        csvpath = renavpath + os.sep + 'csv'
+        drcsvpath = csvpath + os.sep + 'dead_reckoning'
+        pfcsvpath = csvpath + os.sep + 'particle_filter'            
 
-            for i in [csvpath, drcsvpath, pfcsvpath]:
-                if os.path.isdir(i) == 0:
-                    try:
-                        os.mkdir(i)
-                    except Exception as e:
-                        print("Warning:",e)
+        def write_csv(csv_filepath, data_list, csv_filename, csv_flag):
+            #check the relvant folders exist and if note create them           
+            csv_file = Path(csvpath)
+            if csv_file.exists() is False:
+                os.mkdir(csvpath)
 
-            def write_csv(csv_filepath, data_list, csv_filename, csv_flag):
-                if csv_flag == True:
-                    print("Writing outputs to {}.csv ...".format(csv_filename))
-                    with open(csv_filepath + os.sep + '{}.csv'.format(csv_filename) ,'w') as fileout:
-                        fileout.write('Timestamp, Northing [m], Easting [m], Depth [m], Roll [deg], Pitch [deg], Heading [deg], Altitude [m], Latitude [deg], Longitude [deg]\n')
-                    for i in range(len(data_list)):
-                        with open(csv_filepath + os.sep + '{}.csv'.format(csv_filename) ,'a') as fileout:
-                            try:
-                                fileout.write(str(data_list[i].timestamp)+','+str(data_list[i].northings)+','+str(data_list[i].eastings)+','+str(data_list[i].depth)+','+str(data_list[i].roll)+','+str(data_list[i].pitch)+','+str(data_list[i].yaw)+','+str(data_list[i].altitude)+','+str(data_list[i].latitude)+','+str(data_list[i].longitude)+'\n')
-                                fileout.close()
-                            except IndexError:
-                                break
+            csv_file = Path(csv_filepath)
+            if csv_file.exists() is False:
+                os.mkdir(csv_filepath)        
 
-            ### First column of csv file - image file naming step probably not very robust, needs improvement
-            def camera_csv(camera_list, camera_name, csv_filepath, csv_flag):
-                if csv_flag == True:
-                    if len(camera_list) > 1:
-                        print("Writing outputs to {}.csv ...".format(camera_name))
-                        with open(csv_filepath + os.sep + '{}.csv'.format(camera_name) ,'w') as fileout:
-                            fileout.write('Imagenumber, Northing [m], Easting [m], Depth [m], Roll [deg], Pitch [deg], Heading [deg], Altitude [m], Timestamp, Latitude [deg], Longitude [deg]\n')
-                        for i in range(len(camera_list)):
-                            with open(csv_filepath + os.sep + '{}.csv'.format(camera_name) ,'a') as fileout:
-                                try:
-                                    imagenumber = camera_list[i].filename[-11:-4]
-                                    if imagenumber.isdigit():
-                                        image_filename=int(imagenumber)
-                                    else:
-                                        image_filename=camera_list[i].filename
-                                    fileout.write(str(image_filename)+','+str(camera_list[i].northings)+','+str(camera_list[i].eastings)+','+str(camera_list[i].depth)+','+str(camera_list[i].roll)+','+str(camera_list[i].pitch)+','+str(camera_list[i].yaw)+','+str(camera_list[i].altitude)+','+str(camera_list[i].timestamp)+','+str(camera_list[i].latitude)+','+str(camera_list[i].longitude)+'\n')
-                                    fileout.close()
-                                except IndexError:
-                                    break
-
-            # if this works make all follow this format!
-            def other_data_csv(data_list, data_name, csv_filepath, csv_flag):
-                if csv_flag == True:
-                    print("Writing outputs to {}.csv ...".format(data_name))
-                    # csv_header = 
-                    csv_row_data_list = []
-                    for i in data_list:
-                        csv_row_data = {'epochtimestamp':i.timestamp,'Northing [m]':i.northings, 'Easting [m]': i.eastings, 'Depth [m]': i.depth, 'Roll [deg]': i.roll, 'Pitch [deg]': i.pitch, 'Heading [deg]': i.yaw, 'Altitude [m]':i.altitude, 'Latitude [deg]': i.latitude, 'Longitude [deg]': i.longitude}
-                        for j in i.data:
-                            csv_row_data.update({'{} [{}]'.format(j['label'], j['units']):j['value']})
-                        csv_row_data_list.append(csv_row_data)
-                    df = pd.DataFrame(csv_row_data_list)
-                    df.to_csv(csv_filepath + os.sep + '{}.csv'.format(data_name), header=True, index = False) # , na_rep='-') https://www.youtube.com/watch?v=hmYdzvmcTD8
-
-            if len(usbl_list) > 1:
-                print("Writing outputs to auv_usbl.csv ...")
-                with open(csvpath + os.sep + 'auv_usbl.csv' ,'w') as fileout:
-                    fileout.write('Timestamp, Northing [m], Easting [m], Depth [m], Latitude [deg], Longitude [deg]\n')
-                for i in range(len(usbl_list)):
-                    with open(csvpath + os.sep + 'auv_usbl.csv' ,'a') as fileout:
+            if csv_flag == True:
+                print("Writing outputs to {}.csv ...".format(csv_filename))
+                with open(csv_filepath + os.sep + '{}.csv'.format(csv_filename) ,'w') as fileout:
+                    fileout.write('Timestamp, Northing [m], Easting [m], Depth [m], Roll [deg], Pitch [deg], Heading [deg], Altitude [m], Latitude [deg], Longitude [deg]\n')
+                for i in range(len(data_list)):
+                    with open(csv_filepath + os.sep + '{}.csv'.format(csv_filename) ,'a') as fileout:
                         try:
-                            fileout.write(str(usbl_list[i].timestamp)+','+str(usbl_list[i].northings)+','+str(usbl_list[i].eastings)+','+str(usbl_list[i].depth)+','+str(usbl_list[i].latitude)+','+str(usbl_list[i].longitude)+'\n')
+                            fileout.write(str(data_list[i].timestamp)+','+str(data_list[i].northings)+','+str(data_list[i].eastings)+','+str(data_list[i].depth)+','+str(data_list[i].roll)+','+str(data_list[i].pitch)+','+str(data_list[i].yaw)+','+str(data_list[i].altitude)+','+str(data_list[i].latitude)+','+str(data_list[i].longitude)+'\n')
                             fileout.close()
                         except IndexError:
                             break
 
-            if output_DR == True:
-                write_csv(drcsvpath, dead_reckoning_centre_list, 'auv_centre', csv_auv_centre)
-                write_csv(drcsvpath, dead_reckoning_dvl_list, 'auv_dvl', csv_auv_dvl)
-                # if len(velocity_inertial_list) > 1:
-                #     write_csv(drcsvpath, velocity_inertial_list, 'auv_{}'.format(velocity_inertial_sensor_name)) # can't use this cuz missing Altitude!
-                camera_csv(camera1_list, camera1_sensor_name, drcsvpath, csv_camera_1)
-                camera_csv(camera2_list, camera2_sensor_name, drcsvpath, csv_camera_2)
-                camera_csv(camera3_list, camera3_sensor_name, drcsvpath, csv_camera_3)
-                if len(chemical_list) > 1:
-                    other_data_csv(chemical_list, 'chemical', drcsvpath, csv_chemical)
+        ### First column of csv file - image file naming step probably not very robust, needs improvement
+        def camera_csv(camera_list, camera_name, csv_filepath, csv_flag):
+            
 
-            # if len(pf_eastings)>1:
-            #     write_csv(pfcsvpath, ) # can't use this cuz diff format! write new function for all pf related stuff
-            if len(pf_fusion_dvl_list) > 1:
-                write_csv(pfcsvpath, pf_fusion_dvl_list, 'auv_pf_dvl', csv_pf_auv_dvl)
-                write_csv(pfcsvpath, pf_fusion_centre_list, 'auv_pf_centre', csv_pf_auv_centre)
-                camera_csv(camera1_pf_list, camera1_sensor_name, pfcsvpath, csv_pf_camera_1)
-                camera_csv(camera2_pf_list, camera2_sensor_name, pfcsvpath, csv_pf_camera_2)
-                camera_csv(camera3_pf_list, camera3_sensor_name, pfcsvpath, csv_pf_camera_3)
-                if len(chemical_list) > 1:
-                    other_data_csv(chemical_list, 'chemical', pfcsvpath, csv_pf_chemical)
+            csv_file = Path(csvpath)
+            if csv_file.exists() is False:
+                os.mkdir(csvpath)
 
-            print('Complete extraction of data: ', csvpath)
+            csv_file = Path(csv_filepath)
+            if csv_file.exists() is False:
+                os.mkdir(csv_filepath) 
+
+            if csv_flag == True:
+                if len(camera_list) > 1:
+                    print("Writing outputs to {}.csv ...".format(camera_name))
+                    with open(csv_filepath + os.sep + '{}.csv'.format(camera_name) ,'w') as fileout:
+                        fileout.write('Imagenumber, Northing [m], Easting [m], Depth [m], Roll [deg], Pitch [deg], Heading [deg], Altitude [m], Timestamp, Latitude [deg], Longitude [deg]\n')
+                    for i in range(len(camera_list)):
+                        with open(csv_filepath + os.sep + '{}.csv'.format(camera_name) ,'a') as fileout:
+                            try:
+                                imagenumber = camera_list[i].filename[-11:-4]
+                                if imagenumber.isdigit():
+                                    image_filename=int(imagenumber)
+                                else:
+                                    image_filename=camera_list[i].filename
+                                fileout.write(str(image_filename)+','+str(camera_list[i].northings)+','+str(camera_list[i].eastings)+','+str(camera_list[i].depth)+','+str(camera_list[i].roll)+','+str(camera_list[i].pitch)+','+str(camera_list[i].yaw)+','+str(camera_list[i].altitude)+','+str(camera_list[i].timestamp)+','+str(camera_list[i].latitude)+','+str(camera_list[i].longitude)+'\n')
+                                fileout.close()
+                            except IndexError:
+                                break
+
+        # if this works make all follow this format!
+        def other_data_csv(data_list, data_name, csv_filepath, csv_flag):
+            
+            csv_file = Path(csvpath)
+            if csv_file.exists() is False:
+                os.mkdir(csvpath)
+
+            csv_file = Path(csv_filepath)
+            if csv_file.exists() is False:
+                os.mkdir(csv_filepath) 
+
+            if csv_flag == True:
+                print("Writing outputs to {}.csv ...".format(data_name))
+                # csv_header = 
+                csv_row_data_list = []
+                for i in data_list:
+                    csv_row_data = {'epochtimestamp':i.timestamp,'Northing [m]':i.northings, 'Easting [m]': i.eastings, 'Depth [m]': i.depth, 'Roll [deg]': i.roll, 'Pitch [deg]': i.pitch, 'Heading [deg]': i.yaw, 'Altitude [m]':i.altitude, 'Latitude [deg]': i.latitude, 'Longitude [deg]': i.longitude}
+                    for j in i.data:
+                        csv_row_data.update({'{} [{}]'.format(j['label'], j['units']):j['value']})
+                    csv_row_data_list.append(csv_row_data)
+                df = pd.DataFrame(csv_row_data_list)
+                df.to_csv(csv_filepath + os.sep + '{}.csv'.format(data_name), header=True, index = False) # , na_rep='-') https://www.youtube.com/watch?v=hmYdzvmcTD8
+
+        if len(usbl_list) > 1:
+        
+            csv_file = Path(csvpath)
+            if csv_file.exists() is False:
+                os.mkdir(csvpath)
+
+            print("Writing outputs to auv_usbl.csv ...")
+            with open(csvpath + os.sep + 'auv_usbl.csv' ,'w') as fileout:
+                fileout.write('Timestamp, Northing [m], Easting [m], Depth [m], Latitude [deg], Longitude [deg]\n')
+            for i in range(len(usbl_list)):
+                with open(csvpath + os.sep + 'auv_usbl.csv' ,'a') as fileout:
+                    try:
+                        fileout.write(str(usbl_list[i].timestamp)+','+str(usbl_list[i].northings)+','+str(usbl_list[i].eastings)+','+str(usbl_list[i].depth)+','+str(usbl_list[i].latitude)+','+str(usbl_list[i].longitude)+'\n')
+                        fileout.close()
+                    except IndexError:
+                        break
+
+
+        if csv_dr_auv_centre is True:
+            write_csv(drcsvpath, dead_reckoning_centre_list, 'auv_dr_centre', csv_dr_auv_centre)
+        if csv_dr_auv_dvl is True:    
+            write_csv(drcsvpath, dead_reckoning_dvl_list, 'auv_dr_dvl', csv_dr_auv_dvl)
+        # if len(velocity_inertial_list) > 1:
+        #     write_csv(drcsvpath, velocity_inertial_list, 'auv_{}'.format(velocity_inertial_sensor_name)) # can't use this cuz missing Altitude!
+        if csv_dr_camera_1 is True:
+            camera_csv(camera1_list, 'auv_dr_' + camera1_sensor_name, drcsvpath, csv_dr_camera_1)
+        if csv_dr_camera_2 is True:
+            camera_csv(camera2_list, 'auv_dr_' + camera2_sensor_name, drcsvpath, csv_dr_camera_2)
+        if csv_dr_camera_3 is True:
+            camera_csv(camera3_list, 'auv_dr_' + camera3_sensor_name, drcsvpath, csv_dr_camera_3)
+            
+        if len(chemical_list) > 1:
+            other_data_csv(chemical_list, 'auv_dr_chemical', drcsvpath, csv_dr_chemical)
+
+        # if len(pf_eastings)>1:
+        #     write_csv(pfcsvpath, ) # can't use this cuz diff format! write new function for all pf related stuff
+        if csv_pf_auv_centre is True:
+            write_csv(pfcsvpath, pf_fusion_centre_list, 'auv_pf_centre', csv_pf_auv_centre)
+        if csv_pf_auv_dvl is True:    
+            write_csv(pfcsvpath, pf_fusion_dvl_list, 'auv_pf_dvl', csv_pf_auv_dvl)    
+        if csv_pf_camera_1 is True:
+            camera_csv(camera1_pf_list, 'auv_pf_' + camera1_sensor_name, pfcsvpath, csv_pf_camera_1)
+        if csv_pf_camera_2 is True:
+            camera_csv(camera2_pf_list, 'auv_pf_' + camera2_sensor_name, pfcsvpath, csv_pf_camera_2)
+        if csv_pf_camera_3 is True:
+            camera_csv(camera3_pf_list, 'auv_pf_' + camera3_sensor_name, pfcsvpath, csv_pf_camera_3)
+        
+        if len(chemical_list) > 1:
+                other_data_csv(chemical_list, 'auv_pf_chemical' , pfcsvpath, csv_pf_chemical)
+
+        print('Complete extraction of data: ', csvpath)
 
         print('Completed data extraction: ', renavpath)
