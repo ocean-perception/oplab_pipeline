@@ -8,20 +8,20 @@ particle_filter:
   imu_noise_sigma_factor: 2
   usbl_noise_sigma_factor: 2
   particles_number: 100
-  particles_plot_time_interval: 300
+  particles_plot_time_interval: 60
 
 csv_output:
   dead_reckoning: 
-    auv_centre: False
-    auv_dvl: True
+    auv_centre: True
+    auv_dvl: False
     camera_1: True
-    camera_2: True
-    camera_3: True
-    chemical: True
+    camera_2: False
+    camera_3: False
+    chemical: False
   particle_filter:
-    auv_centre: False
-    auv_dvl: True
+    auv_centre: True
+    auv_dvl: False
     camera_1: True
-    camera_2: True
-    camera_3: True
-    chemical: True
+    camera_2: False
+    camera_3: False
+    chemical: False
