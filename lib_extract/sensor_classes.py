@@ -75,6 +75,7 @@ class usbl:
 		self.eastings_std = 0
 
 		self.depth = 0
+		self.depth_std = 0
 
 		self.distance_to_ship = 0
 

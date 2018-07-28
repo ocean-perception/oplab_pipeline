@@ -98,8 +98,8 @@ class parse_ae2000:
 						data_list.append(data)
 
 						frame_string = 'inertial'
-						east_velocity=float(df['vxe'][row_index]) # phins convention is west +ve so a minus should be necessary
-						north_velocity=float(df['vye'][row_index])
+						east_velocity=float(df['vye'][row_index]) # phins convention is west +ve so a minus should be necessary
+						north_velocity=float(df['vxe'][row_index])
 						down_velocity=-9999
 
 						east_velocity_std=abs(east_velocity)*velocity_std_factor+velocity_std_offset
