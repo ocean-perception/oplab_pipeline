@@ -27,7 +27,7 @@ git push origin master
 
 or run
 
-pip3 install numpy pyyaml plotly pandas xlrd prettytable --user
+pip3 install matplotlib numpy pyyaml plotly pandas xlrd prettytable --user
 
 Some of the packages above are in [third_party](third_party) which can be installed by:
 * executing the following terminal commands within the folder...
