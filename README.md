@@ -25,6 +25,10 @@ git push origin master
 6. [xlrd](https://pypi.org/project/xlrd/) (version used: 1.1.0) `pip3 install xlrd`
 7. [prettytable](https://pypi.python.org/pypi/PrettyTable) (version used: 0.7.2) `pip3 install prettytable`
 
+or run
+
+pip3 install numpy pyyaml plotly pandas xlrd prettytable --user
+
 Some of the packages above are in [third_party](third_party) which can be installed by:
 * executing the following terminal commands within the folder...
 ```
