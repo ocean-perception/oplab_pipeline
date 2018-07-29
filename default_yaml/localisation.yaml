@@ -11,7 +11,9 @@ particle_filter:
   particles_plot_time_interval: 60
 
 csv_output:
-  dead_reckoning: 
+  active: True
+  usbl: True
+  dead_reckoning:
     auv_centre: True
     auv_dvl: False
     camera_1: True

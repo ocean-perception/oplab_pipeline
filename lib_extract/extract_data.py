@@ -126,6 +126,10 @@ class extract_data:
                 particles_number = load_localisation['particle_filter']['particles_number']
                 particles_time_interval = load_localisation['particle_filter']['particles_plot_time_interval']
             if 'csv_output' in load_localisation:
+                csv_active = load_localisation['csv_output']['active']
+
+                csv_usbl = load_localisation['csv_output']['usbl']
+
                 csv_dr_auv_centre = load_localisation['csv_output']['dead_reckoning']['auv_centre']
                 csv_dr_auv_dvl = load_localisation['csv_output']['dead_reckoning']['auv_dvl']
                 csv_dr_camera_1 = load_localisation['csv_output']['dead_reckoning']['camera_1']
@@ -139,10 +143,6 @@ class extract_data:
                 csv_pf_camera_2 = load_localisation['csv_output']['particle_filter']['camera_2']
                 csv_pf_camera_3 = load_localisation['csv_output']['particle_filter']['camera_3']
                 csv_pf_chemical = load_localisation['csv_output']['particle_filter']['chemical']
-        
-            
-
-
 
     # get information of sensor position offset from origin/centre reference point from vehicle.yaml
         print('Loading vehicle.yaml')    
@@ -1172,7 +1172,7 @@ class extract_data:
         #if plotly is True:
 
         print('Plotting plotly data ...')
-        plotlypath = renavpath + os.sep + 'dynamic_plots'
+        plotlypath = renavpath + os.sep + 'interactive_plots'
         
         if os.path.isdir(plotlypath) == 0:
             try:
@@ -1180,10 +1180,11 @@ class extract_data:
             except Exception as e:
                 print("Warning:",e)
 
-        def create_trace(x_list,y_list,trace_name,trace_color):
+        def create_trace(x_list,y_list,trace_name,trace_color,visibility=True):
             trace = go.Scattergl(
                 x=x_list,
                 y=y_list,
+                visible=visibility, # True | False | legendonly
                 name=trace_name,
                 mode='lines+markers',
                 marker=dict(color=trace_color),#'rgba(152, 0, 0, .8)'),#,size = 10, line = dict(width = 2,color = 'rgb(0, 0, 0)'),
@@ -1369,15 +1370,15 @@ class extract_data:
 
         plotly_list = []
         if len(camera1_list) > 1:
-            plotly_list.append(['dr_camera1', camera1_list])
+            plotly_list.append(['dr_camera1', camera1_list, 'legendonly'])
         if len(dead_reckoning_centre_list) > 1:
-            plotly_list.append(['dr_centre', dead_reckoning_centre_list])
-        #if len(dead_reckoning_dvl_list) > 1:
-        #    plotly_list.append(['DVL',dead_reckoning_dvl_list])
-        #if len(velocity_inertial_list) > 1:
+            plotly_list.append(['dr_centre', dead_reckoning_centre_list, 'legendonly'])
+        if len(dead_reckoning_dvl_list) > 1:
+           plotly_list.append(['dr_dvl',dead_reckoning_dvl_list, True])
+        # if len(velocity_inertial_list) > 1:
         #    plotly_list.append([velocity_inertial_sensor_name, velocity_inertial_list])
         if len(usbl_list) > 1:
-            plotly_list.append(['usbl', usbl_list])
+            plotly_list.append(['usbl', usbl_list, True])
 
         for i in plotly_list:
             timestamp_list = [j.timestamp for j in i[1]]
@@ -1385,11 +1386,6 @@ class extract_data:
                 minTimestamp = min(timestamp_list)
             if max(timestamp_list) > maxTimestamp:
                 maxTimestamp = max(timestamp_list)
-        # for i in [[i.timestamp for i in camera1_list], [i.timestamp for i in dead_reckoning_centre_list], [i.timestamp for i in velocity_inertial_list], [i.timestamp for i in usbl_list]]:
-        #     if min(i) < minTimestamp:
-        #         minTimestamp = min(i)
-        #     if max(i) > maxTimestamp:
-        #         maxTimestamp = max(i)
 
         # slider plot
         # time_gap = 240
@@ -1454,43 +1450,41 @@ class extract_data:
         ]
 
         #make data
-        def make_data(name,eastings,northings,mode='lines'):
+        def make_data(name,eastings,northings,mode='lines', visibility=True):
             # mode='lines'
             if 'usbl' in name:
                 mode='lines+markers'
+            # data_dict = go.Scattergl( # this doesn't work
+            #     x = eastings,
+            #     y = northings,
+            #     visible = visibility, # True | False | legendonly
+            #     mode = '{}'.format(mode),
+            #     name = '{}'.format(name),
+            #     # marker=dict(color=trace_color),#'rgba(152, 0, 0, .8)'),#,size = 10, line = dict(width = 2,color = 'rgb(0, 0, 0)'),
+            #     # line=dict(color=trace_color)#rgb(205, 12, 24)'))#, width = 4, dash = 'dot')
+            # )
             data_dict = {
                 'x': eastings,
                 'y': northings,
                 'mode':'{}'.format(mode),
-                'name': '{}'.format(name)
+                'name': '{}'.format(name),
+                'visible': visibility
             }
             figure['data'].append(data_dict)
 
         for i in plotly_list:
-            make_data(i[0], [j.eastings for j in i[1]], [j.northings for j in i[1]])
-        # make_data('Camera1',[i.eastings for i in camera1_list],[i.northings for i in camera1_list])
-        # make_data('Centre',[i.eastings for i in dead_reckoning_centre_list],[i.northings for i in dead_reckoning_centre_list])
-        # make_data('DVL',[i.eastings for i in dead_reckoning_dvl_list],[i.northings for i in dead_reckoning_dvl_list])
-        # make_data(velocity_inertial_sensor_name,[i.eastings for i in velocity_inertial_list],[i.northings for i in velocity_inertial_list])
-        # make_data('USBL',[i.eastings for i in usbl_list],[i.northings for i in usbl_list])
+            make_data(i[0], [j.eastings for j in i[1]], [j.northings for j in i[1]], visibility=i[2])
         if len(pf_fusion_centre_list) > 1:
 
-            make_data('pf_camera1', [i.eastings for i in pf_fusion_camera1_list], [i.northings for i in pf_fusion_camera1_list])
-            # pf_timestamps_interval = []
-            pf_eastings_interval = []
-            pf_northings_interval = []
-            for i in pf_particles_list[0]:
-                # pf_timestamps_interval.append(pf_particles_list[0][0].timestamps[0])
-                pf_eastings_interval.append(i.eastings[0])
-                pf_northings_interval.append(i.northings[0])
-            timestamp_value_tracker = pf_particles_list[0][0].timestamps[0]
+            make_data('pf_camera1', [i.eastings for i in pf_fusion_camera1_list], [i.northings for i in pf_fusion_camera1_list], visibility='legendonly')
 
-            make_data('pf_centre', [i.eastings for i in pf_fusion_centre_list], [i.northings for i in pf_fusion_centre_list])
-            # pf_timestamps_interval = []
+            make_data('pf_centre', [i.eastings for i in pf_fusion_centre_list], [i.northings for i in pf_fusion_centre_list], visibility='legendonly')
+            make_data('pf_dvl', [i.eastings for i in pf_fusion_dvl_list], [i.northings for i in pf_fusion_dvl_list], visibility=True)
+            pf_timestamps_interval = []
             pf_eastings_interval = []
             pf_northings_interval = []
             for i in pf_particles_list[0]:
-                # pf_timestamps_interval.append(pf_particles_list[0][0].timestamps[0])
+                pf_timestamps_interval.append(pf_particles_list[0][0].timestamps[0])
                 pf_eastings_interval.append(i.eastings[0])
                 pf_northings_interval.append(i.northings[0])
             timestamp_value_tracker = pf_particles_list[0][0].timestamps[0]
@@ -1500,13 +1494,12 @@ class extract_data:
                 for j in range(len(pf_particles_list[i][0].timestamps)):# for j in pf_particles_list[i]:
                     if pf_particles_list[i][0].timestamps[j] - timestamp_value_tracker > particles_time_interval: # 
                         for k in pf_particles_list[i]:    # pf_timestamps_interval.append()
-                            # pf_timestamps_interval.append(k.timestamps[j])
+                            pf_timestamps_interval.append(k.timestamps[j])
                             pf_eastings_interval.append(k.eastings[j])
                             pf_northings_interval.append(k.northings[j])
                         timestamp_value_tracker = pf_particles_list[i][0].timestamps[j]
-            make_data('pf_centre_distribution', pf_eastings_interval, pf_northings_interval, mode='markers')
+            make_data('pf_dvl_distribution', pf_eastings_interval, pf_northings_interval, mode='markers', visibility=True)
      
-            
                  ### ===== for checking and visualization purposes =====
             # make_data('USBL_1', [pf_usbl_datapoints[0].eastings], [pf_usbl_datapoints[0].northings], mode='markers')
             # make_data('PF_Initialization', [i.eastings[0] for i in pf_particles_list[0]], [i.northings[0] for i in pf_particles_list[0]], mode='markers')
@@ -1536,7 +1529,7 @@ class extract_data:
 
         py.plot(figure, config=config, filename=plotlypath + os.sep + 'auv_path.html',auto_open=False)
 
-        def make_frame(data,tstamp):
+        def make_frame(data,tstamp, visibility=True, mode='lines'):
             temp_index=-1#next(x[0] for x in enumerate(data[0]) if x[1] > tstamp)
             for i in range(len(data[1])):
                 if data[1][i] <= tstamp:
@@ -1545,10 +1538,20 @@ class extract_data:
                     break
             eastings=data[2][:temp_index+1]
             northings=data[3][:temp_index+1]
+            # data_dict = go.Scattergl( # this doesn't work
+            #     x = eastings,
+            #     y = northings,
+            #     visible = visibility, # True | False | legendonly
+            #     # mode = '{}'.format(mode),
+            #     name = '{}'.format(data[0]),
+            #     # marker=dict(color=trace_color),#'rgba(152, 0, 0, .8)'),#,size = 10, line = dict(width = 2,color = 'rgb(0, 0, 0)'),
+            #     # line=dict(color=trace_color)#rgb(205, 12, 24)'))#, width = 4, dash = 'dot')
+            # )
             data_dict = {
                 'x': eastings,
                 'y': northings,
-                'name': '{}'.format(data[0])
+                'name': '{}'.format(data[0]),
+                'mode': '{}'.format(mode)
             }
             frame['data'].append(data_dict)
 
@@ -1558,19 +1561,15 @@ class extract_data:
             
             for j in plotly_list:
                 make_frame([j[0],[k.timestamp for k in j[1]], [k.eastings for k in j[1]], [k.northings for k in j[1]]],i)
-            # for j in [['Camera1',[i.timestamp for i in camera1_list],[i.eastings for i in camera1_list],[i.northings for i in camera1_list]],['Centre',[i.timestamp for i in dead_reckoning_centre_list],[i.eastings for i in dead_reckoning_centre_list],[i.northings for i in dead_reckoning_centre_list]],['DVL',[i.timestamp for i in dead_reckoning_dvl_list],[i.eastings for i in dead_reckoning_dvl_list],[i.northings for i in dead_reckoning_dvl_list]],[velocity_inertial_sensor_name,[i.timestamp for i in velocity_inertial_list],[i.eastings for i in velocity_inertial_list],[i.northings for i in velocity_inertial_list]],['USBL',[i.timestamp for i in usbl_list],[i.eastings for i in usbl_list],[i.northings for i in usbl_list]]]:
-            #     make_frame(j,i)
             if len(pf_fusion_camera1_list) > 1:
                 make_frame(['pf_camera1',[i.timestamp for i in pf_fusion_camera1_list],[i.eastings for i in pf_fusion_camera1_list],[i.northings for i in pf_fusion_camera1_list]],i)
-
             if len(pf_fusion_centre_list) > 1:
                 make_frame(['pf_centre',[i.timestamp for i in pf_fusion_centre_list],[i.eastings for i in pf_fusion_centre_list],[i.northings for i in pf_fusion_centre_list]],i)
+            if len(pf_fusion_dvl_list) > 1:
+                make_frame(['pf_dvl', [i.timestamp for i in pf_fusion_dvl_list], [i.eastings for i in pf_fusion_dvl_list], [i.northings for i in pf_fusion_dvl_list]], i)
+            if len(pf_timestamps_interval) > 1:
+                make_frame(['pf_dvl_distribution',pf_timestamps_interval, pf_eastings_interval, pf_northings_interval], i, mode='markers')
 
-            
-
-            # if len(pf_eastings) > 1:
-            #     for j in [['PF_Fusion',pf_timestamps,pf_eastings,pf_northings]]:#,['PF_Initialization', [i.timestamps[0] for i in pf_particles_list[0]], [i.eastings[0] for i in pf_particles_list[0]], [i.northings for i in pf_particles_list[0]]],['PF_Final Resampling',[i.timestamps[0] for i in pf_particles_list[-1]], [i.eastings[0] for i in pf_particles_list[-1]], [i.northings for i in pf_particles_list[-1]]]]:
-                    # make_frame(j,i)
             figure['frames'].append(frame)
             slider_step = {'args': [
                 [i],
@@ -1672,55 +1671,54 @@ class extract_data:
                 df = pd.DataFrame(csv_row_data_list)
                 df.to_csv(csv_filepath + os.sep + '{}.csv'.format(data_name), header=True, index = False) # , na_rep='-') https://www.youtube.com/watch?v=hmYdzvmcTD8
 
-        if len(usbl_list) > 1:
-        
-            csv_file = Path(csvpath)
-            if csv_file.exists() is False:
-                os.mkdir(csvpath)
+        if csv_active is True:
+            if csv_usbl is True:
+                if len(usbl_list) > 1:
+                    csv_file = Path(csvpath)
+                    if csv_file.exists() is False:
+                        os.mkdir(csvpath)
 
-            print("Writing outputs to auv_usbl.csv ...")
-            with open(csvpath + os.sep + 'auv_usbl.csv' ,'w') as fileout:
-                fileout.write('Timestamp, Northing [m], Easting [m], Depth [m], Latitude [deg], Longitude [deg]\n')
-            for i in range(len(usbl_list)):
-                with open(csvpath + os.sep + 'auv_usbl.csv' ,'a') as fileout:
-                    try:
-                        fileout.write(str(usbl_list[i].timestamp)+','+str(usbl_list[i].northings)+','+str(usbl_list[i].eastings)+','+str(usbl_list[i].depth)+','+str(usbl_list[i].latitude)+','+str(usbl_list[i].longitude)+'\n')
-                        fileout.close()
-                    except IndexError:
-                        break
+                    print("Writing outputs to auv_usbl.csv ...")
+                    with open(csvpath + os.sep + 'auv_usbl.csv' ,'w') as fileout:
+                        fileout.write('Timestamp, Northing [m], Easting [m], Depth [m], Latitude [deg], Longitude [deg]\n')
+                    for i in range(len(usbl_list)):
+                        with open(csvpath + os.sep + 'auv_usbl.csv' ,'a') as fileout:
+                            try:
+                                fileout.write(str(usbl_list[i].timestamp)+','+str(usbl_list[i].northings)+','+str(usbl_list[i].eastings)+','+str(usbl_list[i].depth)+','+str(usbl_list[i].latitude)+','+str(usbl_list[i].longitude)+'\n')
+                                fileout.close()
+                            except IndexError:
+                                break
+            if csv_dr_auv_centre is True:
+                write_csv(drcsvpath, dead_reckoning_centre_list, 'auv_dr_centre', csv_dr_auv_centre)
+            if csv_dr_auv_dvl is True:    
+                write_csv(drcsvpath, dead_reckoning_dvl_list, 'auv_dr_dvl', csv_dr_auv_dvl)
+            # if len(velocity_inertial_list) > 1:
+            #     write_csv(drcsvpath, velocity_inertial_list, 'auv_{}'.format(velocity_inertial_sensor_name)) # can't use this cuz missing Altitude!
+            if csv_dr_camera_1 is True:
+                camera_csv(camera1_list, 'auv_dr_' + camera1_sensor_name, drcsvpath, csv_dr_camera_1)
+            if csv_dr_camera_2 is True:
+                camera_csv(camera2_list, 'auv_dr_' + camera2_sensor_name, drcsvpath, csv_dr_camera_2)
+            if csv_dr_camera_3 is True:
+                camera_csv(camera3_list, 'auv_dr_' + camera3_sensor_name, drcsvpath, csv_dr_camera_3)
+                
+            if len(chemical_list) > 1:
+                other_data_csv(chemical_list, 'auv_dr_chemical', drcsvpath, csv_dr_chemical)
 
-
-        if csv_dr_auv_centre is True:
-            write_csv(drcsvpath, dead_reckoning_centre_list, 'auv_dr_centre', csv_dr_auv_centre)
-        if csv_dr_auv_dvl is True:    
-            write_csv(drcsvpath, dead_reckoning_dvl_list, 'auv_dr_dvl', csv_dr_auv_dvl)
-        # if len(velocity_inertial_list) > 1:
-        #     write_csv(drcsvpath, velocity_inertial_list, 'auv_{}'.format(velocity_inertial_sensor_name)) # can't use this cuz missing Altitude!
-        if csv_dr_camera_1 is True:
-            camera_csv(camera1_list, 'auv_dr_' + camera1_sensor_name, drcsvpath, csv_dr_camera_1)
-        if csv_dr_camera_2 is True:
-            camera_csv(camera2_list, 'auv_dr_' + camera2_sensor_name, drcsvpath, csv_dr_camera_2)
-        if csv_dr_camera_3 is True:
-            camera_csv(camera3_list, 'auv_dr_' + camera3_sensor_name, drcsvpath, csv_dr_camera_3)
+            # if len(pf_eastings)>1:
+            #     write_csv(pfcsvpath, ) # can't use this cuz diff format! write new function for all pf related stuff
+            if csv_pf_auv_centre is True:
+                write_csv(pfcsvpath, pf_fusion_centre_list, 'auv_pf_centre', csv_pf_auv_centre)
+            if csv_pf_auv_dvl is True:    
+                write_csv(pfcsvpath, pf_fusion_dvl_list, 'auv_pf_dvl', csv_pf_auv_dvl)    
+            if csv_pf_camera_1 is True:
+                camera_csv(camera1_pf_list, 'auv_pf_' + camera1_sensor_name, pfcsvpath, csv_pf_camera_1)
+            if csv_pf_camera_2 is True:
+                camera_csv(camera2_pf_list, 'auv_pf_' + camera2_sensor_name, pfcsvpath, csv_pf_camera_2)
+            if csv_pf_camera_3 is True:
+                camera_csv(camera3_pf_list, 'auv_pf_' + camera3_sensor_name, pfcsvpath, csv_pf_camera_3)
             
-        if len(chemical_list) > 1:
-            other_data_csv(chemical_list, 'auv_dr_chemical', drcsvpath, csv_dr_chemical)
-
-        # if len(pf_eastings)>1:
-        #     write_csv(pfcsvpath, ) # can't use this cuz diff format! write new function for all pf related stuff
-        if csv_pf_auv_centre is True:
-            write_csv(pfcsvpath, pf_fusion_centre_list, 'auv_pf_centre', csv_pf_auv_centre)
-        if csv_pf_auv_dvl is True:    
-            write_csv(pfcsvpath, pf_fusion_dvl_list, 'auv_pf_dvl', csv_pf_auv_dvl)    
-        if csv_pf_camera_1 is True:
-            camera_csv(camera1_pf_list, 'auv_pf_' + camera1_sensor_name, pfcsvpath, csv_pf_camera_1)
-        if csv_pf_camera_2 is True:
-            camera_csv(camera2_pf_list, 'auv_pf_' + camera2_sensor_name, pfcsvpath, csv_pf_camera_2)
-        if csv_pf_camera_3 is True:
-            camera_csv(camera3_pf_list, 'auv_pf_' + camera3_sensor_name, pfcsvpath, csv_pf_camera_3)
-        
-        if len(chemical_list) > 1:
-                other_data_csv(chemical_list, 'auv_pf_chemical' , pfcsvpath, csv_pf_chemical)
+            if len(chemical_list) > 1:
+                    other_data_csv(chemical_list, 'auv_pf_chemical' , pfcsvpath, csv_pf_chemical)
 
         print('Complete extraction of data: ', csvpath)
 
