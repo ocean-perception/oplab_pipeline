@@ -7,7 +7,7 @@
 
 import math
 #http://www.json.org/
-deg_to_rad = 3.141592654/180 
+deg_to_rad = math.pi/180 # 3.141592654/180 
 
 class body_to_inertial:
 	def __init__(self, roll, pitch, yaw, old_x, old_y, old_z):

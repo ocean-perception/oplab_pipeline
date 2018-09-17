@@ -16,10 +16,11 @@ from lib_converttime.converttime import date_time_to_epoch
 from lib_coordinates.latlon_wgs84 import latlon_to_metres
 from lib_coordinates.latlon_wgs84 import metres_to_latlon
 
+data_list=[]
+
 class parse_usbl_dump:
-	def __init__(self, filepath, filename, label, category, timezone, timeoffset, latitude_reference, longitude_reference, ftype, outpath, fileoutname):
-		return
-	def __new__(self, filepath, filename, label, category, timezone, timeoffset, latitude_reference, longitude_reference, ftype, outpath, fileoutname):
+	def __init__(self, filepath, filename, label, category, timezone, timeoffset, latitude_reference, longitude_reference, ftype, outpath, fileoutname, fileout):
+
 		# parser meta data    
 		class_string = 'measurement'
 		sensor_string = 'jamstec_usbl'
@@ -50,8 +51,6 @@ class parse_usbl_dump:
 		# extract data from files
 		print('...... parsing usbl dump')
 		data_list=[]
-		if ftype == 'acfr':
-			data_list = ''
 		with codecs.open(filepath + filename,'r',encoding='utf-8', errors='ignore') as filein:
 			
 			for line in filein.readlines():
@@ -144,6 +143,21 @@ class parse_usbl_dump:
 
 						if ftype == 'acfr':
 							data = 'SSBL_FIX: ' + str(float(epoch_timestamp)) + ' ship_x: ' + str(float(northings_ship)) + ' ship_y: ' + str(float(eastings_ship)) + ' target_x: ' + str(float(northings_target)) + ' target_y: ' + str(float(eastings_target)) + ' target_z: ' + str(float(depth)) + ' target_hr: ' + str(float(lateral_distance)) + ' target_sr: ' + str(float(distance)) + ' target_bearing: ' + str(float(bearing)) + '\n'
-							data_list += data
+							fileout.write(data)
 
-		return data_list
+
+		if ftype == 'oplab':
+			fileout.close()
+			for filein in glob.glob(outpath + os.sep + fileoutname):
+				try:
+					with open(filein, 'rb') as json_file:						
+						data_in=json.load(json_file)						
+						for i in range(len(data_in)):
+							data_list.insert(0,data_in[len(data_in)-i-1])				        
+						
+				except ValueError:					
+					print('Initialising JSON file')
+
+			with open(outpath + os.sep + fileoutname,'w') as fileout:
+				json.dump(data_list, fileout)	
+				del data_list

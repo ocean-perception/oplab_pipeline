@@ -15,12 +15,7 @@ from lib_converttime.converttime import date_time_to_epoch
 #http://www.json.org/
 
 class parse_seaxerocks_images:
-    def __init__(self, filepath, sensor_string, date, camera1_label, camera2_label, camera3_label, category, timezone, timeoffset, ftype, outpath, fileoutname):
-        return
-    def __new__(self, filepath, sensor_string, date, camera1_label, camera2_label, camera3_label, category, timezone, timeoffset, ftype, outpath, fileoutname):
-        data_list = []
-        if ftype == 'acfr':
-            data_list = ''
+    def __init__(self, filepath, sensor_string, date, camera1_label, camera2_label, camera3_label, category, timezone, timeoffset, ftype, outpath, fileoutname, fileout):
 
         # parser meta data
         class_string = 'measurement'
@@ -36,6 +31,7 @@ class parse_seaxerocks_images:
         stereo_index=[]
         laser_index=[]
         values = []
+        data_list = []
         camera1_index = []
         camera2_index = []
         camera3_index = []
@@ -151,9 +147,9 @@ class parse_seaxerocks_images:
         for i in range(len(camera1_list)):
             if ftype == 'acfr': 
                 data = 'VIS: ' + str(float(epoch_timestamp_camera1[i])) + ' [' + str(float(epoch_timestamp_camera1[i])) + '] ' + str(camera1_filename[i]) + ' exp: 0\n'
-                data_list += data
+                fileout.write(data)
                 data = 'VIS: ' + str(float(epoch_timestamp_camera2[i])) + ' [' + str(float(epoch_timestamp_camera2[i])) + '] ' + str(camera2_filename[i]) + ' exp: 0\n'
-                data_list += data
+                fileout.write(data)
 
             if ftype == 'oplab':                    
                 data = {'epoch_timestamp': float(epoch_timestamp_camera1[i]), 'class': class_string, 'sensor': sensor_string, 'frame': frame_string, 'category': category_stereo, 'camera1': [{'epoch_timestamp': float(epoch_timestamp_camera1[i]), 'serial' : camera1_serial, 'filename': str(camera1_label+'/'+camera1_filename[i])}], 'camera2':  [{'epoch_timestamp': float(epoch_timestamp_camera2[i]), 'serial' : camera2_serial,  'filename': str(camera2_label+'/'+camera2_filename[i])}]}                
@@ -220,4 +216,19 @@ class parse_seaxerocks_images:
                 data_list.append(data)
 
 
-        return data_list
+
+        if ftype == 'oplab':
+            fileout.close()
+            for filein in glob.glob(outpath + os.sep + fileoutname):
+                try:
+                    with open(filein, 'rb') as json_file:                       
+                        data_in=json.load(json_file)                        
+                        for i in range(len(data_in)):
+                            data_list.insert(0,data_in[len(data_in)-i-1])                       
+                        
+                except ValueError:                  
+                    print('Initialising JSON file')
+
+            with open(outpath + os.sep + fileoutname,'w') as fileout:
+                json.dump(data_list, fileout)   
+                del data_list
