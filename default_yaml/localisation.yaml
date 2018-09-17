@@ -1,8 +1,10 @@
 usbl_filter:
+  activate: True
   max_auv_speed: 2
   sigma_factor: 2
 
 particle_filter:
+  activate: True
   mode: usbl
   dvl_noise_sigma_factor: 2
   imu_noise_sigma_factor: 2
@@ -11,19 +13,24 @@ particle_filter:
   particles_plot_time_interval: 60
 
 csv_output:
-  active: True
+  activate: True
   usbl: True
   dead_reckoning:
     auv_centre: True
     auv_dvl: False
     camera_1: True
-    camera_2: False
-    camera_3: False
+    camera_2: True
+    camera_3: True
     chemical: False
   particle_filter:
-    auv_centre: True
+    auv_centre: False
     auv_dvl: False
-    camera_1: True
+    camera_1: False
     camera_2: False
     camera_3: False
     chemical: False
+
+plot_output:
+  activate: True
+  pdf_plot: False
+  html_plot: True

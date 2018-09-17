@@ -15,10 +15,10 @@ from lib_coordinates.latlon_wgs84 import latlon_to_metres
 from lib_coordinates.latlon_wgs84 import metres_to_latlon
 from lib_converttime.converttime import date_time_to_epoch
 
+data_list=[]
+
 class parse_gaps:
-	def __init__(self, filepath, category, timezone, timeoffset, latitude_reference, longitude_reference, ftype, outpath, fileoutname, usbl_id):
-		return
-	def __new__(self, filepath, category, timezone, timeoffset, latitude_reference, longitude_reference, ftype, outpath, fileoutname, usbl_id):
+	def __init__(self, filepath, category, timezone, timeoffset, latitude_reference, longitude_reference, ftype, outpath, fileoutname, usbl_id, fileout):
 
 		# parser meta data    
 		class_string = 'measurement'
@@ -57,8 +57,6 @@ class parse_gaps:
 		
 		# extract data from files
 		data_list=[]
-		if ftype == 'acfr':
-			data_list = ''
 		for i in range(len(gaps_list)):
 			path_gaps = filepath + os.sep + gaps_list[i]
 			
@@ -91,11 +89,6 @@ class parse_gaps:
 								except ValueError as verr:
 									broken_packet_flag=True
 									pass
-
-								if secs >= 60:
-									mins += 1
-									secs = 0
-									broken_packet_flag = True
 
 								epoch_time = date_time_to_epoch(yyyy,mm,dd,hour,mins,secs,timezone_offset)
 
@@ -146,11 +139,6 @@ class parse_gaps:
 								except ValueError as verr:
 									broken_packet_flag=True
 									pass
-
-								if secs >= 60:
-									mins += 1
-									secs = 0
-									broken_packet_flag = True
 
 								epoch_time = date_time_to_epoch(yyyy,mm,dd,hour,mins,secs,timezone_offset)
 								# dt_obj = datetime(yyyy,mm,dd,hour,mins,secs)
@@ -283,7 +271,7 @@ class parse_gaps:
 
 							if ftype == 'acfr':
 								data = 'SSBL_FIX: ' + str(float(epoch_timestamp)) + ' ship_x: ' + str(float(northings_ship)) + ' ship_y: ' + str(float(eastings_ship)) + ' target_x: ' + str(float(northings_target)) + ' target_y: ' + str(float(eastings_target)) + ' target_z: ' + str(float(depth)) + ' target_hr: ' + str(float(lateral_distance)) + ' target_sr: ' + str(float(distance)) + ' target_bearing: ' + str(float(bearing)) + '\n'
-								data_list += data
+								fileout.write(data)
 
 						else:
 	 					    print('Warning: Badly formatted packet (GAPS TIME)')
@@ -295,4 +283,19 @@ class parse_gaps:
 						flag_got_time = 0
 
 
-		return data_list
+
+		if ftype == 'oplab':
+			fileout.close()
+			for filein in glob.glob(outpath + os.sep + fileoutname):
+				try:
+					with open(filein, 'rb') as json_file:						
+						data_in=json.load(json_file)						
+						for i in range(len(data_in)):
+							data_list.insert(0,data_in[len(data_in)-i-1])				        
+						
+				except ValueError:					
+					print('Initialising JSON file')
+
+			with open(outpath + os.sep + fileoutname,'w') as fileout:
+				json.dump(data_list, fileout)	
+				del data_list

@@ -79,6 +79,17 @@ class usbl:
 
 		self.distance_to_ship = 0
 
+		### temporary solution for fk180731 cruise
+		# self.epoch_timestamp = 0 timestamp
+		self.northings_ship = 0
+		self.eastings_ship = 0
+		# self.northings_target = 0 northings
+		# self.eastings_target = 0 eastings
+		# self.depth = 0 depth
+		self.lateral_distace = 0
+		self.distance = 0 #distance
+		self.bearing = 0
+
 class camera:
 	def __init__(self):
 		self.timestamp = 0

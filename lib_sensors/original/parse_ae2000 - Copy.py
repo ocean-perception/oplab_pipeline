@@ -17,9 +17,8 @@ from lib_converttime.converttime import date_time_to_epoch
 data_list=[]
 #need to make acfr parsers
 class parse_ae2000:
-	def __init__(self, filepath, filename, category, timezone, timeoffset, headingoffset, ftype, outpath, fileoutname):
-		return
-	def __new__(self, filepath, filename, category, timezone, timeoffset, headingoffset, ftype, outpath, fileoutname):
+	def __init__(self, filepath, filename, category, timezone, timeoffset, headingoffset, ftype, outpath, fileoutname, fileout):
+
 		# parser meta data
 		class_string = 'measurement'
 		sensor_string = 'ae20000'
@@ -57,9 +56,6 @@ class parse_ae2000:
 		# parse phins data
 		print('  Parsing ae2000 logs...')
 		data_list=[]
-		if ftype == 'acfr':
-			data_list = ''
-
 		df = pd.read_csv(filepath + filename)
 		
 		time_column = df.iloc[:,0] # list of time value in the first column (starting from 2nd row, not considering first row)
@@ -199,7 +195,7 @@ class parse_ae2000:
 									#print(data)
 							# write out in the required format interlace at end																				
 						data = 'RDI: ' + str(float(epoch_timestamp)) + ' alt:' + str(float(altitude)) + ' r1:0 r2:0 r3:0 r4:0 h:' + str(float(heading)) + ' p:' + str(float(pitch)) + ' r:' + str(float(roll)) + ' vx:' + str(float(xx_velocity)) + ' vy:' + str(float(yy_velocity)) + ' vz:' + str(float(zz_velocity)) + ' nx:0 ny:0 nz:0 COG:0 SOG:0 bt_status:0 h_true:0 p_gimbal:0 sv: ' + str(float(sound_velocity)) + '\n'
-						data_list += data
+						fileout.write(data)
 
 					if category == 'orientation':
 						roll=float(df['Roll'][row_index])
@@ -223,18 +219,34 @@ class parse_ae2000:
 							#print(data)												
 							# write out in the required format interlace at end
 						data = 'PHINS_COMPASS: ' + str(float(epoch_timestamp)) + ' r: ' + str(float(roll)) + ' p: ' + str(float(pitch)) + ' h: ' + str(float(heading)) + ' std_r: ' + str(float(roll_std)) + ' std_p: ' + str(float(pitch_std)) + ' std_h: ' + str(float(heading_std)) + '\n'
-						data_list += data
+						fileout.write(data)
 
 					if category == 'depth':																				
 							
 						depth=float(df['Depth'][row_index])
 						# write out in the required format interlace at end
 						data = 'PAROSCI: ' + str(float(epoch_timestamp)) + ' ' + str(float(depth)) + '\n'
-						data_list += data
+						fileout.write(data)
 					else:
 						continue
 			# else:
 			# 	print('no bottom lock')
 		print('  ...done parsing ae2000 logs.')
 
-		return data_list
+		print('  Writing converted ae2000 data to file...')
+		if ftype == 'oplab':
+			fileout.close()
+			for filein in glob.glob(outpath + os.sep + fileoutname):
+				try:
+					with open(filein, 'rb') as json_file:					
+						data_in=json.load(json_file)						
+						for i in range(len(data_in)):
+							data_list.insert(0,data_in[len(data_in)-i-1])				        
+						
+				except ValueError:					
+					print('An error occurred while initialising JSON file')
+
+			with open(outpath + os.sep + fileoutname,'w') as fileout:
+				json.dump(data_list, fileout)	
+				del data_list
+		print('  ...done writing converted ae2000 data to file.')

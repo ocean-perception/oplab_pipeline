@@ -33,6 +33,9 @@ import numpy as np
 import plotly.offline as py
 import plotly.graph_objs as go
 
+# sys.path.append("..")
+from lib_converttime.converttime import epoch_to_localtime, get_localtimezone
+
 class display_info:
 	# Goes through each data element in json file and first check for different types category, 
 	# and then different types of frame (body or inertial). Displays a sample information for each different 
@@ -161,7 +164,7 @@ class display_info:
 						plotlytable_info_list[3].append(line[1].replace('\n','<br>'))
 
 						# plotly plot
-						x_values = [time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(k['epoch_timestamp']))+'.{}'.format(('{:.6f}'.format(k['epoch_timestamp']-int(k['epoch_timestamp'])))[2:9]) for k in j] # format is 'yyyy-mm-dd HH:MM:SS.ssssss'
+						x_values = [time.strftime('%Y-%m-%d %H:%M:%S', epoch_to_localtime(k['epoch_timestamp']))+'.{}'.format(('{:.6f}'.format(k['epoch_timestamp']-int(k['epoch_timestamp'])))[2:9]) for k in j] # format is 'yyyy-mm-dd HH:MM:SS.ssssss'
 						# x_values = [k['epoch_timestamp'] for k in j]
 						y_values = [title] * len(x_values)
 						trace_list.append(create_trace(x_values, y_values, title))
@@ -189,19 +192,19 @@ class display_info:
 				)
 			)
 
-			layout_table = go.Layout(title='Json Data Info Table<br>Start time is: %s (local time), %d (epoch)<br>Finish time is: %s (local time), %d (epoch)' % (time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time)), start_time, time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(finish_time)), finish_time))
+			layout_table = go.Layout(title='Json Data Info Table<br>Start time is: %s (%s), %d (epoch)<br>Finish time is: %s (%s), %d (epoch)' % (time.strftime('%Y-%m-%d %H:%M:%S', epoch_to_localtime(start_time)), get_localtimezone(), start_time, time.strftime('%Y-%m-%d %H:%M:%S', epoch_to_localtime(finish_time)), get_localtimezone(), finish_time))
 			table_fig = go.Figure(data=[table_trace], layout=layout_table)
 			py.plot(table_fig, filename=outpath + 'json_data_info.html', auto_open=True)
 
 			layout = go.Layout(
 				# width=950,
 				# height=800,
-				title='Timestamp History Plot<br>Start time is: %s (local time), %d (epoch)<br>Finish time is: %s (local time), %d (epoch)' % (time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time)), start_time, time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(finish_time)), finish_time),
+				title='Timestamp History Plot<br>Start time is: %s (%s), %d (epoch)<br>Finish time is: %s (%s), %d (epoch)' % (time.strftime('%Y-%m-%d %H:%M:%S', epoch_to_localtime(start_time)), get_localtimezone(), start_time, time.strftime('%Y-%m-%d %H:%M:%S', epoch_to_localtime(finish_time)), get_localtimezone(), finish_time),
 				hovermode='closest',
 				xaxis=dict(
 					# domain=[0,1],
 					# anchor='y1',
-					title='Date time (local time)',
+					title='Date time (%s)' % (get_localtimezone()),
 					# tickmode='array',
 					# tickvals=list(range(int(start_time), int(finish_time), 300)),
 					# ticktext=[time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(k)) for k in list(range(int(start_time), int(finish_time), 300))],
@@ -285,7 +288,7 @@ class display_info:
 			# f.savefig(outpath + 'timestamp_history.pdf')
 			# plt.close()
 
-			start_end_text = 'Start time is: %s (local time), %d (epoch)\nFinish time is: %s (local time), %d (epoch)\n' % (time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time)), start_time, time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(finish_time)), finish_time) #changed from gmtime to localtime
+			start_end_text = 'Start time is: %s (%s), %d (epoch)\nFinish time is: %s (%s), %d (epoch)\n' % (time.strftime('%Y-%m-%d %H:%M:%S', epoch_to_localtime(start_time)), get_localtimezone(), start_time, time.strftime('%Y-%m-%d %H:%M:%S', epoch_to_localtime(finish_time)), get_localtimezone(), finish_time) #changed from gmtime to localtime
 			
 			t.align['Sample Value'] = 'l'
 			t.hrules = ALL

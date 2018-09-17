@@ -21,9 +21,7 @@ tolerance = 0.05 # 0.01 # stereo pair must be within 10ms of each other
 #http://www.json.org/
 
 class parse_acfr_images:
-	def __init__(self, filepath, sensor_string, camera1_label, camera2_label, category, timezone, timeoffset, ftype, outpath, fileoutname):
-		return
-	def __new__(self, filepath, sensor_string, camera1_label, camera2_label, category, timezone, timeoffset, ftype, outpath, fileoutname):
+	def __init__(self, filepath, sensor_string, camera1_label, camera2_label, category, timezone, timeoffset, ftype, outpath, fileoutname, fileout):
 
 		# parser meta data
 		class_string = 'measurement'
@@ -57,9 +55,6 @@ class parse_acfr_images:
 		camera2_filename = [ line for line in all_list if camera2_label in line and '.txt' not in line and '._' not in line]
 		
 		data_list=[]
-		if ftype == 'acfr':
-			data_list = ''
-
 		for i in range(len(camera1_filename)):
 		
 			camera1_filename_split = camera1_filename[i].strip().split('_') 
@@ -132,10 +127,22 @@ class parse_acfr_images:
 					data_list.append(data)
 				if ftype == 'acfr':
 					data = 'VIS: ' + str(float(epoch_timestamp_camera1[i])) + ' [' + str(float(epoch_timestamp_camera1[i])) + '] ' + str(camera1_filename[i]) + ' exp: 0\n'
-					# fileout.write(data)
-					data_list += data
+					fileout.write(data)
 					data = 'VIS: ' + str(float(epoch_timestamp_camera2[sync_pair])) + ' [' + str(float(epoch_timestamp_camera2[sync_pair])) + '] ' + str(camera2_filename[sync_pair]) + ' exp: 0\n'
-					# fileout.write(data)
-					data_list += data
+					fileout.write(data)
 
-		return data_list
+		if ftype == 'oplab':
+			fileout.close()
+			for filein in glob.glob(outpath + os.sep + fileoutname):
+				try:
+					with open(filein, 'rb') as json_file:						
+						data_in=json.load(json_file)						
+						for i in range(len(data_in)):
+							data_list.insert(0,data_in[len(data_in)-i-1])				        
+						
+				except ValueError:					
+					print('Initialising JSON file')
+
+			with open(outpath + os.sep + fileoutname,'w') as fileout:
+				json.dump(data_list, fileout)	
+				del data_list

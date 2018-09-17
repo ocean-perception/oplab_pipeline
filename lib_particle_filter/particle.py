@@ -9,7 +9,8 @@ class particle:
 
         self.parentID = '' # '0-0'/'0-1'/'0-2'/... so can string split and determine encoded location
         self.childIDList = [] # ['1-0','1-1','1'3']
-        self.weight = 0
+        self.weight = [] # 0
+        self.averaged_weight = 0
         self.error = 0
         # self.trajectoryNrEsTs = [] # [[easting, northing, timestamp], [easting, northing, timestamp], ...] # write a function to plot nice graphs for visualization purposes (for you and publishing)
         self.eastings = []
@@ -42,8 +43,8 @@ class particle:
         self.depth.append(new_depth)
         # self.trajectoryNrEsTs.append([new_easting, new_northing, new_timestamp])
     
-    def set_error(self, measurement):
-        self.error = math.sqrt((self.eastings[0] - measurement.eastings) ** 2 + (self.northings[0] - measurement.northings) ** 2)
+    # def set_error(self, measurement):
+    #     self.error = math.sqrt((self.eastings[0] - measurement.eastings) ** 2 + (self.northings[0] - measurement.northings) ** 2)
 
     def Gaussian(self, mu, sigma, x):
         # calculates the probability of x for 1-dim Gaussian with mean mu and sigma (standard deviation)
