@@ -1,24 +1,9 @@
 # Import librarys
-import sys, os, csv, time
+import sys, os, time
 import math
-import calendar, codecs
-import operator
-#import hashlib, glob
-
-
-#import matplotlib.pyplot as plt
-
-from datetime import datetime
 from lib_parse_data.parse_data import parse_data
-from lib_calculus.interpolate import interpolate
-from lib_localisation.dead_reckoning import dead_reckoning
-from lib_coordinates.body_to_inertial import body_to_inertial
 from lib_extract.extract_data import extract_data
 from lib_visualise.display_info import display_info
-from lib_payload_data.interpolate_csv import interpolate_csv
-# from lib_visualise.parse_gaps import parse_gaps
-
-
 
 
 def syntax_error():
