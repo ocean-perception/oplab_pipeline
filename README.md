@@ -1,14 +1,14 @@
 # auv_nav
 ## Downloading and Updating the code ##
 
-To download the code, go to directory you want it to be in, open a terminal/command prompt there and type 
+To download the code, go to directory you want download the code to, open a terminal/command prompt there and type 
 ```
-git clone --recursive https://github.com/ocean-perception/auv_nav.git
+git clone https://github.com/ocean-perception/auv_nav.git
 ```
 
-To push updates, stage changes, commit and push to a branch, usually master
+To push updates you made to the repository on github (assuming you are using the master branch, which is the default), type
 ```
-git add -A
+git add -u
 git commit -m "Some message about the change"
 git push origin master
 ```
