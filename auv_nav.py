@@ -25,6 +25,14 @@ def syntax_error():
     
     return -1
 
+
+def is_subfolder_of(path, folder_name):
+    for i in range(1,len(path)):
+        if path[i]==folder_name:
+            return True
+    return False
+
+
 if __name__ == '__main__':
 
     start_time = time.time()
@@ -32,7 +40,6 @@ if __name__ == '__main__':
     flag_i=False # input path set flag
     flag_v=False # visualisation flag
     flag_e=False # extraction of information flag
-
     flag_o=False # output type set flag
 
     start_datetime=''
@@ -73,37 +80,15 @@ if __name__ == '__main__':
             ftype='oplab'
 
         if flag_i ==True:
-            sub_path = filepath.split(os.sep)     
-            flag_r=False # path is a subfolder of a folder called "raw"
-            for i in range(1,len(sub_path)):
-                if sub_path[i]=='raw':
-                    flag_r = True
-            if flag_r == True:
-                parse_data(filepath,ftype)
-            else:
-                print('Check folder structure contains "raw"')
+            parse_data(filepath,ftype)
 
         elif flag_v == True:
-            sub_path = filepath.split(os.sep)  
-            flag_p=False # path is a subfolder of a folder called "processed"      
-            for i in range(1,len(sub_path)):
-                if sub_path[i]=='processed':
-                    flag_p = True
-            if flag_p == True:
-                display_info(filepath + os.sep,ftype)
-            else:
-                print('Check folder structure contains "processed"')
+            display_info(filepath + os.sep,ftype) # Previously there used to be a check, whether the file is in a subfolder of processed, but display_info doesn't require this to be the case
 
         elif flag_e==True:
-            sub_path = filepath.split(os.sep)  
-            flag_p=False # path is a subfolder of a folder called "processed"      
-            for i in range(1,len(sub_path)):
-                if sub_path[i]=='processed':
-                    flag_p = True
-            if (flag_p ==True):
-                extract_data(filepath + os.sep,ftype,start_datetime,finish_datetime)
-            else:
-                print('Check folder structure contains "processed"')
+            if not is_subfolder_of(filepath, "processed"):
+                raise ValueError("The input directory you provided is not a subfolder of a folder called 'processed'")
+            extract_data(filepath + os.sep,ftype,start_datetime,finish_datetime)
 
         else:
             print('Error: incorrect use')

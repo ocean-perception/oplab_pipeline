@@ -131,21 +131,25 @@ def parse_data(filepath,ftype):
     sub_out=sub_path
     outpath=sub_out[0]
 
+    is_subfolder_of_processed = False
     for i in range(1,len(sub_path)):
         if sub_path[i]=='raw':
             sub_out[i] = 'processed'
-            proc_flag = 1
+            is_subfolder_of_processed = True #proc_flag = 1
         else:
             sub_out[i] = sub_path[i]
         
         outpath = outpath + os.sep + sub_out[i]
         # make the new directories after 'processed' if it doesnt already exist
-        if proc_flag == 1:        
+        if is_subfolder_of_processed: #proc_flag == 1:        
             if os.path.isdir(outpath) == 0:
                 try:
                     os.mkdir(outpath)
                 except Exception as e:
                     print("Warning:",e)
+
+    if not is_subfolder_of_processed:
+        raise ValueError("The input directory you provided is not a subfolder of a folder called 'raw'")
                     
     # check for recognised formats and create nav file
     print('Checking output format')
