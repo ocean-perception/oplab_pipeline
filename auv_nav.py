@@ -74,8 +74,9 @@ def call_process_data(args):
 
 	
 def is_subfolder_of(path, folder_name):
-    for i in range(1,len(path)):
-        if path[i]==folder_name:
+    sub_path = path.split(os.sep)
+    for i in range(len(sub_path)):
+        if sub_path[i]==folder_name:
             return True
     return False
 
