@@ -10,7 +10,7 @@ particle_filter:
   imu_noise_sigma_factor: 1
   usbl_noise_sigma_factor: 1
   particles_number: 100
-  particles_plot_time_interval: 60
+  particles_plot_time_interval: False #60
 
 csv_output:
   activate: True

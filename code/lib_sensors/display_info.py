@@ -77,7 +77,7 @@ class display_info:
 	               	# legendgroup='group11'
 				return trace
 
-			outpath = filepath + 'nav' + os.sep
+			outpath = filepath + os.sep # + 'nav' + os.sep
 
 			print('Loading json file')
 			category_list = [] # Contains all the 'category' in the json file.
