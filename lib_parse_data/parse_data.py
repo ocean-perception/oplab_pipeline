@@ -5,6 +5,11 @@ Created on Thu Sep 27 12:34:42 2018
 @author: Adrian
 """
 
+## Known issues: When running the code more than once from the same console, 
+## line 206 pool = multiprocessing.Pool(cpu_to_use) causes an error.
+## A workaround is to close the console after eachr run
+
+
 import multiprocessing
 import os
 import shutil
@@ -40,10 +45,8 @@ class ThreadWithReturnValue(Thread):
 
 
 def parse_data(filepath,ftype):
-
-    # initiate data and processing flags
-    proc_flag = 0
     
+    # initiate data and processing flags    
     origin_flag=0
     velocity_flag=0
     orientation_flag=0
@@ -52,10 +55,12 @@ def parse_data(filepath,ftype):
     usbl_flag =0
     image_flag =0
     chemical_flag = 0
+	
+    filepath = filepath.replace('\\', '/')
 
     # load mission.yaml config file
     print('Loading mission.yaml')    
-    mission = filepath + os.sep + 'mission.yaml'
+    mission = filepath + '/' + 'mission.yaml'
     with open(mission,'r') as stream:
         load_data = yaml.load(stream)
     # for i in range(0,len(load_data)): 
@@ -127,7 +132,7 @@ def parse_data(filepath,ftype):
     
     # generate output path
     print('Generating output paths')    
-    sub_path = filepath.split(os.sep)        
+    sub_path = filepath.split('/')       
     sub_out=sub_path
     outpath=sub_out[0]
 
@@ -135,13 +140,13 @@ def parse_data(filepath,ftype):
     for i in range(1,len(sub_path)):
         if sub_path[i]=='raw':
             sub_out[i] = 'processed'
-            is_subfolder_of_processed = True #proc_flag = 1
+            is_subfolder_of_processed = True
         else:
             sub_out[i] = sub_path[i]
         
-        outpath = outpath + os.sep + sub_out[i]
+        outpath = outpath + '/' + sub_out[i]
         # make the new directories after 'processed' if it doesnt already exist
-        if is_subfolder_of_processed: #proc_flag == 1:        
+        if is_subfolder_of_processed:      
             if os.path.isdir(outpath) == 0:
                 try:
                     os.mkdir(outpath)
@@ -157,181 +162,177 @@ def parse_data(filepath,ftype):
     if ftype == 'oplab':# or (ftype is not 'acfr'):
         # if os.path.isdir(mission):
         shutil.copy2(mission, outpath) # save mission yaml to processed directory
-        vehicle = filepath + os.sep + 'vehicle.yaml'
+        vehicle = filepath + '/' + 'vehicle.yaml'
         # if os.path.isdir(vehicle):
         shutil.copy2(vehicle, outpath) # save vehicle yaml to processed directory
-        outpath = outpath + os.sep + 'nav'
+        outpath = outpath + '/' + 'nav'
         filename='nav_standard.json'
         
-        proc_flag=2
-    
     elif ftype == 'acfr':# or (ftype is not 'acfr'):        
-        with open(outpath + os.sep + 'mission.cfg','w') as fileout:
+        with open(outpath + '/' + 'mission.cfg','w') as fileout:
             data = 'MAG_VAR_LAT ' + str(float(latitude_reference)) + '\n' + 'MAG_VAR_LNG ' + str(float(longitude_reference)) + '\n' + 'MAG_VAR_DATE "' + str(date) + '"\n' + 'MAGNETIC_VAR_DEG ' + str(float(0))
             
             fileout.write(data)
             fileout.close()
                        
-        outpath = outpath + os.sep +'dRAWLOGS_cv'
+        outpath = outpath + '/' +'dRAWLOGS_cv'
         filename='combined.RAW.auv'
-        proc_flag=2    
 
     else:
         print('Error: -o',ftype,'not recognised')
         #syntax_error()    
         return
     
-    # check if output specified is recognised and make file path if not exist
-    if proc_flag == 2:        
-        if os.path.isdir(outpath) == 0:
-            try:
-                os.mkdir(outpath)
-            except Exception as e:
-                print("Warning:",e)
+    # make file path if not exist
+    if os.path.isdir(outpath) == 0:
+        try:
+            os.mkdir(outpath)
+        except Exception as e:
+            print("Warning:",e)
 
+
+    # create file (overwrite if exists)
+    with open(outpath + '/' + filename,'w') as fileout:
+        print('Loading raw data')
+
+        #thread_list = []
+
+        if multiprocessing.cpu_count() < 4:
+            cpu_to_use = 1
+        else:
+            cpu_to_use = 3
+        pool = multiprocessing.Pool(cpu_to_use) #multiprocessing.cpu_count() - 3)
+        pool_list = []
+
+        # read in, parse data and write data
+        if image_flag == 1:
+            if image_format == "acfr_standard" or image_format == "unagi" :
+                pool_list.append(pool.apply_async(parse_acfr_images, [filepath + '/' + image_filepath,image_format,camera1_label,camera2_label,'images',image_timezone,image_timeoffset,ftype,outpath,filename]))
+                # pool_list.append(results)
+                # thread = ThreadWithReturnValue(target=parse_acfr_images, args=[filepath + '/' + image_filepath,image_format,camera1_label,camera2_label,'images',image_timezone,image_timeoffset,ftype,outpath,filename,fileout])
+                # thread_list.append(thread)
+            if image_format == "seaxerocks_3":
+                pool_list.append(pool.apply_async(parse_seaxerocks_images, [filepath + '/' + image_filepath,image_format,date,camera1_label,camera2_label,camera3_label,'images',image_timezone,image_timeoffset,ftype,outpath,filename]))
+                # pool_list.append(results)
+                # thread = ThreadWithReturnValue(target=parse_seaxerocks_images, args=[filepath + '/' + image_filepath,image_format,date,camera1_label,camera2_label,camera3_label,'images',image_timezone,image_timeoffset,ftype,outpath,filename,fileout])
+                # thread_list.append(thread)
+            image_flag = 0
+
+        if usbl_flag == 1:
+            print('Loading usbl data...')
+            if usbl_format == "gaps":
+                pool_list.append(pool.apply_async(parse_gaps, [filepath + '/' + usbl_filepath,'usbl',time_usblzone,time_usbloffset,latitude_reference,longitude_reference,ftype,outpath,filename,usbl_id]))
+                # pool_list.append(results)
+                # thread = ThreadWithReturnValue(target=parse_gaps, args=[filepath + '/' + usbl_filepath,'usbl',time_usblzone,time_usbloffset,latitude_reference,longitude_reference,ftype,outpath,filename,usbl_id,fileout])
+                # thread_list.append(thread)
+            if usbl_format == "usbl_dump":
+                pool_list.append(pool.apply_async(parse_usbl_dump, [filepath + '/' + usbl_filepath,usbl_filename,usbl_label,'usbl',time_usblzone,time_usbloffset,latitude_reference,longitude_reference,ftype,outpath,filename]))
+                # pool_list.append(results)
+                # thead = ThreadWithReturnValue(target=parse_usbl_dump, args=[filepath + '/' + usbl_filepath,usbl_filename,usbl_label,'usbl',time_usblzone,time_usbloffset,latitude_reference,longitude_reference,ftype,outpath,filename,fileout])
+                # thread_list.append(thread)
+            usbl_flag = 0
+
+        if velocity_flag == 1:
+            print('Loading velocity data...')
+            if velocity_format == "phins":
+                pool_list.append(pool.apply_async(parse_phins, [filepath + '/' + velocity_filepath,velocity_filename,'velocity',velocity_timezone,velocity_timeoffset,velocity_headingoffset,ftype,outpath,filename]))
+                # pool_list.append(results)
+                # thread = ThreadWithReturnValue(target=parse_phins, args=[filepath + '/' + velocity_filepath,velocity_filename,'velocity',velocity_timezone,velocity_timeoffset,velocity_headingoffset,ftype,outpath,filename,fileout])
+                # thread_list.append(thread)
+            if velocity_format == "ae2000":
+                pool_list.append(pool.apply_async(parse_ae2000, [filepath + '/' + velocity_filepath,velocity_filename,'velocity',velocity_timezone,velocity_timeoffset,velocity_headingoffset,ftype,outpath,filename]))
+                # pool_list.append(results)
+                # thread = ThreadWithReturnValue(target=parse_ae2000, args=[filepath + '/' + velocity_filepath,velocity_filename,'velocity',velocity_timezone,velocity_timeoffset,velocity_headingoffset,ftype,outpath,filename,fileout])
+                # thread_list.append(thread)
+            velocity_flag = 0
+
+        if orientation_flag == 1:                
+            print('Loading orientation data...')
+            if orientation_format == "phins":    
+                pool_list.append(pool.apply_async(parse_phins, [filepath + '/' + orientation_filepath,orientation_filename,'orientation',time_orientationzone,time_orientationoffset,orientation_headingoffset,ftype,outpath,filename]))
+                # pool_list.append(results)
+                # thread = ThreadWithReturnValue(target=parse_phins, args=[filepath + '/' + orientation_filepath,orientation_filename,'orientation',time_orientationzone,time_orientationoffset,orientation_headingoffset,ftype,outpath,filename,fileout])
+                # thread_list.append(thread)
+            if orientation_format == "ae2000":
+                pool_list.append(pool.apply_async(parse_ae2000, [filepath + '/' + orientation_filepath,orientation_filename,'orientation',time_orientationzone,time_orientationoffset,orientation_headingoffset,ftype,outpath,filename]))
+                # pool_list.append(results)
+                # thread = ThreadWithReturnValue(target=parse_ae2000, args=[filepath + '/' + orientation_filepath,orientation_filename,'orientation',time_orientationzone,time_orientationoffset,orientation_headingoffset,ftype,outpath,filename,fileout])
+                # thread_list.append(thread)
+            orientation_flag = 0
+
+        if depth_flag == 1:                                
+            print('Loading depth data...')
+            if depth_format == "phins":
+                pool_list.append(pool.apply_async(parse_phins, [filepath + '/' + depth_filepath,depth_filename,'depth',time_depthzone,time_depthoffset,0,ftype,outpath,filename]))
+                # pool_list.append(results)
+                # thread = ThreadWithReturnValue(target=parse_phins, args=[filepath + '/' + depth_filepath,depth_filename,'depth',time_depthzone,time_depthoffset,0,ftype,outpath,filename,fileout])
+                # thread_list.append(thread)
+            if depth_format == "ae2000":
+                pool_list.append(pool.apply_async(parse_ae2000, [filepath + '/' + depth_filepath,depth_filename,'depth',time_depthzone,time_depthoffset,0,ftype,outpath,filename]))
+                # pool_list.append(results)
+                # thread = ThreadWithReturnValue(target=parse_ae2000, args=[filepath + '/' + depth_filepath,depth_filename,'depth',time_depthzone,time_depthoffset,0,ftype,outpath,filename,fileout])
+                # thread_list.append(thread)
+            depth_flag = 0
+
+        if altitude_flag == 1:                
+            print('Loading altitude data...')
+            if altitude_format == "phins":
+                pool_list.append(pool.apply_async(parse_phins, [filepath + '/' + altitude_filepath,altitude_filename,'altitude',time_altitudezone,0,time_altitudeoffset,ftype,outpath,filename]))
+                # pool_list.append(results)
+                # thread = ThreadWithReturnValue(target=parse_phins, args=[filepath + '/' + altitude_filepath,altitude_filename,'altitude',time_altitudezone,0,time_altitudeoffset,ftype,outpath,filename,fileout])
+                # thread_list.append(thread)
+            if altitude_format == "ae2000":
+                pool_list.append(pool.apply_async(parse_ae2000, [filepath + '/' + altitude_filepath,altitude_filename,'altitude',time_altitudezone,0,time_altitudeoffset,ftype,outpath,filename]))
+                # pool_list.append(results)
+                # thread = ThreadWithReturnValue(target=parse_ae2000, args=[filepath + '/' + altitude_filepath,altitude_filename,'altitude',time_altitudezone,0,time_altitudeoffset,ftype,outpath,filename,fileout])
+                # thread_list.append(thread)
+            altitude_flag = 0
+
+        # for thread in thread_list:
+        #     thread.start()
+        # data_list = []
+        # for thread in thread_list:
+        #     data = thread.join()
+        #     data_list.append(data)
+
+        pool.close()
+        pool.join()
+
+        data_list = []
+
+        for i in pool_list:
+        	results = i.get()
+        	data_list.append(results)
+            # print (type(results.get()))
+            # print (len(results.get()))
+            # data_list.append(results.get())
+
+        if ftype == 'acfr':
+            data_string = ''
+            for i in data_list:
+                data_string += i
+            fileout.write(data_string)
+            del data_string
+        elif ftype == 'oplab':
+            # print('Initialising JSON file')
+            data_list_temp = []
+            for i in data_list:
+                data_list_temp += i
+            json.dump(data_list_temp, fileout)
+            del data_list_temp
+        del data_list
+
+        # if chemical_flag == 1:
+        #     print('Loading chemical data...')
+        #     if chemical_format == 'date_time_intensity':
+        #         parse_chemical(filepath + '/' + chemical_filepath, chemical_filename, chemical_timezone, chemical_timeoffset, chemical_data, ftype, outpath, filename, fileout)
+        #     chemical_flag = 0
+
+    fileout.close()
     
-        # create file (overwrite if exists)
-        with open(outpath + os.sep + filename,'w') as fileout:
-            print('Loading raw data')
+    #interlace the data based on timestamps
+    print('Interlacing data...')
+    parse_interlacer(ftype,outpath,filename)
+    print('Output saved to ' + outpath + '/' + filename)
 
-            #thread_list = []
-
-            if multiprocessing.cpu_count() < 4:
-                cpu_to_use = 1
-            else:
-                cpu_to_use = 3
-            pool = multiprocessing.Pool(cpu_to_use) #multiprocessing.cpu_count() - 3)
-            pool_list = []
-    
-            # read in, parse data and write data
-            if image_flag == 1:
-                if image_format == "acfr_standard" or image_format == "unagi" :
-                    pool_list.append(pool.apply_async(parse_acfr_images, [filepath + os.sep + image_filepath,image_format,camera1_label,camera2_label,'images',image_timezone,image_timeoffset,ftype,outpath,filename]))
-                    # pool_list.append(results)
-                    # thread = ThreadWithReturnValue(target=parse_acfr_images, args=[filepath + os.sep + image_filepath,image_format,camera1_label,camera2_label,'images',image_timezone,image_timeoffset,ftype,outpath,filename,fileout])
-                    # thread_list.append(thread)
-                if image_format == "seaxerocks_3":
-                    pool_list.append(pool.apply_async(parse_seaxerocks_images, [filepath + os.sep + image_filepath,image_format,date,camera1_label,camera2_label,camera3_label,'images',image_timezone,image_timeoffset,ftype,outpath,filename]))
-                    # pool_list.append(results)
-                    # thread = ThreadWithReturnValue(target=parse_seaxerocks_images, args=[filepath + os.sep + image_filepath,image_format,date,camera1_label,camera2_label,camera3_label,'images',image_timezone,image_timeoffset,ftype,outpath,filename,fileout])
-                    # thread_list.append(thread)
-                image_flag = 0
-
-            if usbl_flag == 1:
-                print('Loading usbl data...')
-                if usbl_format == "gaps":
-                    pool_list.append(pool.apply_async(parse_gaps, [filepath + os.sep + usbl_filepath,'usbl',time_usblzone,time_usbloffset,latitude_reference,longitude_reference,ftype,outpath,filename,usbl_id]))
-                    # pool_list.append(results)
-                    # thread = ThreadWithReturnValue(target=parse_gaps, args=[filepath + os.sep + usbl_filepath,'usbl',time_usblzone,time_usbloffset,latitude_reference,longitude_reference,ftype,outpath,filename,usbl_id,fileout])
-                    # thread_list.append(thread)
-                if usbl_format == "usbl_dump":
-                    pool_list.append(pool.apply_async(parse_usbl_dump, [filepath + os.sep + usbl_filepath,usbl_filename,usbl_label,'usbl',time_usblzone,time_usbloffset,latitude_reference,longitude_reference,ftype,outpath,filename]))
-                    # pool_list.append(results)
-                    # thead = ThreadWithReturnValue(target=parse_usbl_dump, args=[filepath + os.sep + usbl_filepath,usbl_filename,usbl_label,'usbl',time_usblzone,time_usbloffset,latitude_reference,longitude_reference,ftype,outpath,filename,fileout])
-                    # thread_list.append(thread)
-                usbl_flag = 0
-
-            if velocity_flag == 1:
-                print('Loading velocity data...')
-                if velocity_format == "phins":
-                    pool_list.append(pool.apply_async(parse_phins, [filepath + os.sep + velocity_filepath,velocity_filename,'velocity',velocity_timezone,velocity_timeoffset,velocity_headingoffset,ftype,outpath,filename]))
-                    # pool_list.append(results)
-                    # thread = ThreadWithReturnValue(target=parse_phins, args=[filepath + os.sep + velocity_filepath,velocity_filename,'velocity',velocity_timezone,velocity_timeoffset,velocity_headingoffset,ftype,outpath,filename,fileout])
-                    # thread_list.append(thread)
-                if velocity_format == "ae2000":
-                    pool_list.append(pool.apply_async(parse_ae2000, [filepath + os.sep + velocity_filepath,velocity_filename,'velocity',velocity_timezone,velocity_timeoffset,velocity_headingoffset,ftype,outpath,filename]))
-                    # pool_list.append(results)
-                    # thread = ThreadWithReturnValue(target=parse_ae2000, args=[filepath + os.sep + velocity_filepath,velocity_filename,'velocity',velocity_timezone,velocity_timeoffset,velocity_headingoffset,ftype,outpath,filename,fileout])
-                    # thread_list.append(thread)
-                velocity_flag = 0
-
-            if orientation_flag == 1:                
-                print('Loading orientation data...')
-                if orientation_format == "phins":    
-                    pool_list.append(pool.apply_async(parse_phins, [filepath + os.sep + orientation_filepath,orientation_filename,'orientation',time_orientationzone,time_orientationoffset,orientation_headingoffset,ftype,outpath,filename]))
-                    # pool_list.append(results)
-                    # thread = ThreadWithReturnValue(target=parse_phins, args=[filepath + os.sep + orientation_filepath,orientation_filename,'orientation',time_orientationzone,time_orientationoffset,orientation_headingoffset,ftype,outpath,filename,fileout])
-                    # thread_list.append(thread)
-                if orientation_format == "ae2000":
-                    pool_list.append(pool.apply_async(parse_ae2000, [filepath + os.sep + orientation_filepath,orientation_filename,'orientation',time_orientationzone,time_orientationoffset,orientation_headingoffset,ftype,outpath,filename]))
-                    # pool_list.append(results)
-                    # thread = ThreadWithReturnValue(target=parse_ae2000, args=[filepath + os.sep + orientation_filepath,orientation_filename,'orientation',time_orientationzone,time_orientationoffset,orientation_headingoffset,ftype,outpath,filename,fileout])
-                    # thread_list.append(thread)
-                orientation_flag = 0
-
-            if depth_flag == 1:                                
-                print('Loading depth data...')
-                if depth_format == "phins":
-                    pool_list.append(pool.apply_async(parse_phins, [filepath + os.sep + depth_filepath,depth_filename,'depth',time_depthzone,time_depthoffset,0,ftype,outpath,filename]))
-                    # pool_list.append(results)
-                    # thread = ThreadWithReturnValue(target=parse_phins, args=[filepath + os.sep + depth_filepath,depth_filename,'depth',time_depthzone,time_depthoffset,0,ftype,outpath,filename,fileout])
-                    # thread_list.append(thread)
-                if depth_format == "ae2000":
-                    pool_list.append(pool.apply_async(parse_ae2000, [filepath + os.sep + depth_filepath,depth_filename,'depth',time_depthzone,time_depthoffset,0,ftype,outpath,filename]))
-                    # pool_list.append(results)
-                    # thread = ThreadWithReturnValue(target=parse_ae2000, args=[filepath + os.sep + depth_filepath,depth_filename,'depth',time_depthzone,time_depthoffset,0,ftype,outpath,filename,fileout])
-                    # thread_list.append(thread)
-                depth_flag = 0
-
-            if altitude_flag == 1:                
-                print('Loading altitude data...')
-                if altitude_format == "phins":
-                    pool_list.append(pool.apply_async(parse_phins, [filepath + os.sep + altitude_filepath,altitude_filename,'altitude',time_altitudezone,0,time_altitudeoffset,ftype,outpath,filename]))
-                    # pool_list.append(results)
-                    # thread = ThreadWithReturnValue(target=parse_phins, args=[filepath + os.sep + altitude_filepath,altitude_filename,'altitude',time_altitudezone,0,time_altitudeoffset,ftype,outpath,filename,fileout])
-                    # thread_list.append(thread)
-                if altitude_format == "ae2000":
-                    pool_list.append(pool.apply_async(parse_ae2000, [filepath + os.sep + altitude_filepath,altitude_filename,'altitude',time_altitudezone,0,time_altitudeoffset,ftype,outpath,filename]))
-                    # pool_list.append(results)
-                    # thread = ThreadWithReturnValue(target=parse_ae2000, args=[filepath + os.sep + altitude_filepath,altitude_filename,'altitude',time_altitudezone,0,time_altitudeoffset,ftype,outpath,filename,fileout])
-                    # thread_list.append(thread)
-                altitude_flag = 0
-
-            # for thread in thread_list:
-            #     thread.start()
-            # data_list = []
-            # for thread in thread_list:
-            #     data = thread.join()
-            #     data_list.append(data)
-
-            pool.close()
-            pool.join()
-
-            data_list = []
-
-            for i in pool_list:
-            	results = i.get()
-            	data_list.append(results)
-                # print (type(results.get()))
-                # print (len(results.get()))
-                # data_list.append(results.get())
-
-            if ftype == 'acfr':
-                data_string = ''
-                for i in data_list:
-                    data_string += i
-                fileout.write(data_string)
-                del data_string
-            elif ftype == 'oplab':
-                # print('Initialising JSON file')
-                data_list_temp = []
-                for i in data_list:
-                    data_list_temp += i
-                json.dump(data_list_temp, fileout)
-                del data_list_temp
-            del data_list
-
-            # if chemical_flag == 1:
-            #     print('Loading chemical data...')
-            #     if chemical_format == 'date_time_intensity':
-            #         parse_chemical(filepath + os.sep + chemical_filepath, chemical_filename, chemical_timezone, chemical_timeoffset, chemical_data, ftype, outpath, filename, fileout)
-            #     chemical_flag = 0
-    
-        fileout.close()
-        
-        #interlace the data based on timestamps
-        print('Interlacing data...')
-        parse_interlacer(ftype,outpath,filename)
-        print('Output saved to ' + outpath + os.sep + filename)
-
-        print('Complete parse data')
+    print('Complete parse data')
