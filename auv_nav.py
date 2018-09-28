@@ -8,9 +8,9 @@ Created on Tue Sep 25 16:44:40 2018
 
 import os
 import argparse
-from lib_parse_data.parse_data import parse_data
-from lib_visualise.display_info import display_info
-from lib_extract.extract_data import extract_data
+from code.lib_sensors.parse_data import parse_data
+# from code.lib_sensors.display_info import display_info
+from code.lib_extract.extract_data import extract_data
 
 
 def main(args=None): # This notation makes it possible to call the module from the command line as well as from a different python module. When called from the command line args defaults to None, and parse_args() defaults to using sys.argv[1:]. When called from a python script or module, pass the arguments as list, e.g. main(["parse", "-h"]). This will populate the args parameter.
@@ -35,13 +35,13 @@ def main(args=None): # This notation makes it possible to call the module from t
         help="Format in which the data is output. 'oplab' or 'acfr'. Default: 'oplab'.")
     subparser_parse.set_defaults(func=call_parse_data)
 
-    subparser_visualise = subparsers.add_parser('visualise', help="Visualise data. Data needs to be saved in the intermediate data format generated using auv_nav.py parse. Type auv_nav visualise -h for help on this target.")
-    subparser_visualise.add_argument('path', 
-        help="Path of folder where the data to visualise is. The folder has to be generated using auv_nav parse.")
-    subparser_visualise.add_argument('-f', '--format', dest='format',
-        default="oplab", 
-        help="Format in which the data to be visualised is stored. 'oplab' or 'acfr'. Default: 'oplab'.")
-    subparser_visualise.set_defaults(func=call_visualise_data)
+    # subparser_visualise = subparsers.add_parser('visualise', help="Visualise data. Data needs to be saved in the intermediate data format generated using auv_nav.py parse. Type auv_nav visualise -h for help on this target.")
+    # subparser_visualise.add_argument('path', 
+    #     help="Path of folder where the data to visualise is. The folder has to be generated using auv_nav parse.")
+    # subparser_visualise.add_argument('-f', '--format', dest='format',
+    #     default="oplab", 
+    #     help="Format in which the data to be visualised is stored. 'oplab' or 'acfr'. Default: 'oplab'.")
+    # subparser_visualise.set_defaults(func=call_visualise_data)
 
     subparser_process = subparsers.add_parser('process', help="Process and/or convert data. Data needs to be saved in the intermediate data format generated using auv_nav.py parse. Type auv_nav process -h for help on this target.")
     subparser_process.add_argument('path', 
@@ -63,8 +63,8 @@ def call_parse_data(args):
     parse_data(args.path, args.format)
 
 	
-def call_visualise_data(args):
-    display_info(args.path + os.sep, args.format)
+# def call_visualise_data(args):
+#     display_info(args.path + os.sep, args.format)
 	
 	
 def call_process_data(args):
