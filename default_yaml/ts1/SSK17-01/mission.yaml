@@ -40,6 +40,7 @@ usbl:
   filepath: nav/gaps/
   timezone: utc
   timeoffset: 0.0
+  id: 2 # 1 2 or 3 ...
 
 image:
   format: acfr_standard

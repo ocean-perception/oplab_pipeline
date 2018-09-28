@@ -6,9 +6,9 @@ usbl_filter:
 particle_filter:
   activate: True
   mode: usbl
-  dvl_noise_sigma_factor: 2
-  imu_noise_sigma_factor: 2
-  usbl_noise_sigma_factor: 2
+  dvl_noise_sigma_factor: 1
+  imu_noise_sigma_factor: 1
+  usbl_noise_sigma_factor: 1
   particles_number: 100
   particles_plot_time_interval: 60
 
