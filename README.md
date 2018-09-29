@@ -50,33 +50,23 @@ Required arguments (only run one of them at a time):
 
 | Parameter                 | Value           | Description   |
 | :------------------------ |:--------------- | :-------------|
-| -i --rawinputpath         | Path to root raw folder  | Parses the raw data
-| -v --visualizeoutput      | Path to root processed folder where parsed data exist | Generate brief summaries of the output data
-| -e --extractdata          | Path to root processed folder where parsed data exist | Extract useful information from output files
+| parse --parserawdata         | Path to root raw folder  | Parses the raw data and generate brief summary of the output data
+| process --processparseddata          | Path to root processed folder where parsed data exist | Extract useful information from output files
 
 Optional arguments:
 
 | Parameter                 | Value           |Default | Description   |
 | :------------------------ |:--------------- |:------ | :-------------|
-| -o --outputformat         | oplab/acfr | oplab | to select oplab or acfr format
-| -start --startdatetime    | YYYYMMDDhhmmss | 20170817000000 (YYYYMMDD is automatically selected) | to select start date time of data to be processed
-| -finish --finishdatetime  | YYYYMMDDhhmmss | 20170817235959 (YYYYMMDD is automatically selected) | to select finish date time of data to be processed
-| -plot --plotpdfoption     | - | False | to select whether to output pdf plots
-| -plotly --plothtmloption  | - | True | to select whether to output html interactive plots using plotly library
-| -csv --csvoption          | - | False | to select whether to output csv files which contain navigation information for multiple sensors (can be further configured in [localisation.yaml](localisation.yaml))
-| -DR --deadreckoning       | - | False | to select whether to output dead reckoning csv outputs
-| -PF --particlefilter      | - | False | to select whether to perform particle filter data fusion (can be further configured in [localisation.yaml](localisation.yaml))
+| -f --outputformat         | oplab/acfr | oplab | to select oplab or acfr format
+| -s --startdatetime    | YYYYMMDDhhmmss | (automatically selects timestamp of first data point) | to select start date time of data to be processed
+| -e --finishdatetime  | YYYYMMDDhhmmss | (automatically selects timestamp of last data point) | to select end date time of data to be processed
 
 **Example commands to run**
 
 For OPLAB output format:
-1. Parse raw data into json file format 'nav_standard.json'
+1. Parse raw data into json file format 'nav_standard.json' and visualise data output
 
-    `python3 auv_nav.py -i '\\oplab-surf\reconstruction\raw\2017\SSK17-01\ts_un_006' -o oplab`
-
-2. Visualise information in nav_standard.json output
-
-    `python3 auv_nav.py -v '\\oplab-surf\reconstruction\processed\2017\SSK17-01\ts_un_006' -o oplab`
+    `python3 auv_nav.py parse '\\oplab-surf\reconstruction\raw\2017\SSK17-01\ts_un_006' -f oplab`
 
     Example of output:
     ```
@@ -89,14 +79,14 @@ For OPLAB output format:
     ]
     ```
 
-3. Extract information from nav_standard.json output (start and finish time can be selected based on output in step 2)
+2. Extract information from nav_standard.json output (start and finish time can be selected based on output in step 2)
 
-    `python3 auv_nav.py -e '\\oplab-surf\reconstruction\processed\2017\SSK17-01\ts_un_006' -o oplab -start 20170817032000 -finish 20170817071000 -plotly -csv -PF -DR`
+    `python3 auv_nav.py process '\\oplab-surf\reconstruction\processed\2017\SSK17-01\ts_un_006' -f oplab -s 20170817032000 -e 20170817071000`
 
 For ACFR output format:
 1. Parse raw data into combined.RAW.auv and mission.cfg
 
-    `python3 auv_nav.py -i '\\oplab-surf\reconstruction\raw\2017\SSK17-01\ts_un_006' -o acfr`
+    `python3 auv_nav.py parse '\\oplab-surf\reconstruction\raw\2017\SSK17-01\ts_un_006' -f acfr`
 
     Example of output:
     ```
@@ -178,6 +168,7 @@ usbl:
     filepath: nav/gaps/
     timezone: utc
     timeoffset: 0.0
+    id: 1
 
 image:
     format: acfr_standard
@@ -233,8 +224,12 @@ An example dataset can be downloaded from the following link with the expected f
 
 Download, extract and specify the folder location and run as
 ```
-python3 auv_nav.py -i ~/raw/2017/cruise/dive/ -o acfr
-python3 auv_nav.py -i ~/raw/2017/cruise/dive/ -o oplab
+ACFR format:
+python3 auv_nav.py parse ~/raw/2017/cruise/dive -f acfr
+
+OPLAB format:
+python3 auv_nav.py parse ~/raw/2017/cruise/dive -f oplab
+python3 auv_nav.py process ~/processed/2017/cruise/dive -f oplab -s 20170816032345 -e 20170816034030
 ```        
 
 The coordinate frames used are those defined in Thor Fossen Guidance, Navigation and Control of Ocean Vehicles
