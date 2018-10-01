@@ -201,7 +201,11 @@ def parse_data(filepath,ftype):
             cpu_to_use = 1
         else:
             cpu_to_use = 3
-        pool = multiprocessing.Pool(cpu_to_use) #multiprocessing.cpu_count() - 3)
+
+        try:
+            pool = multiprocessing.Pool(cpu_to_use) #multiprocessing.cpu_count() - 3)
+        except AttributeError as e: 
+            print("Error: ",e, "\n===============\nThis error is known to happen when running the code more than once from the same console in Spyder. Please run the code from a new console to prevent this error from happening. You may close the current console.\n==============")
         pool_list = []
 
         # read in, parse data and write data
