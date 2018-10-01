@@ -25,48 +25,81 @@ git push origin master
 6. [xlrd](https://pypi.org/project/xlrd/) (version used: 1.1.0) `pip3 install xlrd`
 7. [prettytable](https://pypi.python.org/pypi/PrettyTable) (version used: 0.7.2) `pip3 install prettytable`
 
-or run
-
+Depending on the Python distribution you are using, you might already have these packages, or you might have to install them manually. If you are using Anaconda (https://www.anaconda.com/download/) will proably only have to install prettytable and plotly, which you can install from the Conda prompt: 
+```
+pip install prettytable
+conda install plotly
+```
+(In general, when using Conda, it is preferable to use `conda` for installing packages rather than `pip`, but if `conda` doesn't work, `pip` can be used.)  
+If you are using a different distribution, you might have to to install all packages manually using one of the following commands (depending on your distribution it might be  `pip` instead of `pip3` and `python` instead of `python3`):
+```
 pip3 install matplotlib numpy pyyaml plotly pandas xlrd prettytable --user
-
+```
 Some of the packages above are in [third_party](third_party) which can be installed by:
 * executing the following terminal commands within the folder...
 ```
 python3 setup.py install
 python3 setup.py test
 ```
-* ... or executing this command for whl files 
+* ... or executing this command for whl files (if you are using Windows)
 ```
 pip3 install pandas-0.22.0-cp36-cp36m-win_amd64.whl
 ```
 
-## Functionality ##
+## Usage ##
 
-Parses and interleave navigation data for oplab standard and acfr standard formats. 
+auv_nav has 2 commands:  
+- `parse`, which reads raw data from multiple sensors and writes it in chornological order to a text file in an intermediate data format. There are 2 different intermediate formats to choose: "oplab" or "acfr"
+- `process`, which outputs previously parsed data in a format that the 3D mapping pipeline can read
 
-**Arguments**
+`auv_nave parse' usage:
+```
+auv_nav.py parse [-h] [-f FORMAT] path
 
-Required arguments (only run one of them at a time):
+positional arguments:
+  path                  Folderpath where the (raw) input data is. Needs to be
+                        a subfolder of 'raw' and contain the mission.yaml
+                        configuration file.
 
-| Parameter                 | Value           | Description   |
-| :------------------------ |:--------------- | :-------------|
-| parse --parserawdata         | Path to root raw folder  | Parses the raw data and generate brief summary of the output data
-| process --processparseddata          | Path to root processed folder where parsed data exist | Extract useful information from output files
+optional arguments:
+  -h, --help            show this help message and exit
+  -f FORMAT, --format FORMAT
+                        Format in which the data is output. 'oplab' or 'acfr'.
+                        Default: 'oplab'.
+```
+The algorithm replicated the same folder structure as the input data, but instead of using a subfolder of 'raw', a folder 'processed' is created (if doesn't already exist), with the same succession of subfolders as there are in 'raw'. The mission.yaml and the vehicle.yaml files are copied to this folder. When using the 'oplab' format, the interlaced data is written in oplab format to a file called 'nav_standard.json' in a subfolder called 'nav'. When using the 'acfr' format, the interlaced data is written in acfr format to a file called combined.RAW.auv in a folder called dRAWLOGS_cv.
 
-Optional arguments:
 
-| Parameter                 | Value           |Default | Description   |
-| :------------------------ |:--------------- |:------ | :-------------|
-| -f --outputformat         | oplab/acfr | oplab | to select oplab or acfr format
-| -s --startdatetime    | YYYYMMDDhhmmss | (automatically selects timestamp of first data point) | to select start date time of data to be processed
-| -e --finishdatetime  | YYYYMMDDhhmmss | (automatically selects timestamp of last data point) | to select end date time of data to be processed
+`auv_nav.py process` usage:
+```
+auv_nav.py process [-h] [-f FORMAT] [-s START_DATETIME] [-e END_DATETIME] path
 
-**Example commands to run**
+positional arguments:
+  path                  Path to folder where the data to process is. The
+                        folder has to be generated using auv_nav parse.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -f FORMAT, --format FORMAT
+                        Format in which the data to be processed is stored.
+                        'oplab' or 'acfr'. Default: 'oplab'.
+  -s START_DATETIME, --start START_DATETIME
+                        Start date & time in YYYYMMDDhhmmss from which data
+                        will be processed. If not set, start at beginning of
+                        dataset.
+  -e END_DATETIME, --end END_DATETIME
+                        End date & time in YYYYMMDDhhmmss up to which data
+                        will be processed. If not set process to end of
+                        dataset.
+```
+
+
+## Examples ##
 
 For OPLAB output format:
 1. Parse raw data into json file format 'nav_standard.json' and visualise data output
 
-    `python3 auv_nav.py parse '\\oplab-surf\reconstruction\raw\2017\SSK17-01\ts_un_006' -f oplab`
+    `python3 auv_nav.py parse -f oplab '\\oplab-surf\data\reconstruction\raw\2017\SSK17-01\ts_un_006'`
 
     Example of output:
     ```
@@ -81,12 +114,12 @@ For OPLAB output format:
 
 2. Extract information from nav_standard.json output (start and finish time can be selected based on output in step 2)
 
-    `python3 auv_nav.py process '\\oplab-surf\reconstruction\processed\2017\SSK17-01\ts_un_006' -f oplab -s 20170817032000 -e 20170817071000`
+    `python3 auv_nav.py process -f oplab -s 20170817032000 -e 20170817071000 '\\oplab-surf\data\reconstruction\processed\2017\SSK17-01\ts_un_006'`
 
 For ACFR output format:
 1. Parse raw data into combined.RAW.auv and mission.cfg
 
-    `python3 auv_nav.py parse '\\oplab-surf\reconstruction\raw\2017\SSK17-01\ts_un_006' -f acfr`
+    `python3 auv_nav.py parse -f acfr '\\oplab-surf\data\reconstruction\raw\2017\SSK17-01\ts_un_006'`
 
     Example of output:
     ```
