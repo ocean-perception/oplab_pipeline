@@ -8,9 +8,9 @@ Created on Tue Sep 25 16:44:40 2018
 
 import os
 import argparse
-from code.lib_sensors.parse_data import parse_data
+from lib.lib_sensors.parse_data import parse_data
 # from code.lib_sensors.display_info import display_info
-from code.lib_extract.extract_data import extract_data
+from lib.lib_extract.extract_data import extract_data
 
 
 def main(args=None): # This notation makes it possible to call the module from the command line as well as from a different python module. When called from the command line args defaults to None, and parse_args() defaults to using sys.argv[1:]. When called from a python script or module, pass the arguments as list, e.g. main(["parse", "-h"]). This will populate the args parameter.
