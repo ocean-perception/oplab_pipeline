@@ -9,8 +9,8 @@
 import hashlib, sys, os
 import codecs, time, json, glob
 
-
-# sys.path.append("..")
+#sys.path.append("..")
+#sys.path.append("../..")
 from lib_converttime.converttime import date_time_to_epoch
 from lib_coordinates.body_to_inertial import body_to_inertial
 #http://www.json.org/
