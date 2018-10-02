@@ -46,7 +46,7 @@ class ThreadWithReturnValue(Thread):
 
 def parse_data(filepath,ftype):
     
-    # initiate data and processing flags    
+    # initiate data and processing flags
     origin_flag=0
     velocity_flag=0
     orientation_flag=0
@@ -59,11 +59,11 @@ def parse_data(filepath,ftype):
     filepath = filepath.replace('\\', '/')
 
     # load mission.yaml config file
-    print('Loading mission.yaml')    
+    print('Loading mission.yaml')
     mission = filepath + '/' + 'mission.yaml'
     with open(mission,'r') as stream:
         load_data = yaml.load(stream)
-    # for i in range(0,len(load_data)): 
+    # for i in range(0,len(load_data)):
     if 'origin' in load_data:
         origin_flag=1
         latitude_reference = load_data['origin']['latitude']
@@ -71,7 +71,7 @@ def parse_data(filepath,ftype):
         coordinate_reference = load_data['origin']['coordinate_reference_system']
         date = load_data['origin']['date']
     if 'velocity' in load_data:
-        velocity_flag=1                    
+        velocity_flag=1
         velocity_format = load_data['velocity']['format']
         velocity_filepath = load_data['velocity']['filepath']
         velocity_filename = load_data['velocity']['filename']
@@ -79,7 +79,7 @@ def parse_data(filepath,ftype):
         velocity_timeoffset = load_data['velocity']['timeoffset']
         velocity_headingoffset = load_data['velocity']['headingoffset']
     if 'orientation' in load_data:
-        orientation_flag=1                    
+        orientation_flag=1
         orientation_format = load_data['orientation']['format']
         orientation_filepath = load_data['orientation']['filepath']
         orientation_filename = load_data['orientation']['filename']
@@ -87,21 +87,21 @@ def parse_data(filepath,ftype):
         time_orientationoffset = load_data['orientation']['timeoffset']
         orientation_headingoffset = load_data['orientation']['headingoffset']
     if 'depth' in load_data:
-        depth_flag=1                    
+        depth_flag=1
         depth_format = load_data['depth']['format']
         depth_filepath = load_data['depth']['filepath']
         depth_filename = load_data['depth']['filename']
         time_depthzone = load_data['depth']['timezone']
         time_depthoffset = load_data['depth']['timeoffset']
     if 'altitude' in load_data:
-        altitude_flag=1                    
+        altitude_flag=1
         altitude_format = load_data['altitude']['format']
         altitude_filepath = load_data['altitude']['filepath']
         altitude_filename = load_data['altitude']['filename']
         time_altitudezone = load_data['altitude']['timezone']
         time_altitudeoffset = load_data['altitude']['timeoffset']
-    if 'usbl' in load_data:            
-        usbl_flag=1                    
+    if 'usbl' in load_data:
+        usbl_flag=1
         usbl_format = load_data['usbl']['format']
         usbl_filepath = load_data['usbl']['filepath']
         time_usblzone = load_data['usbl']['timezone']
@@ -112,7 +112,7 @@ def parse_data(filepath,ftype):
         if usbl_format == 'gaps':
             usbl_id = load_data['usbl']['id']
     if 'image' in load_data:
-        image_flag=1                    
+        image_flag=1
         image_format = load_data['image']['format']
         image_filepath = load_data['image']['filepath']
         camera1_label = load_data['image']['camera1']
@@ -131,8 +131,8 @@ def parse_data(filepath,ftype):
     #     chemical_data = load_data['chemical']['data']
     
     # generate output path
-    print('Generating output paths')    
-    sub_path = filepath.split('/')       
+    print('Generating output paths')
+    sub_path = filepath.split('/')
     sub_out=sub_path
     outpath=sub_out[0]
 
@@ -146,7 +146,7 @@ def parse_data(filepath,ftype):
         
         outpath = outpath + '/' + sub_out[i]
         # make the new directories after 'processed' if it doesnt already exist
-        if is_subfolder_of_processed:      
+        if is_subfolder_of_processed:
             if os.path.isdir(outpath) == 0:
                 try:
                     os.mkdir(outpath)
@@ -155,7 +155,7 @@ def parse_data(filepath,ftype):
 
     if not is_subfolder_of_processed:
         raise ValueError("The input directory you provided is not a subfolder of a folder called 'raw'")
-                    
+
     # check for recognised formats and create nav file
     print('Checking output format')
 
@@ -167,20 +167,20 @@ def parse_data(filepath,ftype):
         shutil.copy2(vehicle, outpath) # save vehicle yaml to processed directory
         outpath = outpath + '/' + 'nav'
         filename='nav_standard.json'
-        
+
     elif ftype == 'acfr':# or (ftype is not 'acfr'):        
         with open(outpath + '/' + 'mission.cfg','w') as fileout:
             data = 'MAG_VAR_LAT ' + str(float(latitude_reference)) + '\n' + 'MAG_VAR_LNG ' + str(float(longitude_reference)) + '\n' + 'MAG_VAR_DATE "' + str(date) + '"\n' + 'MAGNETIC_VAR_DEG ' + str(float(0))
             
             fileout.write(data)
             fileout.close()
-                       
+
         outpath = outpath + '/' +'dRAWLOGS_cv'
         filename='combined.RAW.auv'
 
     else:
         print('Error: -o',ftype,'not recognised')
-        #syntax_error()    
+        #syntax_error()
         return
     
     # make file path if not exist
@@ -250,9 +250,9 @@ def parse_data(filepath,ftype):
                 # thread_list.append(thread)
             velocity_flag = 0
 
-        if orientation_flag == 1:                
+        if orientation_flag == 1:
             print('Loading orientation data...')
-            if orientation_format == "phins":    
+            if orientation_format == "phins":
                 pool_list.append(pool.apply_async(parse_phins, [filepath + '/' + orientation_filepath,orientation_filename,'orientation',time_orientationzone,time_orientationoffset,orientation_headingoffset,ftype,outpath,filename]))
                 # pool_list.append(results)
                 # thread = ThreadWithReturnValue(target=parse_phins, args=[filepath + '/' + orientation_filepath,orientation_filename,'orientation',time_orientationzone,time_orientationoffset,orientation_headingoffset,ftype,outpath,filename,fileout])
@@ -264,7 +264,7 @@ def parse_data(filepath,ftype):
                 # thread_list.append(thread)
             orientation_flag = 0
 
-        if depth_flag == 1:                                
+        if depth_flag == 1:
             print('Loading depth data...')
             if depth_format == "phins":
                 pool_list.append(pool.apply_async(parse_phins, [filepath + '/' + depth_filepath,depth_filename,'depth',time_depthzone,time_depthoffset,0,ftype,outpath,filename]))
@@ -278,7 +278,7 @@ def parse_data(filepath,ftype):
                 # thread_list.append(thread)
             depth_flag = 0
 
-        if altitude_flag == 1:                
+        if altitude_flag == 1:
             print('Loading altitude data...')
             if altitude_format == "phins":
                 pool_list.append(pool.apply_async(parse_phins, [filepath + '/' + altitude_filepath,altitude_filename,'altitude',time_altitudezone,0,time_altitudeoffset,ftype,outpath,filename]))
@@ -300,17 +300,23 @@ def parse_data(filepath,ftype):
         #     data_list.append(data)
 
         pool.close()
+        print('Wait for parsing threads to finish...')
         pool.join()
+        print('...done. All parsing threads have finished processing.')
+        print('...done loading raw data.')
 
+
+        print('Compile data list...')
         data_list = []
-
         for i in pool_list:
-        	results = i.get()
-        	data_list.append(results)
+            results = i.get()
+            data_list.append(results)
             # print (type(results.get()))
             # print (len(results.get()))
             # data_list.append(results.get())
+        print('...done compiling data list.')
 
+        print('Writing to output file...')
         if ftype == 'acfr':
             data_string = ''
             for i in data_list:
@@ -325,6 +331,7 @@ def parse_data(filepath,ftype):
             json.dump(data_list_temp, fileout)
             del data_list_temp
         del data_list
+        print('... done writing to output file.')
 
         # if chemical_flag == 1:
         #     print('Loading chemical data...')
@@ -337,7 +344,7 @@ def parse_data(filepath,ftype):
     #interlace the data based on timestamps
     print('Interlacing data...')
     parse_interlacer(ftype,outpath,filename)
-    print('Output saved to ' + outpath + '/' + filename)
+    print('...done interlacing data. Output saved to ' + outpath + '/' + filename)
 
     if ftype == 'oplab':
         display_info(outpath, ftype)
