@@ -19,7 +19,7 @@ def main(args=None): # This notation makes it possible to call the module from t
     Args:
         args : list of arguments as if they were input in the command line. Leave it None to use sys.argv.
     """
-	
+
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
 
@@ -54,10 +54,10 @@ def main(args=None): # This notation makes it possible to call the module from t
     subparser_process.add_argument('-e', '--end', dest='end_datetime', default='', 
         help="End date & time in YYYYMMDDhhmmss up to which data will be processed. If not set process to end of dataset.")
     subparser_process.set_defaults(func=call_process_data)
-	
+
     args = parser.parse_args(args)	
     args.func(args)
-	
+
 
 def call_parse_data(args):
     parse_data(args.path, args.format)
@@ -74,7 +74,8 @@ def call_process_data(args):
 
 	
 def is_subfolder_of(path, folder_name):
-    sub_path = path.split(os.sep)
+    path = path.replace('\\', '/')
+    sub_path = path.split('/')
     for i in range(len(sub_path)):
         if sub_path[i]==folder_name:
             return True
