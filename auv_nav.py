@@ -74,7 +74,7 @@ def call_parse_data(args):
 def call_process_data(args):
     if not is_subfolder_of(args.path, "processed"):
         raise ValueError("The input directory you provided is not a subfolder of a folder called 'processed'")
-    extract_data(args.path + os.sep, args.format, args.start_datetime, args.end_datetime)
+    extract_data(args.path, args.format, args.start_datetime, args.end_datetime)
 
 	
 def is_subfolder_of(path, folder_name):

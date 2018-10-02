@@ -23,6 +23,7 @@ from plotly import tools
 from pathlib import Path
 import plotly.offline as py
 import plotly.graph_objs as go
+import pandas as pd
 
 import matplotlib.pyplot as plt
 
@@ -100,13 +101,13 @@ class extract_data:
 
     # Helper functions
         def datetime_to_epochtime(yyyy, mm, dd, hours, mins, secs):
-            dt_obj = datetime(yyyy,mm,dd,hours,mins,secs)       
+            dt_obj = datetime(yyyy,mm,dd,hours,mins,secs)
             time_tuple = dt_obj.timetuple()
             return time.mktime(time_tuple)
 
     # load localisaion.yaml for particle filter and other setup
         print('Loading localisation.yaml')
-        localisation = filepath + 'localisation.yaml'
+        localisation = os.path.join(filepath, 'localisation.yaml')
         localisation_file = Path(localisation)
 
         # check if localisation.yaml file exist, if not, generate one with default settings
@@ -164,7 +165,7 @@ class extract_data:
         # ins_x_offset = ins_y_offset = ins_z_offset = 0
         # chemical_x_offset = chemical_y_offset = chemical_z_offset = 0
         print('Loading vehicle.yaml')
-        vehicle = filepath +'vehicle.yaml'
+        vehicle = os.path.join(filepath, 'vehicle.yaml')
         # if os.path.isdir(vehicle):
         with open(vehicle,'r') as stream:
             vehicle_data = yaml.load(stream)
@@ -207,15 +208,15 @@ class extract_data:
 
     # OPLAB mode
         if ftype == 'oplab':# or (ftype is not 'acfr'):
-            outpath=filepath + 'nav'
+            outpath=os.path.join(filepath, 'nav')
 
-            filename='nav_standard.json'        
-            print('Loading json file ' + outpath + os.sep + filename)
-            with open(outpath + os.sep + filename) as nav_standard:                
+            filename='nav_standard.json'
+            print('Loading json file ' + os.path.join(outpath, filename))
+            with open(os.path.join(outpath, filename)) as nav_standard:
                 parsed_json_data = json.load(nav_standard)
 
             print('Loading mission.yaml')    
-            mission = filepath +'mission.yaml'
+            mission = os.path.join(filepath, 'mission.yaml')
             with open(mission,'r') as stream:
                 mission_data = yaml.load(stream)
             # assigns sensor names from mission.yaml instead of json data packet (instead of looking at json data as TunaSand don't have serial yet)
@@ -398,39 +399,39 @@ class extract_data:
             chemical_pf_list = copy.deepcopy(chemical_list)
 
         # make path for processed outputs
-            renavpath = filepath + 'json_renav_' + start_datetime[0:8] + '_' + start_datetime[8:14] + '_' + finish_datetime[0:8] + '_' + finish_datetime[8:14]
+            renavpath = os.path.join(filepath, ('json_renav_' + start_datetime[0:8] + '_' + start_datetime[8:14] + '_' + finish_datetime[0:8] + '_' + finish_datetime[8:14]))
             if os.path.isdir(renavpath) == 0:
                 try:
                     os.mkdir(renavpath)
                 except Exception as e:
                     print("Warning:",e)
 
-            print('Complete parse of:' + outpath + os.sep + filename)
+            print('Complete parse of:' + os.path.join(outpath, filename))
             print('Writing outputs to: ' + renavpath)
-            # copy to renav folder renavpath + os.sep + 'localisation.yaml'
+            # copy to renav folder os.path.join(renavpath, 'localisation.yaml')
             # shutil.copy2(localisation, renavpath) # save mission yaml to processed directory
 
     # ACFR mode
         if ftype == 'acfr':
             # extract_acfr()
-            print('Loading mission.cfg')    
-            mission = filepath +'mission.cfg'
+            print('Loading mission.cfg')
+            mission = os.path.join(filepath, 'mission.cfg')
             with codecs.open(mission,'r',encoding='utf-8', errors='ignore') as filein:
-                for line in filein.readlines():             
+                for line in filein.readlines():
                     line_split = line.strip().split(' ')
                     if str(line_split[0]) == 'MAG_VAR_LAT':
-                        latitude_reference = float(line_split[1])                  
+                        latitude_reference = float(line_split[1])
                     if str(line_split[0]) == 'MAG_VAR_LNG':
-                        longitude_reference = float(line_split[1])                
+                        longitude_reference = float(line_split[1])
                     if str(line_split[0]) == 'MAG_VAR_DATE':
-                        date = str(line_split[1])                
+                        date = str(line_split[1])
 
-            outpath=filepath + 'dRAWLOGS_cv'
+            outpath=os.path.join(filepath, 'dRAWLOGS_cv')
 
-            filename='combined.RAW.auv'        
-            print('Loading acfr standard RAW.auv file ' + outpath + os.sep + filename)
+            filename='combined.RAW.auv'
+            print('Loading acfr standard RAW.auv file ' + os.path.join(outpath, filename))
 
-            with codecs.open(outpath + os.sep + filename,'r',encoding='utf-8', errors='ignore') as filein:
+            with codecs.open(os.path.join(outpath, filename),'r',encoding='utf-8', errors='ignore') as filein:
                 # setup the time window
                 parsed_acfr_data = filein.readlines()
                 if start_datetime == '':
@@ -489,7 +490,7 @@ class extract_data:
                     if str(line_split[0]) == 'RDI:':
                         
                         epoch_timestamp=float(line_split[1])
-                        if epoch_timestamp >= epoch_start_time and epoch_timestamp <= epoch_finish_time:                                      
+                        if epoch_timestamp >= epoch_start_time and epoch_timestamp <= epoch_finish_time:
 
                             velocity_body = sens_cls.velocity_body()
                             velocity_body.timestamp = float(line_split[1])
@@ -512,7 +513,7 @@ class extract_data:
                     if str(line_split[0]) == 'PHINS_COMPASS:':
                         
                         epoch_timestamp=float(line_split[1])
-                        if epoch_timestamp >= epoch_start_time and epoch_timestamp <= epoch_finish_time:                                      
+                        if epoch_timestamp >= epoch_start_time and epoch_timestamp <= epoch_finish_time:
 
                             velocity_inertial = sens_cls.velocity_inertial()
                             velocity_inertial.timestamp = float(line_split[1])
@@ -535,7 +536,7 @@ class extract_data:
                     if str(line_split[0]) == 'PAROSCI:':
 
                         epoch_timestamp=float(line_split[1])
-                        if epoch_timestamp >= epoch_start_time and epoch_timestamp <= epoch_finish_time:                                      
+                        if epoch_timestamp >= epoch_start_time and epoch_timestamp <= epoch_finish_time:
 
                             depth = sens_cls.depth()
                             depth.timestamp = float(line_split[1])
@@ -546,7 +547,7 @@ class extract_data:
                         
                         epoch_timestamp=float(line_split[1])
                         
-                        if epoch_timestamp >= epoch_start_time and epoch_timestamp <= epoch_finish_time:                                      
+                        if epoch_timestamp >= epoch_start_time and epoch_timestamp <= epoch_finish_time:
 
                             usbl = sens_cls.usbl()
                             usbl.timestamp = float(line_split[1])
@@ -576,17 +577,17 @@ class extract_data:
             camera1_pf_list = copy.deepcopy(camera1_list)
             camera2_pf_list = copy.deepcopy(camera2_list)
             # camera3_pf_list = copy.deepcopy(camera3_list)
-            # chemical_pf_list = copy.deepcopy(chemical_list)        
+            # chemical_pf_list = copy.deepcopy(chemical_list)
 
             # make folder to store csv and plots
-            renavpath = filepath + 'acfr_renav_' + start_datetime[0:8] + '_' + start_datetime[8:14] + '_' + finish_datetime[0:8] + '_' + finish_datetime[8:14]
+            renavpath = os.path.join(filepath, ('acfr_renav_' + start_datetime[0:8] + '_' + start_datetime[8:14] + '_' + finish_datetime[0:8] + '_' + finish_datetime[8:14]))
             if os.path.isdir(renavpath) == 0:
                 try:
                     os.mkdir(renavpath)
                 except Exception as e:
                     print("Warning:",e)
 
-            print('Complete parse of:' + outpath + os.sep + filename)
+            print('Complete parse of:' + os.path.join(outpath, filename))
             print('Writing outputs to: ' + renavpath)
             
     # interpolate to find the appropriate depth to compute seafloor depth for each altitude measurement
@@ -902,7 +903,7 @@ class extract_data:
             # plotly data in html
             if html_plot is True:
                 print('Plotting plotly data ...')
-                plotlypath = renavpath + os.sep + 'interactive_plots'
+                plotlypath = os.path.join(renavpath, 'interactive_plots')
                 
                 if os.path.isdir(plotlypath) == 0:
                     try:
@@ -938,7 +939,7 @@ class extract_data:
                         )
                 config={'scrollZoom': True}
                 fig = go.Figure(data=[trace11a, trace11b, trace11c], layout=layout)
-                py.plot(fig, config=config, filename=plotlypath + os.sep + 'orientation_vs_time.html', auto_open=False)
+                py.plot(fig, config=config, filename= os.path.join(plotlypath, 'orientation_vs_time.html'), auto_open=False)
 
                 # velocity_body (north,east,down) compared to velocity_inertial
                 print('...plotting velocity_vs_time...')
@@ -982,7 +983,7 @@ class extract_data:
                 fig['layout']['yaxis6'].update(title='Velocity, m/s')
                 fig['layout'].update(title='Velocity vs Time Plots (Left column: Inertial frame - north east down | Right column: Body frame - x y z)', dragmode='pan', hovermode='closest')#, hoverlabel={'namelength':'-1'})
                 config={'scrollZoom': True}
-                py.plot(fig, config=config, filename=plotlypath + os.sep + 'velocity_vs_time.html', auto_open=False)
+                py.plot(fig, config=config, filename=os.path.join(plotlypath, 'velocity_vs_time.html'), auto_open=False)
 
             # time_dead_reckoning northings eastings depth vs time
                 print('...plotting deadreckoning_vs_time...')
@@ -1026,7 +1027,7 @@ class extract_data:
                 fig['layout']['yaxis4'].update(title='Altitude, m')
                 fig['layout'].update(title='Deadreckoning vs Time', dragmode='pan', hovermode='closest')#, hoverlabel={'namelength':'-1'})
                 config={'scrollZoom': True}
-                py.plot(fig, config=config, filename=plotlypath + os.sep + 'deadreckoning_vs_time.html', auto_open=False)
+                py.plot(fig, config=config, filename=os.path.join(plotlypath, 'deadreckoning_vs_time.html'), auto_open=False)
 
             # pf uncertainty plotly # maybe make a slider plot for this, or a dot projection slider
                 trace11a = create_trace([i.timestamp for i in pf_fusion_dvl_list], pf_northings_std, 'northings_std (m)', 'red')
@@ -1041,7 +1042,7 @@ class extract_data:
                     )
                 config={'scrollZoom': True}
                 fig = go.Figure(data=[trace11a, trace11b, trace11c], layout=layout)
-                py.plot(fig, config=config, filename=plotlypath + os.sep + 'pf_uncertainty.html', auto_open=False)
+                py.plot(fig, config=config, filename=os.path.join(plotlypath, 'pf_uncertainty.html'), auto_open=False)
 
             # Uncertainty plotly --- https://plot.ly/python/line-charts/#filled-lines Something like that?
                 trace11a = create_trace([i.timestamp for i in orientation_list], [i.roll_std for i in orientation_list], 'roll std', 'red')
@@ -1089,7 +1090,7 @@ class extract_data:
                 fig['layout']['yaxis6'].update(title='NorthEast, m')
                 fig['layout'].update(title='Uncertainty Plots', dragmode='pan', hovermode='closest')
                 config={'scrollZoom': True}
-                py.plot(fig, config=config, filename=plotlypath + os.sep + 'uncertainties_plot.html', auto_open=False)
+                py.plot(fig, config=config, filename=os.path.join(plotlypath, 'uncertainties_plot.html'), auto_open=False)
 
             # # DR plotly slider *include toggle button that switches between lat long and north east
                 print('...plotting auv_path...')
@@ -1276,7 +1277,7 @@ class extract_data:
                     ### ===== for checking and visualization purposes =====
                 config={'scrollZoom': True}
 
-                py.plot(figure, config=config, filename=plotlypath + os.sep + 'auv_path.html',auto_open=False)
+                py.plot(figure, config=config, filename=os.path.join(plotlypath, 'auv_path.html'),auto_open=False)
 
                 print('...plotting auv_path_slider...')
 
@@ -1334,35 +1335,35 @@ class extract_data:
 
                 figure['layout']['sliders'] = [sliders_dict]
 
-                py.plot(figure, config=config, filename=plotlypath + os.sep + 'auv_path_slider.html',auto_open=False)
+                py.plot(figure, config=config, filename=os.path.join(plotlypath, 'auv_path_slider.html'),auto_open=False)
 
                 print('Complete plot data: ', plotlypath)
 
     # write values out to a csv file
         # create a directory with the time stamp
         
-        #if csv_write is True:        
+        #if csv_write is True:
 
-        csvpath = renavpath + os.sep + 'csv'
-        drcsvpath = csvpath + os.sep + 'dead_reckoning'
-        pfcsvpath = csvpath + os.sep + 'particle_filter'            
+        csvpath = os.path.join(renavpath, 'csv')
+        drcsvpath = os.path.join(csvpath, 'dead_reckoning')
+        pfcsvpath = os.path.join(csvpath, 'particle_filter')
 
         def write_csv(csv_filepath, data_list, csv_filename, csv_flag):
-            #check the relvant folders exist and if note create them           
+            #check the relvant folders exist and if note create them
             csv_file = Path(csvpath)
             if csv_file.exists() is False:
                 os.mkdir(csvpath)
 
             csv_file = Path(csv_filepath)
             if csv_file.exists() is False:
-                os.mkdir(csv_filepath)        
+                os.mkdir(csv_filepath)
 
             if csv_flag == True:
                 print("Writing outputs to {}.csv ...".format(csv_filename))
-                with open(csv_filepath + os.sep + '{}.csv'.format(csv_filename) ,'w') as fileout:
+                with open(os.path.join(csv_filepath, '{}.csv'.format(csv_filename)) ,'w') as fileout:
                     fileout.write('Timestamp, Northing [m], Easting [m], Depth [m], Roll [deg], Pitch [deg], Heading [deg], Altitude [m], Latitude [deg], Longitude [deg]\n')
                 for i in range(len(data_list)):
-                    with open(csv_filepath + os.sep + '{}.csv'.format(csv_filename) ,'a') as fileout:
+                    with open(os.path.join(csv_filepath,'{}.csv'.format(csv_filename)) ,'a') as fileout:
                         try:
                             fileout.write(str(data_list[i].timestamp)+','+str(data_list[i].northings)+','+str(data_list[i].eastings)+','+str(data_list[i].depth)+','+str(data_list[i].roll)+','+str(data_list[i].pitch)+','+str(data_list[i].yaw)+','+str(data_list[i].altitude)+','+str(data_list[i].latitude)+','+str(data_list[i].longitude)+'\n')
                             fileout.close()
@@ -1371,8 +1372,6 @@ class extract_data:
 
         ### First column of csv file - image file naming step probably not very robust, needs improvement
         def camera_csv(camera_list, camera_name, csv_filepath, csv_flag):
-            
-
             csv_file = Path(csvpath)
             if csv_file.exists() is False:
                 os.mkdir(csvpath)
@@ -1384,10 +1383,10 @@ class extract_data:
             if csv_flag == True:
                 if len(camera_list) > 1:
                     print("Writing outputs to {}.csv ...".format(camera_name))
-                    with open(csv_filepath + os.sep + '{}.csv'.format(camera_name) ,'w') as fileout:
+                    with open(os.path.join(csv_filepath, '{}.csv'.format(camera_name)) ,'w') as fileout:
                         fileout.write('Imagenumber, Northing [m], Easting [m], Depth [m], Roll [deg], Pitch [deg], Heading [deg], Altitude [m], Timestamp, Latitude [deg], Longitude [deg]\n')
                     for i in range(len(camera_list)):
-                        with open(csv_filepath + os.sep + '{}.csv'.format(camera_name) ,'a') as fileout:
+                        with open(os.path.join(csv_filepath, '{}.csv'.format(camera_name)) ,'a') as fileout:
                             try:
                                 imagenumber = camera_list[i].filename[-11:-4]
                                 if imagenumber.isdigit():
@@ -1401,7 +1400,6 @@ class extract_data:
 
         # if this works make all follow this format!
         def other_data_csv(data_list, data_name, csv_filepath, csv_flag):
-            
             csv_file = Path(csvpath)
             if csv_file.exists() is False:
                 os.mkdir(csvpath)
@@ -1420,7 +1418,7 @@ class extract_data:
                         csv_row_data.update({'{} [{}]'.format(j['label'], j['units']):j['value']})
                     csv_row_data_list.append(csv_row_data)
                 df = pd.DataFrame(csv_row_data_list)
-                df.to_csv(csv_filepath + os.sep + '{}.csv'.format(data_name), header=True, index = False) # , na_rep='-') https://www.youtube.com/watch?v=hmYdzvmcTD8
+                df.to_csv(os.path.join(csv_filepath, '{}.csv'.format(data_name)), header=True, index = False) # , na_rep='-') https://www.youtube.com/watch?v=hmYdzvmcTD8
 
         if csv_output_activate is True:
             if csv_usbl is True:
@@ -1430,10 +1428,10 @@ class extract_data:
                         os.mkdir(csvpath)
 
                     print("Writing outputs to auv_usbl.csv ...")
-                    with open(csvpath + os.sep + 'auv_usbl.csv' ,'w') as fileout:
+                    with open(os.path.join(csvpath, 'auv_usbl.csv') ,'w') as fileout:
                         fileout.write('Timestamp, Northing [m], Easting [m], Depth [m], Latitude [deg], Longitude [deg]\n')
                     for i in range(len(usbl_list)):
-                        with open(csvpath + os.sep + 'auv_usbl.csv' ,'a') as fileout:
+                        with open(os.path.join(csvpath, 'auv_usbl.csv') ,'a') as fileout:
                             try:
                                 fileout.write(str(usbl_list[i].timestamp)+','+str(usbl_list[i].northings)+','+str(usbl_list[i].eastings)+','+str(usbl_list[i].depth)+','+str(usbl_list[i].latitude)+','+str(usbl_list[i].longitude)+'\n')
                                 fileout.close()
