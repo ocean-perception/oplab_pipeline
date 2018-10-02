@@ -14,6 +14,7 @@ import yaml, json
 import shutil, math
 import time, codecs
 import operator
+import pathlib
 #import hashlib, glob
 
 import copy
@@ -40,7 +41,7 @@ from lib_usbl_filter.usbl_filter import usbl_filter
 class extract_data:
     #def __init__(self,filepath,ftype,start_datetime,finish_datetime):
     def __init__(self,filepath,ftype,start_datetime,finish_datetime):
-    
+        
     # placeholders
         interpolate_remove_flag = False
 
@@ -104,7 +105,7 @@ class extract_data:
             return time.mktime(time_tuple)
 
     # load localisaion.yaml for particle filter and other setup
-        print('Loading localisation.yaml')    
+        print('Loading localisation.yaml')
         localisation = filepath + 'localisation.yaml'
         localisation_file = Path(localisation)
 
@@ -112,7 +113,8 @@ class extract_data:
         if localisation_file.exists():
             print("Loading existng localisation.yaml at {}".format(localisation))
         else:
-            default_localisation = 'default_yaml' + os.sep + 'localisation.yaml'
+            default_localisation = os.path.join(pathlib.Path(__file__).parents[2], 'default_yaml', 'localisation.yaml')
+            print("default_localisation: " + default_localisation)
             print("Cannot find {}, generating default from {}".format(localisation,default_localisation))
             shutil.copy2(default_localisation, filepath) # save localisation yaml to processed directory
         
