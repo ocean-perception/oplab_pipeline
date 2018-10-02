@@ -17,8 +17,8 @@ import json
 import yaml
 from threading import Thread
 
-sys.path.append("lib.")
-from lib_sensors.parse_phins import parse_phins
+#sys.path.append("..")
+from parse_phins import parse_phins
 from lib_sensors.parse_ae2000 import parse_ae2000
 from lib_sensors.parse_gaps import parse_gaps
 from lib_sensors.parse_usbl_dump import parse_usbl_dump

@@ -1,6 +1,6 @@
 # This looks at nav_standard.json file stored in the format of [{"<DataName>":<Value>,"<DataName>":<Value>, ...}, ...] 
 # and displays the information such as 'Categories' in it, start date time, finish date time, etc...
-"""Display infomation of json file​
+"""Display infomation of json file
 		inputs are
 			data_check.py <options>
 				-i <path to nav folder containing json file>

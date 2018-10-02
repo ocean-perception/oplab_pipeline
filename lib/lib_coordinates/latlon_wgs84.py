@@ -4,21 +4,6 @@
 # and convert distance from latitude and longitude references to latitude longitude uncertainty
 # http://www.movable-type.co.uk/scripts/latlong.html
 
-# Distance
-# a = math.sin²(Δφ/2) + math.cos φ1 ⋅ math.cos φ2 ⋅ math.sin²(Δλ/2)
-# c = 2 ⋅ math.atan2( √a, √(1−a) )
-# d = R ⋅ c
-# where	φ is latitude, λ is longitude, R is earth’s radius (mean radius = 6,371km);
-
-# Bearing
-# θ = math.atan2( math.sin Δλ ⋅ math.cos φ2 , math.cos φ1 ⋅ math.sin φ2 − math.sin φ1 ⋅ math.cos φ2 ⋅ math.cos Δλ )
-# where	φ1,λ1 is the start point, φ2,λ2 the end point (Δλ is the difference in longitude)
-
-# Destination point along great-circle given distance and bearing from start point
-# φ2 = asin( sin φ1 ⋅ cos δ + cos φ1 ⋅ sin δ ⋅ cos θ )
-# λ2 = λ1 + atan2( sin θ ⋅ sin δ ⋅ cos φ1, cos δ − sin φ1 ⋅ sin φ2 )
-# where	φ is latitude, λ is longitude, θ is the bearing (clockwise from north), δ is the angular distance d/R; d being the distance travelled, R the earth’s radius
-
 # Author: Blair Thornton
 # Date: 31/08/2017
 
