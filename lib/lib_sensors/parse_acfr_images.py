@@ -24,13 +24,11 @@ class parse_acfr_images:
 	def __init__(self, filepath, sensor_string, camera1_label, camera2_label, category, timezone, timeoffset, ftype, outpath, fileoutname):
 		return
 	def __new__(self, filepath, sensor_string, camera1_label, camera2_label, category, timezone, timeoffset, ftype, outpath, fileoutname):
-
 		# parser meta data
 		class_string = 'measurement'
 		frame_string = 'body'
 		category = 'image'
 
-		
 		# read in timezone
 		if isinstance(timezone, str):			
 			if timezone == 'utc' or  timezone == 'UTC':
