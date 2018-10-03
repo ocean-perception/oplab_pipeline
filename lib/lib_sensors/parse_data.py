@@ -60,7 +60,9 @@ def parse_data(filepath,ftype):
 
     # load mission.yaml config file
     print('Loading mission.yaml')
+
     mission = filepath + '/' + 'mission.yaml'
+
     with open(mission,'r') as stream:
         load_data = yaml.load(stream)
     # for i in range(0,len(load_data)):
@@ -159,12 +161,14 @@ def parse_data(filepath,ftype):
     # check for recognised formats and create nav file
     print('Checking output format')
 
+    # copy mission.yaml and vehicle.yaml to processed folder for process step
+    # if os.path.isdir(mission):
+    shutil.copy2(mission, outpath) # save mission yaml to processed directory
+    vehicle = filepath + '/' + 'vehicle.yaml'
+    # if os.path.isdir(vehicle):
+    shutil.copy2(vehicle, outpath) # save vehicle yaml to processed directory
+
     if ftype == 'oplab':# or (ftype is not 'acfr'):
-        # if os.path.isdir(mission):
-        shutil.copy2(mission, outpath) # save mission yaml to processed directory
-        vehicle = filepath + '/' + 'vehicle.yaml'
-        # if os.path.isdir(vehicle):
-        shutil.copy2(vehicle, outpath) # save vehicle yaml to processed directory
         outpath = outpath + '/' + 'nav'
         filename='nav_standard.json'
 
