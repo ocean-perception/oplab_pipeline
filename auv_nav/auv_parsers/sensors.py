@@ -1,6 +1,10 @@
-class velocity_body:
+class LoggedData(object):
 	def __init__(self):
 		self.timestamp = 0
+
+class BodyVelocity(LoggedData):
+	def __init__(self):
+		LoggedData.__init__(self)
 
 		self.x_velocity = 0
 		self.y_velocity = 0
@@ -10,9 +14,9 @@ class velocity_body:
 		self.y_velocity_std = 0
 		self.z_velocity_std = 0
 
-class velocity_inertial:
+class InertialVelocity(LoggedData):
 	def __init__(self):
-		self.timestamp = 0
+		LoggedData.__init__(self)
 		self.north_velocity = 0
 		self.east_velocity = 0
 		self.down_velocity = 0
@@ -33,9 +37,9 @@ class velocity_inertial:
 		self.latitude = 0
 		self.longitude = 0
 
-class orientation:
+class Orientation(LoggedData):
 	def __init__(self):
-		self.timestamp = 0
+		LoggedData.__init__(self)
 
 		self.roll = 0
 		self.pitch = 0
@@ -45,24 +49,24 @@ class orientation:
 		self.pitch_std = 0
 		self.yaw_std = 0
 
-class depth:
+class Depth(LoggedData):
 	def __init__(self):
-		self.timestamp = 0
+		LoggedData.__init__(self)
 		self.depth = 0
 		self.depth_std = 0
 
-class altitude:
+class Altitude(LoggedData):
 	def __init__(self):
-		self.timestamp = 0
+		LoggedData.__init__(self)
 
 		self.altitude = 0
 		self.altitude_std = 0
 		# interpolate depth and add altitude for every altitude measurement
 		self.seafloor_depth = 0
 
-class usbl:
+class Usbl(LoggedData):
 	def __init__(self):
-		self.timestamp = 0
+		LoggedData.__init__(self)
 
 		self.latitude = 0
 		self.longitude = 0
@@ -90,9 +94,9 @@ class usbl:
 		self.distance = 0 #distance
 		self.bearing = 0
 
-class camera:
+class Camera(LoggedData):
 	def __init__(self):
-		self.timestamp = 0
+		LoggedData.__init__(self)
 		self.filename = ''
 		#
 		self.northings = 0
@@ -109,9 +113,9 @@ class camera:
 
 		self.altitude = 0
 
-class other:
+class Other(LoggedData):
 	def __init__(self):
-		self.timestamp = 0
+		LoggedData.__init__(self)
 		self.data = []
 
 		self.northings = 0
@@ -127,9 +131,9 @@ class other:
 
 		self.altitude = 0
 
-class synced_orientation_velocity_body:
+class SyncedOrientationBodyVelocity(LoggedData):
 	def __init__(self):
-		self.timestamp = 0
+		LoggedData.__init__(self)
 		# from orientation
 		self.roll = 0
 		self.pitch = 0

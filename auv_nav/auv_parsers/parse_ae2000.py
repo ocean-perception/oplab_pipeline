@@ -11,8 +11,8 @@ import codecs, time, json, glob
 import pandas as pd
 
 # sys.path.append("..")
-from lib_coordinates.body_to_inertial import body_to_inertial
-from lib_converttime.converttime import date_time_to_epoch
+from auv_nav.auv_coordinates.body_to_inertial import body_to_inertial
+from auv_nav.auv_conversions.time_conversions import date_time_to_epoch
 #http://www.json.org/
 data_list=[]
 #need to make acfr parsers

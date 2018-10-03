@@ -13,8 +13,7 @@ from operator import itemgetter
 ### temporary solution for fk180731 cruise ###
 import numpy as np
 # sys.path.append("..")
-from lib_usbl_filter.usbl_filter import usbl_filter
-from lib_extract import sensor_classes as sens_cls
+from auv_nav.auv_localisation.usbl_filter import usbl_filter
 import time
 from datetime import datetime
 ### temporary solution for fk180731 cruise ###

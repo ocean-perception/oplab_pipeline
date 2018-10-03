@@ -18,15 +18,15 @@ import yaml
 from threading import Thread
 
 #sys.path.append("..")
-from lib_sensors.parse_phins import parse_phins
-from lib_sensors.parse_ae2000 import parse_ae2000
-from lib_sensors.parse_gaps import parse_gaps
-from lib_sensors.parse_usbl_dump import parse_usbl_dump
-from lib_sensors.parse_acfr_images import parse_acfr_images
-from lib_sensors.parse_seaxerocks_images import parse_seaxerocks_images
-from lib_sensors.parse_interlacer import parse_interlacer
+from auv_nav.auv_parsers.parse_phins import parse_phins
+from auv_nav.auv_parsers.parse_ae2000 import parse_ae2000
+from auv_nav.auv_parsers.parse_gaps import parse_gaps
+from auv_nav.auv_parsers.parse_usbl_dump import parse_usbl_dump
+from auv_nav.auv_parsers.parse_acfr_images import parse_acfr_images
+from auv_nav.auv_parsers.parse_seaxerocks_images import parse_seaxerocks_images
+from auv_nav.auv_parsers.parse_interlacer import parse_interlacer
 # from lib_sensors.parse_chemical import parse_chemical
-from lib_sensors.display_info import display_info
+from auv_nav.auv_parsers.display_info import display_info
 
 class ThreadWithReturnValue(Thread):
     def __init__(self, group=None, target=None, name=None,

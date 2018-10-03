@@ -9,13 +9,13 @@ import numpy
 import matplotlib.pyplot as plt
 
 import sys
+sys.path.append('..')
 
-sys.path.append("..")
-from lib_calculus.interpolate import interpolate
-from lib_coordinates.body_to_inertial import body_to_inertial
-from lib_extract import sensor_classes as sens_cls
-from lib_particle_filter.particle import particle
-from lib_coordinates.latlon_wgs84 import latlon_to_metres
+from auv_nav.auv_conversions.interpolate import interpolate
+from auv_nav.auv_coordinates.body_to_inertial import body_to_inertial
+from auv_nav.auv_parsers.sensors import SyncedOrientationBodyVelocity, Usbl
+from auv_nav.auv_localisation.particle import particle
+from auv_nav.auv_coordinates.latlon_wgs84 import latlon_to_metres
 
 # create an equation for each noise, and def them for sensors in ae2000, or ts1, or ts2. read from mission yaml which sensor used, and automatically pick the one desired.
 
@@ -169,7 +169,7 @@ class particle_filter:
                 return particles_list
 
         def interpolate_dvl_data(query_timestamp, data_1, data_2):
-            temp_data = sens_cls.synced_orientation_velocity_body()
+            temp_data = SyncedOrientationBodyVelocity()
             temp_data.timestamp = query_timestamp
             temp_data.x_velocity = interpolate(query_timestamp, data_1.timestamp, data_2.timestamp, data_1.x_velocity, data_2.x_velocity)
             temp_data.y_velocity = interpolate(query_timestamp, data_1.timestamp, data_2.timestamp, data_1.y_velocity, data_2.y_velocity)
@@ -194,7 +194,7 @@ class particle_filter:
             return (temp_data)
 
         def interpolate_usbl_data(query_timestamp, data_1, data_2):
-            temp_data = sens_cls.usbl()
+            temp_data = Usbl()
             temp_data.timestamp = query_timestamp
             temp_data.northings = interpolate(query_timestamp, data_1.timestamp, data_2.timestamp, data_1.northings, data_2.northings)
             temp_data.eastings = interpolate(query_timestamp, data_1.timestamp, data_2.timestamp, data_1.eastings, data_2.eastings)
@@ -403,7 +403,7 @@ class particle_filter:
         
         pf_fusion_dvl_list = []
         for i in range(len(timestamp_list)):
-            pf_fusion_dvl = sens_cls.synced_orientation_velocity_body()
+            pf_fusion_dvl = SyncedOrientationBodyVelocity()
             pf_fusion_dvl.timestamp = timestamp_list[i]
             pf_fusion_dvl.northings = northings_trajectory[i]
             pf_fusion_dvl.eastings = eastings_trajectory[i]

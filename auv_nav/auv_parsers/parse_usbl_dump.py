@@ -12,9 +12,9 @@ import codecs, time, json, glob
 
 #http://www.json.org/
 # sys.path.append("..")
-from lib_converttime.converttime import date_time_to_epoch
-from lib_coordinates.latlon_wgs84 import latlon_to_metres
-from lib_coordinates.latlon_wgs84 import metres_to_latlon
+from auv_nav.auv_conversions.time_conversions import date_time_to_epoch
+from auv_nav.auv_coordinates.latlon_wgs84 import latlon_to_metres
+from auv_nav.auv_coordinates.latlon_wgs84 import metres_to_latlon
 
 class parse_usbl_dump:
 	def __init__(self, filepath, filename, label, category, timezone, timeoffset, latitude_reference, longitude_reference, ftype, outpath, fileoutname):

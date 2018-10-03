@@ -10,7 +10,7 @@ import codecs, time, json, glob
 # from datetime import datetime
 
 # sys.path.append("..")
-from lib_converttime.converttime import date_time_to_epoch
+from auv_nav.auv_conversions.time_conversions import date_time_to_epoch
 
 #http://www.json.org/
 

@@ -10,12 +10,10 @@ import os
 import sys
 import argparse
 
-sys.path.append(os.path.abspath('./lib'))
 sys.path.append(os.path.abspath('.'))
 
-from lib.lib_sensors.parse_data import parse_data
-# from code.lib_sensors.display_info import display_info
-from lib.lib_extract.extract_data import extract_data
+from auv_nav.auv_parsers.parse_data import parse_data
+from auv_nav.auv_parsers.extract_data import extract_data
 
 def main(args=None): # This notation makes it possible to call the module from the command line as well as from a different python module. When called from the command line args defaults to None, and parse_args() defaults to using sys.argv[1:]. When called from a python script or module, pass the arguments as list, e.g. main(["parse", "-h"]). This will populate the args parameter.
     """
@@ -58,6 +56,10 @@ def main(args=None): # This notation makes it possible to call the module from t
     subparser_process.add_argument('-e', '--end', dest='end_datetime', default='', 
         help="End date & time in YYYYMMDDhhmmss up to which data will be processed. If not set process to end of dataset.")
     subparser_process.set_defaults(func=call_process_data)
+
+    if len(sys.argv) == 1:
+        parser.print_help(sys.stderr)
+        sys.exit(1)
 
     args = parser.parse_args(args)	
     args.func(args)

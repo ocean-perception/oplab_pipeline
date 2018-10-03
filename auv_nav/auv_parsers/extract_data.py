@@ -30,14 +30,14 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 
 sys.path.append("..")
-from lib_calculus.interpolate import interpolate
-from lib_localisation.dead_reckoning import dead_reckoning
-from lib_localisation.usbl_offset import usbl_offset
-from lib_coordinates.body_to_inertial import body_to_inertial
-from lib_coordinates.latlon_wgs84 import metres_to_latlon
-from lib_extract import sensor_classes as sens_cls
-from lib_particle_filter.particle_filter import particle_filter
-from lib_usbl_filter.usbl_filter import usbl_filter
+from auv_nav.auv_conversions.interpolate import interpolate
+from auv_nav.auv_coordinates.latlon_wgs84 import metres_to_latlon
+from auv_nav.auv_coordinates.body_to_inertial import body_to_inertial
+from auv_nav.auv_localisation.dead_reckoning import dead_reckoning
+from auv_nav.auv_localisation.usbl_offset import usbl_offset
+from auv_nav.auv_localisation.particle_filter import particle_filter
+from auv_nav.auv_localisation.usbl_filter import usbl_filter
+from auv_nav.auv_parsers.sensors import BodyVelocity, InertialVelocity, Altitude, Depth, Usbl, Orientation, Other, Camera, SyncedOrientationBodyVelocity
 
 class extract_data:
     #def __init__(self,filepath,ftype,start_datetime,finish_datetime):
@@ -307,7 +307,7 @@ class extract_data:
                             if 'epoch_timestamp_dvl' in parsed_json_data[i]:
                                 # confirm time stamps of dvl are aligned with main clock (within a second)
                                 if abs(parsed_json_data[i]['epoch_timestamp']-parsed_json_data[i]['epoch_timestamp_dvl'])<1:
-                                    velocity_body = sens_cls.velocity_body()
+                                    velocity_body = BodyVelocity()
                                     velocity_body.timestamp = parsed_json_data[i]['epoch_timestamp_dvl'] # dvl clock not necessarily synced by phins
                                     velocity_body.x_velocity = parsed_json_data[i]['data'][0]['x_velocity']
                                     velocity_body.y_velocity = parsed_json_data[i]['data'][1]['y_velocity']
@@ -317,7 +317,7 @@ class extract_data:
                                     velocity_body.z_velocity_std = parsed_json_data[i]['data'][2]['z_velocity_std']
                                     velocity_body_list.append(velocity_body)
                         if 'inertial' in parsed_json_data[i]['frame']:
-                            velocity_inertial = sens_cls.velocity_inertial()
+                            velocity_inertial = InertialVelocity()
                             velocity_inertial.timestamp = parsed_json_data[i]['epoch_timestamp']
                             velocity_inertial.north_velocity = parsed_json_data[i]['data'][0]['north_velocity']
                             velocity_inertial.east_velocity = parsed_json_data[i]['data'][1]['east_velocity']
@@ -328,7 +328,7 @@ class extract_data:
                             velocity_inertial_list.append(velocity_inertial)
                     
                     if 'orientation' in parsed_json_data[i]['category']:
-                        orientation = sens_cls.orientation()
+                        orientation = Orientation()
                         orientation.timestamp = parsed_json_data[i]['epoch_timestamp']
                         orientation.roll = parsed_json_data[i]['data'][1]['roll']
                         orientation.pitch = parsed_json_data[i]['data'][2]['pitch']
@@ -339,20 +339,20 @@ class extract_data:
                         orientation_list.append(orientation)
 
                     if 'depth' in parsed_json_data[i]['category']:
-                        depth = sens_cls.depth()
+                        depth = Depth()
                         depth.timestamp = parsed_json_data[i]['epoch_timestamp_depth']
                         depth.depth = parsed_json_data[i]['data'][0]['depth']
                         depth.depth_std = parsed_json_data[i]['data'][0]['depth_std']
                         depth_list.append(depth)
 
                     if 'altitude' in parsed_json_data[i]['category']:
-                        altitude = sens_cls.altitude()
+                        altitude = Altitude()
                         altitude.timestamp = parsed_json_data[i]['epoch_timestamp']
                         altitude.altitude = parsed_json_data[i]['data'][0]['altitude']
                         altitude_list.append(altitude)
 
                     if 'usbl' in parsed_json_data[i]['category']:
-                        usbl = sens_cls.usbl()
+                        usbl = Usbl()
                         usbl.timestamp = parsed_json_data[i]['epoch_timestamp']
                         usbl.latitude = parsed_json_data[i]['data_target'][0]['latitude']
                         usbl.latitude_std = parsed_json_data[i]['data_target'][0]['latitude_std']
@@ -372,23 +372,23 @@ class extract_data:
                         usbl_list.append(usbl)
 
                     if 'image' in parsed_json_data[i]['category']:
-                        camera1 = sens_cls.camera()
+                        camera1 = Camera()
                         camera1.timestamp = parsed_json_data[i]['camera1'][0]['epoch_timestamp']#LC
                         camera1.filename = parsed_json_data[i]['camera1'][0]['filename']
                         camera1_list.append(camera1)
-                        camera2 = sens_cls.camera()
+                        camera2 = Camera()
                         camera2.timestamp = parsed_json_data[i]['camera2'][0]['epoch_timestamp']
                         camera2.filename = parsed_json_data[i]['camera2'][0]['filename']
                         camera2_list.append(camera2)
 
                     if 'laser' in parsed_json_data[i]['category']:
-                        camera3 = sens_cls.camera()
+                        camera3 = Camera()
                         camera3.timestamp = parsed_json_data[i]['epoch_timestamp']
                         camera3.filename = parsed_json_data[i]['filename']
                         camera3_list.append(camera3)
 
                     if 'chemical' in parsed_json_data[i]['category']:
-                        chemical = sens_cls.other()
+                        chemical = Other()
                         chemical.timestamp = parsed_json_data[i]['epoch_timestamp']
                         chemical.data = parsed_json_data[i]['data']
                         chemical_list.append(chemical)
@@ -492,9 +492,9 @@ class extract_data:
                         epoch_timestamp=float(line_split[1])
                         if epoch_timestamp >= epoch_start_time and epoch_timestamp <= epoch_finish_time:
 
-                            velocity_body = sens_cls.velocity_body()
+                            velocity_body = BodyVelocity()
                             velocity_body.timestamp = float(line_split[1])
-                            altitude = sens_cls.altitude()
+                            altitude = Altitude()
                             altitude.timestamp = float(line_split[1])
 
                             for i in range(len(line_split)):
@@ -515,9 +515,9 @@ class extract_data:
                         epoch_timestamp=float(line_split[1])
                         if epoch_timestamp >= epoch_start_time and epoch_timestamp <= epoch_finish_time:
 
-                            velocity_inertial = sens_cls.velocity_inertial()
+                            velocity_inertial = InertialVelocity()
                             velocity_inertial.timestamp = float(line_split[1])
-                            orientation = sens_cls.orientation()
+                            orientation = Orientation()
                             orientation.timestamp = float(line_split[1])
 
                             for i in range(len(line_split)-1):
@@ -538,7 +538,7 @@ class extract_data:
                         epoch_timestamp=float(line_split[1])
                         if epoch_timestamp >= epoch_start_time and epoch_timestamp <= epoch_finish_time:
 
-                            depth = sens_cls.depth()
+                            depth = Depth()
                             depth.timestamp = float(line_split[1])
                             depth.depth = float(line_split[2])
                             depth_list.append(depth)
@@ -549,7 +549,7 @@ class extract_data:
                         
                         if epoch_timestamp >= epoch_start_time and epoch_timestamp <= epoch_finish_time:
 
-                            usbl = sens_cls.usbl()
+                            usbl = Usbl()
                             usbl.timestamp = float(line_split[1])
                         
                             for i in range(len(line_split)-1):
@@ -565,12 +565,12 @@ class extract_data:
 
                     if str(line_split[0]) == 'VIS:':
                         if 'FC' or 'LC' in line_split[3]:
-                            camera1 = sens_cls.camera()
+                            camera1 = Camera()
                             camera1.timestamp = float(line_split[1])
                             camera1.filename = line_split[3]
                             camera1_list.append(camera1)
                         if 'AC' or 'RC' in line_split[3]:
-                            camera2 = sens_cls.camera()
+                            camera2 = Camera()
                             camera2.timestamp = float(line_split[1])
                             camera2.filename = line_split[3]
                             camera2_list.append(camera2)
@@ -629,7 +629,7 @@ class extract_data:
             while j<len(velocity_body_list)-1 and orientation_list[i].timestamp>velocity_body_list[j+1].timestamp:
                 j += 1
 
-            dead_reckoning_dvl = sens_cls.synced_orientation_velocity_body()
+            dead_reckoning_dvl = SyncedOrientationBodyVelocity()
             dead_reckoning_dvl.timestamp = orientation_list[i].timestamp
             dead_reckoning_dvl.roll = orientation_list[i].roll
             dead_reckoning_dvl.pitch = orientation_list[i].pitch

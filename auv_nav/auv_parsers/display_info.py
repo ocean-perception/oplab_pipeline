@@ -34,7 +34,7 @@ import plotly.offline as py
 import plotly.graph_objs as go
 
 # sys.path.append("..")
-from lib_converttime.converttime import epoch_to_localtime, get_localtimezone
+from auv_nav.auv_conversions.time_conversions import epoch_to_localtime, get_localtimezone
 
 class display_info:
 	# Goes through each data element in json file and first check for different types category, 
@@ -86,7 +86,7 @@ class display_info:
 			finish_time = 0 
 
 			# Loads and sorts data elements into their respective 'category' and 'frame'.
-			with open(outpath + 'nav_standard.json', 'rb') as json_file:
+			with open(outpath + 'nav_standard.json', 'r', encoding='utf-8') as json_file:
 				data_in = json.load(json_file)
 				start_time = data_in[0]['epoch_timestamp']
 				for i in data_in:
@@ -151,9 +151,13 @@ class display_info:
 						# print the info
 						time_difference = j[1]['epoch_timestamp'] - j[0]['epoch_timestamp']
 						n = 0
-						while time_difference == 0 or time_difference < 0.002:
+						print (time_difference, j[0]['epoch_timestamp'], j[1]['epoch_timestamp'])
+						while time_difference == 0 or time_difference < 0.002 and n < len(j):
 							n += 1
 							time_difference = j[1 + n]['epoch_timestamp'] - j[n]['epoch_timestamp']
+							print (time_difference, n, len(j))
+							if n > 10:
+								sys.exit(0)
 						line = print_lines(j[0], time_difference)
 						t.add_row([j[0]['category'], len(j), line[0], line[1]])
 
