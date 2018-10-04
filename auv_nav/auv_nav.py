@@ -57,7 +57,7 @@ def main(args=None): # This notation makes it possible to call the module from t
         help="End date & time in YYYYMMDDhhmmss up to which data will be processed. If not set process to end of dataset.")
     subparser_process.set_defaults(func=call_process_data)
 
-    if len(sys.argv) == 1:
+    if len(sys.argv) == 1 and args==None:
         parser.print_help(sys.stderr)
         sys.exit(1)
 
