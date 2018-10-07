@@ -4,14 +4,15 @@ Copyright (c) 2018, University of Southampton
 All rights reserved.
 """
 
-from auv_nav.auv_parsers.parse_data import parse_data
-from auv_nav.auv_parsers.extract_data import extract_data
 
 import os
 import sys
 import argparse
 
 sys.path.append(os.path.abspath('.'))
+from auv_nav.auv_parsers.parse_data import parse_data
+from auv_nav.auv_parsers.extract_data import extract_data
+from auv_nav.auv_parsers.folder_structure import is_subfolder_of
 
 
 def main(args=None):
@@ -83,7 +84,7 @@ def main(args=None):
         process to end of dataset.")
     subparser_process.set_defaults(func=call_process_data)
 
-    if len(sys.argv) == 1 and args==None:
+    if len(sys.argv) == 1 and args is None:
         # Show help if no args provided
         parser.print_help(sys.stderr)
         sys.exit(1)
@@ -106,15 +107,6 @@ def call_process_data(args):
                          of a folder called 'processed'")
     extract_data(args.path, args.format,
                  args.start_datetime, args.end_datetime)
-
-
-def is_subfolder_of(path, folder_name):
-    path = path.replace('\\', '/')
-    sub_path = path.split('/')
-    for i in range(len(sub_path)):
-        if sub_path[i] == folder_name:
-            return True
-    return False
 
 
 if __name__ == '__main__':
