@@ -332,7 +332,7 @@ def parse_data(filepath,ftype):
             data_list_temp = []
             for i in data_list:
                 data_list_temp += i
-            json.dump(data_list_temp, fileout)
+            json.dump(data_list_temp, fileout, indent=2)
             del data_list_temp
         del data_list
         print('... done writing to output file.')
