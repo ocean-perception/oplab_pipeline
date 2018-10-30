@@ -22,6 +22,7 @@ setuptools.setup(
             'auv_nav = auv_nav.auv_nav:main',
         ],
     },
+    package_data={'auv_nav': ['default_yaml/*.yaml']},
     install_requires=[
         'matplotlib>=2.1.2',
         'numpy>=1.14.5',
