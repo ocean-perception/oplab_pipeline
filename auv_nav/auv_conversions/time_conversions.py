@@ -10,7 +10,7 @@ import calendar
 import time
 
 
-def date_time_to_epoch(yyyy, mm, dd, hh, mm1, ss, timezone_offset_to_utc):
+def date_time_to_epoch(yyyy, mm, dd, hh, mm1, ss, timezone_offset_to_utc=0):
     utc_date_time = (datetime(yyyy, mm, dd, hh, mm1, ss)
                      - timedelta(hours=timezone_offset_to_utc))
     epochtime = calendar.timegm(utc_date_time.timetuple())
@@ -25,3 +25,43 @@ def epoch_to_localtime(epochtime):
 def get_localtimezone():
     localtimezone = reference.LocalTimezone().tzname(datetime.now())  # string
     return localtimezone
+
+
+def string_to_epoch(datetime):
+    yyyy = int(datetime[0:4])
+    mm = int(datetime[4:6])
+    dd = int(datetime[6:8])
+
+    hours = int(datetime[8:10])
+    mins = int(datetime[10:12])
+    secs = int(datetime[12:14])
+
+    return date_time_to_epoch(yyyy, mm, dd, hours, mins, secs)
+
+
+def epoch_from_json(json):
+    epoch_timestamp = json['epoch_timestamp']
+    start_datetime = time.strftime(
+        '%Y%m%d%H%M%S', time.localtime(epoch_timestamp))
+    return string_to_epoch(start_datetime)
+
+
+def epoch_to_datetime(epoch_timestamp):
+    return time.strftime('%Y%m%d%H%M%S',
+                         time.localtime(epoch_timestamp))
+
+
+def read_timezone(timezone):
+    if isinstance(timezone, str):
+        if timezone == 'utc' or timezone == 'UTC':
+            timezone_offset = 0
+        elif timezone == 'jst' or timezone == 'JST':
+            timezone_offset = 9
+    else:
+        try:
+            timezone_offset = float(timezone)
+        except ValueError:
+            print('Error: timezone', timezone, 'in mission.cfg not \
+                  recognised, please enter value from UTC in hours')
+            return
+    return timezone_offset
