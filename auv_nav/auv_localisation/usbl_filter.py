@@ -12,12 +12,12 @@ def usbl_filter(usbl_list, depth_list, sigma_factor, max_auv_speed, ftype): #dep
     j=0
 
     for i in range(len(usbl_list)):        
-        while j < len(depth_list)-1 and depth_list[j].timestamp<usbl_list[i].timestamp:
+        while j < len(depth_list)-1 and depth_list[j].epoch_timestamp<usbl_list[i].epoch_timestamp:
             j=j+1
 
         if j>=1:                
-            depth_interpolated.append(interpolate(usbl_list[i].timestamp,depth_list[j-1].timestamp,depth_list[j].timestamp,depth_list[j-1].depth,depth_list[j].depth))
-            depth_std_interpolated.append(interpolate(usbl_list[i].timestamp,depth_list[j-1].timestamp,depth_list[j].timestamp,depth_list[j-1].depth_std,depth_list[j].depth_std))
+            depth_interpolated.append(interpolate(usbl_list[i].epoch_timestamp,depth_list[j-1].epoch_timestamp,depth_list[j].epoch_timestamp,depth_list[j-1].depth,depth_list[j].depth))
+            depth_std_interpolated.append(interpolate(usbl_list[i].epoch_timestamp,depth_list[j-1].epoch_timestamp,depth_list[j].epoch_timestamp,depth_list[j-1].depth_std,depth_list[j].depth_std))
 
     # not very robust, need to define max_speed carefully. Maybe use kmeans clustering? features = gradient/value compared to nearest few neighbours, k = 2, select group with least std/larger value?        
     
@@ -42,7 +42,7 @@ def usbl_filter(usbl_list, depth_list, sigma_factor, max_auv_speed, ftype): #dep
 
     def distance_filter(i,n):          
         lateral_distance = ((usbl_list[i].northings - usbl_list[i+n].northings)**2 + (usbl_list[i].eastings - usbl_list[i+n].eastings)**2)**0.5
-        lateral_distance_uncertainty_envelope = (((usbl_list[i].northings_std)**2+(usbl_list[i].eastings_std)**2)**0.5+((usbl_list[i+n].northings_std)**2+(usbl_list[i+n].eastings_std)**2)**0.5)+abs(usbl_list[i].timestamp-usbl_list[i+n].timestamp)*max_auv_speed
+        lateral_distance_uncertainty_envelope = (((usbl_list[i].northings_std)**2+(usbl_list[i].eastings_std)**2)**0.5+((usbl_list[i+n].northings_std)**2+(usbl_list[i+n].eastings_std)**2)**0.5)+abs(usbl_list[i].epoch_timestamp-usbl_list[i+n].epoch_timestamp)*max_auv_speed
 
         if lateral_distance <= sigma_factor*lateral_distance_uncertainty_envelope:
             return True
@@ -55,7 +55,7 @@ def usbl_filter(usbl_list, depth_list, sigma_factor, max_auv_speed, ftype): #dep
             usbl_temp_list.append(usbl_list[i])
         i+=1
 
-    print ("Length of original usbl list = {}, Length of depth filtered usbl list = {}".format(len(usbl_list), len(usbl_temp_list)))
+    # print ("Length of original usbl list = {}, Length of depth filtered usbl list = {}".format(len(usbl_list), len(usbl_temp_list)))
     usbl_list = usbl_temp_list
     usbl_temp_list = []
 
@@ -80,13 +80,13 @@ def usbl_filter(usbl_list, depth_list, sigma_factor, max_auv_speed, ftype): #dep
                 i+=1
 
         
-    print ("Length of depth filtered usbl list = {}, Length of depth and distance filtered usbl list = {}".format(len(usbl_list), len(usbl_temp_list)))
+    # print ("Length of depth filtered usbl list = {}, Length of depth and distance filtered usbl list = {}".format(len(usbl_list), len(usbl_temp_list)))
     # usbl_list = usbl_temp_list
 
     return usbl_temp_list
                    
     #def speed(ii, n):
-    #    value = abs((usbl_list[ii].northings - usbl_list[ii-n].northings)**2 + (usbl_list[ii].eastings - usbl_list[ii-n].eastings)**2/(usbl_list[ii].timestamp-usbl_list[ii-n].timestamp))
+    #    value = abs((usbl_list[ii].northings - usbl_list[ii-n].northings)**2 + (usbl_list[ii].eastings - usbl_list[ii-n].eastings)**2/(usbl_list[ii].epoch_timestamp-usbl_list[ii-n].epoch_timestamp))
     #    return value
     # to pick a good starting point. Any thing that says auv is at 5m/s reject
     #i=2
