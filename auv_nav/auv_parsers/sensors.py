@@ -1,6 +1,7 @@
 
 from auv_nav.auv_coordinates.body_to_inertial import body_to_inertial
 from auv_nav.auv_conversions.time_conversions import date_time_to_epoch
+from auv_nav.auv_conversions.time_conversions import read_timezone
 
 
 class PhinsHeaders():
@@ -17,12 +18,45 @@ class PhinsHeaders():
     ALTITUDE = 'LOGDVL'
 
 
+class Timestamp():
+    def epoch_timestamp_from_zone_offset(self, date, timezone, offset):
+        self.year, self.month, self.day = date
+        self.tz_offset = read_timezone(timezone)
+        self.offset = offset
+
+    def get(self, hour, mins, secs, msec):
+        epoch_time = date_time_to_epoch(
+            self.year, self.month, self.day,
+            hour, mins, secs, self.tz_offset)
+        return epoch_time + msec/1000+self.offset
+
+    def epoch_timestamp_from_phins(self, line):
+        epoch_timestamp = None
+        time_string = str(line[2])
+        if len(time_string) == 10:
+            hour = int(time_string[0:2])
+            mins = int(time_string[2:4])
+            try:
+                secs = int(time_string[4:6])
+                # phins sometimes returns 60s...
+                if secs < 60:
+                    msec = int(time_string[7:10])
+                    epoch_timestamp = self.get(hour, mins, secs, msec)
+            except Exception as exc:
+                print('Warning: Badly formatted packet (PHINS TIME): '
+                      + time_string + ' Exception: ' + str(exc))
+        else:
+            print('Warning: Badly formatted packet (PHINS TIME): ' + str(line))
+        return epoch_timestamp
+
+
 class Category():
     POSITION = 'position'
     ORIENTATION = 'orientation'
     VELOCITY = 'velocity'
     DEPTH = 'depth'
     ALTITUDE = 'altitude'
+    USBL = 'usbl'
 
 
 class OutputFormat():
@@ -35,7 +69,10 @@ class OutputFormat():
 
     def __init__(self):
         # Nothing to do
-        pass
+        self.epoch_timestamp = 0
+
+    def __lt__(self, o):
+        return self.epoch_timestamp < o.epoch_timestamp
 
     def _to_json(self):
         # To implement in child class
@@ -72,61 +109,15 @@ class OutputFormat():
         return data
 
 
-class Timestamp():
-    def __init__(self, date, timezone, offset):
-        self.epoch = None
-        self.year, self.month, self.day = date
-        self.tz_offset = self.read_timezone(timezone)
-        self.offset = offset
-
-    def read_timezone(self, timezone):
-        if isinstance(timezone, str):
-            if timezone == 'utc' or timezone == 'UTC':
-                timezone_offset = 0
-            elif timezone == 'jst' or timezone == 'JST':
-                timezone_offset = 9
-        else:
-            try:
-                timezone_offset = float(timezone)
-            except ValueError:
-                print('Error: timezone', timezone, 'in mission.cfg not \
-                      recognised, please enter value from UTC in hours')
-                return
-        return timezone_offset
-
-    def get(self, hour, mins, secs, msec):
-        epoch_time = date_time_to_epoch(
-            self.year, self.month, self.day,
-            hour, mins, secs, self.tz_offset)
-        return epoch_time + msec/1000+self.offset
-
-    def get_time_from_phins(self, line):
-        epoch_timestamp = None
-        time_string = str(line[2])
-        if len(time_string) == 10:
-            hour = int(time_string[0:2])
-            mins = int(time_string[2:4])
-            try:
-                secs = int(time_string[4:6])
-                # phins sometimes returns 60s...
-                if secs < 60:
-                    msec = int(time_string[7:10])
-                    epoch_timestamp = self.get(hour, mins, secs, msec)
-            except Exception as exc:
-                print('Warning: Badly formatted packet (PHINS TIME): '
-                      + time_string + ' Exception: ' + str(exc))
-        else:
-            print('Warning: Badly formatted packet (PHINS TIME): ' + str(line))
-        return epoch_timestamp
-
-
 class BodyVelocity(OutputFormat):
-    def __init__(self, timestamp, velocity_std_factor,
-                 velocity_std_offset, heading_offset):
+    def __init__(self, velocity_std_factor=0.001,
+                 velocity_std_offset=0.2, heading_offset=0,
+                 timestamp=None):
+        self.epoch_timestamp = None
         self.timestamp = timestamp
         self.velocity_std_factor = velocity_std_factor
         self.velocity_std_offset = velocity_std_offset
-        self.heading_offset = 0
+        self.yaw_offset = 0
         self.sensor_string = 'unknown'
         self.clear()
 
@@ -155,7 +146,7 @@ class BodyVelocity(OutputFormat):
         vy = float(line[3])  # DVL convention is +ve port to starboard
         vz = float(line[4])  # DVL convention is bottom to top +ve
         # account for sensor rotational offset
-        [vx, vy, vz] = body_to_inertial(0, 0, self.heading_offset, vx, vy, vz)
+        [vx, vy, vz] = body_to_inertial(0, 0, self.yaw_offset, vx, vy, vz)
         vy = -1*vy
         vz = -1*vz
 
@@ -178,6 +169,15 @@ class BodyVelocity(OutputFormat):
                 hour_dvl, mins_dvl, secs_dvl, msec_dvl)
             return epoch_time_dvl
 
+    def from_json(self, json):
+        self.epoch_timestamp = json['epoch_timestamp_dvl']
+        self.x_velocity = json['data'][0]['x_velocity']
+        self.y_velocity = json['data'][1]['y_velocity']
+        self.z_velocity = json['data'][2]['z_velocity']
+        self.x_velocity_std = json['data'][0]['x_velocity_std']
+        self.y_velocity_std = json['data'][1]['y_velocity_std']
+        self.z_velocity_std = json['data'][2]['z_velocity_std']
+
     def _to_json(self):
         data = {
             'epoch_timestamp': float(self.epoch_timestamp),
@@ -185,7 +185,7 @@ class BodyVelocity(OutputFormat):
             'class': 'measurement',
             'sensor': self.sensor_string,
             'frame': 'body',
-            'category': 'velocity',
+            'category': Category.VELOCITY,
             'data': [
                 {
                     'x_velocity': float(self.x_velocity),
@@ -204,7 +204,7 @@ class BodyVelocity(OutputFormat):
         data = ('RDI: ' + str(float(self.epoch_timestamp_dvl))
                 + ' alt:' + str(float(altitude.altitude))
                 + ' r1:0 r2:0 r3:0 r4:0'
-                + ' h:' + str(float(orientation.heading))
+                + ' h:' + str(float(orientation.yaw))
                 + ' p:' + str(float(orientation.pitch))
                 + ' r:' + str(float(orientation.roll))
                 + ' vx:' + str(float(self.x_velocity))
@@ -216,8 +216,8 @@ class BodyVelocity(OutputFormat):
 
 
 class InertialVelocity(OutputFormat):
-    def __init__(self, timestamp):
-        self.timestamp = timestamp
+    def __init__(self):
+        self.epoch_timestamp = None
         self.sensor_string = 'unknown'
         self.clear()
 
@@ -229,6 +229,18 @@ class InertialVelocity(OutputFormat):
         self.north_velocity_std = None
         self.east_velocity_std = None
         self.down_velocity_std = None
+
+        # interpolated data. mabye separate below to synced_velocity_inertial_orientation_...?
+        self.roll = 0
+        self.pitch = 0
+        self.yaw = 0
+
+        self.northings = 0
+        self.eastings = 0
+        self.depth = 0
+
+        self.latitude = 0
+        self.longitude = 0
 
     def valid(self):
         if (self.north_velocity is not None
@@ -253,13 +265,22 @@ class InertialVelocity(OutputFormat):
             self.north_velocity_std = float(line[3])
             self.down_velocity_std = -1*float(line[4])
 
+    def from_json(self, json):
+        self.epoch_timestamp = json['epoch_timestamp']
+        self.north_velocity = json['data'][0]['north_velocity']
+        self.east_velocity = json['data'][1]['east_velocity']
+        self.down_velocity = json['data'][2]['down_velocity']
+        self.north_velocity_std = json['data'][0]['north_velocity_std']
+        self.east_velocity_std = json['data'][1]['east_velocity_std']
+        self.down_velocity_std = json['data'][2]['down_velocity_std']
+
     def _to_json(self):
         data = {
             'epoch_timestamp': float(self.epoch_timestamp),
             'class': 'measurement',
             'sensor': self.sensor_string,
             'frame': 'inertial',
-            'category': 'velocity',
+            'category': Category.VELOCITY,
             'data': [
                 {
                     'north_velocity': float(self.north_velocity),
@@ -276,56 +297,66 @@ class InertialVelocity(OutputFormat):
 
 
 class Orientation(OutputFormat):
-    def __init__(self, timestamp, heading_offset=0.0):
-        self.timestamp = timestamp
-        self.heading_offset = heading_offset
+    def __init__(self, heading_offset=0.0):
+        self.epoch_timestamp = None
+        self.epoch_timestamp = None
+        self.yaw_offset = heading_offset
         self.sensor_string = 'unknown'
         self.clear()
 
     def clear(self):
         self.roll = None
         self.pitch = None
-        self.heading = None
+        self.yaw = None
 
         self.roll_std = None
         self.pitch_std = None
-        self.heading_std = None
+        self.yaw_std = None
 
     def valid(self):
         return (self.roll is not None
                 and self.roll_std is not None
-                and self.heading is not None
+                and self.yaw is not None
                 and self.epoch_timestamp is not None)
 
     def from_phins(self, line):
         self.sensor_string = 'phins'
         if line[0] == PhinsHeaders.HEADING:
             # phins +ve clockwise so no need to change
-            self.heading = float(line[1])
+            self.yaw = float(line[1])
 
         if line[1] == PhinsHeaders.ATTITUDE:
             self.roll = -1*float(line[2])
             # phins +ve nose up so no need to change
             self.pitch = -1*float(line[3])
-            if self.heading is not None:
-                [self.roll, self.pitch, self.heading] = body_to_inertial(
-                    0, 0, self.heading_offset,
-                    self.roll, self.pitch, self.heading)
+            if self.yaw is not None:
+                [self.roll, self.pitch, self.yaw] = body_to_inertial(
+                    0, 0, self.yaw_offset,
+                    self.roll, self.pitch, self.yaw)
                 # heading=heading+headingoffset
-                if self.heading > 360:
-                    self.heading = self.heading - 360
-                if self.heading < 0:
-                    self.heading = self.heading + 360
+                if self.yaw > 360:
+                    self.yaw = self.yaw - 360
+                if self.yaw < 0:
+                    self.yaw = self.yaw + 360
 
         if line[1] == PhinsHeaders.ATTITUDE_STD:
-            self.heading_std = float(line[2])
+            self.yaw_std = float(line[2])
             self.roll_std = float(line[3])
             self.pitch_std = float(line[4])
 
             # account for sensor rotational offset
             [roll_std, pitch_std, heading_std] = body_to_inertial(
-                0, 0, self.heading_offset,
-                self.roll_std, self.pitch_std, self.heading_std)
+                0, 0, self.yaw_offset,
+                self.roll_std, self.pitch_std, self.yaw_std)
+
+    def from_json(self, json):
+        self.epoch_timestamp = json['epoch_timestamp']
+        self.roll = json['data'][1]['roll']
+        self.pitch = json['data'][2]['pitch']
+        self.yaw = json['data'][0]['heading']
+        self.roll_std = json['data'][1]['roll_std']
+        self.pitch_std = json['data'][2]['pitch_std']
+        self.yaw_std = json['data'][0]['heading_std']
 
     def _to_json(self):
         data = {
@@ -333,11 +364,11 @@ class Orientation(OutputFormat):
             'class': 'measurement',
             'sensor': self.sensor_string,
             'frame': 'body',
-            'category': 'orientation',
+            'category': Category.ORIENTATION,
             'data': [
                 {
-                    'heading': float(self.heading),
-                    'heading_std': float(self.heading_std)
+                    'heading': float(self.yaw),
+                    'heading_std': float(self.yaw_std)
                 }, {
                     'roll': float(self.roll),
                     'roll_std': float(self.roll_std)
@@ -352,16 +383,17 @@ class Orientation(OutputFormat):
         data = ('PHINS_COMPASS: ' + str(float(self.epoch_timestamp))
                 + ' r: ' + str(float(self.roll))
                 + ' p: ' + str(float(self.pitch))
-                + ' h: ' + str(float(self.heading))
+                + ' h: ' + str(float(self.yaw))
                 + ' std_r: ' + str(float(self.roll_std))
                 + ' std_p: ' + str(float(self.pitch_std))
-                + ' std_h: ' + str(float(self.heading_std)) + '\n')
+                + ' std_h: ' + str(float(self.yaw_std)) + '\n')
         return data
 
 
 class Depth(OutputFormat):
-    def __init__(self, timestamp, depth_std_factor):
-        self.timestamp = timestamp
+    def __init__(self, depth_std_factor=0.0001, ts=None):
+        self.epoch_timestamp = None
+        self.ts = ts
         self.depth_std_factor = depth_std_factor
         self.sensor_string = 'unknown'
         self.clear()
@@ -389,11 +421,16 @@ class Depth(OutputFormat):
             # phins sometimes returns 60s...
             if secs < 60:
                 msec = int(time_string[7:10])
-                self.depth_timestamp = self.timestamp.get(
+                self.depth_timestamp = self.ts.get(
                     hour, mins, secs, msec)
         except Exception as exc:
             print('Warning: Badly formatted packet (DEPTH TIME): '
                   + time_string + ' Exception: ' + str(exc))
+
+    def from_json(self, json):
+        self.epoch_timestamp = json['epoch_timestamp_depth']
+        self.depth = json['data'][0]['depth']
+        self.depth_std = json['data'][0]['depth_std']
 
     def _to_json(self):
         data = {
@@ -402,7 +439,7 @@ class Depth(OutputFormat):
             'class': 'measurement',
             'sensor': self.sensor_string,
             'frame': 'inertial',
-            'category': 'depth',
+            'category': Category.DEPTH,
             'data': [
                 {
                     'depth': float(self.depth),
@@ -418,8 +455,8 @@ class Depth(OutputFormat):
 
 
 class Altitude(OutputFormat):
-    def __init__(self, timestamp, altitude_std_factor):
-        self.timestamp = timestamp
+    def __init__(self, altitude_std_factor=0.01):
+        self.epoch_timestamp = None
         self.altitude_std_factor = altitude_std_factor
         self.sensor_string = 'unknown'
         self.clear()
@@ -446,6 +483,10 @@ class Altitude(OutputFormat):
         self.altitude = float(line[4])
         self.altitude_std = self.altitude*self.altitude_std_factor
 
+    def from_json(self, json):
+        self.epoch_timestamp = json['epoch_timestamp']
+        self.altitude = json['data'][0]['altitude']
+
     def _to_json(self):
         data = {
             'epoch_timestamp': float(self.epoch_timestamp),
@@ -453,7 +494,7 @@ class Altitude(OutputFormat):
             'class': 'measurement',
             'sensor': self.sensor_string,
             'frame': 'body',
-            'category': 'altitude',
+            'category': Category.ALTITUDE,
             'data': [
                 {
                     'altitude': float(self.altitude),
@@ -467,9 +508,9 @@ class Altitude(OutputFormat):
         return data
 
 
-class Usbl():
-    def __init__(self, date):
-        self.timestamp = timestamp
+class Usbl(OutputFormat):
+    def __init__(self):
+        self.epoch_timestamp = None
 
         self.latitude = 0
         self.longitude = 0
@@ -494,13 +535,53 @@ class Usbl():
         # self.eastings_target = 0 eastings
         # self.depth = 0 depth
         self.lateral_distace = 0
-        self.distance = 0 #distance
+        self.distance = 0  #distance
         self.bearing = 0
+
+    def from_json(self, json):
+        self.epoch_timestamp = json['epoch_timestamp']
+        self.latitude = json['data_target'][0]['latitude']
+        self.latitude_std = json['data_target'][0]['latitude_std']
+        self.longitude = json['data_target'][1]['longitude']
+        self.longitude_std = json['data_target'][1]['longitude_std']
+        self.northings = json['data_target'][2]['northings']
+        self.northings_std = json['data_target'][2]['northings_std']
+        self.eastings = json['data_target'][3]['eastings']
+        self.eastings_std = json['data_target'][3]['eastings_std']
+        self.depth = json['data_target'][4]['depth']
+        self.depth_std = json['data_target'][4]['depth_std']
+        self.distance_to_ship = json['data_target'][5]['distance_to_ship']
+
+    def _to_json(self):
+        data = {
+            'epoch_timestamp': float(self.epoch_timestamp),
+            'category': Category.USBL,
+            'data_target': [
+                {
+                    'latitude': float(self.latitude),
+                    'latitude_std': float(self.latitude_std)
+                }, {
+                    'longitude': float(self.longitude),
+                    'longitude_std': float(self.longitude_std)
+                }, {
+                    'northings': float(self.northings),
+                    'northings_std': float(self.northings_std)
+                }, {
+                    'eastings': float(self.eastings),
+                    'eastings_std': float(self.eastings_std)
+                }, {
+                    'depth': float(self.depth),
+                    'depth_std': float(self.depth_std)
+                }, {
+                    'distance_to_ship': float(self.distance_to_ship),
+                }]
+            }
+        return data
 
 
 class Camera():
-    def __init__(self, date):
-        self.timestamp = timestamp
+    def __init__(self, timestamp=None):
+        self.epoch_timestamp = None
         self.filename = ''
         #
         self.northings = 0
@@ -517,10 +598,14 @@ class Camera():
 
         self.altitude = 0
 
+    def from_json(self, json, cam_name):
+        self.epoch_timestamp = json[cam_name][0]['epoch_timestamp']
+        self.filename = json[cam_name][0]['filename']
+
 
 class Other():
-    def __init__(self, date):
-        self.timestamp = timestamp
+    def __init__(self, timestamp=None):
+        self.epoch_timestamp = None
         self.data = []
 
         self.northings = 0
@@ -536,10 +621,14 @@ class Other():
 
         self.altitude = 0
 
+    def from_json(self, json):
+        self.epoch_timestamp = json['epoch_timestamp']
+        self.data = json['data']
+
 
 class SyncedOrientationBodyVelocity():
-    def __init__(self, date):
-        self.timestamp = timestamp
+    def __init__(self, timestamp=None):
+        self.epoch_timestamp = None
         # from orientation
         self.roll = 0
         self.pitch = 0
@@ -573,7 +662,7 @@ class SyncedOrientationBodyVelocity():
 
 # class synced_velocity_inertial_orientation:
 #   def __init__(self):
-#       self.timestamp = 0
+#       self.epoch_timestamp = 0
 
-#maybe do one synchronised orientation_bodyVelocity, and then one class of dead_reckoning.
-#and separate these steps in extract_data?
+# maybe do one synchronised orientation_bodyVelocity, and then one class of dead_reckoning.
+# and separate these steps in extract_data?
