@@ -4,15 +4,15 @@ Copyright (c) 2018, University of Southampton
 All rights reserved.
 """
 
+from auv_nav.auv_parsers.parse_data import parse_data
+from auv_nav.auv_parsers.extract_data import extract_data
+from auv_nav.auv_parsers.folder_structure import is_subfolder_of
 
 import os
 import sys
 import argparse
 
 sys.path.append(os.path.abspath('.'))
-from auv_nav.auv_parsers.parse_data import parse_data
-from auv_nav.auv_parsers.extract_data import extract_data
-from auv_nav.auv_parsers.folder_structure import is_subfolder_of
 
 
 def main(args=None):
