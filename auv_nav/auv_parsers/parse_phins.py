@@ -7,7 +7,7 @@ All rights reserved.
 import codecs
 from auv_nav.auv_parsers.sensors import BodyVelocity, InertialVelocity
 from auv_nav.auv_parsers.sensors import Orientation, Depth, Altitude
-from auv_nav.auv_parsers.sensors import Timestamp, Category, PhinsHeaders
+from auv_nav.auv_parsers.sensors import Category, Timestamp, PhinsHeaders
 
 
 class PhinsParser():
@@ -36,14 +36,14 @@ class PhinsParser():
 
         self.timestamp = Timestamp(date, timezone, timeoffset)
 
-        self.body_velocity = BodyVelocity(self.timestamp,
-                                          velocity_std_factor,
+        self.body_velocity = BodyVelocity(velocity_std_factor,
                                           velocity_std_offset,
-                                          heading_offset)
-        self.inertial_velocity = InertialVelocity(self.timestamp)
-        self.orientation = Orientation(self.timestamp, heading_offset)
-        self.depth = Depth(self.timestamp, depth_std_factor)
-        self.altitude = Altitude(self.timestamp, altitude_std_factor)
+                                          heading_offset,
+                                          self.timestamp)
+        self.inertial_velocity = InertialVelocity()
+        self.orientation = Orientation(heading_offset)
+        self.depth = Depth(depth_std_factor, self.timestamp)
+        self.altitude = Altitude(altitude_std_factor)
 
     def set_timestamp(self, epoch_timestamp):
         self.body_velocity.epoch_timestamp = epoch_timestamp
@@ -117,10 +117,7 @@ class PhinsParser():
                 self.inertial_velocity.from_phins(line)
                 data = self.inertial_velocity.export(self.output_format)
 
-        if (self.category == Category.ORIENTATION
-                and (header == PhinsHeaders.HEADING
-                     or header == PhinsHeaders.ATTITUDE
-                     or header == PhinsHeaders.ATTITUDE_STD)):
+        if self.category == Category.ORIENTATION:
             self.orientation.from_phins(line)
             data = self.orientation.export(self.output_format)
 
