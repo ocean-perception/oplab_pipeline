@@ -1,9 +1,15 @@
 # auv_nav
 ## Downloading and Updating the code ##
 
-To download the code, go to directory you want download the code to, open a terminal/command prompt there and type 
+To download the code, go to directory you want download the code to, open a terminal/command prompt there and type
 ```
 git clone https://github.com/ocean-perception/auv_nav.git
+```
+
+To install the code, executing the following terminal commands within the folder
+```
+python3 setup.py install
+python3 setup.py test
 ```
 
 To push updates you made to the repository on github (assuming you are using the master branch, which is the default), type
@@ -35,26 +41,26 @@ If you are using a different distribution, you might have to to install all pack
 ```
 pip3 install matplotlib numpy pyyaml plotly pandas xlrd prettytable --user
 ```
+* ... or executing this command for whl files (if you are using Windows)
+```
+pip3 install pandas-0.22.0-cp36-cp36m-win_amd64.whl
+```
 Some of the packages above are in [third_party](third_party) which can be installed by:
 * executing the following terminal commands within the folder...
 ```
 python3 setup.py install
 python3 setup.py test
 ```
-* ... or executing this command for whl files (if you are using Windows)
-```
-pip3 install pandas-0.22.0-cp36-cp36m-win_amd64.whl
-```
 
 ## Usage ##
 
-auv_nav has 2 commands:  
+auv_nav has 2 commands:
 - `parse`, which reads raw data from multiple sensors and writes it in chornological order to a text file in an intermediate data format. There are 2 different intermediate formats to choose: "oplab" or "acfr"
 - `process`, which outputs previously parsed data in a format that the 3D mapping pipeline can read
 
-`auv_nave parse' usage:
+`auv_nav parse` usage:
 ```
-auv_nav.py parse [-h] [-f FORMAT] path
+auv_nav parse [-h] [-f FORMAT] path
 
 positional arguments:
   path                  Folderpath where the (raw) input data is. Needs to be
@@ -70,9 +76,9 @@ optional arguments:
 The algorithm replicated the same folder structure as the input data, but instead of using a subfolder of 'raw', a folder 'processed' is created (if doesn't already exist), with the same succession of subfolders as there are in 'raw'. The mission.yaml and the vehicle.yaml files are copied to this folder. When using the 'oplab' format, the interlaced data is written in oplab format to a file called 'nav_standard.json' in a subfolder called 'nav'. When using the 'acfr' format, the interlaced data is written in acfr format to a file called combined.RAW.auv in a folder called dRAWLOGS_cv.
 
 
-`auv_nav.py process` usage:
+`auv_nav process` usage:
 ```
-auv_nav.py process [-h] [-f FORMAT] [-s START_DATETIME] [-e END_DATETIME] path
+auv_nav process [-h] [-f FORMAT] [-s START_DATETIME] [-e END_DATETIME] path
 
 positional arguments:
   path                  Path to folder where the data to process is. The
@@ -99,7 +105,7 @@ optional arguments:
 For OPLAB output format:
 1. Parse raw data into json file format 'nav_standard.json' and visualise data output
 
-    `python3 auv_nav.py parse -f oplab '\\oplab-surf\data\reconstruction\raw\2017\SSK17-01\ts_un_006'`
+    `auv_nav parse -f oplab '\\oplab-surf\data\reconstruction\raw\2017\SSK17-01\ts_un_006'`
 
     Example of output:
     ```
@@ -114,12 +120,12 @@ For OPLAB output format:
 
 2. Extract information from nav_standard.json output (start and finish time can be selected based on output in step 2)
 
-    `python3 auv_nav.py process -f oplab -s 20170817032000 -e 20170817071000 '\\oplab-surf\data\reconstruction\processed\2017\SSK17-01\ts_un_006'`
+    `auv_nav process -f oplab -s 20170817032000 -e 20170817071000 '\\oplab-surf\data\reconstruction\processed\2017\SSK17-01\ts_un_006'`
 
 For ACFR output format:
 1. Parse raw data into combined.RAW.auv and mission.cfg
 
-    `python3 auv_nav.py parse -f acfr '\\oplab-surf\data\reconstruction\raw\2017\SSK17-01\ts_un_006'`
+    `auv_nav parse -f acfr '\\oplab-surf\data\reconstruction\raw\2017\SSK17-01\ts_un_006'`
 
     Example of output:
     ```
@@ -136,7 +142,7 @@ For ACFR output format:
 
 The output files are stored in a mirrored file location where the input raw data is stored as follows with the paths to raw data as defined in mission.yaml
 ```
-e.g. 
+e.g.
     raw /<YEAR> /<CRUISE> /<DIVE>   /mission.yaml
                                     /vehicle.yaml
                                     /nav/gaps/
@@ -154,28 +160,29 @@ e.g.
 
 ## Example of Required YAML Configuration Files ##
 
-These files need to be in the root raw folder. Further examples can be found in [sample_yaml](sample_yaml)
+These files need to be in the root raw folder. Further examples can be found in [default_yaml](default_yaml)
 
-mission.yaml:
+1. mission.yaml:
+This file describes the mission's details and parameters of each sensor (e.g. where is the filepath of the data, its timezone format, etc).
 ```
 #YAML 1.0
 origin:
     latitude: 26.674083
-    longitude: 127.868054               
-    coordinate_reference_system: wgs84  
-    date: 2017/08/17              
+    longitude: 127.868054
+    coordinate_reference_system: wgs84
+    date: 2017/08/17
 
 velocity:
-    format: phins
+    format: phins # phins or ae2000
     thread: dvl
-    filepath: nav/phins/
-    filename: 20170817_phins.txt
-    timezone: utc
-    timeoffset: 0.0
-    headingoffset: -45.0
+    filepath: nav/phins/ # where is the filepath located
+    filename: 20170817_phins.txt # what is the filename
+    timezone: utc # what time zone is the timestamps in
+    timeoffset: 0.0 # what is the time offset
+    headingoffset: -45.0 # what is the heading offset of the sensor
 
 orientation:
-    format: phins
+    format: phins # phins or ae2000
     filepath: nav/phins/
     filename: 20170817_phins.txt
     timezone: utc
@@ -183,44 +190,49 @@ orientation:
     headingoffset: -45.0
 
 depth:
-    format: phins
+    format: phins # phins or ae2000
     filepath: nav/phins/
     filename: 20170817_phins.txt
     timezone: utc
     timeoffset: 0.0
 
 altitude:
-    format: phins
+    format: phins # phins or ae2000
     filepath: nav/phins/
     filename: 20170817_phins.txt
     timezone: utc
     timeoffset: 0.0
 
 usbl:
-    format: gaps
+    format: gaps # gaps or usbl_dump
     filepath: nav/gaps/
+    filename: 20171123_AE2000f_LOG.csv # filename of data, only for usbl_dump format
     timezone: utc
     timeoffset: 0.0
-    id: 1
+    id: 1 # selected usbl id, only for gaps format
+    label: T1 # selected usbl label, only for usbl_dump format
 
 image:
-    format: acfr_standard
+    format: acfr_standard # acfr_standard or seaxerocks_3
     filepath: image/r20170817_041459_UG117_sesoko/i20170817_041459/
     camera1: LC
     camera2: RC
+    camera3: LM165 # only for seaxerocks_3 format
     timezone: utc
     timeoffset: 0.0
 ```
 
 vehicle.yaml
+This file describes the location of the sensors relative to the defined position (origin) of the vehicle.
 ```
 #YAML 1.0
-origin: #centre of robot
+# origin = centre of robot when x_offset, y_offset, z_offset = 0
+origin:
   x_offset: 0
   y_offset: 0
   z_offset: 0
 
-# distance with reference to origin/centre of robot
+# distance of sensor to origin
 usbl:
   x_offset: 0.1
   y_offset: 0
@@ -258,15 +270,15 @@ An example dataset can be downloaded from the following link with the expected f
 Download, extract and specify the folder location and run as
 ```
 ACFR format:
-python3 auv_nav.py parse ~/raw/2017/cruise/dive -f acfr
+auv_nav parse ~/raw/2017/cruise/dive -f acfr
 
 OPLAB format:
-python3 auv_nav.py parse ~/raw/2017/cruise/dive -f oplab
-python3 auv_nav.py process ~/processed/2017/cruise/dive -f oplab -s 20170816032345 -e 20170816034030
-```        
+auv_nav parse ~/raw/2017/cruise/dive -f oplab
+auv_nav process ~/processed/2017/cruise/dive -f oplab -s 20170816032345 -e 20170816034030
+```
 
 The coordinate frames used are those defined in Thor Fossen Guidance, Navigation and Control of Ocean Vehicles
-    
+
 i.e. Body frame:
         x-direction: +ve aft to fore
         y-direction: +ve port to starboard
@@ -277,4 +289,4 @@ i.e. Intertial frame:
         down-direction: +ve depth downwards
 
 Parameter naming conventions
-    long and descriptive names should be used with all lower case letters. 
+    long and descriptive names should be used with all lower case letters.
