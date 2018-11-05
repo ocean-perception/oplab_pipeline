@@ -222,7 +222,7 @@ image:
     timeoffset: 0.0
 ```
 
-vehicle.yaml
+2. vehicle.yaml
 This file describes the location of the sensors relative to the defined position (origin) of the vehicle.
 ```
 #YAML 1.0
