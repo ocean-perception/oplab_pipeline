@@ -5,6 +5,8 @@ All rights reserved.
 """
 from auv_nav.auv_parsers.sensors import BodyVelocity, Usbl
 from auv_nav.auv_parsers.sensors import Depth, Orientation
+from auv_nav.auv_parsers.sensors import SyncedOrientationBodyVelocity
+from auv_nav.auv_conversions.interpolate import interpolate_dvl
 
 import math
 import numpy as np
@@ -53,10 +55,11 @@ class EkfState(object):
 
 
 class Measurement(object):
-    def __init__(self):
+    def __init__(self, noise_factor):
         # The measurement and its associated covariance
         self.measurement = np.zeros(15, dtype=float)
         self.covariance = np.zeros((15, 15), dtype=float)
+        self.noise_factor = noise_factor
 
         # This defines which variables within this measurement
         # actually get passed into the filter.
@@ -69,51 +72,79 @@ class Measurement(object):
         self.mahalanobis_threshold = 1e20
 
     def from_depth(self, value):
-        self.time = value.depth_timestamp
+        # print('Depth measurement')
+        self.time = value.epoch_timestamp
         self.measurement[Index.Z] = value.depth
         self.covariance[Index.Z, Index.Z] = value.depth_std
+        self.covariance *= self.noise_factor
         self.update_vector[Index.Z] = 1
 
     def from_dvl(self, value):
+        # print('DVL measurement')
+        # Vinnay's dvl_noise model:
+        # velocity_std = (-0.0125*((velocity)**2)+0.2*(velocity)+0.2125)/100)
+        # assuming noise of x_velocity = y_velocity = z_velocity
+        velocity_std_factor = 0.001
+        velocity_std_offset = 0.002
+
         self.time = value.epoch_timestamp
         self.measurement[Index.VX] = value.x_velocity
         self.measurement[Index.VY] = value.y_velocity
         self.measurement[Index.VZ] = value.z_velocity
-        self.covariance[Index.VX, Index.VX] = value.x_velocity_std
-        self.covariance[Index.VY, Index.VY] = value.y_velocity_std
-        self.covariance[Index.VZ, Index.VZ] = value.z_velocity_std
+        self.covariance[Index.VX, Index.VX] = (
+            abs(value.x_velocity)*velocity_std_factor+velocity_std_offset)
+        self.covariance[Index.VY, Index.VY] = (
+            abs(value.y_velocity)*velocity_std_factor+velocity_std_offset)
+        self.covariance[Index.VZ, Index.VZ] = (
+            abs(value.z_velocity)*velocity_std_factor+velocity_std_offset)
+        self.covariance *= self.noise_factor
         self.update_vector[Index.VX] = 1
         self.update_vector[Index.VY] = 1
         self.update_vector[Index.VZ] = 1
 
     def from_usbl(self, value):
+        # print('USBL measurement')
+        usbl_noise_std_offset = 5
+        usbl_noise_std_factor = 0.01
+        distance = math.sqrt(value.northings**2
+                             + value.eastings**2
+                             + value.depth**2)
+        error = (usbl_noise_std_offset + usbl_noise_std_factor*distance)
+
         self.time = value.epoch_timestamp
         self.measurement[Index.X] = value.northings
         self.measurement[Index.Y] = value.eastings
-        self.covariance[Index.X, Index.X] = value.northings_std
-        self.covariance[Index.Y, Index.Y] = value.eastings_std
+        self.covariance[Index.X, Index.X] = error
+        self.covariance[Index.Y, Index.Y] = error
+        self.covariance *= self.noise_factor
         self.update_vector[Index.X] = 1
         self.update_vector[Index.Y] = 1
 
     def from_orientation(self, value):
+        # print('Orientation measurement')
+        imu_noise = 0.003
+
         self.time = value.epoch_timestamp
         self.measurement[Index.ROLL] = value.roll*math.pi/180.
         self.measurement[Index.PITCH] = value.pitch*math.pi/180.
         self.measurement[Index.YAW] = value.yaw*math.pi/180.
-        self.covariance[Index.ROLL, Index.ROLL] = value.roll_std*math.pi/180.
-        self.covariance[Index.PITCH,
-                        Index.PITCH] = value.pitch_std*math.pi/180.
-        self.covariance[Index.YAW, Index.YAW] = value.yaw_std*math.pi/180.
+        self.covariance[Index.ROLL, Index.ROLL] = imu_noise
+        self.covariance[Index.PITCH, Index.PITCH] = imu_noise
+        self.covariance[Index.YAW, Index.YAW] = imu_noise
+        self.covariance *= self.noise_factor
         self.update_vector[Index.ROLL] = 1
         self.update_vector[Index.PITCH] = 1
         self.update_vector[Index.YAW] = 1
+
+    def from_synced_orientation_body_velocity(self, value):
+        self.from_orientation(value)
+        self.from_dvl(value)
 
 
 class EkfImpl(object):
     def __init__(self):
         self.covariance = np.array([])
         self.state = np.array([])
-        self.last_measurement_time = 0.0
         self.initialized = False
         self.last_update_time = 0.0
         self.predicted_state = np.array([])
@@ -123,29 +154,29 @@ class EkfImpl(object):
         self.states_vector = []
         self.smoothed_states_vector = []
 
+    def get_states(self):
+        return self.states_vector
+
     def get_smoothed_states(self):
         return self.smoothed_states_vector
 
     def get_last_update_time(self):
         return self.last_update_time
 
-    def get_last_measurement_time(self):
-        return self.last_measurement_time
-
     def set_state(self, state):
-        self.state = state.astype(float)
+        self.state = copy.deepcopy(state.astype(float))
+
+    def get_state(self):
+        return self.state
 
     def set_process_noise_covariance(self, pnc):
-        self.process_noise_covariance = np.mat(pnc).astype(float)
+        self.process_noise_covariance = copy.deepcopy(np.mat(pnc).astype(float))
 
     def set_last_update_time(self, time):
         self.last_update_time = time
 
-    def set_last_measurement_time(self, time):
-        self.last_measurement_time = time
-
     def set_covariance(self, cov):
-        self.covariance = np.mat(cov).astype(float)
+        self.covariance = copy.deepcopy(np.mat(cov).astype(float))
 
     def wrap_state_angles(self):
         self.state[Index.ROLL] = self.clamp_rotation(self.state[Index.ROLL])
@@ -176,6 +207,9 @@ class EkfImpl(object):
         # (2) Project the error forward: P = J * P * J' + Q
         self.covariance = (A @ self.covariance @ A.T)
         self.covariance += delta * self.process_noise_covariance
+
+        # print('Prediction {0}'.format(str(self.state.T)))
+        self.last_update_time = timestamp
 
         # (3) Save the state for posterior smoothing
         s = EkfState(timestamp, self.state, self.covariance)
@@ -262,11 +296,14 @@ class EkfImpl(object):
                                 @ kalman_gain_subset.T)
             # Wrap state angles
             self.wrap_state_angles()
+            self.last_update_time = measurement.time
 
             # (5) Update the state for posterior smoothing
             if len(self.states_vector) > 0:
                 self.states_vector[-1].set(
                     self.state, self.covariance)
+        else:
+            print('Mahalanobis distance too large. Correction not applied.')
 
     def smooth(self):
         if len(self.states_vector) < 2:
@@ -281,8 +318,8 @@ class EkfImpl(object):
 
             delta = sf.get_time() - s.get_time()
 
-            f = self.compute_transfer_function(delta, self.state)
-            A = self.compute_transfer_function_jacobian(delta, self.state, f)
+            f = self.compute_transfer_function(delta, x_prior)
+            A = self.compute_transfer_function_jacobian(delta, x_prior, f)
 
             p_prior_pred = (A @ p_prior @ A.T
                             + self.process_noise_covariance * delta)
@@ -306,7 +343,7 @@ class EkfImpl(object):
         cy = math.cos(yaw)
         sy = math.sin(yaw)
 
-        f = np.zeros((Index.DIM, Index.DIM), dtype=float)
+        f = np.eye(Index.DIM, dtype=float)
         f[Index.X, Index.VX] = cy * cp * delta
         f[Index.X, Index.VY] = (cy * sp * sr - sy * cr) * delta
         f[Index.X, Index.VZ] = (cy * sp * cr + sy * sr) * delta
@@ -340,9 +377,6 @@ class EkfImpl(object):
         return f
 
     def compute_transfer_function_jacobian(self, delta, state, f):
-        x = state[Index.X]
-        y = state[Index.Y]
-        z = state[Index.Z]
         roll = state[Index.ROLL]
         pitch = state[Index.PITCH]
         yaw = state[Index.YAW]
@@ -445,30 +479,34 @@ class EkfImpl(object):
         tfjac[Index.YAW, Index.PITCH] = dFY_dP
         return tfjac
 
+    def print_state(self):
+        print('State at time {0}'.format(str(self.last_update_time)))
+        s = self.state
+        print('XYZ : ({0}, {1}, {2})'.format(str(s[0]), str(s[1]), str(s[2])))
+        print('RPY : ({0}, {1}, {2})'.format(str(s[3]), str(s[4]), str(s[5])))
+        print('VXYZ: ({0}, {1}, {2})'.format(str(s[6]), str(s[7]), str(s[8])))
+
 
 class ExtendedKalmanFilter(object):
     def __init__(self,
                  initial_estimate_covariance,
                  process_noise_covariance,
-                 velocity_body_list,
-                 orientation_list,
-                 depth_list,
+                 measurement_noise_sigma_factor,
+                 dr_list,
                  usbl_list):
         # Prepare a list of sensor readings and sort it.
-        sensor_list = copy.deepcopy(velocity_body_list)
-        sensor_list.extend(orientation_list)
-        sensor_list.extend(depth_list)
+        sensor_list = copy.deepcopy(dr_list)
+        # sensor_list = copy.deepcopy(velocity_body_list)
+        # sensor_list.extend(orientation_list)
+        # sensor_list.extend(depth_list)
         sensor_list.extend(usbl_list)
         sorted_list = sorted(sensor_list)
 
         """
         Get the first USBL, DVL and Orientation reading for EKF initialization
         """
-        state0 = self.get_init_state(velocity_body_list,
-                                     orientation_list,
-                                     depth_list,
+        state0 = self.get_init_state(dr_list,
                                      usbl_list)
-
         # Get first measurement
         start_time = sorted_list[0].epoch_timestamp
         end_time = sorted_list[-1].epoch_timestamp
@@ -477,15 +515,19 @@ class ExtendedKalmanFilter(object):
 
         ekf = EkfImpl()
         ekf.set_state(state0)
+        ekf.set_last_update_time(current_time)
         ekf.set_covariance(initial_estimate_covariance)
         ekf.set_process_noise_covariance(process_noise_covariance)
 
         sensor_idx = 0
+        print('-------------------------------')
         print("Running EKF...")
+        ekf.print_state()
+        print('-------------------------------')
         while current_time < end_time:
             measurement_queue = []
             while sorted_list[sensor_idx].epoch_timestamp < current_time:
-                m = Measurement()
+                m = Measurement(measurement_noise_sigma_factor)
                 if type(sorted_list[sensor_idx]) is BodyVelocity:
                     m.from_dvl(sorted_list[sensor_idx])
                     measurement_queue.append(m)
@@ -495,74 +537,77 @@ class ExtendedKalmanFilter(object):
                 elif type(sorted_list[sensor_idx]) is Depth:
                     m.from_depth(sorted_list[sensor_idx])
                     measurement_queue.append(m)
+                elif type(sorted_list[sensor_idx]) is SyncedOrientationBodyVelocity:
+                    m.from_synced_orientation_body_velocity(sorted_list[sensor_idx])
+                    measurement_queue.append(m)
                 elif type(sorted_list[sensor_idx]) is Usbl:
                     m.from_usbl(sorted_list[sensor_idx])
                     measurement_queue.append(m)
+                # print('Update vector: {0}'.format(m.update_vector))
                 sensor_idx += 1
 
-            # f_meas_time = ekf.getLastMeasurementTime()
             f_upda_time = ekf.get_last_update_time()
             last_update_delta = current_time - f_upda_time
-            ekf.predict(current_time, last_update_delta)
-            if len(measurement_queue) > 0:
-                for m in measurement_queue:
-                    ekf.correct(m)
-                    ekf.set_last_measurement_time(m.time)
-            ekf.set_last_update_time(current_time)
+            # print('last_update_delta {0}'.format(last_update_delta))
+            if last_update_delta > 1e-9:
+                ekf.predict(current_time, last_update_delta)
+                # Predict and update any measurements
+                if len(measurement_queue) > 0:
+                    for m in measurement_queue:
+                        ekf.correct(m)
+                    measurement_queue.clear()
+
             current_time += step_time
+            # print('-------------------------------')
+            # ekf.print_state()
+            # print('-------------------------------')
+            # time.sleep(1)
+        self.states = ekf.get_states()
         print("EKF finished, smoothing with EKS...")
         ekf.smooth()
+        self.states_smoothed = ekf.get_smoothed_states()
         print("EKS finished")
-        self.states = ekf.get_smoothed_states()
 
     def get_result(self):
         return self.states
 
-    def get_init_state(self,
-                       velocity_body_list,
-                       orientation_list,
-                       depth_list,
-                       usbl_list):
-        oi = 0
-        oready = False
-        di = 0
-        dready = False
-        ui = 0
-        uready = False
-        vi = 0
-        ref_stamp = velocity_body_list[vi].epoch_timestamp
+    def get_smoothed_result(self):
+        return self.states_smoothed
 
-        all_ready = False
-        while not all_ready:
-            o = orientation_list[oi]
-            d = depth_list[di]
-            u = usbl_list[ui]
-            if o.epoch_timestamp < ref_stamp:
-                oi += 1
-            else:
-                oready = True
-            if d.epoch_timestamp < ref_stamp:
-                di += 1
-            else:
-                dready = True
-            if u.epoch_timestamp < ref_stamp:
-                ui += 1
-            else:
-                uready = True
-            all_ready = oready and dready and uready
-
-        x = usbl_list[ui].northings
-        y = usbl_list[ui].eastings
-        z = depth_list[di].depth
-        roll = orientation_list[oi].roll
-        pitch = orientation_list[oi].pitch
-        heading = orientation_list[oi].yaw
-        vx = velocity_body_list[vi].x_velocity
-        vy = velocity_body_list[vi].y_velocity
-        vz = velocity_body_list[vi].z_velocity
+    def build_state(self, usbl, dr):
+        x = usbl.northings
+        y = usbl.eastings
+        z = dr.depth
+        roll = dr.roll*math.pi/180.
+        pitch = dr.pitch*math.pi/180.
+        heading = dr.yaw*math.pi/180.
+        vx = dr.x_velocity
+        vy = dr.y_velocity
+        vz = dr.z_velocity
         state = np.array([[x, y, z,
                           roll, pitch, heading,
                           vx, vy, vz,
                           0, 0, 0,
                           0, 0, 0]])
+        return state
+
+    def get_init_state(self,
+                       dr_list,
+                       usbl_list):
+        ui = 0
+        di = 0
+        state = []
+        if usbl_list[ui].epoch_timestamp > dr_list[di].epoch_timestamp:
+            while usbl_list[ui].epoch_timestamp > dr_list[di].epoch_timestamp:
+                di += 1
+        if dr_list[di].epoch_timestamp == usbl_list[ui].epoch_timestamp:
+            state = self.build_state(usbl_list[ui], dr_list[di])
+            ui += 1
+            di += 1
+        elif usbl_list[ui].epoch_timestamp < dr_list[di].epoch_timestamp:
+            while usbl_list[ui+1].epoch_timestamp < dr_list[di].epoch_timestamp:
+                ui += 1
+            # interpolated_data = interpolate_data(usbl_list[ui].epoch_timestamp, dr_list[di], dr_list[di+1])
+            interpolated_data = interpolate_dvl(usbl_list[ui].epoch_timestamp, dr_list[di], dr_list[di+1])
+            state = self.build_state(usbl_list[ui], interpolated_data)
         return state.T
