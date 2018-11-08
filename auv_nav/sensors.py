@@ -4,9 +4,9 @@ Copyright (c) 2018, University of Southampton
 All rights reserved.
 """
 
-from auv_nav.auv_coordinates.body_to_inertial import body_to_inertial
-from auv_nav.auv_conversions.time_conversions import date_time_to_epoch
-from auv_nav.auv_conversions.time_conversions import read_timezone
+from auv_nav.tools.body_to_inertial import body_to_inertial
+from auv_nav.tools.time_conversions import date_time_to_epoch
+from auv_nav.tools.time_conversions import read_timezone
 
 
 class PhinsHeaders():

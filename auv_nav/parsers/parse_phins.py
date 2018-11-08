@@ -5,9 +5,9 @@ All rights reserved.
 """
 
 import codecs
-from auv_nav.auv_parsers.sensors import BodyVelocity, InertialVelocity
-from auv_nav.auv_parsers.sensors import Orientation, Depth, Altitude
-from auv_nav.auv_parsers.sensors import Category, Timestamp, PhinsHeaders
+from auv_nav.sensors import BodyVelocity, InertialVelocity
+from auv_nav.sensors import Orientation, Depth, Altitude
+from auv_nav.sensors import Category, Timestamp, PhinsHeaders
 
 
 class PhinsParser():

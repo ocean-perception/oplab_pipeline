@@ -11,9 +11,9 @@ import sys, math
 import time, json, glob
 #http://www.json.org/
 # sys.path.append("..")
-from auv_nav.auv_coordinates.latlon_wgs84 import latlon_to_metres
-from auv_nav.auv_coordinates.latlon_wgs84 import metres_to_latlon
-from auv_nav.auv_conversions.time_conversions import date_time_to_epoch
+from auv_nav.tools.latlon_wgs84 import latlon_to_metres
+from auv_nav.tools.latlon_wgs84 import metres_to_latlon
+from auv_nav.tools.time_conversions import date_time_to_epoch
 
 class parse_gaps:
 	def __init__(self, filepath, category, timezone, timeoffset, latitude_reference, longitude_reference, ftype, outpath, fileoutname, usbl_id):

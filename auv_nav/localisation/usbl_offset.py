@@ -7,7 +7,7 @@
 
 import sys, os, math
 sys.path.append("..")
-from auv_nav.auv_conversions.interpolate import interpolate
+from auv_nav.tools.interpolate import interpolate
 
 class usbl_offset:
 	def __init__(self, time_dead_reckoning, northings_dead_reckoning, eastings_dead_reckoning, time_usbl, northings_usbl, eastings_usbl):

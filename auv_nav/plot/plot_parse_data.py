@@ -13,8 +13,8 @@ from prettytable import PrettyTable, ALL
 import plotly.offline as py
 import plotly.graph_objs as go
 
-from auv_nav.auv_conversions.time_conversions import epoch_to_localtime
-from auv_nav.auv_conversions.time_conversions import get_localtimezone
+from auv_nav.tools.time_conversions import epoch_to_localtime
+from auv_nav.tools.time_conversions import get_localtimezone
 
 """
 This looks at nav_standard.json file stored in the format of
@@ -98,7 +98,7 @@ def data2trace(i, j, t, plotlytable_info_list):
     return x_values, y_values, title
 
 
-def display_info(filepath, ftype):
+def plot_parse_data(filepath, ftype):
     '''
     Goes through each data element in json file and first check for different
     types category, and then different types of frame (body or inertial).

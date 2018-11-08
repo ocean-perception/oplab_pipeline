@@ -4,30 +4,31 @@ Copyright (c) 2018, University of Southampton
 All rights reserved.
 """
 
-from auv_nav.auv_conversions.interpolate import interpolate
-from auv_nav.auv_conversions.interpolate import interpolate_sensor_list
-from auv_nav.auv_conversions.time_conversions import string_to_epoch
-from auv_nav.auv_conversions.time_conversions import epoch_from_json
-from auv_nav.auv_conversions.time_conversions import epoch_to_datetime
-from auv_nav.auv_coordinates.latlon_wgs84 import metres_to_latlon
-from auv_nav.auv_coordinates.body_to_inertial import body_to_inertial
-from auv_nav.auv_localisation.dead_reckoning import dead_reckoning
-from auv_nav.auv_localisation.usbl_offset import usbl_offset
-from auv_nav.auv_localisation.particle_filter import ParticleFilter
-from auv_nav.auv_localisation.ekf import ExtendedKalmanFilter, Index
-from auv_nav.auv_localisation.usbl_filter import usbl_filter
-from auv_nav.auv_parsers.sensors import BodyVelocity, InertialVelocity
-from auv_nav.auv_parsers.sensors import Altitude, Depth, Usbl, Orientation
-from auv_nav.auv_parsers.sensors import Other, Camera
-from auv_nav.auv_parsers.sensors import SyncedOrientationBodyVelocity
-from auv_nav.auv_parsers.plot_tools import plot_orientation_vs_time
-from auv_nav.auv_parsers.plot_tools import plot_velocity_vs_time
-from auv_nav.auv_parsers.plot_tools import plot_deadreckoning_vs_time
-from auv_nav.auv_parsers.plot_tools import plot_pf_uncertainty
-from auv_nav.auv_parsers.plot_tools import plot_2d_deadreckoning
-from auv_nav.auv_parsers.csv_tools import write_csv
-from auv_nav.auv_parsers.csv_tools import camera_csv
-from auv_nav.auv_parsers.csv_tools import other_data_csv
+from auv_nav.tools.interpolate import interpolate
+from auv_nav.tools.interpolate import interpolate_sensor_list
+from auv_nav.tools.time_conversions import string_to_epoch
+from auv_nav.tools.time_conversions import epoch_from_json
+from auv_nav.tools.time_conversions import epoch_to_datetime
+from auv_nav.tools.latlon_wgs84 import metres_to_latlon
+from auv_nav.tools.body_to_inertial import body_to_inertial
+from auv_nav.tools.csv_tools import write_csv
+from auv_nav.tools.csv_tools import camera_csv
+from auv_nav.tools.csv_tools import other_data_csv
+from auv_nav.sensors import BodyVelocity, InertialVelocity
+from auv_nav.sensors import Altitude, Depth, Usbl, Orientation
+from auv_nav.sensors import Other, Camera
+from auv_nav.sensors import SyncedOrientationBodyVelocity
+from auv_nav.localisation.dead_reckoning import dead_reckoning
+from auv_nav.localisation.usbl_offset import usbl_offset
+from auv_nav.localisation.particle_filter import ParticleFilter
+from auv_nav.localisation.ekf import ExtendedKalmanFilter, Index
+from auv_nav.localisation.usbl_filter import usbl_filter
+from auv_nav.plot.plot_process_data import plot_orientation_vs_time
+from auv_nav.plot.plot_process_data import plot_velocity_vs_time
+from auv_nav.plot.plot_process_data import plot_deadreckoning_vs_time
+from auv_nav.plot.plot_process_data import plot_pf_uncertainty
+from auv_nav.plot.plot_process_data import plot_2d_deadreckoning
+
 
 # Import librarys
 import os
@@ -54,7 +55,7 @@ csv files and, if plot is True, save plots
 """
 
 
-def extract_data(filepath, ftype, start_datetime, finish_datetime):
+def process_data(filepath, ftype, start_datetime, finish_datetime):
     # placeholders
     interpolate_remove_flag = False
 

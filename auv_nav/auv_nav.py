@@ -4,9 +4,9 @@ Copyright (c) 2018, University of Southampton
 All rights reserved.
 """
 
-from auv_nav.auv_parsers.parse_data import parse_data
-from auv_nav.auv_parsers.extract_data import extract_data
-from auv_nav.auv_parsers.folder_structure import is_subfolder_of
+from auv_nav.parse_data import parse_data
+from auv_nav.process_data import process_data
+from auv_nav.tools.folder_structure import is_subfolder_of
 
 import os
 import sys
@@ -105,7 +105,7 @@ def call_process_data(args):
     if not is_subfolder_of(args.path, "processed"):
         raise ValueError("The input directory you provided is not a subfolder \
                          of a folder called 'processed'")
-    extract_data(args.path, args.format,
+    process_data(args.path, args.format,
                  args.start_datetime, args.end_datetime)
 
 
