@@ -38,6 +38,7 @@ import time
 import codecs
 import pathlib
 import copy
+import math
 
 from pathlib import Path
 import numpy as np
@@ -151,6 +152,10 @@ def extract_data(filepath, ftype, start_datetime, finish_datetime):
                 'ekf']['initial_estimate_covariance']
             ekf_initial_estimate_covariance = np.asarray(
                 ekf_initial_estimate_covariance).reshape((15, 15))
+            measurement_noise_sigma_factor = load_localisation[
+                'ekf']['measurement_noise_sigma_factor']
+            measurement_noise_sigma_factor = np.asarray(
+                measurement_noise_sigma_factor)
         if 'csv_output' in load_localisation:
             # csv_active
             csv_output_activate = load_localisation['csv_output']['activate']
@@ -732,11 +737,11 @@ def extract_data(filepath, ftype, start_datetime, finish_datetime):
         # usbl_list, list of Usbl()
         ekf = ExtendedKalmanFilter(ekf_initial_estimate_covariance,
                                    ekf_process_noise_covariance,
-                                   velocity_body_list,
-                                   orientation_list,
-                                   depth_list,
+                                   measurement_noise_sigma_factor,
+                                   dead_reckoning_dvl_list,
                                    usbl_list)
         ekf_states = ekf.get_result()
+        ekf_smoothed_states = ekf.get_smoothed_result()
         ekf_end_time = time.time()
         ekf_elapsed_time = ekf_end_time - ekf_start_time
         print("EKF took {} seconds".format(ekf_elapsed_time))
@@ -744,22 +749,66 @@ def extract_data(filepath, ftype, start_datetime, finish_datetime):
         ekf_list = []
         for s in ekf_states:
             b = SyncedOrientationBodyVelocity()
-            b.latitude, b.longitude = metres_to_latlon(
-                latitude_reference, longitude_reference,
-                s.state[Index.X], s.state[Index.Y])
+            b.epoch_timestamp = s.time
+            b.northings = s.state[Index.X, 0]
+            b.eastings = s.state[Index.Y, 0]
+            b.depth = s.state[Index.Z, 0]
+            b.roll = s.state[Index.ROLL, 0]*180.0/math.pi
+            b.pitch = s.state[Index.PITCH, 0]*180.0/math.pi
+            b.yaw = s.state[Index.YAW, 0]*180.0/math.pi
+            b.roll_std = s.covariance[Index.ROLL, Index.ROLL]*180.0/math.pi
+            b.pitch_std = s.covariance[Index.PITCH, Index.PITCH]*180.0/math.pi
+            b.yaw_std = s.covariance[Index.YAW, Index.YAW]*180.0/math.pi
+            b.x_velocity = s.state[Index.VX, 0]
+            b.y_velocity = s.state[Index.VY, 0]
+            b.z_velocity = s.state[Index.VZ, 0]
+            b.x_velocity_std = s.covariance[Index.VX, Index.VX]
+            b.y_velocity_std = s.covariance[Index.VY, Index.VY]
+            b.z_velocity_std = s.covariance[Index.VZ, Index.VZ]
             [x_offset, y_offset, z_offset] = body_to_inertial(
-                s.state[Index.ROLL],
-                s.state[Index.PITCH],
-                s.state[Index.YAW],
+                b.roll, b.pitch, b.yaw,
                 origin_x_offset - dvl_x_offset,
                 origin_y_offset - dvl_y_offset,
                 origin_z_offset - dvl_z_offset)
             b.northings += x_offset
             b.eastings += y_offset
+            b.depth += z_offset
             b.latitude, b.longitude = metres_to_latlon(
                 latitude_reference, longitude_reference,
                 b.eastings, b.northings)
             ekf_list.append(b)
+
+        ekf_smoothed_list = []
+        for s in ekf_smoothed_states:
+            b = SyncedOrientationBodyVelocity()
+            b.epoch_timestamp = s.time
+            b.northings = s.state[Index.X, 0]
+            b.eastings = s.state[Index.Y, 0]
+            b.depth = s.state[Index.Z, 0]
+            b.roll = s.state[Index.ROLL, 0]*180.0/math.pi
+            b.pitch = s.state[Index.PITCH, 0]*180.0/math.pi
+            b.yaw = s.state[Index.YAW, 0]*180.0/math.pi
+            b.roll_std = s.covariance[Index.ROLL, Index.ROLL]*180.0/math.pi
+            b.pitch_std = s.covariance[Index.PITCH, Index.PITCH]*180.0/math.pi
+            b.yaw_std = s.covariance[Index.YAW, Index.YAW]*180.0/math.pi
+            b.x_velocity = s.state[Index.VX, 0]
+            b.y_velocity = s.state[Index.VY, 0]
+            b.z_velocity = s.state[Index.VZ, 0]
+            b.x_velocity_std = s.covariance[Index.VX, Index.VX]
+            b.y_velocity_std = s.covariance[Index.VY, Index.VY]
+            b.z_velocity_std = s.covariance[Index.VZ, Index.VZ]
+            [x_offset, y_offset, z_offset] = body_to_inertial(
+                b.roll, b.pitch, b.yaw,
+                origin_x_offset - dvl_x_offset,
+                origin_y_offset - dvl_y_offset,
+                origin_z_offset - dvl_z_offset)
+            b.northings += x_offset
+            b.eastings += y_offset
+            b.depth += z_offset
+            b.latitude, b.longitude = metres_to_latlon(
+                latitude_reference, longitude_reference,
+                b.eastings, b.northings)
+            ekf_smoothed_list.append(b)
 
     origin_offsets = [origin_x_offset, origin_y_offset, origin_z_offset]
     latlon_reference = [latitude_reference, longitude_reference]
@@ -816,7 +865,7 @@ def extract_data(filepath, ftype, start_datetime, finish_datetime):
                 latlon_reference,
                 pf_fusion_centre_list)
     if len(ekf_list) > 1:
-        if len(camera1_pf_list) > 1:
+        if len(camera1_ekf_list) > 1:
             interpolate_sensor_list(
                 camera1_ekf_list,
                 camera1_sensor_name,
@@ -824,7 +873,7 @@ def extract_data(filepath, ftype, start_datetime, finish_datetime):
                 origin_offsets,
                 latlon_reference,
                 ekf_list)
-        if len(camera2_pf_list) > 1:
+        if len(camera2_ekf_list) > 1:
             interpolate_sensor_list(
                 camera2_ekf_list,
                 camera2_sensor_name,
@@ -832,7 +881,7 @@ def extract_data(filepath, ftype, start_datetime, finish_datetime):
                 origin_offsets,
                 latlon_reference,
                 ekf_list)
-        if len(camera3_pf_list) > 1:
+        if len(camera3_ekf_list) > 1:
             interpolate_sensor_list(
                 camera3_ekf_list,
                 camera3_sensor_name,
@@ -889,27 +938,28 @@ def extract_data(filepath, ftype, start_datetime, finish_datetime):
                                        depth_list,
                                        velocity_inertial_sensor_name,
                                        plotlypath)
-            plot_pf_uncertainty(pf_fusion_dvl_list,
-                                pf_northings_std,
-                                pf_eastings_std,
-                                pf_yaw_std,
-                                orientation_list,
-                                velocity_body_list,
-                                depth_list,
-                                usbl_list,
-                                velocity_inertial_list,
-                                velocity_inertial_sensor_name,
-                                plotlypath)
-            plot_2d_deadreckoning(camera1_list,
-                                  dead_reckoning_centre_list,
-                                  dead_reckoning_dvl_list,
-                                  pf_fusion_centre_list,
-                                  camera1_pf_list,
-                                  pf_fusion_dvl_list,
-                                  particles_time_interval,
-                                  pf_particles_list,
-                                  usbl_list,
-                                  plotlypath)
+            if particle_filter_activate:
+                plot_pf_uncertainty(pf_fusion_dvl_list,
+                                    pf_northings_std,
+                                    pf_eastings_std,
+                                    pf_yaw_std,
+                                    orientation_list,
+                                    velocity_body_list,
+                                    depth_list,
+                                    usbl_list,
+                                    velocity_inertial_list,
+                                    velocity_inertial_sensor_name,
+                                    plotlypath)
+                plot_2d_deadreckoning(camera1_list,
+                                      dead_reckoning_centre_list,
+                                      dead_reckoning_dvl_list,
+                                      pf_fusion_centre_list,
+                                      camera1_pf_list,
+                                      pf_fusion_dvl_list,
+                                      particles_time_interval,
+                                      pf_particles_list,
+                                      usbl_list,
+                                      plotlypath)
             print('Complete plot data: ', plotlypath)
 
 # write values out to a csv file
@@ -949,45 +999,35 @@ def extract_data(filepath, ftype, start_datetime, finish_datetime):
                             fileout.close()
                         except IndexError:
                             break
-        if csv_dr_auv_centre is True:
-            write_csv(drcsvpath, dead_reckoning_centre_list,
-                      'auv_dr_centre', csv_dr_auv_centre)
-        if csv_dr_auv_dvl is True:
-            write_csv(drcsvpath, dead_reckoning_dvl_list,
-                      'auv_dr_dvl', csv_dr_auv_dvl)
-        if csv_dr_camera_1 is True:
-            camera_csv(camera1_list, 'auv_dr_' +
-                       camera1_sensor_name, drcsvpath, csv_dr_camera_1)
-        if csv_dr_camera_2 is True:
-            camera_csv(camera2_list, 'auv_dr_' +
-                       camera2_sensor_name, drcsvpath, csv_dr_camera_2)
-        if csv_dr_camera_3 is True:
-            camera_csv(camera3_list, 'auv_dr_' +
-                       camera3_sensor_name, drcsvpath, csv_dr_camera_3)
-        if len(chemical_list) > 1:
-            other_data_csv(chemical_list, 'auv_dr_chemical',
-                           drcsvpath, csv_dr_chemical)
-        if csv_pf_auv_centre is True:
-            write_csv(pfcsvpath, pf_fusion_centre_list,
-                      'auv_pf_centre', csv_pf_auv_centre)
-        if csv_pf_auv_dvl is True:
-            write_csv(pfcsvpath, pf_fusion_dvl_list,
-                      'auv_pf_dvl', csv_pf_auv_dvl)
-        if csv_pf_camera_1 is True:
-            camera_csv(camera1_pf_list, 'auv_pf_' +
-                       camera1_sensor_name, pfcsvpath, csv_pf_camera_1)
-        if csv_pf_camera_2 is True:
-            camera_csv(camera2_pf_list, 'auv_pf_' +
-                       camera2_sensor_name, pfcsvpath, csv_pf_camera_2)
-        if csv_pf_camera_3 is True:
-            camera_csv(camera3_pf_list, 'auv_pf_' +
-                       camera3_sensor_name, pfcsvpath, csv_pf_camera_3)
-        if csv_ekf_auv_centre is True:
-            write_csv(ekfcsvpath, ekf_list,
-                      'auv_ekf_centre', csv_ekf_auv_centre)
-        if len(chemical_list) > 1:
-            other_data_csv(chemical_list, 'auv_pf_chemical',
-                           pfcsvpath, csv_pf_chemical)
+
+        write_csv(drcsvpath, dead_reckoning_centre_list,
+                  'auv_dr_centre', csv_dr_auv_centre)
+        write_csv(drcsvpath, dead_reckoning_dvl_list,
+                  'auv_dr_dvl', csv_dr_auv_dvl)
+        camera_csv(camera1_list, 'auv_dr_' +
+                   camera1_sensor_name, drcsvpath, csv_dr_camera_1)
+        camera_csv(camera2_list, 'auv_dr_' +
+                   camera2_sensor_name, drcsvpath, csv_dr_camera_2)
+        camera_csv(camera3_list, 'auv_dr_' +
+                   camera3_sensor_name, drcsvpath, csv_dr_camera_3)
+        other_data_csv(chemical_list, 'auv_dr_chemical',
+                       drcsvpath, csv_dr_chemical)
+        write_csv(pfcsvpath, pf_fusion_centre_list,
+                  'auv_pf_centre', csv_pf_auv_centre)
+        write_csv(pfcsvpath, pf_fusion_dvl_list,
+                  'auv_pf_dvl', csv_pf_auv_dvl)
+        camera_csv(camera1_pf_list, 'auv_pf_' +
+                   camera1_sensor_name, pfcsvpath, csv_pf_camera_1)
+        camera_csv(camera2_pf_list, 'auv_pf_' +
+                   camera2_sensor_name, pfcsvpath, csv_pf_camera_2)
+        camera_csv(camera3_pf_list, 'auv_pf_' +
+                   camera3_sensor_name, pfcsvpath, csv_pf_camera_3)
+        write_csv(ekfcsvpath, ekf_list,
+                  'auv_ekf_centre', csv_ekf_auv_centre)
+        write_csv(ekfcsvpath, ekf_smoothed_list,
+                  'auv_eks_centre', csv_ekf_auv_centre)
+        other_data_csv(chemical_list, 'auv_pf_chemical',
+                       pfcsvpath, csv_pf_chemical)
 
     print('Complete extraction of data: ', csvpath)
 
