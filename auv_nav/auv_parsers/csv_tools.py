@@ -4,12 +4,12 @@ import pandas as pd
 
 
 def write_csv(csv_filepath, data_list, csv_filename, csv_flag):
-    # check the relvant folders exist and if note create them
-    csv_file = Path(csv_filepath)
-    if csv_file.exists() is False:
-        os.makedirs(csv_filepath, exist_ok=True)
-
     if csv_flag is True:
+        # check the relvant folders exist and if note create them
+        csv_file = Path(csv_filepath)
+        if csv_file.exists() is False:
+            os.makedirs(csv_filepath, exist_ok=True)
+
         print("Writing outputs to {}.csv ...".format(csv_filename))
         with open(os.path.join(csv_filepath,
                                '{}.csv'.format(csv_filename)),
@@ -42,11 +42,10 @@ def write_csv(csv_filepath, data_list, csv_filename, csv_flag):
 # First column of csv file - image file naming step probably not very robust
 # needs improvement
 def camera_csv(camera_list, camera_name, csv_filepath, csv_flag):
-    csv_file = Path(csv_filepath)
-    if csv_file.exists() is False:
-        os.makedirs(csv_filepath, exist_ok=True)
-
     if csv_flag is True:
+        csv_file = Path(csv_filepath)
+        if csv_file.exists() is False:
+            os.makedirs(csv_filepath, exist_ok=True)
         if len(camera_list) > 1:
             print("Writing outputs to {}.csv ...".format(camera_name))
             with open(os.path.join(csv_filepath, '{}.csv'.format(camera_name)), 'w') as fileout:
