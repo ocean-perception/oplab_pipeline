@@ -1,7 +1,12 @@
+# -*- coding: utf-8 -*-
+"""
+Copyright (c) 2018, University of Southampton
+All rights reserved.
+"""
 import math
-import numpy as np
 
-class particle:
+
+class Particle:
     def __init__(self): #origin_location):
         # self.dvl_noise = 0.0 # x_noise, y_noise
         # self.imu_noise    = 0.0 # yaw_noise (don;t)
