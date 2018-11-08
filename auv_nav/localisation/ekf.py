@@ -3,10 +3,10 @@
 Copyright (c) 2018, University of Southampton
 All rights reserved.
 """
-from auv_nav.auv_parsers.sensors import BodyVelocity, Usbl
-from auv_nav.auv_parsers.sensors import Depth, Orientation
-from auv_nav.auv_parsers.sensors import SyncedOrientationBodyVelocity
-from auv_nav.auv_conversions.interpolate import interpolate_dvl
+from auv_nav.sensors import BodyVelocity, Usbl
+from auv_nav.sensors import Depth, Orientation
+from auv_nav.sensors import SyncedOrientationBodyVelocity
+from auv_nav.tools.interpolate import interpolate_dvl
 
 import math
 import numpy as np

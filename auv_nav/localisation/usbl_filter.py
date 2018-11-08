@@ -1,5 +1,5 @@
 
-from auv_nav.auv_conversions.interpolate import interpolate
+from auv_nav.tools.interpolate import interpolate
 
 # filter usbl data outliers
 # interpolate to find the appropriate depth to compute seafloor depth for each altitude measurement

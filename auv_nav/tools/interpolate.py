@@ -4,9 +4,9 @@ Copyright (c) 2018, University of Southampton
 All rights reserved.
 """
 
-from auv_nav.auv_parsers.sensors import SyncedOrientationBodyVelocity, Usbl
-from auv_nav.auv_coordinates.latlon_wgs84 import metres_to_latlon
-from auv_nav.auv_coordinates.body_to_inertial import body_to_inertial
+from auv_nav.sensors import SyncedOrientationBodyVelocity, Usbl
+from auv_nav.tools.latlon_wgs84 import metres_to_latlon
+from auv_nav.tools.body_to_inertial import body_to_inertial
 
 # Scripts to interpolate values
 def interpolate(x_query, x_lower, x_upper, y_lower, y_upper):

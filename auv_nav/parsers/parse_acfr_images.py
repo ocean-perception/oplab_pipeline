@@ -10,7 +10,7 @@ import codecs, time, json, glob
 # from datetime import datetime
 
 # sys.path.append("..")
-from auv_nav.auv_conversions.time_conversions import date_time_to_epoch
+from auv_nav.tools.time_conversions import date_time_to_epoch
 
 epoch_timestamp_camera1 = []
 epoch_timestamp_camera2 = []

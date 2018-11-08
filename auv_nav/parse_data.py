@@ -17,15 +17,15 @@ import json
 import yaml
 
 #sys.path.append("..")
-from auv_nav.auv_parsers.parse_phins import parse_phins
-from auv_nav.auv_parsers.parse_ae2000 import parse_ae2000
-from auv_nav.auv_parsers.parse_gaps import parse_gaps
-from auv_nav.auv_parsers.parse_usbl_dump import parse_usbl_dump
-from auv_nav.auv_parsers.parse_acfr_images import parse_acfr_images
-from auv_nav.auv_parsers.parse_seaxerocks_images import parse_seaxerocks_images
-from auv_nav.auv_parsers.parse_interlacer import parse_interlacer
+from auv_nav.parsers.parse_phins import parse_phins
+from auv_nav.parsers.parse_ae2000 import parse_ae2000
+from auv_nav.parsers.parse_gaps import parse_gaps
+from auv_nav.parsers.parse_usbl_dump import parse_usbl_dump
+from auv_nav.parsers.parse_acfr_images import parse_acfr_images
+from auv_nav.parsers.parse_seaxerocks_images import parse_seaxerocks_images
+from auv_nav.parsers.parse_interlacer import parse_interlacer
 # from lib_sensors.parse_chemical import parse_chemical
-from auv_nav.auv_parsers.display_info import display_info
+from auv_nav.plot.plot_parse_data import plot_parse_data
 
 
 def parse_data(filepath, ftype):
@@ -287,6 +287,6 @@ def parse_data(filepath, ftype):
     print('...done interlacing data. Output saved to ' + outpath + '/' + filename)
 
     if ftype == 'oplab':
-        display_info(outpath, ftype)
+        plot_parse_data(outpath, ftype)
 
     print('Complete parse data')

@@ -4,10 +4,10 @@ Copyright (c) 2018, University of Southampton
 All rights reserved.
 """
 
-from auv_nav.auv_conversions.interpolate import interpolate_dvl, interpolate_usbl
-from auv_nav.auv_coordinates.body_to_inertial import body_to_inertial
-from auv_nav.auv_parsers.sensors import SyncedOrientationBodyVelocity, Usbl
-from auv_nav.auv_localisation.particle import Particle
+from auv_nav.tools.interpolate import interpolate_dvl, interpolate_usbl
+from auv_nav.tools.body_to_inertial import body_to_inertial
+from auv_nav.sensors import SyncedOrientationBodyVelocity, Usbl
+from auv_nav.localisation.particle import Particle
 
 import math
 import random
