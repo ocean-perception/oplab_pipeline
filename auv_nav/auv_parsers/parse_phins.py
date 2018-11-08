@@ -102,7 +102,7 @@ class PhinsParser():
     def process_line(self, header, line):
         data = None
         if header == PhinsHeaders.TIME:
-            epoch_timestamp = self.timestamp.get_time_from_phins(
+            epoch_timestamp = self.timestamp.epoch_timestamp_from_phins(
                 line)
             self.set_timestamp(epoch_timestamp)
 
