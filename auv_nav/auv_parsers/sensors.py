@@ -668,6 +668,9 @@ class SyncedOrientationBodyVelocity():
         self.latitude = 0
         self.longitude = 0
 
+    def __lt__(self, o):
+        return self.epoch_timestamp < o.epoch_timestamp
+
 # class synced_velocity_inertial_orientation:
 #   def __init__(self):
 #       self.epoch_timestamp = 0
