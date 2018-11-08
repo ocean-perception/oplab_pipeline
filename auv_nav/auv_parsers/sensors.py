@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+"""
+Copyright (c) 2018, University of Southampton
+All rights reserved.
+"""
 
 from auv_nav.auv_coordinates.body_to_inertial import body_to_inertial
 from auv_nav.auv_conversions.time_conversions import date_time_to_epoch
@@ -19,6 +24,9 @@ class PhinsHeaders():
 
 
 class Timestamp():
+    def __init__(self, date, timezone, offset):
+        self.epoch_timestamp_from_zone_offset(date, timezone, offset)
+
     def epoch_timestamp_from_zone_offset(self, date, timezone, offset):
         self.year, self.month, self.day = date
         self.tz_offset = read_timezone(timezone)
