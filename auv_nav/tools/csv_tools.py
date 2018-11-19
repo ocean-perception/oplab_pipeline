@@ -42,28 +42,43 @@ def write_csv(csv_filepath, data_list, csv_filename, csv_flag):
 # First column of csv file - image file naming step probably not very robust
 # needs improvement
 def camera_csv(camera_list, camera_name, csv_filepath, csv_flag):
-    if csv_flag is True:
+    if csv_flag is True and len(camera_list) > 1:
         csv_file = Path(csv_filepath)
         if csv_file.exists() is False:
             os.makedirs(csv_filepath, exist_ok=True)
-        if len(camera_list) > 1:
-            print("Writing outputs to {}.csv ...".format(camera_name))
-            with open(os.path.join(csv_filepath, '{}.csv'.format(camera_name)), 'w') as fileout:
-                fileout.write(
-                    'Imagenumber, Northing [m], Easting [m], Depth [m], Roll [deg], Pitch [deg], Heading [deg], Altitude [m], Timestamp, Latitude [deg], Longitude [deg]\n')
-            for i in range(len(camera_list)):
-                with open(os.path.join(csv_filepath, '{}.csv'.format(camera_name)), 'a') as fileout:
-                    try:
-                        imagenumber = camera_list[i].filename[-11:-4]
-                        if imagenumber.isdigit():
-                            image_filename = imagenumber
-                        else:
-                            image_filename = camera_list[i].filename
-                        fileout.write(str(image_filename)+','+str(camera_list[i].northings)+','+str(camera_list[i].eastings)+','+str(camera_list[i].depth)+','+str(camera_list[i].roll)+','+str(
-                            camera_list[i].pitch)+','+str(camera_list[i].yaw)+','+str(camera_list[i].altitude)+','+str(camera_list[i].epoch_timestamp)+','+str(camera_list[i].latitude)+','+str(camera_list[i].longitude)+'\n')
-                        fileout.close()
-                    except IndexError:
-                        break
+
+        print("Writing outputs to {}.csv ...".format(camera_name))
+        with open(
+            os.path.join(csv_filepath,
+                         '{}.csv'.format(camera_name)), 'w') as fileout:
+            fileout.write(
+                'Imagenumber, Northing [m], Easting [m], Depth [m], Roll [deg],\
+                 Pitch [deg], Heading [deg], Altitude [m], Timestamp, \
+                 Latitude [deg], Longitude [deg]\n')
+        for i in range(len(camera_list)):
+            with open(
+                os.path.join(csv_filepath,
+                             '{}.csv'.format(camera_name)), 'a') as fileout:
+                try:
+                    imagenumber = camera_list[i].filename[-11:-4]
+                    if imagenumber.isdigit():
+                        image_filename = imagenumber
+                    else:
+                        image_filename = camera_list[i].filename
+                    fileout.write(str(image_filename)
+                                  + ',' + str(camera_list[i].northings)
+                                  + ',' + str(camera_list[i].eastings)
+                                  + ',' + str(camera_list[i].depth)
+                                  + ',' + str(camera_list[i].roll)
+                                  + ',' + str(camera_list[i].pitch)
+                                  + ',' + str(camera_list[i].yaw)
+                                  + ',' + str(camera_list[i].altitude)
+                                  + ',' + str(camera_list[i].epoch_timestamp)
+                                  + ',' + str(camera_list[i].latitude)
+                                  + ',' + str(camera_list[i].longitude)+'\n')
+                    fileout.close()
+                except IndexError:
+                    break
 
 
 # if this works make all follow this format!

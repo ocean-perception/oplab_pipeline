@@ -18,6 +18,7 @@ import sys
 # create an equation for each noise, and def them for sensors in ae2000, or ts1, or ts2. read from mission yaml which sensor used, and automatically pick the one desired.
 class ParticleFilter:
     def __init__(self, usbl_data, dvl_imu_data, N,
+                 sensors_std,
                  dvl_noise_sigma_factor,
                  imu_noise_sigma_factor,
                  usbl_noise_sigma_factor,
@@ -25,6 +26,7 @@ class ParticleFilter:
         return
 
     def __new__(self, usbl_data, dvl_imu_data, N,
+                sensors_std,
                 dvl_noise_sigma_factor,
                 imu_noise_sigma_factor,
                 usbl_noise_sigma_factor,

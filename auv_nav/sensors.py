@@ -125,7 +125,7 @@ class BodyVelocity(OutputFormat):
         self.timestamp = timestamp
         self.velocity_std_factor = velocity_std_factor
         self.velocity_std_offset = velocity_std_offset
-        self.yaw_offset = 0
+        self.yaw_offset = heading_offset
         self.sensor_string = 'unknown'
         self.clear()
 
@@ -663,7 +663,8 @@ class SyncedOrientationBodyVelocity():
         # calculated
         self.northings = 0
         self.eastings = 0
-        self.depth = 0 # from interpolation of depth, not dr
+        self.depth = 0  # from interpolation of depth, not dr
+        self.depth_std = 0
 
         self.latitude = 0
         self.longitude = 0

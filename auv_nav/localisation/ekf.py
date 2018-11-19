@@ -3,9 +3,6 @@
 Copyright (c) 2018, University of Southampton
 All rights reserved.
 """
-from auv_nav.sensors import BodyVelocity, Usbl
-from auv_nav.sensors import Depth, Orientation
-from auv_nav.sensors import SyncedOrientationBodyVelocity
 from auv_nav.tools.interpolate import interpolate_dvl
 
 import math
@@ -55,11 +52,11 @@ class EkfState(object):
 
 
 class Measurement(object):
-    def __init__(self, noise_factor):
+    def __init__(self, sensors_std):
         # The measurement and its associated covariance
         self.measurement = np.zeros(15, dtype=float)
         self.covariance = np.zeros((15, 15), dtype=float)
-        self.noise_factor = noise_factor
+        self.sensors_std = sensors_std
 
         # This defines which variables within this measurement
         # actually get passed into the filter.
@@ -72,20 +69,23 @@ class Measurement(object):
         self.mahalanobis_threshold = 1e20
 
     def from_depth(self, value):
-        # print('Depth measurement')
+        depth_std_factor = self.sensors_std['depth']['factor']
+        depth_std_offset = self.sensors_std['depth']['offset']
         self.time = value.epoch_timestamp
         self.measurement[Index.Z] = value.depth
-        self.covariance[Index.Z, Index.Z] = value.depth_std
-        self.covariance *= self.noise_factor
+        if (depth_std_offset > 0 and depth_std_offset > 0):
+            self.covariance[Index.Z, Index.Z] = (
+                value.depth*depth_std_factor + depth_std_offset)
+        else:
+            self.covariance[Index.Z, Index.Z] = value.depth_std
         self.update_vector[Index.Z] = 1
 
     def from_dvl(self, value):
-        # print('DVL measurement')
         # Vinnay's dvl_noise model:
         # velocity_std = (-0.0125*((velocity)**2)+0.2*(velocity)+0.2125)/100)
         # assuming noise of x_velocity = y_velocity = z_velocity
-        velocity_std_factor = 0.001
-        velocity_std_offset = 0.002
+        velocity_std_factor = self.sensors_std['dvl']['factor']
+        velocity_std_offset = self.sensors_std['dvl']['offset']
 
         self.time = value.epoch_timestamp
         self.measurement[Index.VX] = value.x_velocity
@@ -97,15 +97,13 @@ class Measurement(object):
             abs(value.y_velocity)*velocity_std_factor+velocity_std_offset)
         self.covariance[Index.VZ, Index.VZ] = (
             abs(value.z_velocity)*velocity_std_factor+velocity_std_offset)
-        self.covariance *= self.noise_factor
         self.update_vector[Index.VX] = 1
         self.update_vector[Index.VY] = 1
         self.update_vector[Index.VZ] = 1
 
     def from_usbl(self, value):
-        # print('USBL measurement')
-        usbl_noise_std_offset = 5
-        usbl_noise_std_factor = 0.01
+        usbl_noise_std_offset = self.sensors_std['usbl']['offset']
+        usbl_noise_std_factor = self.sensors_std['usbl']['factor']
         distance = math.sqrt(value.northings**2
                              + value.eastings**2
                              + value.depth**2)
@@ -116,22 +114,23 @@ class Measurement(object):
         self.measurement[Index.Y] = value.eastings
         self.covariance[Index.X, Index.X] = error
         self.covariance[Index.Y, Index.Y] = error
-        self.covariance *= self.noise_factor
         self.update_vector[Index.X] = 1
         self.update_vector[Index.Y] = 1
 
     def from_orientation(self, value):
-        # print('Orientation measurement')
-        imu_noise = 0.003
+        imu_noise_std_offset = self.sensors_std['orientation']['offset']
+        imu_noise_std_factor = self.sensors_std['orientation']['factor']
 
         self.time = value.epoch_timestamp
         self.measurement[Index.ROLL] = value.roll*math.pi/180.
         self.measurement[Index.PITCH] = value.pitch*math.pi/180.
         self.measurement[Index.YAW] = value.yaw*math.pi/180.
-        self.covariance[Index.ROLL, Index.ROLL] = imu_noise
-        self.covariance[Index.PITCH, Index.PITCH] = imu_noise
-        self.covariance[Index.YAW, Index.YAW] = imu_noise
-        self.covariance *= self.noise_factor
+        self.covariance[Index.ROLL, Index.ROLL] = (
+            imu_noise_std_offset + value.roll*imu_noise_std_factor)
+        self.covariance[Index.PITCH, Index.PITCH] = (
+            imu_noise_std_offset + value.pitch*imu_noise_std_factor)
+        self.covariance[Index.YAW, Index.YAW] = (
+            imu_noise_std_offset + value.yaw*imu_noise_std_factor)
         self.update_vector[Index.ROLL] = 1
         self.update_vector[Index.PITCH] = 1
         self.update_vector[Index.YAW] = 1
@@ -139,6 +138,7 @@ class Measurement(object):
     def from_synced_orientation_body_velocity(self, value):
         self.from_orientation(value)
         self.from_dvl(value)
+        self.from_depth(value)
 
 
 class EkfImpl(object):
@@ -491,27 +491,17 @@ class ExtendedKalmanFilter(object):
     def __init__(self,
                  initial_estimate_covariance,
                  process_noise_covariance,
-                 measurement_noise_sigma_factor,
+                 sensors_std,
                  dr_list,
                  usbl_list):
-        # Prepare a list of sensor readings and sort it.
-        sensor_list = copy.deepcopy(dr_list)
-        # sensor_list = copy.deepcopy(velocity_body_list)
-        # sensor_list.extend(orientation_list)
-        # sensor_list.extend(depth_list)
-        sensor_list.extend(usbl_list)
-        sorted_list = sorted(sensor_list)
-
         """
         Get the first USBL, DVL and Orientation reading for EKF initialization
         """
-        state0 = self.get_init_state(dr_list,
-                                     usbl_list)
+        state0, dr_idx, usbl_idx = self.get_init_state(dr_list,
+                                                       usbl_list)
         # Get first measurement
-        start_time = sorted_list[0].epoch_timestamp
-        end_time = sorted_list[-1].epoch_timestamp
+        start_time = dr_list[dr_idx].epoch_timestamp
         current_time = start_time
-        step_time = 0.05  # 20 Hz
 
         ekf = EkfImpl()
         ekf.set_state(state0)
@@ -519,49 +509,29 @@ class ExtendedKalmanFilter(object):
         ekf.set_covariance(initial_estimate_covariance)
         ekf.set_process_noise_covariance(process_noise_covariance)
 
-        sensor_idx = 0
         print('-------------------------------')
         print("Running EKF...")
         ekf.print_state()
         print('-------------------------------')
-        while current_time < end_time:
-            measurement_queue = []
-            while sorted_list[sensor_idx].epoch_timestamp < current_time:
-                m = Measurement(measurement_noise_sigma_factor)
-                if type(sorted_list[sensor_idx]) is BodyVelocity:
-                    m.from_dvl(sorted_list[sensor_idx])
-                    measurement_queue.append(m)
-                elif type(sorted_list[sensor_idx]) is Orientation:
-                    m.from_orientation(sorted_list[sensor_idx])
-                    measurement_queue.append(m)
-                elif type(sorted_list[sensor_idx]) is Depth:
-                    m.from_depth(sorted_list[sensor_idx])
-                    measurement_queue.append(m)
-                elif type(sorted_list[sensor_idx]) is SyncedOrientationBodyVelocity:
-                    m.from_synced_orientation_body_velocity(sorted_list[sensor_idx])
-                    measurement_queue.append(m)
-                elif type(sorted_list[sensor_idx]) is Usbl:
-                    m.from_usbl(sorted_list[sensor_idx])
-                    measurement_queue.append(m)
-                # print('Update vector: {0}'.format(m.update_vector))
-                sensor_idx += 1
-
+        while dr_idx < len(dr_list):
+            dr_stamp = dr_list[dr_idx].epoch_timestamp
+            if usbl_idx < len(usbl_list):
+                usbl_stamp = usbl_list[usbl_idx].epoch_timestamp
+            else:
+                usbl_stamp = dr_stamp + 1
+            m = Measurement(sensors_std)
             f_upda_time = ekf.get_last_update_time()
-            last_update_delta = current_time - f_upda_time
-            # print('last_update_delta {0}'.format(last_update_delta))
-            if last_update_delta > 1e-9:
-                ekf.predict(current_time, last_update_delta)
-                # Predict and update any measurements
-                if len(measurement_queue) > 0:
-                    for m in measurement_queue:
-                        ekf.correct(m)
-                    measurement_queue.clear()
-
-            current_time += step_time
-            # print('-------------------------------')
-            # ekf.print_state()
-            # print('-------------------------------')
-            # time.sleep(1)
+            m.from_synced_orientation_body_velocity(dr_list[dr_idx])
+            dr_idx += 1
+            # if dr_stamp < usbl_stamp:
+            #     m.from_synced_orientation_body_velocity(dr_list[dr_idx])
+            #     dr_idx += 1
+            # elif usbl_idx < len(usbl_list):
+            #     m.from_usbl(usbl_list[usbl_idx])
+            #     usbl_idx += 1
+            last_update_delta = m.time - f_upda_time
+            ekf.predict(m.time, last_update_delta)
+            ekf.correct(m)
         self.states = ekf.get_states()
         print("EKF finished, smoothing with EKS...")
         ekf.smooth()
@@ -605,9 +575,11 @@ class ExtendedKalmanFilter(object):
             ui += 1
             di += 1
         elif usbl_list[ui].epoch_timestamp < dr_list[di].epoch_timestamp:
-            while usbl_list[ui+1].epoch_timestamp < dr_list[di].epoch_timestamp:
+            while (usbl_list[ui+1].epoch_timestamp
+                   < dr_list[di].epoch_timestamp):
                 ui += 1
-            # interpolated_data = interpolate_data(usbl_list[ui].epoch_timestamp, dr_list[di], dr_list[di+1])
-            interpolated_data = interpolate_dvl(usbl_list[ui].epoch_timestamp, dr_list[di], dr_list[di+1])
+            interpolated_data = interpolate_dvl(usbl_list[ui].epoch_timestamp,
+                                                dr_list[di],
+                                                dr_list[di+1])
             state = self.build_state(usbl_list[ui], interpolated_data)
-        return state.T
+        return state.T, di+1, ui

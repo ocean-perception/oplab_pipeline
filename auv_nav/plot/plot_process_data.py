@@ -447,6 +447,7 @@ def plot_2d_deadreckoning(camera1_list,
                           dead_reckoning_centre_list,
                           dead_reckoning_dvl_list,
                           pf_fusion_centre_list,
+                          ekf_centre_list,
                           camera1_pf_list,
                           pf_fusion_dvl_list,
                           particles_time_interval,
@@ -487,7 +488,8 @@ def plot_2d_deadreckoning(camera1_list,
 
     # fill in most of layout
     figure['layout']['xaxis'] = {'title': 'Eastings,m'}
-    figure['layout']['yaxis'] = {'title': 'Northings,m'}
+    figure['layout']['yaxis'] = {'title': 'Northings,m',
+                                 'scaleanchor': 'x'}
     figure['layout']['hovermode'] = 'closest'
     figure['layout']['dragmode'] = 'pan'
     figure['layout']['updatemenus'] = [
@@ -591,6 +593,12 @@ def plot_2d_deadreckoning(camera1_list,
                           opacity=0.5)
                 resampling_index += 1
 
+    if len(ekf_centre_list) > 1:
+        make_data(figure, 'ekf_centre',
+                  [i.eastings for i in ekf_centre_list],
+                  [i.northings for i in ekf_centre_list],
+                  visibility='legendonly')
+
     config = {'scrollZoom': True}
 
     py.plot(figure,
@@ -650,6 +658,13 @@ def plot_2d_deadreckoning(camera1_list,
                         [i.eastings for i in pf_fusion_centre_list],
                         [i.northings for i in pf_fusion_centre_list]],
                        i)
+        if len(ekf_centre_list) > 1:
+            make_frame(frame,
+                       ['ekf_centre',
+                        [i.epoch_timestamp for i in ekf_centre_list],
+                        [i.eastings for i in ekf_centre_list],
+                        [i.northings for i in ekf_centre_list]],
+                       i)
         if len(pf_fusion_dvl_list) > 1:
             make_frame(frame,
                        ['pf_dvl',
@@ -681,4 +696,149 @@ def plot_2d_deadreckoning(camera1_list,
     py.plot(figure,
             config=config,
             filename=os.path.join(plotlypath, 'auv_path_slider.html'),
+            auto_open=False)
+
+
+def plot_2d_localisation(dr_list,
+                         pf_list,
+                         ekf_list,
+                         eks_list,
+                         plotlypath):
+    # DR plotly slider *include toggle button that switches between lat long and north east
+    print('...plotting auv_path...')
+
+    # might not be robust in the future
+    min_timestamp = float('inf')
+    max_timestamp = float('-inf')
+
+    plotly_list = []
+    if len(dr_list) > 1:
+        plotly_list.append(['dr', dr_list, 'legendonly'])
+    if len(pf_list) > 1:
+        plotly_list.append(['pf', pf_list, 'legendonly'])
+    if len(eks_list) > 1:
+        plotly_list.append(['ekf', ekf_list, True])
+    if len(eks_list) > 1:
+        plotly_list.append(['eks', eks_list, True])
+
+    for i in plotly_list:
+        timestamp_list = [j.epoch_timestamp for j in i[1]]
+        if min(timestamp_list) < min_timestamp:
+            min_timestamp = min(timestamp_list)
+        if max(timestamp_list) > max_timestamp:
+            max_timestamp = max(timestamp_list)
+
+    figure = {
+        'data': [],
+        'layout': {},
+        'frames': []
+    }
+
+    # fill in most of layout
+    figure['layout']['xaxis'] = {'title': 'Eastings,m'}
+    figure['layout']['yaxis'] = {'title': 'Northings,m',
+                                 'scaleanchor': 'x'}
+    figure['layout']['hovermode'] = 'closest'
+    figure['layout']['dragmode'] = 'pan'
+    figure['layout']['updatemenus'] = [
+        {
+            'buttons': [
+                {
+                    'args': [
+                        None, {
+                            'frame': {'duration': 500, 'redraw': False},
+                            'fromcurrent': True,
+                            'transition': {
+                                'duration': 300,
+                                'easing': 'quadratic-in-out'}}],
+                    'label': 'Play',
+                    'method': 'animate'
+                }, {
+                    'args': [
+                        [None],
+                        {'frame': {'duration': 0, 'redraw': False},
+                         'mode': 'immediate',
+                         'transition': {'duration': 0}}],
+                    'label': 'Pause',
+                    'method': 'animate'
+                }
+            ],
+            'direction': 'left',
+            'pad': {'r': 10, 't': 87},
+            'showactive': False,
+            'type': 'buttons',
+            'x': 0.1,
+            'xanchor': 'right',
+            'y': 0,
+            'yanchor': 'top'
+        }
+    ]
+
+    for i in plotly_list:
+        make_data(figure, i[0],
+                  [j.eastings for j in i[1]],
+                  [j.northings for j in i[1]],
+                  visibility=i[2])
+
+    config = {'scrollZoom': True}
+
+    py.plot(figure,
+            config=config,
+            filename=os.path.join(plotlypath, 'auv_localisation.html'),
+            auto_open=False)
+
+    print('...plotting auv_path_slider...')
+
+    sliders_dict = {
+        'active': 0,
+        'yanchor': 'top',
+        'xanchor': 'left',
+        'currentvalue': {
+            'font': {'size': 20},
+            'prefix': 'epoch_timestamp:',
+            'visible': True,
+            'xanchor': 'right'
+        },
+        'transition': {'duration': 300, 'easing': 'cubic-in-out'},
+        'pad': {'b': 10, 't': 50},
+        'len': 0.9,
+        'x': 0.1,
+        'y': 0,
+        'steps': []
+    }
+
+    # slider plot
+    # time_gap = 240
+    time_gap = int((max_timestamp - min_timestamp)/40)
+    epoch_timestamps_slider = list(range(int(min_timestamp),
+                                         int(max_timestamp),
+                                         int(time_gap)))
+
+    # make frames
+    for i in epoch_timestamps_slider:
+        frame = {'data': [], 'name': str(i)}
+
+        for j in plotly_list:
+            make_frame(frame,
+                       [j[0],
+                        [k.epoch_timestamp for k in j[1]],
+                        [k.eastings for k in j[1]],
+                        [k.northings for k in j[1]]],
+                       i)
+        figure['frames'].append(frame)
+        slider_step = {'args': [
+            [i],
+            {'frame': {'duration': 300, 'redraw': False},
+             'mode': 'immediate',
+             'transition': {'duration': 300}}
+         ],
+         'label': i,
+         'method': 'animate'}
+        sliders_dict['steps'].append(slider_step)
+
+    figure['layout']['sliders'] = [sliders_dict]
+
+    py.plot(figure,
+            config=config,
+            filename=os.path.join(plotlypath, 'auv_localisation_slider.html'),
             auto_open=False)
