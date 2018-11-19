@@ -47,10 +47,10 @@ image:
   format: acfr_standard
   cameras:
     - name: LC
-      format: bayer_rggb
+      type: bayer_rggb
       path: image/r20170817_041459_UG117_sesoko/i20170817_041459/
     - name: RC
-      format: bayer_rggb
+      type: bayer_rggb
       path: image/r20170817_041459_UG117_sesoko/i20170817_041459/
   timezone: jst
   timeoffset: 0.0

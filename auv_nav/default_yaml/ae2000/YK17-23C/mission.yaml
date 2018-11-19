@@ -48,13 +48,13 @@ image:
   format: seaxerocks_3
   cameras:
     - name: fore
-      format: bayer_rggb
+      type: bayer_rggb
       path: image/SeaXeroxData20171123_095119/Xviii/Cam51707923
     - name: aft
-      format: bayer_rggb
+      type: bayer_rggb
       path: image/SeaXeroxData20171123_095119/Xviii/Cam51707925
     - name: laser
-      format: grayscale
+      type: grayscale
       path: image/SeaXeroxData20171123_095119/LM165
   timezone: jst
   timeoffset: 0.0
