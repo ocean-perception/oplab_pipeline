@@ -27,6 +27,11 @@ def get_localtimezone():
     return localtimezone
 
 
+def epoch_to_day(epoch):
+    return time.strftime('%Y/%m/%d',
+                         time.localtime(epoch))
+
+
 def string_to_epoch(datetime):
     yyyy = int(datetime[0:4])
     mm = int(datetime[4:6])
@@ -54,14 +59,14 @@ def epoch_to_datetime(epoch_timestamp):
 def read_timezone(timezone):
     if isinstance(timezone, str):
         if timezone == 'utc' or timezone == 'UTC':
-            timezone_offset = 0
+            timezone_offset = 0.
         elif timezone == 'jst' or timezone == 'JST':
-            timezone_offset = 9
+            timezone_offset = 9.
     else:
         try:
             timezone_offset = float(timezone)
         except ValueError:
-            print('Error: timezone', timezone, 'in mission.cfg not \
+            print('Error: timezone', timezone, 'in mission.yaml not \
                   recognised, please enter value from UTC in hours')
             return
     return timezone_offset

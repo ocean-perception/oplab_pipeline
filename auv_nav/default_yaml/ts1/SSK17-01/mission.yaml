@@ -1,9 +1,10 @@
 #YAML 1.0
+version: 1
+
 origin:
   latitude: 26.674083
   longitude: 127.868054
   coordinate_reference_system: wgs84
-  date: 2017/08/17
 
 velocity:
   format: phins
@@ -44,8 +45,12 @@ usbl:
 
 image:
   format: acfr_standard
-  filepath: image/r20170817_041459_UG117_sesoko/i20170817_041459/
-  camera1: LC
-  camera2: RC
-  timezone: utc
+  cameras:
+    - name: LC
+      format: bayer_rggb
+      path: image/r20170817_041459_UG117_sesoko/i20170817_041459/
+    - name: RC
+      format: bayer_rggb
+      path: image/r20170817_041459_UG117_sesoko/i20170817_041459/
+  timezone: jst
   timeoffset: 0.0

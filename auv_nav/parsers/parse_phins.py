@@ -11,15 +11,14 @@ from auv_nav.sensors import Category, Timestamp, PhinsHeaders
 
 
 class PhinsParser():
-    def __init__(self, filepath, filename, category, timezone, timeoffset,
-                 heading_offset, ftype):
+    def __init__(self, node, category, ftype, outpath, filename):
         # parser meta data
         self.class_string = 'measurement'
         self.sensor_string = 'phins'
         self.category = category
 
-        self.filename = filename
-        self.filepath = filepath
+        self.filename = node['filename']
+        self.filepath = node['filepath']
         self.output_format = ftype
 
         # phins std models
@@ -34,14 +33,14 @@ class PhinsParser():
         dd = int(filename[6:8])
         date = yyyy, mm, dd
 
-        self.timestamp = Timestamp(date, timezone, timeoffset)
+        self.timestamp = Timestamp(date, node['timezone'], node['timeoffset'])
 
         self.body_velocity = BodyVelocity(velocity_std_factor,
                                           velocity_std_offset,
-                                          heading_offset,
+                                          node['heading_offset'],
                                           self.timestamp)
         self.inertial_velocity = InertialVelocity()
-        self.orientation = Orientation(heading_offset)
+        self.orientation = Orientation(node['heading_offset'])
         self.depth = Depth(depth_std_factor, self.timestamp)
         self.altitude = Altitude(altitude_std_factor)
 
@@ -139,9 +138,14 @@ class PhinsParser():
 
 
 def parse_phins(
-        filepath, filename, category,
-        timezone, timeoffset, heading_offset,
-        output_format, outpath, out_filename):
-    p = PhinsParser(filepath, filename, category, timezone,
-                    timeoffset, heading_offset, output_format)
+        node,
+        category,
+        ftype,
+        outpath,
+        fileoutname):
+    p = PhinsParser(node,
+                    category,
+                    ftype,
+                    outpath,
+                    fileoutname)
     return p.parse()

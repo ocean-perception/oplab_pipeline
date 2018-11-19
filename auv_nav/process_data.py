@@ -28,6 +28,7 @@ from auv_nav.plot.plot_process_data import plot_velocity_vs_time
 from auv_nav.plot.plot_process_data import plot_deadreckoning_vs_time
 from auv_nav.plot.plot_process_data import plot_pf_uncertainty
 from auv_nav.plot.plot_process_data import plot_2d_deadreckoning
+from auv_nav.plot.plot_process_data import plot_2d_localisation
 
 
 # Import librarys
@@ -112,6 +113,16 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
     chemical_list = []
     chemical_pf_list = []
 
+    # std factors and offsets defaults
+    std_factor_usbl = 0.01
+    std_offset_usbl = 10.
+    std_factor_dvl = 0.001
+    std_offset_dvl = 0.002
+    std_factor_depth = 0.
+    std_offset_depth = 0.
+    std_factor_orientation = 0.
+    std_offset_orientation = 0.003
+
 # load localisaion.yaml for particle filter and other setup
     print('Loading localisation.yaml')
     localisation = os.path.join(filepath, 'localisation.yaml')
@@ -144,6 +155,35 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
             usbl_noise_sigma_factor = load_localisation['particle_filter']['usbl_noise_sigma_factor']
             particles_number = load_localisation['particle_filter']['particles_number']
             particles_time_interval = load_localisation['particle_filter']['particles_plot_time_interval']
+        if 'std' in load_localisation:
+            std_factor_usbl = load_localisation['std']['usbl']['factor']
+            std_offset_usbl = load_localisation['std']['usbl']['offset']
+            std_factor_dvl = load_localisation['std']['dvl']['factor']
+            std_offset_dvl = load_localisation['std']['dvl']['offset']
+            std_factor_depth = load_localisation['std']['depth']['factor']
+            std_offset_depth = load_localisation['std']['depth']['offset']
+            std_factor_orientation = load_localisation['std']['orientation']['factor']
+            std_offset_orientation = load_localisation['std']['orientation']['offset']
+            sensors_std = load_localisation['std']
+        else:
+            sensors_std = {
+                'usbl': {
+                    'factor': std_factor_usbl,
+                    'offset': std_offset_usbl
+                },
+                'dvl': {
+                    'factor': std_factor_dvl,
+                    'offset': std_offset_dvl
+                },
+                'depth': {
+                    'factor': std_factor_depth,
+                    'offset': std_offset_depth
+                },
+                'orientation': {
+                    'factor': std_factor_orientation,
+                    'offset': std_offset_orientation
+                },
+            }
         if 'ekf' in load_localisation:
             ekf_activate = load_localisation['ekf']['activate']
             ekf_process_noise_covariance = load_localisation['ekf']['process_noise_covariance']
@@ -153,10 +193,6 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
                 'ekf']['initial_estimate_covariance']
             ekf_initial_estimate_covariance = np.asarray(
                 ekf_initial_estimate_covariance).reshape((15, 15))
-            measurement_noise_sigma_factor = load_localisation[
-                'ekf']['measurement_noise_sigma_factor']
-            measurement_noise_sigma_factor = np.asarray(
-                measurement_noise_sigma_factor)
         if 'csv_output' in load_localisation:
             # csv_active
             csv_output_activate = load_localisation['csv_output']['activate']
@@ -176,6 +212,10 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
             csv_pf_chemical = load_localisation['csv_output']['particle_filter']['chemical']
 
             csv_ekf_auv_centre = load_localisation['csv_output']['ekf']['auv_centre']
+            csv_ekf_camera_1 = load_localisation['csv_output']['ekf']['camera_1']
+            csv_ekf_camera_2 = load_localisation['csv_output']['ekf']['camera_2']
+            csv_ekf_camera_3 = load_localisation['csv_output']['ekf']['camera_3']
+            csv_ekf_chemical = load_localisation['csv_output']['ekf']['chemical']
         if 'plot_output' in load_localisation:
             plot_output_activate = load_localisation['plot_output']['activate']
             pdf_plot = load_localisation['plot_output']['pdf_plot']
@@ -354,6 +394,7 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
         camera1_ekf_list = copy.deepcopy(camera1_list)
         camera2_ekf_list = copy.deepcopy(camera2_list)
         camera3_ekf_list = copy.deepcopy(camera3_list)
+        chemical_ekf_list = copy.deepcopy(chemical_list)
 
     # make path for processed outputs
         renavpath = os.path.join(
@@ -575,7 +616,8 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
         # interpolate to find the appropriate depth for dead_reckoning
         dead_reckoning_dvl.depth = interpolate(
             orientation_list[i].epoch_timestamp, depth_list[k-1].epoch_timestamp, depth_list[k].epoch_timestamp, depth_list[k-1].depth, depth_list[k].depth)
-
+        dead_reckoning_dvl.depth_std = interpolate(
+            orientation_list[i].epoch_timestamp, depth_list[k-1].epoch_timestamp, depth_list[k].epoch_timestamp, depth_list[k-1].depth_std, depth_list[k].depth_std)
         dead_reckoning_dvl_list.append(dead_reckoning_dvl)
 
     # dead reckoning solution
@@ -699,6 +741,7 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
             copy.deepcopy(usbl_list),
             copy.deepcopy(dead_reckoning_dvl_list),
             particles_number,
+            sensors_std,
             dvl_noise_sigma_factor,
             imu_noise_sigma_factor,
             usbl_noise_sigma_factor,
@@ -724,11 +767,12 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
                 origin_z_offset - dvl_z_offset)
             pf_fusion_centre_list[i].northings += x_offset
             pf_fusion_centre_list[i].eastings += y_offset
-            pf_fusion_centre_list[i].latitude,
-            pf_fusion_centre_list[i].longitude = metres_to_latlon(
+            lat, lon = metres_to_latlon(
                 latitude_reference, longitude_reference,
                 pf_fusion_centre_list[i].eastings,
                 pf_fusion_centre_list[i].northings)
+            pf_fusion_centre_list[i].latitude = lat
+            pf_fusion_centre_list[i].longitude = lon
 
     if ekf_activate:
         ekf_start_time = time.time()
@@ -738,11 +782,10 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
         # usbl_list, list of Usbl()
         ekf = ExtendedKalmanFilter(ekf_initial_estimate_covariance,
                                    ekf_process_noise_covariance,
-                                   measurement_noise_sigma_factor,
+                                   sensors_std,
                                    dead_reckoning_dvl_list,
                                    usbl_list)
-        ekf_states = ekf.get_result()
-        ekf_smoothed_states = ekf.get_smoothed_result()
+        ekf_states = ekf.get_smoothed_result()
         ekf_end_time = time.time()
         ekf_elapsed_time = ekf_end_time - ekf_start_time
         print("EKF took {} seconds".format(ekf_elapsed_time))
@@ -778,38 +821,6 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
                 latitude_reference, longitude_reference,
                 b.eastings, b.northings)
             ekf_list.append(b)
-
-        ekf_smoothed_list = []
-        for s in ekf_smoothed_states:
-            b = SyncedOrientationBodyVelocity()
-            b.epoch_timestamp = s.time
-            b.northings = s.state[Index.X, 0]
-            b.eastings = s.state[Index.Y, 0]
-            b.depth = s.state[Index.Z, 0]
-            b.roll = s.state[Index.ROLL, 0]*180.0/math.pi
-            b.pitch = s.state[Index.PITCH, 0]*180.0/math.pi
-            b.yaw = s.state[Index.YAW, 0]*180.0/math.pi
-            b.roll_std = s.covariance[Index.ROLL, Index.ROLL]*180.0/math.pi
-            b.pitch_std = s.covariance[Index.PITCH, Index.PITCH]*180.0/math.pi
-            b.yaw_std = s.covariance[Index.YAW, Index.YAW]*180.0/math.pi
-            b.x_velocity = s.state[Index.VX, 0]
-            b.y_velocity = s.state[Index.VY, 0]
-            b.z_velocity = s.state[Index.VZ, 0]
-            b.x_velocity_std = s.covariance[Index.VX, Index.VX]
-            b.y_velocity_std = s.covariance[Index.VY, Index.VY]
-            b.z_velocity_std = s.covariance[Index.VZ, Index.VZ]
-            [x_offset, y_offset, z_offset] = body_to_inertial(
-                b.roll, b.pitch, b.yaw,
-                origin_x_offset - dvl_x_offset,
-                origin_y_offset - dvl_y_offset,
-                origin_z_offset - dvl_z_offset)
-            b.northings += x_offset
-            b.eastings += y_offset
-            b.depth += z_offset
-            b.latitude, b.longitude = metres_to_latlon(
-                latitude_reference, longitude_reference,
-                b.eastings, b.northings)
-            ekf_smoothed_list.append(b)
 
     origin_offsets = [origin_x_offset, origin_y_offset, origin_z_offset]
     latlon_reference = [latitude_reference, longitude_reference]
@@ -955,6 +966,7 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
                                       dead_reckoning_centre_list,
                                       dead_reckoning_dvl_list,
                                       pf_fusion_centre_list,
+                                      ekf_list,
                                       camera1_pf_list,
                                       pf_fusion_dvl_list,
                                       particles_time_interval,
@@ -1023,12 +1035,18 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
                    camera2_sensor_name, pfcsvpath, csv_pf_camera_2)
         camera_csv(camera3_pf_list, 'auv_pf_' +
                    camera3_sensor_name, pfcsvpath, csv_pf_camera_3)
-        write_csv(ekfcsvpath, ekf_list,
-                  'auv_ekf_centre', csv_ekf_auv_centre)
-        write_csv(ekfcsvpath, ekf_smoothed_list,
-                  'auv_eks_centre', csv_ekf_auv_centre)
         other_data_csv(chemical_list, 'auv_pf_chemical',
                        pfcsvpath, csv_pf_chemical)
+        write_csv(ekfcsvpath, ekf_list,
+                  'auv_ekf_centre', csv_ekf_auv_centre)
+        camera_csv(camera1_ekf_list, 'auv_ekf_' +
+                   camera1_sensor_name, ekfcsvpath, csv_ekf_camera_1)
+        camera_csv(camera2_ekf_list, 'auv_ekf_' +
+                   camera2_sensor_name, ekfcsvpath, csv_ekf_camera_2)
+        camera_csv(camera3_ekf_list, 'auv_ekf_' +
+                   camera3_sensor_name, ekfcsvpath, csv_ekf_camera_3)
+        other_data_csv(chemical_list, 'auv_ekf_chemical',
+                       ekfcsvpath, csv_pf_chemical)
 
     print('Complete extraction of data: ', csvpath)
 
