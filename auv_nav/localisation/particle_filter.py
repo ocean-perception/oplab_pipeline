@@ -222,6 +222,9 @@ class ParticleFilter:
             dvl_imu_data_index += 1
         elif usbl_data[usbl_data_index].epoch_timestamp < dvl_imu_data[dvl_imu_data_index].epoch_timestamp:
             while usbl_data[usbl_data_index+1].epoch_timestamp < dvl_imu_data[dvl_imu_data_index].epoch_timestamp:
+                if len(usbl_data) - 2 == usbl_data_index:
+                    print('USBL data does not span to DVL data. Is your data right?')
+                    break
                 usbl_data_index += 1
             # interpolated_data = interpolate_data(usbl_data[usbl_data_index].epoch_timestamp, dvl_imu_data[dvl_imu_data_index], dvl_imu_data[dvl_imu_data_index+1])
             interpolated_data = interpolate_usbl(dvl_imu_data[dvl_imu_data_index].epoch_timestamp, usbl_data[usbl_data_index], usbl_data[usbl_data_index+1])

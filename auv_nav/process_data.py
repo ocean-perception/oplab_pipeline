@@ -292,7 +292,6 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
             latitude_reference = mission_data['origin']['latitude']
             longitude_reference = mission_data['origin']['longitude']
             coordinate_reference = mission_data['origin']['coordinate_reference_system']
-            date = mission_data['origin']['date']
         if 'velocity' in mission_data:
             velocity_body_sensor_name = mission_data['velocity']['format']
             velocity_inertial_sensor_name = mission_data['velocity']['format']
@@ -305,15 +304,15 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
         if 'usbl' in mission_data:
             usbl_sensor_name = mission_data['usbl']['format']
         if 'image' in mission_data:
-            if 'camera1' in mission_data['image']:
+            if len(mission_data['image']['cameras']) > 0:
                 camera1_sensor_name = '_'.join(
-                    mission_data['image']['camera1'].split('/'))
-            if 'camera2' in mission_data['image']:
+                    mission_data['image']['cameras'][0]['name'])
+            if len(mission_data['image']['cameras']) > 1:
                 camera2_sensor_name = '_'.join(
-                    mission_data['image']['camera2'].split('/'))
-            if 'camera3' in mission_data['image']:
+                    mission_data['image']['cameras'][1]['name'])
+            if len(mission_data['image']['cameras']) > 2:
                 camera3_sensor_name = '_'.join(
-                    mission_data['image']['camera3'].split('/'))
+                    mission_data['image']['cameras'][2]['name'])
 
         # setup start and finish date time
         if start_datetime == '':
@@ -370,15 +369,15 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
                 if 'image' in parsed_json_data[i]['category']:
                     camera1 = Camera()
                     # LC
-                    camera1.from_json(parsed_json_data[1], 'camera1')
+                    camera1.from_json(parsed_json_data[i], 'camera1')
                     camera1_list.append(camera1)
                     camera2 = Camera()
-                    camera2.from_json(parsed_json_data[1], 'camera2')
+                    camera2.from_json(parsed_json_data[i], 'camera2')
                     camera2_list.append(camera2)
 
                 if 'laser' in parsed_json_data[i]['category']:
                     camera3 = Camera()
-                    camera3.from_json(parsed_json_data[1], 'camera3')
+                    camera3.from_json(parsed_json_data[i], 'camera3')
                     camera3_list.append(camera3)
 
                 if 'chemical' in parsed_json_data[i]['category']:

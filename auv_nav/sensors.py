@@ -7,6 +7,7 @@ All rights reserved.
 from auv_nav.tools.body_to_inertial import body_to_inertial
 from auv_nav.tools.time_conversions import date_time_to_epoch
 from auv_nav.tools.time_conversions import read_timezone
+import json as js
 
 
 class PhinsHeaders():
@@ -607,8 +608,12 @@ class Camera():
         self.altitude = 0
 
     def from_json(self, json, cam_name):
-        self.epoch_timestamp = json[cam_name][0]['epoch_timestamp']
-        self.filename = json[cam_name][0]['filename']
+        if cam_name in json:
+            self.epoch_timestamp = json[cam_name][0]['epoch_timestamp']
+            self.filename = json[cam_name][0]['filename']
+        else:
+            self.epoch_timestamp = json['epoch_timestamp']
+            self.filename = json['filename']
 
 
 class Other():

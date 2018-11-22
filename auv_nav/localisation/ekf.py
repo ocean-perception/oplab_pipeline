@@ -577,6 +577,9 @@ class ExtendedKalmanFilter(object):
         elif usbl_list[ui].epoch_timestamp < dr_list[di].epoch_timestamp:
             while (usbl_list[ui+1].epoch_timestamp
                    < dr_list[di].epoch_timestamp):
+                if len(usbl_list) - 2 == ui:
+                    print('USBL data does not span to DVL data. Is your data right?')
+                    break
                 ui += 1
             interpolated_data = interpolate_dvl(usbl_list[ui].epoch_timestamp,
                                                 dr_list[di],
