@@ -1,15 +1,9 @@
 # auv_nav
-## Downloading and Updating the code ##
 
+## Downloading and updating the code ##
 To download the code, go to directory you want download the code to, open a terminal/command prompt there and type
 ```
 git clone https://github.com/ocean-perception/auv_nav.git
-```
-
-To install the code, executing the following terminal commands within the folder
-```
-python3 setup.py install
-python3 setup.py test
 ```
 
 To push updates you made to the repository on github (assuming you are using the master branch, which is the default), type
@@ -19,10 +13,46 @@ git commit -m "Some message about the change"
 git push origin master
 ```
 
-## Libraries Required ##
 
-*Requires [python3.6.2](https://www.python.org/downloads/release/python-362/) or later*
+## Running the code ##
+Requires [python3.6.2](https://www.python.org/downloads/release/python-362/) or later ([latest](https://www.python.org/downloads/release/python3)).  
+You can also use [Anaconda](https://www.anaconda.com/download/), which comes with the Spyder IDE, that in turn uses the IPython shell.
 
+### When using Python from standard terminal ###
+The auv_nav project is compiled into a binary. Navigate to the auv_nav folder, where setup.py is saved and execute
+```
+python3 setup.py install
+python3 setup.py test
+```
+`auv_nav` can now be used as a command from any folder on your computer. You can test that by trying to display the help: 
+```
+auv_nav -h
+```
+
+### When using Anaconda (with the Spyder IDE) ###
+Start the Anaconda prompt and run the following lines: 
+```
+pip install prettytable
+conda install plotly
+```
+Open Spyder and use its shell (it is the IPython shell) to navigate to the auv_nav folder (the one which contains README.md, etc.) and execute
+```
+import auv_nav
+run auv_nav/auv_nav.py -h
+```
+This should display the help. To use auv_nav, replace `-h` with the command you want to run.  
+This way you can run auv_nav from within Spyder, but you always need to navigate to this directory to execute the code
+
+Alternatively, you can us the Anaconda prompt to make binaries by navigating to the auv_nav folder and executing the following lines:
+```
+python setup.py install
+python setup.py test
+```
+After doing so auv_nav can be called from any location (no need to navigate to the auv_nav directory) using the Anaconda prompt. However, this will only work from the Anaconda prompt and not from IPython, the reason being that IPython not supporting execution of binaries.
+
+
+### Required libraries ###
+Below is a list of the required libraries. You should not need to install them manually, as the instructions above should have already installed these. The list and the commands are just listed here for completeness.
 1. [matplotlib](https://matplotlib.org/2.0.2/users/installing.html) (version used: 2.2.2) `pip3 install matplotlib`
 2. [numpy](https://pypi.python.org/pypi/numpy) (version used: 1.14.5) `pip3 install numpy`
 3. [PyYAML](http://pyyaml.org/download/pyyaml/PyYAML-3.12.tar.gz) (version used: 3.12) `pip3 install pyyaml`
@@ -30,27 +60,14 @@ git push origin master
 5. [pandas](https://pypi.org/project/pandas/0.22.0/) (version used: 0.22.0) `pip3 install pandas`
 6. [xlrd](https://pypi.org/project/xlrd/) (version used: 1.1.0) `pip3 install xlrd`
 7. [prettytable](https://pypi.python.org/pypi/PrettyTable) (version used: 0.7.2) `pip3 install prettytable`
+(The commands for installing the libaries are for standard python 3. If you are using Anaconda, `pip3` is replaced either by `conda` or by `pip`.)
 
-Depending on the Python distribution you are using, you might already have these packages, or you might have to install them manually. If you are using Anaconda (https://www.anaconda.com/download/) will proably only have to install prettytable and plotly, which you can install from the Conda prompt: 
-```
-pip install prettytable
-conda install plotly
-```
-(In general, when using Conda, it is preferable to use `conda` for installing packages rather than `pip`, but if `conda` doesn't work, `pip` can be used.)  
-If you are using a different distribution, you might have to to install all packages manually using one of the following commands (depending on your distribution it might be  `pip` instead of `pip3` and `python` instead of `python3`):
+If for some reason you want to install the above libraries manually, the command is (on Linux)
 ```
 pip3 install matplotlib numpy pyyaml plotly pandas xlrd prettytable --user
 ```
-* ... or executing this command for whl files (if you are using Windows)
-```
-pip3 install pandas-0.22.0-cp36-cp36m-win_amd64.whl
-```
-Some of the packages above are in [third_party](third_party) which can be installed by:
-* executing the following terminal commands within the folder...
-```
-python3 setup.py install
-python3 setup.py test
-```
+If you are using a different distribution, you might have to to install all packages manually using one of the following commands (depending on your distribution it might be  `pip` instead of `pip3` and `python` instead of `python3`)
+
 
 ## Usage ##
 
