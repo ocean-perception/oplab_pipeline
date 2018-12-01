@@ -1,0 +1,67 @@
+#YAML 1.0
+version: 1
+
+origin:
+  latitude: 26.66988889
+  longitude: 127.86577778
+  coordinate_reference_system: wgs84
+
+velocity:
+  format: phins
+  filepath: nav/phins/
+  filename: 20181002211036phins.txt
+  timezone: utc
+  timeoffset: 0.0
+  headingoffset: -45.0
+  std_factor: 0.001
+  std_offset: 0.2
+
+orientation:
+  format: phins
+  filepath: nav/phins/
+  filename: 20181002211036phins.txt
+  timezone: utc
+  timeoffset: 0.0
+  headingoffset: -45.0
+
+depth:
+  format: phins
+  filepath: nav/phins/
+  filename: 20181002211036phins.txt
+  timezone: utc
+  timeoffset: 0.0
+  std_factor: 0.01/100
+
+altitude:
+  format: phins
+  filepath: nav/phins/
+  filename: 20181002211036phins.txt
+  timezone: utc
+  timeoffset: 0.0
+  std_factor: 1/100
+
+usbl:
+  format: gaps
+  filepath: nav/gaps/
+  timezone: utc
+  timeoffset: 0.0
+  id: 1 # tried 1
+
+image:
+  format: seaxerocks_3
+  cameras:
+    - name: fore
+      type: bayer_rggb
+      bit_depth: 12
+      path: image/SeaXeroxData20171123_095119/Xviii/Cam51707925
+    - name: aft
+      type: bayer_rggb
+      bit_depth: 12
+      path: image/SeaXeroxData20171123_095119/Xviii/Cam51707923
+    - name: laser
+      type: grayscale
+      bit_depth: 12
+      path: image/SeaXeroxData20171123_095119/LM165
+  timezone: jst
+  timeoffset: 0.0
+

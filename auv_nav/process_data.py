@@ -305,14 +305,11 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
             usbl_sensor_name = mission_data['usbl']['format']
         if 'image' in mission_data:
             if len(mission_data['image']['cameras']) > 0:
-                camera1_sensor_name = '_'.join(
-                    mission_data['image']['cameras'][0]['name'])
+                camera1_sensor_name = mission_data['image']['cameras'][0]['name']
             if len(mission_data['image']['cameras']) > 1:
-                camera2_sensor_name = '_'.join(
-                    mission_data['image']['cameras'][1]['name'])
+                camera2_sensor_name = mission_data['image']['cameras'][1]['name']
             if len(mission_data['image']['cameras']) > 2:
-                camera3_sensor_name = '_'.join(
-                    mission_data['image']['cameras'][2]['name'])
+                camera3_sensor_name = mission_data['image']['cameras'][2]['name']
 
         # setup start and finish date time
         if start_datetime == '':

@@ -8,11 +8,8 @@ from auv_nav.parse_data import parse_data
 from auv_nav.process_data import process_data
 from auv_nav.tools.folder_structure import is_subfolder_of
 
-import os
 import sys
 import argparse
-
-sys.path.append(os.path.abspath('.'))
 
 
 def main(args=None):
