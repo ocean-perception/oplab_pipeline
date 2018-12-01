@@ -1,0 +1,28 @@
+#YAML 1.0
+origin: #centre of robot
+  x_offset: 0
+  y_offset: 0
+  z_offset: 0
+
+# distance with reference to origin/centre of robot
+usbl:
+  x_offset: 0.1
+  y_offset: 0
+  z_offset: -0.5
+
+ins:
+  x_offset: 0.1
+  y_offset: 0
+  z_offset: 0
+
+dvl:
+  x_offset: -0.45
+  y_offset: 0
+  z_offset: 0.45
+
+depth:
+  x_offset: 0.16
+  y_offset: 0
+  z_offset: 0
+
+
