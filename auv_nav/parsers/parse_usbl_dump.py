@@ -14,6 +14,7 @@ import codecs
 from auv_nav.tools.time_conversions import date_time_to_epoch
 from auv_nav.tools.latlon_wgs84 import latlon_to_metres
 from auv_nav.tools.latlon_wgs84 import metres_to_latlon
+from auv_nav.tools.folder_structure import get_raw_folder
 
 
 def parse_usbl_dump(node, category, origin_node, ftype, outpath, fileoutname):
@@ -31,6 +32,8 @@ def parse_usbl_dump(node, category, origin_node, ftype, outpath, fileoutname):
     filepath = node['filepath']
     filename = node['filename']
     label = node['label']
+
+    filepath = get_raw_folder(outpath + '/../' + filepath)
 
     latitude_reference = origin_node['latitude']
     longitude_reference = origin_node['longitude']
