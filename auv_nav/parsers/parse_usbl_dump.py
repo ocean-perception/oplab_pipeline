@@ -60,7 +60,7 @@ def parse_usbl_dump(node, category, origin_node, ftype, outpath, fileoutname):
     data_list = []
     if ftype == 'acfr':
         data_list = ''
-    with codecs.open(filepath + filename, 'r', encoding='utf-8', errors='ignore') as filein:
+    with codecs.open(str(filepath) + filename, 'r', encoding='utf-8', errors='ignore') as filein:
 
         for line in filein.readlines():
             line_split = line.strip().split(',')

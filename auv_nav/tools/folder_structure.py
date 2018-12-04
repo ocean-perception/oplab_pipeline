@@ -1,23 +1,25 @@
+from pathlib import Path
 
 
-def is_subfolder_of(path, folder_name):
-    path = path.replace('\\', '/')
-    sub_path = path.split('/')
-    for i in range(len(sub_path)):
-        if sub_path[i] == folder_name:
-            return True
-    return False
+def change_subfolder(path, prior, new):
+    index = path.parts.index(prior)
+    parts = list(path.parts)
+    parts[index] = new
+    new_path = Path(*parts)
+    if not new_path.exists():
+        new_path.mkdir(exist_ok=True, parents=True)
+    return new_path
 
 
 def get_folder(path, name):
-    if is_subfolder_of(path, name):
+    if name in path.parts:
         return path
-    elif is_subfolder_of(path, "processed"):
-        return path.replace("processed", name)
-    elif is_subfolder_of(path, "raw"):
-        return path.replace("raw", name)
-    elif is_subfolder_of(path, "configuration"):
-        return path.replace("configuration", name)
+    elif 'processed' in path.parts:
+        return change_subfolder(path, 'processed', name)
+    elif 'raw' in path.parts:
+        return change_subfolder(path, 'raw', name)
+    elif 'configuration' in path.parts:
+        return change_subfolder(path, 'configuration', name)
     else:
         print("The folder {0} does not belong to \
                any dataset folder structure.".format(
@@ -25,12 +27,24 @@ def get_folder(path, name):
 
 
 def get_config_folder(path):
-    return get_folder(path, "configuration")
+    p = Path(path)
+    return get_folder(p, "configuration")
 
 
 def get_raw_folder(path):
-    return get_folder(path, "raw")
+    p = Path(path)
+    return get_folder(p, "raw")
 
 
 def get_processed_folder(path):
-    return get_folder(path, "processed")
+    p = Path(path)
+    return get_folder(p, "processed")
+
+
+def _copy(self, target):
+    import shutil
+    assert self.is_file()
+    shutil.copy(str(self), str(target))  # str() only there for Python < (3, 6)
+
+
+Path.copy = _copy

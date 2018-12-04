@@ -60,7 +60,7 @@ def parse_acfr_images(node,
     # determine file paths
 
     filepath = get_raw_folder(outpath+'/../' + filepath)
-    all_list = os.listdir(filepath)
+    all_list = os.listdir(str(filepath))
 
     camera1_filename = [
         line for line in all_list if camera1_label in line and '.txt' not in line and '._' not in line]
