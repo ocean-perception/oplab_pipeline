@@ -132,10 +132,8 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
     if localisation_file.exists():
         print("Loading existing localisation.yaml at {}".format(localisation))
     else:
-        print(
-            str(os.path.join(str(pathlib.Path(__file__).parents[1]), 'default_yaml')))
         default_localisation = os.path.join(
-            str(pathlib.Path(__file__).parents[1]), 'default_yaml', 'localisation.yaml')
+            str(pathlib.Path(__file__).parents[1]), 'auv_nav/default_yaml', 'localisation.yaml')
         print("default_localisation: " + default_localisation)
         print("Cannot find {}, generating default from {}".format(
             localisation, default_localisation))
