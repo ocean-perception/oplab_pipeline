@@ -29,25 +29,31 @@ from auv_nav.parsers.parse_interlacer import parse_interlacer
 from auv_nav.plot.plot_parse_data import plot_parse_data
 from auv_nav.tools.time_conversions import epoch_to_day
 from auv_nav.tools.folder_structure import get_config_folder, get_raw_folder
+from auv_nav.tools.folder_structure import get_processed_folder
 
 
 def parse_data(filepath, ftype):
     # initiate data and processing flags
     filepath = filepath.replace('\\', '/')
 
+    filepath = str(get_raw_folder(filepath))
+
     # load mission.yaml config file
 
-    print(filepath)
     mission_file = os.path.join(filepath, 'mission.yaml')
-    print(mission_file)
     mission_file = get_config_folder(mission_file)
-    print(mission_file)
 
-    print('Loading mission.yaml at {0}'.format(str(mission_file)))
-    mission = yaml.load(open(mission_file, 'r'))
+    print('Loading mission.yaml at {0}'.format(mission_file))
+    mission = yaml.load(mission_file.open('r'))
 
     vehicle_file = os.path.join(filepath, 'vehicle.yaml')
     vehicle_file = get_config_folder(vehicle_file)
+
+    # copy mission.yaml and vehicle.yaml to processed folder for process step
+    mission_processed = get_processed_folder(mission_file)
+    vehicle_processed = get_processed_folder(vehicle_file)
+    mission_file.copy(mission_processed)
+    vehicle_file.copy(vehicle_processed)
 
     # Check mission.yaml version
     if 'version' in mission:
@@ -66,43 +72,10 @@ def parse_data(filepath, ftype):
         print('auv_nav will now exit')
         sys.exit()
 
-    # generate output path
-    print('Generating output paths')
-    filepath = get_raw_folder(filepath)
-    sub_path = filepath.split('/')
-    sub_out = sub_path
-    outpath = sub_out[0]
-
-    is_subfolder_of_processed = False
-    for i in range(1, len(sub_path)):
-        if sub_path[i] == 'raw':
-            sub_out[i] = 'processed'
-            is_subfolder_of_processed = True
-        else:
-            sub_out[i] = sub_path[i]
-
-        outpath = outpath + '/' + sub_out[i]
-        # make the new directories after 'processed' if it doesnt already exist
-        if is_subfolder_of_processed:
-            if os.path.isdir(outpath) == 0:
-                try:
-                    os.mkdir(outpath)
-                except Exception as e:
-                    print("Warning:", e)
-
-    if not is_subfolder_of_processed:
-        raise ValueError(
-            "The input directory you provided is not a subfolder of a folder called 'raw'")
-
     # check for recognised formats and create nav file
+    outpath = get_processed_folder(filepath)
+    outpath = str(outpath)
     print('Checking output format')
-
-    # copy mission.yaml and vehicle.yaml to processed folder for process step
-    # if os.path.isdir(mission):
-    shutil.copy2(mission_file, outpath)  # save mission yaml to processed directory
-    # if os.path.isdir(vehicle_file):
-    shutil.copy2(vehicle_file, outpath)  # save vehicle yaml to processed directory
-
     if ftype == 'oplab':  # or (ftype is not 'acfr'):
         outpath = outpath + '/' + 'nav'
         filename = 'nav_standard.json'

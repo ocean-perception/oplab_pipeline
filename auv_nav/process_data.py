@@ -125,24 +125,26 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
     std_offset_orientation = 0.003
 
 # load localisaion.yaml for particle filter and other setup
+
+    filepath = str(get_processed_folder(filepath))
+
     print('Loading localisation.yaml')
-    localisation = os.path.join(filepath, 'localisation.yaml')
-    localisation = get_config_folder(localisation)
-    localisation_file = Path(localisation)
+    localisation_file = os.path.join(filepath, 'localisation.yaml')
+    localisation_file = get_config_folder(localisation_file)
 
     # check if localisation.yaml file exist, if not, generate one with default settings
     if localisation_file.exists():
-        print("Loading existing localisation.yaml at {}".format(localisation))
+        print("Loading existing localisation.yaml at {}".format(localisation_file))
     else:
-        default_localisation = os.path.join(
-            str(pathlib.Path(__file__).parents[1]), 'auv_nav/default_yaml', 'localisation.yaml')
-        print("default_localisation: " + default_localisation)
+        root = pathlib.Path(__file__).parents[1]
+        default_localisation = root / 'auv_nav/default_yaml' / 'localisation.yaml'
+        print("default_localisation: {}".format(default_localisation))
         print("Cannot find {}, generating default from {}".format(
-            localisation, default_localisation))
+            localisation_file, default_localisation))
         # save localisation yaml to processed directory
-        shutil.copy2(default_localisation, filepath)
+        default_localisation.copy(localisation_file)
 
-    with open(localisation, 'r') as stream:
+    with localisation_file.open('r') as stream:
         load_localisation = yaml.load(stream)
         if 'usbl_filter' in load_localisation:
             usbl_filter_activate = load_localisation['usbl_filter']['activate']
@@ -235,7 +237,7 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
     vehicle_file = os.path.join(filepath, 'vehicle.yaml')
     vehicle_file = get_config_folder(vehicle_file)
     # if os.path.isdir(vehicle):
-    with open(vehicle_file, 'r') as stream:
+    with vehicle_file.open('r') as stream:
         vehicle_data = yaml.load(stream)
     if 'origin' in vehicle_data:
         origin_x_offset = vehicle_data['origin']['x_offset']
@@ -281,14 +283,14 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
         filename = 'nav_standard.json'
         nav_standard_file = os.path.join(outpath, filename)
         nav_standard_file = get_processed_folder(nav_standard_file)
-        print('Loading json file ' + nav_standard_file)
-        with open(nav_standard_file) as nav_standard:
+        print('Loading json file {}'.format(nav_standard_file))
+        with nav_standard_file.open('r') as nav_standard:
             parsed_json_data = json.load(nav_standard)
 
         print('Loading mission.yaml')
         mission_file = os.path.join(filepath, 'mission.yaml')
         mission_file = get_config_folder(mission_file)
-        with open(mission_file, 'r') as stream:
+        with mission_file.open('r') as stream:
             mission_data = yaml.load(stream)
         # assigns sensor names from mission.yaml instead of json data packet (instead of looking at json data as TunaSand don't have serial yet)
         if 'origin' in mission_data:

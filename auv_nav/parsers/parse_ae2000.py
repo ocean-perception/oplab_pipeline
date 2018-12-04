@@ -66,7 +66,7 @@ def parse_ae2000(node,
     if ftype == 'acfr':
         data_list = ''
 
-    filepath = get_raw_folder(outpath + '/../' + filepath)
+    filepath = str(get_raw_folder(outpath + '/../' + filepath))
     df = pd.read_csv(filepath + filename)
 
     # list of time value in the first column (starting from 2nd row, not considering first row)

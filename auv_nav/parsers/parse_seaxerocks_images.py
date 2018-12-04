@@ -96,7 +96,7 @@ def parse_seaxerocks_images(node,
 
     cam1_path = get_raw_folder(outpath+'/../' + camera1_filepath+'/../')
 
-    with codecs.open(cam1_path+'FileTime.csv',
+    with codecs.open(str(cam1_path)+'FileTime.csv',
                      'r',
                      encoding='utf-8',
                      errors='ignore') as filein:
@@ -192,7 +192,7 @@ def parse_seaxerocks_images(node,
             data_list.append(data)
 
     cam3_path = get_raw_folder(outpath+'/../' + camera3_filepath+'/')
-    with codecs.open(cam3_path+'FileTime.csv',
+    with codecs.open(str(cam3_path)+'FileTime.csv',
                      'r',
                      encoding='utf-8',
                      errors='ignore') as filein:
