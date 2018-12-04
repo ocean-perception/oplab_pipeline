@@ -9,15 +9,28 @@ def is_subfolder_of(path, folder_name):
     return False
 
 
-def get_raw_folder(path):
-    if is_subfolder_of(path, "raw"):
+def get_folder(path, name):
+    if is_subfolder_of(path, name):
         return path
+    elif is_subfolder_of(path, "processed"):
+        return path.replace("processed", name)
+    elif is_subfolder_of(path, "raw"):
+        return path.replace("raw", name)
+    elif is_subfolder_of(path, "configuration"):
+        return path.replace("configuration", name)
     else:
-        return path.replace("processed", "raw")
+        print("The folder {0} does not belong to \
+               any dataset folder structure.".format(
+                str(path)))
+
+
+def get_config_folder(path):
+    return get_folder(path, "configuration")
+
+
+def get_raw_folder(path):
+    return get_folder(path, "raw")
 
 
 def get_processed_folder(path):
-    if is_subfolder_of(path, "processed"):
-        return path
-    else:
-        return path.replace("raw", "processed")
+    return get_folder(path, "processed")

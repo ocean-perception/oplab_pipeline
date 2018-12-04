@@ -29,6 +29,7 @@ from auv_nav.plot.plot_process_data import plot_deadreckoning_vs_time
 from auv_nav.plot.plot_process_data import plot_pf_uncertainty
 from auv_nav.plot.plot_process_data import plot_2d_deadreckoning
 from auv_nav.plot.plot_process_data import plot_2d_localisation
+from auv_nav.tools.folder_structure import get_config_folder, get_processed_folder
 
 
 # Import librarys
@@ -126,6 +127,7 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
 # load localisaion.yaml for particle filter and other setup
     print('Loading localisation.yaml')
     localisation = os.path.join(filepath, 'localisation.yaml')
+    localisation = get_config_folder(localisation)
     localisation_file = Path(localisation)
 
     # check if localisation.yaml file exist, if not, generate one with default settings
@@ -230,9 +232,10 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
     # ins_x_offset = ins_y_offset = ins_z_offset = 0
     # chemical_x_offset = chemical_y_offset = chemical_z_offset = 0
     print('Loading vehicle.yaml')
-    vehicle = os.path.join(filepath, 'vehicle.yaml')
+    vehicle_file = os.path.join(filepath, 'vehicle.yaml')
+    vehicle_file = get_config_folder(vehicle_file)
     # if os.path.isdir(vehicle):
-    with open(vehicle, 'r') as stream:
+    with open(vehicle_file, 'r') as stream:
         vehicle_data = yaml.load(stream)
     if 'origin' in vehicle_data:
         origin_x_offset = vehicle_data['origin']['x_offset']
@@ -276,13 +279,16 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
         outpath = os.path.join(filepath, 'nav')
 
         filename = 'nav_standard.json'
-        print('Loading json file ' + os.path.join(outpath, filename))
-        with open(os.path.join(outpath, filename)) as nav_standard:
+        nav_standard_file = os.path.join(outpath, filename)
+        nav_standard_file = get_processed_folder(nav_standard_file)
+        print('Loading json file ' + nav_standard_file)
+        with open(nav_standard_file) as nav_standard:
             parsed_json_data = json.load(nav_standard)
 
         print('Loading mission.yaml')
-        mission = os.path.join(filepath, 'mission.yaml')
-        with open(mission, 'r') as stream:
+        mission_file = os.path.join(filepath, 'mission.yaml')
+        mission_file = get_config_folder(mission_file)
+        with open(mission_file, 'r') as stream:
             mission_data = yaml.load(stream)
         # assigns sensor names from mission.yaml instead of json data packet (instead of looking at json data as TunaSand don't have serial yet)
         if 'origin' in mission_data:
