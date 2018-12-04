@@ -10,6 +10,7 @@ import os
 
 # sys.path.append("..")
 from auv_nav.tools.time_conversions import date_time_to_epoch
+from auv_nav.tools.folder_structure import get_raw_folder
 
 epoch_timestamp_camera1 = []
 epoch_timestamp_camera2 = []
@@ -33,7 +34,7 @@ def parse_acfr_images(node,
 
     timezone = node['timezone']
     timeoffset = node['timeoffset']
-    filepath = node['filepath']
+    filepath = node['cameras'][0]['path']
     camera1_label = node['cameras'][0]['name']
     camera2_label = node['cameras'][1]['name']
 
@@ -58,6 +59,7 @@ def parse_acfr_images(node,
 
     # determine file paths
 
+    filepath = get_raw_folder(outpath+'/../' + filepath)
     all_list = os.listdir(filepath)
 
     camera1_filename = [

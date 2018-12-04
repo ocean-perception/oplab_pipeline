@@ -27,6 +27,8 @@ from auv_nav.parsers.parse_seaxerocks_images import parse_seaxerocks_images
 from auv_nav.parsers.parse_interlacer import parse_interlacer
 # from lib_sensors.parse_chemical import parse_chemical
 from auv_nav.plot.plot_parse_data import plot_parse_data
+from auv_nav.tools.time_conversions import epoch_to_day
+from auv_nav.tools.folder_structure import get_config_folder, get_raw_folder
 
 
 def parse_data(filepath, ftype):
@@ -34,10 +36,18 @@ def parse_data(filepath, ftype):
     filepath = filepath.replace('\\', '/')
 
     # load mission.yaml config file
-    print('Loading mission.yaml')
 
-    mission_file = filepath + '/' + 'mission.yaml'
+    print(filepath)
+    mission_file = os.path.join(filepath, 'mission.yaml')
+    print(mission_file)
+    mission_file = get_config_folder(mission_file)
+    print(mission_file)
+
+    print('Loading mission.yaml at {0}'.format(str(mission_file)))
     mission = yaml.load(open(mission_file, 'r'))
+
+    vehicle_file = os.path.join(filepath, 'vehicle.yaml')
+    vehicle_file = get_config_folder(vehicle_file)
 
     # Check mission.yaml version
     if 'version' in mission:
@@ -58,6 +68,7 @@ def parse_data(filepath, ftype):
 
     # generate output path
     print('Generating output paths')
+    filepath = get_raw_folder(filepath)
     sub_path = filepath.split('/')
     sub_out = sub_path
     outpath = sub_out[0]
@@ -89,9 +100,8 @@ def parse_data(filepath, ftype):
     # copy mission.yaml and vehicle.yaml to processed folder for process step
     # if os.path.isdir(mission):
     shutil.copy2(mission_file, outpath)  # save mission yaml to processed directory
-    vehicle = filepath + '/' + 'vehicle.yaml'
-    # if os.path.isdir(vehicle):
-    shutil.copy2(vehicle, outpath)  # save vehicle yaml to processed directory
+    # if os.path.isdir(vehicle_file):
+    shutil.copy2(vehicle_file, outpath)  # save vehicle yaml to processed directory
 
     if ftype == 'oplab':  # or (ftype is not 'acfr'):
         outpath = outpath + '/' + 'nav'

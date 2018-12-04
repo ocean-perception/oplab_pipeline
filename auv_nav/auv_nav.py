@@ -6,7 +6,6 @@ All rights reserved.
 
 from auv_nav.parse_data import parse_data
 from auv_nav.process_data import process_data
-from auv_nav.tools.folder_structure import is_subfolder_of
 
 import sys
 import argparse
@@ -39,7 +38,7 @@ def main(args=None):
         dataformat for further processing. Type auv_nav parse -h for help on \
         this target.")
     subparser_parse.add_argument(
-        'path', help="Folderpath where the (raw) input data is. Needs to be a \
+        'path', default=".", help="Folderpath where the (raw) input data is. Needs to be a \
         subfolder of 'raw' and contain the mission.yaml configuration file.")
     # prefixing the argument with -- means it's optional
     subparser_parse.add_argument(
@@ -65,7 +64,7 @@ def main(args=None):
         the intermediate data format generated using auv_nav.py parse. Type \
         auv_nav process -h for help on this target.")
     subparser_process.add_argument(
-        'path', help="Path to folder where the data to process is. The folder \
+        'path', default=".", help="Path to folder where the data to process is. The folder \
         has to be generated using auv_nav parse.")
     subparser_process.add_argument(
         '-f', '--format', dest='format', default="oplab", help="Format in which \
@@ -94,14 +93,7 @@ def call_parse_data(args):
     parse_data(args.path, args.format)
 
 
-# def call_visualise_data(args):
-#     display_info(args.path + os.sep, args.format)
-
-
 def call_process_data(args):
-    if not is_subfolder_of(args.path, "processed"):
-        raise ValueError("The input directory you provided is not a subfolder \
-                         of a folder called 'processed'")
     process_data(args.path, args.format,
                  args.start_datetime, args.end_datetime)
 
