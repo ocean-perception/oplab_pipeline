@@ -7,7 +7,9 @@ def change_subfolder(path, prior, new):
     parts[index] = new
     new_path = Path(*parts)
     if not new_path.exists():
-        new_path.mkdir(exist_ok=True, parents=True)
+        dummy_path = Path(*parts[:-1])
+        print('The path {} does not exist. I am creating it for you.'.format(path))
+        dummy_path.mkdir(exist_ok=True, parents=True)
     return new_path
 
 

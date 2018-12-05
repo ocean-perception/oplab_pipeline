@@ -6,7 +6,6 @@
 # Date: 14/02/2018
 
 import math
-import codecs
 # from datetime import datetime
 
 # http://www.json.org/
@@ -60,7 +59,8 @@ def parse_usbl_dump(node, category, origin_node, ftype, outpath, fileoutname):
     data_list = []
     if ftype == 'acfr':
         data_list = ''
-    with codecs.open(str(filepath) + filename, 'r', encoding='utf-8', errors='ignore') as filein:
+    usbl_file = filepath / filename
+    with usbl_file.open('r', encoding='utf-8', errors='ignore') as filein:
 
         for line in filein.readlines():
             line_split = line.strip().split(',')
