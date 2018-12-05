@@ -5,10 +5,6 @@
 # Author: Blair Thornton
 # Date: 31/08/2017
 
-
-import codecs
-# from datetime import datetime
-
 # sys.path.append("..")
 from auv_nav.tools.time_conversions import date_time_to_epoch
 from auv_nav.tools.time_conversions import epoch_to_day
@@ -95,11 +91,11 @@ def parse_seaxerocks_images(node,
     print('Parsing', sensor_string, 'images')
 
     cam1_path = get_raw_folder(outpath+'/../' + camera1_filepath+'/../')
+    cam1_filetime = cam1_path / 'FileTime.csv'
 
-    with codecs.open(str(cam1_path)+'FileTime.csv',
-                     'r',
-                     encoding='utf-8',
-                     errors='ignore') as filein:
+    with cam1_filetime.open('r',
+                            encoding='utf-8',
+                            errors='ignore') as filein:
         for line in filein.readlines():
             stereo_index_timestamps = line.strip().split(',')
 
@@ -192,10 +188,10 @@ def parse_seaxerocks_images(node,
             data_list.append(data)
 
     cam3_path = get_raw_folder(outpath+'/../' + camera3_filepath+'/')
-    with codecs.open(str(cam3_path)+'FileTime.csv',
-                     'r',
-                     encoding='utf-8',
-                     errors='ignore') as filein:
+    cam3_filetime = cam3_path / 'FileTime.csv'
+    with cam3_filetime.open('r',
+                            encoding='utf-8',
+                            errors='ignore') as filein:
         for line in filein.readlines():
             laser_index_timestamps = line.strip().split(',')
 

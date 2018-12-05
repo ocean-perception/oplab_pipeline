@@ -94,8 +94,7 @@ class PhinsParser():
 
         data_list = []
         path = get_raw_folder(self.outpath + '/../' + self.filepath + self.filename)
-        with codecs.open(str(path), 'r',
-                         encoding='utf-8', errors='ignore') as filein:
+        with path.open('r', encoding='utf-8', errors='ignore') as filein:
             for complete_line in filein.readlines():
                 line_and_md5 = complete_line.strip().split('*')
                 line = line_and_md5[0].strip().split(',')

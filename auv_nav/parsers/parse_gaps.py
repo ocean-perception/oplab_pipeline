@@ -62,8 +62,8 @@ def parse_gaps(node,
     # timeoffset = -timezone_offset*60*60 + timeoffset
 
     # determine file paths
-    filepath = str(get_raw_folder(outpath + '/../' + filepath))
-    all_list = os.listdir(filepath)
+    filepath = get_raw_folder(outpath + '/../' + filepath)
+    all_list = os.listdir(str(filepath))
     gaps_list = [line for line in all_list if '.dat' in line]
     print(str(len(gaps_list)) + ' GAPS file(s) found')
 
@@ -72,9 +72,9 @@ def parse_gaps(node,
     if ftype == 'acfr':
         data_list = ''
     for i in range(len(gaps_list)):
-        path_gaps = filepath + os.sep + gaps_list[i]
+        path_gaps = filepath / gaps_list[i]
 
-        with open(path_gaps, errors='ignore') as gaps:
+        with path_gaps.open('r', errors='ignore') as gaps:
             # initialise flag
             flag_got_time = 0
             for line in gaps.readlines():
