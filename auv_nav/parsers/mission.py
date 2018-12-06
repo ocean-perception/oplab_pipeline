@@ -106,6 +106,7 @@ class Mission:
                 print('auv_nav will now exit')
                 sys.exit(1)
 
+            self.origin.load(data['origin'])
             if 'velocity' in data:
                 self.velocity.load(data['velocity'])
             if 'orientation' in data:
