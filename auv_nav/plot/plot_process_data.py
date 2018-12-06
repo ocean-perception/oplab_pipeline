@@ -90,7 +90,7 @@ def plot_orientation_vs_time(orientation_list,
     fig = go.Figure(data=[tr_yaw, tr_pitch, tr_roll], layout=layout)
     py.plot(fig,
             config=config,
-            filename=os.path.join(plotlypath, 'orientation_vs_time.html'),
+            filename=str(plotlypath / 'orientation_vs_time.html'),
             auto_open=False)
 
 
@@ -186,8 +186,7 @@ def plot_velocity_vs_time(dead_reckoning_dvl_list,
     config = {'scrollZoom': True}
     py.plot(fig,
             config=config,
-            filename=os.path.join(plotlypath,
-                                  'velocity_vs_time.html'),
+            filename=str(plotlypath / 'velocity_vs_time.html'),
             auto_open=False)
 
 
@@ -302,8 +301,7 @@ def plot_deadreckoning_vs_time(dead_reckoning_dvl_list,
     config = {'scrollZoom': True}
     py.plot(fig,
             config=config,
-            filename=os.path.join(plotlypath,
-                                  'deadreckoning_vs_time.html'),
+            filename=str(plotlypath / 'deadreckoning_vs_time.html'),
             auto_open=False)
 
 
@@ -342,7 +340,7 @@ def plot_pf_uncertainty(pf_fusion_dvl_list,
                     layout=layout)
     py.plot(fig,
             config=config,
-            filename=os.path.join(plotlypath, 'pf_uncertainty.html'),
+            filename=str(plotlypath / 'pf_uncertainty.html'),
             auto_open=False)
 
     # Uncertainty plotly --- https://plot.ly/python/line-charts/
@@ -439,7 +437,7 @@ def plot_pf_uncertainty(pf_fusion_dvl_list,
     config = {'scrollZoom': True}
     py.plot(fig,
             config=config,
-            filename=os.path.join(plotlypath, 'uncertainties_plot.html'),
+            filename=str(plotlypath / 'uncertainties_plot.html'),
             auto_open=False)
 
 
@@ -603,7 +601,7 @@ def plot_2d_deadreckoning(camera1_list,
 
     py.plot(figure,
             config=config,
-            filename=os.path.join(plotlypath, 'auv_path.html'),
+            filename=str(plotlypath / 'auv_path.html'),
             auto_open=False)
 
     print('...plotting auv_path_slider...')
@@ -695,7 +693,7 @@ def plot_2d_deadreckoning(camera1_list,
 
     py.plot(figure,
             config=config,
-            filename=os.path.join(plotlypath, 'auv_path_slider.html'),
+            filename=str(plotlypath / 'auv_path_slider.html'),
             auto_open=False)
 
 
@@ -784,7 +782,7 @@ def plot_2d_localisation(dr_list,
 
     py.plot(figure,
             config=config,
-            filename=os.path.join(plotlypath, 'auv_localisation.html'),
+            filename=str(plotlypath / 'auv_localisation.html'),
             auto_open=False)
 
     print('...plotting auv_path_slider...')
@@ -840,5 +838,5 @@ def plot_2d_localisation(dr_list,
 
     py.plot(figure,
             config=config,
-            filename=os.path.join(plotlypath, 'auv_localisation_slider.html'),
+            filename=str(plotlypath / 'auv_localisation_slider.html'),
             auto_open=False)

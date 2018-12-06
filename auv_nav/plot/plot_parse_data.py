@@ -5,7 +5,6 @@ All rights reserved.
 """
 
 import sys
-import os
 import json
 import time
 
@@ -107,8 +106,6 @@ def plot_parse_data(filepath, ftype):
     category/frame, need to expand code to check for variations in them too.
     '''
     if ftype == 'oplab':
-        outpath = filepath + os.sep  # + 'nav' + os.sep
-
         print('Loading json file')
         # Contains all the 'category' in the json file.
         ct_lst = []  # category_list
@@ -120,8 +117,8 @@ def plot_parse_data(filepath, ftype):
         finish_time = 0
 
         # Loads and sorts data elements into 'category' and 'frame'.
-        fn = outpath + 'nav_standard.json'
-        with open(fn, 'r', encoding='utf-8') as json_file:
+        fn = filepath / 'nav_standard.json'
+        with fn.open('r', encoding='utf-8') as json_file:
             data_in = json.load(json_file)
             start_time = data_in[0]['epoch_timestamp']
             for i in data_in:
@@ -229,7 +226,7 @@ def plot_parse_data(filepath, ftype):
                 finish_time))
         table_fig = go.Figure(data=[table_trace], layout=layout_table)
         py.plot(table_fig,
-                filename=outpath + 'json_data_info.html',
+                filename=str(filepath / 'json_data_info.html'),
                 auto_open=True)
 
         layout = go.Layout(
@@ -290,7 +287,7 @@ def plot_parse_data(filepath, ftype):
         fig = go.Figure(data=list(reversed(trace_list)), layout=layout)
         py.plot(fig,
                 config=config,
-                filename=outpath + 'timestamp_history.html',
+                filename=str(filepath / 'timestamp_history.html'),
                 auto_open=True)
 
         start_end_text = 'Start time is: %s (%s), %d (epoch)\nFinish time is: \
@@ -308,6 +305,6 @@ def plot_parse_data(filepath, ftype):
         t.hrules = ALL
         print(start_end_text)
         print(t)
-        print('Outputs saved to %s' % (outpath))
+        print('Outputs saved to {}'.format(filepath))
     else:
         print('ACFR ftype to be done')

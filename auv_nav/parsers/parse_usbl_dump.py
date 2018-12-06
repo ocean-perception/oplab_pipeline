@@ -16,26 +16,26 @@ from auv_nav.tools.latlon_wgs84 import metres_to_latlon
 from auv_nav.tools.folder_structure import get_raw_folder
 
 
-def parse_usbl_dump(node, category, origin_node, ftype, outpath, fileoutname):
+def parse_usbl_dump(mission, vehicle, category, ftype, outpath, fileoutname):
     # parser meta data
     class_string = 'measurement'
     sensor_string = 'jamstec_usbl'
     frame_string = 'inertial'
 
     # gaps std models
-    distance_std_factor = 1/100  # 1% uncertainty often quoted by ship's crew
-    distance_std_offset = 2  # 2m lateral error on DGPS to be added
+    distance_std_factor = mission.usbl.std_factor
+    distance_std_offset = mission.usbl.std_offset
 
-    timezone = node['timezone']
-    timeoffset = node['timeoffset']
-    filepath = node['filepath']
-    filename = node['filename']
-    label = node['label']
+    timezone = mission.usbl.timezone
+    timeoffset = mission.usbl.timeoffset
+    filepath = mission.usbl.filepath
+    filename = mission.usbl.filename
+    label = mission.usbl.label
 
-    filepath = get_raw_folder(outpath + '/../' + filepath)
+    filepath = get_raw_folder(outpath / '..' / filepath)
 
-    latitude_reference = origin_node['latitude']
-    longitude_reference = origin_node['longitude']
+    latitude_reference = mission.origin.latitude
+    longitude_reference = mission.origin.longitude
 
     # read in timezone
     if isinstance(timezone, str):

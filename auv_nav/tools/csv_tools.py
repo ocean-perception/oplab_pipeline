@@ -7,21 +7,18 @@ def write_csv(csv_filepath, data_list, csv_filename, csv_flag):
     if csv_flag is True:
         # check the relvant folders exist and if note create them
         csv_file = Path(csv_filepath)
-        if csv_file.exists() is False:
-            os.makedirs(csv_filepath, exist_ok=True)
+        if not csv_file.exists():
+            csv_file.mkdir(parents=True, exist_ok=True)
 
         print("Writing outputs to {}.csv ...".format(csv_filename))
-        with open(os.path.join(csv_filepath,
-                               '{}.csv'.format(csv_filename)),
-                  'w') as fileout:
+        file = csv_file / '{}.csv'.format(csv_filename)
+        with file.open('w') as fileout:
             fileout.write(
                 'Timestamp, Northing [m], Easting [m], Depth [m], Roll [deg], \
                 Pitch [deg], Heading [deg], Altitude [m], Latitude [deg], \
                 Longitude [deg]\n')
         for i in range(len(data_list)):
-            with open(os.path.join(csv_filepath,
-                                   '{}.csv'.format(csv_filename)),
-                      'a')as fileout:
+            with file.open('a')as fileout:
                 try:
                     fileout.write(
                         str(data_list[i].epoch_timestamp)+','
@@ -45,20 +42,17 @@ def camera_csv(camera_list, camera_name, csv_filepath, csv_flag):
     if csv_flag is True and len(camera_list) > 1:
         csv_file = Path(csv_filepath)
         if csv_file.exists() is False:
-            os.makedirs(csv_filepath, exist_ok=True)
+            csv_file.mkdir(parents=True, exist_ok=True)
 
         print("Writing outputs to {}.csv ...".format(camera_name))
-        with open(
-            os.path.join(csv_filepath,
-                         '{}.csv'.format(camera_name)), 'w') as fileout:
+        file = csv_file / '{}.csv'.format(camera_name)
+        with file.open('w') as fileout:
             fileout.write(
                 'Imagenumber, Northing [m], Easting [m], Depth [m], Roll [deg],\
                  Pitch [deg], Heading [deg], Altitude [m], Timestamp, \
                  Latitude [deg], Longitude [deg]\n')
         for i in range(len(camera_list)):
-            with open(
-                os.path.join(csv_filepath,
-                             '{}.csv'.format(camera_name)), 'a') as fileout:
+            with file.open('a') as fileout:
                 try:
                     imagenumber = camera_list[i].filename[-11:-4]
                     if imagenumber.isdigit():
@@ -85,7 +79,7 @@ def camera_csv(camera_list, camera_name, csv_filepath, csv_flag):
 def other_data_csv(data_list, data_name, csv_filepath, csv_flag):
     csv_file = Path(csv_filepath)
     if csv_file.exists() is False:
-        os.makedirs(csv_filepath, exist_ok=True)
+        csv_file.mkdir(parents=True, exist_ok=True)
 
     if csv_flag is True:
         print("Writing outputs to {}.csv ...".format(data_name))
@@ -100,5 +94,5 @@ def other_data_csv(data_list, data_name, csv_filepath, csv_flag):
             csv_row_data_list.append(csv_row_data)
         df = pd.DataFrame(csv_row_data_list)
         # , na_rep='-') https://www.youtube.com/watch?v=hmYdzvmcTD8
-        df.to_csv(os.path.join(csv_filepath, '{}.csv'.format(
-            data_name)), header=True, index=False)
+        df.to_csv(csv_file / '{}.csv'.format(data_name),
+                  header=True, index=False)

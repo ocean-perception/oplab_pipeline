@@ -16,9 +16,9 @@ from auv_nav.tools.time_conversions import date_time_to_epoch
 from auv_nav.tools.folder_structure import get_raw_folder
 
 
-def parse_gaps(node,
+def parse_gaps(mission,
+               vehicle,
                category,
-               origin_node,
                ftype,
                outpath,
                fileoutname):
@@ -28,20 +28,20 @@ def parse_gaps(node,
     sensor_string = 'gaps'
     frame_string = 'inertial'
 
-    timezone = node['timezone']
-    timeoffset = node['timeoffset']
-    filepath = node['filepath']
-    usbl_id = node['id']
-    latitude_reference = origin_node['latitude']
-    longitude_reference = origin_node['longitude']
+    timezone = mission.usbl.timezone
+    timeoffset = mission.usbl.timeoffset
+    filepath = mission.usbl.filepath
+    usbl_id = mission.usbl.id
+    latitude_reference = mission.origin.latitude
+    longitude_reference = mission.origin.longitude
 
     # define headers used in phins
     header_absolute = '$PTSAG'  # '<< $PTSAG' #georeferenced strings
     header_heading = '$HEHDT'  # '<< $HEHDT'
 
     # gaps std models
-    distance_std_factor = 1/100  # usbl catalogue gaps spec
-    distance_std_offset = 2  # 2m lateral error on DGPS to be added
+    distance_std_factor = mission.usbl.std_factor
+    distance_std_offset = mission.usbl.std_offset
     broken_packet_flag = False
 
     # read in timezone
@@ -62,7 +62,7 @@ def parse_gaps(node,
     # timeoffset = -timezone_offset*60*60 + timeoffset
 
     # determine file paths
-    filepath = get_raw_folder(outpath + '/../' + filepath)
+    filepath = get_raw_folder(outpath / '..' / filepath)
     all_list = os.listdir(str(filepath))
     gaps_list = [line for line in all_list if '.dat' in line]
     print(str(len(gaps_list)) + ' GAPS file(s) found')

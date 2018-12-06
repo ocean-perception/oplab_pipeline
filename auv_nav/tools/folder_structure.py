@@ -14,6 +14,8 @@ def change_subfolder(path, prior, new):
 
 
 def get_folder(path, name):
+    if not isinstance(path, Path):
+        path = Path(path)
     if name in path.parts:
         return path
     elif 'processed' in path.parts:
@@ -29,18 +31,15 @@ def get_folder(path, name):
 
 
 def get_config_folder(path):
-    p = Path(path)
-    return get_folder(p, "configuration")
+    return get_folder(path, "configuration")
 
 
 def get_raw_folder(path):
-    p = Path(path)
-    return get_folder(p, "raw")
+    return get_folder(path, "raw")
 
 
 def get_processed_folder(path):
-    p = Path(path)
-    return get_folder(p, "processed")
+    return get_folder(path, "processed")
 
 
 def _copy(self, target):
