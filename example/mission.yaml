@@ -12,7 +12,6 @@ velocity:
   filename: 20181002211036phins.txt
   timezone: utc
   timeoffset: 0.0
-  headingoffset: -45.0
   std_factor: 0.001
   std_offset: 0.2
 
@@ -22,7 +21,8 @@ orientation:
   filename: 20181002211036phins.txt
   timezone: utc
   timeoffset: 0.0
-  headingoffset: -45.0
+  std_factor: 0.0
+  std_offset: 0.003
 
 depth:
   format: phins
@@ -30,7 +30,8 @@ depth:
   filename: 20181002211036phins.txt
   timezone: utc
   timeoffset: 0.0
-  std_factor: 0.01/100
+  std_factor: 0.0001
+  std_offset: 0.0
 
 altitude:
   format: phins
@@ -38,7 +39,8 @@ altitude:
   filename: 20181002211036phins.txt
   timezone: utc
   timeoffset: 0.0
-  std_factor: 1/100
+  std_factor: 0.01
+  std_offset: 0.0
 
 usbl:
   format: gaps
@@ -46,22 +48,19 @@ usbl:
   timezone: utc
   timeoffset: 0.0
   id: 1 # tried 1
+  std_factor: 0.01
+  std_offset: 2.0
 
 image:
-  format: seaxerocks_3
+  format: acfr_standard
   cameras:
-    - name: fore
+    - name: LC
       type: bayer_rggb
       bit_depth: 12
-      path: image/SeaXeroxData20171123_095119/Xviii/Cam51707925
-    - name: aft
+      path: image/i20181002_063627/
+    - name: RC
       type: bayer_rggb
       bit_depth: 12
-      path: image/SeaXeroxData20171123_095119/Xviii/Cam51707923
-    - name: laser
-      type: grayscale
-      bit_depth: 12
-      path: image/SeaXeroxData20171123_095119/LM165
-  timezone: jst
+      path: image/i20181002_063627/
+  timezone: utc
   timeoffset: 0.0
-
