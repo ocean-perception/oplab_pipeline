@@ -11,7 +11,8 @@ from auv_nav.tools.time_conversions import epoch_to_day
 from auv_nav.tools.folder_structure import get_raw_folder
 
 
-def parse_seaxerocks_images(node,
+def parse_seaxerocks_images(mission,
+                            vehicle,
                             category,
                             ftype,
                             outpath,
@@ -27,14 +28,14 @@ def parse_seaxerocks_images(node,
     category_laser = 'laser'
     sensor_string = 'seaxerocks_3'
 
-    timezone = node['timezone']
-    timeoffset = node['timeoffset']
-    camera1_filepath = node['cameras'][0]['path']
-    camera2_filepath = node['cameras'][1]['path']
-    camera3_filepath = node['cameras'][2]['path']
-    camera1_label = node['cameras'][0]['name']
-    camera2_label = node['cameras'][1]['name']
-    camera3_label = node['cameras'][2]['name']
+    timezone = mission.image.timezone
+    timeoffset = mission.image.timeoffset
+    camera1_filepath = mission.image.cameras[0].path
+    camera2_filepath = mission.image.cameras[1].path
+    camera3_filepath = mission.image.cameras[2].path
+    camera1_label = mission.image.cameras[0].name
+    camera2_label = mission.image.cameras[1].name
+    camera3_label = mission.image.cameras[2].name
 
     epoch_timestamp_stereo = []
     epoch_timestamp_laser = []
@@ -90,7 +91,7 @@ def parse_seaxerocks_images(node,
 
     print('Parsing', sensor_string, 'images')
 
-    cam1_path = get_raw_folder(outpath+'/../' + camera1_filepath+'/../')
+    cam1_path = get_raw_folder(outpath / '..' / camera1_filepath / '..')
     cam1_filetime = cam1_path / 'FileTime.csv'
 
     with cam1_filetime.open('r',
@@ -187,7 +188,7 @@ def parse_seaxerocks_images(node,
                     }]}
             data_list.append(data)
 
-    cam3_path = get_raw_folder(outpath+'/../' + camera3_filepath+'/')
+    cam3_path = get_raw_folder(outpath / '..' / camera3_filepath)
     cam3_filetime = cam3_path / 'FileTime.csv'
     with cam3_filetime.open('r',
                             encoding='utf-8',

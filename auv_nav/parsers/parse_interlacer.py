@@ -5,8 +5,6 @@ All rights reserved.
 """
 
 import json
-import glob
-import os
 from array import array
 from operator import itemgetter
 
@@ -23,32 +21,33 @@ def parse_interlacer(ftype, outpath, filename):
     data_original = []
     data_ordered = []
 
+    filepath = outpath / filename
+
     if ftype == 'oplab':
-            for filein in glob.glob(outpath + os.sep + filename):
-                try:
-                    with open(filein, 'r') as json_file:
-                        data = json.load(json_file)
-                        for i in range(len(data)):
-                            data_packet = data[i]
-                            value.append(str(float(data_packet['epoch_timestamp'])))
+        try:
+            with filepath.open('r') as json_file:
+                data = json.load(json_file)
+                for i in range(len(data)):
+                    data_packet = data[i]
+                    value.append(str(float(data_packet['epoch_timestamp'])))
 
-                except ValueError:
-                    print('Error: no data in JSON file')
+        except ValueError:
+            print('Error: no data in JSON file')
 
-                # sort data in order of epoch_timestamp
-                sorted_index, sorted_items = sort_values(value)
+        # sort data in order of epoch_timestamp
+        sorted_index, sorted_items = sort_values(value)
 
-            # store interlaced data in order of time
-            for i in range(len(data)):
-                data_ordered.append((data[sorted_index[i]]))
+        # store interlaced data in order of time
+        for i in range(len(data)):
+            data_ordered.append((data[sorted_index[i]]))
 
-            # write out interlaced json file
-            with open(outpath + os.sep + filename, 'w') as fileout:
-                json.dump(data_ordered, fileout, indent=2)
+        # write out interlaced json file
+        with filepath.open('w') as fileout:
+            json.dump(data_ordered, fileout, indent=2)
 
     if ftype == 'acfr':
         try:
-            with open(outpath + os.sep + filename, 'r') as acfr_file:
+            with filepath.open('r') as acfr_file:
                 for line in acfr_file.readlines():
                     line_split = line.strip().split(':')
                     line_split_tailed = line_split[1].strip().split(' ')
@@ -65,7 +64,7 @@ def parse_interlacer(ftype, outpath, filename):
             data_ordered.append(data_original[sorted_index[i]])
 
         # write out interlaced acfr file
-        with open(outpath + os.sep + filename, 'w') as fileout:
+        with filepath.open('w') as fileout:
             for i in range(len(data_original)):
                 fileout.write(str(data_ordered[i]))
 

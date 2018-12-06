@@ -17,7 +17,8 @@ data_list = []
 # need to make acfr parsers
 
 
-def parse_ae2000(node,
+def parse_ae2000(mission,
+                 vehicle,
                  category,
                  ftype,
                  outpath,
@@ -27,17 +28,17 @@ def parse_ae2000(node,
     sensor_string = 'ae20000'
 
     # phins std models
-    depth_std_factor = 0.01/100  # from catalogue paroscientific
-    velocity_std_factor = 0.001  # from catalogue rdi whn1200/600
-    velocity_std_offset = 0.2  # from catalogue rdi whn1200/600
-    altitude_std_factor = 1/100  # acoustic velocity assumed 1% accurate
+    depth_std_factor = mission.depth.std_factor
+    velocity_std_factor = mission.velocity.std_factor
+    velocity_std_offset = mission.velocity.std_offset
+    altitude_std_factor = mission.altitude.std_factor
     altitude_limit = 200  # value given by ae2000 when there is no bottom lock
     # read in date from filename
 
-    timezone = node['timezone']
-    timeoffset = node['timeoffset']
-    filepath = node['filepath']
-    filename = node['filename']
+    timezone = mission.velocity.timezone
+    timeoffset = mission.velocity.timeoffset
+    filepath = mission.velocity.filepath
+    filename = mission.velocity.filename
 
     yyyy = int(filename[3:5])+2000
     mm = int(filename[5:7])
@@ -66,7 +67,7 @@ def parse_ae2000(node,
     if ftype == 'acfr':
         data_list = ''
 
-    filepath = get_raw_folder(outpath + '/../' + filepath)
+    filepath = get_raw_folder(outpath / '..' / filepath)
     df = pd.read_csv(filepath / filename)
 
     # list of time value in the first column (starting from 2nd row, not considering first row)
@@ -94,8 +95,7 @@ def parse_ae2000(node,
 
                     frame_string = 'body'
 
-                    headingoffset = node['headingoffset']
-
+                    headingoffset = vehicle.dvl.yaw
 
                     # DVL convention is +ve aft to forward
                     x_velocity = float(df['vx'][row_index])
@@ -150,7 +150,7 @@ def parse_ae2000(node,
                     roll_std = -9999
                     pitch_std = -9999
                     # account for sensor rotational offset
-                    headingoffset = node['headingoffset']
+                    headingoffset = vehicle.ins.yaw
 
                     [roll, pitch, heading] = body_to_inertial(
                         0, 0, headingoffset, roll, pitch, heading)
@@ -243,7 +243,7 @@ def parse_ae2000(node,
                     heading_std = -9999
 
                     # account for sensor rotational offset
-                    headingoffset = node['headingoffset']
+                    headingoffset = vehicle.ins.yaw
 
                     [roll, pitch, heading] = body_to_inertial(
                         0, 0, headingoffset, roll, pitch, heading)

@@ -28,18 +28,16 @@ from auv_nav.plot.plot_process_data import plot_velocity_vs_time
 from auv_nav.plot.plot_process_data import plot_deadreckoning_vs_time
 from auv_nav.plot.plot_process_data import plot_pf_uncertainty
 from auv_nav.plot.plot_process_data import plot_2d_deadreckoning
-from auv_nav.plot.plot_process_data import plot_2d_localisation
-from auv_nav.tools.folder_structure import get_config_folder, get_processed_folder
+from auv_nav.tools.folder_structure import get_config_folder
+from auv_nav.tools.folder_structure import get_processed_folder
+from auv_nav.parsers.vehicle import Vehicle
+from auv_nav.parsers.mission import Mission
 
 
 # Import librarys
-import os
 import yaml
 import json
-import shutil
 import time
-import codecs
-import pathlib
 import copy
 import math
 
@@ -67,35 +65,26 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
 
     # velocity body placeholders (DVL)
     velocity_body_list = []
-    velocity_body_sensor_name = 'vel_body'
     # velocity inertial placeholders
     velocity_inertial_list = []
-    velocity_inertial_sensor_name = 'vel_inertial'
     # orientation placeholders (INS)
     orientation_list = []
-    orientation_sensor_name = 'ins'
     # depth placeholders
     depth_list = []
-    depth_sensor_name = 'depth'
     # altitude placeholders
     altitude_list = []
-    altitude_sensor_name = 'alt'
     # USBL placeholders
     usbl_list = []
-    usbl_sensor_name = 'usbl'
 
     # camera1 placeholders
     camera1_list = []
     camera1_pf_list = []
-    camera1_sensor_name = 'cam1'  # original serial_camera1
     # camera2 placeholders
     camera2_list = []
     camera2_pf_list = []
-    camera2_sensor_name = 'cam2'
     # camera3 placeholders
     camera3_list = []
     camera3_pf_list = []
-    camera3_sensor_name = 'cam3'
 
     # placeholders for interpolated velocity body measurements based on orientation and transformed coordinates
     dead_reckoning_centre_list = []
@@ -126,17 +115,18 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
 
 # load localisaion.yaml for particle filter and other setup
 
-    filepath = str(get_processed_folder(filepath))
+    filepath = Path(filepath).resolve()
+    filepath = get_processed_folder(filepath)
 
     print('Loading localisation.yaml')
-    localisation_file = os.path.join(filepath, 'localisation.yaml')
+    localisation_file = filepath / 'localisation.yaml'
     localisation_file = get_config_folder(localisation_file)
 
     # check if localisation.yaml file exist, if not, generate one with default settings
     if localisation_file.exists():
         print("Loading existing localisation.yaml at {}".format(localisation_file))
     else:
-        root = pathlib.Path(__file__).parents[1]
+        root = Path(__file__).parents[1]
         default_localisation = root / 'auv_nav/default_yaml' / 'localisation.yaml'
         print("default_localisation: {}".format(default_localisation))
         print("Cannot find {}, generating default from {}".format(
@@ -223,99 +213,37 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
             pdf_plot = load_localisation['plot_output']['pdf_plot']
             html_plot = load_localisation['plot_output']['html_plot']
 
-# get information of sensor position offset from origin/centre reference point from vehicle.yaml
-    # origin_x_offset = origin_y_offset = origin_z_offset = 0
-    # camera1_x_offset = camera1_y_offset = camera1_z_offset = 0
-    # camera2_x_offset = camera2_y_offset = camera2_z_offset = 0
-    # camera3_x_offset = camera3_y_offset = camera3_z_offset = 0
-    # usbl_x_offset = usbl_y_offset = usbl_z_offset = 0
-    # dvl_x_offset = dvl_y_offset = dvl_z_offset = 0
-    # depth_x_offset = depth_y_offset = depth_z_offset = 0
-    # ins_x_offset = ins_y_offset = ins_z_offset = 0
-    # chemical_x_offset = chemical_y_offset = chemical_z_offset = 0
     print('Loading vehicle.yaml')
-    vehicle_file = os.path.join(filepath, 'vehicle.yaml')
-    vehicle_file = get_config_folder(vehicle_file)
-    # if os.path.isdir(vehicle):
-    with vehicle_file.open('r') as stream:
-        vehicle_data = yaml.load(stream)
-    if 'origin' in vehicle_data:
-        origin_x_offset = vehicle_data['origin']['x_offset']
-        origin_y_offset = vehicle_data['origin']['y_offset']
-        origin_z_offset = vehicle_data['origin']['z_offset']
-    if 'camera1' in vehicle_data:
-        camera1_x_offset = vehicle_data['camera1']['x_offset']
-        camera1_y_offset = vehicle_data['camera1']['y_offset']
-        camera1_z_offset = vehicle_data['camera1']['z_offset']
-    if 'camera2' in vehicle_data:
-        camera2_x_offset = vehicle_data['camera2']['x_offset']
-        camera2_y_offset = vehicle_data['camera2']['y_offset']
-        camera2_z_offset = vehicle_data['camera2']['z_offset']
-    if 'camera3' in vehicle_data:
-        camera3_x_offset = vehicle_data['camera3']['x_offset']
-        camera3_y_offset = vehicle_data['camera3']['y_offset']
-        camera3_z_offset = vehicle_data['camera3']['z_offset']
-    if 'usbl' in vehicle_data:
-        usbl_x_offset = vehicle_data['usbl']['x_offset']
-        usbl_y_offset = vehicle_data['usbl']['y_offset']
-        usbl_z_offset = vehicle_data['usbl']['z_offset']
-    if 'dvl' in vehicle_data:
-        dvl_x_offset = vehicle_data['dvl']['x_offset']
-        dvl_y_offset = vehicle_data['dvl']['y_offset']
-        dvl_z_offset = vehicle_data['dvl']['z_offset']
-    if 'depth' in vehicle_data:
-        depth_x_offset = vehicle_data['depth']['x_offset']
-        depth_y_offset = vehicle_data['depth']['y_offset']
-        depth_z_offset = vehicle_data['depth']['z_offset']
-    if 'ins' in vehicle_data:
-        ins_x_offset = vehicle_data['ins']['x_offset']
-        ins_y_offset = vehicle_data['ins']['y_offset']
-        ins_z_offset = vehicle_data['ins']['z_offset']
-    if 'chemical' in vehicle_data:
-        chemical_x_offset = vehicle_data['chemical']['x_offset']
-        chemical_y_offset = vehicle_data['chemical']['y_offset']
-        chemical_z_offset = vehicle_data['chemical']['z_offset']
+    vehicle_file = filepath / 'vehicle.yaml'
+    vehicle = Vehicle(vehicle_file)
 
-# OPLAB mode
+    camera1_offsets = [vehicle.camera1.surge,
+                       vehicle.camera1.sway,
+                       vehicle.camera1.heave]
+    camera2_offsets = [vehicle.camera2.surge,
+                       vehicle.camera2.sway,
+                       vehicle.camera2.heave]
+    camera3_offsets = [vehicle.camera3.surge,
+                       vehicle.camera3.sway,
+                       vehicle.camera3.heave]
+    chemical_offset = [vehicle.chemical.surge,
+                       vehicle.chemical.sway,
+                       vehicle.chemical.heave]
+
+    # OPLAB mode
     if ftype == 'oplab':  # or (ftype is not 'acfr'):
-        outpath = os.path.join(filepath, 'nav')
+        outpath = filepath / 'nav'
 
-        filename = 'nav_standard.json'
-        nav_standard_file = os.path.join(outpath, filename)
+        nav_standard_file = outpath / 'nav_standard.json'
         nav_standard_file = get_processed_folder(nav_standard_file)
         print('Loading json file {}'.format(nav_standard_file))
         with nav_standard_file.open('r') as nav_standard:
             parsed_json_data = json.load(nav_standard)
 
         print('Loading mission.yaml')
-        mission_file = os.path.join(filepath, 'mission.yaml')
+        mission_file = filepath / 'mission.yaml'
         mission_file = get_config_folder(mission_file)
-        with mission_file.open('r') as stream:
-            mission_data = yaml.load(stream)
-        # assigns sensor names from mission.yaml instead of json data packet (instead of looking at json data as TunaSand don't have serial yet)
-        if 'origin' in mission_data:
-            origin_flag = 1
-            latitude_reference = mission_data['origin']['latitude']
-            longitude_reference = mission_data['origin']['longitude']
-            coordinate_reference = mission_data['origin']['coordinate_reference_system']
-        if 'velocity' in mission_data:
-            velocity_body_sensor_name = mission_data['velocity']['format']
-            velocity_inertial_sensor_name = mission_data['velocity']['format']
-        if 'orientation' in mission_data:
-            orientation_sensor_name = mission_data['orientation']['format']
-        if 'depth' in mission_data:
-            depth_sensor_name = mission_data['depth']['format']
-        if 'altitude' in mission_data:
-            altitude_sensor_name = mission_data['altitude']['format']
-        if 'usbl' in mission_data:
-            usbl_sensor_name = mission_data['usbl']['format']
-        if 'image' in mission_data:
-            if len(mission_data['image']['cameras']) > 0:
-                camera1_sensor_name = mission_data['image']['cameras'][0]['name']
-            if len(mission_data['image']['cameras']) > 1:
-                camera2_sensor_name = mission_data['image']['cameras'][1]['name']
-            if len(mission_data['image']['cameras']) > 2:
-                camera3_sensor_name = mission_data['image']['cameras'][2]['name']
+        mission = Mission(mission_file)
 
         # setup start and finish date time
         if start_datetime == '':
@@ -329,7 +257,7 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
         else:
             epoch_finish_time = string_to_epoch(finish_datetime)
 
-    # read in data from json file
+        # read in data from json file
         # i here is the number of the data packet
         for i in range(len(parsed_json_data)):
             epoch_timestamp = parsed_json_data[i]['epoch_timestamp']
@@ -398,43 +326,45 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
         camera3_ekf_list = copy.deepcopy(camera3_list)
         chemical_ekf_list = copy.deepcopy(chemical_list)
 
-    # make path for processed outputs
-        renavpath = os.path.join(
-            filepath, ('json_renav_' + start_datetime[0:8] + '_' + start_datetime[8:14] + '_' + finish_datetime[0:8] + '_' + finish_datetime[8:14]))
-        if os.path.isdir(renavpath) == 0:
+        # make path for processed outputs
+        json_filename = ('json_renav_'
+                         + start_datetime[0:8]
+                         + '_'
+                         + start_datetime[8:14]
+                         + '_'
+                         + finish_datetime[0:8]
+                         + '_'
+                         + finish_datetime[8:14])
+        renavpath = filepath / json_filename
+        if renavpath.is_dir() is False:
             try:
-                os.mkdir(renavpath)
+                renavpath.mkdir()
             except Exception as e:
                 print("Warning:", e)
 
-        print('Complete parse of:' + os.path.join(outpath, filename))
-        print('Writing outputs to: ' + renavpath)
-        # copy to renav folder os.path.join(renavpath, 'localisation.yaml')
-        # shutil.copy2(localisation, renavpath) # save mission yaml to processed directory
+        print('Complete parse of: {}'.format(nav_standard_file))
+        print('Writing outputs to: {}'.format(renavpath))
 
-# ACFR mode
+    # ACFR mode
     if ftype == 'acfr':
         # extract_acfr()
         print('Loading mission.cfg')
-        mission = os.path.join(filepath, 'mission.cfg')
-        with codecs.open(mission, 'r', encoding='utf-8', errors='ignore') as filein:
+        mission = filepath / 'mission.cfg'
+        with mission.open('r', encoding='utf-8', errors='ignore') as filein:
             for line in filein.readlines():
                 line_split = line.strip().split(' ')
                 if str(line_split[0]) == 'MAG_VAR_LAT':
-                    latitude_reference = float(line_split[1])
+                    mission.origin.latitude = float(line_split[1])
                 if str(line_split[0]) == 'MAG_VAR_LNG':
-                    longitude_reference = float(line_split[1])
+                    mission.origin.longitude = float(line_split[1])
                 if str(line_split[0]) == 'MAG_VAR_DATE':
                     date = str(line_split[1])
 
-        outpath = os.path.join(filepath, 'dRAWLOGS_cv')
+        outpath = filepath / 'dRAWLOGS_cv'
+        filename = outpath / 'combined.RAW.auv'
+        print('Loading acfr standard RAW.auv file {}'.format(filename))
 
-        filename = 'combined.RAW.auv'
-        print('Loading acfr standard RAW.auv file ' +
-              os.path.join(outpath, filename))
-
-        with codecs.open(os.path.join(outpath, filename), 'r',
-                         encoding='utf-8', errors='ignore') as filein:
+        with filename.open('r', encoding='utf-8', errors='ignore') as filein:
             # setup the time window
             parsed_acfr_data = filein.readlines()
             if start_datetime == '':
@@ -524,23 +454,23 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
         # chemical_pf_list = copy.deepcopy(chemical_list)
 
         # make folder to store csv and plots
-        renavpath = os.path.join(
-            filepath, ('acfr_renav_'
-                       + start_datetime[0:8]
-                       + '_'
-                       + start_datetime[8:14]
-                       + '_'
-                       + finish_datetime[0:8]
-                       + '_'
-                       + finish_datetime[8:14]))
-        if os.path.isdir(renavpath) == 0:
+        filename = ('acfr_renav_'
+                    + start_datetime[0:8]
+                    + '_'
+                    + start_datetime[8:14]
+                    + '_'
+                    + finish_datetime[0:8]
+                    + '_'
+                    + finish_datetime[8:14])
+        renavpath = filepath / filename
+        if renavpath.is_dir() is False:
             try:
-                os.mkdir(renavpath)
+                renavpath.mkdir()
             except Exception as e:
                 print("Warning:", e)
 
-        print('Complete parse of:' + os.path.join(outpath, filename))
-        print('Writing outputs to: ' + renavpath)
+        print('Complete parse of: {}'.format(filename))
+        print('Writing outputs to: {}'.format(renavpath))
 
     # interpolate to find the appropriate depth to compute seafloor depth for each altitude measurement
     j = 0
@@ -549,8 +479,12 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
             j = j + 1
 
         if j >= 1:
-            altitude_list[i].seafloor_depth = interpolate(altitude_list[i].epoch_timestamp, depth_list[j-1].epoch_timestamp,
-                                                          depth_list[j].epoch_timestamp, depth_list[j-1].depth, depth_list[j].depth)+altitude_list[i].altitude
+            altitude_list[i].seafloor_depth = interpolate(
+                altitude_list[i].epoch_timestamp,
+                depth_list[j-1].epoch_timestamp,
+                depth_list[j].epoch_timestamp,
+                depth_list[j-1].depth,
+                depth_list[j].depth)+altitude_list[i].altitude
 
     # perform usbl_filter
     if usbl_filter_activate:
@@ -593,15 +527,32 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
         dead_reckoning_dvl.roll = orientation_list[i].roll
         dead_reckoning_dvl.pitch = orientation_list[i].pitch
         dead_reckoning_dvl.yaw = orientation_list[i].yaw
-        dead_reckoning_dvl.x_velocity = interpolate(orientation_list[i].epoch_timestamp, velocity_body_list[j].epoch_timestamp,
-                                                    velocity_body_list[j+1].epoch_timestamp, velocity_body_list[j].x_velocity, velocity_body_list[j+1].x_velocity)
-        dead_reckoning_dvl.y_velocity = interpolate(orientation_list[i].epoch_timestamp, velocity_body_list[j].epoch_timestamp,
-                                                    velocity_body_list[j+1].epoch_timestamp, velocity_body_list[j].y_velocity, velocity_body_list[j+1].y_velocity)
-        dead_reckoning_dvl.z_velocity = interpolate(orientation_list[i].epoch_timestamp, velocity_body_list[j].epoch_timestamp,
-                                                    velocity_body_list[j+1].epoch_timestamp, velocity_body_list[j].z_velocity, velocity_body_list[j+1].z_velocity)
+        dead_reckoning_dvl.x_velocity = interpolate(
+            orientation_list[i].epoch_timestamp,
+            velocity_body_list[j].epoch_timestamp,
+            velocity_body_list[j+1].epoch_timestamp,
+            velocity_body_list[j].x_velocity,
+            velocity_body_list[j+1].x_velocity)
+        dead_reckoning_dvl.y_velocity = interpolate(
+            orientation_list[i].epoch_timestamp,
+            velocity_body_list[j].epoch_timestamp,
+            velocity_body_list[j+1].epoch_timestamp,
+            velocity_body_list[j].y_velocity,
+            velocity_body_list[j+1].y_velocity)
+        dead_reckoning_dvl.z_velocity = interpolate(
+            orientation_list[i].epoch_timestamp,
+            velocity_body_list[j].epoch_timestamp,
+            velocity_body_list[j+1].epoch_timestamp,
+            velocity_body_list[j].z_velocity,
+            velocity_body_list[j+1].z_velocity)
 
-        [x_offset, y_offset, z_offset] = body_to_inertial(orientation_list[i].roll, orientation_list[i].pitch, orientation_list[i].yaw,
-                                                          dead_reckoning_dvl.x_velocity, dead_reckoning_dvl.y_velocity, dead_reckoning_dvl.z_velocity)
+        [x_offset, y_offset, z_offset] = body_to_inertial(
+            orientation_list[i].roll,
+            orientation_list[i].pitch,
+            orientation_list[i].yaw,
+            dead_reckoning_dvl.x_velocity,
+            dead_reckoning_dvl.y_velocity,
+            dead_reckoning_dvl.z_velocity)
 
         dead_reckoning_dvl.north_velocity = x_offset
         dead_reckoning_dvl.east_velocity = y_offset
@@ -610,31 +561,55 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
         # double check this step, i.e. what if velocity_body_list timestamps not = altitude timestamps
         while n < len(altitude_list)-1 and n < len(velocity_body_list)-1 and orientation_list[i].epoch_timestamp > altitude_list[n+1].epoch_timestamp and orientation_list[i].epoch_timestamp > velocity_body_list[n+1].epoch_timestamp:
             n += 1
-        dead_reckoning_dvl.altitude = interpolate(orientation_list[i].epoch_timestamp, velocity_body_list[n].epoch_timestamp,
-                                                  velocity_body_list[n+1].epoch_timestamp, altitude_list[n].altitude, altitude_list[n+1].altitude)
+        dead_reckoning_dvl.altitude = interpolate(
+            orientation_list[i].epoch_timestamp,
+            velocity_body_list[n].epoch_timestamp,
+            velocity_body_list[n+1].epoch_timestamp,
+            altitude_list[n].altitude,
+            altitude_list[n+1].altitude)
 
         while k < len(depth_list)-1 and depth_list[k].epoch_timestamp < orientation_list[i].epoch_timestamp:
             k += 1
         # interpolate to find the appropriate depth for dead_reckoning
         dead_reckoning_dvl.depth = interpolate(
-            orientation_list[i].epoch_timestamp, depth_list[k-1].epoch_timestamp, depth_list[k].epoch_timestamp, depth_list[k-1].depth, depth_list[k].depth)
+            orientation_list[i].epoch_timestamp,
+            depth_list[k-1].epoch_timestamp,
+            depth_list[k].epoch_timestamp,
+            depth_list[k-1].depth,
+            depth_list[k].depth)
         dead_reckoning_dvl.depth_std = interpolate(
-            orientation_list[i].epoch_timestamp, depth_list[k-1].epoch_timestamp, depth_list[k].epoch_timestamp, depth_list[k-1].depth_std, depth_list[k].depth_std)
+            orientation_list[i].epoch_timestamp,
+            depth_list[k-1].epoch_timestamp,
+            depth_list[k].epoch_timestamp,
+            depth_list[k-1].depth_std,
+            depth_list[k].depth_std)
         dead_reckoning_dvl_list.append(dead_reckoning_dvl)
 
     # dead reckoning solution
     for i in range(len(dead_reckoning_dvl_list)):
         # dead reckoning solution
         if i >= 1:
-            [dead_reckoning_dvl_list[i].northings, dead_reckoning_dvl_list[i].eastings] = dead_reckoning(dead_reckoning_dvl_list[i].epoch_timestamp, dead_reckoning_dvl_list[i-1].epoch_timestamp, dead_reckoning_dvl_list[i].north_velocity,
-                                                                                                         dead_reckoning_dvl_list[i-1].north_velocity, dead_reckoning_dvl_list[i].east_velocity, dead_reckoning_dvl_list[i-1].east_velocity, dead_reckoning_dvl_list[i-1].northings, dead_reckoning_dvl_list[i-1].eastings)
+            [dead_reckoning_dvl_list[i].northings, dead_reckoning_dvl_list[i].eastings] = dead_reckoning(
+                dead_reckoning_dvl_list[i].epoch_timestamp,
+                dead_reckoning_dvl_list[i-1].epoch_timestamp,
+                dead_reckoning_dvl_list[i].north_velocity,
+                dead_reckoning_dvl_list[i-1].north_velocity,
+                dead_reckoning_dvl_list[i].east_velocity,
+                dead_reckoning_dvl_list[i-1].east_velocity,
+                dead_reckoning_dvl_list[i-1].northings,
+                dead_reckoning_dvl_list[i-1].eastings)
 
     # offset sensor to plot origin/centre of vehicle
     dead_reckoning_centre_list = copy.deepcopy(
         dead_reckoning_dvl_list)  # [:] #.copy()
     for i in range(len(dead_reckoning_centre_list)):
-        [x_offset, y_offset, z_offset] = body_to_inertial(dead_reckoning_centre_list[i].roll, dead_reckoning_centre_list[i].pitch,
-                                                          dead_reckoning_centre_list[i].yaw, origin_x_offset - dvl_x_offset, origin_y_offset - dvl_y_offset, origin_z_offset - dvl_z_offset)
+        [x_offset, y_offset, z_offset] = body_to_inertial(
+            dead_reckoning_centre_list[i].roll,
+            dead_reckoning_centre_list[i].pitch,
+            dead_reckoning_centre_list[i].yaw,
+            vehicle.origin.surge - vehicle.dvl.surge,
+            vehicle.origin.sway - vehicle.dvl.sway,
+            vehicle.origin.heave - vehicle.dvl.heave)
         dead_reckoning_centre_list[i].northings += x_offset
         dead_reckoning_centre_list[i].eastings += y_offset
         # dead_reckoning_centre_list[i].depth += z_offset
@@ -664,41 +639,70 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
             if j == 1:
                 interpolate_remove_flag = True
             else:
-                velocity_inertial_list[i].roll = interpolate(velocity_inertial_list[i].epoch_timestamp, orientation_list[j -
-                                                                                                                         1].epoch_timestamp, orientation_list[j].epoch_timestamp, orientation_list[j-1].roll, orientation_list[j].roll)
-                velocity_inertial_list[i].pitch = interpolate(velocity_inertial_list[i].epoch_timestamp, orientation_list[j -
-                                                                                                                          1].epoch_timestamp, orientation_list[j].epoch_timestamp, orientation_list[j-1].pitch, orientation_list[j].pitch)
+                velocity_inertial_list[i].roll = interpolate(
+                    velocity_inertial_list[i].epoch_timestamp,
+                    orientation_list[j-1].epoch_timestamp,
+                    orientation_list[j].epoch_timestamp,
+                    orientation_list[j-1].roll,
+                    orientation_list[j].roll)
+                velocity_inertial_list[i].pitch = interpolate(
+                    velocity_inertial_list[i].epoch_timestamp,
+                    orientation_list[j-1].epoch_timestamp,
+                    orientation_list[j].epoch_timestamp,
+                    orientation_list[j-1].pitch,
+                    orientation_list[j].pitch)
 
                 if abs(orientation_list[j].yaw-orientation_list[j-1].yaw) > 180:
                     if orientation_list[j].yaw > orientation_list[j-1].yaw:
-                        velocity_inertial_list[i].yaw = interpolate(velocity_inertial_list[i].epoch_timestamp, orientation_list[j-1].epoch_timestamp,
-                                                                    orientation_list[j].epoch_timestamp, orientation_list[j-1].yaw, orientation_list[j].yaw-360)
-
+                        velocity_inertial_list[i].yaw = interpolate(
+                            velocity_inertial_list[i].epoch_timestamp,
+                            orientation_list[j-1].epoch_timestamp,
+                            orientation_list[j].epoch_timestamp,
+                            orientation_list[j-1].yaw,
+                            orientation_list[j].yaw-360)
                     else:
-                        velocity_inertial_list[i].yaw = interpolate(velocity_inertial_list[i].epoch_timestamp, orientation_list[j-1].epoch_timestamp,
-                                                                    orientation_list[j].epoch_timestamp, orientation_list[j-1].yaw-360, orientation_list[j].yaw)
+                        velocity_inertial_list[i].yaw = interpolate(
+                            velocity_inertial_list[i].epoch_timestamp,
+                            orientation_list[j-1].epoch_timestamp,
+                            orientation_list[j].epoch_timestamp,
+                            orientation_list[j-1].yaw-360,
+                            orientation_list[j].yaw)
 
                     if velocity_inertial_list[i].yaw < 0:
                         velocity_inertial_list[i].yaw += 360
 
                     elif velocity_inertial_list[i].yaw > 360:
                         velocity_inertial_list[i].yaw -= 360
-
                 else:
-                    velocity_inertial_list[i].yaw = interpolate(velocity_inertial_list[i].epoch_timestamp, orientation_list[j -
-                                                                                                                            1].epoch_timestamp, orientation_list[j].epoch_timestamp, orientation_list[j-1].yaw, orientation_list[j].yaw)
+                    velocity_inertial_list[i].yaw = interpolate(
+                        velocity_inertial_list[i].epoch_timestamp,
+                        orientation_list[j-1].epoch_timestamp,
+                        orientation_list[j].epoch_timestamp,
+                        orientation_list[j-1].yaw,
+                        orientation_list[j].yaw)
 
             while k < len(depth_list)-1 and depth_list[k].epoch_timestamp < velocity_inertial_list[i].epoch_timestamp:
                 k = k+1
 
             if k >= 1:
-                velocity_inertial_list[i].depth = interpolate(velocity_inertial_list[i].epoch_timestamp, depth_list[k-1].epoch_timestamp,
-                                                              depth_list[k].epoch_timestamp, depth_list[k-1].depth, depth_list[k].depth)  # depth directly interpolated from depth sensor
+                velocity_inertial_list[i].depth = interpolate(
+                    velocity_inertial_list[i].epoch_timestamp,
+                    depth_list[k-1].epoch_timestamp,
+                    depth_list[k].epoch_timestamp,
+                    depth_list[k-1].depth,
+                    depth_list[k].depth)  # depth directly interpolated from depth sensor
 
         for i in range(len(velocity_inertial_list)):
             if i >= 1:
-                [velocity_inertial_list[i].northings, velocity_inertial_list[i].eastings] = dead_reckoning(velocity_inertial_list[i].epoch_timestamp, velocity_inertial_list[i-1].epoch_timestamp, velocity_inertial_list[i].north_velocity,
-                                                                                                           velocity_inertial_list[i-1].north_velocity, velocity_inertial_list[i].east_velocity, velocity_inertial_list[i-1].east_velocity, velocity_inertial_list[i-1].northings, velocity_inertial_list[i-1].eastings)
+                [velocity_inertial_list[i].northings, velocity_inertial_list[i].eastings] = dead_reckoning(
+                    velocity_inertial_list[i].epoch_timestamp,
+                    velocity_inertial_list[i-1].epoch_timestamp,
+                    velocity_inertial_list[i].north_velocity,
+                    velocity_inertial_list[i-1].north_velocity,
+                    velocity_inertial_list[i].east_velocity,
+                    velocity_inertial_list[i-1].east_velocity,
+                    velocity_inertial_list[i-1].northings,
+                    velocity_inertial_list[i-1].eastings)
 
         if interpolate_remove_flag == True:
             del velocity_inertial_list[0]
@@ -708,28 +712,47 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
 
 # offset velocity DR by average usbl estimate
     # offset velocity body DR by average usbl estimate
-    [northings_usbl_interpolated, eastings_usbl_interpolated] = usbl_offset([i.epoch_timestamp for i in dead_reckoning_centre_list], [i.northings for i in dead_reckoning_centre_list], [
-                                                                            i.eastings for i in dead_reckoning_centre_list], [i.epoch_timestamp for i in usbl_list], [i.northings for i in usbl_list], [i.eastings for i in usbl_list])
+    [northings_usbl_interpolated, eastings_usbl_interpolated] = usbl_offset(
+        [i.epoch_timestamp for i in dead_reckoning_centre_list],
+        [i.northings for i in dead_reckoning_centre_list],
+        [i.eastings for i in dead_reckoning_centre_list],
+        [i.epoch_timestamp for i in usbl_list],
+        [i.northings for i in usbl_list],
+        [i.eastings for i in usbl_list])
     for i in range(len(dead_reckoning_centre_list)):
         dead_reckoning_centre_list[i].northings += northings_usbl_interpolated
         dead_reckoning_centre_list[i].eastings += eastings_usbl_interpolated
         dead_reckoning_centre_list[i].latitude, dead_reckoning_centre_list[i].longitude = metres_to_latlon(
-            latitude_reference, longitude_reference, dead_reckoning_centre_list[i].eastings, dead_reckoning_centre_list[i].northings)
+            mission.origin.latitude,
+            mission.origin.longitude,
+            dead_reckoning_centre_list[i].eastings,
+            dead_reckoning_centre_list[i].northings)
     for i in range(len(dead_reckoning_dvl_list)):
         dead_reckoning_dvl_list[i].northings += northings_usbl_interpolated
         dead_reckoning_dvl_list[i].eastings += eastings_usbl_interpolated
         dead_reckoning_dvl_list[i].latitude, dead_reckoning_dvl_list[i].longitude = metres_to_latlon(
-            latitude_reference, longitude_reference, dead_reckoning_dvl_list[i].eastings, dead_reckoning_dvl_list[i].northings)
+            mission.origin.latitude,
+            mission.origin.longitude,
+            dead_reckoning_dvl_list[i].eastings,
+            dead_reckoning_dvl_list[i].northings)
 
     # offset velocity inertial DR by average usbl estimate
     if len(velocity_inertial_list) > 0:
-        [northings_usbl_interpolated, eastings_usbl_interpolated] = usbl_offset([i.epoch_timestamp for i in velocity_inertial_list], [i.northings for i in velocity_inertial_list], [
-                                                                                i.eastings for i in velocity_inertial_list], [i.epoch_timestamp for i in usbl_list], [i.northings for i in usbl_list], [i.eastings for i in usbl_list])
+        [northings_usbl_interpolated, eastings_usbl_interpolated] = usbl_offset(
+            [i.epoch_timestamp for i in velocity_inertial_list],
+            [i.northings for i in velocity_inertial_list],
+            [i.eastings for i in velocity_inertial_list],
+            [i.epoch_timestamp for i in usbl_list],
+            [i.northings for i in usbl_list],
+            [i.eastings for i in usbl_list])
         for i in range(len(velocity_inertial_list)):
             velocity_inertial_list[i].northings += northings_usbl_interpolated
             velocity_inertial_list[i].eastings += eastings_usbl_interpolated
             velocity_inertial_list[i].latitude, velocity_inertial_list[i].longitude = metres_to_latlon(
-                latitude_reference, longitude_reference, velocity_inertial_list[i].eastings, velocity_inertial_list[i].northings)
+                mission.origin.latitude,
+                mission.origin.longitude,
+                velocity_inertial_list[i].eastings,
+                velocity_inertial_list[i].northings)
 
 # particle filter data fusion of usbl_data and dvl_imu_data
     if particle_filter_activate:
@@ -757,20 +780,20 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
         for i in range(len(pf_fusion_centre_list)):
             pf_fusion_dvl_list[i].latitude,
             pf_fusion_dvl_list[i].longitude = metres_to_latlon(
-                latitude_reference, longitude_reference,
+                mission.origin.latitude, mission.origin.longitude,
                 pf_fusion_dvl_list[i].eastings,
                 pf_fusion_dvl_list[i].northings)
             [x_offset, y_offset, z_offset] = body_to_inertial(
                 pf_fusion_centre_list[i].roll,
                 pf_fusion_centre_list[i].pitch,
                 pf_fusion_centre_list[i].yaw,
-                origin_x_offset - dvl_x_offset,
-                origin_y_offset - dvl_y_offset,
-                origin_z_offset - dvl_z_offset)
+                vehicle.origin.surge - vehicle.dvl.surge,
+                vehicle.origin.sway - vehicle.dvl.sway,
+                vehicle.origin.heave - vehicle.dvl.heave)
             pf_fusion_centre_list[i].northings += x_offset
             pf_fusion_centre_list[i].eastings += y_offset
             lat, lon = metres_to_latlon(
-                latitude_reference, longitude_reference,
+                mission.origin.latitude, mission.origin.longitude,
                 pf_fusion_centre_list[i].eastings,
                 pf_fusion_centre_list[i].northings)
             pf_fusion_centre_list[i].latitude = lat
@@ -813,43 +836,43 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
             b.z_velocity_std = s.covariance[Index.VZ, Index.VZ]
             [x_offset, y_offset, z_offset] = body_to_inertial(
                 b.roll, b.pitch, b.yaw,
-                origin_x_offset - dvl_x_offset,
-                origin_y_offset - dvl_y_offset,
-                origin_z_offset - dvl_z_offset)
+                vehicle.origin.surge - vehicle.dvl.surge,
+                vehicle.origin.sway - vehicle.dvl.sway,
+                vehicle.origin.heave - vehicle.dvl.heave)
             b.northings += x_offset
             b.eastings += y_offset
             b.depth += z_offset
             b.latitude, b.longitude = metres_to_latlon(
-                latitude_reference, longitude_reference,
+                mission.origin.latitude, mission.origin.longitude,
                 b.eastings, b.northings)
             ekf_list.append(b)
 
-    origin_offsets = [origin_x_offset, origin_y_offset, origin_z_offset]
-    latlon_reference = [latitude_reference, longitude_reference]
+    origin_offsets = [vehicle.origin.surge, vehicle.origin.sway, vehicle.origin.heave]
+    latlon_reference = [mission.origin.latitude, mission.origin.longitude]
 
     # perform interpolations of state data to camera{1/2/3} time stamps
     # for both DR and PF
     if len(camera1_list) > 1:
         interpolate_sensor_list(
             camera1_list,
-            camera1_sensor_name,
-            [camera1_x_offset, camera1_y_offset, camera1_z_offset],
+            mission.image.cameras[0].name,
+            camera1_offsets,
             origin_offsets,
             latlon_reference,
             dead_reckoning_centre_list)
     if len(camera2_list) > 1:
         interpolate_sensor_list(
             camera2_list,
-            camera2_sensor_name,
-            [camera2_x_offset, camera2_y_offset, camera2_z_offset],
+            mission.image.cameras[1].name,
+            camera2_offsets,
             origin_offsets,
             latlon_reference,
             dead_reckoning_centre_list)
     if len(camera3_list) > 1:
         interpolate_sensor_list(
             camera3_list,
-            camera3_sensor_name,
-            [camera3_x_offset, camera3_y_offset, camera3_z_offset],
+            mission.image.cameras[2].name,
+            camera3_offsets,
             origin_offsets,
             latlon_reference,
             dead_reckoning_centre_list)
@@ -857,24 +880,24 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
         if len(camera1_pf_list) > 1:
             interpolate_sensor_list(
                 camera1_pf_list,
-                camera1_sensor_name,
-                [camera1_x_offset, camera1_y_offset, camera1_z_offset],
+                mission.image.cameras[0].name,
+                camera1_offsets,
                 origin_offsets,
                 latlon_reference,
                 pf_fusion_centre_list)
         if len(camera2_pf_list) > 1:
             interpolate_sensor_list(
                 camera2_pf_list,
-                camera2_sensor_name,
-                [camera1_x_offset, camera1_y_offset, camera1_z_offset],
+                mission.image.cameras[1].name,
+                camera2_offsets,
                 origin_offsets,
                 latlon_reference,
                 pf_fusion_centre_list)
         if len(camera3_pf_list) > 1:
             interpolate_sensor_list(
                 camera3_pf_list,
-                camera3_sensor_name,
-                [camera1_x_offset, camera1_y_offset, camera1_z_offset],
+                mission.image.cameras[2].name,
+                camera3_offsets,
                 origin_offsets,
                 latlon_reference,
                 pf_fusion_centre_list)
@@ -882,24 +905,24 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
         if len(camera1_ekf_list) > 1:
             interpolate_sensor_list(
                 camera1_ekf_list,
-                camera1_sensor_name,
-                [camera1_x_offset, camera1_y_offset, camera1_z_offset],
+                mission.image.cameras[0].name,
+                camera1_offsets,
                 origin_offsets,
                 latlon_reference,
                 ekf_list)
         if len(camera2_ekf_list) > 1:
             interpolate_sensor_list(
                 camera2_ekf_list,
-                camera2_sensor_name,
-                [camera1_x_offset, camera1_y_offset, camera1_z_offset],
+                mission.image.cameras[1].name,
+                camera2_offsets,
                 origin_offsets,
                 latlon_reference,
                 ekf_list)
         if len(camera3_ekf_list) > 1:
             interpolate_sensor_list(
                 camera3_ekf_list,
-                camera3_sensor_name,
-                [camera1_x_offset, camera1_y_offset, camera1_z_offset],
+                mission.image.cameras[2].name,
+                camera3_offsets,
                 origin_offsets,
                 latlon_reference,
                 ekf_list)
@@ -910,7 +933,7 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
         interpolate_sensor_list(
             chemical_list,
             'chemical',
-            [chemical_x_offset, chemical_y_offset, chemical_z_offset],
+            chemical_offset,
             origin_offsets,
             latlon_reference,
             dead_reckoning_centre_list)
@@ -918,7 +941,7 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
             interpolate_sensor_list(
                 chemical_list,
                 'chemical',
-                [chemical_x_offset, chemical_y_offset, chemical_z_offset],
+                chemical_offset,
                 origin_offsets,
                 latlon_reference,
                 pf_fusion_centre_list)
@@ -928,12 +951,12 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
             # pdf_plot()
 
         # plotly data in html
-        if html_plot is True:
+        if html_plot:
             print('Plotting plotly data ...')
-            plotlypath = os.path.join(renavpath, 'interactive_plots')
-            if os.path.isdir(plotlypath) == 0:
+            plotlypath = renavpath / 'interactive_plots'
+            if plotlypath.is_dir() == 0:
                 try:
-                    os.mkdir(plotlypath)
+                    plotlypath.mkdir()
                 except Exception as e:
                     print("Warning:", e)
 
@@ -942,7 +965,7 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
             plot_velocity_vs_time(dead_reckoning_dvl_list,
                                   velocity_inertial_list,
                                   dead_reckoning_centre_list,
-                                  velocity_inertial_sensor_name,
+                                  mission.velocity.format,
                                   plotlypath)
             plot_deadreckoning_vs_time(dead_reckoning_dvl_list,
                                        velocity_inertial_list,
@@ -950,7 +973,7 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
                                        dead_reckoning_centre_list,
                                        altitude_list,
                                        depth_list,
-                                       velocity_inertial_sensor_name,
+                                       mission.velocity.format,
                                        plotlypath)
             if particle_filter_activate:
                 plot_pf_uncertainty(pf_fusion_dvl_list,
@@ -962,7 +985,7 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
                                     depth_list,
                                     usbl_list,
                                     velocity_inertial_list,
-                                    velocity_inertial_sensor_name,
+                                    mission.velocity.format,
                                     plotlypath)
                 plot_2d_deadreckoning(camera1_list,
                                       dead_reckoning_centre_list,
@@ -977,32 +1000,25 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
                                       plotlypath)
             print('Complete plot data: ', plotlypath)
 
-# write values out to a csv file
-    # create a directory with the time stamp
+    csvpath = renavpath / 'csv'
+    drcsvpath = csvpath / 'dead_reckoning'
+    pfcsvpath = csvpath / 'particle_filter'
+    ekfcsvpath = csvpath / 'ekf'
 
-    # if csv_write is True:
-
-    csvpath = os.path.join(renavpath, 'csv')
-    drcsvpath = os.path.join(csvpath, 'dead_reckoning')
-    pfcsvpath = os.path.join(csvpath, 'particle_filter')
-    ekfcsvpath = os.path.join(csvpath, 'ekf')
-
-    if csv_output_activate is True:
-        if csv_usbl is True:
+    if csv_output_activate:
+        if csv_usbl:
             if len(usbl_list) > 1:
-                csv_file = Path(csvpath)
-                if csv_file.exists() is False:
-                    os.mkdir(csvpath)
+                if not csvpath.exists():
+                    csvpath.mkdir()
 
                 print("Writing outputs to auv_usbl.csv ...")
-                with open(os.path.join(csvpath, 'auv_usbl.csv'),
-                          'w') as fileout:
+                auv_usbl_file = csvpath / 'auv_usbl.csv'
+                with auv_usbl_file.open('w') as fileout:
                     fileout.write(
                         'Timestamp, Northing [m], Easting [m], Depth [m], \
                         Latitude [deg], Longitude [deg]\n')
                 for i in range(len(usbl_list)):
-                    with open(os.path.join(csvpath, 'auv_usbl.csv'),
-                              'a') as fileout:
+                    with auv_usbl_file.open('a') as fileout:
                         try:
                             fileout.write(
                                 str(usbl_list[i].epoch_timestamp) + ','
@@ -1020,11 +1036,9 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
         write_csv(drcsvpath, dead_reckoning_dvl_list,
                   'auv_dr_dvl', csv_dr_auv_dvl)
         camera_csv(camera1_list, 'auv_dr_' +
-                   camera1_sensor_name, drcsvpath, csv_dr_camera_1)
+                   mission.image.cameras[0].name, drcsvpath, csv_dr_camera_1)
         camera_csv(camera2_list, 'auv_dr_' +
-                   camera2_sensor_name, drcsvpath, csv_dr_camera_2)
-        camera_csv(camera3_list, 'auv_dr_' +
-                   camera3_sensor_name, drcsvpath, csv_dr_camera_3)
+                   mission.image.cameras[1].name, drcsvpath, csv_dr_camera_2)
         other_data_csv(chemical_list, 'auv_dr_chemical',
                        drcsvpath, csv_dr_chemical)
         write_csv(pfcsvpath, pf_fusion_centre_list,
@@ -1032,24 +1046,27 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
         write_csv(pfcsvpath, pf_fusion_dvl_list,
                   'auv_pf_dvl', csv_pf_auv_dvl)
         camera_csv(camera1_pf_list, 'auv_pf_' +
-                   camera1_sensor_name, pfcsvpath, csv_pf_camera_1)
+                   mission.image.cameras[0].name, pfcsvpath, csv_pf_camera_1)
         camera_csv(camera2_pf_list, 'auv_pf_' +
-                   camera2_sensor_name, pfcsvpath, csv_pf_camera_2)
-        camera_csv(camera3_pf_list, 'auv_pf_' +
-                   camera3_sensor_name, pfcsvpath, csv_pf_camera_3)
+                   mission.image.cameras[1].name, pfcsvpath, csv_pf_camera_2)
         other_data_csv(chemical_list, 'auv_pf_chemical',
                        pfcsvpath, csv_pf_chemical)
         write_csv(ekfcsvpath, ekf_list,
                   'auv_ekf_centre', csv_ekf_auv_centre)
         camera_csv(camera1_ekf_list, 'auv_ekf_' +
-                   camera1_sensor_name, ekfcsvpath, csv_ekf_camera_1)
+                   mission.image.cameras[0].name, ekfcsvpath, csv_ekf_camera_1)
         camera_csv(camera2_ekf_list, 'auv_ekf_' +
-                   camera2_sensor_name, ekfcsvpath, csv_ekf_camera_2)
-        camera_csv(camera3_ekf_list, 'auv_ekf_' +
-                   camera3_sensor_name, ekfcsvpath, csv_ekf_camera_3)
+                   mission.image.cameras[1].name, ekfcsvpath, csv_ekf_camera_2)
         other_data_csv(chemical_list, 'auv_ekf_chemical',
                        ekfcsvpath, csv_pf_chemical)
 
-    print('Complete extraction of data: ', csvpath)
+        if len(mission.image.cameras) > 2:
+            camera_csv(camera3_list, 'auv_dr_' +
+                       mission.image.cameras[2].name, drcsvpath, csv_dr_camera_3)
+            camera_csv(camera3_pf_list, 'auv_pf_' +
+                       mission.image.cameras[2].name, pfcsvpath, csv_pf_camera_3)
+            camera_csv(camera3_ekf_list, 'auv_ekf_' +
+                       mission.image.cameras[2].name, ekfcsvpath, csv_ekf_camera_3)
 
-    print('Completed data extraction: ', renavpath)
+    print('Complete extraction of data: {}'.format(csvpath))
+    print('Completed data extraction: {}'.format(renavpath))

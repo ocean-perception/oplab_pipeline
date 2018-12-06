@@ -4,7 +4,6 @@ Copyright (c) 2018, University of Southampton
 All rights reserved.
 """
 
-import codecs
 from auv_nav.sensors import BodyVelocity, InertialVelocity
 from auv_nav.sensors import Orientation, Depth, Altitude
 from auv_nav.sensors import Category, Timestamp, PhinsHeaders
@@ -12,27 +11,23 @@ from auv_nav.tools.folder_structure import get_raw_folder
 
 
 class PhinsParser():
-    def __init__(self, node, category, ftype, outpath, filename):
+    def __init__(self, mission, vehicle, category, ftype, outpath, filename):
         # parser meta data
         self.class_string = 'measurement'
         self.sensor_string = 'phins'
         self.category = category
 
         self.outpath = outpath
-        self.filename = node['filename']
-        self.filepath = node['filepath']
+        self.filename = mission.velocity.filename
+        self.filepath = mission.velocity.filepath
         self.output_format = ftype
-
-        if 'headingoffset' in node:
-            self.headingoffset = node['headingoffset']
-        else:
-            self.headingoffset = 0.0
+        self.headingoffset = vehicle.dvl.yaw
 
         # phins std models
-        depth_std_factor = 0.01/100  # from catalogue paroscientific
-        velocity_std_factor = 0.001  # from catalogue rdi whn1200/600
-        velocity_std_offset = 0.2    # from catalogue rdi whn1200/600
-        altitude_std_factor = 1/100  # acoustic vel assumed 1% accurate
+        depth_std_factor = mission.depth.std_factor
+        velocity_std_factor = mission.velocity.std_factor
+        velocity_std_offset = mission.velocity.std_offset
+        altitude_std_factor = mission.altitude.std_factor
 
         # read in date from filename
         yyyy = int(self.filename[0:4])
@@ -40,7 +35,9 @@ class PhinsParser():
         dd = int(self.filename[6:8])
         date = yyyy, mm, dd
 
-        self.timestamp = Timestamp(date, node['timezone'], node['timeoffset'])
+        self.timestamp = Timestamp(date,
+                                   mission.velocity.timezone,
+                                   mission.velocity.timeoffset)
         self.body_velocity = BodyVelocity(velocity_std_factor,
                                           velocity_std_offset,
                                           self.headingoffset,
@@ -93,7 +90,7 @@ class PhinsParser():
         print('...... parsing phins standard data')
 
         data_list = []
-        path = get_raw_folder(self.outpath + '/../' + self.filepath + self.filename)
+        path = get_raw_folder(self.outpath / '..' / self.filepath / self.filename)
         with path.open('r', encoding='utf-8', errors='ignore') as filein:
             for complete_line in filein.readlines():
                 line_and_md5 = complete_line.strip().split('*')
@@ -146,12 +143,14 @@ class PhinsParser():
 
 
 def parse_phins(
-        node,
+        mission,
+        vehicle,
         category,
         ftype,
         outpath,
         fileoutname):
-    p = PhinsParser(node,
+    p = PhinsParser(mission,
+                    vehicle,
                     category,
                     ftype,
                     outpath,

@@ -21,7 +21,8 @@ tolerance = 0.05  # 0.01 # stereo pair must be within 10ms of each other
 # http://www.json.org/
 
 
-def parse_acfr_images(node,
+def parse_acfr_images(mission,
+                      vehicle,
                       category,
                       ftype,
                       outpath,
@@ -32,11 +33,11 @@ def parse_acfr_images(node,
     category = 'image'
     sensor_string = 'acfr_standard'
 
-    timezone = node['timezone']
-    timeoffset = node['timeoffset']
-    filepath = node['cameras'][0]['path']
-    camera1_label = node['cameras'][0]['name']
-    camera2_label = node['cameras'][1]['name']
+    timezone = mission.image.timezone
+    timeoffset = mission.image.timeoffset
+    filepath = mission.image.cameras[0].path
+    camera1_label = mission.image.cameras[0].name
+    camera2_label = mission.image.cameras[1].name
 
     # read in timezone
     if isinstance(timezone, str):
@@ -59,7 +60,7 @@ def parse_acfr_images(node,
 
     # determine file paths
 
-    filepath = get_raw_folder(outpath+'/../' + filepath)
+    filepath = get_raw_folder(outpath / '..' / filepath)
     all_list = os.listdir(str(filepath))
 
     camera1_filename = [

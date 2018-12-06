@@ -11,11 +11,8 @@ Created on Thu Sep 27 12:34:42 2018
 
 
 import multiprocessing
-import os
-import shutil
 import json
-import yaml
-import sys
+from pathlib import Path
 
 # sys.path.append("..")
 from auv_nav.parsers.parse_phins import parse_phins
@@ -30,58 +27,43 @@ from auv_nav.plot.plot_parse_data import plot_parse_data
 from auv_nav.tools.time_conversions import epoch_to_day
 from auv_nav.tools.folder_structure import get_config_folder, get_raw_folder
 from auv_nav.tools.folder_structure import get_processed_folder
+from auv_nav.parsers.vehicle import Vehicle
+from auv_nav.parsers.mission import Mission
 
 
 def parse_data(filepath, ftype):
     # initiate data and processing flags
-    filepath = filepath.replace('\\', '/')
+    filepath = Path(filepath).resolve()
 
-    filepath = str(get_raw_folder(filepath))
+    filepath = get_raw_folder(filepath)
 
     # load mission.yaml config file
 
-    mission_file = os.path.join(filepath, 'mission.yaml')
+    mission_file = filepath / 'mission.yaml'
+    vehicle_file = filepath / 'vehicle.yaml'
     mission_file = get_config_folder(mission_file)
-
-    print('Loading mission.yaml at {0}'.format(mission_file))
-    mission = yaml.load(mission_file.open('r'))
-
-    vehicle_file = os.path.join(filepath, 'vehicle.yaml')
     vehicle_file = get_config_folder(vehicle_file)
+    print('Loading mission.yaml at {0}'.format(mission_file))
+    mission = Mission(mission_file)
+    print('Loading vehicle.yaml at {0}'.format(vehicle_file))
+    vehicle = Vehicle(vehicle_file)
 
     # copy mission.yaml and vehicle.yaml to processed folder for process step
     mission_processed = get_processed_folder(mission_file)
-    vehicle_processed = get_processed_folder(vehicle_file)
+    vehicle_source = get_config_folder(vehicle_file)
+    vehicle_destination = get_processed_folder(vehicle_file)
     mission_file.copy(mission_processed)
-    vehicle_file.copy(vehicle_processed)
-
-    # Check mission.yaml version
-    if 'version' in mission:
-        if mission['version'] == 1:
-            print('Mission version: 1')
-        else:
-            print('Mission version 1 expected.')
-            print('Your mission version is {0}'.format(mission['version']))
-            print('auv_nav will now exit')
-            sys.exit()
-    else:
-        print('Mission version 1 expected.')
-        print('You are using and old mission.yaml format that is no longer \n\
-              compatible. Please refer to the example mission.yaml file and \n\
-              modify yours to fit.')
-        print('auv_nav will now exit')
-        sys.exit()
+    vehicle_source.copy(vehicle_destination)
 
     # check for recognised formats and create nav file
     outpath = get_processed_folder(filepath)
-    outpath = str(outpath)
     print('Checking output format')
     if ftype == 'oplab':  # or (ftype is not 'acfr'):
-        outpath = outpath + '/' + 'nav'
+        outpath = outpath / 'nav'
         filename = 'nav_standard.json'
 
     elif ftype == 'acfr':  # or (ftype is not 'acfr'):
-        outpath = outpath + '/' + 'dRAWLOGS_cv'
+        outpath = outpath / 'dRAWLOGS_cv'
         filename = 'combined.RAW.auv'
     else:
         print('Error: -o', ftype, 'not recognised')
@@ -89,20 +71,21 @@ def parse_data(filepath, ftype):
         return
 
     # make file path if not exist
-    if os.path.isdir(outpath) == 0:
+    if not outpath.is_dir():
         try:
-            os.mkdir(outpath)
+            outpath.mkdir()
         except Exception as e:
             print("Warning:", e)
 
     # create file (overwrite if exists)
-    with open(outpath + '/' + filename, 'w') as fileout:
+    nav_file = outpath / filename
+    with nav_file.open('w') as fileout:
         print('Loading raw data')
 
         if multiprocessing.cpu_count() < 4:
             cpu_to_use = 1
         else:
-            cpu_to_use = 3
+            cpu_to_use = multiprocessing.cpu_count() - 2
 
         try:
             pool = multiprocessing.Pool(cpu_to_use)
@@ -115,92 +98,90 @@ def parse_data(filepath, ftype):
         pool_list = []
 
         # read in, parse data and write data
-        if 'image' in mission:
-            if mission['image']['format'] == "acfr_standard" or mission['image']['format'] == "unagi":
+        if not mission.image.empty():
+            if mission.image.format == "acfr_standard" or mission.image.format == "unagi":
                 pool_list.append(
                     pool.apply_async(parse_acfr_images,
-                                     [mission['image'], 'images',
+                                     [mission, vehicle, 'images',
                                       ftype, outpath, filename]))
-            if mission['image']['format'] == "seaxerocks_3":
+            if mission.image.format == "seaxerocks_3":
                 pool_list.append(
                     pool.apply_async(parse_seaxerocks_images,
-                                     [mission['image'], 'images',
+                                     [mission, vehicle, 'images',
                                       ftype, outpath, filename]))
-        if 'usbl' in mission:
+        if not mission.usbl.empty():
             print('Loading usbl data...')
-            if mission['usbl']['format'] == "gaps":
+            if mission.usbl.format == "gaps":
                 pool_list.append(
                     pool.apply_async(
                         parse_gaps,
-                        [mission['usbl'], 'usbl',
-                         mission['origin'],
+                        [mission, vehicle, 'usbl',
                          ftype, outpath, filename]))
-            if mission['usbl']['format'] == "usbl_dump":
+            if mission.usbl.format == "usbl_dump":
                 pool_list.append(
                     pool.apply_async(
                         parse_usbl_dump,
-                        [mission['usbl'], 'usbl',
-                         mission['origin'],
+                        [mission, vehicle, 'usbl',
                          ftype, outpath, filename]))
 
-        if 'velocity' in mission:
+        if not mission.velocity.empty():
             print('Loading velocity data...')
-            if mission['velocity']['format'] == "phins":
+            if mission.velocity.format == "phins":
                 pool_list.append(
                     pool.apply_async(
                         parse_phins,
-                        [mission['velocity'], 'velocity',
+                        [mission, vehicle, 'velocity',
                          ftype, outpath, filename]))
-            if mission['velocity']['format'] == "ae2000":
+            if mission.velocity.format == "ae2000":
                 pool_list.append(
                     pool.apply_async(
                         parse_ae2000,
-                        [mission['velocity'], 'velocity',
+                        [mission, vehicle, 'velocity',
                          ftype, outpath, filename]))
 
-        if 'orientation' in mission:
+        if not mission.orientation.empty():
             print('Loading orientation data...')
-            if mission['orientation']['format'] == "phins":
+            if mission.orientation.format == "phins":
                 pool_list.append(
                     pool.apply_async(
                         parse_phins,
-                        [mission['orientation'], 'orientation',
+                        [mission, vehicle, 'orientation',
                          ftype, outpath, filename]))
-            if mission['orientation']['format'] == "ae2000":
+            if mission.orientation.format == "ae2000":
                 pool_list.append(
                     pool.apply_async(
                         parse_ae2000,
-                        [mission['orientation'], 'orientation',
+                        [mission, vehicle, 'orientation',
                          ftype, outpath, filename]))
 
-        if 'depth' in mission:
+        if not mission.depth.empty():
             print('Loading depth data...')
-            if mission['depth']['format'] == "phins":
+            if mission.depth.format == "phins":
                 pool_list.append(
                     pool.apply_async(
                         parse_phins,
-                        [mission['depth'], 'depth',
+                        [mission, vehicle, 'depth',
                          ftype, outpath, filename]))
-            if mission['depth']['format'] == "ae2000":
+            if mission.depth.format == "ae2000":
                 pool_list.append(
                     pool.apply_async(
                         parse_ae2000,
-                        [mission['depth'], 'depth',
+                        [mission, vehicle, 'depth',
                          ftype, outpath, filename]))
 
-        if 'altitude' in mission:
+        if not mission.altitude.empty():
             print('Loading altitude data...')
-            if mission['altitude']['format'] == "phins":
+            if mission.altitude.format == "phins":
                 pool_list.append(
                     pool.apply_async(
                         parse_phins,
-                        [mission['altitude'], 'altitude',
+                        [mission, vehicle, 'altitude',
                          ftype, outpath, filename]))
-            if mission['altitude']['format'] == "ae2000":
+            if mission.altitude.format == "ae2000":
                 pool_list.append(
                     pool.apply_async(
                         parse_ae2000,
-                        [mission['altitude'], 'altitude',
+                        [mission, vehicle, 'altitude',
                          ftype, outpath, filename]))
         pool.close()
         print('Wait for parsing threads to finish...')
@@ -213,9 +194,6 @@ def parse_data(filepath, ftype):
         for i in pool_list:
             results = i.get()
             data_list.append(results)
-            # print (type(results.get()))
-            # print (len(results.get()))
-            # data_list.append(results.get())
         print('...done compiling data list.')
 
         print('Writing to output file...')
@@ -250,7 +228,7 @@ def parse_data(filepath, ftype):
     # interlace the data based on timestamps
     print('Interlacing data...')
     parse_interlacer(ftype, outpath, filename)
-    print('...done interlacing data. Output saved to ' + outpath + '/' + filename)
+    print('...done interlacing data. Output saved to {}'.format(outpath /filename))
 
     if ftype == 'oplab':
         plot_parse_data(outpath, ftype)
