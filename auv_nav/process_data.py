@@ -845,6 +845,7 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
             b.latitude, b.longitude = metres_to_latlon(
                 mission.origin.latitude, mission.origin.longitude,
                 b.eastings, b.northings)
+            b.covariance = s.covariance
             ekf_list.append(b)
 
     origin_offsets = [vehicle.origin.surge, vehicle.origin.sway, vehicle.origin.heave]

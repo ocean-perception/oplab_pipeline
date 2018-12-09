@@ -209,19 +209,10 @@ class BodyVelocity(OutputFormat):
             }
         return data
 
-    def _to_acfr(self, altitude, orientation):
-        data = ('RDI: ' + str(float(self.epoch_timestamp_dvl))
-                + ' alt:' + str(float(altitude.altitude))
-                + ' r1:0 r2:0 r3:0 r4:0'
-                + ' h:' + str(float(orientation.yaw))
-                + ' p:' + str(float(orientation.pitch))
-                + ' r:' + str(float(orientation.roll))
-                + ' vx:' + str(float(self.x_velocity))
-                + ' vy:' + str(float(self.y_velocity))
-                + ' vz:' + str(float(self.z_velocity))
-                + ' nx:0 ny:0 nz:0 COG:0 SOG:0 bt_status:0 h_true:0 p_gimbal:0'
-                + ' sv: ' + str(float(altitude.sound_velocity)) + '\n')
-        return data
+    def _to_acfr(self):
+        # This function has to be called when altitude and orientation
+        # are available. Moved to PhinsParse class.
+        pass
 
 
 class InertialVelocity(OutputFormat):
@@ -303,6 +294,9 @@ class InertialVelocity(OutputFormat):
                 }]
             }
         return data
+
+    def _to_acfr(self):
+        pass
 
 
 class Orientation(OutputFormat):
@@ -516,6 +510,9 @@ class Altitude(OutputFormat):
             }
         return data
 
+    def _to_acfr(self):
+        pass
+
 
 class Usbl(OutputFormat):
     def __init__(self):
@@ -606,6 +603,7 @@ class Camera():
         self.yaw = 0
 
         self.altitude = 0
+        self.covariance = None
 
     def from_json(self, json, cam_name):
         if cam_name in json:
@@ -633,6 +631,7 @@ class Other():
         self.yaw = 0
 
         self.altitude = 0
+        self.covariance = None
 
     def from_json(self, json):
         self.epoch_timestamp = json['epoch_timestamp']
@@ -673,6 +672,7 @@ class SyncedOrientationBodyVelocity():
 
         self.latitude = 0
         self.longitude = 0
+        self.covariance = None
 
     def __lt__(self, o):
         return self.epoch_timestamp < o.epoch_timestamp

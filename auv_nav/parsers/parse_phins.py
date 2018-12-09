@@ -48,12 +48,9 @@ class PhinsParser():
         self.altitude = Altitude(altitude_std_factor)
 
     def set_timestamp(self, epoch_timestamp):
-        if (self.category == Category.VELOCITY
-           or self.category == Category.ALTITUDE):
-            self.body_velocity.epoch_timestamp = epoch_timestamp
+        self.body_velocity.epoch_timestamp = epoch_timestamp
         self.inertial_velocity.epoch_timestamp = epoch_timestamp
-        if self.category == Category.ORIENTATION:
-            self.orientation.epoch_timestamp = epoch_timestamp
+        self.orientation.epoch_timestamp = epoch_timestamp
         self.depth.epoch_timestamp = epoch_timestamp
         self.altitude.epoch_timestamp = epoch_timestamp
 
@@ -103,6 +100,23 @@ class PhinsParser():
                     data_list.append(data)
             return data_list
 
+    def build_rdi_acfr(self):
+        data = ('RDI: ' + str(float(self.body_velocity.epoch_timestamp_dvl))
+                + ' alt:' + str(float(self.altitude.altitude))
+                + ' r1:0 r2:0 r3:0 r4:0'
+                + ' h:' + str(float(self.orientation.yaw))
+                + ' p:' + str(float(self.orientation.pitch))
+                + ' r:' + str(float(self.orientation.roll))
+                + ' vx:' + str(float(self.body_velocity.x_velocity))
+                + ' vy:' + str(float(self.body_velocity.y_velocity))
+                + ' vz:' + str(float(self.body_velocity.z_velocity))
+                + ' nx:0 ny:0 nz:0 COG:0 SOG:0 bt_status:0 h_true:0 p_gimbal:0'
+                + ' sv: ' + str(float(self.altitude.sound_velocity)) + '\n')
+        self.body_velocity.clear()
+        self.orientation.clear()
+        self.altitude.clear()
+        return data
+
     def process_line(self, header, line):
         data = None
         if header == PhinsHeaders.TIME:
@@ -111,14 +125,29 @@ class PhinsParser():
             self.set_timestamp(epoch_timestamp)
 
         if self.category == Category.VELOCITY:
-
             if header == PhinsHeaders.DVL:
                 self.body_velocity.from_phins(line)
-                data = self.body_velocity.export(self.output_format)
 
             if (header == PhinsHeaders.VEL
                     or header == PhinsHeaders.VEL_STD):
                 self.inertial_velocity.from_phins(line)
+
+            if self.output_format == 'acfr':
+                self.orientation.from_phins(line)
+                if header == PhinsHeaders.ALTITUDE:
+                    self.altitude.from_phins(
+                        line,
+                        self.body_velocity.epoch_timestamp_dvl)
+                # if (self.body_velocity.valid()
+                #    or self.altitude.valid()
+                #    or self.orientation.valid()):
+                    # print('bv {} al {} or {}'.format(self.body_velocity.valid(), self.altitude.valid(), self.orientation.valid()))
+                if (self.body_velocity.valid()
+                   and self.altitude.valid()
+                   and self.orientation.valid()):
+                    data = self.build_rdi_acfr()
+            elif self.output_format == 'oplab':
+                data = self.body_velocity.export(self.output_format)
                 data = self.inertial_velocity.export(self.output_format)
 
         if self.category == Category.ORIENTATION:

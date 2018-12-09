@@ -8,6 +8,7 @@ class OriginEntry:
         self.latitude = 0.0
         self.longitude = 0.0
         self.crs = ''
+        self.date = ''
         self._empty = True
 
     def empty(self):
@@ -18,6 +19,7 @@ class OriginEntry:
         self.latitude = node['latitude']
         self.longitude = node['longitude']
         self.crs = node['coordinate_reference_system']
+        self.date = node['date']
 
 
 class CameraEntry:
