@@ -26,7 +26,7 @@ class SensorOffset:
 
 
 class Vehicle:
-    def __init__(self, filename):
+    def __init__(self, filename=None):
         self.origin = SensorOffset()
         self.ins = SensorOffset()
         self.dvl = SensorOffset()
@@ -37,6 +37,9 @@ class Vehicle:
         self.camera3 = SensorOffset()
         self.camera3 = SensorOffset()
         self.chemical = SensorOffset()
+
+        if filename is None:
+            return
 
         vehicle_file = get_config_folder(filename)
         with vehicle_file.open('r') as stream:

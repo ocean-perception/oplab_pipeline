@@ -230,6 +230,11 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
                        vehicle.chemical.sway,
                        vehicle.chemical.heave]
 
+    print('Loading mission.yaml')
+    mission_file = filepath / 'mission.yaml'
+    mission_file = get_config_folder(mission_file)
+    mission = Mission(mission_file)
+
     # OPLAB mode
     if ftype == 'oplab':  # or (ftype is not 'acfr'):
         outpath = filepath / 'nav'
@@ -239,11 +244,6 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
         print('Loading json file {}'.format(nav_standard_file))
         with nav_standard_file.open('r') as nav_standard:
             parsed_json_data = json.load(nav_standard)
-
-        print('Loading mission.yaml')
-        mission_file = filepath / 'mission.yaml'
-        mission_file = get_config_folder(mission_file)
-        mission = Mission(mission_file)
 
         # setup start and finish date time
         if start_datetime == '':
@@ -349,8 +349,8 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
     if ftype == 'acfr':
         # extract_acfr()
         print('Loading mission.cfg')
-        mission = filepath / 'mission.cfg'
-        with mission.open('r', encoding='utf-8', errors='ignore') as filein:
+        mission_acfr = filepath / 'mission.cfg'
+        with mission_acfr.open('r', encoding='utf-8', errors='ignore') as filein:
             for line in filein.readlines():
                 line_split = line.strip().split(' ')
                 if str(line_split[0]) == 'MAG_VAR_LAT':
@@ -358,7 +358,7 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
                 if str(line_split[0]) == 'MAG_VAR_LNG':
                     mission.origin.longitude = float(line_split[1])
                 if str(line_split[0]) == 'MAG_VAR_DATE':
-                    date = str(line_split[1])
+                    mission.origin.date = str(line_split[1])
 
         outpath = filepath / 'dRAWLOGS_cv'
         filename = outpath / 'combined.RAW.auv'
@@ -406,6 +406,13 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
                     if epoch_timestamp >= epoch_start_time and epoch_timestamp <= epoch_finish_time:
                         velocity_inertial = InertialVelocity()
                         velocity_inertial.epoch_timestamp = epoch_timestamp
+                        # TODO: what to do with these values?
+                        velocity_inertial.north_velocity = 0
+                        velocity_inertial.east_velocity = 0
+                        velocity_inertial.down_velocity = 0
+                        velocity_inertial.north_velocity_std = 0
+                        velocity_inertial.east_velocity_std = 0
+                        velocity_inertial.down_velocity_std = 0
                         orientation = Orientation()
                         orientation.epoch_timestamp = epoch_timestamp
                         for i in range(len(line_split)-1):
@@ -423,6 +430,9 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
                         depth = Depth()
                         depth.epoch_timestamp = epoch_timestamp
                         depth.depth = float(line_split[2])
+                        depth.depth_std = (mission.depth.std_offset
+                                           + depth.depth
+                                           * mission.depth.std_factor)
                         depth_list.append(depth)
                 if str(line_split[0]) == 'SSBL_FIX:':
                     epoch_timestamp = float(line_split[1])
@@ -450,8 +460,21 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
                         camera2_list.append(camera2)
         camera1_pf_list = copy.deepcopy(camera1_list)
         camera2_pf_list = copy.deepcopy(camera2_list)
-        # camera3_pf_list = copy.deepcopy(camera3_list)
-        # chemical_pf_list = copy.deepcopy(chemical_list)
+        camera3_pf_list = copy.deepcopy(camera3_list)
+        chemical_pf_list = copy.deepcopy(chemical_list)
+        camera1_ekf_list = copy.deepcopy(camera1_list)
+        camera2_ekf_list = copy.deepcopy(camera2_list)
+        camera3_ekf_list = copy.deepcopy(camera3_list)
+        chemical_ekf_list = copy.deepcopy(chemical_list)
+
+        print('velocity_body_list: {}'.format(len(velocity_body_list)))
+        print('altitude_list: {}'.format(len(altitude_list)))
+        print('velocity_inertial_list: {}'.format(len(velocity_inertial_list)))
+        print('orientation_list: {}'.format(len(orientation_list)))
+        print('depth_list: {}'.format(len(depth_list)))
+        print('usbl_list: {}'.format(len(usbl_list)))
+        print('camera1_list: {}'.format(len(camera1_list)))
+        print('camera2_list: {}'.format(len(camera2_list)))
 
         # make folder to store csv and plots
         filename = ('acfr_renav_'

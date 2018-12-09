@@ -62,7 +62,8 @@ def parse_gaps(mission,
     # timeoffset = -timezone_offset*60*60 + timeoffset
 
     # determine file paths
-    filepath = get_raw_folder(outpath / '..' / filepath)
+    path = (outpath / '..' / filepath).absolute()
+    filepath = get_raw_folder(path)
     all_list = os.listdir(str(filepath))
     gaps_list = [line for line in all_list if '.dat' in line]
     print(str(len(gaps_list)) + ' GAPS file(s) found')
