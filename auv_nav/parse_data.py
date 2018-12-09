@@ -63,12 +63,11 @@ def parse_data(filepath, ftype):
         filename = 'nav_standard.json'
 
     elif ftype == 'acfr':  # or (ftype is not 'acfr'):
-        outpath = outpath / 'dRAWLOGS_cv'
         filename = 'combined.RAW.auv'
-        config_filename = 'mission.cfg'
+        config_filename = outpath / 'mission.cfg'
+        outpath = outpath / 'dRAWLOGS_cv'
 
-        config_file = outpath / config_filename
-        with config_file.open('w') as f:
+        with config_filename.open('w') as f:
             data = ('MAG_VAR_LAT ' + str(float(mission.origin.latitude))
                     + '\nMAG_VAR_LNG ' + str(float(mission.origin.longitude))
                     + '\nMAG_VAR_DATE ' + str(mission.origin.date)
@@ -209,7 +208,7 @@ def parse_data(filepath, ftype):
         if ftype == 'acfr':
             data_string = ''
             for i in data_list:
-                data_string += str(i)
+                    data_string += ''.join(i)
             fileout.write(data_string)
             del data_string
         elif ftype == 'oplab':

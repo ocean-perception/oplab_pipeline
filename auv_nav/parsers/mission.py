@@ -82,7 +82,7 @@ class DefaultEntry:
 
 
 class Mission:
-    def __init__(self, filename):
+    def __init__(self, filename=None):
         self.version = 0
         self.origin = OriginEntry()
         self.velocity = DefaultEntry()
@@ -91,6 +91,9 @@ class Mission:
         self.altitude = DefaultEntry()
         self.usbl = DefaultEntry()
         self.image = ImageEntry()
+
+        if filename is None:
+            return
 
         mission_file = get_config_folder(filename)
         with mission_file.open('r') as stream:
