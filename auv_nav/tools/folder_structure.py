@@ -2,6 +2,7 @@ from pathlib import Path
 
 
 def change_subfolder(path, prior, new):
+    path = path.absolute()
     index = path.parts.index(prior)
     parts = list(path.parts)
     parts[index] = new

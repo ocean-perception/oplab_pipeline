@@ -65,6 +65,15 @@ def parse_data(filepath, ftype):
     elif ftype == 'acfr':  # or (ftype is not 'acfr'):
         outpath = outpath / 'dRAWLOGS_cv'
         filename = 'combined.RAW.auv'
+        config_filename = 'mission.cfg'
+
+        config_file = outpath / config_filename
+        with config_file.open('w') as f:
+            data = ('MAG_VAR_LAT ' + str(float(mission.origin.latitude))
+                    + '\nMAG_VAR_LNG ' + str(float(mission.origin.longitude))
+                    + '\nMAG_VAR_DATE ' + str(mission.origin.date)
+                    + '\nMAGNETIC_VAR_DEG ' + str(float(0)))
+            f.write(data)
     else:
         print('Error: -o', ftype, 'not recognised')
         # syntax_error()
@@ -200,12 +209,7 @@ def parse_data(filepath, ftype):
         if ftype == 'acfr':
             data_string = ''
             for i in data_list:
-                data_string += i
-
-            date = epoch_to_day(data_string[0]['epoch_timestamp'])
-            data = 'MAG_VAR_LAT ' + str(float(latitude_reference)) + '\n' + 'MAG_VAR_LNG ' + str(float(
-                longitude_reference)) + '\n' + 'MAG_VAR_DATE "' + str(date) + '"\n' + 'MAGNETIC_VAR_DEG ' + str(float(0))
-            fileout.write(data)
+                data_string += str(i)
             fileout.write(data_string)
             del data_string
         elif ftype == 'oplab':

@@ -8,6 +8,8 @@ from auv_nav.sensors import SyncedOrientationBodyVelocity, Usbl
 from auv_nav.tools.latlon_wgs84 import metres_to_latlon
 from auv_nav.tools.body_to_inertial import body_to_inertial
 
+import numpy as np
+
 # Scripts to interpolate values
 def interpolate(x_query, x_lower, x_upper, y_lower, y_upper):
     if x_upper == x_lower:
@@ -104,6 +106,32 @@ def interpolate_usbl(query_timestamp, data_1, data_2):
                                   data_1.depth,
                                   data_2.depth)
     return (temp_data)
+
+
+def eigen_sorted(a):
+    eigenvalues, eigenvectors = np.linalg.eig(a)
+    idx = np.argsort(eigenvalues)
+    eigenvalues = eigenvalues[idx]
+    eigenvectors = eigenvectors[:, idx]
+    n = eigenvalues.size
+    eigenvalues = np.eye(n, n)*eigenvalues
+    return eigenvalues, eigenvectors
+
+
+def interpolate_covariance(t, t0, t1, cov0, cov1):
+    eigval0, eigvec0 = eigen_sorted(cov0)
+    eigval1, eigvec1 = eigen_sorted(cov1)
+
+    x = (t-t0)/(t1-t0)
+    eigval = ((1-x)*np.sqrt(eigval0)+x*np.sqrt(eigval1))**2
+
+    c0 = eigvec0*eigval0*eigvec0.T
+    c1 = eigvec1*eigval1*eigvec1.T
+    r = c1*c0.T
+    eigvec = r*eigval0
+    cov = eigvec*eigval*eigvec.T
+
+    return cov
 
 
 def interpolate_sensor_list(sensor_list,
@@ -222,6 +250,15 @@ def interpolate_sensor_list(sensor_list,
                 longitude_reference,
                 sensor_list[i].eastings,
                 sensor_list[i].northings)
+
+            if _centre_list[i].covariance is not None:
+                sensor_list[i].covariance = interpolate_covariance(
+                    sensor_list[i].epoch_timestamp,
+                    _centre_list[j-1].epoch_timestamp,
+                    _centre_list[j].epoch_timestamp,
+                    _centre_list[j-1].covariance,
+                    _centre_list[j].covariance)
+
         if sensor_overlap_flag == 1:
             print('{} data more than dead reckoning data. Only processed \
                   overlapping data and ignored the rest.'.format(sensor_name))
