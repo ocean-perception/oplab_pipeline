@@ -251,7 +251,7 @@ def interpolate_sensor_list(sensor_list,
                 sensor_list[i].eastings,
                 sensor_list[i].northings)
 
-            if _centre_list[i].covariance is not None:
+            if _centre_list[j].covariance is not None:
                 sensor_list[i].covariance = interpolate_covariance(
                     sensor_list[i].epoch_timestamp,
                     _centre_list[j-1].epoch_timestamp,
