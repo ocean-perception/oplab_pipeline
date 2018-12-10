@@ -342,6 +342,15 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
             except Exception as e:
                 print("Warning:", e)
 
+        print('velocity_body_list: {}'.format(len(velocity_body_list)))
+        print('altitude_list: {}'.format(len(altitude_list)))
+        print('velocity_inertial_list: {}'.format(len(velocity_inertial_list)))
+        print('orientation_list: {}'.format(len(orientation_list)))
+        print('depth_list: {}'.format(len(depth_list)))
+        print('usbl_list: {}'.format(len(usbl_list)))
+        print('camera1_list: {}'.format(len(camera1_list)))
+        print('camera2_list: {}'.format(len(camera2_list)))
+
         print('Complete parse of: {}'.format(nav_standard_file))
         print('Writing outputs to: {}'.format(renavpath))
 
