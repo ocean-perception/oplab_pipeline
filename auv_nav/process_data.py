@@ -522,6 +522,10 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
     if usbl_filter_activate:
         usbl_list = usbl_filter(
             usbl_list, depth_list, sigma_factor, max_auv_speed, ftype)
+        if len(usbl_list) == 0:
+            print('Filtering USBL measurements lead to an empty list. ')
+            print(' * Is USBL reliable?')
+            print(' * Can you change filter parameters?')
 
     """
     Perform coordinate transformations and interpolations of state data
@@ -736,11 +740,10 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
                     velocity_inertial_list[i-1].northings,
                     velocity_inertial_list[i-1].eastings)
 
-        if interpolate_remove_flag == True:
+        if interpolate_remove_flag:
             del velocity_inertial_list[0]
             interpolate_remove_flag = False  # reset flag
-        print(
-            'Complete interpolation and coordinate transfomations for velocity_inertial')
+        print('Complete interpolation and coordinate transfomations for velocity_inertial')
 
 # offset velocity DR by average usbl estimate
     # offset velocity body DR by average usbl estimate

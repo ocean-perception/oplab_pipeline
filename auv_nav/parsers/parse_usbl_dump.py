@@ -30,7 +30,7 @@ def parse_usbl_dump(mission, vehicle, category, ftype, outpath, fileoutname):
     timeoffset = mission.usbl.timeoffset
     filepath = mission.usbl.filepath
     filename = mission.usbl.filename
-    label = mission.usbl.id
+    label = mission.usbl.label
 
     filepath = get_raw_folder(outpath / '..' / filepath)
 
