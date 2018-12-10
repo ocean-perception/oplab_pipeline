@@ -73,8 +73,8 @@ class DefaultEntry:
             self.filepath = node['filepath']
         if 'filename' in node:
             self.filename = node['filename']
-        if 'id' in node:
-            self.id = node['id']
+        if 'label' in node:
+            self.label = node['label']
         if 'std_factor' in node:
             self.std_factor = node['std_factor']
         if 'std_offset' in node:
