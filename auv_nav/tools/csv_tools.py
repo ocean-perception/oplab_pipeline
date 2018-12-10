@@ -1,5 +1,4 @@
 from pathlib import Path
-import os
 import pandas as pd
 
 
@@ -16,7 +15,17 @@ def write_csv(csv_filepath, data_list, csv_filename, csv_flag):
             fileout.write(
                 'Timestamp, Northing [m], Easting [m], Depth [m], Roll [deg], \
                 Pitch [deg], Heading [deg], Altitude [m], Latitude [deg], \
-                Longitude [deg]\n')
+                Longitude [deg]')
+            if data_list[0].covariance is not None:
+                cov = ['x', 'y', 'z',
+                       'roll', 'pitch', 'yaw',
+                       'vx', 'vy', 'vz',
+                       'vroll', 'vpitch', 'vyaw',
+                       'ax', 'ay', 'az']
+                for a in cov:
+                    for b in cov:
+                        fileout.write(', cov_'+a+'_'+b)
+            fileout.write('\n')
         for i in range(len(data_list)):
             with file.open('a')as fileout:
                 try:
@@ -30,8 +39,14 @@ def write_csv(csv_filepath, data_list, csv_filename, csv_flag):
                         + str(data_list[i].yaw)+','
                         + str(data_list[i].altitude)+','
                         + str(data_list[i].latitude)+','
-                        + str(data_list[i].longitude)+'\n')
-                    fileout.close()
+                        + str(data_list[i].longitude))
+
+                    if data_list[i].covariance is not None:
+                        cov = data_list[i].covariance.flatten().tolist()
+                        cov = [item for sublist in cov for item in sublist]
+                        for c in cov:
+                            fileout.write(',' + str(c))
+                    fileout.write('\n')
                 except IndexError:
                     break
 
@@ -69,8 +84,11 @@ def camera_csv(camera_list, camera_name, csv_filepath, csv_flag):
                                   + ',' + str(camera_list[i].altitude)
                                   + ',' + str(camera_list[i].epoch_timestamp)
                                   + ',' + str(camera_list[i].latitude)
-                                  + ',' + str(camera_list[i].longitude)+'\n')
-                    fileout.close()
+                                  + ',' + str(camera_list[i].longitude))
+                    if camera_list[i].covariance is not None:
+                        for c in camera_list[i].covariance:
+                            fileout.write(',' + str(c))
+                    fileout.write('\n')
                 except IndexError:
                     break
 
