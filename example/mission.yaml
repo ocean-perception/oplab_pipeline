@@ -5,6 +5,7 @@ origin:
   latitude: 26.66988889
   longitude: 127.86577778
   coordinate_reference_system: wgs84
+  date: 2018/10/02
 
 velocity:
   format: phins
