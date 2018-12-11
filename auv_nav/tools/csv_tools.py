@@ -11,44 +11,44 @@ def write_csv(csv_filepath, data_list, csv_filename, csv_flag):
 
         print("Writing outputs to {}.csv ...".format(csv_filename))
         file = csv_file / '{}.csv'.format(csv_filename)
-        with file.open('w') as fileout:
-            fileout.write(
-                'Timestamp, Northing [m], Easting [m], Depth [m], Roll [deg], \
-                Pitch [deg], Heading [deg], Altitude [m], Latitude [deg], \
-                Longitude [deg]')
-            if data_list[0].covariance is not None:
-                cov = ['x', 'y', 'z',
-                       'roll', 'pitch', 'yaw',
-                       'vx', 'vy', 'vz',
-                       'vroll', 'vpitch', 'vyaw',
-                       'ax', 'ay', 'az']
-                for a in cov:
-                    for b in cov:
-                        fileout.write(', cov_'+a+'_'+b)
-            fileout.write('\n')
+        str_to_write = ''
+        str_to_write += 'Timestamp, Northing [m], Easting [m], Depth [m], ' \
+                        'Roll [deg], Pitch [deg], Heading [deg], Altitude ' \
+                        '[m], Latitude [deg], Longitude [deg]'
+        if data_list[0].covariance is not None:
+            cov = ['x', 'y', 'z',
+                   'roll', 'pitch', 'yaw',
+                   'vx', 'vy', 'vz',
+                   'vroll', 'vpitch', 'vyaw',
+                   'ax', 'ay', 'az']
+            for a in cov:
+                for b in cov:
+                    str_to_write += ', cov_'+a+'_'+b
+        str_to_write += '\n'
         for i in range(len(data_list)):
-            with file.open('a')as fileout:
-                try:
-                    fileout.write(
-                        str(data_list[i].epoch_timestamp)+','
-                        + str(data_list[i].northings)+','
-                        + str(data_list[i].eastings)+','
-                        + str(data_list[i].depth)+','
-                        + str(data_list[i].roll)+','
-                        + str(data_list[i].pitch)+','
-                        + str(data_list[i].yaw)+','
-                        + str(data_list[i].altitude)+','
-                        + str(data_list[i].latitude)+','
-                        + str(data_list[i].longitude))
+            try:
+                str_to_write += (
+                    str(data_list[i].epoch_timestamp)+','
+                    + str(data_list[i].northings)+','
+                    + str(data_list[i].eastings)+','
+                    + str(data_list[i].depth)+','
+                    + str(data_list[i].roll)+','
+                    + str(data_list[i].pitch)+','
+                    + str(data_list[i].yaw)+','
+                    + str(data_list[i].altitude)+','
+                    + str(data_list[i].latitude)+','
+                    + str(data_list[i].longitude))
 
-                    if data_list[i].covariance is not None:
-                        cov = data_list[i].covariance.flatten().tolist()
-                        cov = [item for sublist in cov for item in sublist]
-                        for c in cov:
-                            fileout.write(',' + str(c))
-                    fileout.write('\n')
-                except IndexError:
-                    break
+                if data_list[i].covariance is not None:
+                    cov = data_list[i].covariance.flatten().tolist()
+                    cov = [item for sublist in cov for item in sublist]
+                    for c in cov:
+                        str_to_write += ',' + str(c)
+                str_to_write += '\n'
+            except IndexError:
+                break
+        with file.open('w') as fileout:
+            fileout.write(str_to_write)
 
 
 # First column of csv file - image file naming step probably not very robust
@@ -61,36 +61,37 @@ def camera_csv(camera_list, camera_name, csv_filepath, csv_flag):
 
         print("Writing outputs to {}.csv ...".format(camera_name))
         file = csv_file / '{}.csv'.format(camera_name)
-        with file.open('w') as fileout:
-            fileout.write(
-                'Imagenumber, Northing [m], Easting [m], Depth [m], Roll [deg],\
-                 Pitch [deg], Heading [deg], Altitude [m], Timestamp, \
-                 Latitude [deg], Longitude [deg]\n')
+        str_to_write = ''
+        str_to_write += 'Imagenumber, Northing [m], Easting [m], Depth [m], ' \
+                        'Roll [deg], Pitch [deg], Heading [deg], Altitude '\
+                        '[m], Timestamp, Latitude [deg], Longitude [deg]\n'
         for i in range(len(camera_list)):
-            with file.open('a') as fileout:
-                try:
-                    imagenumber = camera_list[i].filename[-11:-4]
-                    if imagenumber.isdigit():
-                        image_filename = imagenumber
-                    else:
-                        image_filename = camera_list[i].filename
-                    fileout.write(str(image_filename)
-                                  + ',' + str(camera_list[i].northings)
-                                  + ',' + str(camera_list[i].eastings)
-                                  + ',' + str(camera_list[i].depth)
-                                  + ',' + str(camera_list[i].roll)
-                                  + ',' + str(camera_list[i].pitch)
-                                  + ',' + str(camera_list[i].yaw)
-                                  + ',' + str(camera_list[i].altitude)
-                                  + ',' + str(camera_list[i].epoch_timestamp)
-                                  + ',' + str(camera_list[i].latitude)
-                                  + ',' + str(camera_list[i].longitude))
-                    if camera_list[i].covariance is not None:
-                        for c in camera_list[i].covariance:
-                            fileout.write(',' + str(c))
-                    fileout.write('\n')
-                except IndexError:
-                    break
+            try:
+                imagenumber = camera_list[i].filename[-11:-4]
+                if imagenumber.isdigit():
+                    image_filename = imagenumber
+                else:
+                    image_filename = camera_list[i].filename
+                str_to_write += (
+                    str(image_filename) + ','
+                    + str(camera_list[i].northings) + ','
+                    + str(camera_list[i].eastings) + ','
+                    + str(camera_list[i].depth) + ','
+                    + str(camera_list[i].roll) + ','
+                    + str(camera_list[i].pitch) + ','
+                    + str(camera_list[i].yaw) + ','
+                    + str(camera_list[i].altitude) + ','
+                    + str(camera_list[i].epoch_timestamp) + ','
+                    + str(camera_list[i].latitude) + ','
+                    + str(camera_list[i].longitude))
+                if camera_list[i].covariance is not None:
+                    for c in camera_list[i].covariance:
+                        str_to_write += ',' + str(c)
+                str_to_write += '\n'
+            except IndexError:
+                break
+        with file.open('w') as fileout:
+            fileout.write(str_to_write)
 
 
 # if this works make all follow this format!
