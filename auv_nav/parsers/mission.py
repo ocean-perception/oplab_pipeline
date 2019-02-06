@@ -95,7 +95,7 @@ class Mission:
         if filename is None:
             return
 
-        mission_file = get_config_folder(filename)
+        mission_file = get_raw_folder(filename)
         with mission_file.open('r') as stream:
             data = yaml.load(stream)
             self.version = data['version']

@@ -1,41 +1,65 @@
 #YAML 1.0
 origin: #centre of robot
-  x_offset: 0
-  y_offset: 0
-  z_offset: 0
+  surge_m: 0
+  sway_m: 0
+  heave_m: 0
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 0
 
 # distance with reference to origin/centre of robot
 usbl:
-  x_offset: 0 # uncertain
-  y_offset: 0 # uncertain
-  z_offset: -0.289 # uncertain
+  surge_m: 0 # uncertain
+  sway_m: 0 # uncertain
+  heave_m: -0.289 # uncertain
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 0
 
 ins:
-  x_offset: -0.09 # uncertain
-  y_offset: 0 # uncertain
-  z_offset: 0 # uncertain
+  surge_m: -0.09 # uncertain
+  sway_m: 0 # uncertain
+  heave_m: 0 # uncertain
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 0
 
 dvl:
-  x_offset: -0.780625
-  y_offset: 0
-  z_offset: 0.204
+  surge_m: -0.780625
+  sway_m: 0
+  heave_m: 0.204
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 0
 
 depth:
-  x_offset: 0 # uncertain
-  y_offset: 0 # uncertain
-  z_offset: 0 # uncertain
+  surge_m: 0 # uncertain
+  sway_m: 0 # uncertain
+  heave_m: 0 # uncertain
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 0
 
 camera1: # Front Camera
-  x_offset: 0.262875
-  y_offset: 0
-  z_offset: 0.5 # uncertain
+  surge_m: 0.262875
+  sway_m: 0
+  heave_m: 0.5 # uncertain
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 0
 
 camera2: #Back Camera
-  x_offset: 0.012875
-  y_offset: 0
-  z_offset: 0.5 # uncertain
+  surge_m: 0.012875
+  sway_m: 0
+  heave_m: 0.5 # uncertain
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 0
 
 camera3: # Laser
-  x_offset: 0.147875
-  y_offset: 0
-  z_offset: 0.5 # uncertain
+  surge_m: 0.147875
+  sway_m: 0
+  heave_m: 0.5 # uncertain
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 0

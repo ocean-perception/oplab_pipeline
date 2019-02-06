@@ -41,7 +41,7 @@ class Vehicle:
         if filename is None:
             return
 
-        vehicle_file = get_config_folder(filename)
+        vehicle_file = get_raw_folder(filename)
         with vehicle_file.open('r') as stream:
             data = yaml.load(stream)
             if 'origin' in data:
