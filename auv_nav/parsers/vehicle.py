@@ -1,5 +1,6 @@
 import yaml
 from auv_nav.tools.folder_structure import get_config_folder
+from auv_nav.tools.folder_structure import get_raw_folder
 
 
 class SensorOffset:
@@ -15,15 +16,21 @@ class SensorOffset:
     def empty(self):
         return self._emtpy
 
-    def load(self, node):
+    def load(self, node, mission_node = []):
         self._empty = False
-        self.surge = node['surge_m']
-        self.sway = node['sway_m']
-        self.heave = node['heave_m']
-        self.roll = node['roll_deg']
-        self.pitch = node['pitch_deg']
-        self.yaw = node['yaw_deg']
-
+        if 'surge_m' in node:
+            self.surge = node['surge_m']
+            self.sway = node['sway_m']
+            self.heave = node['heave_m']
+            self.roll = node['roll_deg']
+            self.pitch = node['pitch_deg']
+            self.yaw = node['yaw_deg']
+        elif 'x_offset' in node:
+            self.surge = node['x_offset']
+            self.sway = node['y_offset']
+            self.heave = node['z_offset']
+            if mission_node:
+                self.yaw = mission_node['headingoffset']
 
 class Vehicle:
     def __init__(self, filename=None):
@@ -42,14 +49,35 @@ class Vehicle:
             return
 
         vehicle_file = get_raw_folder(filename)
+        mission_file = vehicle_file.parents[0] / 'mission.yaml'
+        old_format = False
+        mission_data = []
+
         with vehicle_file.open('r') as stream:
             data = yaml.load(stream)
             if 'origin' in data:
                 self.origin.load(data['origin'])
+                if 'x_offset' in data['origin']:
+                    print('-------------------------------------------------')
+                    print('| DEPRECATED: Vehicle version not supported.    |')
+                    print('| Please convert your vehicle to version 1      |')
+                    print('-------------------------------------------------')
+                    print('You are using an old vehicle.yaml format that is no \
+                           longer compatible. Please refer to the example \
+                           mission.yaml file and modify yours to fit.')
+                    mission_stream = mission_file.open('r')
+                    mission_data = yaml.load(mission_stream)
+                    old_format = True
             if 'ins' in data:
-                self.ins.load(data['ins'])
+                if old_format:
+                    self.ins.load(data['ins'], mission_data['orientation'])
+                else:
+                    self.ins.load(data['ins'])
             if 'dvl' in data:
-                self.dvl.load(data['dvl'])
+                if old_format:
+                    self.dvl.load(data['dvl'], mission_data['velocity'])
+                else:
+                    self.dvl.load(data['dvl'])
             if 'depth' in data:
                 self.depth.load(data['depth'])
             if 'usbl' in data:
