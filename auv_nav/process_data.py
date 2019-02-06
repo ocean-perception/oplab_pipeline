@@ -118,16 +118,16 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
     filepath = Path(filepath).resolve()
     filepath = get_processed_folder(filepath)
 
-    print('Loading localisation.yaml')
-    localisation_file = filepath / 'localisation.yaml'
+    print('Loading auv_nav.yaml')
+    localisation_file = filepath / 'auv_nav.yaml'
     localisation_file = get_config_folder(localisation_file)
 
-    # check if localisation.yaml file exist, if not, generate one with default settings
+    # check if auv_nav.yaml file exist, if not, generate one with default settings
     if localisation_file.exists():
-        print("Loading existing localisation.yaml at {}".format(localisation_file))
+        print("Loading existing auv_nav.yaml at {}".format(localisation_file))
     else:
         root = Path(__file__).parents[1]
-        default_localisation = root / 'auv_nav/default_yaml' / 'localisation.yaml'
+        default_localisation = root / 'auv_nav/default_yaml' / 'auv_nav.yaml'
         print("default_localisation: {}".format(default_localisation))
         print("Cannot find {}, generating default from {}".format(
             localisation_file, default_localisation))
