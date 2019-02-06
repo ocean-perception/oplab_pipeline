@@ -5,18 +5,16 @@ Created on Thu Sep 27 12:34:42 2018
 @author: Adrian
 """
 
-## Known issues: When running the code more than once from the same console, 
-## line 206 pool = multiprocessing.Pool(cpu_to_use) causes an error.
-## A workaround is to close the console after eachr run
+# Known issues: When running the code more than once from the same console,
+# line 206 pool = multiprocessing.Pool(cpu_to_use) causes an error.
+# A workaround is to close the console after eachr run
 
 
 import multiprocessing
-import os
-import shutil
 import json
-import yaml
+from pathlib import Path
 
-#sys.path.append("..")
+# sys.path.append("..")
 from auv_nav.parsers.parse_phins import parse_phins
 from auv_nav.parsers.parse_ae2000 import parse_ae2000
 from auv_nav.parsers.parse_gaps import parse_gaps
@@ -26,221 +24,173 @@ from auv_nav.parsers.parse_seaxerocks_images import parse_seaxerocks_images
 from auv_nav.parsers.parse_interlacer import parse_interlacer
 # from lib_sensors.parse_chemical import parse_chemical
 from auv_nav.plot.plot_parse_data import plot_parse_data
+from auv_nav.tools.time_conversions import epoch_to_day
+from auv_nav.tools.folder_structure import get_config_folder, get_raw_folder
+from auv_nav.tools.folder_structure import get_processed_folder
+from auv_nav.parsers.vehicle import Vehicle
+from auv_nav.parsers.mission import Mission
 
 
 def parse_data(filepath, ftype):
     # initiate data and processing flags
-    origin_flag = 0
-    velocity_flag = 0
-    orientation_flag = 0
-    depth_flag = 0
-    altitude_flag = 0
-    usbl_flag = 0
-    image_flag = 0
-    chemical_flag = 0
-    filepath = filepath.replace('\\', '/')
+    filepath = Path(filepath).resolve()
+
+    filepath = get_raw_folder(filepath)
 
     # load mission.yaml config file
-    print('Loading mission.yaml')
 
-    mission = filepath + '/' + 'mission.yaml'
-
-    with open(mission,'r') as stream:
-        load_data = yaml.load(stream)
-    # for i in range(0,len(load_data)):
-    if 'origin' in load_data:
-        origin_flag=1
-        latitude_reference = load_data['origin']['latitude']
-        longitude_reference = load_data['origin']['longitude']
-        coordinate_reference = load_data['origin']['coordinate_reference_system']
-        date = load_data['origin']['date']
-    if 'velocity' in load_data:
-        velocity_flag=1
-        velocity_format = load_data['velocity']['format']
-        velocity_filepath = load_data['velocity']['filepath']
-        velocity_filename = load_data['velocity']['filename']
-        velocity_timezone = load_data['velocity']['timezone']
-        velocity_timeoffset = load_data['velocity']['timeoffset']
-        velocity_headingoffset = load_data['velocity']['headingoffset']
-    if 'orientation' in load_data:
-        orientation_flag=1
-        orientation_format = load_data['orientation']['format']
-        orientation_filepath = load_data['orientation']['filepath']
-        orientation_filename = load_data['orientation']['filename']
-        time_orientationzone = load_data['orientation']['timezone']
-        time_orientationoffset = load_data['orientation']['timeoffset']
-        orientation_headingoffset = load_data['orientation']['headingoffset']
-    if 'depth' in load_data:
-        depth_flag=1
-        depth_format = load_data['depth']['format']
-        depth_filepath = load_data['depth']['filepath']
-        depth_filename = load_data['depth']['filename']
-        time_depthzone = load_data['depth']['timezone']
-        time_depthoffset = load_data['depth']['timeoffset']
-    if 'altitude' in load_data:
-        altitude_flag=1
-        altitude_format = load_data['altitude']['format']
-        altitude_filepath = load_data['altitude']['filepath']
-        altitude_filename = load_data['altitude']['filename']
-        time_altitudezone = load_data['altitude']['timezone']
-        time_altitudeoffset = load_data['altitude']['timeoffset']
-    if 'usbl' in load_data:
-        usbl_flag=1
-        usbl_format = load_data['usbl']['format']
-        usbl_filepath = load_data['usbl']['filepath']
-        time_usblzone = load_data['usbl']['timezone']
-        time_usbloffset = load_data['usbl']['timeoffset']
-        if usbl_format == 'usbl_dump':
-            usbl_filename = load_data['usbl']['filename']
-            usbl_label = load_data['usbl']['label']
-        if usbl_format == 'gaps':
-            usbl_id = load_data['usbl']['id']
-    if 'image' in load_data:
-        image_flag=1
-        image_format = load_data['image']['format']
-        image_filepath = load_data['image']['filepath']
-        camera1_label = load_data['image']['camera1']
-        camera2_label = load_data['image']['camera2']
-        image_timezone = load_data['image']['timezone']
-        image_timeoffset = load_data['image']['timeoffset']
-        if image_format == 'seaxerocks_3':
-            camera3_label = load_data['image']['camera3']
-    # if 'chemical' in load_data:
-    #     chemical_flag=1
-    #     chemical_format = load_data['chemical']['format']
-    #     chemical_filepath = load_data['chemical']['filepath']
-    #     chemical_filename = load_data['chemical']['filename']
-    #     chemical_timezone = load_data['chemical']['timezone']
-    #     chemical_timeoffset = load_data['chemical']['timeoffset']
-    #     chemical_data = load_data['chemical']['data']
-    
-    # generate output path
-    print('Generating output paths')
-    sub_path = filepath.split('/')
-    sub_out=sub_path
-    outpath=sub_out[0]
-
-    is_subfolder_of_processed = False
-    for i in range(1,len(sub_path)):
-        if sub_path[i]=='raw':
-            sub_out[i] = 'processed'
-            is_subfolder_of_processed = True
-        else:
-            sub_out[i] = sub_path[i]
-        
-        outpath = outpath + '/' + sub_out[i]
-        # make the new directories after 'processed' if it doesnt already exist
-        if is_subfolder_of_processed:
-            if os.path.isdir(outpath) == 0:
-                try:
-                    os.mkdir(outpath)
-                except Exception as e:
-                    print("Warning:",e)
-
-    if not is_subfolder_of_processed:
-        raise ValueError("The input directory you provided is not a subfolder of a folder called 'raw'")
-
-    # check for recognised formats and create nav file
-    print('Checking output format')
+    mission_file = filepath / 'mission.yaml'
+    vehicle_file = filepath / 'vehicle.yaml'
+    mission_file = get_raw_folder(mission_file)
+    vehicle_file = get_raw_folder(vehicle_file)
+    print('Loading mission.yaml at {0}'.format(mission_file))
+    mission = Mission(mission_file)
+    print('Loading vehicle.yaml at {0}'.format(vehicle_file))
+    vehicle = Vehicle(vehicle_file)
 
     # copy mission.yaml and vehicle.yaml to processed folder for process step
-    # if os.path.isdir(mission):
-    shutil.copy2(mission, outpath) # save mission yaml to processed directory
-    vehicle = filepath + '/' + 'vehicle.yaml'
-    # if os.path.isdir(vehicle):
-    shutil.copy2(vehicle, outpath) # save vehicle yaml to processed directory
+    mission_processed = get_processed_folder(mission_file)
+    vehicle_source = get_config_folder(vehicle_file)
+    vehicle_destination = get_processed_folder(vehicle_file)
+    mission_file.copy(mission_processed)
+    vehicle_source.copy(vehicle_destination)
 
-    if ftype == 'oplab':# or (ftype is not 'acfr'):
-        outpath = outpath + '/' + 'nav'
-        filename='nav_standard.json'
+    # check for recognised formats and create nav file
+    outpath = get_processed_folder(filepath)
+    print('Checking output format')
+    if ftype == 'oplab':  # or (ftype is not 'acfr'):
+        outpath = outpath / 'nav'
+        filename = 'nav_standard.json'
 
-    elif ftype == 'acfr':# or (ftype is not 'acfr'):
-        with open(outpath + '/' + 'mission.cfg','w') as fileout:
-            data = 'MAG_VAR_LAT ' + str(float(latitude_reference)) + '\n' + 'MAG_VAR_LNG ' + str(float(longitude_reference)) + '\n' + 'MAG_VAR_DATE "' + str(date) + '"\n' + 'MAGNETIC_VAR_DEG ' + str(float(0))
+    elif ftype == 'acfr':  # or (ftype is not 'acfr'):
+        filename = 'combined.RAW.auv'
+        config_filename = outpath / 'mission.cfg'
+        outpath = outpath / 'dRAWLOGS_cv'
 
-            fileout.write(data)
-            fileout.close()
-
-        outpath = outpath + '/' +'dRAWLOGS_cv'
-        filename='combined.RAW.auv'
-
+        with config_filename.open('w') as f:
+            data = ('MAG_VAR_LAT ' + str(float(mission.origin.latitude))
+                    + '\nMAG_VAR_LNG ' + str(float(mission.origin.longitude))
+                    + '\nMAG_VAR_DATE ' + str(mission.origin.date)
+                    + '\nMAGNETIC_VAR_DEG ' + str(float(0)))
+            f.write(data)
     else:
-        print('Error: -o',ftype,'not recognised')
-        #syntax_error()
+        print('Error: -o', ftype, 'not recognised')
+        # syntax_error()
         return
-    
-    # make file path if not exist
-    if os.path.isdir(outpath) == 0:
-        try:
-            os.mkdir(outpath)
-        except Exception as e:
-            print("Warning:",e)
 
+    # make file path if not exist
+    if not outpath.is_dir():
+        try:
+            outpath.mkdir()
+        except Exception as e:
+            print("Warning:", e)
 
     # create file (overwrite if exists)
-    with open(outpath + '/' + filename,'w') as fileout:
+    nav_file = outpath / filename
+    with nav_file.open('w') as fileout:
         print('Loading raw data')
-
-        #thread_list = []
 
         if multiprocessing.cpu_count() < 4:
             cpu_to_use = 1
         else:
-            cpu_to_use = 3
+            cpu_to_use = multiprocessing.cpu_count() - 2
 
         try:
-            pool = multiprocessing.Pool(cpu_to_use) #multiprocessing.cpu_count() - 3)
-        except AttributeError as e: 
-            print("Error: ",e, "\n===============\nThis error is known to happen when running the code more than once from the same console in Spyder. Please run the code from a new console to prevent this error from happening. You may close the current console.\n==============")
+            pool = multiprocessing.Pool(cpu_to_use)
+        except AttributeError as e:
+            print("Error: ", e, "\n===============\nThis error is known to \
+                   happen when running the code more than once from the same \
+                   console in Spyder. Please run the code from a new console \
+                   to prevent this error from happening. You may close the \
+                   current console.\n==============")
         pool_list = []
 
         # read in, parse data and write data
-        if image_flag == 1:
-            if image_format == "acfr_standard" or image_format == "unagi" :
-                pool_list.append(pool.apply_async(parse_acfr_images, [filepath + '/' + image_filepath,image_format,camera1_label,camera2_label,'images',image_timezone,image_timeoffset,ftype,outpath,filename]))
-            if image_format == "seaxerocks_3":
-                pool_list.append(pool.apply_async(parse_seaxerocks_images, [filepath + '/' + image_filepath,image_format,date,camera1_label,camera2_label,camera3_label,'images',image_timezone,image_timeoffset,ftype,outpath,filename]))
-            image_flag = 0
-
-        if usbl_flag == 1:
+        if not mission.image.empty():
+            if mission.image.format == "acfr_standard" or mission.image.format == "unagi":
+                pool_list.append(
+                    pool.apply_async(parse_acfr_images,
+                                     [mission, vehicle, 'images',
+                                      ftype, outpath, filename]))
+            if mission.image.format == "seaxerocks_3":
+                pool_list.append(
+                    pool.apply_async(parse_seaxerocks_images,
+                                     [mission, vehicle, 'images',
+                                      ftype, outpath, filename]))
+        if not mission.usbl.empty():
             print('Loading usbl data...')
-            if usbl_format == "gaps":
-                pool_list.append(pool.apply_async(parse_gaps, [filepath + '/' + usbl_filepath,'usbl',time_usblzone,time_usbloffset,latitude_reference,longitude_reference,ftype,outpath,filename,usbl_id]))
-            if usbl_format == "usbl_dump":
-                pool_list.append(pool.apply_async(parse_usbl_dump, [filepath + '/' + usbl_filepath,usbl_filename,usbl_label,'usbl',time_usblzone,time_usbloffset,latitude_reference,longitude_reference,ftype,outpath,filename]))
-            usbl_flag = 0
+            if mission.usbl.format == "gaps":
+                pool_list.append(
+                    pool.apply_async(
+                        parse_gaps,
+                        [mission, vehicle, 'usbl',
+                         ftype, outpath, filename]))
+            if mission.usbl.format == "usbl_dump":
+                pool_list.append(
+                    pool.apply_async(
+                        parse_usbl_dump,
+                        [mission, vehicle, 'usbl',
+                         ftype, outpath, filename]))
 
-        if velocity_flag == 1:
+        if not mission.velocity.empty():
             print('Loading velocity data...')
-            if velocity_format == "phins":
-                pool_list.append(pool.apply_async(parse_phins, [filepath + '/' + velocity_filepath,velocity_filename,'velocity',velocity_timezone,velocity_timeoffset,velocity_headingoffset,ftype,outpath,filename]))
-            if velocity_format == "ae2000":
-                pool_list.append(pool.apply_async(parse_ae2000, [filepath + '/' + velocity_filepath,velocity_filename,'velocity',velocity_timezone,velocity_timeoffset,velocity_headingoffset,ftype,outpath,filename]))
-            velocity_flag = 0
+            if mission.velocity.format == "phins":
+                pool_list.append(
+                    pool.apply_async(
+                        parse_phins,
+                        [mission, vehicle, 'velocity',
+                         ftype, outpath, filename]))
+            if mission.velocity.format == "ae2000":
+                pool_list.append(
+                    pool.apply_async(
+                        parse_ae2000,
+                        [mission, vehicle, 'velocity',
+                         ftype, outpath, filename]))
 
-        if orientation_flag == 1:
+        if not mission.orientation.empty():
             print('Loading orientation data...')
-            if orientation_format == "phins":
-                pool_list.append(pool.apply_async(parse_phins, [filepath + '/' + orientation_filepath,orientation_filename,'orientation',time_orientationzone,time_orientationoffset,orientation_headingoffset,ftype,outpath,filename]))
-            if orientation_format == "ae2000":
-                pool_list.append(pool.apply_async(parse_ae2000, [filepath + '/' + orientation_filepath,orientation_filename,'orientation',time_orientationzone,time_orientationoffset,orientation_headingoffset,ftype,outpath,filename]))
-            orientation_flag = 0
+            if mission.orientation.format == "phins":
+                pool_list.append(
+                    pool.apply_async(
+                        parse_phins,
+                        [mission, vehicle, 'orientation',
+                         ftype, outpath, filename]))
+            if mission.orientation.format == "ae2000":
+                pool_list.append(
+                    pool.apply_async(
+                        parse_ae2000,
+                        [mission, vehicle, 'orientation',
+                         ftype, outpath, filename]))
 
-        if depth_flag == 1:
+        if not mission.depth.empty():
             print('Loading depth data...')
-            if depth_format == "phins":
-                pool_list.append(pool.apply_async(parse_phins, [filepath + '/' + depth_filepath,depth_filename,'depth',time_depthzone,time_depthoffset,0,ftype,outpath,filename]))
-            if depth_format == "ae2000":
-                pool_list.append(pool.apply_async(parse_ae2000, [filepath + '/' + depth_filepath,depth_filename,'depth',time_depthzone,time_depthoffset,0,ftype,outpath,filename]))
-            depth_flag = 0
+            if mission.depth.format == "phins":
+                pool_list.append(
+                    pool.apply_async(
+                        parse_phins,
+                        [mission, vehicle, 'depth',
+                         ftype, outpath, filename]))
+            if mission.depth.format == "ae2000":
+                pool_list.append(
+                    pool.apply_async(
+                        parse_ae2000,
+                        [mission, vehicle, 'depth',
+                         ftype, outpath, filename]))
 
-        if altitude_flag == 1:
+        if not mission.altitude.empty():
             print('Loading altitude data...')
-            if altitude_format == "phins":
-                pool_list.append(pool.apply_async(parse_phins, [filepath + '/' + altitude_filepath,altitude_filename,'altitude',time_altitudezone,0,time_altitudeoffset,ftype,outpath,filename]))
-            if altitude_format == "ae2000":
-                pool_list.append(pool.apply_async(parse_ae2000, [filepath + '/' + altitude_filepath,altitude_filename,'altitude',time_altitudezone,0,time_altitudeoffset,ftype,outpath,filename]))
-            altitude_flag = 0
+            if mission.altitude.format == "phins":
+                pool_list.append(
+                    pool.apply_async(
+                        parse_phins,
+                        [mission, vehicle, 'altitude',
+                         ftype, outpath, filename]))
+            if mission.altitude.format == "ae2000":
+                pool_list.append(
+                    pool.apply_async(
+                        parse_ae2000,
+                        [mission, vehicle, 'altitude',
+                         ftype, outpath, filename]))
         pool.close()
         print('Wait for parsing threads to finish...')
         pool.join()
@@ -252,16 +202,13 @@ def parse_data(filepath, ftype):
         for i in pool_list:
             results = i.get()
             data_list.append(results)
-            # print (type(results.get()))
-            # print (len(results.get()))
-            # data_list.append(results.get())
         print('...done compiling data list.')
 
         print('Writing to output file...')
         if ftype == 'acfr':
             data_string = ''
             for i in data_list:
-                data_string += i
+                    data_string += ''.join(i)
             fileout.write(data_string)
             del data_string
         elif ftype == 'oplab':
@@ -284,7 +231,7 @@ def parse_data(filepath, ftype):
     # interlace the data based on timestamps
     print('Interlacing data...')
     parse_interlacer(ftype, outpath, filename)
-    print('...done interlacing data. Output saved to ' + outpath + '/' + filename)
+    print('...done interlacing data. Output saved to {}'.format(outpath /filename))
 
     if ftype == 'oplab':
         plot_parse_data(outpath, ftype)

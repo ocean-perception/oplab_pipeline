@@ -1,0 +1,103 @@
+usbl_filter:
+  activate: True
+  max_auv_speed: 2
+  sigma_factor: 2
+
+ekf:
+  activate: True
+  # [ADVANCED] The process noise covariance matrix can be difficult to tune, and can vary for each application, so it is
+  # exposed as a configuration parameter. This matrix represents the noise we add to the total error after each
+  # prediction step. The better the omnidirectional motion model matches your system, the smaller these values can be.
+  # However, if users find that a given variable is slow to converge, one approach is to increase the
+  # process_noise_covariance diagonal value for the variable in question, which will cause the filter's predicted error
+  # to be larger, which will cause the filter to trust the incoming measurement more during correction. The values are
+  # ordered as x, y, z, roll, pitch, yaw, vx, vy, vz, vroll, vpitch, vyaw, ax, ay, az.
+  process_noise_covariance: [0.05, 0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                             0,    0.05, 0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                             0,    0,    0.06, 0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                             0,    0,    0,    0.03, 0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                             0,    0,    0,    0,    0.03, 0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                             0,    0,    0,    0,    0,    0.06, 0,     0,     0,    0,    0,    0,    0,    0,    0,
+                             0,    0,    0,    0,    0,    0,    0.025, 0,     0,    0,    0,    0,    0,    0,    0,
+                             0,    0,    0,    0,    0,    0,    0,     0.025, 0,    0,    0,    0,    0,    0,    0,
+                             0,    0,    0,    0,    0,    0,    0,     0,     0.04, 0,    0,    0,    0,    0,    0,
+                             0,    0,    0,    0,    0,    0,    0,     0,     0,    0.01, 0,    0,    0,    0,    0,
+                             0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0.01, 0,    0,    0,    0,
+                             0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0.02, 0,    0,    0,
+                             0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0.01, 0,    0,
+                             0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0.01, 0,
+                             0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0.015]
+  # [ADVANCED] This represents the initial value for the state estimate error covariance matrix. Setting a diagonal
+  # value (variance) to a large value will result in rapid convergence for initial measurements of the variable in
+  # question. Users should take care not to use large values for variables that will not be measured directly. The values
+  # are ordered as x, y, z, roll, pitch, yaw, vx, vy, vz, vroll, vpitch, vyaw, ax, ay, az.
+  initial_estimate_covariance: [1e-9, 0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                                0,    1e-9, 0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                                0,    0,    1e-9, 0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                                0,    0,    0,    1e-9, 0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                                0,    0,    0,    0,    1e-9, 0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                                0,    0,    0,    0,    0,    1e-9, 0,    0,    0,    0,     0,     0,     0,    0,    0,
+                                0,    0,    0,    0,    0,    0,    1e-9, 0,    0,    0,     0,     0,     0,    0,    0,
+                                0,    0,    0,    0,    0,    0,    0,    1e-9, 0,    0,     0,     0,     0,    0,    0,
+                                0,    0,    0,    0,    0,    0,    0,    0,    1e-9, 0,     0,     0,     0,    0,    0,
+                                0,    0,    0,    0,    0,    0,    0,    0,    0,    1e-9,  0,     0,     0,    0,    0,
+                                0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     1e-9,  0,     0,    0,    0,
+                                0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     1e-9,  0,    0,    0,
+                                0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     1e-9, 0,    0,
+                                0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    1e-9, 0,
+                                0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    1e-9]
+
+  # Sensor standard deviation for EKF. If both are set to zero, the stored
+  # covariance from the sensor message is used instead.
+  # If the factor is zero and oly the offset is used, a fixed covariance is set
+  std:
+    usbl:
+      offset: 100.
+      factor: 0.1
+    dvl:
+      offset: 0.002
+      factor: 0.001
+    depth:
+      offset: 0.
+      factor: 0.
+    orientation:
+      offset: 0.003
+      factor: 0.
+
+particle_filter:
+  activate: True
+  mode: usbl
+  dvl_noise_sigma_factor: 1
+  imu_noise_sigma_factor: 1
+  usbl_noise_sigma_factor: 1
+  particles_number: 100
+  particles_plot_time_interval: False #60
+
+csv_output:
+  activate: True
+  usbl: True
+  dead_reckoning:
+    auv_centre: True
+    auv_dvl: True
+    camera_1: True
+    camera_2: True
+    camera_3: True
+    chemical: False
+  particle_filter:
+    auv_centre: True
+    auv_dvl: True
+    camera_1: True
+    camera_2: True
+    camera_3: True
+    chemical: False
+  ekf:
+    auv_centre: True
+    camera_1: True
+    camera_2: True
+    camera_3: True
+    chemical: False
+
+plot_output:
+  activate: True
+  pdf_plot: False
+  html_plot: True
