@@ -183,102 +183,143 @@ These files need to be in the root raw folder. Further examples can be found in 
 This file describes the mission's details and parameters of each sensor (e.g. where is the filepath of the data, its timezone format, etc).
 ```
 #YAML 1.0
+version: 1  # New vehicle.yaml format
+
 origin:
-    latitude: 26.674083
-    longitude: 127.868054
-    coordinate_reference_system: wgs84
-    date: 2017/08/17
+  latitude: 22.745000
+  longitude: 153.266667
+  coordinate_reference_system: wgs84
 
 velocity:
-    format: phins # phins or ae2000
-    thread: dvl
-    filepath: nav/phins/ # where is the filepath located
-    filename: 20170817_phins.txt # what is the filename
-    timezone: utc # what time zone is the timestamps in
-    timeoffset: 0.0 # what is the time offset
-    headingoffset: -45.0 # what is the heading offset of the sensor
+  format: ae2000  # phins or ae2000
+  filepath: nav/ae_log/  # where is the filepath located
+  filename: pos171123064542.csv  # what is the filename
+  timezone: jst  # what time zone is the timestamps in
+  timeoffset: 0.0  # what is the time offset
+  std_factor: 0.01 # what is the std factor
+  std_offset: 0    # what is the std offset
 
 orientation:
-    format: phins # phins or ae2000
-    filepath: nav/phins/
-    filename: 20170817_phins.txt
-    timezone: utc
-    timeoffset: 0.0
-    headingoffset: -45.0
+  format: ae2000  # phins or ae2000
+  filepath: nav/ae_log/
+  filename: pos171123064542.csv
+  timezone: jst
+  timeoffset: 0.0
+  std_factor: 0.01
+  std_offset: 0
 
 depth:
-    format: phins # phins or ae2000
-    filepath: nav/phins/
-    filename: 20170817_phins.txt
-    timezone: utc
-    timeoffset: 0.0
+  format: ae2000  # phins or ae2000
+  filepath: nav/ae_log/
+  filename: pos171123064542.csv
+  timezone: jst
+  timeoffset: 0.0
+  std_factor: 0.01
+  std_offset: 0
 
 altitude:
-    format: phins # phins or ae2000
-    filepath: nav/phins/
-    filename: 20170817_phins.txt
-    timezone: utc
-    timeoffset: 0.0
+  format: ae2000  # phins or ae2000
+  filepath: nav/ae_log/
+  filename: pos171123064542.csv
+  timezone: jst
+  timeoffset: 0.0
+  std_factor: 0.01
+  std_offset: 0
 
 usbl:
-    format: gaps # gaps or usbl_dump
-    filepath: nav/gaps/
-    filename: 20171123_AE2000f_LOG.csv # filename of data, only for usbl_dump format
-    timezone: utc
-    timeoffset: 0.0
-    id: 1 # selected usbl id, only for gaps format
-    label: T1 # selected usbl label, only for usbl_dump format
+  format: usbl_dump  # gaps or usbl_dump
+  filepath: nav/ssbl/
+  filename: 20171123_AE2000f_LOG.csv  # filename of data, only for usbl_dump format
+  timezone: 9
+  timeoffset: 0.0
+  label: T1  # selected usbl label
+  std_factor: 0.01
+  std_offset: 0
 
 image:
-    format: acfr_standard # acfr_standard or seaxerocks_3
-    filepath: image/r20170817_041459_UG117_sesoko/i20170817_041459/
-    camera1: LC
-    camera2: RC
-    camera3: LM165 # only for seaxerocks_3 format
-    timezone: utc
-    timeoffset: 0.0
+  format: seaxerocks_3  # acfr_standard or seaxerocks_3
+  cameras:
+    - name: fore
+      type: bayer_rggb
+      path: image/SeaXeroxData20171123_095119/Xviii/Cam51707923
+    - name: aft
+      type: bayer_rggb
+      path: image/SeaXeroxData20171123_095119/Xviii/Cam51707925
+    - name: laser
+      type: grayscale
+      path: image/SeaXeroxData20171123_095119/LM165
+  timezone: jst
+  timeoffset: 0.0
 ```
 
 2. vehicle.yaml
 This file describes the location of the sensors relative to the defined position (origin) of the vehicle.
 ```
 #YAML 1.0
-# origin = centre of robot when x_offset, y_offset, z_offset = 0
-origin:
-  x_offset: 0
-  y_offset: 0
-  z_offset: 0
+origin: #centre of robot
+  surge_m: 0
+  sway_m: 0
+  heave_m: 0
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 0
 
-# distance of sensor to origin
+# distance with reference to origin/centre of robot
 usbl:
-  x_offset: 0.1
-  y_offset: 0
-  z_offset: -0.5
+  surge_m: 0 
+  sway_m: 0 
+  heave_m: -0.289 
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 0
 
 ins:
-  x_offset: 0.1
-  y_offset: 0
-  z_offset: 0
+  surge_m: -0.09 
+  sway_m: 0 
+  heave_m: 0 
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 0
 
 dvl:
-  x_offset: -0.45
-  y_offset: 0
-  z_offset: 0.45
+  surge_m: -0.780625
+  sway_m: 0
+  heave_m: 0.204
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 0
 
 depth:
-  x_offset: 0.16
-  y_offset: 0
-  z_offset: 0
+  surge_m: 0 
+  sway_m: 0 
+  heave_m: 0 
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 0
 
-camera1:
-  x_offset: -0.05
-  y_offset: -0.3
-  z_offset: 0.18
+camera1: # Front camera
+  surge_m: 0.262875
+  sway_m: 0
+  heave_m: 0.5 
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 0
 
-camera2:
-  x_offset: -0.05
-  y_offset: -0.1
-  z_offset: 0.18
+camera2: #Back Camera
+  surge_m: 0.012875
+  sway_m: 0
+  heave_m: 0.5 
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 0
+
+camera3: # Laser
+  surge_m: 0.147875
+  sway_m: 0
+  heave_m: 0.5 
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 0
 ```
 
 ## Example Dataset for testing ##
