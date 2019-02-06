@@ -196,6 +196,9 @@ def parse_seaxerocks_images(mission,
         for line in filein.readlines():
             laser_index_timestamps = line.strip().split(',')
 
+            if len(laser_index_timestamps) < 4:
+                print('Warning: The laser FileTime.csv is apparently corrupt...')
+                continue
             index_string = laser_index_timestamps[0]
             date_string = laser_index_timestamps[1]
             time_string = laser_index_timestamps[2]

@@ -30,6 +30,7 @@ from auv_nav.plot.plot_process_data import plot_pf_uncertainty
 from auv_nav.plot.plot_process_data import plot_2d_deadreckoning
 from auv_nav.tools.folder_structure import get_config_folder
 from auv_nav.tools.folder_structure import get_processed_folder
+from auv_nav.tools.folder_structure import get_raw_folder
 from auv_nav.parsers.vehicle import Vehicle
 from auv_nav.parsers.mission import Mission
 
