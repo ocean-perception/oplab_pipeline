@@ -41,8 +41,8 @@ def parse_data(filepath, ftype):
 
     mission_file = filepath / 'mission.yaml'
     vehicle_file = filepath / 'vehicle.yaml'
-    mission_file = get_config_folder(mission_file)
-    vehicle_file = get_config_folder(vehicle_file)
+    mission_file = get_raw_folder(mission_file)
+    vehicle_file = get_raw_folder(vehicle_file)
     print('Loading mission.yaml at {0}'.format(mission_file))
     mission = Mission(mission_file)
     print('Loading vehicle.yaml at {0}'.format(vehicle_file))

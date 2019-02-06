@@ -215,6 +215,7 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
 
     print('Loading vehicle.yaml')
     vehicle_file = filepath / 'vehicle.yaml'
+    vehicle_file = get_raw_folder(vehicle_file)
     vehicle = Vehicle(vehicle_file)
 
     camera1_offsets = [vehicle.camera1.surge,
@@ -232,7 +233,7 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
 
     print('Loading mission.yaml')
     mission_file = filepath / 'mission.yaml'
-    mission_file = get_config_folder(mission_file)
+    mission_file = get_raw_folder(mission_file)
     mission = Mission(mission_file)
 
     # OPLAB mode
