@@ -31,7 +31,7 @@ def parse_gaps(mission,
     timezone = mission.usbl.timezone
     timeoffset = mission.usbl.timeoffset
     filepath = mission.usbl.filepath
-    usbl_id = mission.usbl.id
+    usbl_id = mission.usbl.label
     latitude_reference = mission.origin.latitude
     longitude_reference = mission.origin.longitude
 
