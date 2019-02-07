@@ -198,7 +198,17 @@ def parse_data(filepath, ftype):
         print('...done loading raw data.')
 
         print('Compile data list...')
-        data_list = []
+        data_list = [[{
+            'epoch_timestamp': 0.0,
+            'class': 'origin',
+            'category': 'origin',
+            'data': [{
+                'latitude': mission.origin.latitude,
+                'longitude': mission.origin.longitude,
+                'crs': mission.origin.crs,
+                'date': mission.origin.date
+            }]
+        }]]
         for i in pool_list:
             results = i.get()
             data_list.append(results)

@@ -50,10 +50,11 @@ def print_lines(object, time_difference):
             line[1] += str(object[i]) + '\n'
     line[0] += 'Approximate update rate (Hz)'
     line[1] += str(1/time_difference)
-    if object['frame'] != 'body':
-        if object['frame'] != 'inertial':
-            line[0] += 'Warning\n'
-            line[1] += 'Multiple ''frame''in this category\n'
+    if 'frame' in object:
+        if object['frame'] != 'body':
+            if object['frame'] != 'inertial':
+                line[0] += 'Warning\n'
+                line[1] += 'Multiple ''frame''in this category\n'
     return line
 
 
@@ -127,6 +128,8 @@ def plot_parse_data(filepath, ftype):
                     start_time = i['epoch_timestamp']
                 if i['epoch_timestamp'] > finish_time:
                     finish_time = i['epoch_timestamp']
+                if i['category'] == 'origin':
+                    continue
                 # to find out how many categories are there
                 if i['category'] in ct_lst:
                     # to record all different types of frames
