@@ -50,10 +50,9 @@ def parse_data(filepath, ftype):
 
     # copy mission.yaml and vehicle.yaml to processed folder for process step
     mission_processed = get_processed_folder(mission_file)
-    vehicle_source = get_config_folder(vehicle_file)
-    vehicle_destination = get_processed_folder(vehicle_file)
+    vehicle_processed = get_processed_folder(vehicle_file)
     mission_file.copy(mission_processed)
-    vehicle_source.copy(vehicle_destination)
+    vehicle_file.copy(vehicle_processed)
 
     # check for recognised formats and create nav file
     outpath = get_processed_folder(filepath)
