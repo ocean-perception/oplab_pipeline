@@ -131,9 +131,7 @@ class Mission:
                 print('| DEPRECATED: Mission version not supported.    |')
                 print('| Please convert your mission to version 1      |')
                 print('-------------------------------------------------')
-                print('You are using and old mission.yaml format that is no \
-                       longer compatible. Please refer to the example \
-                       mission.yaml file and modify yours to fit.')
+                print('You are using and old mission.yaml format that is no longer compatible. Please refer to the example mission.yaml file and modify yours to fit.')
 
             self.origin.load(data['origin'])
             if 'velocity' in data:

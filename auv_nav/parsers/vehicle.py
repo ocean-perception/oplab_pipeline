@@ -62,9 +62,7 @@ class Vehicle:
                     print('| DEPRECATED: Vehicle version not supported.    |')
                     print('| Please convert your vehicle to version 1      |')
                     print('-------------------------------------------------')
-                    print('You are using an old vehicle.yaml format that is no \
-                           longer compatible. Please refer to the example \
-                           mission.yaml file and modify yours to fit.')
+                    print('You are using an old vehicle.yaml format that is no longer compatible. Please refer to the example vehicle.yaml file and modify yours to fit.')
                     mission_stream = mission_file.open('r')
                     mission_data = yaml.load(mission_stream)
                     old_format = True
