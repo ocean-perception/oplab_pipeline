@@ -141,7 +141,7 @@ class BodyVelocity(OutputFormat):
 
     def valid(self):
         # The class is populated with just one line message.
-        if self.x_velocity is not None and self.epoch_timestamp is not None:
+        if self.x_velocity is not None and self.epoch_timestamp is not None and self.epoch_timestamp_dvl is not None:
             return True
         else:
             return False
@@ -168,15 +168,21 @@ class BodyVelocity(OutputFormat):
         self.epoch_timestamp_dvl = self.parse_dvl_time(line)
 
     def parse_dvl_time(self, line):
+        epoch_time_dvl = None
         velocity_time = str(line[6])
         hour_dvl = int(velocity_time[0:2])
         mins_dvl = int(velocity_time[2:4])
         secs_dvl = int(velocity_time[4:6])
-        if secs_dvl < 60:
-            msec_dvl = int(velocity_time[7:10])
-            epoch_time_dvl = self.timestamp.get(
-                hour_dvl, mins_dvl, secs_dvl, msec_dvl)
-            return epoch_time_dvl
+        try:
+            secs_dvl = int(velocity_time[4:6])
+            # phins sometimes returns 60s...
+            if secs_dvl < 60:
+               msec_dvl = int(velocity_time[7:10])
+               epoch_time_dvl = self.timestamp.get( hour_dvl, mins_dvl, secs_dvl, msec_dvl)
+        except Exception as exc:
+            print('Warning: Badly formatted packet (PHINS TIME): '
+                  + line[6] + ' Exception: ' + str(exc))
+        return epoch_time_dvl
 
     def from_json(self, json):
         self.epoch_timestamp = json['epoch_timestamp_dvl']
