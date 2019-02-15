@@ -30,7 +30,6 @@ from auv_nav.plot.plot_process_data import plot_pf_uncertainty
 from auv_nav.plot.plot_process_data import plot_2d_deadreckoning
 from auv_nav.tools.folder_structure import get_config_folder
 from auv_nav.tools.folder_structure import get_processed_folder
-from auv_nav.tools.folder_structure import get_raw_folder
 from auv_nav.parsers.vehicle import Vehicle
 from auv_nav.parsers.mission import Mission
 
@@ -216,7 +215,7 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
 
     print('Loading vehicle.yaml')
     vehicle_file = filepath / 'vehicle.yaml'
-    vehicle_file = get_raw_folder(vehicle_file)
+    vehicle_file = get_processed_folder(vehicle_file)
     vehicle = Vehicle(vehicle_file)
 
     camera1_offsets = [vehicle.camera1.surge,
@@ -234,7 +233,7 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
 
     print('Loading mission.yaml')
     mission_file = filepath / 'mission.yaml'
-    mission_file = get_raw_folder(mission_file)
+    mission_file = get_processed_folder(mission_file)
     mission = Mission(mission_file)
 
     # OPLAB mode
