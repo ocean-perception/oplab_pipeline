@@ -27,11 +27,6 @@ def parse_ae2000(mission,
     class_string = 'measurement'
     sensor_string = 'ae20000'
 
-    # phins std models
-    depth_std_factor = mission.depth.std_factor
-    velocity_std_factor = mission.velocity.std_factor
-    velocity_std_offset = mission.velocity.std_offset
-    altitude_std_factor = mission.altitude.std_factor
     altitude_limit = 200  # value given by ae2000 when there is no bottom lock
     # read in date from filename
 
@@ -112,11 +107,11 @@ def parse_ae2000(mission,
                     # z_velocity=-1*z_velocity
 
                     x_velocity_std = abs(x_velocity) * \
-                        velocity_std_factor+velocity_std_offset
+                        mission.velocity.std_factor+mission.velocity.std_offset
                     y_velocity_std = abs(y_velocity) * \
-                        velocity_std_factor+velocity_std_offset
+                        mission.velocity.std_factor+mission.velocity.std_offset
                     z_velocity_std = abs(z_velocity) * \
-                        velocity_std_factor+velocity_std_offset
+                        mission.velocity.std_factor+mission.velocity.std_offset
 
                     # write out in the required format interlace at end
                     data = {'epoch_timestamp': float(epoch_timestamp), 'epoch_timestamp_dvl': float(epoch_timestamp), 'class': class_string, 'sensor': sensor_string, 'frame': frame_string, 'category': category, 'data': [{'x_velocity': float(
@@ -130,9 +125,9 @@ def parse_ae2000(mission,
                     down_velocity = -9999
 
                     east_velocity_std = abs(
-                        east_velocity)*velocity_std_factor+velocity_std_offset
+                        east_velocity)*mission.velocity.std_factor + mission.velocity.std_offset
                     north_velocity_std = abs(
-                        north_velocity)*velocity_std_factor+velocity_std_offset
+                        north_velocity)*mission.velocity.std_factor + mission.velocity.std_offset
                     down_velocity_std = -9999
                     # write out in the required format interlace at end
                     data = {'epoch_timestamp': float(epoch_timestamp), 'class': class_string, 'sensor': sensor_string, 'frame': frame_string, 'category': category, 'data': [{'north_velocity': float(north_velocity), 'north_velocity_std': float(
@@ -185,7 +180,7 @@ def parse_ae2000(mission,
                     frame_string = 'inertial'
 
                     depth = float(df['Depth'][row_index])
-                    depth_std = depth*depth_std_factor
+                    depth_std = depth*mission.depth.std_factor + mission.depth.std_offset
 
                     # write out in the required format interlace at end
                     data = {'epoch_timestamp': float(epoch_timestamp), 'epoch_timestamp_depth': float(epoch_timestamp), 'class': class_string,
@@ -195,7 +190,7 @@ def parse_ae2000(mission,
                 if category == 'altitude':
                     frame_string = 'body'
                     altitude = float(df['Height'][row_index])
-                    altitude_std = altitude*altitude_std_factor
+                    altitude_std = altitude*mission.altitude.std_factor + mission.altitude.std_offset
                     sound_velocity = -9999
                     sound_velocity_correction = -9999
 
