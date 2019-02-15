@@ -104,21 +104,19 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
     chemical_list = []
     chemical_pf_list = []
 
-    # std factors and offsets defaults
+    # std factors and offsets defaults for EKF
     std_factor_usbl = 0.01
     std_offset_usbl = 10.
     std_factor_dvl = 0.001
     std_offset_dvl = 0.002
-    std_factor_depth = 0.
-    std_offset_depth = 0.
+    std_factor_depth = 0
+    std_offset_depth = 0.01
     std_factor_orientation = 0.
     std_offset_orientation = 0.003
 
-# load localisaion.yaml for particle filter and other setup
-
+    # load auv_nav.yaml for particle filter and other setup
     filepath = Path(filepath).resolve()
     filepath = get_processed_folder(filepath)
-
     print('Loading auv_nav.yaml')
     localisation_file = filepath / 'auv_nav.yaml'
     localisation_file = get_config_folder(localisation_file)
@@ -149,14 +147,6 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
             particles_number = load_localisation['particle_filter']['particles_number']
             particles_time_interval = load_localisation['particle_filter']['particles_plot_time_interval']
         if 'std' in load_localisation:
-            std_factor_usbl = load_localisation['std']['usbl']['factor']
-            std_offset_usbl = load_localisation['std']['usbl']['offset']
-            std_factor_dvl = load_localisation['std']['dvl']['factor']
-            std_offset_dvl = load_localisation['std']['dvl']['offset']
-            std_factor_depth = load_localisation['std']['depth']['factor']
-            std_offset_depth = load_localisation['std']['depth']['offset']
-            std_factor_orientation = load_localisation['std']['orientation']['factor']
-            std_offset_orientation = load_localisation['std']['orientation']['offset']
             sensors_std = load_localisation['std']
         else:
             sensors_std = {
@@ -249,7 +239,7 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
 
         # setup start and finish date time
         if start_datetime == '':
-            epoch_start_time = epoch_from_json(parsed_json_data[0])
+            epoch_start_time = epoch_from_json(parsed_json_data[1])
             start_datetime = epoch_to_datetime(epoch_start_time)
         else:
             epoch_start_time = string_to_epoch(start_datetime)
@@ -650,7 +640,7 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
             vehicle.origin.heave - vehicle.dvl.heave)
         dead_reckoning_centre_list[i].northings += x_offset
         dead_reckoning_centre_list[i].eastings += y_offset
-        # dead_reckoning_centre_list[i].depth += z_offset
+        dead_reckoning_centre_list[i].depth += z_offset
     # correct for altitude and depth offset too!
 
     # remove first term if first time_orientation is < velocity_body time
