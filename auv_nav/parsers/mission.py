@@ -125,14 +125,6 @@ class Mission:
             data = yaml.load(stream)
             if 'version' in data:
                 self.version = data['version']
-
-            if self.version != 1:
-                print('-------------------------------------------------')
-                print('| DEPRECATED: Mission version not supported.    |')
-                print('| Please convert your mission to version 1      |')
-                print('-------------------------------------------------')
-                print('You are using and old mission.yaml format that is no longer compatible. Please refer to the example mission.yaml file and modify yours to fit.')
-
             self.origin.load(data['origin'])
             if 'velocity' in data:
                 self.velocity.load(data['velocity'])

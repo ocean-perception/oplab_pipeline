@@ -32,6 +32,9 @@ class SensorOffset:
             if mission_node:
                 self.yaw = mission_node['headingoffset']
 
+    def print(self, name):
+        print('{}: XYZ ({:.2f}, {:.2f}, {:.2f}) RPY ({:.2f}, {:.2f}, {:.2f})'.format(name, self.surge, self.sway, self.heave, self.roll, self.pitch, self.yaw))
+
 class Vehicle:
     def __init__(self, filename=None):
         self.origin = SensorOffset()
@@ -58,11 +61,6 @@ class Vehicle:
             if 'origin' in data:
                 self.origin.load(data['origin'])
                 if 'x_offset' in data['origin']:
-                    print('-------------------------------------------------')
-                    print('| DEPRECATED: Vehicle version not supported.    |')
-                    print('| Please convert your vehicle to version 1      |')
-                    print('-------------------------------------------------')
-                    print('You are using an old vehicle.yaml format that is no longer compatible. Please refer to the example vehicle.yaml file and modify yours to fit.')
                     mission_stream = mission_file.open('r')
                     mission_data = yaml.load(mission_stream)
                     old_format = True
@@ -87,4 +85,4 @@ class Vehicle:
             if 'camera3' in data:
                 self.camera3.load(data['camera3'])
             if 'chemical' in data:
-                self.camera3.load(data['chemical'])
+                self.chemical.load(data['chemical'])
