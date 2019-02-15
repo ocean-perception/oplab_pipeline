@@ -53,7 +53,6 @@ def usbl_filter(usbl_list, depth_list, sigma_factor, max_auv_speed, ftype):
         while j < len(depth_list)-1 and depth_list[j].epoch_timestamp < usbl_list[i].epoch_timestamp:
             j = j+1
         if j >= 1:
-            print(depth_list[j].depth)
             depth_interpolated.append(interpolate(
                 usbl_list[i].epoch_timestamp,
                 depth_list[j - 1].epoch_timestamp,
