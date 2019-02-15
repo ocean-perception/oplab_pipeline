@@ -48,6 +48,51 @@ def parse_data(filepath, ftype):
     print('Loading vehicle.yaml at {0}'.format(vehicle_file))
     vehicle = Vehicle(vehicle_file)
 
+    # std factors and offsets defaults
+    # Even if you provide std factors and offset or not, if the sensor
+    # has its own std measurements, that measurements will be used instead
+    std_factor_usbl = 0.01
+    std_offset_usbl = 10.
+    std_factor_dvl = 0.001
+    std_offset_dvl = 0.002
+    std_factor_depth = 0
+    std_offset_depth = 0.01
+    std_factor_orientation = 0.
+    std_offset_orientation = 0.003
+    std_factor_altitude = 0.
+    std_offset_altitude = 0.01
+
+    if mission.usbl.std_factor == 0 and std_factor_usbl != 0:
+        # print('USBL standard deviation factor not provided. Using default of {}'.format(std_factor_usbl))
+        mission.usbl.std_factor = std_factor_usbl
+    if mission.usbl.std_offset == 0 and std_offset_usbl != 0:
+        # print('USBL standard deviation offset not provided. Using default of {}'.format(std_offset_usbl))
+        mission.usbl.std_offset = std_offset_usbl
+    if mission.velocity.std_factor == 0 and std_factor_dvl != 0:
+        # print('DVL standard deviation factor not provided. Using default of {}'.format(std_factor_dvl))
+        mission.velocity.std_factor = std_factor_dvl
+    if mission.velocity.std_offset == 0 and std_offset_dvl != 0:
+        # print('DVL standard deviation offset not provided. Using default of {}'.format(std_offset_dvl))
+        mission.velocity.std_offset = std_offset_dvl
+    if mission.depth.std_factor == 0 and std_factor_depth != 0:
+        # print('Depth standard deviation factor not provided. Using default of {}'.format(std_factor_depth))
+        mission.depth.std_factor = std_factor_depth
+    if mission.depth.std_offset == 0 and std_offset_depth != 0:
+        # print('Depth standard deviation offset not provided. Using default of {}'.format(std_offset_depth))
+        mission.depth.std_offset = std_offset_depth
+    if mission.orientation.std_factor == 0 and std_factor_orientation != 0:
+        # print('Orientation standard deviation factor not provided. Using default of {}'.format(std_factor_orientation))
+        mission.orientation.std_factor = std_factor_orientation
+    if mission.orientation.std_offset == 0 and std_offset_orientation != 0:
+        # print('Orientation standard deviation offset not provided. Using default of {}'.format(std_offset_orientation))
+        mission.orientation.std_offset = std_offset_orientation
+    if mission.altitude.std_factor == 0 and std_factor_altitude != 0:
+        # print('Altitude standard deviation factor not provided. Using default of {}'.format(std_factor_altitude))
+        mission.altitude.std_factor = std_factor_altitude
+    if mission.altitude.std_offset == 0 and std_offset_altitude != 0:
+        # print('Altitude standard deviation offset not provided. Using default of {}'.format(std_offset_altitude))
+        mission.altitude.std_offset = std_offset_altitude
+
     # copy mission.yaml and vehicle.yaml to processed folder for process step
     mission_processed = get_processed_folder(mission_file)
     vehicle_processed = get_processed_folder(vehicle_file)
