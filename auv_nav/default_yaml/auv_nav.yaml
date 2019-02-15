@@ -58,7 +58,7 @@ ekf:
       offset: 0.002
       factor: 0.001
     depth:
-      offset: 0.
+      offset: 0.01
       factor: 0.
     orientation:
       offset: 0.003
