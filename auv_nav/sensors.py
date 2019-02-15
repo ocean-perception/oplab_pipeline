@@ -177,8 +177,11 @@ class BodyVelocity(OutputFormat):
             secs_dvl = int(velocity_time[4:6])
             # phins sometimes returns 60s...
             if secs_dvl < 60:
-               msec_dvl = int(velocity_time[7:10])
-               epoch_time_dvl = self.timestamp.get( hour_dvl, mins_dvl, secs_dvl, msec_dvl)
+                msec_dvl = int(velocity_time[7:10])
+                epoch_time_dvl = self.timestamp.get(hour_dvl,
+                                                    mins_dvl,
+                                                    secs_dvl,
+                                                    msec_dvl)
         except Exception as exc:
             print('Warning: Badly formatted packet (PHINS TIME): '
                   + line[6] + ' Exception: ' + str(exc))
@@ -308,7 +311,6 @@ class InertialVelocity(OutputFormat):
 class Orientation(OutputFormat):
     def __init__(self, heading_offset=0.0):
         self.epoch_timestamp = None
-        self.epoch_timestamp = None
         self.yaw_offset = heading_offset
         self.sensor_string = 'unknown'
         self.clear()
@@ -342,7 +344,6 @@ class Orientation(OutputFormat):
                 [self.roll, self.pitch, self.yaw] = body_to_inertial(
                     0, 0, self.yaw_offset,
                     self.roll, self.pitch, self.yaw)
-                # heading=heading+headingoffset
                 if self.yaw > 360:
                     self.yaw = self.yaw - 360
                 if self.yaw < 0:
