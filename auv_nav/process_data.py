@@ -825,6 +825,7 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
             pf_fusion_centre_list[i].latitude = lat
             pf_fusion_centre_list[i].longitude = lon
 
+    ekf_list = []
     if ekf_activate:
         ekf_start_time = time.time()
         # velocity_body_list, list of BodyVelocity()
@@ -841,7 +842,6 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
         ekf_elapsed_time = ekf_end_time - ekf_start_time
         print("EKF took {} seconds".format(ekf_elapsed_time))
         # TODO: convert from EKF states in meters to lat lon
-        ekf_list = []
         for s in ekf_states:
             b = SyncedOrientationBodyVelocity()
             b.epoch_timestamp = s.time
