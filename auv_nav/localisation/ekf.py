@@ -4,6 +4,7 @@ Copyright (c) 2018, University of Southampton
 All rights reserved.
 """
 from auv_nav.tools.interpolate import interpolate_dvl
+from auv_nav.tools.interpolate import interpolate
 
 import math
 import numpy as np
@@ -305,31 +306,32 @@ class EkfImpl(object):
         else:
             print('Mahalanobis distance too large. Correction not applied.')
 
-    def smooth(self):
+    def smooth(self, enable=True):
         if len(self.states_vector) < 2:
             return
         ns = len(self.states_vector)
         self.smoothed_states_vector = copy.deepcopy(self.states_vector)
-        for i in range(ns):
-            sf = self.smoothed_states_vector[ns - 1 - i]
-            s = self.states_vector[ns - 2 - i]
-            x_prior, p_prior = s.get()
-            x_smoothed, p_smoothed = sf.get()
+        if enable:
+            for i in range(ns):
+                sf = self.smoothed_states_vector[ns - 1 - i]
+                s = self.states_vector[ns - 2 - i]
+                x_prior, p_prior = s.get()
+                x_smoothed, p_smoothed = sf.get()
 
-            delta = sf.get_time() - s.get_time()
+                delta = sf.get_time() - s.get_time()
 
-            f = self.compute_transfer_function(delta, x_prior)
-            A = self.compute_transfer_function_jacobian(delta, x_prior, f)
+                f = self.compute_transfer_function(delta, x_prior)
+                A = self.compute_transfer_function_jacobian(delta, x_prior, f)
 
-            p_prior_pred = (A @ p_prior @ A.T
-                            + self.process_noise_covariance * delta)
-            J = p_prior * A.T * np.linalg.inv(p_prior_pred)
+                p_prior_pred = (A @ p_prior @ A.T
+                                + self.process_noise_covariance * delta)
+                J = p_prior * A.T * np.linalg.inv(p_prior_pred)
 
-            x_prior_smoothed = x_prior + J @ (x_smoothed - f @ x_prior)
-            p_prior_smoothed = (
-                p_prior + J @ (p_smoothed - p_prior_pred) @ J.T)
-            self.smoothed_states_vector[ns-2-i].set(
-                x_prior_smoothed, p_prior_smoothed)
+                x_prior_smoothed = x_prior + J @ (x_smoothed - f @ x_prior)
+                p_prior_smoothed = (
+                    p_prior + J @ (p_smoothed - p_prior_pred) @ J.T)
+                self.smoothed_states_vector[ns-2-i].set(
+                    x_prior_smoothed, p_prior_smoothed)
 
     def compute_transfer_function(self, delta, state):
         roll = state[Index.ROLL]
@@ -503,46 +505,45 @@ class ExtendedKalmanFilter(object):
         start_time = dr_list[dr_idx].epoch_timestamp
         current_time = start_time
 
-        ekf = EkfImpl()
-        ekf.set_state(state0)
-        ekf.set_last_update_time(current_time)
-        ekf.set_covariance(initial_estimate_covariance)
-        ekf.set_process_noise_covariance(process_noise_covariance)
+        self.ekf = EkfImpl()
+        self.ekf.set_state(state0)
+        self.ekf.set_last_update_time(current_time)
+        self.ekf.set_covariance(initial_estimate_covariance)
+        self.ekf.set_process_noise_covariance(process_noise_covariance)
 
         print('-------------------------------')
         print("Running EKF...")
-        ekf.print_state()
+        self.ekf.print_state()
         print('-------------------------------')
         while dr_idx < len(dr_list):
             dr_stamp = dr_list[dr_idx].epoch_timestamp
             if usbl_idx < len(usbl_list):
                 usbl_stamp = usbl_list[usbl_idx].epoch_timestamp
             else:
+                # Fake a later USBL measurement to force EKF to read DR
                 usbl_stamp = dr_stamp + 1
             m = Measurement(sensors_std)
-            f_upda_time = ekf.get_last_update_time()
-            m.from_synced_orientation_body_velocity(dr_list[dr_idx])
-            dr_idx += 1
-            # if dr_stamp < usbl_stamp:
-            #     m.from_synced_orientation_body_velocity(dr_list[dr_idx])
-            #     dr_idx += 1
-            # elif usbl_idx < len(usbl_list):
-            #     m.from_usbl(usbl_list[usbl_idx])
-            #     usbl_idx += 1
+            f_upda_time = self.ekf.get_last_update_time()
+            # m.from_synced_orientation_body_velocity(dr_list[dr_idx])
+            # dr_idx += 1
+            if dr_stamp < usbl_stamp:
+                m.from_synced_orientation_body_velocity(dr_list[dr_idx])
+                dr_idx += 1
+            elif usbl_idx < len(usbl_list):
+                m.from_usbl(usbl_list[usbl_idx])
+                usbl_idx += 1
             last_update_delta = m.time - f_upda_time
-            ekf.predict(m.time, last_update_delta)
-            ekf.correct(m)
-        self.states = ekf.get_states()
+            self.ekf.predict(m.time, last_update_delta)
+            self.ekf.correct(m)
         print("EKF finished, smoothing with EKS...")
-        ekf.smooth()
-        self.states_smoothed = ekf.get_smoothed_states()
+        self.ekf.smooth(enable=False)
         print("EKS finished")
 
     def get_result(self):
-        return self.states
+        return self.ekf.get_states()
 
     def get_smoothed_result(self):
-        return self.states_smoothed
+        return self.ekf.get_smoothed_states()
 
     def build_state(self, usbl, dr):
         x = usbl.northings
@@ -564,25 +565,48 @@ class ExtendedKalmanFilter(object):
     def get_init_state(self,
                        dr_list,
                        usbl_list):
-        ui = 0
-        di = 0
+        dr_index = 0
         state = []
-        if usbl_list[ui].epoch_timestamp > dr_list[di].epoch_timestamp:
-            while usbl_list[ui].epoch_timestamp > dr_list[di].epoch_timestamp:
-                di += 1
-        if dr_list[di].epoch_timestamp == usbl_list[ui].epoch_timestamp:
-            state = self.build_state(usbl_list[ui], dr_list[di])
-            ui += 1
-            di += 1
-        elif usbl_list[ui].epoch_timestamp < dr_list[di].epoch_timestamp:
-            while (usbl_list[ui+1].epoch_timestamp
-                   < dr_list[di].epoch_timestamp):
-                if len(usbl_list) - 2 == ui:
-                    print('USBL data does not span to DVL data. Is your data right?')
-                    break
-                ui += 1
-            interpolated_data = interpolate_dvl(usbl_list[ui].epoch_timestamp,
-                                                dr_list[di],
-                                                dr_list[di+1])
-            state = self.build_state(usbl_list[ui], interpolated_data)
-        return state.T, di+1, ui
+
+        dr_eastings = []
+        dr_northings = []
+        for i in range(len(usbl_list)):
+            while dr_index < len(dr_list) - 2 and usbl_list[i].epoch_timestamp > dr_list[dr_index+1].epoch_timestamp:
+                dr_index += 1
+            dr_eastings.append(interpolate(usbl_list[i].epoch_timestamp,
+                                           dr_list[dr_index].epoch_timestamp,
+                                           dr_list[dr_index + 1].epoch_timestamp,
+                                           dr_list[dr_index].eastings,
+                                           dr_list[dr_index + 1].eastings))
+            dr_northings.append(interpolate(usbl_list[i].epoch_timestamp,
+                                            dr_list[dr_index].epoch_timestamp,
+                                            dr_list[dr_index + 1].epoch_timestamp,
+                                            dr_list[dr_index].northings,
+                                            dr_list[dr_index + 1].northings))
+        usbl_eastings = [i.eastings for i in usbl_list]
+        usbl_northings = [i.northings for i in usbl_list]
+        eastings_error = [x - y for x, y in zip(dr_eastings, usbl_eastings)]
+        northings_error = [x - y for x, y in zip(dr_northings, usbl_northings)]
+        eastings_mean = np.mean(eastings_error)
+        northings_mean = np.mean(northings_error)
+
+        print('Offsetting DR navigation by USBL error offset: ({:.2f}, {:.2f})'.format(northings_mean, eastings_mean))
+
+        dr_index = 0
+        usbl_index = 0
+        if usbl_list[usbl_index].epoch_timestamp > dr_list[dr_index].epoch_timestamp:
+            while dr_index < len(dr_list) and usbl_list[usbl_index].epoch_timestamp > dr_list[dr_index].epoch_timestamp:
+                dr_index += 1
+        elif dr_list[dr_index].epoch_timestamp > usbl_list[usbl_index].epoch_timestamp:
+            while usbl_index < len(usbl_list) and dr_list[dr_index].epoch_timestamp > usbl_list[usbl_index].epoch_timestamp:
+                usbl_index += 1
+
+        print('Picked usbl_index of ', usbl_index)
+        print('Picked dr of ', dr_index)
+
+        state = self.build_state(usbl_list[usbl_index], dr_list[dr_index])
+        state[0, Index.X] = state[0, Index.X] - northings_mean
+        state[0, Index.Y] = state[0, Index.Y] - eastings_mean
+        print(state)
+
+        return state.T, 0, 0
