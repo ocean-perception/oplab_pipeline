@@ -15,40 +15,43 @@ def write_csv(csv_filepath, data_list, csv_filename, csv_flag):
         str_to_write += 'Timestamp, Northing [m], Easting [m], Depth [m], ' \
                         'Roll [deg], Pitch [deg], Heading [deg], Altitude ' \
                         '[m], Latitude [deg], Longitude [deg]'
-        if data_list[0].covariance is not None:
-            cov = ['x', 'y', 'z',
-                   'roll', 'pitch', 'yaw',
-                   'vx', 'vy', 'vz',
-                   'vroll', 'vpitch', 'vyaw',
-                   'ax', 'ay', 'az']
-            for a in cov:
-                for b in cov:
-                    str_to_write += ', cov_'+a+'_'+b
-        str_to_write += '\n'
-        for i in range(len(data_list)):
-            try:
-                str_to_write += (
-                    str(data_list[i].epoch_timestamp)+','
-                    + str(data_list[i].northings)+','
-                    + str(data_list[i].eastings)+','
-                    + str(data_list[i].depth)+','
-                    + str(data_list[i].roll)+','
-                    + str(data_list[i].pitch)+','
-                    + str(data_list[i].yaw)+','
-                    + str(data_list[i].altitude)+','
-                    + str(data_list[i].latitude)+','
-                    + str(data_list[i].longitude))
+        if len(data_list) > 0:
+            if data_list[0].covariance is not None:
+                cov = ['x', 'y', 'z',
+                       'roll', 'pitch', 'yaw',
+                       'vx', 'vy', 'vz',
+                       'vroll', 'vpitch', 'vyaw',
+                       'ax', 'ay', 'az']
+                for a in cov:
+                    for b in cov:
+                        str_to_write += ', cov_'+a+'_'+b
+            str_to_write += '\n'
+            for i in range(len(data_list)):
+                try:
+                    str_to_write += (
+                        str(data_list[i].epoch_timestamp)+','
+                        + str(data_list[i].northings)+','
+                        + str(data_list[i].eastings)+','
+                        + str(data_list[i].depth)+','
+                        + str(data_list[i].roll)+','
+                        + str(data_list[i].pitch)+','
+                        + str(data_list[i].yaw)+','
+                        + str(data_list[i].altitude)+','
+                        + str(data_list[i].latitude)+','
+                        + str(data_list[i].longitude))
 
-                if data_list[i].covariance is not None:
-                    cov = data_list[i].covariance.flatten().tolist()
-                    cov = [item for sublist in cov for item in sublist]
-                    for c in cov:
-                        str_to_write += ',' + str(c)
-                str_to_write += '\n'
-            except IndexError:
-                break
-        with file.open('w') as fileout:
-            fileout.write(str_to_write)
+                    if data_list[i].covariance is not None:
+                        cov = data_list[i].covariance.flatten().tolist()
+                        cov = [item for sublist in cov for item in sublist]
+                        for c in cov:
+                            str_to_write += ',' + str(c)
+                    str_to_write += '\n'
+                except IndexError:
+                    break
+            with file.open('w') as fileout:
+                fileout.write(str_to_write)
+        else:
+            print('WARNING: empty data list ', str(csv_filename))
 
 
 # First column of csv file - image file naming step probably not very robust
