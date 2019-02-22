@@ -7,6 +7,7 @@ All rights reserved.
 from auv_nav.tools.body_to_inertial import body_to_inertial
 from auv_nav.tools.time_conversions import date_time_to_epoch
 from auv_nav.tools.time_conversions import read_timezone
+from auv_nav.tools.console import Console
 import json as js
 
 
@@ -52,10 +53,10 @@ class Timestamp():
                     msec = int(time_string[7:10])
                     epoch_timestamp = self.get(hour, mins, secs, msec)
             except Exception as exc:
-                print('Warning: Badly formatted packet (PHINS TIME): '
-                      + time_string + ' Exception: ' + str(exc))
+                Console.warn('Badly formatted packet (PHINS TIME): '
+                             + time_string + ' Exception: ' + str(exc))
         else:
-            print('Warning: Badly formatted packet (PHINS TIME): ' + str(line))
+            Console.warn('Badly formatted packet (PHINS TIME): ' + str(line))
         return epoch_timestamp
 
 
@@ -183,8 +184,8 @@ class BodyVelocity(OutputFormat):
                                                     secs_dvl,
                                                     msec_dvl)
         except Exception as exc:
-            print('Warning: Badly formatted packet (PHINS TIME): '
-                  + line[6] + ' Exception: ' + str(exc))
+            Console.warn('Warning: Badly formatted packet (PHINS TIME): '
+                         + line[6] + ' Exception: ' + str(exc))
         return epoch_time_dvl
 
     def from_json(self, json):
@@ -470,8 +471,8 @@ class Depth(OutputFormat):
                 self.depth_timestamp = self.ts.get(
                     hour, mins, secs, msec)
         except Exception as exc:
-            print('Warning: Badly formatted packet (DEPTH TIME): '
-                  + time_string + ' Exception: ' + str(exc))
+            Console.warn('Badly formatted packet (DEPTH TIME): '
+                         + time_string + ' Exception: ' + str(exc))
 
     def from_json(self, json):
         self.epoch_timestamp = json['epoch_timestamp_depth']

@@ -11,7 +11,9 @@ import pandas as pd
 # sys.path.append("..")
 from auv_nav.tools.body_to_inertial import body_to_inertial
 from auv_nav.tools.time_conversions import date_time_to_epoch
+from auv_nav.tools.time_conversions import read_timezone
 from auv_nav.tools.folder_structure import get_raw_folder
+from auv_nav.tools.console import Console
 # http://www.json.org/
 data_list = []
 # need to make acfr parsers
@@ -39,25 +41,13 @@ def parse_ae2000(mission,
     mm = int(filename[5:7])
     dd = int(filename[7:9])
 
-    # read in timezone
-    if isinstance(timezone, str):
-        if timezone == 'utc' or timezone == 'UTC':
-            timezone_offset = 0
-        elif timezone == 'jst' or timezone == 'JST':
-            timezone_offset = 9
-    else:
-        try:
-            timezone_offset = float(timezone)
-        except ValueError:
-            print('Error: timezone', timezone,
-                  'in mission.cfg not recognised, please enter value from UTC in hours')
-            return
+    timezone_offset = read_timezone(timezone)
 
     # convert to seconds from utc
     # timeoffset = -timezone_offset*60*60 + timeoffset
 
     # parse phins data
-    print('  Parsing ae2000 logs...')
+    Console.info('  Parsing ae2000 logs...')
     data_list = []
     if ftype == 'acfr':
         data_list = ''
@@ -269,6 +259,6 @@ def parse_ae2000(mission,
                     continue
         # else:
         # 	print('no bottom lock')
-    print('  ...done parsing ae2000 logs.')
+    Console.info('  ...done parsing ae2000 logs.')
 
     return data_list

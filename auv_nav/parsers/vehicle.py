@@ -16,7 +16,7 @@ class SensorOffset:
     def empty(self):
         return self._emtpy
 
-    def load(self, node, mission_node = []):
+    def load(self, node, mission_node=[]):
         self._empty = False
         if 'surge_m' in node:
             self.surge = node['surge_m']
@@ -34,6 +34,7 @@ class SensorOffset:
 
     def print(self, name):
         print('{}: XYZ ({:.2f}, {:.2f}, {:.2f}) RPY ({:.2f}, {:.2f}, {:.2f})'.format(name, self.surge, self.sway, self.heave, self.roll, self.pitch, self.yaw))
+
 
 class Vehicle:
     def __init__(self, filename=None):

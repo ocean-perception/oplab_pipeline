@@ -13,7 +13,9 @@ import math
 from auv_nav.tools.latlon_wgs84 import latlon_to_metres
 from auv_nav.tools.latlon_wgs84 import metres_to_latlon
 from auv_nav.tools.time_conversions import date_time_to_epoch
+from auv_nav.tools.time_conversions import read_timezone
 from auv_nav.tools.folder_structure import get_raw_folder
+from auv_nav.tools.console import Console
 
 
 def parse_gaps(mission,
@@ -45,18 +47,7 @@ def parse_gaps(mission,
     broken_packet_flag = False
 
     # read in timezone
-    if isinstance(timezone, str):
-        if timezone == 'utc' or timezone == 'UTC':
-            timezone_offset = 0
-        elif timezone == 'jst' or timezone == 'JST':
-            timezone_offset = 9
-    else:
-        try:
-            timezone_offset = float(timezone)
-        except ValueError:
-            print('Error: timezone', timezone,
-                  'in mission.yaml not recognised, please enter value from UTC in hours')
-            return
+    timezone_offset = read_timezone(timezone)
 
     # convert to seconds from utc
     # timeoffset = -timezone_offset*60*60 + timeoffset
@@ -66,7 +57,7 @@ def parse_gaps(mission,
     filepath = get_raw_folder(path)
     all_list = os.listdir(str(filepath))
     gaps_list = [line for line in all_list if '.dat' in line]
-    print(str(len(gaps_list)) + ' GAPS file(s) found')
+    Console.info(str(len(gaps_list)) + ' GAPS file(s) found')
 
     # extract data from files
     data_list = []
@@ -330,9 +321,8 @@ def parse_gaps(mission,
                             data_list += data
 
                     else:
-                        print('Warning: Badly formatted packet (GAPS TIME)')
-                        print(line)
-                        print('Moving on')
+                        Console.warn('Badly formatted packet (GAPS TIME)')
+                        Console.warn(line)
                         # print(hour,mins,secs)
 
                     # reset flag

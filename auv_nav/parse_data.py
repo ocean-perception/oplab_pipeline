@@ -27,11 +27,12 @@ from auv_nav.plot.plot_parse_data import plot_parse_data
 from auv_nav.tools.time_conversions import epoch_to_day
 from auv_nav.tools.folder_structure import get_config_folder, get_raw_folder
 from auv_nav.tools.folder_structure import get_processed_folder
+from auv_nav.tools.console import Console
 from auv_nav.parsers.vehicle import Vehicle
 from auv_nav.parsers.mission import Mission
 
 
-def parse_data(filepath, ftype):
+def parse_data(filepath, ftype, force_overwite):
     # initiate data and processing flags
     filepath = Path(filepath).resolve()
 
@@ -43,9 +44,10 @@ def parse_data(filepath, ftype):
     vehicle_file = filepath / 'vehicle.yaml'
     mission_file = get_raw_folder(mission_file)
     vehicle_file = get_raw_folder(vehicle_file)
-    print('Loading mission.yaml at {0}'.format(mission_file))
+    Console.info('Loading mission.yaml at {0}'.format(mission_file))
     mission = Mission(mission_file)
-    print('Loading vehicle.yaml at {0}'.format(vehicle_file))
+
+    Console.info('Loading vehicle.yaml at {0}'.format(vehicle_file))
     vehicle = Vehicle(vehicle_file)
 
     # std factors and offsets defaults
@@ -96,12 +98,25 @@ def parse_data(filepath, ftype):
     # copy mission.yaml and vehicle.yaml to processed folder for process step
     mission_processed = get_processed_folder(mission_file)
     vehicle_processed = get_processed_folder(vehicle_file)
-    mission_file.copy(mission_processed)
+
+    # If there is a mission file in the destination folder means
+    # that the dataset has already been processed. So ask the user
+    # whether to overwrite it or not.
+    if mission_processed.exists() and not force_overwite:
+        Console.warn('Looks like this dataset has already been parsed.')
+        Console.warn('The default behaviour of auv_nav is NOT to overwrite an already parsed dataset.')
+        Console.warn('If you would like to force so, rerun auv_nav with the flag -F.')
+        Console.warn('Example:   auv_nav parse -F PATH')
+        Console.quit('auv_nav parse would overwrite mission.yaml in proccessed folder')
+
+    # Write mission with metadata (username, date and hostname)
+    mission.write(mission_processed)
+    # mission_file.copy(mission_processed)
     vehicle_file.copy(vehicle_processed)
 
     # check for recognised formats and create nav file
     outpath = get_processed_folder(filepath)
-    print('Checking output format')
+    Console.info('Output format: {}'.format(ftype))
     if ftype == 'oplab':  # or (ftype is not 'acfr'):
         outpath = outpath / 'nav'
         filename = 'nav_standard.json'
@@ -118,9 +133,7 @@ def parse_data(filepath, ftype):
                     + '\nMAGNETIC_VAR_DEG ' + str(float(0)))
             f.write(data)
     else:
-        print('Error: -o', ftype, 'not recognised')
-        # syntax_error()
-        return
+        Console.quit('Output format not recognised.')
 
     # make file path if not exist
     if not outpath.is_dir():
@@ -132,7 +145,7 @@ def parse_data(filepath, ftype):
     # create file (overwrite if exists)
     nav_file = outpath / filename
     with nav_file.open('w') as fileout:
-        print('Loading raw data')
+        Console.info('Loading raw data')
 
         if multiprocessing.cpu_count() < 4:
             cpu_to_use = 1
@@ -236,12 +249,10 @@ def parse_data(filepath, ftype):
                         [mission, vehicle, 'altitude',
                          ftype, outpath, filename]))
         pool.close()
-        print('Wait for parsing threads to finish...')
         pool.join()
-        print('...done. All parsing threads have finished processing.')
-        print('...done loading raw data.')
+        Console.info('...done loading raw data.')
 
-        print('Compile data list...')
+        Console.info('Compile data list...')
         data_list = [[{
             'epoch_timestamp': 0.0,
             'class': 'origin',
@@ -256,9 +267,9 @@ def parse_data(filepath, ftype):
         for i in pool_list:
             results = i.get()
             data_list.append(results)
-        print('...done compiling data list.')
+        Console.info('...done compiling data list.')
 
-        print('Writing to output file...')
+        Console.info('Writing to output file...')
         if ftype == 'acfr':
             data_string = ''
             for i in data_list:
@@ -273,7 +284,7 @@ def parse_data(filepath, ftype):
             json.dump(data_list_temp, fileout, indent=2)
             del data_list_temp
         del data_list
-        print('... done writing to output file.')
+        Console.info('... done writing to output file.')
 
         # if chemical_flag == 1:
         #     print('Loading chemical data...')
@@ -283,11 +294,11 @@ def parse_data(filepath, ftype):
 
     fileout.close()
     # interlace the data based on timestamps
-    print('Interlacing data...')
+    Console.info('Interlacing data...')
     parse_interlacer(ftype, outpath, filename)
-    print('...done interlacing data. Output saved to {}'.format(outpath /filename))
+    Console.info('...done interlacing data. Output saved to {}'.format(outpath /filename))
 
     if ftype == 'oplab':
         plot_parse_data(outpath, ftype)
 
-    print('Complete parse data')
+    Console.info('Complete parse data')

@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="auv_nav",
-    version="0.0.1rc4",
+    version='0.0.1.5',
     author="Jin Lim, Blair Thornton",
     author_email="author@example.com",
     description="Parsers for navigation data for oplab and acfr formats",

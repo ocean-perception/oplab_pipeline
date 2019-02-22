@@ -1,3 +1,4 @@
+from auv_nav.tools.console import Console
 from pathlib import Path
 
 
@@ -9,7 +10,7 @@ def change_subfolder(path, prior, new):
     new_path = Path(*parts)
     if not new_path.exists():
         dummy_path = Path(*parts[:-1])
-        print('The path {} does not exist. I am creating it for you.'.format(path))
+        Console.info('The path {} does not exist. I am creating it for you.'.format(path))
         dummy_path.mkdir(exist_ok=True, parents=True)
     return new_path
 
@@ -26,7 +27,7 @@ def get_folder(path, name):
     elif 'configuration' in path.parts:
         return change_subfolder(path, 'configuration', name)
     else:
-        print("The folder {0} does not belong to \
+        Console.error("The folder {0} does not belong to \
                any dataset folder structure.".format(
                 str(path)))
 

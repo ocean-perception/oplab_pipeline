@@ -1,3 +1,4 @@
+from auv_nav.tools.console import Console
 from pathlib import Path
 import pandas as pd
 
@@ -9,7 +10,7 @@ def write_csv(csv_filepath, data_list, csv_filename, csv_flag):
         if not csv_file.exists():
             csv_file.mkdir(parents=True, exist_ok=True)
 
-        print("Writing outputs to {}.csv ...".format(csv_filename))
+        Console.info("Writing outputs to {}.csv ...".format(csv_filename))
         file = csv_file / '{}.csv'.format(csv_filename)
         str_to_write = ''
         str_to_write += 'Timestamp, Northing [m], Easting [m], Depth [m], ' \
@@ -51,7 +52,7 @@ def write_csv(csv_filepath, data_list, csv_filename, csv_flag):
             with file.open('w') as fileout:
                 fileout.write(str_to_write)
         else:
-            print('WARNING: empty data list ', str(csv_filename))
+            Console.warn('Empty data list ' + str(csv_filename))
 
 
 # First column of csv file - image file naming step probably not very robust
@@ -62,7 +63,7 @@ def camera_csv(camera_list, camera_name, csv_filepath, csv_flag):
         if csv_file.exists() is False:
             csv_file.mkdir(parents=True, exist_ok=True)
 
-        print("Writing outputs to {}.csv ...".format(camera_name))
+        Console.info("Writing outputs to {}.csv ...".format(camera_name))
         file = csv_file / '{}.csv'.format(camera_name)
         str_to_write = ''
         str_to_write += 'Imagenumber, Northing [m], Easting [m], Depth [m], ' \
@@ -104,7 +105,7 @@ def other_data_csv(data_list, data_name, csv_filepath, csv_flag):
         csv_file.mkdir(parents=True, exist_ok=True)
 
     if csv_flag is True:
-        print("Writing outputs to {}.csv ...".format(data_name))
+        Console.info("Writing outputs to {}.csv ...".format(data_name))
         # csv_header =
         csv_row_data_list = []
         for i in data_list:
@@ -127,7 +128,7 @@ def write_raw_sensor_csv(csv_filepath, data_list, csv_filename):
         if not csv_file.exists():
             csv_file.mkdir(parents=True, exist_ok=True)
 
-        print("Writing raw sensor to {}.csv ...".format(csv_filename))
+        Console.info("Writing raw sensor to {}.csv ...".format(csv_filename))
         file = csv_file / '{}.csv'.format(csv_filename)
         str_to_write = ''
         str_to_write += data_list[0].write_csv_header()
@@ -137,4 +138,4 @@ def write_raw_sensor_csv(csv_filepath, data_list, csv_filename):
         with file.open('w') as fileout:
             fileout.write(str_to_write)
     else:
-        print('WARNING: empty data list ', str(csv_filename))
+        Console.warn('Empty data list ', str(csv_filename))

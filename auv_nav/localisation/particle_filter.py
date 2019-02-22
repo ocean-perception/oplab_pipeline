@@ -4,6 +4,7 @@ Copyright (c) 2018, University of Southampton
 All rights reserved.
 """
 
+from auv_nav.tools.console import Console
 from auv_nav.tools.interpolate import interpolate_dvl, interpolate_usbl
 from auv_nav.tools.body_to_inertial import body_to_inertial
 from auv_nav.sensors import SyncedOrientationBodyVelocity, Usbl
@@ -205,7 +206,7 @@ class ParticleFilter:
         particles_list = []
         usbl_datapoints = []
 
-        print('Initializing particles around first point of dead reckoning solution offset by averaged usbl readings')
+        # print('Initializing particles around first point of dead reckoning solution offset by averaged usbl readings')
         # Interpolate dvl_imu_data to usbl_data to initializing particles at first appropriate usbl timestamp.
         # if dvl_imu_data[dvl_imu_data_index].epoch_timestamp > usbl_data[usbl_data_index].epoch_timestamp:
         #     while dvl_imu_data[dvl_imu_data_index].epoch_timestamp > usbl_data[usbl_data_index].epoch_timestamp:
@@ -223,7 +224,7 @@ class ParticleFilter:
         elif usbl_data[usbl_data_index].epoch_timestamp < dvl_imu_data[dvl_imu_data_index].epoch_timestamp:
             while usbl_data[usbl_data_index+1].epoch_timestamp < dvl_imu_data[dvl_imu_data_index].epoch_timestamp:
                 if len(usbl_data) - 2 == usbl_data_index:
-                    print('USBL data does not span to DVL data. Is your data right?')
+                    Console.warn('USBL data does not span to DVL data. Is your data right?')
                     break
                 usbl_data_index += 1
             # interpolated_data = interpolate_data(usbl_data[usbl_data_index].epoch_timestamp, dvl_imu_data[dvl_imu_data_index], dvl_imu_data[dvl_imu_data_index+1])
@@ -234,7 +235,7 @@ class ParticleFilter:
             usbl_data_index += 1
             dvl_imu_data_index += 1
         else:
-            sys.exit("Fatal error. Check dvl_imu_data and usbl_data in particle_filter.py.")
+            Console.quit("Check dvl_imu_data and usbl_data in particle_filter.py.")
         usbl_datapoints.append(usbl_data[usbl_data_index-1])
         particles_list.append(particles)
 
@@ -261,7 +262,7 @@ class ParticleFilter:
                         usbl_avr_uncertainty = sum(usbl_uncertainty_list)/len(usbl_uncertainty_list)
 
                         if max_uncertainty >= usbl_avr_uncertainty:
-                            print ('RESAMPLED! {}'.format(n), max_uncertainty, usbl_noise(usbl_data[usbl_data_index]))
+                            Console.info('RESAMPLED! {} {} {}'.format(n, max_uncertainty, usbl_noise(usbl_data[usbl_data_index])))
                             n += 1
                             max_uncertainty = 0
                             new_particles = measurement_update(N, usbl_data[usbl_data_index], particles_list)
