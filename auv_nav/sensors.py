@@ -196,6 +196,24 @@ class BodyVelocity(OutputFormat):
         self.y_velocity_std = json['data'][1]['y_velocity_std']
         self.z_velocity_std = json['data'][2]['z_velocity_std']
 
+    def write_csv_header(self):
+        return ('epoch_timestamp,'
+                + 'x_velocity,'
+                + 'y_velocity,'
+                + 'z_velocity,'
+                + 'x_velocity_std,'
+                + 'y_velocity_std,'
+                + 'z_velocity_std\n')
+
+    def to_csv(self):
+        return (str(self.epoch_timestamp) + ','
+                + str(self.x_velocity) + ','
+                + str(self.y_velocity) + ','
+                + str(self.z_velocity) + ','
+                + str(self.x_velocity_std) + ','
+                + str(self.y_velocity_std) + ','
+                + str(self.z_velocity_std) + '\n')
+
     def _to_json(self):
         data = {
             'epoch_timestamp': float(self.epoch_timestamp),
@@ -368,6 +386,24 @@ class Orientation(OutputFormat):
         self.pitch_std = json['data'][2]['pitch_std']
         self.yaw_std = json['data'][0]['heading_std']
 
+    def write_csv_header(self):
+        return ('epoch_timestamp,'
+                + 'roll,'
+                + 'pitch,'
+                + 'yaw,'
+                + 'roll_std,'
+                + 'pitch_std,'
+                + 'yaw_std\n')
+
+    def to_csv(self):
+        return (str(self.epoch_timestamp) + ','
+                + str(self.roll) + ','
+                + str(self.pitch) + ','
+                + str(self.yaw) + ','
+                + str(self.roll_std) + ','
+                + str(self.pitch_std) + ','
+                + str(self.yaw_std) + '\n')
+
     def _to_json(self):
         data = {
             'epoch_timestamp': float(self.epoch_timestamp),
@@ -442,6 +478,16 @@ class Depth(OutputFormat):
         self.depth = json['data'][0]['depth']
         self.depth_std = json['data'][0]['depth_std']
 
+    def write_csv_header(self):
+        return ('epoch_timestamp,'
+                + 'depth,'
+                + 'depth_std\n')
+
+    def to_csv(self):
+        return (str(self.epoch_timestamp) + ','
+                + str(self.depth) + ','
+                + str(self.depth_std) + '\n')
+
     def _to_json(self):
         data = {
             'epoch_timestamp': float(self.epoch_timestamp),
@@ -496,6 +542,14 @@ class Altitude(OutputFormat):
     def from_json(self, json):
         self.epoch_timestamp = json['epoch_timestamp']
         self.altitude = json['data'][0]['altitude']
+
+    def write_csv_header(self):
+        return ('epoch_timestamp,'
+                + 'altitude\n')
+
+    def to_csv(self):
+        return (str(self.epoch_timestamp) + ','
+                + str(self.altitude) + '\n')
 
     def _to_json(self):
         data = {
@@ -564,6 +618,34 @@ class Usbl(OutputFormat):
         self.depth = json['data_target'][4]['depth']
         self.depth_std = json['data_target'][4]['depth_std']
         self.distance_to_ship = json['data_target'][5]['distance_to_ship']
+
+    def write_csv_header(self):
+        return ('epoch_timestamp,'
+                + 'latitude,'
+                + 'longitude,'
+                + 'northings,'
+                + 'eastings,'
+                + 'depth,'
+                + 'distance_to_ship,'
+                + 'latitude_std,'
+                + 'longitude_std,'
+                + 'northings_std,'
+                + 'eastings_std,'
+                + 'depth_std\n')
+
+    def to_csv(self):
+        return (str(self.epoch_timestamp) + ','
+                + str(self.latitude) + ','
+                + str(self.longitude) + ','
+                + str(self.northings) + ','
+                + str(self.eastings) + ','
+                + str(self.depth) + ','
+                + str(self.distance_to_ship) + ','
+                + str(self.latitude_std) + ','
+                + str(self.longitude_std) + ','
+                + str(self.northings_std) + ','
+                + str(self.eastings_std) + ','
+                + str(self.depth_std) + '\n')
 
     def _to_json(self):
         data = {

@@ -24,10 +24,7 @@ class Index():
     VROLL = 9
     VPITCH = 10
     VYAW = 11
-    AX = 12
-    AY = 13
-    AZ = 14
-    DIM = 15
+    DIM = 12
 
 
 class EkfState(object):
@@ -35,10 +32,10 @@ class EkfState(object):
         # The real-valued time, in seconds, since some epoch
         self.time = time
 
-        # A 15 dimensional state vector
+        # A 12 dimensional state vector
         self.state = state
 
-        # A 15x15 covariance matrix
+        # A 12x12 covariance matrix
         self.covariance = covariance
 
     def set(self, state, covariance):
@@ -55,13 +52,13 @@ class EkfState(object):
 class Measurement(object):
     def __init__(self, sensors_std):
         # The measurement and its associated covariance
-        self.measurement = np.zeros(15, dtype=float)
-        self.covariance = np.zeros((15, 15), dtype=float)
+        self.measurement = np.zeros(12, dtype=float)
+        self.covariance = np.zeros((12, 12), dtype=float)
         self.sensors_std = sensors_std
 
         # This defines which variables within this measurement
         # actually get passed into the filter.
-        self.update_vector = np.zeros(15, dtype=int)
+        self.update_vector = np.zeros(12, dtype=int)
 
         # The real-valued time, in seconds, since some epoch
         self.time = 0.0
@@ -74,11 +71,11 @@ class Measurement(object):
         depth_std_offset = self.sensors_std['depth']['offset']
         self.time = value.epoch_timestamp
         self.measurement[Index.Z] = value.depth
-        if (depth_std_offset > 0 and depth_std_offset > 0):
+        if value.depth_std > 0:
+            self.covariance[Index.Z, Index.Z] = value.depth_std**2
+        else:
             self.covariance[Index.Z, Index.Z] = (
                 value.depth*depth_std_factor + depth_std_offset)
-        else:
-            self.covariance[Index.Z, Index.Z] = value.depth_std
         self.update_vector[Index.Z] = 1
 
     def from_dvl(self, value):
@@ -92,12 +89,18 @@ class Measurement(object):
         self.measurement[Index.VX] = value.x_velocity
         self.measurement[Index.VY] = value.y_velocity
         self.measurement[Index.VZ] = value.z_velocity
-        self.covariance[Index.VX, Index.VX] = (
-            abs(value.x_velocity)*velocity_std_factor+velocity_std_offset)
-        self.covariance[Index.VY, Index.VY] = (
-            abs(value.y_velocity)*velocity_std_factor+velocity_std_offset)
-        self.covariance[Index.VZ, Index.VZ] = (
-            abs(value.z_velocity)*velocity_std_factor+velocity_std_offset)
+
+        if value.x_velocity_std > 0:
+            self.covariance[Index.VX, Index.VX] = value.x_velocity_std**2
+            self.covariance[Index.VX, Index.VX] = value.y_velocity_std**2
+            self.covariance[Index.VX, Index.VX] = value.z_velocity_std**2
+        else:
+            self.covariance[Index.VX, Index.VX] = (
+                abs(value.x_velocity)*velocity_std_factor+velocity_std_offset)
+            self.covariance[Index.VY, Index.VY] = (
+                abs(value.y_velocity)*velocity_std_factor+velocity_std_offset)
+            self.covariance[Index.VZ, Index.VZ] = (
+                abs(value.z_velocity)*velocity_std_factor+velocity_std_offset)
         self.update_vector[Index.VX] = 1
         self.update_vector[Index.VY] = 1
         self.update_vector[Index.VZ] = 1
@@ -113,8 +116,13 @@ class Measurement(object):
         self.time = value.epoch_timestamp
         self.measurement[Index.X] = value.northings
         self.measurement[Index.Y] = value.eastings
-        self.covariance[Index.X, Index.X] = error
-        self.covariance[Index.Y, Index.Y] = error
+
+        if value.northings_std > 0:
+            self.covariance[Index.X, Index.X] = value.northings_std**2
+            self.covariance[Index.Y, Index.Y] = value.eastings_std**2
+        else:
+            self.covariance[Index.X, Index.X] = error
+            self.covariance[Index.Y, Index.Y] = error
         self.update_vector[Index.X] = 1
         self.update_vector[Index.Y] = 1
 
@@ -126,12 +134,18 @@ class Measurement(object):
         self.measurement[Index.ROLL] = value.roll*math.pi/180.
         self.measurement[Index.PITCH] = value.pitch*math.pi/180.
         self.measurement[Index.YAW] = value.yaw*math.pi/180.
-        self.covariance[Index.ROLL, Index.ROLL] = (
-            imu_noise_std_offset + value.roll*imu_noise_std_factor)
-        self.covariance[Index.PITCH, Index.PITCH] = (
-            imu_noise_std_offset + value.pitch*imu_noise_std_factor)
-        self.covariance[Index.YAW, Index.YAW] = (
-            imu_noise_std_offset + value.yaw*imu_noise_std_factor)
+
+        if value.roll_std > 0:
+            self.covariance[Index.ROLL, Index.ROLL] = (value.roll_std*math.pi/180.)**2
+            self.covariance[Index.PITCH, Index.PITCH] = (value.pitch*math.pi/180.)**2
+            self.covariance[Index.YAW, Index.YAW] = (value.yaw*math.pi/180.)**2
+        else:
+            self.covariance[Index.ROLL, Index.ROLL] = (
+                imu_noise_std_offset + value.roll*imu_noise_std_factor)
+            self.covariance[Index.PITCH, Index.PITCH] = (
+                imu_noise_std_offset + value.pitch*imu_noise_std_factor)
+            self.covariance[Index.YAW, Index.YAW] = (
+                imu_noise_std_offset + value.yaw*imu_noise_std_factor)
         self.update_vector[Index.ROLL] = 1
         self.update_vector[Index.PITCH] = 1
         self.update_vector[Index.YAW] = 1
@@ -344,38 +358,26 @@ class EkfImpl(object):
         sp = math.sin(pitch)
         cy = math.cos(yaw)
         sy = math.sin(yaw)
+        cpi = 1. / cp
+        tp = sp * cpi
 
         f = np.eye(Index.DIM, dtype=float)
         f[Index.X, Index.VX] = cy * cp * delta
         f[Index.X, Index.VY] = (cy * sp * sr - sy * cr) * delta
         f[Index.X, Index.VZ] = (cy * sp * cr + sy * sr) * delta
-        f[Index.X, Index.AX] = 0.5 * f[Index.X, Index.VX] * delta
-        f[Index.X, Index.AY] = 0.5 * f[Index.X, Index.VY] * delta
-        f[Index.X, Index.AZ] = 0.5 * f[Index.X, Index.VZ] * delta
         f[Index.Y, Index.VX] = sy * cp * delta
         f[Index.Y, Index.VY] = (sy * sp * sr + cy * cr) * delta
         f[Index.Y, Index.VZ] = (sy * sp * cr - cy * sr) * delta
-        f[Index.Y, Index.AX] = 0.5 * f[Index.Y, Index.VX] * delta
-        f[Index.Y, Index.AY] = 0.5 * f[Index.Y, Index.VY] * delta
-        f[Index.Y, Index.AZ] = 0.5 * f[Index.Y, Index.VZ] * delta
         f[Index.Z, Index.VX] = -sp * delta
         f[Index.Z, Index.VY] = cp * sr * delta
         f[Index.Z, Index.VZ] = cp * cr * delta
-        f[Index.Z, Index.AX] = 0.5 * f[Index.Z, Index.VX] * delta
-        f[Index.Z, Index.AY] = 0.5 * f[Index.Z, Index.VY] * delta
-        f[Index.Z, Index.AZ] = 0.5 * f[Index.Z, Index.VZ] * delta
-        f[Index.ROLL, Index.VROLL] = f[Index.X, Index.VX]
-        f[Index.ROLL, Index.VPITCH] = f[Index.X, Index.VY]
-        f[Index.ROLL, Index.VYAW] = f[Index.X, Index.VZ]
-        f[Index.PITCH, Index.VROLL] = f[Index.Y, Index.VX]
-        f[Index.PITCH, Index.VPITCH] = f[Index.Y, Index.VY]
-        f[Index.PITCH, Index.VYAW] = f[Index.Y, Index.VZ]
-        f[Index.YAW, Index.VROLL] = f[Index.Z, Index.VX]
-        f[Index.YAW, Index.VPITCH] = f[Index.Z, Index.VY]
-        f[Index.YAW, Index.VYAW] = f[Index.Z, Index.VZ]
-        f[Index.VX, Index.AX] = delta
-        f[Index.VY, Index.AY] = delta
-        f[Index.VZ, Index.AZ] = delta
+        f[Index.ROLL, Index.VROLL] = delta
+        f[Index.ROLL, Index.VPITCH] = sr * tp * delta
+        f[Index.ROLL, Index.VYAW] = cr * tp * delta
+        f[Index.PITCH, Index.VPITCH] = cr * delta
+        f[Index.PITCH, Index.VYAW] = -sr * delta
+        f[Index.YAW, Index.VPITCH] = sr * cpi * delta
+        f[Index.YAW, Index.VYAW] = cr * cpi * delta
         return f
 
     def compute_transfer_function_jacobian(self, delta, state, f):
@@ -388,9 +390,6 @@ class EkfImpl(object):
         vroll = state[Index.VROLL]
         vpitch = state[Index.VPITCH]
         vyaw = state[Index.VYAW]
-        ax = state[Index.AX]
-        ay = state[Index.AY]
-        az = state[Index.AZ]
 
         cr = math.cos(roll)
         sr = math.sin(roll)
@@ -398,69 +397,59 @@ class EkfImpl(object):
         sp = math.sin(pitch)
         cy = math.cos(yaw)
         sy = math.sin(yaw)
+        cpi = 1. / cp
+        tp = sp * cpi
 
         x_coeff = 0.0
         y_coeff = 0.0
         z_coeff = 0.0
-        half_t_squared = 0.5 * delta * delta
 
         y_coeff = cy * sp * cr + sy * sr
         z_coeff = -cy * sp * sr + sy * cr
-        dFx_dR = ((y_coeff * vy + z_coeff * vz) * delta
-                  + (y_coeff * ay + z_coeff * az) * half_t_squared)
-        dFR_dR = 1 + (y_coeff * vpitch + z_coeff * vyaw) * delta
+        dFx_dR = (y_coeff * vy + z_coeff * vz) * delta
+        dFR_dR = 1.0 + (cr * tp * vpitch - sr * tp * vyaw) * delta
 
         x_coeff = -cy * sp
         y_coeff = cy * cp * sr
         z_coeff = cy * cp * cr
         dFx_dP = (
-            (x_coeff * vx + y_coeff * vy + z_coeff * vz) * delta
-            + (x_coeff * ax + y_coeff * ay + z_coeff * az) * half_t_squared)
-        dFR_dP = (x_coeff * vroll + y_coeff * vpitch + z_coeff * vyaw) * delta
+            (x_coeff * vx + y_coeff * vy + z_coeff * vz) * delta)
+        dFR_dP = (cpi * cpi * sr * vpitch + cpi * cpi * cr * vyaw) * delta
 
         x_coeff = -sy * cp
         y_coeff = -sy * sp * sr - cy * cr
         z_coeff = -sy * sp * cr + cy * sr
-        dFx_dY = (
-            (x_coeff * vx + y_coeff * vy + z_coeff * vz) * delta
-            + (x_coeff * ax + y_coeff * ay + z_coeff * az) * half_t_squared)
-        dFR_dY = (x_coeff * vroll + y_coeff * vpitch + z_coeff * vyaw) * delta
+        dFx_dY = (x_coeff * vx + y_coeff * vy + z_coeff * vz) * delta
+        # dFR_dY = (x_coeff * vroll + y_coeff * vpitch + z_coeff * vyaw) * delta
 
         y_coeff = sy * sp * cr - cy * sr
         z_coeff = -sy * sp * sr - cy * cr
-        dFy_dR = ((y_coeff * vy + z_coeff * vz) * delta
-                  + (y_coeff * ay + z_coeff * az) * half_t_squared)
-        dFP_dR = (y_coeff * vpitch + z_coeff * vyaw) * delta
+        dFy_dR = ((y_coeff * vy + z_coeff * vz) * delta)
+        dFP_dR = (-sr * vpitch - cr * vyaw) * delta
 
         x_coeff = -sy * sp
         y_coeff = sy * cp * sr
         z_coeff = sy * cp * cr
-        dFy_dP = (
-            (x_coeff * vx + y_coeff * vy + z_coeff * vz) * delta
-            + (x_coeff * ax + y_coeff * ay + z_coeff * az) * half_t_squared)
-        dFP_dP = 1 + (x_coeff * vroll + y_coeff * vpitch + z_coeff * vyaw) * delta
+        dFy_dP = (x_coeff * vx + y_coeff * vy + z_coeff * vz) * delta
+        # dFP_dP = 1 + (x_coeff * vroll + y_coeff * vpitch + z_coeff * vyaw) * delta
 
         x_coeff = cy * cp
         y_coeff = cy * sp * sr - sy * cr
         z_coeff = cy * sp * cr + sy * sr
         dFy_dY = (
-            (x_coeff * vx + y_coeff * vy + z_coeff * vz) * delta
-            + (x_coeff * ax + y_coeff * ay + z_coeff * az) * half_t_squared)
-        dFP_dY = (x_coeff * vroll + y_coeff * vpitch + z_coeff * vyaw) * delta
+            (x_coeff * vx + y_coeff * vy + z_coeff * vz) * delta)
+        # dFP_dY = (x_coeff * vroll + y_coeff * vpitch + z_coeff * vyaw) * delta
 
         y_coeff = cp * cr
         z_coeff = -cp * sr
-        dFz_dR = ((y_coeff * vy + z_coeff * vz) * delta
-                  + (y_coeff * ay + z_coeff * az) * half_t_squared)
-        dFY_dR = (y_coeff * vpitch + z_coeff * vyaw) * delta
+        dFz_dR = (y_coeff * vy + z_coeff * vz) * delta
+        dFY_dR = (cr * cpi * vpitch - sr * cpi * vyaw) * delta
 
         x_coeff = -cp
         y_coeff = -sp * sr
         z_coeff = -sp * cr
-        dFz_dP = (
-            (x_coeff * vx + y_coeff * vy + z_coeff * vz) * delta
-            + (x_coeff * ax + y_coeff * ay + z_coeff * az) * half_t_squared)
-        dFY_dP = (x_coeff * vroll + y_coeff * vpitch + z_coeff * vyaw) * delta
+        dFz_dP = (x_coeff * vx + y_coeff * vy + z_coeff * vz) * delta
+        dFY_dP = (sr * tp * cpi * vpitch - cr * tp * cpi * vyaw) * delta
 
         tfjac = copy.deepcopy(f)
         tfjac[Index.X, Index.ROLL] = dFx_dR
@@ -473,10 +462,10 @@ class EkfImpl(object):
         tfjac[Index.Z, Index.PITCH] = dFz_dP
         tfjac[Index.ROLL, Index.ROLL] = dFR_dR
         tfjac[Index.ROLL, Index.PITCH] = dFR_dP
-        tfjac[Index.ROLL, Index.YAW] = dFR_dY
+        # tfjac[Index.ROLL, Index.YAW] = dFR_dY
         tfjac[Index.PITCH, Index.ROLL] = dFP_dR
-        tfjac[Index.PITCH, Index.PITCH] = dFP_dP
-        tfjac[Index.PITCH, Index.YAW] = dFP_dY
+        # tfjac[Index.PITCH, Index.PITCH] = dFP_dP
+        # tfjac[Index.PITCH, Index.YAW] = dFP_dY
         tfjac[Index.YAW, Index.ROLL] = dFY_dR
         tfjac[Index.YAW, Index.PITCH] = dFY_dP
         return tfjac
@@ -520,23 +509,29 @@ class ExtendedKalmanFilter(object):
             if usbl_idx < len(usbl_list):
                 usbl_stamp = usbl_list[usbl_idx].epoch_timestamp
             else:
-                # Fake a later USBL measurement to force EKF to read DR
+                # Fake a posterior USBL measurement to force EKF to read DR
                 usbl_stamp = dr_stamp + 1
+
             m = Measurement(sensors_std)
             f_upda_time = self.ekf.get_last_update_time()
+
             # m.from_synced_orientation_body_velocity(dr_list[dr_idx])
             # dr_idx += 1
+
             if dr_stamp < usbl_stamp:
                 m.from_synced_orientation_body_velocity(dr_list[dr_idx])
                 dr_idx += 1
             elif usbl_idx < len(usbl_list):
                 m.from_usbl(usbl_list[usbl_idx])
                 usbl_idx += 1
+
             last_update_delta = m.time - f_upda_time
-            self.ekf.predict(m.time, last_update_delta)
+
+            if last_update_delta > 0:
+                self.ekf.predict(m.time, last_update_delta)
             self.ekf.correct(m)
         print("EKF finished, smoothing with EKS...")
-        self.ekf.smooth(enable=False)
+        self.ekf.smooth(enable=True)
         print("EKS finished")
 
     def get_result(self):
@@ -558,7 +553,6 @@ class ExtendedKalmanFilter(object):
         state = np.array([[x, y, z,
                           roll, pitch, heading,
                           vx, vy, vz,
-                          0, 0, 0,
                           0, 0, 0]])
         return state
 
@@ -585,8 +579,8 @@ class ExtendedKalmanFilter(object):
                                             dr_list[dr_index + 1].northings))
         usbl_eastings = [i.eastings for i in usbl_list]
         usbl_northings = [i.northings for i in usbl_list]
-        eastings_error = [x - y for x, y in zip(dr_eastings, usbl_eastings)]
-        northings_error = [x - y for x, y in zip(dr_northings, usbl_northings)]
+        eastings_error = [y - x for x, y in zip(dr_eastings, usbl_eastings)]
+        northings_error = [y - x for x, y in zip(dr_northings, usbl_northings)]
         eastings_mean = np.mean(eastings_error)
         northings_mean = np.mean(northings_error)
 
@@ -609,4 +603,4 @@ class ExtendedKalmanFilter(object):
         state[0, Index.Y] = state[0, Index.Y] - eastings_mean
         print(state)
 
-        return state.T, 0, 0
+        return state.T, dr_index, usbl_index
