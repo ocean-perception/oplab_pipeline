@@ -118,3 +118,23 @@ def other_data_csv(data_list, data_name, csv_filepath, csv_flag):
         # , na_rep='-') https://www.youtube.com/watch?v=hmYdzvmcTD8
         df.to_csv(csv_file / '{}.csv'.format(data_name),
                   header=True, index=False)
+
+
+def write_raw_sensor_csv(csv_filepath, data_list, csv_filename):
+    if len(data_list) > 0:
+        # check the relvant folders exist and if note create them
+        csv_file = Path(csv_filepath)
+        if not csv_file.exists():
+            csv_file.mkdir(parents=True, exist_ok=True)
+
+        print("Writing raw sensor to {}.csv ...".format(csv_filename))
+        file = csv_file / '{}.csv'.format(csv_filename)
+        str_to_write = ''
+        str_to_write += data_list[0].write_csv_header()
+
+        for d in data_list:
+            str_to_write += d.to_csv()
+        with file.open('w') as fileout:
+            fileout.write(str_to_write)
+    else:
+        print('WARNING: empty data list ', str(csv_filename))

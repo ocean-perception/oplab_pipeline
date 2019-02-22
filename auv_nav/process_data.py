@@ -11,7 +11,7 @@ from auv_nav.tools.time_conversions import epoch_from_json
 from auv_nav.tools.time_conversions import epoch_to_datetime
 from auv_nav.tools.latlon_wgs84 import metres_to_latlon
 from auv_nav.tools.body_to_inertial import body_to_inertial
-from auv_nav.tools.csv_tools import write_csv
+from auv_nav.tools.csv_tools import write_csv, write_raw_sensor_csv
 from auv_nav.tools.csv_tools import camera_csv
 from auv_nav.tools.csv_tools import other_data_csv
 from auv_nav.sensors import BodyVelocity, InertialVelocity
@@ -169,12 +169,19 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
         if 'ekf' in load_localisation:
             ekf_activate = load_localisation['ekf']['activate']
             ekf_process_noise_covariance = load_localisation['ekf']['process_noise_covariance']
-            ekf_process_noise_covariance = np.asarray(
-                ekf_process_noise_covariance).reshape((15, 15))
-            ekf_initial_estimate_covariance = load_localisation[
-                'ekf']['initial_estimate_covariance']
-            ekf_initial_estimate_covariance = np.asarray(
-                ekf_initial_estimate_covariance).reshape((15, 15))
+            ekf_initial_estimate_covariance = load_localisation['ekf']['initial_estimate_covariance']
+            if len(ekf_process_noise_covariance) != 144:
+                d = np.asarray(
+                    ekf_process_noise_covariance).reshape((15, 15))
+                ekf_process_noise_covariance = d[0:12, 0:12]
+                d = np.asarray(
+                    ekf_initial_estimate_covariance).reshape((15, 15))
+                ekf_initial_estimate_covariance = d[0:12, 0:12]
+            else:
+                ekf_process_noise_covariance = np.asarray(
+                    ekf_process_noise_covariance).reshape((12, 12))
+                ekf_initial_estimate_covariance = np.asarray(
+                    ekf_initial_estimate_covariance).reshape((12, 12))
         if 'csv_output' in load_localisation:
             # csv_active
             csv_output_activate = load_localisation['csv_output']['activate']
@@ -344,6 +351,13 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
 
         print('Complete parse of: {}'.format(nav_standard_file))
         print('Writing outputs to: {}'.format(renavpath))
+
+        raw_sensor_path = renavpath / 'csv' / 'sensors'
+        write_raw_sensor_csv(raw_sensor_path, velocity_body_list, 'velocity_body_raw')
+        write_raw_sensor_csv(raw_sensor_path, altitude_list, 'altitude_raw')
+        write_raw_sensor_csv(raw_sensor_path, orientation_list, 'orientation_raw')
+        write_raw_sensor_csv(raw_sensor_path, depth_list, 'depth_raw')
+        write_raw_sensor_csv(raw_sensor_path, usbl_list, 'usbl_raw')
 
     # ACFR mode
     if ftype == 'acfr':
@@ -554,6 +568,9 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
         dead_reckoning_dvl.roll = orientation_list[i].roll
         dead_reckoning_dvl.pitch = orientation_list[i].pitch
         dead_reckoning_dvl.yaw = orientation_list[i].yaw
+        dead_reckoning_dvl.roll_std = orientation_list[i].roll_std
+        dead_reckoning_dvl.pitch_std = orientation_list[i].pitch_std
+        dead_reckoning_dvl.yaw_std = orientation_list[i].yaw_std
         dead_reckoning_dvl.x_velocity = interpolate(
             orientation_list[i].epoch_timestamp,
             velocity_body_list[j].epoch_timestamp,
@@ -572,6 +589,24 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
             velocity_body_list[j+1].epoch_timestamp,
             velocity_body_list[j].z_velocity,
             velocity_body_list[j+1].z_velocity)
+        dead_reckoning_dvl.x_velocity_std = interpolate(
+            orientation_list[i].epoch_timestamp,
+            velocity_body_list[j].epoch_timestamp,
+            velocity_body_list[j+1].epoch_timestamp,
+            velocity_body_list[j].x_velocity_std,
+            velocity_body_list[j+1].x_velocity_std)
+        dead_reckoning_dvl.y_velocity_std = interpolate(
+            orientation_list[i].epoch_timestamp,
+            velocity_body_list[j].epoch_timestamp,
+            velocity_body_list[j+1].epoch_timestamp,
+            velocity_body_list[j].y_velocity_std,
+            velocity_body_list[j+1].y_velocity_std)
+        dead_reckoning_dvl.z_velocity_std = interpolate(
+            orientation_list[i].epoch_timestamp,
+            velocity_body_list[j].epoch_timestamp,
+            velocity_body_list[j+1].epoch_timestamp,
+            velocity_body_list[j].z_velocity_std,
+            velocity_body_list[j+1].z_velocity_std)
 
         [x_offset, y_offset, z_offset] = body_to_inertial(
             orientation_list[i].roll,
@@ -584,6 +619,18 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
         dead_reckoning_dvl.north_velocity = x_offset
         dead_reckoning_dvl.east_velocity = y_offset
         dead_reckoning_dvl.down_velocity = z_offset
+
+        [x_offset, y_offset, z_offset] = body_to_inertial(
+            orientation_list[i].roll,
+            orientation_list[i].pitch,
+            orientation_list[i].yaw,
+            dead_reckoning_dvl.x_velocity_std,
+            dead_reckoning_dvl.y_velocity_std,
+            dead_reckoning_dvl.z_velocity_std)
+
+        dead_reckoning_dvl.north_velocity_std = x_offset
+        dead_reckoning_dvl.east_velocity_std = y_offset
+        dead_reckoning_dvl.down_velocity_std = z_offset
 
         # double check this step, i.e. what if velocity_body_list timestamps not = altitude timestamps
         while n < len(altitude_list)-1 and n < len(velocity_body_list)-1 and orientation_list[i].epoch_timestamp > altitude_list[n+1].epoch_timestamp and orientation_list[i].epoch_timestamp > velocity_body_list[n+1].epoch_timestamp:
@@ -643,7 +690,7 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
     # correct for altitude and depth offset too!
 
     # remove first term if first time_orientation is < velocity_body time
-    if interpolate_remove_flag == True:
+    if interpolate_remove_flag:
 
         # del time_orientation[0]
         del dead_reckoning_centre_list[0]
