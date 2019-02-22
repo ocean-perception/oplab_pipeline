@@ -6,6 +6,7 @@ All rights reserved.
 
 from auv_nav.parse_data import parse_data
 from auv_nav.process_data import process_data
+from auv_nav.tools.console import Console
 
 import sys
 import argparse
@@ -23,6 +24,8 @@ def main(args=None):
     When called from a python script or module, pass the arguments as list,
     e.g. main(["parse", "-h"]). This will populate the args parameter.
     """
+
+    Console.info('Running auv_nav version ' + str(Console.get_version()))
 
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
@@ -44,6 +47,8 @@ def main(args=None):
     subparser_parse.add_argument(
         '-f', '--format', dest='format', default="oplab", help="Format in which \
         the data is output. 'oplab' or 'acfr'. Default: 'oplab'.")
+    subparser_parse.add_argument(
+        '-F', '--Force', dest='force', action='store_true', help="Force file overwite")
     subparser_parse.set_defaults(func=call_parse_data)
 
 #   subparser_visualise = subparsers.add_parser(
@@ -71,6 +76,8 @@ def main(args=None):
         the data to be processed is stored. 'oplab' or 'acfr'. Default: \
         'oplab'.")
     subparser_process.add_argument(
+        '-F', '--Force', dest='force', action='store_true', help="Force file overwite")
+    subparser_process.add_argument(
         '-s', '--start', dest='start_datetime', default='', help="Start date & \
         time in YYYYMMDDhhmmss from which data will be processed. If not set, \
         start at beginning of dataset.")
@@ -90,11 +97,11 @@ def main(args=None):
 
 
 def call_parse_data(args):
-    parse_data(args.path, args.format)
+    parse_data(args.path, args.format, args.force)
 
 
 def call_process_data(args):
-    process_data(args.path, args.format,
+    process_data(args.path, args.format, args.force,
                  args.start_datetime, args.end_datetime)
 
 

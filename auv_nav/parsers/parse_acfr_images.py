@@ -11,6 +11,7 @@ import os
 # sys.path.append("..")
 from auv_nav.tools.time_conversions import date_time_to_epoch
 from auv_nav.tools.folder_structure import get_raw_folder
+from auv_nav.tools.console import Console
 
 epoch_timestamp_camera1 = []
 epoch_timestamp_camera2 = []
@@ -56,7 +57,7 @@ def parse_acfr_images(mission,
     # convert to seconds from utc
     # timeoffset = -timezone_offset*60*60 + timeoffset
 
-    print('Parsing', sensor_string, 'images')
+    Console.info('Parsing ' + sensor_string + ' images')
 
     # determine file paths
 

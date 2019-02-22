@@ -11,9 +11,11 @@ import math
 # http://www.json.org/
 # sys.path.append("..")
 from auv_nav.tools.time_conversions import date_time_to_epoch
+from auv_nav.tools.time_conversions import read_timezone
 from auv_nav.tools.latlon_wgs84 import latlon_to_metres
 from auv_nav.tools.latlon_wgs84 import metres_to_latlon
 from auv_nav.tools.folder_structure import get_raw_folder
+from auv_nav.tools.console import Console
 
 
 def parse_usbl_dump(mission, vehicle, category, ftype, outpath, fileoutname):
@@ -38,24 +40,13 @@ def parse_usbl_dump(mission, vehicle, category, ftype, outpath, fileoutname):
     longitude_reference = mission.origin.longitude
 
     # read in timezone
-    if isinstance(timezone, str):
-        if timezone == 'utc' or timezone == 'UTC':
-            timezone_offset = 0
-        elif timezone == 'jst' or timezone == 'JST':
-            timezone_offset = 9
-    else:
-        try:
-            timezone_offset = float(timezone)
-        except ValueError:
-            print('Error: timezone', timezone,
-                  'in mission.cfg not recognised, please enter value from UTC in hours')
-            return
+    timezone_offset = read_timezone(timezone)
 
     # convert to seconds from utc
     # timeoffset = -timezone_offset*60*60 + timeoffset
 
     # extract data from files
-    print('...... parsing usbl dump')
+    Console.info('...... parsing usbl dump')
     data_list = []
     if ftype == 'acfr':
         data_list = ''

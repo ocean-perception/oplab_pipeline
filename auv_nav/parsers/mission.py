@@ -2,6 +2,26 @@ import yaml
 import sys
 from auv_nav.tools.folder_structure import get_config_folder
 from auv_nav.tools.folder_structure import get_raw_folder
+from auv_nav.tools.console import Console
+
+
+# Workaround to dump OrderedDict into YAML files
+from collections import OrderedDict
+
+
+def represent_ordereddict(dumper, data):
+    value = []
+
+    for item_key, item_value in data.items():
+        node_key = dumper.represent_data(item_key)
+        node_value = dumper.represent_data(item_value)
+
+        value.append((node_key, node_value))
+
+    return yaml.nodes.MappingNode(u'tag:yaml.org,2002:map', value)
+
+
+yaml.add_representer(OrderedDict, represent_ordereddict)
 
 
 class OriginEntry:
@@ -22,13 +42,24 @@ class OriginEntry:
         self.crs = node['coordinate_reference_system']
         self.date = node['date']
 
+    def write(self, node):
+        node['latitude'] = self.latitude
+        node['longitude'] = self.longitude
+        node['coordinate_reference_system'] = self.crs
+        node['date'] = self.date
+
 
 class CameraEntry:
-    def __init__(self, node = None):
+    def __init__(self, node=None):
         if node is not None:
             self.name = node['name']
             self.type = node['type']
             self.path = node['path']
+
+    def write(self, node):
+        node['name'] = self.name
+        node['type'] = self.type
+        node['path'] = self.path
 
 
 class ImageEntry:
@@ -72,6 +103,17 @@ class ImageEntry:
                 self.cameras[1].type = 'bayer_rggb'
                 self.cameras[1].path = node['filepath']
 
+    def write(self, node):
+        node['format'] = self.format
+        node['timezone'] = self.timezone
+        node['timeoffset'] = self.timeoffset
+        node['cameras'] = []
+        for c in self.cameras:
+            cam_dict = OrderedDict()
+            c.write(cam_dict)
+            node['cameras'].append(cam_dict)
+
+
 class DefaultEntry:
     def __init__(self):
         self.format = ''
@@ -105,6 +147,17 @@ class DefaultEntry:
         if 'std_offset' in node:
             self.std_offset = node['std_offset']
 
+    def write(self, node):
+        node['format'] = self.format
+        node['timezone'] = self.timezone
+        node['timeoffset'] = self.timeoffset
+        node['filepath'] = self.filepath
+        node['filename'] = self.filename
+        node['label'] = self.label
+        node['id'] = self.label
+        node['std_factor'] = self.std_factor
+        node['std_offset'] = self.std_offset
+
 
 class Mission:
     def __init__(self, filename=None):
@@ -120,8 +173,7 @@ class Mission:
         if filename is None:
             return
 
-        mission_file = get_raw_folder(filename)
-        with mission_file.open('r') as stream:
+        with filename.open('r') as stream:
             data = yaml.load(stream)
             if 'version' in data:
                 self.version = data['version']
@@ -138,3 +190,31 @@ class Mission:
                 self.usbl.load(data['usbl'])
             if 'image' in data:
                 self.image.load(data['image'], self.version)
+
+    def write_metadata(self, node):
+        node['username'] = Console.get_username()
+        node['date'] = Console.get_date()
+        node['hostname'] = Console.get_hostname()
+        node['version'] = Console.get_version()
+
+    def write(self, filename):
+        with filename.open('w') as f:
+            mission_dict = OrderedDict()
+            mission_dict['version'] = 1
+            mission_dict['metadata'] = OrderedDict()
+            mission_dict['origin'] = OrderedDict()
+            mission_dict['velocity'] = OrderedDict()
+            mission_dict['orientation'] = OrderedDict()
+            mission_dict['depth'] = OrderedDict()
+            mission_dict['altitude'] = OrderedDict()
+            mission_dict['usbl'] = OrderedDict()
+            mission_dict['image'] = OrderedDict()
+            self.write_metadata(mission_dict['metadata'])
+            self.origin.write(mission_dict['origin'])
+            self.velocity.write(mission_dict['velocity'])
+            self.orientation.write(mission_dict['orientation'])
+            self.depth.write(mission_dict['depth'])
+            self.altitude.write(mission_dict['altitude'])
+            self.usbl.write(mission_dict['usbl'])
+            self.image.write(mission_dict['image'])
+            yaml.dump(mission_dict, f, allow_unicode=True, default_flow_style=False)

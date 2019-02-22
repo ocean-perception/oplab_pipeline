@@ -7,6 +7,7 @@ All rights reserved.
 import json
 from array import array
 from operator import itemgetter
+from auv_nav.tools.console import Console
 
 
 def sort_values(value, order_index=1):
@@ -32,7 +33,7 @@ def parse_interlacer(ftype, outpath, filename):
                     value.append(str(float(data_packet['epoch_timestamp'])))
 
         except ValueError:
-            print('Error: no data in JSON file')
+            Console.quit('Error: no data in JSON file')
 
         # sort data in order of epoch_timestamp
         sorted_index, sorted_items = sort_values(value)
@@ -55,7 +56,7 @@ def parse_interlacer(ftype, outpath, filename):
                     data_original.append(line)
 
         except ValueError:
-                print('Error: no data in RAW.auv file')
+            Console.quit('Error: no data in RAW.auv file')
 
         # sort data in order of epoch_timestamp
         sorted_index, sorted_items = sort_values(value)

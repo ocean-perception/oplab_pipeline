@@ -9,6 +9,7 @@
 from auv_nav.tools.time_conversions import date_time_to_epoch
 from auv_nav.tools.time_conversions import epoch_to_day
 from auv_nav.tools.folder_structure import get_raw_folder
+from auv_nav.tools.console import Console
 
 
 def parse_seaxerocks_images(mission,
@@ -73,6 +74,7 @@ def parse_seaxerocks_images(mission,
 
     i = 0
     # read in timezone
+    # TODO change ALL timezones to integers
     if isinstance(timezone, str):
         if timezone == 'utc' or timezone == 'UTC':
             timezone_offset = 0
@@ -89,7 +91,7 @@ def parse_seaxerocks_images(mission,
     # convert to seconds from utc
     # timeoffset = -timezone_offset*60*60 + timeoffset
 
-    print('Parsing', sensor_string, 'images')
+    Console.info('Parsing ' + sensor_string + 'images')
 
     cam1_path = get_raw_folder(outpath / '..' / camera1_filepath / '..')
     cam1_filetime = cam1_path / 'FileTime.csv'
@@ -197,7 +199,7 @@ def parse_seaxerocks_images(mission,
             laser_index_timestamps = line.strip().split(',')
 
             if len(laser_index_timestamps) < 4:
-                print('Warning: The laser FileTime.csv is apparently corrupt...')
+                Console.warn('The laser FileTime.csv is apparently corrupt...')
                 continue
             index_string = laser_index_timestamps[0]
             date_string = laser_index_timestamps[1]

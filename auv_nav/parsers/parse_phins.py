@@ -8,6 +8,7 @@ from auv_nav.sensors import BodyVelocity, InertialVelocity
 from auv_nav.sensors import Orientation, Depth, Altitude
 from auv_nav.sensors import Category, Timestamp, PhinsHeaders
 from auv_nav.tools.folder_structure import get_raw_folder
+from auv_nav.tools.console import Console
 
 
 class PhinsParser():
@@ -75,16 +76,15 @@ class PhinsParser():
                 return True
 
             else:
-                    print('Broken packet: ', line)
-                    print('Check sum calculated ',
-                          hex(string_sum).zfill(2).upper())
-                    print('Does not match that provided', check_sum.upper())
-                    print('Ignore and move on')
+                    Console.warn('Broken packet: ' + str(line))
+                    Console.warn('Check sum calculated ' + str(hex(string_sum).zfill(2).upper()))
+                    Console.warn('Does not match that provided ' + str(check_sum.upper()))
+                    Console.warn('Ignore and move on')
         return False
 
     def parse(self):
         # parse phins data
-        print('...... parsing phins standard data')
+        Console.info('...... parsing phins standard data')
 
         data_list = []
         path = get_raw_folder(self.outpath / '..' / self.filepath / self.filename)

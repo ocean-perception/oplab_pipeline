@@ -32,6 +32,7 @@ from auv_nav.tools.folder_structure import get_config_folder
 from auv_nav.tools.folder_structure import get_processed_folder
 from auv_nav.parsers.vehicle import Vehicle
 from auv_nav.parsers.mission import Mission
+from auv_nav.tools.console import Console
 
 
 # Import librarys
@@ -55,7 +56,7 @@ csv files and, if plot is True, save plots
 """
 
 
-def process_data(filepath, ftype, start_datetime, finish_datetime):
+def process_data(filepath, ftype, force_overwite, start_datetime, finish_datetime):
     # placeholders
     interpolate_remove_flag = False
 
@@ -116,18 +117,18 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
     # load auv_nav.yaml for particle filter and other setup
     filepath = Path(filepath).resolve()
     filepath = get_processed_folder(filepath)
-    print('Loading auv_nav.yaml')
+    Console.info('Loading auv_nav.yaml')
     localisation_file = filepath / 'auv_nav.yaml'
     localisation_file = get_config_folder(localisation_file)
 
     # check if auv_nav.yaml file exist, if not, generate one with default settings
     if localisation_file.exists():
-        print("Loading existing auv_nav.yaml at {}".format(localisation_file))
+        Console.info("Loading existing auv_nav.yaml at {}".format(localisation_file))
     else:
         root = Path(__file__).parents[1]
         default_localisation = root / 'auv_nav/default_yaml' / 'auv_nav.yaml'
-        print("default_localisation: {}".format(default_localisation))
-        print("Cannot find {}, generating default from {}".format(
+        Console.info("default_localisation: {}".format(default_localisation))
+        Console.warn("Cannot find {}, generating default from {}".format(
             localisation_file, default_localisation))
         # save localisation yaml to processed directory
         default_localisation.copy(localisation_file)
@@ -210,7 +211,7 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
             pdf_plot = load_localisation['plot_output']['pdf_plot']
             html_plot = load_localisation['plot_output']['html_plot']
 
-    print('Loading vehicle.yaml')
+    Console.info('Loading vehicle.yaml')
     vehicle_file = filepath / 'vehicle.yaml'
     vehicle_file = get_processed_folder(vehicle_file)
     vehicle = Vehicle(vehicle_file)
@@ -228,7 +229,7 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
                        vehicle.chemical.sway,
                        vehicle.chemical.heave]
 
-    print('Loading mission.yaml')
+    Console.info('Loading mission.yaml')
     mission_file = filepath / 'mission.yaml'
     mission_file = get_processed_folder(mission_file)
     mission = Mission(mission_file)
@@ -239,7 +240,7 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
 
         nav_standard_file = outpath / 'nav_standard.json'
         nav_standard_file = get_processed_folder(nav_standard_file)
-        print('Loading json file {}'.format(nav_standard_file))
+        Console.info('Loading json file {}'.format(nav_standard_file))
         with nav_standard_file.open('r') as nav_standard:
             parsed_json_data = json.load(nav_standard)
 
@@ -339,20 +340,19 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
                 renavpath.mkdir()
             except Exception as e:
                 print("Warning:", e)
+        elif renavpath.is_dir() and not force_overwite:
+            # Check if dataset has already been processed
+            Console.warn('Looks like this dataset has already been processed.')
+            Console.warn('The default behaviour of auv_nav is NOT to overwrite an already processed dataset.')
+            Console.warn('If you would like to force so, rerun auv_nav with the flag -F.')
+            Console.warn('Example:   auv_nav process -F PATH')
+            Console.quit('auv_nav process would overwrite json_renav files')
 
-        print('velocity_body_list: {}'.format(len(velocity_body_list)))
-        print('altitude_list: {}'.format(len(altitude_list)))
-        print('velocity_inertial_list: {}'.format(len(velocity_inertial_list)))
-        print('orientation_list: {}'.format(len(orientation_list)))
-        print('depth_list: {}'.format(len(depth_list)))
-        print('usbl_list: {}'.format(len(usbl_list)))
-        print('camera1_list: {}'.format(len(camera1_list)))
-        print('camera2_list: {}'.format(len(camera2_list)))
-
-        print('Complete parse of: {}'.format(nav_standard_file))
-        print('Writing outputs to: {}'.format(renavpath))
+        Console.info('Complete parse of: {}'.format(nav_standard_file))
+        Console.info('Writing outputs to: {}'.format(renavpath))
 
         raw_sensor_path = renavpath / 'csv' / 'sensors'
+
         write_raw_sensor_csv(raw_sensor_path, velocity_body_list, 'velocity_body_raw')
         write_raw_sensor_csv(raw_sensor_path, altitude_list, 'altitude_raw')
         write_raw_sensor_csv(raw_sensor_path, orientation_list, 'orientation_raw')
@@ -362,7 +362,7 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
     # ACFR mode
     if ftype == 'acfr':
         # extract_acfr()
-        print('Loading mission.cfg')
+        Console.info('Loading mission.cfg')
         mission_acfr = filepath / 'mission.cfg'
         with mission_acfr.open('r', encoding='utf-8', errors='ignore') as filein:
             for line in filein.readlines():
@@ -376,7 +376,7 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
 
         outpath = filepath / 'dRAWLOGS_cv'
         filename = outpath / 'combined.RAW.auv'
-        print('Loading acfr standard RAW.auv file {}'.format(filename))
+        Console.info('Loading acfr standard RAW.auv file {}'.format(filename))
 
         with filename.open('r', encoding='utf-8', errors='ignore') as filein:
             # setup the time window
@@ -481,15 +481,6 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
         camera3_ekf_list = copy.deepcopy(camera3_list)
         chemical_ekf_list = copy.deepcopy(chemical_list)
 
-        print('velocity_body_list: {}'.format(len(velocity_body_list)))
-        print('altitude_list: {}'.format(len(altitude_list)))
-        print('velocity_inertial_list: {}'.format(len(velocity_inertial_list)))
-        print('orientation_list: {}'.format(len(orientation_list)))
-        print('depth_list: {}'.format(len(depth_list)))
-        print('usbl_list: {}'.format(len(usbl_list)))
-        print('camera1_list: {}'.format(len(camera1_list)))
-        print('camera2_list: {}'.format(len(camera2_list)))
-
         # make folder to store csv and plots
         filename = ('acfr_renav_'
                     + start_datetime[0:8]
@@ -506,8 +497,8 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
             except Exception as e:
                 print("Warning:", e)
 
-        print('Complete parse of: {}'.format(filename))
-        print('Writing outputs to: {}'.format(renavpath))
+        Console.info('Complete parse of: {}'.format(filename))
+        Console.info('Writing outputs to: {}'.format(renavpath))
 
     # interpolate to find the appropriate depth to compute seafloor depth for each altitude measurement
     j = 0
@@ -528,9 +519,9 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
         usbl_list = usbl_filter(
             usbl_list, depth_list, sigma_factor, max_auv_speed, ftype)
         if len(usbl_list) == 0:
-            print('Filtering USBL measurements lead to an empty list. ')
-            print(' * Is USBL reliable?')
-            print(' * Can you change filter parameters?')
+            Console.warn('Filtering USBL measurements lead to an empty list. ')
+            Console.warn(' * Is USBL reliable?')
+            Console.warn(' * Can you change filter parameters?')
 
     """
     Perform coordinate transformations and interpolations of state data
@@ -696,7 +687,7 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
         del dead_reckoning_centre_list[0]
         del dead_reckoning_dvl_list[0]
         interpolate_remove_flag = False  # reset flag
-    print('Complete interpolation and coordinate transfomations for velocity_body')
+    Console.info('Complete interpolation and coordinate transfomations for velocity_body')
 
 # perform interpolations of state data to velocity_inertial time stamps (without sensor offset and correct imu to dvl flipped interpolation) and perform deadreckoning
     # initialise counters for interpolation
@@ -781,7 +772,7 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
         if interpolate_remove_flag:
             del velocity_inertial_list[0]
             interpolate_remove_flag = False  # reset flag
-        print('Complete interpolation and coordinate transfomations for velocity_inertial')
+        Console.info('Complete interpolation and coordinate transfomations for velocity_inertial')
 
 # offset velocity DR by average usbl estimate
     # offset velocity body DR by average usbl estimate
@@ -829,6 +820,7 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
 
 # particle filter data fusion of usbl_data and dvl_imu_data
     if particle_filter_activate:
+        Console.info("Running PF...")
         pf_start_time = time.time()
         [pf_fusion_dvl_list,
          pf_usbl_datapoints,
@@ -847,7 +839,7 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
         pf_end_time = time.time()
         pf_elapsed_time = pf_end_time - pf_start_time
         # maybe save this as text alongside plotly outputs
-        print("particle filter with {} particles took {} seconds".format(
+        Console.info("PF with {} particles took {} seconds".format(
             particles_number, pf_elapsed_time))
         pf_fusion_centre_list = copy.deepcopy(pf_fusion_dvl_list)
         for i in range(len(pf_fusion_centre_list)):
@@ -879,6 +871,7 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
         # orientation_list, list of Orientation()
         # depth_list, list of Depth()
         # usbl_list, list of Usbl()
+        Console.info("Running EKF...")
         ekf = ExtendedKalmanFilter(ekf_initial_estimate_covariance,
                                    ekf_process_noise_covariance,
                                    sensors_std,
@@ -887,7 +880,7 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
         ekf_states = ekf.get_smoothed_result()
         ekf_end_time = time.time()
         ekf_elapsed_time = ekf_end_time - ekf_start_time
-        print("EKF took {} seconds".format(ekf_elapsed_time))
+        Console.info("EKF took {} seconds".format(ekf_elapsed_time))
         # TODO: convert from EKF states in meters to lat lon
         for s in ekf_states:
             b = SyncedOrientationBodyVelocity()
@@ -1026,7 +1019,7 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
 
         # plotly data in html
         if html_plot:
-            print('Plotting plotly data ...')
+            Console.info('Plotting plotly data ...')
             plotlypath = renavpath / 'interactive_plots'
             if plotlypath.is_dir() == 0:
                 try:
@@ -1072,7 +1065,7 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
                                       pf_particles_list,
                                       usbl_list,
                                       plotlypath)
-            print('Complete plot data: ', plotlypath)
+            Console.info('Complete plot data at: ' + str(plotlypath))
 
     csvpath = renavpath / 'csv'
     drcsvpath = csvpath / 'dead_reckoning'
@@ -1085,7 +1078,7 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
                 if not csvpath.exists():
                     csvpath.mkdir()
 
-                print("Writing outputs to auv_usbl.csv ...")
+                Console.info("Writing outputs to auv_usbl.csv ...")
                 auv_usbl_file = csvpath / 'auv_usbl.csv'
                 with auv_usbl_file.open('w') as fileout:
                     fileout.write(
@@ -1142,5 +1135,5 @@ def process_data(filepath, ftype, start_datetime, finish_datetime):
             camera_csv(camera3_ekf_list, 'auv_ekf_' +
                        mission.image.cameras[2].name, ekfcsvpath, csv_ekf_camera_3)
 
-    print('Complete extraction of data: {}'.format(csvpath))
-    print('Completed data extraction: {}'.format(renavpath))
+    Console.info('Complete extraction of data: {}'.format(csvpath))
+    Console.info('Completed data extraction: {}'.format(renavpath))

@@ -500,10 +500,10 @@ class ExtendedKalmanFilter(object):
         self.ekf.set_covariance(initial_estimate_covariance)
         self.ekf.set_process_noise_covariance(process_noise_covariance)
 
-        print('-------------------------------')
-        print("Running EKF...")
-        self.ekf.print_state()
-        print('-------------------------------')
+        # print('-------------------------------')
+        # print("Running EKF...")
+        # self.ekf.print_state()
+        # print('-------------------------------')
         while dr_idx < len(dr_list):
             dr_stamp = dr_list[dr_idx].epoch_timestamp
             if usbl_idx < len(usbl_list):
@@ -530,9 +530,9 @@ class ExtendedKalmanFilter(object):
             if last_update_delta > 0:
                 self.ekf.predict(m.time, last_update_delta)
             self.ekf.correct(m)
-        print("EKF finished, smoothing with EKS...")
+        # print("EKF finished, smoothing with EKS...")
         self.ekf.smooth(enable=True)
-        print("EKS finished")
+        # print("EKS finished")
 
     def get_result(self):
         return self.ekf.get_states()
@@ -584,7 +584,7 @@ class ExtendedKalmanFilter(object):
         eastings_mean = np.mean(eastings_error)
         northings_mean = np.mean(northings_error)
 
-        print('Offsetting DR navigation by USBL error offset: ({:.2f}, {:.2f})'.format(northings_mean, eastings_mean))
+        # print('Offsetting DR navigation by USBL error offset: ({:.2f}, {:.2f})'.format(northings_mean, eastings_mean))
 
         dr_index = 0
         usbl_index = 0
@@ -595,12 +595,7 @@ class ExtendedKalmanFilter(object):
             while usbl_index < len(usbl_list) and dr_list[dr_index].epoch_timestamp > usbl_list[usbl_index].epoch_timestamp:
                 usbl_index += 1
 
-        print('Picked usbl_index of ', usbl_index)
-        print('Picked dr of ', dr_index)
-
         state = self.build_state(usbl_list[usbl_index], dr_list[dr_index])
         state[0, Index.X] = state[0, Index.X] - northings_mean
         state[0, Index.Y] = state[0, Index.Y] - eastings_mean
-        print(state)
-
         return state.T, dr_index, usbl_index
