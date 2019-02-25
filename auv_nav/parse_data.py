@@ -192,7 +192,7 @@ def parse_data(filepath, ftype, force_overwite):
                         [mission, vehicle, 'usbl',
                          ftype, outpath, filename]))
             else:
-                Console.quit('Mission image format {} not supported.'
+                Console.quit('Mission usbl format {} not supported.'
                              .format(mission.usbl.format))
 
         if not mission.velocity.empty():
@@ -210,7 +210,7 @@ def parse_data(filepath, ftype, force_overwite):
                         [mission, vehicle, 'velocity',
                          ftype, outpath, filename]))
             else:
-                Console.quit('Mission image format {} not supported.'
+                Console.quit('Mission velocity format {} not supported.'
                              .format(mission.velocity.format))
 
         if not mission.orientation.empty():
@@ -228,7 +228,7 @@ def parse_data(filepath, ftype, force_overwite):
                         [mission, vehicle, 'orientation',
                          ftype, outpath, filename]))
             else:
-                Console.quit('Mission image format {} not supported.'
+                Console.quit('Mission orientation format {} not supported.'
                              .format(mission.orientation.format))
 
         if not mission.depth.empty():
@@ -246,7 +246,7 @@ def parse_data(filepath, ftype, force_overwite):
                         [mission, vehicle, 'depth',
                          ftype, outpath, filename]))
             else:
-                Console.quit('Mission image format {} not supported.'
+                Console.quit('Mission depth format {} not supported.'
                              .format(mission.depth.format))
 
         if not mission.altitude.empty():
@@ -264,7 +264,7 @@ def parse_data(filepath, ftype, force_overwite):
                         [mission, vehicle, 'altitude',
                          ftype, outpath, filename]))
             else:
-                Console.quit('Mission image format {} not supported.'
+                Console.quit('Mission altitude format {} not supported.'
                              .format(mission.altitude.format))
         pool.close()
         pool.join()
