@@ -169,11 +169,14 @@ def parse_data(filepath, ftype, force_overwite):
                     pool.apply_async(parse_acfr_images,
                                      [mission, vehicle, 'images',
                                       ftype, outpath, filename]))
-            if mission.image.format == "seaxerocks_3":
+            elif mission.image.format == "seaxerocks_3":
                 pool_list.append(
                     pool.apply_async(parse_seaxerocks_images,
                                      [mission, vehicle, 'images',
                                       ftype, outpath, filename]))
+            else:
+                Console.quit('Mission image format {} not supported.'
+                             .format(mission.image.format))
         if not mission.usbl.empty():
             print('Loading usbl data...')
             if mission.usbl.format == "gaps":
@@ -182,12 +185,15 @@ def parse_data(filepath, ftype, force_overwite):
                         parse_gaps,
                         [mission, vehicle, 'usbl',
                          ftype, outpath, filename]))
-            if mission.usbl.format == "usbl_dump":
+            elif mission.usbl.format == "usbl_dump":
                 pool_list.append(
                     pool.apply_async(
                         parse_usbl_dump,
                         [mission, vehicle, 'usbl',
                          ftype, outpath, filename]))
+            else:
+                Console.quit('Mission image format {} not supported.'
+                             .format(mission.usbl.format))
 
         if not mission.velocity.empty():
             print('Loading velocity data...')
@@ -197,12 +203,15 @@ def parse_data(filepath, ftype, force_overwite):
                         parse_phins,
                         [mission, vehicle, 'velocity',
                          ftype, outpath, filename]))
-            if mission.velocity.format == "ae2000":
+            elif mission.velocity.format == "ae2000":
                 pool_list.append(
                     pool.apply_async(
                         parse_ae2000,
                         [mission, vehicle, 'velocity',
                          ftype, outpath, filename]))
+            else:
+                Console.quit('Mission image format {} not supported.'
+                             .format(mission.velocity.format))
 
         if not mission.orientation.empty():
             print('Loading orientation data...')
@@ -212,12 +221,15 @@ def parse_data(filepath, ftype, force_overwite):
                         parse_phins,
                         [mission, vehicle, 'orientation',
                          ftype, outpath, filename]))
-            if mission.orientation.format == "ae2000":
+            elif mission.orientation.format == "ae2000":
                 pool_list.append(
                     pool.apply_async(
                         parse_ae2000,
                         [mission, vehicle, 'orientation',
                          ftype, outpath, filename]))
+            else:
+                Console.quit('Mission image format {} not supported.'
+                             .format(mission.orientation.format))
 
         if not mission.depth.empty():
             print('Loading depth data...')
@@ -227,12 +239,15 @@ def parse_data(filepath, ftype, force_overwite):
                         parse_phins,
                         [mission, vehicle, 'depth',
                          ftype, outpath, filename]))
-            if mission.depth.format == "ae2000":
+            elif mission.depth.format == "ae2000":
                 pool_list.append(
                     pool.apply_async(
                         parse_ae2000,
                         [mission, vehicle, 'depth',
                          ftype, outpath, filename]))
+            else:
+                Console.quit('Mission image format {} not supported.'
+                             .format(mission.depth.format))
 
         if not mission.altitude.empty():
             print('Loading altitude data...')
@@ -242,12 +257,15 @@ def parse_data(filepath, ftype, force_overwite):
                         parse_phins,
                         [mission, vehicle, 'altitude',
                          ftype, outpath, filename]))
-            if mission.altitude.format == "ae2000":
+            elif mission.altitude.format == "ae2000":
                 pool_list.append(
                     pool.apply_async(
                         parse_ae2000,
                         [mission, vehicle, 'altitude',
                          ftype, outpath, filename]))
+            else:
+                Console.quit('Mission image format {} not supported.'
+                             .format(mission.altitude.format))
         pool.close()
         pool.join()
         Console.info('...done loading raw data.')
