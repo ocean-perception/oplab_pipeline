@@ -71,13 +71,14 @@ If you are using a different distribution, you might have to to install all pack
 
 ## Usage ##
 
-auv_nav has 2 commands:
-- `parse`, which reads raw data from multiple sensors and writes it in chornological order to a text file in an intermediate data format. There are 2 different intermediate formats to choose: "oplab" or "acfr"
+auv_nav has 3commands:
+- `parse`, which reads raw data from multiple sensors and writes it in chornological order to a text file in an intermediate oplab data format.
 - `process`, which outputs previously parsed data in a format that the 3D mapping pipeline can read
+- `convert`, which converts previously parsed data to ACFR format at this moment.
 
 `auv_nav parse` usage:
 ```
-auv_nav parse [-h] [-f FORMAT] path
+auv_nav parse [-h] [-F] path
 
 positional arguments:
   path                  Folderpath where the (raw) input data is. Needs to be
@@ -86,16 +87,14 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
-  -f FORMAT, --format FORMAT
-                        Format in which the data is output. 'oplab' or 'acfr'.
-                        Default: 'oplab'.
+  -F, --Force           Force file overwrite
 ```
-The algorithm replicated the same folder structure as the input data, but instead of using a subfolder of 'raw', a folder 'processed' is created (if doesn't already exist), with the same succession of subfolders as there are in 'raw'. The mission.yaml and the vehicle.yaml files are copied to this folder. When using the 'oplab' format, the interlaced data is written in oplab format to a file called 'nav_standard.json' in a subfolder called 'nav'. When using the 'acfr' format, the interlaced data is written in acfr format to a file called combined.RAW.auv in a folder called dRAWLOGS_cv.
+The algorithm replicated the same folder structure as the input data, but instead of using a subfolder of 'raw', a folder 'processed' is created (if doesn't already exist), with the same succession of subfolders as there are in 'raw'. The mission.yaml and the vehicle.yaml files are copied to this folder. The interlaced data is written in oplab format to a file called 'nav_standard.json' in a subfolder called 'nav'.
 
 
 `auv_nav process` usage:
 ```
-auv_nav process [-h] [-f FORMAT] [-s START_DATETIME] [-e END_DATETIME] path
+auv_nav process [-h] [-F] [-s START_DATETIME] [-e END_DATETIME] path
 
 positional arguments:
   path                  Path to folder where the data to process is. The
@@ -103,9 +102,7 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
-  -f FORMAT, --format FORMAT
-                        Format in which the data to be processed is stored.
-                        'oplab' or 'acfr'. Default: 'oplab'.
+  -F, --Force           Force file overwrite
   -s START_DATETIME, --start START_DATETIME
                         Start date & time in YYYYMMDDhhmmss from which data
                         will be processed. If not set, start at beginning of
@@ -116,6 +113,29 @@ optional arguments:
                         dataset.
 ```
 
+`auv_nav convert` usage:
+```
+auv_nav convert [-h] [-f FORMAT] [-s START_DATETIME] [-e END_DATETIME] path
+
+positional arguments:
+  path                  Path to folder where the data to process is. The
+                        folder has to be generated using auv_nav parse.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -f FORMAT, --format FORMAT
+                        Format in which the data is output. Default: 'acfr'.
+  -s START_DATETIME, --start START_DATETIME
+                        Start date & time in YYYYMMDDhhmmss from which data
+                        will be processed. If not set, start at beginning of
+                        dataset.
+  -e END_DATETIME, --end END_DATETIME
+                        End date & time in YYYYMMDDhhmmss up to which data
+                        will be processed. If not set process to end of
+                        dataset.
+```
+The algorithm will read in the nav_standard.json file obtained after the parsing and will write the required formats and outputs. At v0.0.1.6 the following output formats are available:
+* acfr: The AFCR format uses a 'dRAWLOGS_cv' folder name and outputs its navigation solution to a file called 'combined.RAW.auv' as well as to a 'mission.cfg' to the processing folder root.
 
 ## Examples ##
 
@@ -327,12 +347,11 @@ An example dataset can be downloaded from the following link with the expected f
 
 Download, extract and specify the folder location and run as
 ```
-ACFR format:
-auv_nav parse ~/raw/2017/cruise/dive -f acfr
-
 OPLAB format:
-auv_nav parse ~/raw/2017/cruise/dive -f oplab
-auv_nav process ~/processed/2017/cruise/dive -f oplab -s 20170816032345 -e 20170816034030
+auv_nav parse -f oplab ~/raw/2017/cruise/dive
+auv_nav process -f oplab -s 20170816032345 -e 20170816034030  ~/processed/2017/cruise/dive
+Convert to ACFR
+auv_nav convert -f acfr ~/raw/2017/cruise/dive
 ```
 
 The coordinate frames used are those defined in Thor Fossen Guidance, Navigation and Control of Ocean Vehicles
