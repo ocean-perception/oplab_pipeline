@@ -65,7 +65,7 @@ camera3: # Laser Camera (LM165)
   pitch_deg: 0
   yaw_deg: 0
 
-payload:
+payload1:
   surge_m: 0.4
   sway_m: 0
   heave_m: -0.5
