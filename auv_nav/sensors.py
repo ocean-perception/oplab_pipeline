@@ -8,6 +8,7 @@ from auv_nav.tools.body_to_inertial import body_to_inertial
 from auv_nav.tools.time_conversions import date_time_to_epoch
 from auv_nav.tools.time_conversions import read_timezone
 from auv_nav.tools.console import Console
+from math import sqrt, atan2, pi
 import json as js
 
 
@@ -236,10 +237,22 @@ class BodyVelocity(OutputFormat):
             }
         return data
 
-    def _to_acfr(self):
-        # This function has to be called when altitude and orientation
-        # are available. Moved to PhinsParse class.
-        pass
+    def to_acfr(self, altitude, orientation):
+        sound_velocity = -9999
+        data = ('RDI: ' + str(float(self.epoch_timestamp))
+                + ' alt:' + str(float(altitude.altitude))
+                + ' r1:0 r2:0 r3:0 r4:0 '
+                + ' h:' + str(float(orientation.yaw))
+                + ' p:' + str(float(orientation.pitch))
+                + ' r:' + str(float(orientation.roll))
+                + ' vx:' + str(float(self.x_velocity))
+                + ' vy:' + str(float(self.y_velocity))
+                + ' vz:' + str(float(self.z_velocity))
+                + ' nx:0 ny:0 nz:0 COG:0 SOG:0 bt_status:0 '
+                + ' h_true:0 p_gimbal:0 '
+                + ' sv: ' + str(float(sound_velocity))
+                + '\n')
+        return data
 
 
 class InertialVelocity(OutputFormat):
@@ -257,7 +270,8 @@ class InertialVelocity(OutputFormat):
         self.east_velocity_std = None
         self.down_velocity_std = None
 
-        # interpolated data. mabye separate below to synced_velocity_inertial_orientation_...?
+        # interpolated data.
+        # maybe separate below to synced_velocity_inertial_orientation_...?
         self.roll = 0
         self.pitch = 0
         self.yaw = 0
@@ -322,7 +336,7 @@ class InertialVelocity(OutputFormat):
             }
         return data
 
-    def _to_acfr(self):
+    def to_acfr(self):
         pass
 
 
@@ -425,7 +439,7 @@ class Orientation(OutputFormat):
             }
         return data
 
-    def _to_acfr(self):
+    def to_acfr(self):
         data = ('PHINS_COMPASS: ' + str(float(self.epoch_timestamp))
                 + ' r: ' + str(float(self.roll))
                 + ' p: ' + str(float(self.pitch))
@@ -474,7 +488,8 @@ class Depth(OutputFormat):
                          + time_string + ' Exception: ' + str(exc))
 
     def from_json(self, json):
-        self.epoch_timestamp = json['epoch_timestamp_depth']
+        self.epoch_timestamp = json['epoch_timestamp']
+        self.depth_timestamp = json['epoch_timestamp_depth']
         self.depth = json['data'][0]['depth']
         self.depth_std = json['data'][0]['depth_std']
 
@@ -504,9 +519,9 @@ class Depth(OutputFormat):
             }
         return data
 
-    def _to_acfr(self):
-        data = ('PAROSCI: ' + str(float(self.depth_timestamp))
-                + ' ' + str(float(self.depth)) + '\n')
+    def to_acfr(self):
+        data = ('PAROSCI: ' + str(self.depth_timestamp)
+                + ' ' + str(self.depth) + '\n')
         return data
 
 
@@ -571,13 +586,14 @@ class Altitude(OutputFormat):
             }
         return data
 
-    def _to_acfr(self):
+    def to_acfr(self):
         pass
 
 
 class Usbl(OutputFormat):
     def __init__(self):
         self.epoch_timestamp = None
+        self.sensor_string = 'unknown'
 
         self.latitude = 0
         self.longitude = 0
@@ -593,6 +609,12 @@ class Usbl(OutputFormat):
         self.depth_std = 0
 
         self.distance_to_ship = 0
+
+        self.latitude_ship = 0
+        self.longitude_ship = 0
+        self.northings_ship = 0
+        self.eastings_ship = 0
+        self.heading_ship = 0
 
         ### temporary solution for fk180731 cruise
         # self.epoch_timestamp = 0 timestamp
@@ -618,6 +640,14 @@ class Usbl(OutputFormat):
         self.depth = json['data_target'][4]['depth']
         self.depth_std = json['data_target'][4]['depth_std']
         self.distance_to_ship = json['data_target'][5]['distance_to_ship']
+        try:
+            self.latitude_ship = json['data_ship'][0]['latitude']
+            self.longitude_ship = json['data_ship'][0]['longitude']
+            self.northings_ship = json['data_ship'][1]['northings']
+            self.eastings_ship = json['data_ship'][1]['eastings']
+            self.heading_ship = json['data_ship'][2]['heading']
+        except Exception as exc:
+            Console.warn('Please parse again this dataset.')
 
     def write_csv_header(self):
         return ('epoch_timestamp,'
@@ -649,28 +679,51 @@ class Usbl(OutputFormat):
 
     def _to_json(self):
         data = {
-            'epoch_timestamp': float(self.epoch_timestamp),
+            'epoch_timestamp': float(epoch_timestamp),
+            'class': 'measurement',
+            'sensor': self.sensor_string,
+            'frame': 'inertial',
             'category': Category.USBL,
-            'data_target': [
-                {
-                    'latitude': float(self.latitude),
-                    'latitude_std': float(self.latitude_std)
+            'data_ship': [{
+                'latitude': float(self.latitude_ship),
+                'longitude': float(self.longitude_ship)
                 }, {
-                    'longitude': float(self.longitude),
-                    'longitude_std': float(self.longitude_std)
+                'northings': float(self.northings_ship),
+                'eastings': float(self.eastings_ship)
                 }, {
-                    'northings': float(self.northings),
-                    'northings_std': float(self.northings_std)
+                'heading': float(self.heading_ship)}],
+            'data_target': [{
+                'latitude': float(self.latitude),
+                'latitude_std': float(self.latitude_std)
                 }, {
-                    'eastings': float(self.eastings),
-                    'eastings_std': float(self.eastings_std)
+                'longitude': float(self.longitude),
+                'longitude_std': float(self.longitude_std)
                 }, {
-                    'depth': float(self.depth),
-                    'depth_std': float(self.depth_std)
+                'northings': float(self.northings),
+                'northings_std': float(self.northings_std)
                 }, {
-                    'distance_to_ship': float(self.distance_to_ship),
-                }]
-            }
+                'eastings': float(self.eastings),
+                'eastings_std': float(self.eastings_std)
+                }, {
+                'depth': float(self.depth),
+                'depth_std': float(self.depth_std)
+                }, {
+                'distance_to_ship': float(self.distance_to_ship)}]}
+        return data
+
+    def to_acfr(self):
+        lateral_distance = sqrt(self.distance_to_ship**2 - self.depth**2)
+        bearing = atan2(self.eastings, self.northings)*180/pi
+
+        data = ('SSBL_FIX: ' + str(float(self.epoch_timestamp))
+                + ' ship_x: ' + str(float(self.northings_ship))
+                + ' ship_y: ' + str(float(self.eastings_ship))
+                + ' target_x: ' + str(float(self.northings))
+                + ' target_y: ' + str(float(self.eastings))
+                + ' target_z: ' + str(float(self.depth))
+                + ' target_hr: ' + str(float(lateral_distance))
+                + ' target_sr: ' + str(float(self.distance_to_ship))
+                + ' target_bearing: ' + str(float(bearing)) + '\n')
         return data
 
 
@@ -701,6 +754,12 @@ class Camera():
         else:
             self.epoch_timestamp = json['epoch_timestamp']
             self.filename = json['filename']
+
+    def to_acfr(self):
+        data = ('VIS: ' + str(self.epoch_timestamp)
+                + ' [' + str(self.epoch_timestamp)
+                + '] ' + str(self.filename) + ' exp: 0\n')
+        return data
 
 
 class Other():

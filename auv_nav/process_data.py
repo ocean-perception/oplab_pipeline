@@ -56,7 +56,7 @@ csv files and, if plot is True, save plots
 """
 
 
-def process_data(filepath, ftype, force_overwite, start_datetime, finish_datetime):
+def process_data(filepath, force_overwite, start_datetime, finish_datetime):
     # placeholders
     interpolate_remove_flag = False
 
@@ -234,272 +234,119 @@ def process_data(filepath, ftype, force_overwite, start_datetime, finish_datetim
     mission_file = get_processed_folder(mission_file)
     mission = Mission(mission_file)
 
-    # OPLAB mode
-    if ftype == 'oplab':  # or (ftype is not 'acfr'):
-        outpath = filepath / 'nav'
+    outpath = filepath / 'nav'
 
-        nav_standard_file = outpath / 'nav_standard.json'
-        nav_standard_file = get_processed_folder(nav_standard_file)
-        Console.info('Loading json file {}'.format(nav_standard_file))
-        with nav_standard_file.open('r') as nav_standard:
-            parsed_json_data = json.load(nav_standard)
+    nav_standard_file = outpath / 'nav_standard.json'
+    nav_standard_file = get_processed_folder(nav_standard_file)
+    Console.info('Loading json file {}'.format(nav_standard_file))
+    with nav_standard_file.open('r') as nav_standard:
+        parsed_json_data = json.load(nav_standard)
 
-        # setup start and finish date time
-        if start_datetime == '':
-            epoch_start_time = epoch_from_json(parsed_json_data[1])
-            start_datetime = epoch_to_datetime(epoch_start_time)
-        else:
-            epoch_start_time = string_to_epoch(start_datetime)
-        if finish_datetime == '':
-            epoch_finish_time = epoch_from_json(parsed_json_data[-1])
-            finish_datetime = epoch_to_datetime(epoch_finish_time)
-        else:
-            epoch_finish_time = string_to_epoch(finish_datetime)
+    # setup start and finish date time
+    if start_datetime == '':
+        epoch_start_time = epoch_from_json(parsed_json_data[1])
+        start_datetime = epoch_to_datetime(epoch_start_time)
+    else:
+        epoch_start_time = string_to_epoch(start_datetime)
+    if finish_datetime == '':
+        epoch_finish_time = epoch_from_json(parsed_json_data[-1])
+        finish_datetime = epoch_to_datetime(epoch_finish_time)
+    else:
+        epoch_finish_time = string_to_epoch(finish_datetime)
 
-        # read in data from json file
-        # i here is the number of the data packet
-        for i in range(len(parsed_json_data)):
-            epoch_timestamp = parsed_json_data[i]['epoch_timestamp']
-            if epoch_timestamp >= epoch_start_time and epoch_timestamp <= epoch_finish_time:
-                if 'velocity' in parsed_json_data[i]['category']:
-                    if 'body' in parsed_json_data[i]['frame']:
-                        # to check for corrupted data point which have inertial frame data values
-                        if 'epoch_timestamp_dvl' in parsed_json_data[i]:
-                            # confirm time stamps of dvl are aligned with main clock (within a second)
-                            if (abs(parsed_json_data[i]['epoch_timestamp']
-                               - parsed_json_data[i]['epoch_timestamp_dvl'])) < 1.0:
-                                velocity_body = BodyVelocity()
-                                velocity_body.from_json(parsed_json_data[i])
-                                velocity_body_list.append(velocity_body)
-                    if 'inertial' in parsed_json_data[i]['frame']:
-                        velocity_inertial = InertialVelocity()
-                        velocity_inertial.from_json(parsed_json_data[i])
-                        velocity_inertial_list.append(velocity_inertial)
+    # read in data from json file
+    # i here is the number of the data packet
+    for i in range(len(parsed_json_data)):
+        epoch_timestamp = parsed_json_data[i]['epoch_timestamp']
+        if epoch_timestamp >= epoch_start_time and epoch_timestamp <= epoch_finish_time:
+            if 'velocity' in parsed_json_data[i]['category']:
+                if 'body' in parsed_json_data[i]['frame']:
+                    # to check for corrupted data point which have inertial frame data values
+                    if 'epoch_timestamp_dvl' in parsed_json_data[i]:
+                        # confirm time stamps of dvl are aligned with main clock (within a second)
+                        if (abs(parsed_json_data[i]['epoch_timestamp']
+                           - parsed_json_data[i]['epoch_timestamp_dvl'])) < 1.0:
+                            velocity_body = BodyVelocity()
+                            velocity_body.from_json(parsed_json_data[i])
+                            velocity_body_list.append(velocity_body)
+                if 'inertial' in parsed_json_data[i]['frame']:
+                    velocity_inertial = InertialVelocity()
+                    velocity_inertial.from_json(parsed_json_data[i])
+                    velocity_inertial_list.append(velocity_inertial)
 
-                if 'orientation' in parsed_json_data[i]['category']:
-                    orientation = Orientation()
-                    orientation.from_json(parsed_json_data[i])
-                    orientation_list.append(orientation)
+            if 'orientation' in parsed_json_data[i]['category']:
+                orientation = Orientation()
+                orientation.from_json(parsed_json_data[i])
+                orientation_list.append(orientation)
 
-                if 'depth' in parsed_json_data[i]['category']:
-                    depth = Depth()
-                    depth.from_json(parsed_json_data[i])
-                    depth_list.append(depth)
+            if 'depth' in parsed_json_data[i]['category']:
+                depth = Depth()
+                depth.from_json(parsed_json_data[i])
+                depth_list.append(depth)
 
-                if 'altitude' in parsed_json_data[i]['category']:
-                    altitude = Altitude()
-                    altitude.from_json(parsed_json_data[i])
-                    altitude_list.append(altitude)
+            if 'altitude' in parsed_json_data[i]['category']:
+                altitude = Altitude()
+                altitude.from_json(parsed_json_data[i])
+                altitude_list.append(altitude)
 
-                if 'usbl' in parsed_json_data[i]['category']:
-                    usbl = Usbl()
-                    usbl.from_json(parsed_json_data[i])
-                    usbl_list.append(usbl)
+            if 'usbl' in parsed_json_data[i]['category']:
+                usbl = Usbl()
+                usbl.from_json(parsed_json_data[i])
+                usbl_list.append(usbl)
 
-                if 'image' in parsed_json_data[i]['category']:
-                    camera1 = Camera()
-                    # LC
-                    camera1.from_json(parsed_json_data[i], 'camera1')
-                    camera1_list.append(camera1)
-                    camera2 = Camera()
-                    camera2.from_json(parsed_json_data[i], 'camera2')
-                    camera2_list.append(camera2)
+            if 'image' in parsed_json_data[i]['category']:
+                camera1 = Camera()
+                # LC
+                camera1.from_json(parsed_json_data[i], 'camera1')
+                camera1_list.append(camera1)
+                camera2 = Camera()
+                camera2.from_json(parsed_json_data[i], 'camera2')
+                camera2_list.append(camera2)
 
-                if 'laser' in parsed_json_data[i]['category']:
-                    camera3 = Camera()
-                    camera3.from_json(parsed_json_data[i], 'camera3')
-                    camera3_list.append(camera3)
+            if 'laser' in parsed_json_data[i]['category']:
+                camera3 = Camera()
+                camera3.from_json(parsed_json_data[i], 'camera3')
+                camera3_list.append(camera3)
 
-                if 'chemical' in parsed_json_data[i]['category']:
-                    chemical = Other()
-                    chemical.from_json(parsed_json_data[i])
-                    chemical_list.append(chemical)
+            if 'chemical' in parsed_json_data[i]['category']:
+                chemical = Other()
+                chemical.from_json(parsed_json_data[i])
+                chemical_list.append(chemical)
 
-        camera1_pf_list = copy.deepcopy(camera1_list)
-        camera2_pf_list = copy.deepcopy(camera2_list)
-        camera3_pf_list = copy.deepcopy(camera3_list)
-        chemical_pf_list = copy.deepcopy(chemical_list)
+    camera1_pf_list = copy.deepcopy(camera1_list)
+    camera2_pf_list = copy.deepcopy(camera2_list)
+    camera3_pf_list = copy.deepcopy(camera3_list)
+    chemical_pf_list = copy.deepcopy(chemical_list)
 
-        camera1_ekf_list = copy.deepcopy(camera1_list)
-        camera2_ekf_list = copy.deepcopy(camera2_list)
-        camera3_ekf_list = copy.deepcopy(camera3_list)
-        chemical_ekf_list = copy.deepcopy(chemical_list)
+    camera1_ekf_list = copy.deepcopy(camera1_list)
+    camera2_ekf_list = copy.deepcopy(camera2_list)
+    camera3_ekf_list = copy.deepcopy(camera3_list)
+    chemical_ekf_list = copy.deepcopy(chemical_list)
 
-        # make path for processed outputs
-        json_filename = ('json_renav_'
-                         + start_datetime[0:8]
-                         + '_'
-                         + start_datetime[8:14]
-                         + '_'
-                         + finish_datetime[0:8]
-                         + '_'
-                         + finish_datetime[8:14])
-        renavpath = filepath / json_filename
-        if renavpath.is_dir() is False:
-            try:
-                renavpath.mkdir()
-            except Exception as e:
-                print("Warning:", e)
-        elif renavpath.is_dir() and not force_overwite:
-            # Check if dataset has already been processed
-            Console.warn('Looks like this dataset has already been processed.')
-            Console.warn('The default behaviour of auv_nav is NOT to overwrite an already processed dataset.')
-            Console.warn('If you would like to force so, rerun auv_nav with the flag -F.')
-            Console.warn('Example:   auv_nav process -F PATH')
-            Console.quit('auv_nav process would overwrite json_renav files')
+    # make path for processed outputs
+    json_filename = ('json_renav_'
+                     + start_datetime[0:8]
+                     + '_'
+                     + start_datetime[8:14]
+                     + '_'
+                     + finish_datetime[0:8]
+                     + '_'
+                     + finish_datetime[8:14])
+    renavpath = filepath / json_filename
+    if renavpath.is_dir() is False:
+        try:
+            renavpath.mkdir()
+        except Exception as e:
+            print("Warning:", e)
+    elif renavpath.is_dir() and not force_overwite:
+        # Check if dataset has already been processed
+        Console.warn('Looks like this dataset has already been processed.')
+        Console.warn('The default behaviour of auv_nav is NOT to overwrite an already processed dataset.')
+        Console.warn('If you would like to force so, rerun auv_nav with the flag -F.')
+        Console.warn('Example:   auv_nav process -F PATH')
+        Console.quit('auv_nav process would overwrite json_renav files')
 
-        Console.info('Complete parse of: {}'.format(nav_standard_file))
-        Console.info('Writing outputs to: {}'.format(renavpath))
-
-        raw_sensor_path = renavpath / 'csv' / 'sensors'
-
-        write_raw_sensor_csv(raw_sensor_path, velocity_body_list, 'velocity_body_raw')
-        write_raw_sensor_csv(raw_sensor_path, altitude_list, 'altitude_raw')
-        write_raw_sensor_csv(raw_sensor_path, orientation_list, 'orientation_raw')
-        write_raw_sensor_csv(raw_sensor_path, depth_list, 'depth_raw')
-        write_raw_sensor_csv(raw_sensor_path, usbl_list, 'usbl_raw')
-
-    # ACFR mode
-    if ftype == 'acfr':
-        # extract_acfr()
-        Console.info('Loading mission.cfg')
-        mission_acfr = filepath / 'mission.cfg'
-        with mission_acfr.open('r', encoding='utf-8', errors='ignore') as filein:
-            for line in filein.readlines():
-                line_split = line.strip().split(' ')
-                if str(line_split[0]) == 'MAG_VAR_LAT':
-                    mission.origin.latitude = float(line_split[1])
-                if str(line_split[0]) == 'MAG_VAR_LNG':
-                    mission.origin.longitude = float(line_split[1])
-                if str(line_split[0]) == 'MAG_VAR_DATE':
-                    mission.origin.date = str(line_split[1])
-
-        outpath = filepath / 'dRAWLOGS_cv'
-        filename = outpath / 'combined.RAW.auv'
-        Console.info('Loading acfr standard RAW.auv file {}'.format(filename))
-
-        with filename.open('r', encoding='utf-8', errors='ignore') as filein:
-            # setup the time window
-            parsed_acfr_data = filein.readlines()
-            if start_datetime == '':
-                start_epoch_timestamp = float(
-                    parsed_acfr_data[0].split(' ')[1])
-                start_datetime = time.strftime(
-                    '%Y%m%d%H%M%S', time.localtime(start_epoch_timestamp))
-            epoch_start_time = string_to_epoch(start_datetime)
-            if finish_datetime == '':
-                finish_epoch_timestamp = float(
-                    parsed_acfr_data[-1].split(' ')[1])
-                finish_datetime = time.strftime(
-                    '%Y%m%d%H%M%S', time.localtime(finish_epoch_timestamp))
-            epoch_finish_time = string_to_epoch(finish_datetime)
-
-            for line in parsed_acfr_data:
-                line_split = line.split(' ')
-                if str(line_split[0]) == 'RDI:':
-                    epoch_timestamp = float(line_split[1])
-                    if epoch_timestamp >= epoch_start_time and epoch_timestamp <= epoch_finish_time:
-                        velocity_body = BodyVelocity()
-                        velocity_body.epoch_timestamp = epoch_timestamp
-                        altitude = Altitude()
-                        altitude.epoch_timestamp = epoch_timestamp
-                        for i in range(len(line_split)):
-                            value = line_split[i].split(':')
-                            if value[0] == 'alt':
-                                altitude.altitude = float(value[1])
-                            if value[0] == 'vx':
-                                velocity_body.x_velocity = float(value[1])
-                            if value[0] == 'vy':
-                                velocity_body.y_velocity = float(value[1])
-                            if value[0] == 'vz':
-                                velocity_body.z_velocity = float(value[1])
-                        velocity_body_list.append(velocity_body)
-                        altitude_list.append(altitude)
-                if str(line_split[0]) == 'PHINS_COMPASS:':
-                    epoch_timestamp = float(line_split[1])
-                    if epoch_timestamp >= epoch_start_time and epoch_timestamp <= epoch_finish_time:
-                        velocity_inertial = InertialVelocity()
-                        velocity_inertial.epoch_timestamp = epoch_timestamp
-                        # TODO: what to do with these values?
-                        velocity_inertial.north_velocity = 0
-                        velocity_inertial.east_velocity = 0
-                        velocity_inertial.down_velocity = 0
-                        velocity_inertial.north_velocity_std = 0
-                        velocity_inertial.east_velocity_std = 0
-                        velocity_inertial.down_velocity_std = 0
-                        orientation = Orientation()
-                        orientation.epoch_timestamp = epoch_timestamp
-                        for i in range(len(line_split)-1):
-                            if line_split[i] == 'r:':
-                                orientation.roll = float(line_split[i+1])
-                            if line_split[i] == 'p:':
-                                orientation.pitch = float(line_split[i+1])
-                            if line_split[i] == 'h:':
-                                orientation.yaw = float(line_split[i+1])
-                        velocity_inertial_list.append(velocity_inertial)
-                        orientation_list.append(orientation)
-                if str(line_split[0]) == 'PAROSCI:':
-                    epoch_timestamp = float(line_split[1])
-                    if epoch_timestamp >= epoch_start_time and epoch_timestamp <= epoch_finish_time:
-                        depth = Depth()
-                        depth.epoch_timestamp = epoch_timestamp
-                        depth.depth = float(line_split[2])
-                        depth.depth_std = (mission.depth.std_offset
-                                           + depth.depth
-                                           * mission.depth.std_factor)
-                        depth_list.append(depth)
-                if str(line_split[0]) == 'SSBL_FIX:':
-                    epoch_timestamp = float(line_split[1])
-                    if epoch_timestamp >= epoch_start_time and epoch_timestamp <= epoch_finish_time:
-                        usbl = Usbl()
-                        usbl.epoch_timestamp = epoch_timestamp
-                        for i in range(len(line_split)-1):
-                            if line_split[i] == 'target_x:':
-                                usbl.northings = float(line_split[i+1])
-                            if line_split[i] == 'target_y:':
-                                usbl.eastings = float(line_split[i+1])
-                            if line_split[i] == 'target_z:':
-                                usbl.depth = float(line_split[i+1])
-                        usbl_list.append(usbl)
-                if str(line_split[0]) == 'VIS:':
-                    if 'FC' or 'LC' in line_split[3]:
-                        camera1 = Camera()
-                        camera1.epoch_timestamp = float(line_split[1])
-                        camera1.filename = line_split[3]
-                        camera1_list.append(camera1)
-                    if 'AC' or 'RC' in line_split[3]:
-                        camera2 = Camera()
-                        camera2.epoch_timestamp = float(line_split[1])
-                        camera2.filename = line_split[3]
-                        camera2_list.append(camera2)
-        camera1_pf_list = copy.deepcopy(camera1_list)
-        camera2_pf_list = copy.deepcopy(camera2_list)
-        camera3_pf_list = copy.deepcopy(camera3_list)
-        chemical_pf_list = copy.deepcopy(chemical_list)
-        camera1_ekf_list = copy.deepcopy(camera1_list)
-        camera2_ekf_list = copy.deepcopy(camera2_list)
-        camera3_ekf_list = copy.deepcopy(camera3_list)
-        chemical_ekf_list = copy.deepcopy(chemical_list)
-
-        # make folder to store csv and plots
-        filename = ('acfr_renav_'
-                    + start_datetime[0:8]
-                    + '_'
-                    + start_datetime[8:14]
-                    + '_'
-                    + finish_datetime[0:8]
-                    + '_'
-                    + finish_datetime[8:14])
-        renavpath = filepath / filename
-        if renavpath.is_dir() is False:
-            try:
-                renavpath.mkdir()
-            except Exception as e:
-                print("Warning:", e)
-
-        Console.info('Complete parse of: {}'.format(filename))
-        Console.info('Writing outputs to: {}'.format(renavpath))
-
+    Console.info('Complete parse of: {}.'.format(nav_standard_file))
     Console.info("Parsing has found:")
     Console.info("\t* Velocity_body: {} elements".format(len(velocity_body_list)))
     Console.info("\t* Velocity_inertial: {} elements".format(len(velocity_inertial_list)))
@@ -507,6 +354,14 @@ def process_data(filepath, ftype, force_overwite, start_datetime, finish_datetim
     Console.info("\t* Depth: {} elements".format(len(depth_list)))
     Console.info("\t* Altitude: {} elements".format(len(altitude_list)))
     Console.info("\t* Usbl: {} elements".format(len(usbl_list)))
+
+    Console.info('Writing outputs to: {}'.format(renavpath))
+    raw_sensor_path = renavpath / 'csv' / 'sensors'
+    write_raw_sensor_csv(raw_sensor_path, velocity_body_list, 'velocity_body_raw')
+    write_raw_sensor_csv(raw_sensor_path, altitude_list, 'altitude_raw')
+    write_raw_sensor_csv(raw_sensor_path, orientation_list, 'orientation_raw')
+    write_raw_sensor_csv(raw_sensor_path, depth_list, 'depth_raw')
+    write_raw_sensor_csv(raw_sensor_path, usbl_list, 'usbl_raw')
 
     # interpolate to find the appropriate depth to compute seafloor depth for each altitude measurement
     j = 0
@@ -525,7 +380,7 @@ def process_data(filepath, ftype, force_overwite, start_datetime, finish_datetim
     # perform usbl_filter
     if usbl_filter_activate:
         usbl_list = usbl_filter(
-            usbl_list, depth_list, sigma_factor, max_auv_speed, ftype)
+            usbl_list, depth_list, sigma_factor, max_auv_speed)
         if len(usbl_list) == 0:
             Console.warn('Filtering USBL measurements lead to an empty list. ')
             Console.warn(' * Is USBL reliable?')

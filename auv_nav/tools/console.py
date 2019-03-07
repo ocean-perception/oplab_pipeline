@@ -42,3 +42,24 @@ class Console:
 
     def get_version():
         return pkg_resources.require("auv_nav")[0].version
+
+    def progress(iteration, total, prefix='Progress:', suffix='Complete',
+                 length=50, decimals=1, fill='█'):
+        """
+        Call in a loop to create terminal progress bar
+        @params:
+            iteration   - Required  : current iteration (Int)
+            total       - Required  : total iterations (Int)
+            prefix      - Optional  : prefix string (Str)
+            suffix      - Optional  : suffix string (Str)
+            length      - Optional  : character length of bar (Int)
+            decimals    - Optional  : positive number of decimals in percent complete (Int)
+            fill        - Optional  : bar fill character (Str)
+        """
+        percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+        filledLength = int(length * iteration // total)
+        bar = fill * filledLength + '-' * (length - filledLength)
+        print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end='\r')
+        # Print New Line on Complete
+        if iteration >= total - 1:
+            print()

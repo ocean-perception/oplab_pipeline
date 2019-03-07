@@ -32,11 +32,13 @@ from auv_nav.parsers.vehicle import Vehicle
 from auv_nav.parsers.mission import Mission
 
 
-def parse_data(filepath, ftype, force_overwite):
+def parse_data(filepath, force_overwite):
     # initiate data and processing flags
     filepath = Path(filepath).resolve()
 
     filepath = get_raw_folder(filepath)
+
+    ftype = 'oplab'
 
     # load mission.yaml config file
 
@@ -116,24 +118,8 @@ def parse_data(filepath, ftype, force_overwite):
 
     # check for recognised formats and create nav file
     outpath = get_processed_folder(filepath)
-    Console.info('Output format: {}'.format(ftype))
-    if ftype == 'oplab':  # or (ftype is not 'acfr'):
-        outpath = outpath / 'nav'
-        filename = 'nav_standard.json'
-
-    elif ftype == 'acfr':  # or (ftype is not 'acfr'):
-        filename = 'combined.RAW.auv'
-        config_filename = outpath / 'mission.cfg'
-        outpath = outpath / 'dRAWLOGS_cv'
-
-        with config_filename.open('w') as f:
-            data = ('MAG_VAR_LAT ' + str(float(mission.origin.latitude))
-                    + '\nMAG_VAR_LNG ' + str(float(mission.origin.longitude))
-                    + '\nMAG_VAR_DATE ' + str(mission.origin.date)
-                    + '\nMAGNETIC_VAR_DEG ' + str(float(0)))
-            f.write(data)
-    else:
-        Console.quit('Output format not recognised.')
+    outpath = outpath / 'nav'
+    filename = 'nav_standard.json'
 
     # make file path if not exist
     if not outpath.is_dir():
@@ -272,19 +258,17 @@ def parse_data(filepath, ftype, force_overwite):
 
         Console.info('Compile data list...')
 
-        data_list = []
-        if ftype == 'oplab':
-            data_list = [[{
-                'epoch_timestamp': 0.0,
-                'class': 'origin',
-                'category': 'origin',
-                'data': [{
-                    'latitude': mission.origin.latitude,
-                    'longitude': mission.origin.longitude,
-                    'crs': mission.origin.crs,
-                    'date': mission.origin.date
-                }]
-            }]]
+        data_list = [[{
+            'epoch_timestamp': 0.0,
+            'class': 'origin',
+            'category': 'origin',
+            'data': [{
+                'latitude': mission.origin.latitude,
+                'longitude': mission.origin.longitude,
+                'crs': mission.origin.crs,
+                'date': mission.origin.date
+            }]
+        }]]
 
         for i in pool_list:
             results = i.get()
@@ -292,37 +276,18 @@ def parse_data(filepath, ftype, force_overwite):
         Console.info('...done compiling data list.')
 
         Console.info('Writing to output file...')
-        if ftype == 'acfr':
-            data_string = ''
-            for i in data_list:
-                print(i)
-                print(str(i))
-                data_string += ''.join(i)
-            fileout.write(data_string)
-            del data_string
-        elif ftype == 'oplab':
-            # print('Initialising JSON file')
-            data_list_temp = []
-            for i in data_list:
-                data_list_temp += i
-            json.dump(data_list_temp, fileout, indent=2)
-            del data_list_temp
+        data_list_temp = []
+        for i in data_list:
+            data_list_temp += i
+        json.dump(data_list_temp, fileout, indent=2)
+        del data_list_temp
         del data_list
         Console.info('... done writing to output file.')
-
-        # if chemical_flag == 1:
-        #     print('Loading chemical data...')
-        #     if chemical_format == 'date_time_intensity':
-        #         parse_chemical(filepath + '/' + chemical_filepath, chemical_filename, chemical_timezone, chemical_timeoffset, chemical_data, ftype, outpath, filename, fileout)
-        #     chemical_flag = 0
 
     fileout.close()
     # interlace the data based on timestamps
     Console.info('Interlacing data...')
-    parse_interlacer(ftype, outpath, filename)
+    parse_interlacer(outpath, filename)
     Console.info('...done interlacing data. Output saved to {}'.format(outpath /filename))
-
-    if ftype == 'oplab':
-        plot_parse_data(outpath, ftype)
-
+    plot_parse_data(outpath, ftype)
     Console.info('Complete parse data')
