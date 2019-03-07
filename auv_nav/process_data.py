@@ -1135,7 +1135,7 @@ def process_data(filepath, ftype, force_overwite, start_datetime, finish_datetim
         other_data_csv(chemical_list, 'auv_ekf_chemical',
                        ekfcsvpath, csv_pf_chemical)
 
-        if len(mission.image.cameras) > 2:
+        if len(camera3_list) > 1:
             camera_csv(camera3_list, 'auv_dr_' +
                        mission.image.cameras[2].name, drcsvpath, csv_dr_camera_3)
             camera_csv(camera3_pf_list, 'auv_pf_' +
