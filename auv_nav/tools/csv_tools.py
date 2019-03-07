@@ -52,7 +52,7 @@ def write_csv(csv_filepath, data_list, csv_filename, csv_flag):
             with file.open('w') as fileout:
                 fileout.write(str_to_write)
         else:
-            Console.warn('Empty data list ' + str(csv_filename))
+            Console.warn('Empty data list {}'.format(str(csv_filename)))
 
 
 # First column of csv file - image file naming step probably not very robust
@@ -138,4 +138,4 @@ def write_raw_sensor_csv(csv_filepath, data_list, csv_filename):
         with file.open('w') as fileout:
             fileout.write(str_to_write)
     else:
-        Console.warn('Empty data list ', str(csv_filename))
+        Console.warn('Empty data list {}'.format(str(csv_filename)))
