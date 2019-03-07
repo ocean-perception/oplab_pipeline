@@ -500,6 +500,14 @@ def process_data(filepath, ftype, force_overwite, start_datetime, finish_datetim
         Console.info('Complete parse of: {}'.format(filename))
         Console.info('Writing outputs to: {}'.format(renavpath))
 
+    Console.info("Parsing has found:")
+    Console.info("\t* Velocity_body: {} elements".format(len(velocity_body_list)))
+    Console.info("\t* Velocity_inertial: {} elements".format(len(velocity_inertial_list)))
+    Console.info("\t* Orientation: {} elements".format(len(orientation_list)))
+    Console.info("\t* Depth: {} elements".format(len(depth_list)))
+    Console.info("\t* Altitude: {} elements".format(len(altitude_list)))
+    Console.info("\t* Usbl: {} elements".format(len(usbl_list)))
+
     # interpolate to find the appropriate depth to compute seafloor depth for each altitude measurement
     j = 0
     for i in range(len(altitude_list)):
