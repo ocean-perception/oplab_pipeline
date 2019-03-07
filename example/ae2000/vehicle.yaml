@@ -30,7 +30,7 @@ dvl:
   heave_m: 0.204
   roll_deg: 0
   pitch_deg: 0
-  yaw_deg: -45.0
+  yaw_deg: 0.0
 
 depth:
   surge_m: 0.
