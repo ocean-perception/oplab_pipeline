@@ -173,7 +173,6 @@ class BodyVelocity(OutputFormat):
         velocity_time = str(line[6])
         hour_dvl = int(velocity_time[0:2])
         mins_dvl = int(velocity_time[2:4])
-        secs_dvl = int(velocity_time[4:6])
         try:
             secs_dvl = int(velocity_time[4:6])
             # phins sometimes returns 60s...
