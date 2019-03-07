@@ -271,17 +271,21 @@ def parse_data(filepath, ftype, force_overwite):
         Console.info('...done loading raw data.')
 
         Console.info('Compile data list...')
-        data_list = [[{
-            'epoch_timestamp': 0.0,
-            'class': 'origin',
-            'category': 'origin',
-            'data': [{
-                'latitude': mission.origin.latitude,
-                'longitude': mission.origin.longitude,
-                'crs': mission.origin.crs,
-                'date': mission.origin.date
-            }]
-        }]]
+
+        data_list = []
+        if ftype == 'oplab':
+            data_list = [[{
+                'epoch_timestamp': 0.0,
+                'class': 'origin',
+                'category': 'origin',
+                'data': [{
+                    'latitude': mission.origin.latitude,
+                    'longitude': mission.origin.longitude,
+                    'crs': mission.origin.crs,
+                    'date': mission.origin.date
+                }]
+            }]]
+
         for i in pool_list:
             results = i.get()
             data_list.append(results)
@@ -291,7 +295,9 @@ def parse_data(filepath, ftype, force_overwite):
         if ftype == 'acfr':
             data_string = ''
             for i in data_list:
-                    data_string += ''.join(i)
+                print(i)
+                print(str(i))
+                data_string += ''.join(i)
             fileout.write(data_string)
             del data_string
         elif ftype == 'oplab':
