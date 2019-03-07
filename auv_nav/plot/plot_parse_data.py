@@ -121,13 +121,9 @@ def plot_parse_data(filepath, ftype):
         fn = filepath / 'nav_standard.json'
         with fn.open('r', encoding='utf-8') as json_file:
             data_in = json.load(json_file)
-            start_time = data_in[0]['epoch_timestamp']
+            start_time = data_in[1]['epoch_timestamp']
+            finish_time = data_in[-1]['epoch_timestamp']
             for i in data_in:
-                # to capture start_time and finish_time
-                if i['epoch_timestamp'] < start_time:
-                    start_time = i['epoch_timestamp']
-                if i['epoch_timestamp'] > finish_time:
-                    finish_time = i['epoch_timestamp']
                 if i['category'] == 'origin':
                     continue
                 # to find out how many categories are there

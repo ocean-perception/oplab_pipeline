@@ -1,5 +1,6 @@
 
 from auv_nav.tools.interpolate import interpolate
+from auv_nav.tools.console import Console
 
 # filter usbl data outliers
 # interpolate to find the appropriate depth to compute seafloor depth for each
@@ -46,7 +47,28 @@ def usbl_filter(usbl_list, depth_list, sigma_factor, max_auv_speed):
     usbl_temp_list = []
 
     j = 0
+    printed1 = False
+    printed2 = False
+    acceptable_time_difference = 20  # seconds
+    usbl_list2 = []
+    original_size = len(usbl_list)
     for i in range(len(usbl_list)):
+        if usbl_list[i].epoch_timestamp < depth_list[0].epoch_timestamp + acceptable_time_difference :
+            if not printed1:
+                Console.info('Discarding USBL measurements before DR...')
+                printed1 = True
+            continue
+        elif usbl_list[i].epoch_timestamp + acceptable_time_difference > depth_list[-1].epoch_timestamp:
+            if not printed2:
+                Console.info('Discarding USBL measurements after DR...')
+                printed2 = True
+            continue
+        else:
+            usbl_list2.append(usbl_list[i])
+    usbl_list = usbl_list2
+
+    for i in range(len(usbl_list)):
+        # Get rid of any USBL measurement before DR
         while j < len(depth_list)-1 and depth_list[j].epoch_timestamp < usbl_list[i].epoch_timestamp:
             j = j+1
         if j >= 1:
@@ -94,4 +116,6 @@ def usbl_filter(usbl_list, depth_list, sigma_factor, max_auv_speed):
         else:
             n = -continuity_condition
             i += 1
+
+    Console.info('{} remains of {} USBL measurements'.format(len(usbl_temp_list), original_size))
     return usbl_temp_list
