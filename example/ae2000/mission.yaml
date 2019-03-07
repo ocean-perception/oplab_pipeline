@@ -1,14 +1,16 @@
 #YAML 1.0
+version: 1
+
 origin:
-  latitude: 44.571 #44.673
-  longitude: -125.149 #-125.120
+  latitude: 44.673
+  longitude: -125.120
   coordinate_reference_system: wgs84
-  date: 2018/08/09
+  date: 2018/08/02
 
 velocity:
   format: ae2000
   filepath: nav/ae_log/
-  filename: pos180809083837.csv
+  filename: pos180802164830.csv
   timezone: -7
   timeoffset: 0.0
   headingoffset: .0
@@ -16,7 +18,7 @@ velocity:
 orientation:
   format: ae2000
   filepath: nav/ae_log/
-  filename: pos180809083837.csv
+  filename: pos180802164830.csv
   timezone: -7
   timeoffset: 0.0
   headingoffset: .0
@@ -24,14 +26,14 @@ orientation:
 depth:
   format: ae2000
   filepath: nav/ae_log/
-  filename: pos180809083837.csv
+  filename: pos180802164830.csv
   timezone: -7
   timeoffset: 0.0
 
 altitude:
   format: ae2000
   filepath: nav/ae_log/
-  filename: pos180809083837.csv
+  filename: pos180802164830.csv
   timezone: -7
   timeoffset: 0.0
 
@@ -40,14 +42,23 @@ usbl:
   filepath: nav/gaps/
   timezone: utc
   timeoffset: 0.0
-  id: 3 # Tried: 1, 2, 3, 4
+  id: 3
 
 image:
   format: seaxerocks_3
-  filepath: image/SeaXerocksData20180809_102254/
-  camera1: Xviii/Cam51707923
-  camera2: Xviii/Cam51707925
-  camera3: LM165
+  cameras:
+    - name: fore
+      type: bayer_rggb
+      bit_depth: 12
+      path: image/SeaXerocksData20180802_174821_laserCal/Xviii/Cam51707923
+    - name: aft
+      type: bayer_rggb
+      bit_depth: 12
+      path: image/SeaXerocksData20180802_174821_laserCal/Xviii/Cam51707925
+    - name: laser
+      type: grayscale
+      bit_depth: 12
+      path: image/SeaXerocksData20180802_174821_laserCal/LM165
   timezone: -7
   timeoffset: 0.0
 
