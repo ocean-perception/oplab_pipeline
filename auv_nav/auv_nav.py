@@ -82,22 +82,22 @@ def main(args=None):
     subparser_process.set_defaults(func=call_process_data)
 
     subparser_convert = subparsers.add_parser(
-        'convert', help="Process and/or convert data. Data needs to be saved in \
-        the intermediate data format generated using auv_nav.py parse. Type \
-        auv_nav process -h for help on this target.")
+        'convert', help="Converts data from oplab nav_standard.json into your \
+        specified output format. Type auv_nav convert -h for help on this \
+        target.")
     subparser_convert.add_argument(
-        'path', default=".", help="Path to folder where the data to process is. The folder \
+        'path', default=".", help="Path to folder where the data is. The folder \
         has to be generated using auv_nav parse.")
     subparser_convert.add_argument(
         '-f', '--format', dest='format', default="acfr", help="Format in which \
         the data is output. Default: 'acfr'.")
     subparser_convert.add_argument(
         '-s', '--start', dest='start_datetime', default='', help="Start date & \
-        time in YYYYMMDDhhmmss from which data will be processed. If not set, \
+        time in YYYYMMDDhhmmss from which data will be converted. If not set, \
         start at beginning of dataset.")
     subparser_convert.add_argument(
         '-e', '--end', dest='end_datetime', default='', help="End date & time \
-        in YYYYMMDDhhmmss up to which data will be processed. If not set \
+        in YYYYMMDDhhmmss up to which data will be converted. If not set \
         process to end of dataset.")
     subparser_convert.set_defaults(func=call_convert_data)
 
