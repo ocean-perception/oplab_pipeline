@@ -14,13 +14,10 @@ from auv_nav.tools.interpolate import interpolate
 # depths should be within 2 std (95% prob) of each other.
 # If more than that apart reject
 
-def depth_filter(usbl, depth, depth_std, ftype, sigma_factor):
+def depth_filter(usbl, depth, depth_std, sigma_factor):
     depth_difference = abs(usbl.depth - depth)
-    if ftype == 'oplab':
-        depth_uncertainty_envelope = abs(usbl.depth_std) + abs(depth_std)
-        return depth_difference <= sigma_factor*depth_uncertainty_envelope
-    elif ftype == 'acfr':
-        return depth_difference <= 10
+    depth_uncertainty_envelope = abs(usbl.depth_std) + abs(depth_std)
+    return depth_difference <= sigma_factor*depth_uncertainty_envelope
 
 
 # the 2 usbl readings should be within maximum possible distance traveled by
@@ -43,7 +40,7 @@ def distance_filter(usbl1, usbl2, sigma_factor, max_auv_speed):
     return lateral_distance <= distance_envelope
 
 
-def usbl_filter(usbl_list, depth_list, sigma_factor, max_auv_speed, ftype):
+def usbl_filter(usbl_list, depth_list, sigma_factor, max_auv_speed):
     depth_interpolated = []
     depth_std_interpolated = []
     usbl_temp_list = []
@@ -70,7 +67,6 @@ def usbl_filter(usbl_list, depth_list, sigma_factor, max_auv_speed, ftype):
         if depth_filter(usbl_list[i],
                         depth_interpolated[i],
                         depth_std_interpolated[i],
-                        ftype,
                         sigma_factor):
             usbl_temp_list.append(usbl_list[i])
         i += 1
