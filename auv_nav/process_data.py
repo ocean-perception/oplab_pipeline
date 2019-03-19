@@ -134,7 +134,7 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
         default_localisation.copy(localisation_file)
 
     with localisation_file.open('r') as stream:
-        load_localisation = yaml.load(stream)
+        load_localisation = yaml.safe_load(stream)
         if 'usbl_filter' in load_localisation:
             usbl_filter_activate = load_localisation['usbl_filter']['activate']
             max_auv_speed = load_localisation['usbl_filter']['max_auv_speed']
