@@ -22,6 +22,11 @@ def epoch_to_localtime(epochtime):
     return localtime
 
 
+def epoch_to_utctime(epochtime):
+    utctime = time.gmtime(epochtime)
+    return utctime
+
+
 def get_localtimezone():
     localtimezone = reference.LocalTimezone().tzname(datetime.now())  # string
     return localtimezone

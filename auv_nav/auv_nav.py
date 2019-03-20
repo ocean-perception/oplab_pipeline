@@ -11,6 +11,7 @@ from auv_nav.tools.console import Console
 
 import sys
 import argparse
+import os
 
 
 def main(args=None):
@@ -26,6 +27,7 @@ def main(args=None):
     e.g. main(["parse", "-h"]). This will populate the args parameter.
     """
 
+    os.system('')  # enable VT100 Escape Sequence for WINDOWS 10 for Console outputs  https://stackoverflow.com/questions/16755142/how-to-make-win32-console-recognize-ansi-vt100-escape-sequences
     Console.info('Running auv_nav version ' + str(Console.get_version()))
 
     parser = argparse.ArgumentParser()
