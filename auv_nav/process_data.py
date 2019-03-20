@@ -207,6 +207,12 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
             csv_ekf_camera_2 = load_localisation['csv_output']['ekf']['camera_2']
             csv_ekf_camera_3 = load_localisation['csv_output']['ekf']['camera_3']
             csv_ekf_chemical = load_localisation['csv_output']['ekf']['chemical']
+        else:
+            csv_output_activate = False
+            Console.warn('csv output undefined in auv_nav.yaml. Has been'
+                         + ' set to "False". To activate, add as per'
+                         + ' default auv_nav.yaml found within auv_nav'
+                         + ' file structure and set values to "True".')
         
         if 'spp_output' in load_localisation:
             # spp_active
