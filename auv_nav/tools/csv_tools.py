@@ -152,8 +152,7 @@ def camera_csv(camera_list, camera_name, csv_filepath, csv_flag):
                 cov = ['x', 'y', 'z',
                        'roll', 'pitch', 'yaw',
                        'vx', 'vy', 'vz',
-                       'vroll', 'vpitch', 'vyaw',
-                       'ax', 'ay', 'az']
+                       'vroll', 'vpitch', 'vyaw']
                 for a in cov:
                     for b in cov:
                         str_to_write += ', cov_'+a+'_'+b
