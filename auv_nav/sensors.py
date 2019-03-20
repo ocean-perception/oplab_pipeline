@@ -10,6 +10,7 @@ from auv_nav.tools.time_conversions import read_timezone
 from auv_nav.tools.console import Console
 from math import sqrt, atan2, pi
 import json as js
+import numpy as np
 
 
 class PhinsHeaders():
@@ -746,6 +747,14 @@ class Camera():
 
         self.altitude = 0
         self.covariance = None
+        self.information = None
+    
+    def get_info(self):
+        try:
+            self.information = np.linalg.inv(self.covariance)
+        except np.linalg.LinAlgError as err:
+            Console.error('Failed to invert covariance matrix: '
+                             +  + ' Error: ' + str(err))
 
     def from_json(self, json, cam_name):
         if cam_name in json:

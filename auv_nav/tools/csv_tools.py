@@ -54,6 +54,84 @@ def write_csv(csv_filepath, data_list, csv_filename, csv_flag):
         else:
             Console.warn('Empty data list {}'.format(str(csv_filename)))
 
+def spp_csv(camera_list, camera_name, csv_filepath, csv_flag):
+    if csv_flag is True and len(camera_list) > 1:
+        csv_file = Path(csv_filepath)
+        if csv_file.exists() is False:
+            csv_file.mkdir(parents=True, exist_ok=True)
+
+        Console.info("Writing outputs to {}.txt ...".format(camera_name))
+        file = csv_file / '{}.txt'.format(camera_name)
+        str_to_write = ''
+#        str_to_write += 'Imagenumber, Northing [m], Easting [m], Depth [m], ' \
+#                        'Roll [deg], Pitch [deg], Heading [deg], Altitude '\
+#                        '[m], Timestamp, Latitude [deg], Longitude [deg]'
+        if len(camera_list) > 0:
+            # With unwritted header: ['image_num_from', 'image_num_to',
+            #                         'x', 'y', 'z', 'yaw', 'pitch', 'roll',
+            #                         'inf_x_x', 'inf_x_y', 'inf_x_z',
+            #                         'inf_x_yaw', 'inf_x_pitch',
+            #                         'inf_x_roll', 'inf_y_y', 'inf_y_z',
+            #                         'inf_y_yaw', 'inf_y_pitch',
+            #                         'inf_y_roll', 'inf_z_z', 'inf_z_yaw',
+            #                         ... ]
+            # NOTE: matrix listed is just the upper corner of the diagonal
+            # symetric information matrix, and order for SLAM++ input of
+            # rotational variables is yaw, pitch, roll (reverse order).
+            for i in range(len(camera_list)):
+                try:
+                    imagenumber = camera_list[i].filename[-11:-4]
+                    if imagenumber.isdigit():
+                        image_filename = imagenumber
+                    else:
+                        image_filename = camera_list[i].filename
+                        Console.warn('image_filename for csv output has been'
+                                     + ' set = camera_list[i].filename. If'
+                                     + ' a failure has occurred, may be'
+                                     + ' because this is not a number and'
+                                     + ' cannot be turned into an "int", as'
+                                     + ' needed for SLAM++ txt file output.')
+                    str_to_write += (
+                        'EDGE3' + ' '
+                        + str(int(image_filename)) + ' '
+                        + str(int(image_filename) + 1) + ' '
+                        + str(camera_list[i].northings) + ' '
+                        + str(camera_list[i].eastings) + ' '
+                        + str(camera_list[i].depth) + ' '
+                        + str(camera_list[i].roll) + ' '
+                        + str(camera_list[i].pitch) + ' '
+                        + str(camera_list[i].yaw)
+#                        + str(camera_list[i].altitude) + ' '
+#                        + str(camera_list[i].epoch_timestamp) + ' '
+#                        + str(camera_list[i].latitude) + ' '
+#                        + str(camera_list[i].longitude)
+                        )
+                    if camera_list[i].information is not None:
+                        inf = camera_list[i].information.flatten().tolist()
+                        inf = [item for sublist in inf for item in sublist]
+                        # There are 12 state variables, we are only
+                        # interested in the first 6. Hence the final 6x12
+                        # elements in the information matrix can be
+                        # deleted, as these have an unwanted primary variable.
+                        inf = inf[:-72]
+                        # Of the remaining 6x12 elements, half have unwanted
+                        # secondary variables (the latter half of each
+                        # primary variables chain of elements) and can be
+                        # deleted. Duplicated elements (due to symmetry)
+                        # can also be deleted.
+                        for i in range(6):
+                            inf += inf[i:6]
+                            inf = inf[12:]
+                        for c in inf:
+                            str_to_write += ' ' + str(c)
+                    str_to_write += '\n'
+                except IndexError:
+                    break
+            with file.open('w') as fileout:
+                fileout.write(str_to_write)
+        else:
+            Console.warn('Empty data list {}'.format(str(camera_name)))
+
 
 # First column of csv file - image file naming step probably not very robust
 # needs improvement

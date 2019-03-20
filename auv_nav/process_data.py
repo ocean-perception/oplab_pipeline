@@ -14,6 +14,7 @@ from auv_nav.tools.body_to_inertial import body_to_inertial
 from auv_nav.tools.csv_tools import write_csv, write_raw_sensor_csv
 from auv_nav.tools.csv_tools import camera_csv
 from auv_nav.tools.csv_tools import other_data_csv
+from auv_nav.tools.csv_tools import spp_csv
 from auv_nav.sensors import BodyVelocity, InertialVelocity
 from auv_nav.sensors import Altitude, Depth, Usbl, Orientation
 from auv_nav.sensors import Other, Camera
@@ -206,6 +207,22 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
             csv_ekf_camera_2 = load_localisation['csv_output']['ekf']['camera_2']
             csv_ekf_camera_3 = load_localisation['csv_output']['ekf']['camera_3']
             csv_ekf_chemical = load_localisation['csv_output']['ekf']['chemical']
+        
+        if 'spp_output' in load_localisation:
+            # spp_active
+            spp_output_activate = load_localisation['spp_output']['activate']
+            spp_ekf_auv_centre = load_localisation['spp_output']['ekf']['auv_centre']
+            spp_ekf_camera_1 = load_localisation['spp_output']['ekf']['camera_1']
+            spp_ekf_camera_2 = load_localisation['spp_output']['ekf']['camera_2']
+            spp_ekf_camera_3 = load_localisation['spp_output']['ekf']['camera_3']
+            spp_ekf_chemical = load_localisation['spp_output']['ekf']['chemical']
+        else:
+            spp_output_activate = False
+            Console.warn('SLAM++ output undefined in auv_nav.yaml. Has been'
+                         + ' set to "False". To activate, add as per'
+                         + ' default auv_nav.yaml found within auv_nav'
+                         + ' file structure and set values to "True".')
+
         if 'plot_output' in load_localisation:
             plot_output_activate = load_localisation['plot_output']['activate']
             pdf_plot = load_localisation['plot_output']['pdf_plot']
@@ -960,7 +977,7 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
                             fileout.close()
                         except IndexError:
                             break
-
+        
         write_csv(drcsvpath, dead_reckoning_centre_list,
                   'auv_dr_centre', csv_dr_auv_centre)
         write_csv(drcsvpath, dead_reckoning_dvl_list,
@@ -997,6 +1014,39 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
                        mission.image.cameras[2].name, pfcsvpath, csv_pf_camera_3)
             camera_csv(camera3_ekf_list, 'auv_ekf_' +
                        mission.image.cameras[2].name, ekfcsvpath, csv_ekf_camera_3)
+        
+    if spp_output_activate:
+        Console.info("Converting covariance matrices into information matrices ...")
+        for i in range(len(camera1_ekf_list)):
+            camera1_ekf_list[i].get_info()
+        for i in range(len(camera2_ekf_list)):
+            camera2_ekf_list[i].get_info()
+        
+        if len(camera3_list) > 1:
+            for i in range(len(camera3_ekf_list)):
+                camera3_ekf_list[i].get_info()
+        
+        Console.info("Converting poses into sequential-relative poses ...")
+        for i in range(len(camera1_ekf_list) - 1):
+            camera1_ekf_list[i].northings -= camera1_ekf_list[i+1].northings
+            camera1_ekf_list[i].eastings -= camera1_ekf_list[i+1].eastings
+            camera1_ekf_list[i].depth -= camera1_ekf_list[i+1].depth
+            camera1_ekf_list[i].roll -= camera1_ekf_list[i+1].roll
+            camera1_ekf_list[i].pitch -= camera1_ekf_list[i+1].pitch
+            camera1_ekf_list[i].yaw -= camera1_ekf_list[i+1].yaw
+            
+            camera1_ekf_list[i].information = camera1_ekf_list[i+1].information
+        camera1_ekf_list = camera1_ekf_list[:-1]
+        
+        spp_csv(camera1_ekf_list, 'auv_ekf_' +
+                mission.image.cameras[0].name, ekfcsvpath, spp_ekf_camera_1)
+        spp_csv(camera2_ekf_list, 'auv_ekf_' +
+                mission.image.cameras[1].name, ekfcsvpath, spp_ekf_camera_2)
+        
+        if len(camera3_list) > 1:
+            spp_csv(camera3_ekf_list, 'auv_ekf_' +
+                    mission.image.cameras[2].name, ekfcsvpath, spp_ekf_camera_3)
+        
 
     Console.info('Complete extraction of data: {}'.format(csvpath))
     Console.info('Completed data extraction: {}'.format(renavpath))
