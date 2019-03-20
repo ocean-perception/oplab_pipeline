@@ -91,6 +91,15 @@ csv_output:
     camera_3: True
     chemical: False
 
+spp_output:
+  activate: False
+  ekf:
+    auv_centre: True
+    camera_1: True
+    camera_2: True
+    camera_3: True
+    chemical: False
+
 plot_output:
   activate: True
   pdf_plot: False
