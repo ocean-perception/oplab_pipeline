@@ -63,9 +63,6 @@ def spp_csv(camera_list, camera_name, csv_filepath, csv_flag):
         Console.info("Writing outputs to {}.txt ...".format(camera_name))
         file = csv_file / '{}.txt'.format(camera_name)
         str_to_write = ''
-#        str_to_write += 'Imagenumber, Northing [m], Easting [m], Depth [m], ' \
-#                        'Roll [deg], Pitch [deg], Heading [deg], Altitude '\
-#                        '[m], Timestamp, Latitude [deg], Longitude [deg]'
         if len(camera_list) > 0:
             # With unwritted header: ['image_num_from', 'image_num_to',
             #                         'x', 'y', 'z', 'yaw', 'pitch', 'roll',
@@ -98,13 +95,9 @@ def spp_csv(camera_list, camera_name, csv_filepath, csv_flag):
                         + str(camera_list[i].northings) + ' '
                         + str(camera_list[i].eastings) + ' '
                         + str(camera_list[i].depth) + ' '
-                        + str(camera_list[i].roll) + ' '
+                        + str(camera_list[i].yaw) + ' '
                         + str(camera_list[i].pitch) + ' '
-                        + str(camera_list[i].yaw)
-#                        + str(camera_list[i].altitude) + ' '
-#                        + str(camera_list[i].epoch_timestamp) + ' '
-#                        + str(camera_list[i].latitude) + ' '
-#                        + str(camera_list[i].longitude)
+                        + str(camera_list[i].roll)
                         )
                     if camera_list[i].information is not None:
                         inf = camera_list[i].information.flatten().tolist()
@@ -114,12 +107,17 @@ def spp_csv(camera_list, camera_name, csv_filepath, csv_flag):
                         # elements in the information matrix can be
                         # deleted, as these have an unwanted primary variable.
                         inf = inf[:-72]
-                        # Of the remaining 6x12 elements, half have unwanted
-                        # secondary variables (the latter half of each
-                        # primary variables chain of elements) and can be
-                        # deleted. Duplicated elements (due to symmetry)
-                        # can also be deleted.
                         for i in range(6):
+                            # The rotationnal elements need to be switched
+                            # around to be in SLAM++ (reverse) order.
+                            j = inf[6*i + 3]
+                            inf[6*i + 3] = inf[6*i + 5]
+                            inf[6*i + 5] = j
+                            # Of the remaining 6x12 elements, half have unwanted
+                            # secondary variables (the latter half of each
+                            # primary variables chain of elements) and can be
+                            # deleted. Duplicated elements (due to symmetry)
+                            # can also be deleted.
                             inf += inf[i:6]
                             inf = inf[12:]
                         for c in inf:

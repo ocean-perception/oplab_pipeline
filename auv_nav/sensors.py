@@ -754,7 +754,7 @@ class Camera():
             self.information = np.linalg.inv(self.covariance)
         except np.linalg.LinAlgError as err:
             Console.error('Failed to invert covariance matrix: '
-                             +  + ' Error: ' + str(err))
+                             + ' Error: ' + str(err))
 
     def from_json(self, json, cam_name):
         if cam_name in json:
