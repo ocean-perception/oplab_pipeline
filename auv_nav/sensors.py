@@ -7,8 +7,10 @@ All rights reserved.
 from auv_nav.tools.body_to_inertial import body_to_inertial
 from auv_nav.tools.time_conversions import date_time_to_epoch
 from auv_nav.tools.time_conversions import read_timezone
+from auv_nav.tools.latlon_wgs84 import latlon_to_metres
+from auv_nav.tools.latlon_wgs84 import metres_to_latlon
 from auv_nav.tools.console import Console
-from math import sqrt, atan2, pi
+from math import sqrt, atan2, pi, sin, cos
 import json as js
 
 
@@ -150,6 +152,16 @@ class BodyVelocity(OutputFormat):
 
     def get_std(self, value):
         return abs(value)*self.velocity_std_factor + self.velocity_std_offset
+
+    def from_autosub(self, data, i):
+        self.epoch_timestamp = data['eTime'][i]
+        self.epoch_timestamp_dvl = data['eTime'][i]
+        self.x_velocity = data['Vnorth0'][i] * 0.001
+        self.y_velocity = data['Veast0'][i] * 0.001
+        self.z_velocity = data['Vdown0'][i] * 0.001
+        self.x_velocity_std = data['Verr0'][i] * 0.001
+        self.y_velocity_std = data['Verr0'][i] * 0.001
+        self.z_velocity_std = data['Verr0'][i] * 0.001
 
     def from_phins(self, line):
         self.sensor_string = 'phins'
@@ -341,26 +353,35 @@ class InertialVelocity(OutputFormat):
 
 
 class Orientation(OutputFormat):
-    def __init__(self, heading_offset=0.0):
+    def __init__(self, heading_offset=0.0, orientation_std_offset=None):
         self.epoch_timestamp = None
         self.yaw_offset = heading_offset
         self.sensor_string = 'unknown'
         self.clear()
+        self.roll_std = None
+        self.pitch_std = None
+        self.yaw_std = None
+        if orientation_std_offset is not None:
+            self.roll_std = orientation_std_offset
+            self.pitch_std = orientation_std_offset
+            self.yaw_std = orientation_std_offset
 
     def clear(self):
         self.roll = None
         self.pitch = None
         self.yaw = None
 
-        self.roll_std = None
-        self.pitch_std = None
-        self.yaw_std = None
-
     def valid(self):
         return (self.roll is not None
                 and self.roll_std is not None
                 and self.yaw is not None
                 and self.epoch_timestamp is not None)
+
+    def from_autosub(self, data, i):
+        self.epoch_timestamp = data['eTime'][i]
+        self.roll = data['Roll'][i] * 180.0 / pi
+        self.pitch = data['Pitch'][i] * 180.0 / pi
+        self.yaw = data['Heading'][i] * 180.0 / pi
 
     def from_phins(self, line):
         self.sensor_string = 'phins'
@@ -468,6 +489,12 @@ class Depth(OutputFormat):
                 and self.epoch_timestamp is not None
                 and self.depth_timestamp is not None)
 
+    def from_autosub(self, data, i):
+        self.epoch_timestamp = data['eTime'][i]
+        self.depth_timestamp = self.epoch_timestamp
+        self.depth = data['depSM'][i]
+        self.depth_std = self.depth*self.depth_std_factor
+
     def from_phins(self, line):
         self.sensor_string = 'phins'
         self.depth = float(line[2])
@@ -537,14 +564,20 @@ class Altitude(OutputFormat):
         self.altitude_std = None
         self.altitude_timestamp = None
         # interpolate depth and add altitude for every altitude measurement
-        self.seafloor_depth = None
-        self.sound_velocity = None
-        self.sound_velocity_correction = None
+        self.seafloor_depth = 0
+        self.sound_velocity = 0
+        self.sound_velocity_correction = 0
 
     def valid(self):
         return (self.altitude is not None
                 and self.epoch_timestamp is not None
                 and self.altitude_timestamp is not None)
+
+    def from_autosub(self, data, i):
+        self.epoch_timestamp = data['eTime'][i]
+        self.altitude_timestamp = self.epoch_timestamp
+        self.altitude = data['ADCPAvAlt'][i]
+        self.altitude_std = self.altitude*self.altitude_std_factor
 
     def from_phins(self, line, altitude_timestamp):
         self.sensor_string = 'phins'
@@ -591,17 +624,18 @@ class Altitude(OutputFormat):
 
 
 class Usbl(OutputFormat):
-    def __init__(self):
+    def __init__(self, std_offset=None,
+                 latitude_reference=None, longitude_reference=None):
         self.epoch_timestamp = None
         self.sensor_string = 'unknown'
 
-        self.latitude = 0
-        self.longitude = 0
+        self.latitude = None
+        self.longitude = None
         self.latitude_std = 0
         self.longitude_std = 0
 
-        self.northings = 0
-        self.eastings = 0
+        self.northings = None
+        self.eastings = None
         self.northings_std = 0
         self.eastings_std = 0
 
@@ -616,7 +650,7 @@ class Usbl(OutputFormat):
         self.eastings_ship = 0
         self.heading_ship = 0
 
-        ### temporary solution for fk180731 cruise
+        # temporary solution for fk180731 cruise
         # self.epoch_timestamp = 0 timestamp
         self.northings_ship = 0
         self.eastings_ship = 0
@@ -624,8 +658,45 @@ class Usbl(OutputFormat):
         # self.eastings_target = 0 eastings
         # self.depth = 0 depth
         self.lateral_distace = 0
-        self.distance = 0  #distance
+        self.distance = 0  
         self.bearing = 0
+
+        if std_offset is not None:
+            self.std_offset = std_offset
+        if latitude_reference is not None:
+            self.latitude_reference = latitude_reference
+        if longitude_reference is not None:
+            self.longitude_reference = longitude_reference
+
+    def clear(self):
+        self.latitude = None
+        self.longitude = None
+        self.eastings = None
+        self.northings = None
+        self.epoch_timestamp = None
+
+    def valid(self):
+        return (self.latitude is not None
+                and self.longitude is not None
+                and self.eastings is not None
+                and self.northings is not None
+                and self.epoch_timestamp is not None)
+
+    def from_nmea(self, msg):
+        self.epoch_timestamp = msg.timestamp
+        self.latitude = msg.latitude
+        self.longitude = msg.longitude
+
+        # calculate in metres from reference
+        lateral_distance, bearing = latlon_to_metres(
+            self.latitude, self.longitude,
+            self.latitude_reference, self.longitude_reference)
+        self.eastings = sin(
+            bearing*pi/180.0)*lateral_distance
+        self.northings = cos(
+            bearing*pi/180.0)*lateral_distance
+        self.eastings_std = self.std_offset
+        self.northings_std = self.std_offset
 
     def from_json(self, json):
         self.epoch_timestamp = json['epoch_timestamp']
@@ -679,7 +750,7 @@ class Usbl(OutputFormat):
 
     def _to_json(self):
         data = {
-            'epoch_timestamp': float(epoch_timestamp),
+            'epoch_timestamp': float(self.epoch_timestamp),
             'class': 'measurement',
             'sensor': self.sensor_string,
             'frame': 'inertial',
