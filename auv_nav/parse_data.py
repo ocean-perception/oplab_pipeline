@@ -17,6 +17,8 @@ from pathlib import Path
 # sys.path.append("..")
 from auv_nav.parsers.parse_phins import parse_phins
 from auv_nav.parsers.parse_ae2000 import parse_ae2000
+from auv_nav.parsers.parse_nmea import parse_nmea
+from auv_nav.parsers.parse_autosub import parse_autosub
 from auv_nav.parsers.parse_gaps import parse_gaps
 from auv_nav.parsers.parse_usbl_dump import parse_usbl_dump
 from auv_nav.parsers.parse_acfr_images import parse_acfr_images
@@ -177,6 +179,12 @@ def parse_data(filepath, force_overwite):
                         parse_usbl_dump,
                         [mission, vehicle, 'usbl',
                          ftype, outpath, filename]))
+            elif mission.usbl.format == "nmea":
+                pool_list.append(
+                    pool.apply_async(
+                        parse_nmea,
+                        [mission, vehicle, 'usbl',
+                         ftype, outpath, filename]))
             else:
                 Console.quit('Mission usbl format {} not supported.'
                              .format(mission.usbl.format))
@@ -193,6 +201,12 @@ def parse_data(filepath, force_overwite):
                 pool_list.append(
                     pool.apply_async(
                         parse_ae2000,
+                        [mission, vehicle, 'velocity',
+                         ftype, outpath, filename]))
+            elif mission.velocity.format == "autosub":
+                pool_list.append(
+                    pool.apply_async(
+                        parse_autosub,
                         [mission, vehicle, 'velocity',
                          ftype, outpath, filename]))
             else:
@@ -213,6 +227,12 @@ def parse_data(filepath, force_overwite):
                         parse_ae2000,
                         [mission, vehicle, 'orientation',
                          ftype, outpath, filename]))
+            elif mission.orientation.format == "autosub":
+                pool_list.append(
+                    pool.apply_async(
+                        parse_autosub,
+                        [mission, vehicle, 'orientation',
+                         ftype, outpath, filename]))
             else:
                 Console.quit('Mission orientation format {} not supported.'
                              .format(mission.orientation.format))
@@ -231,6 +251,12 @@ def parse_data(filepath, force_overwite):
                         parse_ae2000,
                         [mission, vehicle, 'depth',
                          ftype, outpath, filename]))
+            elif mission.depth.format == "autosub":
+                pool_list.append(
+                    pool.apply_async(
+                        parse_autosub,
+                        [mission, vehicle, 'depth',
+                         ftype, outpath, filename]))
             else:
                 Console.quit('Mission depth format {} not supported.'
                              .format(mission.depth.format))
@@ -247,6 +273,12 @@ def parse_data(filepath, force_overwite):
                 pool_list.append(
                     pool.apply_async(
                         parse_ae2000,
+                        [mission, vehicle, 'altitude',
+                         ftype, outpath, filename]))
+            elif mission.altitude.format == "autosub":
+                pool_list.append(
+                    pool.apply_async(
+                        parse_autosub,
                         [mission, vehicle, 'altitude',
                          ftype, outpath, filename]))
             else:
