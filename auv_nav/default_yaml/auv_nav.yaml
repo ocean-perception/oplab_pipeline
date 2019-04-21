@@ -46,8 +46,8 @@ ekf:
   # If the factor is zero and oly the offset is used, a fixed covariance is set
   std:
     usbl:
-      offset: 100.
-      factor: 0.1
+      offset: 2.
+      factor: 0.01
     dvl:
       offset: 0.002
       factor: 0.001
@@ -65,7 +65,7 @@ particle_filter:
   imu_noise_sigma_factor: 1
   usbl_noise_sigma_factor: 1
   particles_number: 100
-  particles_plot_time_interval: False #60
+  particles_plot_time_interval: 300
 
 csv_output:
   activate: True
