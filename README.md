@@ -162,12 +162,15 @@ For OPLAB output format:
 
 2. Extract information from nav_standard.json output (start and finish time can be selected based on output in step 2)
 
-    `auv_nav process -f oplab -s 20170817032000 -e 20170817071000 '\\oplab-surf\data\reconstruction\processed\2017\SSK17-01\ts_un_006'`
+    `auv_nav process -f oplab -s 20170817032000 -e 20170817071000 '<container directory>/processed/year/cruise/platform/YYYYMMDD_hhmmss_platform_sensor/'`
+    
+The setting used to run this can be updated by modifying the following file, which takes repository default parameters on the first run.
+    '<container directory>/configuration/year/cruise/platform/YYYYMMDD_hhmmss_platform_sensor/auv_nav.yaml'`
 
 For ACFR output format:
 1. Parse raw data into combined.RAW.auv and mission.cfg
 
-    `auv_nav parse -f acfr '\\oplab-surf\data\reconstruction\raw\2017\SSK17-01\ts_un_006'`
+    `auv_nav convert '<container directory>/processed/year/cruise/platform/YYYYMMDD_hhmmss_platform_sensor/'`
 
     Example of output:
     ```
