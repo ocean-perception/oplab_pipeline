@@ -138,11 +138,14 @@ The algorithm will read in the nav_standard.json file obtained after the parsing
 * acfr: The AFCR format uses a 'dRAWLOGS_cv' folder name and outputs its navigation solution to a file called 'combined.RAW.auv' as well as to a 'mission.cfg' to the processing folder root.
 
 ## Examples ##
+An example data set can be downloaded from here:
+`https://console.cloud.google.com/storage/browser/university-southampton-squidle/raw/year/cruise/platform/YYYYMMDD_hhmmss_platform_sensor/`
 
+Make sure you copy the folder format from 'raw/year/cruise/platform/YYYYMMDD_hhmmss_platform_sensor/'
 For OPLAB output format:
 1. Parse raw data into json file format 'nav_standard.json' and visualise data output
 
-    `auv_nav parse -f oplab '\\oplab-surf\data\reconstruction\raw\2017\SSK17-01\ts_un_006'`
+    `auv_nav parse -F '<container directory>\\raw/year/cruise/platform/YYYYMMDD_hhmmss_platform_sensor/'`
 
     Example of output:
     ```
