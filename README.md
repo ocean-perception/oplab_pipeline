@@ -139,13 +139,15 @@ The algorithm will read in the nav_standard.json file obtained after the parsing
 
 ## Examples ##
 An example data set can be downloaded from here:
-`https://console.cloud.google.com/storage/browser/university-southampton-squidle/raw/year/cruise/platform/YYYYMMDD_hhmmss_platform_sensor/`
+
+    `https://console.cloud.google.com/storage/browser/university-southampton-   squidle/raw/year/cruise/platform/YYYYMMDD_hhmmss_platform_sensor/`
 
 Make sure you copy the folder format from 'raw/year/cruise/platform/YYYYMMDD_hhmmss_platform_sensor/'
-For OPLAB output format:
-1. Parse raw data into json file format 'nav_standard.json' and visualise data output
 
-    `auv_nav parse -F '<container directory>\\raw/year/cruise/platform/YYYYMMDD_hhmmss_platform_sensor/'`
+For OPLAB output format:
+1. Parse raw data into json file format 'nav_standard.json' and visualise data output by parsing the target directory where mission.yaml is stored.
+
+    `auv_nav parse -F '<container directory>/raw/year/cruise/platform/YYYYMMDD_hhmmss_platform_sensor/'`
 
     Example of output:
     ```
