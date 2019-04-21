@@ -103,8 +103,24 @@ class ParticleFilter:
                 # usbl_uncertainty = 0
 
                 temp_particle.set(random.gauss(dvl_imu_datapoint.eastings, usbl_uncertainty), random.gauss(dvl_imu_datapoint.northings,usbl_uncertainty), dvl_imu_datapoint.epoch_timestamp, x_velocity_estimate, y_velocity_estimate, z_velocity_estimate, roll_estimate, pitch_estimate, yaw_estimate, dvl_imu_datapoint.altitude, dvl_imu_datapoint.depth)
+                temp_particle.set_weight(1)
                 particles.append(temp_particle)
+
+            # Normalize weights
+            weights_list = []
+            for i in particles:
+                weights_list.append(i.weight)
+            normalized_weights = normalize_weights(weights_list)
+            for index, particle_ in enumerate(particles):
+                particle_.weight = normalized_weights[index]
+
             return (particles)
+
+        def normalize_weights(weights_list):
+            normalized_weights = []
+            for i in weights_list:
+                normalized_weights.append(i/sum(weights_list))
+            return normalized_weights
 
         def propagate_particles(particles, previous_data_point, current_data_point):
             for i in particles:
@@ -122,59 +138,64 @@ class ParticleFilter:
                 i.set(easting_estimate, northing_estimate, current_data_point.epoch_timestamp, x_velocity_estimate, y_velocity_estimate, z_velocity_estimate, roll_estimate, pitch_estimate, yaw_estimate, current_data_point.altitude, current_data_point.depth)
 
         def measurement_update(N, usbl_measurement, particles_list, resample_flag=True): # updates weights of particles and resamples them # USBL uncertainty follow the readings (0.06/100* depth)! assuming noise of northing = easting
-            # particle weighting
-            # measurement_prob(the sensor measurement! i.e. USBL reading). Over here an example is used ... e.g.[31.622776601683793,53.85164807134504, 31.622776601683793, 53.85164807134504] from Z = myrobot.sense()
-            # weights = []
+
+            # Update weights (particle weighting)
             for i in particles_list[-1]:
                 weight = i.measurement_prob(usbl_measurement, usbl_noise(usbl_measurement))
                 # weights.append(weight)
-                i.weight.append(weight)
+                # i.weight.append(weight)
+                i.weight = i.weight*weight
+            # Normalize weights # this should be in particles...
+            weights_list = []
+            for i in particles_list[-1]:
+                weights_list.append(i.weight)
+            normalized_weights = normalize_weights(weights_list)
+            for index, particle_ in enumerate(particles_list[-1]):
+                particle_.weight = normalized_weights[index]
 
-            # normalised_weights=[]
-            # for i in weights:
-            #     normalised_weights.append(i/sum(weights))
-            # for i in range(len(particles_list[-1])):
-            #     particles_list[-1][i].weight.append(normalised_weights[i]) # i.weight = weight
+            # calculate Neff
+            weights_list = []
+            for i in particles_list[-1]:
+                weights_list.append(i.weight)
+            effectiveParticleSize = 1/sum([i**2 for i in weights_list])
+
+            if effectiveParticleSize < len(particles_list[-1])/2:
+                resample_flag = True
+            else:
+                resample_flag = False
 
             if resample_flag == True:
-                # calculate averaged weight
-                averaged_weight = []
-                for i in particles_list[-1]:
-                    averaged_weight.append(sum(i.weight)/len(i.weight))
-
-                # resampling wheel # should i use weights or normalised weights here?
+                # resampling wheel
                 temp_particles = []
                 index = int(random.random()*N)
                 beta=0.0
-
-                # mw=max(weights)
-                # for i in range(N):
-                #     beta += random.random()*2.0*mw
-                #     while beta > weights[index]:
-                #         beta-= weights[index]
-                #         index = (index + 1)%N
-                #     temp_particle = Particle()
-                #     temp_particle.parentID = '{}-{}'.format(len(particles_list)-1,index)
-                #     particles_list[-1][index].childIDList.append('{}-{}'.format(len(particles_list),len(temp_particles)))
-                #     temp_particle.set(particles_list[-1][index].eastings[-1], particles_list[-1][index].northings[-1], particles_list[-1][index].timestamps[-1], particles_list[-1][index].x_velocity[-1], particles_list[-1][index].y_velocity[-1], particles_list[-1][index].z_velocity[-1], particles_list[-1][index].roll[-1], particles_list[-1][index].pitch[-1], particles_list[-1][index].yaw[-1], particles_list[-1][index].altitude[-1], particles_list[-1][index].depth[-1])
-                #     # temp_particle.set_error(usbl_measurement) # maybe can remove this?
-                #     temp_particles.append(temp_particle)
-
-                mw = max(averaged_weight)
+                mw=max(weights_list)
                 for i in range(N):
                     beta += random.random()*2.0*mw
-                    while beta > averaged_weight[index]:
-                        beta-= averaged_weight[index]
+                    while beta > weights_list[index]:
+                        beta-= weights_list[index]
                         index = (index + 1)%N
                     temp_particle = Particle()
                     temp_particle.parentID = '{}-{}'.format(len(particles_list)-1,index)
                     particles_list[-1][index].childIDList.append('{}-{}'.format(len(particles_list),len(temp_particles)))
-                    temp_particle.set(particles_list[-1][index].eastings[-1], particles_list[-1][index].northings[-1], particles_list[-1][index].timestamps[-1], particles_list[-1][index].x_velocity[-1], particles_list[-1][index].y_velocity[-1], particles_list[-1][index].z_velocity[-1], particles_list[-1][index].roll[-1], particles_list[-1][index].pitch[-1], particles_list[-1][index].yaw[-1], particles_list[-1][index].altitude[-1], particles_list[-1][index].depth[-1])
+                    temp_particle.set(
+                        particles_list[-1][index].eastings[-1], 
+                        particles_list[-1][index].northings[-1], 
+                        particles_list[-1][index].timestamps[-1], 
+                        particles_list[-1][index].x_velocity[-1], 
+                        particles_list[-1][index].y_velocity[-1], 
+                        particles_list[-1][index].z_velocity[-1], 
+                        particles_list[-1][index].roll[-1], 
+                        particles_list[-1][index].pitch[-1], 
+                        particles_list[-1][index].yaw[-1], 
+                        particles_list[-1][index].altitude[-1], 
+                        particles_list[-1][index].depth[-1])
+                    temp_particle.set_weight(1/N) # particles_list[-1][index].weight)
                     # temp_particle.set_error(usbl_measurement) # maybe can remove this?
                     temp_particles.append(temp_particle)
-                return temp_particles
+                return (True, temp_particles)
             else:
-                return particles_list
+                return (False, particles_list)
 
         def extract_trajectory(final_particle):
             northings_trajectory = final_particle.northings
@@ -202,6 +223,19 @@ class ParticleFilter:
 
                 parentID = particles_list[particle_list][element_list].parentID
             return northings_trajectory, eastings_trajectory, timestamp_list, roll_list, pitch_list, yaw_list, altitude_list, depth_list
+
+        def mean_trajectory(particles):
+            x_list_ = []
+            y_list_ = []
+            for i in particles:
+                x_list_.append(i.weight*i.eastings[-1])
+                y_list_.append(i.weight*i.northings[-1])
+            x = sum(x_list_)
+            y = sum(y_list_)
+            return x, y
+
+        x_list = []
+        y_list = []
 
         particles_list = []
         usbl_datapoints = []
@@ -239,12 +273,17 @@ class ParticleFilter:
         usbl_datapoints.append(usbl_data[usbl_data_index-1])
         particles_list.append(particles)
 
+        x_, y_ = mean_trajectory(particles)
+        x_list.append(x_)
+        y_list.append(y_)
+
         max_uncertainty = 0
         usbl_uncertainty_list = []
         n = 0
         if measurement_update_flag is True:  # perform resampling
             last_usbl_flag = False
             while dvl_imu_data[dvl_imu_data_index] != dvl_imu_data[-1]:
+                Console.progress(dvl_imu_data_index, len(dvl_imu_data))
                 time_difference = dvl_imu_data[dvl_imu_data_index+1].epoch_timestamp - dvl_imu_data[dvl_imu_data_index].epoch_timestamp
                 max_uncertainty += dvl_noise(dvl_imu_data[dvl_imu_data_index], mode='std') * time_difference #* 2
 
@@ -261,17 +300,15 @@ class ParticleFilter:
                         usbl_uncertainty_list.append(usbl_noise(usbl_data[usbl_data_index]))
                         usbl_avr_uncertainty = sum(usbl_uncertainty_list)/len(usbl_uncertainty_list)
 
-                        if max_uncertainty >= usbl_avr_uncertainty:
-                            Console.info('RESAMPLED! {} {} {}'.format(n, max_uncertainty, usbl_noise(usbl_data[usbl_data_index])))
-                            n += 1
-                            max_uncertainty = 0
-                            new_particles = measurement_update(N, usbl_data[usbl_data_index], particles_list)
+                        n += 1
+                        resampled, new_particles = measurement_update(N, usbl_data[usbl_data_index], particles_list)
+
+                        if resampled:
                             particles_list.append(new_particles)
                             usbl_datapoints.append(usbl_data[usbl_data_index])
                             #reset usbl_uncertainty_list
                             usbl_uncertainty_list = []
                         else:
-                            new_particles = measurement_update(N, usbl_data[usbl_data_index], particles_list, resample_flag = False)
                             particles_list = new_particles
 
                         if usbl_data[usbl_data_index] == usbl_data[-1]:
@@ -283,32 +320,29 @@ class ParticleFilter:
                     else:
                         propagate_particles(particles_list[-1], dvl_imu_data[dvl_imu_data_index], dvl_imu_data[dvl_imu_data_index+1])
                         dvl_imu_data_index += 1
-                    # if usbl_data[usbl_data_index] == usbl_data[-1]:
-                    #     break
-                    # usbl_data_index += 1
-                    # dvl_imu_data_index += 1
+
+                x_, y_ = mean_trajectory(particles_list[-1])
+                x_list.append(x_)
+                y_list.append(y_)
 
             # print (max_uncertainty)
 
             ### select particle trajectory with largest overall weight
-            particles_weight_list = []
+            # particles_weight_list = []
+            particles_error_list = []
             for i in range(len(particles_list[-1])):
                 parentID = particles_list[-1][i].parentID
-                particles_weight_list.append([])
-                if particles_list[-1][i].averaged_weight == 0:
-                    particles_list[-1][i].averaged_weight = sum(particles_list[-1][i].weight)/len(particles_list[-1][i].weight) # this should be smth like particles.calculate_averaged_weight ... self.avrweioght=....
-                particles_weight_list[-1].append(particles_list[-1][i].averaged_weight)
-                # print (particles_list[-1][i].weight)
-                # print (particles_list[-1][i].averaged_weight)
+                particles_error_list.append([])
+                if len(particles_list[-1][i].error) != 0:
+                    particles_error_list[-1] += particles_list[-1][i].error
                 while parentID != '':
                     particle_list = int(parentID.split('-')[0])
                     element_list = int(parentID.split('-')[1])
                     parentID = particles_list[particle_list][element_list].parentID
-                    particles_weight_list[-1].append(particles_list[particle_list][element_list].averaged_weight)
-            for i in (range(len(particles_weight_list))):
-                particles_weight_list[i] = sum(particles_weight_list[i])
-                # particles_weight_list[i] = sum(particles_weight_list[i])/len(particles_weight_list[i]) # Normalize again? shouldn't matter...
-            selected_particle = particles_list[-1][particles_weight_list.index(max(particles_weight_list))]
+                    particles_error_list[-1] += particles_list[particle_list][element_list].error
+            for i in (range(len(particles_error_list))):
+                particles_error_list[i] = sum(particles_error_list[i])
+            selected_particle = particles_list[-1][particles_error_list.index(min(particles_error_list))]
             northings_trajectory, eastings_trajectory, timestamp_list, roll_list, pitch_list, yaw_list, altitude_list, depth_list =  extract_trajectory(selected_particle)
         else: # do not perform resampling, only propagate
             while dvl_imu_data[dvl_imu_data_index] != dvl_imu_data[-1]:
@@ -389,6 +423,8 @@ class ParticleFilter:
             pf_fusion_dvl.yaw = yaw_list[i]
             pf_fusion_dvl.altitude = altitude_list[i]
             pf_fusion_dvl_list.append(pf_fusion_dvl)
+
+        # plt.scatter(x_list, y_list)
 
         return pf_fusion_dvl_list, usbl_datapoints, particles_list, northings_std, eastings_std, yaw_std
 
