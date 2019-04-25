@@ -37,9 +37,9 @@ def parse_NOC_nmea(mission,
 
         file_list = get_file_list(path)
 
+        data_list = []
         for file in file_list:
             with file.open('r', errors='ignore') as nmea_file:
-                data_list = []
                 for line in nmea_file.readlines():
                     parts = line.split('\t')
                     msg = pynmea2.parse(parts[1])
