@@ -17,7 +17,7 @@ from pathlib import Path
 # sys.path.append("..")
 from auv_nav.parsers.parse_phins import parse_phins
 from auv_nav.parsers.parse_ae2000 import parse_ae2000
-from auv_nav.parsers.parse_nmea import parse_nmea
+from auv_nav.parsers.parse_NOC_nmea import parse_NOC_nmea
 from auv_nav.parsers.parse_autosub import parse_autosub
 from auv_nav.parsers.parse_gaps import parse_gaps
 from auv_nav.parsers.parse_usbl_dump import parse_usbl_dump
@@ -179,10 +179,10 @@ def parse_data(filepath, force_overwite):
                         parse_usbl_dump,
                         [mission, vehicle, 'usbl',
                          ftype, outpath, filename]))
-            elif mission.usbl.format == "nmea":
+            elif mission.usbl.format == "NOC_nmea":
                 pool_list.append(
                     pool.apply_async(
-                        parse_nmea,
+                        parse_NOC_nmea,
                         [mission, vehicle, 'usbl',
                          ftype, outpath, filename]))
             else:

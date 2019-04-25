@@ -748,18 +748,18 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
         for s in ekf_states:
             b = SyncedOrientationBodyVelocity()
             b.epoch_timestamp = s.time
-            b.northings = s.state[Index.X, 0]
-            b.eastings = s.state[Index.Y, 0]
-            b.depth = s.state[Index.Z, 0]
-            b.roll = s.state[Index.ROLL, 0]*180.0/math.pi
-            b.pitch = s.state[Index.PITCH, 0]*180.0/math.pi
-            b.yaw = s.state[Index.YAW, 0]*180.0/math.pi
+            b.northings = s.state[Index.X]
+            b.eastings = s.state[Index.Y]
+            b.depth = s.state[Index.Z]
+            b.roll = s.state[Index.ROLL]*180.0/math.pi
+            b.pitch = s.state[Index.PITCH]*180.0/math.pi
+            b.yaw = s.state[Index.YAW]*180.0/math.pi
             b.roll_std = s.covariance[Index.ROLL, Index.ROLL]*180.0/math.pi
             b.pitch_std = s.covariance[Index.PITCH, Index.PITCH]*180.0/math.pi
             b.yaw_std = s.covariance[Index.YAW, Index.YAW]*180.0/math.pi
-            b.x_velocity = s.state[Index.VX, 0]
-            b.y_velocity = s.state[Index.VY, 0]
-            b.z_velocity = s.state[Index.VZ, 0]
+            b.x_velocity = s.state[Index.VX]
+            b.y_velocity = s.state[Index.VY]
+            b.z_velocity = s.state[Index.VZ]
             b.x_velocity_std = s.covariance[Index.VX, Index.VX]
             b.y_velocity_std = s.covariance[Index.VY, Index.VY]
             b.z_velocity_std = s.covariance[Index.VZ, Index.VZ]
@@ -965,31 +965,32 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
                   'auv_dr_centre', csv_dr_auv_centre)
         write_csv(drcsvpath, dead_reckoning_dvl_list,
                   'auv_dr_dvl', csv_dr_auv_dvl)
-        camera_csv(camera1_list, 'auv_dr_' +
-                   mission.image.cameras[0].name, drcsvpath, csv_dr_camera_1)
-        camera_csv(camera2_list, 'auv_dr_' +
-                   mission.image.cameras[1].name, drcsvpath, csv_dr_camera_2)
         other_data_csv(chemical_list, 'auv_dr_chemical',
                        drcsvpath, csv_dr_chemical)
         write_csv(pfcsvpath, pf_fusion_centre_list,
                   'auv_pf_centre', csv_pf_auv_centre)
         write_csv(pfcsvpath, pf_fusion_dvl_list,
                   'auv_pf_dvl', csv_pf_auv_dvl)
-        camera_csv(camera1_pf_list, 'auv_pf_' +
-                   mission.image.cameras[0].name, pfcsvpath, csv_pf_camera_1)
-        camera_csv(camera2_pf_list, 'auv_pf_' +
-                   mission.image.cameras[1].name, pfcsvpath, csv_pf_camera_2)
         other_data_csv(chemical_list, 'auv_pf_chemical',
                        pfcsvpath, csv_pf_chemical)
         write_csv(ekfcsvpath, ekf_list,
                   'auv_ekf_centre', csv_ekf_auv_centre)
-        camera_csv(camera1_ekf_list, 'auv_ekf_' +
-                   mission.image.cameras[0].name, ekfcsvpath, csv_ekf_camera_1)
-        camera_csv(camera2_ekf_list, 'auv_ekf_' +
-                   mission.image.cameras[1].name, ekfcsvpath, csv_ekf_camera_2)
         other_data_csv(chemical_list, 'auv_ekf_chemical',
                        ekfcsvpath, csv_pf_chemical)
-
+        if len(camera1_list) > 0:
+            camera_csv(camera1_list, 'auv_dr_' +
+                       mission.image.cameras[0].name, drcsvpath, csv_dr_camera_1)
+            camera_csv(camera1_pf_list, 'auv_pf_' +
+                       mission.image.cameras[0].name, pfcsvpath, csv_pf_camera_1)
+            camera_csv(camera1_ekf_list, 'auv_ekf_' +
+                       mission.image.cameras[0].name, ekfcsvpath, csv_ekf_camera_1)
+        if len(camera2_list) > 1:
+            camera_csv(camera2_list, 'auv_dr_' +
+                       mission.image.cameras[1].name, drcsvpath, csv_dr_camera_2)
+            camera_csv(camera2_pf_list, 'auv_pf_' +
+                       mission.image.cameras[1].name, pfcsvpath, csv_pf_camera_2)
+            camera_csv(camera2_ekf_list, 'auv_ekf_' +
+                       mission.image.cameras[1].name, ekfcsvpath, csv_ekf_camera_2)
         if len(camera3_list) > 1:
             camera_csv(camera3_list, 'auv_dr_' +
                        mission.image.cameras[2].name, drcsvpath, csv_dr_camera_3)
