@@ -156,9 +156,9 @@ class BodyVelocity(OutputFormat):
     def from_autosub(self, data, i):
         self.epoch_timestamp = data['eTime'][i]
         self.epoch_timestamp_dvl = data['eTime'][i]
-        self.x_velocity = data['Vnorth0'][i] * 0.001
-        self.y_velocity = data['Veast0'][i] * 0.001
-        self.z_velocity = data['Vdown0'][i] * 0.001
+        self.x_velocity = - data['Vnorth0'][i] * 0.001  # Relative to seabed
+        self.y_velocity = - data['Veast0'][i] * 0.001
+        self.z_velocity = - data['Vdown0'][i] * 0.001
         self.x_velocity_std = data['Verr0'][i] * 0.001
         self.y_velocity_std = data['Verr0'][i] * 0.001
         self.z_velocity_std = data['Verr0'][i] * 0.001
@@ -688,7 +688,7 @@ class Usbl(OutputFormat):
         self.longitude = msg.longitude
         self.depth = - msg.altitude
 
-        # calculate in metres from reference
+        # calculate in meters from reference
         lateral_distance, bearing = latlon_to_metres(
             self.latitude, self.longitude,
             self.latitude_reference, self.longitude_reference)
