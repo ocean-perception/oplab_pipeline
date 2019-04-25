@@ -22,6 +22,11 @@ def epoch_to_localtime(epochtime):
     return localtime
 
 
+def epoch_to_utc(epochtime):
+    utc_time = time.gmtime(epochtime)
+    return utc_time
+
+
 def get_localtimezone():
     localtimezone = reference.LocalTimezone().tzname(datetime.now())  # string
     return localtimezone
@@ -46,14 +51,15 @@ def string_to_epoch(datetime):
 
 def epoch_from_json(json):
     epoch_timestamp = json['epoch_timestamp']
-    start_datetime = time.strftime(
-        '%Y%m%d%H%M%S', time.localtime(epoch_timestamp))
-    return string_to_epoch(start_datetime)
+    #start_datetime = time.strftime(
+    #    '%Y%m%d%H%M%S', time.localtime(epoch_timestamp))
+    #return string_to_epoch(start_datetime)
+    return epoch_timestamp
 
 
 def epoch_to_datetime(epoch_timestamp):
     return time.strftime('%Y%m%d%H%M%S',
-                         time.localtime(epoch_timestamp))
+                         time.gmtime(epoch_timestamp))
 
 
 def read_timezone(timezone):

@@ -12,8 +12,7 @@ from prettytable import PrettyTable, ALL
 import plotly.offline as py
 import plotly.graph_objs as go
 
-from auv_nav.tools.time_conversions import epoch_to_localtime
-from auv_nav.tools.time_conversions import get_localtimezone
+from auv_nav.tools.time_conversions import epoch_to_utc
 
 """
 This looks at nav_standard.json file stored in the format of
@@ -90,7 +89,7 @@ def data2trace(i, j, t, plotlytable_info_list):
     # plotly plot
     # format is 'yyyy-mm-dd HH:MM:SS.ssssss'
     x_values = [time.strftime('%Y-%m-%d %H:%M:%S',
-                epoch_to_localtime(k['epoch_timestamp']))
+                epoch_to_utc(k['epoch_timestamp']))
                 + '.{}'.format(('{:.6f}'.format(k['epoch_timestamp']
                                - int(k['epoch_timestamp'])))[2:9]) for k in j]
     # x_values = [k['epoch_timestamp'] for k in j]
@@ -216,12 +215,12 @@ def plot_parse_data(filepath, ftype):
             title='Json Data Info Table<br>Start time is: %s (%s), %d (epoch)\
             <br>Finish time is: %s (%s), %d (epoch)' % (
                 time.strftime('%Y-%m-%d %H:%M:%S',
-                              epoch_to_localtime(start_time)),
-                get_localtimezone(),
+                              epoch_to_utc(start_time)),
+                'UTC',
                 start_time,
                 time.strftime('%Y-%m-%d %H:%M:%S',
-                              epoch_to_localtime(finish_time)),
-                get_localtimezone(),
+                              epoch_to_utc(finish_time)),
+                'UTC',
                 finish_time))
         table_fig = go.Figure(data=[table_trace], layout=layout_table)
         py.plot(table_fig,
@@ -234,16 +233,16 @@ def plot_parse_data(filepath, ftype):
             title='Timestamp History Plot<br>Start time is: %s (%s), %d (epoch)\
                    <br>Finish time is: %s (%s), %d (epoch)' % (
                     time.strftime('%Y-%m-%d %H:%M:%S',
-                                  epoch_to_localtime(start_time)),
-                    get_localtimezone(),
+                                  epoch_to_utc(start_time)),
+                    'UTC',
                     start_time,
                     time.strftime('%Y-%m-%d %H:%M:%S',
-                                  epoch_to_localtime(finish_time)),
-                    get_localtimezone(),
+                                  epoch_to_utc(finish_time)),
+                    'UTC',
                     finish_time),
             hovermode='closest',
             xaxis=dict(
-                title='Date time (%s)' % (get_localtimezone()),
+                title='Date time (%s)' % ('UTC'),
                 rangeselector=dict(
                     buttons=list([
                         dict(count=5,
@@ -292,12 +291,12 @@ def plot_parse_data(filepath, ftype):
         start_end_text = 'Start time is: %s (%s), %d (epoch)\nFinish time is: \
                           %s (%s), %d (epoch)\n' % (
                           time.strftime('%Y-%m-%d %H:%M:%S',
-                                        epoch_to_localtime(start_time)),
-                          get_localtimezone(),
+                                        epoch_to_utc(start_time)),
+                          'UTC',
                           start_time,
                           time.strftime('%Y-%m-%d %H:%M:%S',
-                                        epoch_to_localtime(finish_time)),
-                          get_localtimezone(),
+                                        epoch_to_utc(finish_time)),
+                          'UTC',
                           finish_time)  # changed from gmtime to localtime
 
         t.align['Sample Value'] = 'l'
