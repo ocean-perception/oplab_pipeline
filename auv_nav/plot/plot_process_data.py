@@ -556,21 +556,22 @@ def plot_2d_deadreckoning(camera1_list,
         if particles_time_interval is not False:
             for i in pf_particles_list[0]:
                 pf_timestamps_interval.append(float(
-                    pf_particles_list[0][0].epoch_timestamps[0]))
+                    pf_particles_list[0][0].timestamps[0]))
                 pf_eastings_interval.append(float(i.eastings[0]))
                 pf_northings_interval.append(float(i.northings[0]))
-            timestamp_value_tracker = pf_particles_list[0][0].epoch_timestamps[0]
+            timestamp_value_tracker = pf_particles_list[0][0].timestamps[0]
+
             for i in range(len(pf_particles_list)):
                 # timestamp_index_tracker = 0
-                for j in range(len(pf_particles_list[i][0].epoch_timestamps)):
-                    if (pf_particles_list[i][0].epoch_timestamps[j]
+                for j in range(len(pf_particles_list[i][0].timestamps)):
+                    if (pf_particles_list[i][0].timestamps[j]
                        - timestamp_value_tracker) > particles_time_interval:
                         for k in pf_particles_list[i]:
-                            pf_timestamps_interval.append(float(k.epoch_timestamps[j]))
+                            pf_timestamps_interval.append(float(k.timestamps[j]))
                             pf_eastings_interval.append(float(k.eastings[j]))
                             pf_northings_interval.append(float(k.northings[j]))
                         timestamp_value_tracker = (pf_particles_list[i][0]
-                                                   .epoch_timestamps[j])
+                                                   .timestamps[j])
             make_data(figure, 'pf_dvl_distribution',
                       pf_eastings_interval,
                       pf_northings_interval,

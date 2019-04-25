@@ -174,7 +174,7 @@ class Mission:
             return
 
         with filename.open('r') as stream:
-            data = yaml.load(stream)
+            data = yaml.safe_load(stream)
             if 'version' in data:
                 self.version = data['version']
             self.origin.load(data['origin'])

@@ -22,9 +22,9 @@ def epoch_to_localtime(epochtime):
     return localtime
 
 
-def epoch_to_utc(epochtime):
-    utc_time = time.gmtime(epochtime)
-    return utc_time
+def epoch_to_utctime(epochtime):
+    utctime = time.gmtime(epochtime)
+    return utctime
 
 
 def get_localtimezone():
