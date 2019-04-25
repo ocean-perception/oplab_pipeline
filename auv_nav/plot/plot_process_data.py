@@ -12,8 +12,8 @@ def create_trace(x_list,
                  trace_color,
                  visibility=True):
     trace = go.Scattergl(
-        x=x_list,
-        y=y_list,
+        x=[float(i) for i in x_list],
+        y=[float(i) for i in y_list],
         visible=visibility,  # True | False | legendonly
         name=trace_name,
         mode='lines+markers',
@@ -526,25 +526,25 @@ def plot_2d_deadreckoning(camera1_list,
 
     for i in plotly_list:
         make_data(figure, i[0],
-                  [j.eastings for j in i[1]],
-                  [j.northings for j in i[1]],
+                  [float(j.eastings) for j in i[1]],
+                  [float(j.northings) for j in i[1]],
                   visibility=i[2])
     if len(pf_fusion_centre_list) > 1:
         make_data(figure, 'pf_camera1',
-                  [i.eastings for i in camera1_pf_list],
-                  [i.northings for i in camera1_pf_list],
+                  [float(i.eastings) for i in camera1_pf_list],
+                  [float(i.northings) for i in camera1_pf_list],
                   visibility='legendonly',
                   hoverinfo='x+y+text',
                   hovertext=[time.strftime('%H:%M:%S',
                              time.localtime(i.epoch_timestamp))
                              for i in camera1_pf_list])
         make_data(figure, 'pf_centre',
-                  [i.eastings for i in pf_fusion_centre_list],
-                  [i.northings for i in pf_fusion_centre_list],
+                  [float(i.eastings) for i in pf_fusion_centre_list],
+                  [float(i.northings) for i in pf_fusion_centre_list],
                   visibility='legendonly')
         make_data(figure, 'pf_dvl',
-                  [i.eastings for i in pf_fusion_dvl_list],
-                  [i.northings for i in pf_fusion_dvl_list],
+                  [float(i.eastings) for i in pf_fusion_dvl_list],
+                  [float(i.northings) for i in pf_fusion_dvl_list],
                   visibility=True,
                   hoverinfo='x+y+text',
                   hovertext=[time.strftime('%H:%M:%S',
@@ -555,10 +555,10 @@ def plot_2d_deadreckoning(camera1_list,
         pf_northings_interval = []
         if particles_time_interval is not False:
             for i in pf_particles_list[0]:
-                pf_timestamps_interval.append(
-                    pf_particles_list[0][0].epoch_timestamps[0])
-                pf_eastings_interval.append(i.eastings[0])
-                pf_northings_interval.append(i.northings[0])
+                pf_timestamps_interval.append(float(
+                    pf_particles_list[0][0].epoch_timestamps[0]))
+                pf_eastings_interval.append(float(i.eastings[0]))
+                pf_northings_interval.append(float(i.northings[0]))
             timestamp_value_tracker = pf_particles_list[0][0].epoch_timestamps[0]
             for i in range(len(pf_particles_list)):
                 # timestamp_index_tracker = 0
@@ -566,9 +566,9 @@ def plot_2d_deadreckoning(camera1_list,
                     if (pf_particles_list[i][0].epoch_timestamps[j]
                        - timestamp_value_tracker) > particles_time_interval:
                         for k in pf_particles_list[i]:
-                            pf_timestamps_interval.append(k.epoch_timestamps[j])
-                            pf_eastings_interval.append(k.eastings[j])
-                            pf_northings_interval.append(k.northings[j])
+                            pf_timestamps_interval.append(float(k.epoch_timestamps[j]))
+                            pf_eastings_interval.append(float(k.eastings[j]))
+                            pf_northings_interval.append(float(k.northings[j]))
                         timestamp_value_tracker = (pf_particles_list[i][0]
                                                    .epoch_timestamps[j])
             make_data(figure, 'pf_dvl_distribution',
@@ -580,21 +580,21 @@ def plot_2d_deadreckoning(camera1_list,
             resampling_index = 1
             for i in pf_particles_list:
                 make_data(figure, 'PF_Resampling{}'.format(resampling_index),
-                          [j.eastings[0] for j in i],
-                          [j.northings[0] for j in i],
+                          [float(j.eastings[0]) for j in i],
+                          [float(j.northings[0]) for j in i],
                           mode='markers',
                           opacity=0.5)
                 make_data(figure, 'PF_Propagation{}'.format(resampling_index),
-                          [j.eastings[-1] for j in i],
-                          [j.northings[-1] for j in i],
+                          [float(j.eastings[-1]) for j in i],
+                          [float(j.northings[-1]) for j in i],
                           mode='markers',
                           opacity=0.5)
                 resampling_index += 1
 
     if len(ekf_centre_list) > 1:
         make_data(figure, 'ekf_centre',
-                  [i.eastings for i in ekf_centre_list],
-                  [i.northings for i in ekf_centre_list],
+                  [float(i.eastings) for i in ekf_centre_list],
+                  [float(i.northings) for i in ekf_centre_list],
                   visibility='legendonly')
 
     config = {'scrollZoom': True}
@@ -638,37 +638,37 @@ def plot_2d_deadreckoning(camera1_list,
         for j in plotly_list:
             make_frame(frame,
                        [j[0],
-                        [k.epoch_timestamp for k in j[1]],
-                        [k.eastings for k in j[1]],
-                        [k.northings for k in j[1]]],
+                        [float(k.epoch_timestamp) for k in j[1]],
+                        [float(k.eastings) for k in j[1]],
+                        [float(k.northings) for k in j[1]]],
                        i)
         if len(camera1_pf_list) > 1:
             make_frame(frame,
                        ['pf_camera1',
-                        [i.epoch_timestamp for i in camera1_pf_list],
-                        [i.eastings for i in camera1_pf_list],
-                        [i.northings for i in camera1_pf_list]],
+                        [float(i.epoch_timestamp) for i in camera1_pf_list],
+                        [float(i.eastings) for i in camera1_pf_list],
+                        [float(i.northings) for i in camera1_pf_list]],
                        i)
         if len(pf_fusion_centre_list) > 1:
             make_frame(frame,
                        ['pf_centre',
-                        [i.epoch_timestamp for i in pf_fusion_centre_list],
-                        [i.eastings for i in pf_fusion_centre_list],
-                        [i.northings for i in pf_fusion_centre_list]],
+                        [float(i.epoch_timestamp) for i in pf_fusion_centre_list],
+                        [float(i.eastings) for i in pf_fusion_centre_list],
+                        [float(i.northings) for i in pf_fusion_centre_list]],
                        i)
         if len(ekf_centre_list) > 1:
             make_frame(frame,
                        ['ekf_centre',
-                        [i.epoch_timestamp for i in ekf_centre_list],
-                        [i.eastings for i in ekf_centre_list],
-                        [i.northings for i in ekf_centre_list]],
+                        [float(i.epoch_timestamp) for i in ekf_centre_list],
+                        [float(i.eastings) for i in ekf_centre_list],
+                        [float(i.northings) for i in ekf_centre_list]],
                        i)
         if len(pf_fusion_dvl_list) > 1:
             make_frame(frame,
                        ['pf_dvl',
-                        [i.epoch_timestamp for i in pf_fusion_dvl_list],
-                        [i.eastings for i in pf_fusion_dvl_list],
-                        [i.northings for i in pf_fusion_dvl_list]],
+                        [float(i.epoch_timestamp) for i in pf_fusion_dvl_list],
+                        [float(i.eastings) for i in pf_fusion_dvl_list],
+                        [float(i.northings) for i in pf_fusion_dvl_list]],
                        i)
         if len(pf_timestamps_interval) > 1:
             make_frame(frame,
@@ -774,8 +774,8 @@ def plot_2d_localisation(dr_list,
 
     for i in plotly_list:
         make_data(figure, i[0],
-                  [j.eastings for j in i[1]],
-                  [j.northings for j in i[1]],
+                  [float(j.eastings) for j in i[1]],
+                  [float(j.northings) for j in i[1]],
                   visibility=i[2])
 
     config = {'scrollZoom': True}
@@ -819,9 +819,9 @@ def plot_2d_localisation(dr_list,
         for j in plotly_list:
             make_frame(frame,
                        [j[0],
-                        [k.epoch_timestamp for k in j[1]],
-                        [k.eastings for k in j[1]],
-                        [k.northings for k in j[1]]],
+                        [float(k.epoch_timestamp) for k in j[1]],
+                        [float(k.eastings) for k in j[1]],
+                        [float(k.northings) for k in j[1]]],
                        i)
         figure['frames'].append(frame)
         slider_step = {'args': [
