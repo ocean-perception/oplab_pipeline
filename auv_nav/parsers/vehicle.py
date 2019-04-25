@@ -58,12 +58,12 @@ class Vehicle:
         mission_data = []
 
         with vehicle_file.open('r') as stream:
-            data = yaml.load(stream)
+            data = yaml.safe_load(stream)
             if 'origin' in data:
                 self.origin.load(data['origin'])
                 if 'x_offset' in data['origin']:
                     mission_stream = mission_file.open('r')
-                    mission_data = yaml.load(mission_stream)
+                    mission_data = yaml.safe_load(mission_stream)
                     old_format = True
             if 'ins' in data:
                 if old_format:

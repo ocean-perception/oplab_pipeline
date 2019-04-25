@@ -14,9 +14,12 @@ class Particle:
 
         self.parentID = '' # '0-0'/'0-1'/'0-2'/... so can string split and determine encoded location
         self.childIDList = [] # ['1-0','1-1','1'3']
-        self.weight = [] # 0
+
+        # self.weight = 1 # [] 0
         self.averaged_weight = 0
-        self.error = 0
+        self.averaged_error = 0
+        self.error = [] # 0
+
         # self.trajectoryNrEsTs = [] # [[easting, northing, timestamp], [easting, northing, timestamp], ...] # write a function to plot nice graphs for visualization purposes (for you and publishing)
         self.eastings = []
         self.northings = []
@@ -29,7 +32,6 @@ class Particle:
         self.roll = []
         self.pitch = []
         self.yaw = []
-
         # from dvl_imu_data
         self.altitude = []
         self.depth = []
@@ -51,6 +53,9 @@ class Particle:
     # def set_error(self, measurement):
     #     self.error = math.sqrt((self.eastings[0] - measurement.eastings) ** 2 + (self.northings[0] - measurement.northings) ** 2)
 
+    def set_weight(self, new_weight):
+        self.weight = new_weight
+
     def Gaussian(self, mu, sigma, x):
         # calculates the probability of x for 1-dim Gaussian with mean mu and sigma (standard deviation)
         return math.exp(- ((mu - x) ** 2) / (sigma ** 2) / 2.0) / math.sqrt(2.0 * math.pi * (sigma ** 2))
@@ -59,6 +64,7 @@ class Particle:
         # calculates how likely a measurement should be
         prob = 1.0;
         dist = math.sqrt((self.eastings[-1] - measurement.eastings) ** 2 + (self.northings[-1] - measurement.northings) ** 2)
+        self.error.append(dist)
         # prob *= self.Gaussian(0, measurement.northings_std, dist) # it should be there (mu = dist = 0), but measurement says its there (x = dist = particle - measurement), with some uncertainty (std = sense_noise)
         prob *= self.Gaussian(0, measurement_error, dist)
 #        for i in range(len(landmarks)):
