@@ -78,7 +78,7 @@ def parse_autosub(mission,
 
     path = get_raw_folder(outpath / '..' / filepath / filename)
 
-    alr_log = loadmat(path)
+    alr_log = loadmat(str(path))
     alr_acdp = alr_log['missionData']['ADCPbin00']
     alr_ins = alr_log['missionData']['INSAttitude']
     alr_ctd = alr_log['missionData']['CTD']
