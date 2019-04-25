@@ -5,6 +5,7 @@ All rights reserved.
 """
 from auv_nav.tools.interpolate import interpolate_dvl
 from auv_nav.tools.interpolate import interpolate
+from auv_nav.tools.console import Console
 
 import math
 import numpy as np
@@ -329,6 +330,7 @@ class EkfImpl(object):
         self.smoothed_states_vector = copy.deepcopy(self.states_vector)
         if enable:
             for i in range(ns):
+                Console.progress(ns+i, 2*ns)
                 sf = self.smoothed_states_vector[ns - 1 - i]
                 s = self.states_vector[ns - 2 - i]
                 x_prior, p_prior = s.get()
@@ -516,6 +518,7 @@ class ExtendedKalmanFilter(object):
         # self.ekf.print_state()
         # print('-------------------------------')
         while dr_idx < len(dr_list):
+            Console.progress(dr_idx, len(dr_list)*2)
             dr_stamp = dr_list[dr_idx].epoch_timestamp
             if usbl_idx < len(usbl_list):
                 usbl_stamp = usbl_list[usbl_idx].epoch_timestamp
