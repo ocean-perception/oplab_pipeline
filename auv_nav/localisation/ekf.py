@@ -52,13 +52,13 @@ class EkfState(object):
 class Measurement(object):
     def __init__(self, sensors_std):
         # The measurement and its associated covariance
-        self.measurement = np.zeros(12, dtype=float)
-        self.covariance = np.zeros((12, 12), dtype=float)
+        self.measurement = np.zeros(Index.DIM, dtype=float)
+        self.covariance = np.zeros((Index.DIM, Index.DIM), dtype=float)
         self.sensors_std = sensors_std
 
         # This defines which variables within this measurement
         # actually get passed into the filter.
-        self.update_vector = np.zeros(12, dtype=int)
+        self.update_vector = np.zeros(Index.DIM, dtype=int)
 
         # The real-valued time, in seconds, since some epoch
         self.time = 0.0
@@ -225,6 +225,8 @@ class EkfImpl(object):
 
         # print('Prediction {0}'.format(str(self.state.T)))
         self.last_update_time = timestamp
+        # Wrap state angles
+        self.wrap_state_angles()
 
         # (3) Save the state for posterior smoothing
         s = EkfState(timestamp, self.state, self.covariance)
@@ -341,7 +343,16 @@ class EkfImpl(object):
                                 + self.process_noise_covariance * delta)
                 J = p_prior * A.T * np.linalg.inv(p_prior_pred)
 
-                x_prior_smoothed = x_prior + J @ (x_smoothed - f @ x_prior)
+                innovation = x_smoothed - f @ x_prior
+                # Wrap angles of the innovation_subset
+                for idx in range(Index.DIM):
+                    if idx == Index.ROLL or idx == Index.PITCH or idx == Index.YAW:
+                        while innovation[idx] < -math.pi:
+                            innovation[idx] += 2*math.pi
+                        while innovation[idx] > math.pi:
+                            innovation[idx] -= 2*math.pi
+
+                x_prior_smoothed = x_prior + J @ innovation
                 p_prior_smoothed = (
                     p_prior + J @ (p_smoothed - p_prior_pred) @ J.T)
                 self.smoothed_states_vector[ns-2-i].set(
@@ -515,9 +526,6 @@ class ExtendedKalmanFilter(object):
             m = Measurement(sensors_std)
             f_upda_time = self.ekf.get_last_update_time()
 
-            # m.from_synced_orientation_body_velocity(dr_list[dr_idx])
-            # dr_idx += 1
-
             if dr_stamp < usbl_stamp:
                 m.from_synced_orientation_body_velocity(dr_list[dr_idx])
                 dr_idx += 1
@@ -530,9 +538,7 @@ class ExtendedKalmanFilter(object):
             if last_update_delta > 0:
                 self.ekf.predict(m.time, last_update_delta)
             self.ekf.correct(m)
-        # print("EKF finished, smoothing with EKS...")
         self.ekf.smooth(enable=True)
-        # print("EKS finished")
 
     def get_result(self):
         return self.ekf.get_states()
