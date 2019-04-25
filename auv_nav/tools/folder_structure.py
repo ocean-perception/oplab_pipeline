@@ -32,6 +32,17 @@ def get_folder(path, name):
                 str(path)))
 
 
+def get_file_list(directory):
+    dirpath = Path(directory)
+    file_list = []
+    for x in dirpath.iterdir():
+        if x.is_file():
+            file_list.append(x)
+        elif x.is_dir():
+            file_list.extend(searching_all_files(x))
+    return file_list
+
+
 def get_config_folder(path):
     return get_folder(path, "configuration")
 

@@ -658,7 +658,7 @@ class Usbl(OutputFormat):
         # self.eastings_target = 0 eastings
         # self.depth = 0 depth
         self.lateral_distace = 0
-        self.distance = 0  
+        self.distance = 0
         self.bearing = 0
 
         if std_offset is not None:
@@ -686,6 +686,7 @@ class Usbl(OutputFormat):
         self.epoch_timestamp = msg.timestamp
         self.latitude = msg.latitude
         self.longitude = msg.longitude
+        self.depth = - msg.altitude
 
         # calculate in metres from reference
         lateral_distance, bearing = latlon_to_metres(
@@ -697,6 +698,7 @@ class Usbl(OutputFormat):
             bearing*pi/180.0)*lateral_distance
         self.eastings_std = self.std_offset
         self.northings_std = self.std_offset
+        self.depth_std = self.std_offset
 
     def from_json(self, json):
         self.epoch_timestamp = json['epoch_timestamp']
