@@ -714,7 +714,7 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
         Console.warn("There are no USBL measurements. Starting DR at origin...")
 
 # particle filter data fusion of usbl_data and dvl_imu_data
-    if particle_filter_activate:
+    if particle_filter_activate and len(usbl_list) > 0:
         Console.info("Running PF...")
         pf_start_time = time.time()
         [pf_fusion_dvl_list,
@@ -760,7 +760,7 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
             pf_fusion_centre_list[i].longitude = lon
 
     ekf_list = []
-    if ekf_activate:
+    if ekf_activate and len(usbl_list) > 0:
         ekf_start_time = time.time()
         # velocity_body_list, list of BodyVelocity()
         # orientation_list, list of Orientation()
