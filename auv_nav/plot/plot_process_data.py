@@ -311,13 +311,8 @@ def plot_pf_uncertainty(pf_fusion_dvl_list,
                         pf_northings_std,
                         pf_eastings_std,
                         pf_yaw_std,
-                        orientation_list,
-                        velocity_body_list,
-                        depth_list,
-                        usbl_list,
-                        velocity_inertial_list,
-                        velocity_inertial_sensor_name,
                         plotlypath):
+    print('...plotting pf_uncertainty...')
     pf_time = [i.epoch_timestamp for i in pf_fusion_dvl_list]
 
     tr_pf_northings_std = create_trace(pf_time, pf_northings_std,
@@ -343,6 +338,15 @@ def plot_pf_uncertainty(pf_fusion_dvl_list,
             filename=str(plotlypath / 'pf_uncertainty.html'),
             auto_open=False)
 
+
+def plot_uncertainty(orientation_list,
+                     velocity_body_list,
+                     depth_list,
+                     usbl_list,
+                     velocity_inertial_list,
+                     velocity_inertial_sensor_name,
+                     plotlypath):
+    print('...plotting uncertainty...')
     # Uncertainty plotly --- https://plot.ly/python/line-charts/
     # filled-lines Something like that?
     ori_time = [i.epoch_timestamp for i in orientation_list]
