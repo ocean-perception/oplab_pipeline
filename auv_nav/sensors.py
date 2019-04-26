@@ -700,6 +700,13 @@ class Usbl(OutputFormat):
         self.eastings_std = self.std_offset
         self.northings_std = self.std_offset
         self.depth_std = self.std_offset
+        # If your displacements aren't too great (less than a few kilometers)
+        # and you're not right at the poles, use the quick and dirty estimate
+        # that 111,111 meters (111.111 km) in the y direction is 1 degree (of
+        # latitude) and 111,111 * cos(latitude) meters in the x direction is
+        # 1 degree (of longitude).
+        self.latitude_std = self.depth / 111.111e3
+        self.longitude_std = self.latitude_std * cos(self.latitude*pi/180.0)
 
     def from_json(self, json):
         self.epoch_timestamp = json['epoch_timestamp']
