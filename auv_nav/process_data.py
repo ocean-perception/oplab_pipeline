@@ -666,49 +666,52 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
             interpolate_remove_flag = False  # reset flag
         Console.info('Complete interpolation and coordinate transfomations for velocity_inertial')
 
-# offset velocity DR by average usbl estimate
+    # offset velocity DR by average usbl estimate
     # offset velocity body DR by average usbl estimate
-    [northings_usbl_interpolated, eastings_usbl_interpolated] = usbl_offset(
-        [i.epoch_timestamp for i in dead_reckoning_centre_list],
-        [i.northings for i in dead_reckoning_centre_list],
-        [i.eastings for i in dead_reckoning_centre_list],
-        [i.epoch_timestamp for i in usbl_list],
-        [i.northings for i in usbl_list],
-        [i.eastings for i in usbl_list])
-    for i in range(len(dead_reckoning_centre_list)):
-        dead_reckoning_centre_list[i].northings += northings_usbl_interpolated
-        dead_reckoning_centre_list[i].eastings += eastings_usbl_interpolated
-        dead_reckoning_centre_list[i].latitude, dead_reckoning_centre_list[i].longitude = metres_to_latlon(
-            mission.origin.latitude,
-            mission.origin.longitude,
-            dead_reckoning_centre_list[i].eastings,
-            dead_reckoning_centre_list[i].northings)
-    for i in range(len(dead_reckoning_dvl_list)):
-        dead_reckoning_dvl_list[i].northings += northings_usbl_interpolated
-        dead_reckoning_dvl_list[i].eastings += eastings_usbl_interpolated
-        dead_reckoning_dvl_list[i].latitude, dead_reckoning_dvl_list[i].longitude = metres_to_latlon(
-            mission.origin.latitude,
-            mission.origin.longitude,
-            dead_reckoning_dvl_list[i].eastings,
-            dead_reckoning_dvl_list[i].northings)
-
-    # offset velocity inertial DR by average usbl estimate
-    if len(velocity_inertial_list) > 0:
+    if len(usbl_list) > 0:
         [northings_usbl_interpolated, eastings_usbl_interpolated] = usbl_offset(
-            [i.epoch_timestamp for i in velocity_inertial_list],
-            [i.northings for i in velocity_inertial_list],
-            [i.eastings for i in velocity_inertial_list],
+            [i.epoch_timestamp for i in dead_reckoning_centre_list],
+            [i.northings for i in dead_reckoning_centre_list],
+            [i.eastings for i in dead_reckoning_centre_list],
             [i.epoch_timestamp for i in usbl_list],
             [i.northings for i in usbl_list],
             [i.eastings for i in usbl_list])
-        for i in range(len(velocity_inertial_list)):
-            velocity_inertial_list[i].northings += northings_usbl_interpolated
-            velocity_inertial_list[i].eastings += eastings_usbl_interpolated
-            velocity_inertial_list[i].latitude, velocity_inertial_list[i].longitude = metres_to_latlon(
+        for i in range(len(dead_reckoning_centre_list)):
+            dead_reckoning_centre_list[i].northings += northings_usbl_interpolated
+            dead_reckoning_centre_list[i].eastings += eastings_usbl_interpolated
+            dead_reckoning_centre_list[i].latitude, dead_reckoning_centre_list[i].longitude = metres_to_latlon(
                 mission.origin.latitude,
                 mission.origin.longitude,
-                velocity_inertial_list[i].eastings,
-                velocity_inertial_list[i].northings)
+                dead_reckoning_centre_list[i].eastings,
+                dead_reckoning_centre_list[i].northings)
+        for i in range(len(dead_reckoning_dvl_list)):
+            dead_reckoning_dvl_list[i].northings += northings_usbl_interpolated
+            dead_reckoning_dvl_list[i].eastings += eastings_usbl_interpolated
+            dead_reckoning_dvl_list[i].latitude, dead_reckoning_dvl_list[i].longitude = metres_to_latlon(
+                mission.origin.latitude,
+                mission.origin.longitude,
+                dead_reckoning_dvl_list[i].eastings,
+                dead_reckoning_dvl_list[i].northings)
+
+        # offset velocity inertial DR by average usbl estimate
+        if len(velocity_inertial_list) > 0:
+            [northings_usbl_interpolated, eastings_usbl_interpolated] = usbl_offset(
+                [i.epoch_timestamp for i in velocity_inertial_list],
+                [i.northings for i in velocity_inertial_list],
+                [i.eastings for i in velocity_inertial_list],
+                [i.epoch_timestamp for i in usbl_list],
+                [i.northings for i in usbl_list],
+                [i.eastings for i in usbl_list])
+            for i in range(len(velocity_inertial_list)):
+                velocity_inertial_list[i].northings += northings_usbl_interpolated
+                velocity_inertial_list[i].eastings += eastings_usbl_interpolated
+                velocity_inertial_list[i].latitude, velocity_inertial_list[i].longitude = metres_to_latlon(
+                    mission.origin.latitude,
+                    mission.origin.longitude,
+                    velocity_inertial_list[i].eastings,
+                    velocity_inertial_list[i].northings)
+    else:
+        Console.warn("There are no USBL measurements. Starting DR at origin...")
 
 # particle filter data fusion of usbl_data and dvl_imu_data
     if particle_filter_activate:
