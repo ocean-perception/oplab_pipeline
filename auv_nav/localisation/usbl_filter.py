@@ -118,5 +118,5 @@ def usbl_filter(usbl_list, depth_list, sigma_factor, max_auv_speed):
             n = -continuity_condition
             i += 1
 
-    Console.info('{} remain of {} USBL measurements'.format(len(usbl_temp_list), original_size))
+    Console.info('{} remain of {} USBL measurements after distance filter'.format(len(usbl_temp_list), original_size))
     return usbl_temp_list
