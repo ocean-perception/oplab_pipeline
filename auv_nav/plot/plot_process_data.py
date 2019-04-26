@@ -671,7 +671,7 @@ def plot_2d_deadreckoning(camera1_list,
                         [float(i.eastings) for i in pf_fusion_dvl_list],
                         [float(i.northings) for i in pf_fusion_dvl_list]],
                        i)
-        if len(pf_timestamps_interval) > 1:
+        if len(pf_fusion_centre_list) > 1:
             make_frame(frame,
                        ['pf_dvl_distribution',
                         pf_timestamps_interval,
