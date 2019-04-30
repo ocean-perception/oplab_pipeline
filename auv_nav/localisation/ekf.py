@@ -76,7 +76,7 @@ class Measurement(object):
             self.covariance[Index.Z, Index.Z] = value.depth_std**2
         else:
             self.covariance[Index.Z, Index.Z] = (
-                value.depth*depth_std_factor + depth_std_offset)
+                value.depth*depth_std_factor + depth_std_offset)**2
         self.update_vector[Index.Z] = 1
 
     def from_dvl(self, value):
@@ -97,11 +97,11 @@ class Measurement(object):
             self.covariance[Index.VX, Index.VX] = value.z_velocity_std**2
         else:
             self.covariance[Index.VX, Index.VX] = (
-                abs(value.x_velocity)*velocity_std_factor+velocity_std_offset)
+                abs(value.x_velocity)*velocity_std_factor+velocity_std_offset)**2
             self.covariance[Index.VY, Index.VY] = (
-                abs(value.y_velocity)*velocity_std_factor+velocity_std_offset)
+                abs(value.y_velocity)*velocity_std_factor+velocity_std_offset)**2
             self.covariance[Index.VZ, Index.VZ] = (
-                abs(value.z_velocity)*velocity_std_factor+velocity_std_offset)
+                abs(value.z_velocity)*velocity_std_factor+velocity_std_offset)**2
         self.update_vector[Index.VX] = 1
         self.update_vector[Index.VY] = 1
         self.update_vector[Index.VZ] = 1
@@ -112,7 +112,7 @@ class Measurement(object):
         distance = math.sqrt(value.northings**2
                              + value.eastings**2
                              + value.depth**2)
-        error = (usbl_noise_std_offset + usbl_noise_std_factor*distance)
+        error = usbl_noise_std_offset + usbl_noise_std_factor*distance
 
         self.time = value.epoch_timestamp
         self.measurement[Index.X] = value.northings
@@ -122,8 +122,8 @@ class Measurement(object):
             self.covariance[Index.X, Index.X] = value.northings_std**2
             self.covariance[Index.Y, Index.Y] = value.eastings_std**2
         else:
-            self.covariance[Index.X, Index.X] = error
-            self.covariance[Index.Y, Index.Y] = error
+            self.covariance[Index.X, Index.X] = error**2
+            self.covariance[Index.Y, Index.Y] = error**2
         self.update_vector[Index.X] = 1
         self.update_vector[Index.Y] = 1
 
@@ -138,15 +138,15 @@ class Measurement(object):
 
         if value.roll_std > 0:
             self.covariance[Index.ROLL, Index.ROLL] = (value.roll_std*math.pi/180.)**2
-            self.covariance[Index.PITCH, Index.PITCH] = (value.pitch*math.pi/180.)**2
-            self.covariance[Index.YAW, Index.YAW] = (value.yaw*math.pi/180.)**2
+            self.covariance[Index.PITCH, Index.PITCH] = (value.pitch_std*math.pi/180.)**2
+            self.covariance[Index.YAW, Index.YAW] = (value.yaw_std*math.pi/180.)**2
         else:
-            self.covariance[Index.ROLL, Index.ROLL] = (
-                imu_noise_std_offset + value.roll*imu_noise_std_factor)
-            self.covariance[Index.PITCH, Index.PITCH] = (
-                imu_noise_std_offset + value.pitch*imu_noise_std_factor)
-            self.covariance[Index.YAW, Index.YAW] = (
-                imu_noise_std_offset + value.yaw*imu_noise_std_factor)
+            self.covariance[Index.ROLL, Index.ROLL] = ((
+                imu_noise_std_offset + value.roll*imu_noise_std_factor)*math.pi/180.)**2
+            self.covariance[Index.PITCH, Index.PITCH] = ((
+                imu_noise_std_offset + value.pitch*imu_noise_std_factor)*math.pi/180.)**2
+            self.covariance[Index.YAW, Index.YAW] = ((
+                imu_noise_std_offset + value.yaw*imu_noise_std_factor)*math.pi/180.)**2
         self.update_vector[Index.ROLL] = 1
         self.update_vector[Index.PITCH] = 1
         self.update_vector[Index.YAW] = 1
