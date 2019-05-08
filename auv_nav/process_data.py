@@ -401,6 +401,10 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
                          args=[raw_sensor_path, usbl_list, 'usbl_raw'])
     t.start()
     threads.append(t)
+    t = threading.Thread(target=write_raw_sensor_csv,
+                         args=[raw_sensor_path, camera3_list, 'camera3_raw'])
+    t.start()
+    threads.append(t)
 
     # interpolate to find the appropriate depth to compute seafloor depth for each altitude measurement
     j = 0
