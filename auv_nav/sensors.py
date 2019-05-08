@@ -828,7 +828,7 @@ class Camera():
         self.altitude = 0
         self.covariance = None
         self.information = None
-    
+
     def get_info(self):
         try:
             self.information = np.linalg.inv(self.covariance)
@@ -849,6 +849,14 @@ class Camera():
                 + ' [' + str(self.epoch_timestamp)
                 + '] ' + str(self.filename) + ' exp: 0\n')
         return data
+
+    def write_csv_header(self):
+        return ('epoch_timestamp,'
+                + 'filename\n')
+
+    def to_csv(self):
+        return (str(self.epoch_timestamp) + ','
+                + str(self.filename) + '\n')
 
 
 class Other():
