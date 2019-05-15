@@ -54,6 +54,7 @@ def write_csv(csv_filepath, data_list, csv_filename, csv_flag):
         else:
             Console.warn('Empty data list {}'.format(str(csv_filename)))
 
+
 def spp_csv(camera_list, camera_name, csv_filepath, csv_flag):
     if csv_flag is True and len(camera_list) > 1:
         csv_file = Path(csv_filepath)
@@ -211,12 +212,16 @@ def other_data_csv(data_list, data_name, csv_filepath, csv_flag):
                   header=True, index=False)
 
 
-def write_raw_sensor_csv(csv_filepath, data_list, csv_filename):
+def write_raw_sensor_csv(csv_filepath, data_list, csv_filename, mutex=None):
     if len(data_list) > 0:
         # check the relvant folders exist and if note create them
         csv_file = Path(csv_filepath)
         if not csv_file.exists():
+            if mutex is not None:
+                mutex.acquire()
             csv_file.mkdir(parents=True, exist_ok=True)
+            if mutex is not None:
+                mutex.release()
 
         Console.info("Writing raw sensor to {}.csv ...".format(csv_filename))
         file = csv_file / '{}.csv'.format(csv_filename)
