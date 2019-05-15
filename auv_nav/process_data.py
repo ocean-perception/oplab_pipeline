@@ -381,28 +381,29 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
     raw_sensor_path = renavpath / 'csv' / 'sensors'
 
     threads = []
+    mutex = threading.Lock()
     t = threading.Thread(target=write_raw_sensor_csv,
-                         args=[raw_sensor_path, velocity_body_list, 'velocity_body_raw'])
+                         args=[raw_sensor_path, velocity_body_list, 'velocity_body_raw', mutex])
     t.start()
     threads.append(t)
     t = threading.Thread(target=write_raw_sensor_csv,
-                         args=[raw_sensor_path, altitude_list, 'altitude_raw'])
+                         args=[raw_sensor_path, altitude_list, 'altitude_raw', mutex])
     t.start()
     threads.append(t)
     t = threading.Thread(target=write_raw_sensor_csv,
-                         args=[raw_sensor_path, orientation_list, 'orientation_raw'])
+                         args=[raw_sensor_path, orientation_list, 'orientation_raw', mutex])
     t.start()
     threads.append(t)
     t = threading.Thread(target=write_raw_sensor_csv,
-                         args=[raw_sensor_path, depth_list, 'depth_raw'])
+                         args=[raw_sensor_path, depth_list, 'depth_raw', mutex])
     t.start()
     threads.append(t)
     t = threading.Thread(target=write_raw_sensor_csv,
-                         args=[raw_sensor_path, usbl_list, 'usbl_raw'])
+                         args=[raw_sensor_path, usbl_list, 'usbl_raw', mutex])
     t.start()
     threads.append(t)
     t = threading.Thread(target=write_raw_sensor_csv,
-                         args=[raw_sensor_path, camera3_list, 'camera3_raw'])
+                         args=[raw_sensor_path, camera3_list, 'camera3_raw', mutex])
     t.start()
     threads.append(t)
 
