@@ -243,7 +243,7 @@ def plot_parse_data(filepath, ftype):
         table_fig = go.Figure(data=[table_trace], layout=layout_table)
         py.plot(table_fig,
                 filename=str(filepath / 'json_data_info.html'),
-                auto_open=True)
+                auto_open=False)
 
         layout = go.Layout(
             # width=950,
@@ -311,7 +311,7 @@ def plot_parse_data(filepath, ftype):
         py.plot(fig,
                 config=config,
                 filename=str(filepath / 'timestamp_history.html'),
-                auto_open=True)
+                auto_open=False)
 
         start_end_text = 'Start time is: %s (%s), %s (%s), %d (epoch)\nFinish time is: \
                           %s (%s), %s (%s), %d (epoch)\n' % (
