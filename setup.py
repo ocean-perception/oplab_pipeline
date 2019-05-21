@@ -30,6 +30,7 @@ setuptools.setup(
         'plotly>=2.5.1',
         'prettytable>=0.7.2',
         'PyYAML>=3.12',
-        'pynmea2>=1.7.0'
+        'pynmea2>=1.7.0',
+        'scipy>=0.19.1'
     ]
 )
