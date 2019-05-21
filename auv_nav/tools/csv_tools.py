@@ -2,6 +2,7 @@ from auv_nav.tools.console import Console
 from pathlib import Path
 import pandas as pd
 
+import numpy as np
 
 def write_csv(csv_filepath, data_list, csv_filename, csv_flag):
     if csv_flag is True:
@@ -76,11 +77,15 @@ def spp_csv(camera_list, camera_name, csv_filepath, csv_flag):
             # NOTE: matrix listed is just the upper corner of the diagonal
             # symetric information matrix, and order for SLAM++ input of
             # rotational variables is yaw, pitch, roll (reverse order).
+            offset = 0
             for i in range(len(camera_list)):
                 try:
                     imagenumber = camera_list[i].filename[-11:-4]
                     if imagenumber.isdigit():
-                        image_filename = imagenumber
+                        # Ensure pose/node IDs start at zero.
+                        if i == 0:
+                            offset = int(imagenumber)
+                        image_filename = int(imagenumber) - offset
                     else:
                         image_filename = camera_list[i].filename
                         Console.warn('image_filename for csv output has been'
@@ -93,12 +98,12 @@ def spp_csv(camera_list, camera_name, csv_filepath, csv_flag):
                         'EDGE3' + ' '
                         + str(int(image_filename)) + ' '
                         + str(int(image_filename) + 1) + ' '
-                        + str(camera_list[i].northings) + ' '
-                        + str(camera_list[i].eastings) + ' '
-                        + str(camera_list[i].depth) + ' '
-                        + str(camera_list[i].yaw) + ' '
-                        + str(camera_list[i].pitch) + ' '
-                        + str(camera_list[i].roll)
+                        + str(np.sum(camera_list[i].northings)) + ' '
+                        + str(np.sum(camera_list[i].eastings)) + ' '
+                        + str(np.sum(camera_list[i].depth)) + ' '
+                        + str(np.sum(camera_list[i].yaw)) + ' '
+                        + str(np.sum(camera_list[i].pitch)) + ' '
+                        + str(np.sum(camera_list[i].roll))
                         )
                     if camera_list[i].information is not None:
                         inf = camera_list[i].information.flatten().tolist()
@@ -108,12 +113,18 @@ def spp_csv(camera_list, camera_name, csv_filepath, csv_flag):
                         # elements in the information matrix can be
                         # deleted, as these have an unwanted primary variable.
                         inf = inf[:-72]
+                        
                         for i in range(6):
                             # The rotationnal elements need to be switched
                             # around to be in SLAM++ (reverse) order.
-                            j = inf[6*i + 3]
-                            inf[6*i + 3] = inf[6*i + 5]
-                            inf[6*i + 5] = j
+                            j = inf[12*i + 3]
+                            inf[12*i + 3] = inf[12*i + 5]
+                            inf[12*i + 5] = j
+                        j = inf[36:48]
+                        inf[36:48] = inf[60:72]
+                        inf[60:72] = j
+                        
+                        for i in range(6):
                             # Of the remaining 6x12 elements, half have unwanted
                             # secondary variables (the latter half of each
                             # primary variables chain of elements) and can be
