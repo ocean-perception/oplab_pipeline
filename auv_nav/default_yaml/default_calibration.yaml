@@ -1,0 +1,16 @@
+cameras:
+  - name: Cam51707923
+    camera_calibration: image/cameraCal/Cam51707923
+    laser_calibration: image/laserCal/Cam51707923
+  - name: Cam51707925
+    camera_calibration: image/cameraCal/Cam51707925
+    laser_calibration: image/laserCal/Cam51707925
+  - name: LM165
+    camera_calibration: image/cameraCal/LM165
+    laser_calibration: image/laserCal/LM165
+
+calibration:
+  pattern: circles
+  cols: 7
+  rows: 7
+  size: 0.1

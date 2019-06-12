@@ -588,11 +588,11 @@ class MonoCalibrator(Calibrator):
 
         Return [ (corners, ChessboardInfo) ]
         """
-        test_image = cv2.imread(images_list[0])
+        test_image = cv2.imread(str(images_list[0]))
         self.size = (test_image.shape[1], test_image.shape[0])
         self.good_corners = []
         for i in images_list:
-            gray = cv2.imread(i)
+            gray = cv2.imread(str(i))
             ok, corners, board = self.get_corners(gray)
             if not ok:
                 continue
@@ -752,15 +752,16 @@ class StereoCalibrator(Calibrator):
 
     is_mono = False
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, name='camera1', name2='camera2', *args, **kwargs):
         if 'name' not in kwargs:
-            kwargs['name'] = 'narrow_stereo'
+            kwargs['name'] = 'camera1'
         super(StereoCalibrator, self).__init__(*args, **kwargs)
         self.l = MonoCalibrator(*args, **kwargs)
         self.r = MonoCalibrator(*args, **kwargs)
         # Collecting from two cameras in a horizontal stereo rig, can't get
         # full X range in the left camera.
         self.param_ranges[0] = 0.4
+        self.name2 = name2
 
     def cal(self, limages_list, rimages_list):
         """
@@ -771,7 +772,7 @@ class StereoCalibrator(Calibrator):
 
         Find chessboards in images, and runs the OpenCV calibration solver.
         """
-        test_img = cv2.imread(limages_list[0])
+        test_img = cv2.imread(str(limages_list[0]))
         self.size = (test_img.shape[1], test_img.shape[0])
         self.l.size = self.size
         self.r.size = self.size
@@ -786,8 +787,8 @@ class StereoCalibrator(Calibrator):
         """
         self.good_corners = []
         for (i, j) in zip(limages_list, rimages_list):
-            lgray = cv2.imread(i)
-            rgray = cv2.imread(j)
+            lgray = cv2.imread(str(i))
+            rgray = cv2.imread(str(j))
             lok, lcorners, lboard = self.get_corners(lgray)
             rok, rcorners, rboard = self.get_corners(rgray)
             if (not lok) or (not rok):
@@ -893,23 +894,70 @@ class StereoCalibrator(Calibrator):
                 self.lrost(self.name + "/right", self.r.distortion, self.r.intrinsics, self.r.R, self.r.P))
 
     def yaml(self):
-        lmsg = self.lryaml(self.name + "/left", self.l.distortion, self.l.intrinsics, self.l.R, self.l.P)
-        rmsg = self.lryaml(self.name + "/right",  self.r.distortion, self.r.intrinsics, self.r.R, self.r.P)
-        emsg = self.extrinsics_yaml(self.R, self.T)
-        return (lmsg, rmsg, emsg)
+        d1 = self.l.distortion
+        k1 = self.l.intrinsics
+        r1 = self.l.R
+        p1 = self.l.P
 
-    def extrinsics_yaml(self, R, T):
+        d2 = self.r.distortion
+        k2 = self.r.intrinsics
+        r2 = self.r.R
+        p2 = self.r.P
+
         calmessage = (""
+                      + "image_width: " + str(self.size[0]) + "\n"
+                      + "image_height: " + str(self.size[1]) + "\n"
+                      + "camera_name: " + self.name + "\n"
+                      + "  camera_matrix:\n"
+                      + "    rows: 3\n"
+                      + "    cols: 3\n"
+                      + "    data: [" + ", ".join(["%8f" % i for i in k1.reshape(1, 9)[0]]) + "]\n"
+                      + "  distortion_model: " +
+                      ("rational_polynomial" if d1.size > 5 else "plumb_bob") + "\n"
+                      + "  distortion_coefficients:\n"
+                      + "    rows: 1\n"
+                      + "    cols: 5\n"
+                      + "    data: [" + ", ".join(["%8f" % d1[i, 0]
+                                                   for i in range(d1.shape[0])]) + "]\n"
+                      + "  rectification_matrix:\n"
+                      + "    rows: 3\n"
+                      + "    cols: 3\n"
+                      + "    data: [" + ", ".join(["%8f" % i for i in r1.reshape(1, 9)[0]]) + "]\n"
+                      + "  projection_matrix:\n"
+                      + "    rows: 3\n"
+                      + "    cols: 4\n"
+                      + "    data: [" + ", ".join(["%8f" % i for i in p1.reshape(1, 12)[0]]) + "]\n"
+                      + "camera_name: " + name + "\n"
+                      + "  camera_matrix:\n"
+                      + "    rows: 3\n"
+                      + "    cols: 3\n"
+                      + "    data: [" + ", ".join(["%8f" % i for i in k2.reshape(1, 9)[0]]) + "]\n"
+                      + "  distortion_model: " +
+                      ("rational_polynomial" if d2.size > 5 else "plumb_bob") + "\n"
+                      + "  distortion_coefficients:\n"
+                      + "    rows: 1\n"
+                      + "    cols: 5\n"
+                      + "    data: [" + ", ".join(["%8f" % d2[i, 0]
+                                                   for i in range(d2.shape[0])]) + "]\n"
+                      + "  rectification_matrix:\n"
+                      + "    rows: 3\n"
+                      + "    cols: 3\n"
+                      + "    data: [" + ", ".join(["%8f" % i for i in r2.reshape(1, 9)[0]]) + "]\n"
+                      + "  projection_matrix:\n"
+                      + "    rows: 3\n"
+                      + "    cols: 4\n"
+                      + "    data: [" + ", ".join(["%8f" % i for i in p2.reshape(1, 12)[0]]) + "]\n"
                       + "rotation_matrix:\n"
                       + "  rows: 3\n"
                       + "  cols: 3\n"
-                      + "  data: [" + ", ".join(["%8f" % i for i in R.reshape(1, 9)[0]]) + "]\n"
+                      + "  data: [" + ", ".join(["%8f" % i for i in self.R.reshape(1, 9)[0]]) + "]\n"
                       + "translation_vector:\n"
                       + "  rows: 3\n"
                       + "  cols: 1\n"
-                      + "  data: [" + ", ".join(["%8f" % i for i in T.reshape(1, 3)[0]]) + "]\n"
+                      + "  data: [" + ", ".join(["%8f" % i for i in self.T.reshape(1, 3)[0]]) + "]\n"
                       + "")
-        return calmessage
+        return (lmsg, rmsg, emsg)
+
 
     # TODO Get rid of "from_images" versions of these, instead have function to get undistorted corners
     def epipolar_error_from_images(self, limage, rimage):
