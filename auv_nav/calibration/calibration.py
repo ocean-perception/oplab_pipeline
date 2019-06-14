@@ -26,7 +26,7 @@ def collect_image_files(image_dir, file_pattern):
 
 def calibrate_mono(name, filepath, extension, output_file):
     Console.info('Looking for {} calibration images in {}'.format(extension, filepath))
-    image_list = collect_image_files(filepath, '*.' + extension)
+    image_list = collect_image_files(filepath, extension)
     Console.info('Found ' + str(len(image_list)) + ' images.')
     if len(image_list) < 8:
         Console.error('Too few images. Try to get more.')
@@ -45,12 +45,12 @@ def calibrate_mono(name, filepath, extension, output_file):
         Console.error('The calibration pattern was not found in the images.')
 
 
-def calibrate_stereo(left_name, left_filepath, right_name, right_filepath, extension, output_file):
+def calibrate_stereo(left_name, left_filepath, right_name, right_filepath, left_extension, right_extension, output_file):
     Console.info('Looking for calibration images in {}'.format(left_filepath))
-    left_image_list = collect_image_files(left_filepath, '*.' + extension)
+    left_image_list = collect_image_files(left_filepath, left_extension)
     Console.info('Found ' + str(len(left_image_list)) + ' left images.')
     Console.info('Looking for calibration images in {}'.format(right_filepath))
-    right_image_list = collect_image_files(right_filepath, '*.' + extension)
+    right_image_list = collect_image_files(right_filepath, right_extension)
     Console.info('Found ' + str(len(right_image_list)) + ' right images.')
     if len(left_image_list) < 8 or len(right_image_list) < 8:
         Console.error('Too few images. Try to get more.')
@@ -79,6 +79,7 @@ class Calibrator():
         self.extension = extension
         filepath = Path(filepath).resolve()
         self.filepath = get_raw_folder(filepath)
+        self.fo = force_overwite
 
         # load mission.yaml config file
         mission_file = get_raw_folder(filepath) / 'mission.yaml'
@@ -108,12 +109,12 @@ class Calibrator():
             cam_name = c['name']
             # Find if the calibration file exists
             calibration_file = self.calibration_path / str('mono_' + cam_name + '.yaml')
-            if calibration_file.exists() and not force_overwite:
+            if calibration_file.exists() and not self.fo:
                 Console.warn('The camera ' + c.name + ' has already been calibrated. If you want to overwrite the calibration, use the -F flag.')
             else:
                 calibrate_mono(cam_name,
                                self.filepath / str(c['camera_calibration']),
-                               self.extension,
+                               '*.' + self.extension,
                                calibration_file)
 
     def stereo(self):
@@ -121,23 +122,33 @@ class Calibrator():
             c0 = self.calibration_config['cameras'][0]
             c1 = self.calibration_config['cameras'][1]
             calibration_file = self.calibration_path / str('stereo_' + c0['name'] + '_' + c1['name'] + '.yaml')
-            if calibration_file.exists() and not force_overwite:
+            if calibration_file.exists() and not self.fo:
                 Console.warn('The stereo pair ' + c0['name'] + '_' + c1['name'] + ' has already been calibrated. If you want to overwrite the calibration, use the -F flag.')
             else:
-                calibrate_stereo(c0['name'], self.filepath / str(c0['camera_calibration']),
+
+                if self.mission.image.format == 'seaxerocks_3':
+                    calibrate_stereo(c0['name'], self.filepath / str(c0['camera_calibration']),
                                  c1['name'], self.filepath / str(c1['camera_calibration']),
-                                 self.extension,
+                                 '*.' + self.extension,
+                                 '*.' + self.extension,
+                                 calibration_file)
+                elif self.mission.image.format == 'acfr_standard':
+                    calibrate_stereo(c0['name'], self.filepath / str(c0['camera_calibration']),
+                                 c1['name'], self.filepath / str(c1['camera_calibration']),
+                                 '*LC16.' + self.extension,
+                                 '*RC16.' + self.extension,
                                  calibration_file)
         if len(self.calibration_config['cameras']) > 2:
             c0 = self.calibration_config['cameras'][0]
             c2 = self.calibration_config['cameras'][2]
             calibration_file = self.calibration_path / str('stereo_' + c0['name'] + '_' + c2['name'] + '.yaml')
-            if calibration_file.exists() and not force_overwite:
+            if calibration_file.exists() and not self.fo:
                 Console.warn('The stereo pair ' + c0['name'] + '_' + c2['name'] + ' has already been calibrated. If you want to overwrite the calibration, use the -F flag.')
             else:
                 calibrate_stereo(c0['name'], self.filepath / str(c0['camera_calibration']),
                                  c2['name'], self.filepath / str(c2['camera_calibration']),
-                                 self.extension,
+                                 '*.' + self.extension,
+                                 '*.' + self.extension,
                                  calibration_file)
 
     def laser(self):
