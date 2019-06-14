@@ -750,6 +750,7 @@ class StereoCalibrator(Calibrator):
         # Collecting from two cameras in a horizontal stereo rig, can't get
         # full X range in the left camera.
         self.param_ranges[0] = 0.4
+        self.name = name
         self.name2 = name2
 
     def cal(self, limages_list, rimages_list):
@@ -916,7 +917,7 @@ class StereoCalibrator(Calibrator):
                       + "    rows: 3\n"
                       + "    cols: 4\n"
                       + "    data: [" + ", ".join(["%8f" % i for i in p1.reshape(1, 12)[0]]) + "]\n"
-                      + "camera_name: " + name + "\n"
+                      + "camera_name: " + self.name2 + "\n"
                       + "  camera_matrix:\n"
                       + "    rows: 3\n"
                       + "    cols: 3\n"
