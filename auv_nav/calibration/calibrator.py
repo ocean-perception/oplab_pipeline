@@ -207,37 +207,26 @@ def _get_corners(img, board, refine=True, checkerboard_flags=0):
 def _is_sharp(img, corners, board):
     # Crop image
     up_left, up_right, down_right, down_left = _get_outside_corners(corners, board)
-    min_x = 0
-    max_x = 0
-    min_y = 0
-    max_y = 0
+    x1 = up_left[0]
+    x2 = up_right[0]
+    x3 = down_right[0]
+    x4 = down_left[0]
+    y1 = up_left[1]
+    y2 = up_right[1]
+    y3 = down_right[1]
+    y4 = down_left[1]
 
-    if up_left[0] < down_left[0]:
-        min_x = int(up_left[0])
-    else:
-        min_x = int(down_left[0])
-
-    if up_right[0] < down_right[0]:
-        max_x = int(up_right[0])
-    else:
-        max_x = int(down_right[0])
-
-    if up_left[1] < up_right[1]:
-        min_y = int(up_left[1])
-    else:
-        min_y = int(up_right[1])
-
-    if down_left[1] < down_right[1]:
-        max_y = int(down_left[1])
-    else:
-        max_y = int(down_right[1])
+    min_x = int(min(x1, x2, x3, x4))
+    max_x = int(max(x1, x2, x3, x4))
+    min_y = int(min(y1, y2, y3, y4))
+    max_y = int(max(y1, y2, y3, y4))
 
     img_roi = img[min_y:max_y, min_x:max_x]
     # cv2.imshow("ROI", img_roi)
     lap_var = cv2.Laplacian(img_roi, cv2.CV_64F).var()
     # TODO: what is a good value here?
     # source: https://www.pyimagesearch.com/2015/09/07/blur-detection-with-opencv/
-    return lap_var > 250.0
+    return lap_var > 18.0
 
 
 def _get_circles(img, board, pattern, invert=False):
@@ -956,7 +945,7 @@ class StereoCalibrator(Calibrator):
                       + "  cols: 1\n"
                       + "  data: [" + ", ".join(["%8f" % i for i in self.T.reshape(1, 3)[0]]) + "]\n"
                       + "")
-        return (lmsg, rmsg, emsg)
+        return calmessage
 
 
     # TODO Get rid of "from_images" versions of these, instead have function to get undistorted corners
