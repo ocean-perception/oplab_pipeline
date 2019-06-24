@@ -152,8 +152,6 @@ class Calibrator():
                                  calibration_file)
 
     def laser(self):
-        Console.warn('Not implemented')
-        """
         if self.mission.cameras[0].laser_calibration:
             c0 = self.mission.cameras[0]
             c1 = self.mission.cameras[1]
@@ -164,5 +162,5 @@ class Calibrator():
             else:
                 calibrate_laser(c0.laser_calibration,
                                 c1.laser_calibration,
-                                c2.laser_calibration)
-        """
+                                c2.laser_calibration,
+                                self.calibration_config['laser_calibration'])
