@@ -35,8 +35,6 @@ def main(args=None):
     subparser_mono.add_argument(
         'path', default=".", help="Folder containing the mission.yaml")
     subparser_mono.add_argument(
-        '-e', '--extension', default="tiff", help="Image extension")
-    subparser_mono.add_argument(
         '-F', '--Force', dest='force', action='store_true', help="Force file overwite")
     subparser_mono.set_defaults(func=call_calibrate_mono)
 
@@ -44,8 +42,6 @@ def main(args=None):
         'stereo', help="Stereo camera calibration using OpenCV.")
     subparser_stereo.add_argument(
         'path', default=".", help="Folder containing the mission.yaml")
-    subparser_stereo.add_argument(
-        '-e', '--extension', default="tiff", help="Image extension")
     subparser_stereo.add_argument(
         '-F', '--Force', dest='force', action='store_true', help="Force file overwite")
     subparser_stereo.set_defaults(func=call_calibrate_stereo)
@@ -68,17 +64,17 @@ def main(args=None):
 
 
 def call_calibrate_mono(args):
-    c = Calibrator(args.path, args.extension, args.force)
+    c = Calibrator(args.path, args.force)
     c.mono()
 
 
 def call_calibrate_stereo(args):
-    c = Calibrator(args.path, args.extension, args.force)
+    c = Calibrator(args.path, args.force)
     c.stereo()
 
 
 def call_calibrate_laser(args):
-    c = Calibrator(args.path, args.extension, args.force)
+    c = Calibrator(args.path, args.force)
     c.laser()
 
 
