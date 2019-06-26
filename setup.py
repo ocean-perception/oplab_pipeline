@@ -20,7 +20,8 @@ setuptools.setup(
     entry_points={  # Optional
         'console_scripts': [
             'auv_nav = auv_nav.auv_nav:main',
-            'auv_calibrate = auv_nav.auv_calibrate:main'
+            'auv_calibrate = auv_calibrate.auv_calibrate:main',
+            'correct_images = correct_images.correct_images:main'
         ],
     },
     package_data={'auv_nav': ['default_yaml/*.yaml']},
@@ -31,6 +32,7 @@ setuptools.setup(
         'plotly>=2.5.1',
         'prettytable>=0.7.2',
         'PyYAML>=3.12',
-        'pynmea2>=1.7.0'
+        'pynmea2>=1.7.0',
+        'scipy>=0.19.1'
     ]
 )
