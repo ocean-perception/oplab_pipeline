@@ -1,0 +1,78 @@
+#YAML 1.0
+version: 1
+
+origin:
+  latitude: 44.673
+  longitude: -125.120
+  coordinate_reference_system: wgs84
+  date: 2018/08/03
+
+velocity:
+  format: ae2000
+  filepath: nav/ae_log/
+  filename: pos180803065749.csv
+  timezone: -7
+  timeoffset: 0.0
+  std_factor: 0.001
+  std_offset: 0.2
+
+orientation:
+  format: ae2000
+  filepath: nav/ae_log/
+  filename: pos180803065749.csv
+  timezone: -7
+  timeoffset: 0.0
+  std_factor: 0.0
+  std_offset: 0.003
+
+depth:
+  format: ae2000
+  filepath: nav/ae_log/
+  filename: pos180803065749.csv
+  timezone: -7
+  timeoffset: 0.0
+  std_factor: 0.0001
+  std_offset: 0.0
+
+
+altitude:
+  format: ae2000
+  filepath: nav/ae_log/
+  filename: pos180803065749.csv
+  timezone: -7
+  timeoffset: 0.0
+  std_factor: 0.01
+  std_offset: 0.0
+
+
+usbl:
+  format: gaps
+  filepath: nav/gaps/
+  timezone: utc
+  timeoffset: 0.0
+  id: 3
+  std_factor: 0.01
+  std_offset: 2.0
+  
+
+image:
+  format: seaxerocks_3
+  cameras:
+    - name: fore
+      type: bayer_rggb
+      bit_depth: 12
+      path: image/SeaXerocksData20180803_084007/Xviii/Cam51707923
+    - name: aft
+      type: bayer_rggb
+      bit_depth: 12
+      path: image/SeaXerocksData20180803_084007/Xviii/Cam51707925
+    - name: laser
+      type: grayscale
+      bit_depth: 12
+      path: image/SeaXerocksData20180803_084007/LM165
+  timezone: -7
+  timeoffset: 0.0
+
+payload1:
+  name: chemical
+  #timestamp_format: 
