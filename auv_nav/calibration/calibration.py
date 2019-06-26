@@ -152,9 +152,11 @@ class Calibrator():
             cam_name = c['name']
             # Find if the calibration file exists
             calibration_file = self.calibration_path / str('mono_' + cam_name + '.yaml')
+            Console.info('Looking for a calibration file at ' + calibration_file)
             if calibration_file.exists() and not self.fo:
                 Console.warn('The camera ' + c.name + ' has already been calibrated. If you want to overwrite the calibration, use the -F flag.')
             else:
+                Console.info('The camera is not calibrated, running mono calibration...')
                 calibrate_mono(cam_name,
                                self.filepath / str(c['camera_calibration']['path']),
                                '*.' + str(c['camera_calibration']['extension']),
@@ -166,9 +168,11 @@ class Calibrator():
             c0 = self.calibration_config['cameras'][0]
             c1 = self.calibration_config['cameras'][1]
             calibration_file = self.calibration_path / str('stereo_' + c0['name'] + '_' + c1['name'] + '.yaml')
+            Console.info('Looking for a calibration file at ' + calibration_file)
             if calibration_file.exists() and not self.fo:
                 Console.warn('The stereo pair ' + c0['name'] + '_' + c1['name'] + ' has already been calibrated. If you want to overwrite the calibration, use the -F flag.')
             else:
+                Console.info('The stereo camera is not calibrated, running stereo calibration...')
                 left_name = ''
                 left_filepath = ''
                 left_extension = ''
@@ -193,6 +197,10 @@ class Calibrator():
                 left_calibration_file = self.calibration_path / str('mono_' + left_name + '.yaml')
                 right_calibration_file = self.calibration_path / str('mono_' + right_name + '.yaml')
                 if not left_calibration_file.exists() or not right_calibration_file.exists():
+                    if not left_calibration_file.exists():
+                        Console.warn('Could not find a monocular calibration file ' + left_calibration_file + '...')
+                    if not right_calibration_file.exists():
+                        Console.warn('Could not find a monocular calibration file ' + right_calibration_file + '...')
                     self.mono()
                 if left_calibration_file.exists() and right_calibration_file.exists():
                     Console.info('Loading previous monocular calibrations at \
@@ -208,7 +216,6 @@ class Calibrator():
                                  right_calibration_file,
                                  self.calibration_config['camera_calibration'],
                                  calibration_file)
-        """
         if len(self.calibration_config['cameras']) > 2:
             c0 = self.calibration_config['cameras'][0]
             c2 = self.calibration_config['cameras'][2]
@@ -224,7 +231,6 @@ class Calibrator():
                                  '*.' + str(c2['camera_calibration']['extension']),
                                  self.calibration_config['camera_calibration'],
                                  calibration_file)
-        """
 
     def laser(self):
         if 'laser_calibration' in self.calibration_config['cameras'][0]:
@@ -232,26 +238,28 @@ class Calibrator():
             c1 = self.calibration_config['cameras'][1]
             c2 = self.calibration_config['cameras'][2]
             calibration_file = self.calibration_path / 'laser_calibration.yaml'
+            Console.info('Looking for a calibration file at ' + calibration_file)
             if calibration_file.exists() and not self.fo:
                 Console.warn('The laser planes from cameras ' + c0['name'] + ' and ' + c1['name'] + ' have already been calibrated. If you want to overwite the calibration, use the -F flag.')
             else:
+                Console.info('The laser planes are not calibrated, running laser calibration...')
                 # Check if the stereo pair has already been calibrated
                 stereo_calibration_file = self.calibration_path / str('stereo_' + c0['name'] + '_' + c1['name'] + '.yaml')
-                if stereo_calibration_file.exists():
-                    left_name = c0['name']
-                    left_filepath = self.filepath / str(c0['laser_calibration']['path'])
-                    left_extension = '*.' + str(c0['laser_calibration']['extension'])
-                    right_name = c1['name']
-                    right_filepath = self.filepath / str(c1['laser_calibration']['path'])
-                    right_extension = '*.' + str(c1['laser_calibration']['extension'])
-                    calibrate_laser(left_name,
-                                    left_filepath,
-                                    left_extension,
-                                    right_name,
-                                    right_filepath,
-                                    right_extension,
-                                    stereo_calibration_file,
-                                    self.calibration_config['laser_calibration'],
-                                    calibration_file)
-                else:
-                    Console.quit('The stereo pair ' + c0['name'] + '_' + c1['name'] + ' has not been calibrated. Calibrate this first.')
+                if not stereo_calibration_file.exists():
+                    Console.warn('Could not find a stereo calibration file ' + stereo_calibration_file + '...')
+                    self.stereo()
+                left_name = c0['name']
+                left_filepath = self.filepath / str(c0['laser_calibration']['path'])
+                left_extension = '*.' + str(c0['laser_calibration']['extension'])
+                right_name = c1['name']
+                right_filepath = self.filepath / str(c1['laser_calibration']['path'])
+                right_extension = '*.' + str(c1['laser_calibration']['extension'])
+                calibrate_laser(left_name,
+                                left_filepath,
+                                left_extension,
+                                right_name,
+                                right_filepath,
+                                right_extension,
+                                stereo_calibration_file,
+                                self.calibration_config['laser_calibration'],
+                                calibration_file)
