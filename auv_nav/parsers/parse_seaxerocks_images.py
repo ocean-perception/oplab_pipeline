@@ -232,7 +232,7 @@ def parse_seaxerocks_images(mission,
     for i in range(len(camera3_list)):
         # let out format (e.g. '.jpg' or '.tif')
         camera3_filename.append(
-            '{}/image{}.xxx'.format(camera3_list[i][:3], camera3_list[i]))
+            '{}/image{}.xxx'.format(camera3_list[i][1:4], camera3_list[i]))
         camera3_index.append(camera3_list[i])
 
     j = 0
