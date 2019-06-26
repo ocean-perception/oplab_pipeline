@@ -20,6 +20,7 @@ setuptools.setup(
     entry_points={  # Optional
         'console_scripts': [
             'auv_nav = auv_nav.auv_nav:main',
+            'correct_images = correct_images.correct_images:main'
         ],
     },
     package_data={'auv_nav': ['default_yaml/*.yaml']},
