@@ -4,7 +4,6 @@ import os
 from shutil import copyfile
 
 from correct_images.calculate_correction_parameters import calculate_correction_parameters
-from correct_images.colour_correct import colour_correct_pixel_stat
 from correct_images.develop_corrected_images import develop_corrected_image
 from auv_nav.tools.folder_structure import get_raw_folder
 from auv_nav.tools.folder_structure import get_processed_folder
