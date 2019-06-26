@@ -38,7 +38,7 @@ from auv_nav.tools.folder_structure import get_config_folder
 
 def str2bool(v):
     if isinstance(v, bool):
-       return v
+        return v
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
         return True
     elif v.lower() in ('no', 'false', 'f', 'n', '0'):
@@ -60,22 +60,24 @@ def main(args=None):
 
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
-    
-    subparser_correct_attenuation = subparsers.add_parser('parse',
-                                                          help='Calculate attenuation correction parameters')
-    subparser_correct_attenuation.add_argument('path', help="Path to raw directory till dive.")
-    subparser_correct_attenuation.add_argument('-f','--force', type=str2bool, default = False,
-                                      help="Force overwrite if correction parameters already exist.")
-    
-    
+
+    subparser_correct_attenuation = subparsers.add_parser(
+        'parse', help='Calculate attenuation correction parameters')
+    subparser_correct_attenuation.add_argument(
+        'path', help="Path to raw directory till dive.")
+    subparser_correct_attenuation.add_argument(
+        '-f','--force', type=str2bool, default = False,
+        help="Force overwrite if correction parameters already exist.")
     subparser_correct_attenuation.set_defaults(func=call_calculate_attenuation_correction_parameter)
 
-    subparser_correct_attenuation = subparsers.add_parser('process',
-                                                          help='Develop attenuation corrected images')
-    subparser_correct_attenuation.add_argument('path', help="Path to processed directory till dive.")
-    subparser_correct_attenuation.add_argument('-f','--force', type=str2bool, default = False,
-                                      help="Force overwrite if processed images already exist.")
-    
+    subparser_correct_attenuation = subparsers.add_parser(
+        'process', help='Develop attenuation corrected images')
+    subparser_correct_attenuation.add_argument(
+        'path', help="Path to processed directory till dive.")
+    subparser_correct_attenuation.add_argument(
+        '-f', '--force', type=str2bool, default = False,
+        help="Force overwrite if processed images already exist.")
+
     subparser_correct_attenuation.set_defaults(func=call_develop_corrected_image)
 
     if len(sys.argv) == 1 and args is None:
@@ -88,7 +90,6 @@ def main(args=None):
 
 
 def call_calculate_attenuation_correction_parameter(args):
-    
     sr = get_raw_folder(args.path)
     sp = get_processed_folder(args.path)
     sc = get_config_folder(args.path)
@@ -102,8 +103,7 @@ def call_calculate_attenuation_correction_parameter(args):
     path_correct = pc
     path_raw = sr
     path_processed = sp
-    
-    calculate_correction_parameters(path_raw,path_processed,path_mission,path_correct,args.force)
+    calculate_correction_parameters(path_raw, path_processed, path_mission, path_correct, args.force)
 
 
 def call_develop_corrected_image(args):
@@ -120,9 +120,8 @@ def call_develop_corrected_image(args):
     path_correct = pc
     path_raw = sr
     path_processed = sp
-    
+
     develop_corrected_image(path_processed,path_mission,path_correct,args.force)
-    
 
 
 if __name__ == '__main__':

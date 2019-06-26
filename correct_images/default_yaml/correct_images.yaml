@@ -1,0 +1,30 @@
+#YAML 1.0
+
+config:
+  # path of the CSV file. mention only the 'dive_start_end_time' name
+  auv_nav_path: 'json_renav_20180803_012500_20180803_230450'
+  # the index of processed images. If -1 is given, all images in filelist.csv are processed
+  src_img_index: -1  # example: src_img_index: [100,101,102,103] or src_img_index: [99]
+
+attenuation_correction:
+  # the images captured at the altitude only in the range from altitude_min to altitude_max are used for calculating parameters.
+  altitude:
+    - max: 12
+    - min: 4
+
+  sampling_method: 'median' # sampling method from raw data. for local computers, 'median' is preferable because the calculation cost is low.
+  median_filter_kernel_size: 3 # If the attenuation correction parameter looks noisy.
+  
+normalization:
+  target_mean: 30 # target mean and standard deviation for pixel stat
+  target_std: 3
+  debayer_option: 'vng' # debayer option. 'linear', 'ea' or 'vng'. default = 'linear'
+
+output:
+  dst_file_format: 'png' # The format of developed images. Currently, only png can be given.
+  
+flags:
+  apply_attenuation_correction: True # If false, the process will develop only pixel stat applied image
+  apply_gamma_correction: True        
+  apply_distortion_correction: False
+  camera_parameter_file_path: 'None' # needed if apply_distortion_correction is True
