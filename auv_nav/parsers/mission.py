@@ -64,8 +64,10 @@ class CameraEntry:
         node['name'] = self.name
         node['type'] = self.type
         node['path'] = self.path
-        node['camera_calibration'] = self.camera_calibration
-        node['laser_calibration'] = self.laser_calibration
+        if 'camera_calibration' in node:
+            node['camera_calibration'] = self.camera_calibration
+        if 'laser_calibration' in node:
+            node['laser_calibration'] = self.laser_calibration
 
 
 class CalibrationEntry:
@@ -136,9 +138,10 @@ class ImageEntry:
             cam_dict = OrderedDict()
             c.write(cam_dict)
             node['cameras'].append(cam_dict)
-        calibration_dict = OrderedDict()
-        self.calibration.write(calibration_dict)
-        node['calibration'].append(calibration_dict)
+        if 'calibration' in node:
+            calibration_dict = OrderedDict()
+            self.calibration.write(calibration_dict)
+            node['calibration'].append(calibration_dict)
 
 
 class DefaultEntry:

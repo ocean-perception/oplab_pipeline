@@ -1,64 +1,26 @@
-
-"""
-05/08/2018
-Michael Leat
-
-Program to process the laser line images, remap them for lens distortion based
-on the calibration parameters, build a point cloud representing the sheet laser,
-and then performs PCA on the point cloud, finding the pitch and yaw error angles.
-
-
-Inputs (via .yaml file):
-1. Laser line images for fore camera - path and file name list in .txt
-2. Laser line images for aft camera - path and file name list in .txt
-3. k value. Number of interpolation data points, k = 5 is sufficient
-4. MinimumGValue. The minimum greenness value specified for laser line extraction. MinimumGValue = 15 is sufficient
-5. image_sample_size. Number of images to sample.
-6. no_columns. No of pixel-wide vertical columns to sample from each image.
-7. no_iterations. Number of iterations for point cloud generation and sheet laser plane analysis
-8. continuous_interpolation. A flag to indicate whether to use discrete or continuous laser line extraction. 1 = continuous.
-
-
-The function returns a .yaml file called uncertainty_parameters.yaml containing
-the pitch and yaw error angles, the pitch and yaw error sheet laser planes
-and the offsets required for these planes. All of which must then be input into
-the laser bathymetry code by Bodenmann et al., to generate the bathymetry ply
-files.
-
-"""
-
+# Encoding: utf-8
 
 import cv2
-import sys
-import os
-import os.path
 import numpy as np
-import matplotlib.pyplot as plt
 from scipy import interpolate
 import yaml
 import math
 import random
-from matplotlib.mlab import PCA
-import queue as Queue
-import threading
-import multiprocessing
-import subprocess
-from datetime import datetime
+from auv_nav.calibration.ransac import plane_fitting_ransac
+from auv_nav.tools.console import Console
 
 
-class LaserCalibrator():
-    def __init__(self):
-        self.data = []
-        # TODO read camera calibration
-        self.left = []
-        self.right = []
+class LaserPoint:
+    def __init__(self, found, row, col):
+        self.found = found
+        self.row = row
+        self.col = col
 
-        left_maps = cv2.initUndistortRectifyMap(
-            mtx_1, dist_1, R1, P1, (1280, 1024), cv2.CV_16SC2)
-        right_maps = cv2.initUndistortRectifyMap(
-            mtx_2, dist_2, R2, P2, (1280, 1024), cv2.CV_16SC2)
+    def __str__(self):
+        return 'Found: ' + str(self.found) + ' (' + str(self.row) + ', ' + str(self.col) + ')'
 
-    def build_plane(pitch, yaw, point):
+
+def build_plane(pitch, yaw, point):
         a = math.cos(pitch) * math.cos(yaw)
         b = math.cos(pitch) * math.sin(yaw)
         c = math.sin(pitch)
@@ -68,29 +30,196 @@ class LaserCalibrator():
         offset = (d - point[1]*b)/a
         return plane, normal, offset
 
+
+def detect_laser_px(img, min_green_val, k, num_columns, continuous_interpolation, prior=None):
+    # k is the +-number of pixels from the maximum G pixel i.e. k=1 means that
+    # maxgreen_1-1,maxgreen_1 and maxgreen_1+1 are considered for interpolation
+    height, width, channels = img.shape
+    peaks = []
+    show_img = img.copy()
+    width_array = np.array(range(20, width-20))
+
+    if prior is None:
+        columns = [width_array[i] for i in sorted(
+            random.sample(range(len(width_array)), num_columns))]
+    else:
+        columns = [i.col for i in prior]
+
+    for i in columns:
+        stripe = img[:, i, 1]
+        max_ind = stripe.argmax()
+        x = []
+        y = []
+        if stripe[max_ind] > min_green_val:
+            maxgreen_x = max_ind
+            for m in range(-k, k+1):
+                x.append(maxgreen_x+m)
+            for n in range(-k-1, k):
+                p = maxgreen_x+n
+                y.append(img[p, i, 1])
+
+            if continuous_interpolation:
+                f = interpolate.interp1d(x, y, kind='cubic')
+                xnew = np.arange(
+                    maxgreen_x-k, maxgreen_x+k, 0.001)
+                ynew = f(xnew)
+                max_ind = np.argmax(ynew)
+                max_height = xnew[max_ind]
+            else:
+                max_ind = np.argmax(y)
+                max_height = x[max_ind]
+            cv2.circle(show_img, (i, int(max_height)), 3, (0, 0, 255))
+            peaks.append(LaserPoint(True, max_height, i))
+        else:
+            peaks.append(LaserPoint(False, -1, -1))
+    cv2.namedWindow('Laser detections', 0)
+    cv2.imshow('Laser detections', show_img)
+    cv2.waitKey(3)
+    return peaks
+
+
+def triangulate_dlt(p1, p2, P1, P2):
+    """Find 3D coordinate using all data given
+
+    Implements a linear triangulation method to find a 3D
+    point. For example, see Hartley & Zisserman section 12.2
+    (p.312).
+    """
+    # for info on SVD, see Hartley & Zisserman (2003) p. 593 (see also p. 587)
+    A = []
+    A.append(float(p1.col)*P1[2, :] - P1[0, :])
+    A.append(float(p1.row)*P1[2, :] - P1[1, :])
+    A.append(float(p2.col)*P2[2, :] - P2[0, :])
+    A.append(float(p2.row)*P2[2, :] - P2[1, :])
+    A = np.array(A)
+    u, d, vt = np.linalg.svd(A)
+    X = vt[-1, 0:3]/vt[-1, 3]  # normalize
+    return X
+
+
+def fit_plane(xyz):
+    # 1. Calculate centroid of points and make points relative to it
+    centroid = xyz.mean(axis=0)
+    xyzT = np.transpose(xyz)
+    xyzR = xyz - centroid  # points relative to centroid
+    xyzRT = np.transpose(xyzR)
+
+    # 2. Calculate the singular value decomposition of the xyzT matrix
+    #    and get the normal as the last column of u matrix
+    u, v, sd = np.linalg.svd(xyzRT)
+
+    # 3. Get d coefficient to plane for display
+    d = normal[0] * centroid[0] + normal[1] * centroid[1] + normal[2] * centroid[2]
+
+    axyz = np.ones((len(point_cloud_local), 4))
+    axyz[:, :3] = point_cloud_local
+    a, b, c, d = np.linalg.svd(axyz)[-1][-1, :]
+    e3 = np.array([a, b, c])
+
+    expected_laser_plane = np.array([1, 0, 0])
+    plane_angle = math.degrees(math.acos(abs(np.dot(
+        e3, expected_laser_plane))/((np.linalg.norm(e3))*(np.linalg.norm(expected_laser_plane)))))
+    expected_pitch_plane = np.array([1, 0])
+    e3_pitch = np.array([e3[0], e3[2]])
+    pitch_angle = math.degrees(math.acos(abs(np.dot(e3_pitch, expected_pitch_plane))/(
+        (np.linalg.norm(e3_pitch))*(np.linalg.norm(expected_pitch_plane)))))
+    expected_yaw_plane = np.array([1, 0])
+    e3_yaw = np.array([e3[0], e3[1]])
+    yaw_angle = math.degrees(math.acos(abs(np.dot(e3_yaw, expected_yaw_plane))/(
+        (np.linalg.norm(e3_yaw))*(np.linalg.norm(expected_yaw_plane)))))
+
+    return [a, b, c, d, plane_angle, pitch_angle, yaw_angle]
+
+
+class LaserCalibrator():
+    def __init__(self,
+                 stereo_camera_model,
+                 k=5,
+                 min_greenness_value=15,
+                 image_step=1,
+                 image_sample_size=200,
+                 num_iterations=30,
+                 num_columns=50,
+                 remap=True,
+                 continuous_interpolation=True):
+        self.data = []
+
+        self.sc = stereo_camera_model
+        self.k = k
+        self.min_greenness_value = min_greenness_value
+        self.image_step = image_step
+        self.image_sample_size = image_sample_size
+        self.num_iterations = num_iterations
+        self.num_columns = num_columns
+        self.remap = remap
+        self.continuous_interpolation = continuous_interpolation
+
+        self.left_maps = cv2.initUndistortRectifyMap(
+            self.sc.left.K,
+            self.sc.left.d,
+            self.sc.left.R,
+            self.sc.left.P,
+            (self.sc.left.image_width, self.sc.left.image_height),
+            cv2.CV_16SC2)
+        self.right_maps = cv2.initUndistortRectifyMap(
+            self.sc.right.K,
+            self.sc.right.d,
+            self.sc.right.R,
+            self.sc.right.P,
+            (self.sc.right.image_width, self.sc.right.image_height),
+            cv2.CV_16SC2)
+
     def cal(self, limages, rimages):
-        for img1, img2 in zip(limages, rimages):
-            peaks1 = detect_laser_px(img1)
-            peaks2 = detect_laser_px(img2)
+        i = 0
+        num_images = len(limages)
+        peaks1 = []
+        peaks2 = []
+        for img_path1, img_path2 in zip(limages, rimages):
+            # Load image
 
+            img1 = cv2.imread(str(img_path1))
+            img2 = cv2.imread(str(img_path2))
+
+            # Remap images
+            if self.remap:
+                img1 = cv2.remap(img1, self.left_maps[0], self.left_maps[1], cv2.INTER_LANCZOS4)
+                img2 = cv2.remap(img2, self.right_maps[0], self.right_maps[1], cv2.INTER_LANCZOS4)
+
+            p1 = detect_laser_px(img1, self.min_greenness_value, self.k, self.num_columns, self.continuous_interpolation)
+            p2 = detect_laser_px(img2, self.min_greenness_value, self.k, self.num_columns, self.continuous_interpolation, prior=p1)
+            peaks1.extend(p1)
+            peaks2.extend(p2)
+            #Console.progress(i, num_images, prefix='Detecting laser points')
+            i += 1
+            if i > 5:
+                break
         point_cloud = []
-        for f1, r1, c1, f2, r2, c2 in zip(peaks1, peaks2):
-            if f1 and f2:
-                p = disparity_px_to_point(r1, r2, c1, f1, cx1)
-                point_cloud.extend(p)
+        i = 0
 
-        n_points = len(point_cloud)
-        num_iterations = 100
+        fx1 = self.sc.left.P[0, 0]
+        cx1 = self.sc.left.P[0, 2]
+        baseline = - self.sc.right.P[1, 3] / fx1
+        for p1, p2 in zip(peaks1, peaks2):
+            if p1.found and p2.found:
+                if p1.row - p2.row > 1.0:
+                    p = triangulate_dlt(p1, p2, self.sc.left.P, self.sc.right.P)
+                    print(p1)
+                    print(p2)
+                    print(p)
+                    point_cloud.append(p)
+            #Console.progress(i, self.num_iterations, prefix='Triangulating points')
+            i += 1
+
         # Get a sample size of 1000 points or a 5% of the dataset.
-        sample_size = min(1000, int(n_points*0.05))
         planes = []
-        for i in range(0, num_iterations):
-            indexes = random.sample(point_cloud, sample_size)
-            plane = fit_plane(point_cloud, indexes)
+        for i in range(0, self.num_iterations):
+            point_cloud_local = random.sample(point_cloud, self.image_sample_size)
+            plane = fit_plane(point_cloud_local)
             planes.append(plane)
+            Console.progress(i, self.num_iterations, prefix='Iterating planes')
 
         planes = np.array(planes)
-        planes = planes.reshape(-1, 8)
+        planes = planes.reshape(-1, 7)
 
         point_cloud = np.array(point_cloud)
         point_cloud = point_cloud.reshape(-1, 3)
@@ -123,189 +252,33 @@ class LaserCalibrator():
         mean_z = np.mean(point_cloud[:, 2])
         mean_xyz = np.array([mean_x, mean_y, mean_z])
 
+        self.yaml_msg = (
+            'mean_xyz: ' + str(mean_xyz.tolist()) + '\n'
+            + 'plane_angle_std: ' + str(plane_angle_std) + '\n'
+            + 'plane_angle_mean: ' + str(plane_angle_mean) + '\n'
+            + 'plane_angle_median: ' + str(plane_angle_median) + '\n'
+            + 'pitch_angle_std: ' + str(pitch_angle_std) + '\n'
+            + 'pitch_angle_mean: ' + str(pitch_angle_mean) + '\n'
+            + 'yaw_angle_std: ' + str(yaw_angle_std) + '\n'
+            + 'yaw_angle_mean: ' + str(yaw_angle_mean) + '\n'
+            + 'num_iterations: ' + str(self.num_iterations) + '\n'
+            + 'total_no_points: ' + str(total_no_points) + '\n')
+
         msg = ['minus_2sigma', 'mean', 'plus_2sigma']
-        t = ['_pitch_', '_yaw_', '_offset']
-        k = 1
+        t = ['_pitch_', '_yaw_', '_offset_']
+        msg_type = ['plane', 'normal', 'offset']
+
         for i in range(0, 3):
             for j in range(0, 3):
                 a = pitch_angle_mean + (1-i)*2*pitch_angle_std
                 b = yaw_angle_mean + (1-j)*2*yaw_angle_std
                 c = mean_xyz
                 plane, normal, offset = build_plane(a, b, c)
-                d = msg[i] + t[0] + msg[j] + t[1] + msg[k] + t[2]
+                d = msg[i] + t[0] + msg[j] + t[1] + msg[1] + t[2]
+                self.yaml_msg += d + msg_type[0] + ': ' + str(plane) + '\n'
+                self.yaml_msg += d + msg_type[1] + ': ' + str(normal) + '\n'
+                self.yaml_msg += d + msg_type[2] + ': ' + str(offset) + '\n'
                 self.data.append([plane, normal, offset, d])
 
     def yaml(self):
-        msg = yaml.dump(
-            {'mean_pitch_mean_yaw_plane': mean_pitch_mean_yaw_plane.tolist(),
-             'mean_pitch_mean_yaw_plane_d': mean_pitch_mean_yaw_plane_d,
-             'mean_pitch_mean_yaw_plane_offset': mean_pitch_mean_yaw_plane_offset,
-             'mean_pitch_plus_2sigma_yaw_plane': mean_pitch_plus_2sigma_yaw_plane.tolist(),
-             'mean_pitch_plus_2sigma_yaw_plane_d': mean_pitch_plus_2sigma_yaw_plane_d,
-             'mean_pitch_plus_2sigma_yaw_plane_offset': mean_pitch_plus_2sigma_yaw_plane_offset,
-             'mean_pitch_minus_2sigma_yaw_plane': mean_pitch_minus_2sigma_yaw_plane.tolist(),
-             'mean_pitch_minus_2sigma_yaw_plane_d': mean_pitch_minus_2sigma_yaw_plane_d,
-             'mean_pitch_minus_2sigma_yaw_plane_offset': mean_pitch_minus_2sigma_yaw_plane_offset,
-             'plus_2sigma_pitch_mean_yaw_plane': plus_2sigma_pitch_mean_yaw_plane.tolist(),
-             'plus_2sigma_pitch_mean_yaw_plane_d': plus_2sigma_pitch_mean_yaw_plane_d,
-             'plus_2sigma_pitch_mean_yaw_plane_offset': plus_2sigma_pitch_mean_yaw_plane_offset,
-             'plus_2sigma_pitch_plus_2sigma_yaw_plane': plus_2sigma_pitch_plus_2sigma_yaw_plane.tolist(),
-             'plus_2sigma_pitch_plus_2sigma_yaw_plane_d': plus_2sigma_pitch_plus_2sigma_yaw_plane_d,
-             'plus_2sigma_pitch_plus_2sigma_yaw_plane_offset': plus_2sigma_pitch_plus_2sigma_yaw_plane_offset,
-             'plus_2sigma_pitch_minus_2sigma_yaw_plane': plus_2sigma_pitch_minus_2sigma_yaw_plane.tolist(),
-             'plus_2sigma_pitch_minus_2sigma_yaw_plane_d': plus_2sigma_pitch_minus_2sigma_yaw_plane_d,
-             'plus_2sigma_pitch_minus_2sigma_yaw_plane_offset': plus_2sigma_pitch_minus_2sigma_yaw_plane_offset,
-             'minus_2sigma_pitch_mean_yaw_plane': minus_2sigma_pitch_mean_yaw_plane.tolist(),
-             'minus_2sigma_pitch_mean_yaw_plane_d': minus_2sigma_pitch_mean_yaw_plane_d,
-             'minus_2sigma_pitch_mean_yaw_plane_offset': minus_2sigma_pitch_mean_yaw_plane_offset,
-             'minus_2sigma_pitch_plus_2sigma_yaw_plane': minus_2sigma_pitch_plus_2sigma_yaw_plane.tolist(),
-             'minus_2sigma_pitch_plus_2sigma_yaw_plane_d': minus_2sigma_pitch_plus_2sigma_yaw_plane_d,
-             'minus_2sigma_pitch_plus_2sigma_yaw_plane_offset': minus_2sigma_pitch_plus_2sigma_yaw_plane_offset,
-             'minus_2sigma_pitch_minus_2sigma_yaw_plane': minus_2sigma_pitch_minus_2sigma_yaw_plane.tolist(),
-             'minus_2sigma_pitch_minus_2sigma_yaw_plane_d': minus_2sigma_pitch_minus_2sigma_yaw_plane_d,
-             'minus_2sigma_pitch_minus_2sigma_yaw_plane_offset': minus_2sigma_pitch_minus_2sigma_yaw_plane_offset,
-             'mean_xyz': mean_xyz.tolist(),
-             'planes': planes.tolist(),
-             'plane_angle_std': plane_angle_std,
-             'plane_angle_mean': plane_angle_mean,
-             'plane_angle_median': plane_angle_median,
-             'pitch_angle_std': pitch_angle_std,
-             'pitch_angle_mean': pitch_angle_mean,
-             'yaw_angle_std': yaw_angle_std,
-             'yaw_angle_mean': yaw_angle_mean,
-             'no_points': no_points,
-             'total_no_points': total_no_points})
-        return msg
-
-
-def detect_laser_px(img, min_green_val, k):
-    # k is the +-number of pixels from the maximum G pixel i.e. k=1 means that
-    # maxgreen_1-1,maxgreen_1 and maxgreen_1+1 are considered for interpolation
-    image_rgb_px = []
-    for py in range(0, width):
-        for px in range(0, height):
-            bgr = img[px][py]
-            image_rgb_px.extend(
-                [bgr[2], bgr[1], bgr[0], px+1, py+1])
-
-    image_rgb_px_1_shaped = np.array(image_rgb_px_1)
-    image_rgb_px_1_shaped = np.reshape(
-        image_rgb_px_1_shaped, (width*height, 5))
-
-    image_rgb_px_1_sectioned = []
-    maxgreen_1 = []
-
-    peaks = []
-
-    width_array = np.array(range(0, width))
-    columns = [width_array[i] for i in sorted(
-        random.sample(range(len(width_array)), no_columns))]
-    for i in columns:
-        x_1 = []
-        y_1 = []
-        lower = height*i
-        upper = height+(height*i)
-        image_rgb_px_1_sectioned = image_rgb_px_1_shaped[lower:upper, :]
-        maxgreen_1 = max(image_rgb_px_1_sectioned,
-                         key=lambda item: item[1])
-        if maxgreen_1[1] > min_green_val:
-            maxgreen_1x = maxgreen_1[3]
-            for m in range(-k, k+1):
-                x_1.append(maxgreen_1x+m)
-            for n in range(-k-1, k):
-                p = maxgreen_1x+n
-                y_1.append(image_rgb_px_1_sectioned[p, 1])
-
-            if continuous_interpolation == 1:
-                f1 = interpolate.interp1d(x_1, y_1, kind='cubic')
-                xnew_1 = np.arange(
-                    maxgreen_1x-k, maxgreen_1x+k, 0.001)
-                ynew_1 = f1(xnew_1)
-                max_ind_1 = np.argmax(ynew_1)
-                max_height_1 = xnew_1[max_ind_1]
-            else:
-                max_ind_1 = np.argmax(y_1)
-                max_height_1 = x_1[max_ind_1]
-            peaks.append([True, max_height_1, i])
-        else:
-            peaks.append([False, -1, -1])
-    return peaks
-
-
-def disparity_px_to_point(r1, r2, c, f1, cx1):
-    z = (f1 * DistanceBetweenCameras) / (r2 - r1)
-    y = ((c+1) * z)/f1
-    x = ((cx1 - r1) * z)/f1
-    return [x, y, z]
-
-
-def fit_plane(point_cloud_local):
-    # MATLIB PCA
-    results = PCA(point_cloud_local, standardize=False)
-    e3 = np.transpose(results.Wt[2, :])
-
-    a = e3[0]
-    b = e3[1]
-    c = e3[2]
-    d = np.dot(e3, results.mu)
-    expected_laser_plane = np.array([1, 0, 0])
-    plane_angle = math.degrees(math.acos(abs(np.dot(
-        e3, expected_laser_plane))/((np.linalg.norm(e3))*(np.linalg.norm(expected_laser_plane)))))
-    expected_pitch_plane = np.array([1, 0])
-    e3_pitch = np.array([e3[0], e3[2]])
-    pitch_angle = math.degrees(math.acos(abs(np.dot(e3_pitch, expected_pitch_plane))/(
-        (np.linalg.norm(e3_pitch))*(np.linalg.norm(expected_pitch_plane)))))
-    expected_yaw_plane = np.array([1, 0])
-    e3_yaw = np.array([e3[0], e3[1]])
-    yaw_angle = math.degrees(math.acos(abs(np.dot(e3_yaw, expected_yaw_plane))/(
-        (np.linalg.norm(e3_yaw))*(np.linalg.norm(expected_yaw_plane)))))
-
-    print('Plane Equation:\n', a, 'x + ', b, 'y + ', c, 'z = ', d)
-    print('Plane angle:\n', plane_angle, 'degrees')
-    print('Pitch angle:\n', pitch_angle, 'degrees')
-    print('Yaw angle:\n', yaw_angle, 'degrees')
-    return [a, b, c, d, plane_angle, pitch_angle, yaw_angle, no_points]
-
-
-def detect_all_points(folder_path_1, file_name):
-    filelist = []
-    with open(os.path.join(folder_path_1, file_name), "r") as ifile:
-        filelist = [line.rstrip() for line in ifile]
-    for image_file in filelist:
-        # Load image
-        print("Processing image {0}".format(str(image_file)))
-        img_1 = cv2.imread(os.path.join(
-            folder_path_1, image_file), cv2.IMREAD_COLOR)
-        img_2 = cv2.imread(os.path.join(
-            folder_path_2, image_file), cv2.IMREAD_COLOR)
-        height, width, channels = img_1.shape
-
-        # Remap images
-        if remap == 1:
-            img_1 = cv2.remap(img_1, left_maps[0], left_maps[1], cv2.INTER_LANCZOS4)
-            img_2 = cv2.remap(img_2, right_maps[0], right_maps[1], cv2.INTER_LANCZOS4)
-
-        point_cloud_local = detect_laser(img_1, img_2)
-
-    point_cloud_local = np.array(point_cloud_local)
-    point_cloud_local = point_cloud_local.reshape(-1, 3)
-    no_points = len(point_cloud_local)
-    print("No_points:", no_points)
-    return point_cloud_local
-
-
-def point_cloud_pca():
-    point_cloud = detect_all_points(folder_path_1, file_name)
-    planes = []
-    for i in iterations:
-        # TODO perform iteration over random sampled points
-        print("Iteration")
-        point_cloud_local = random_sample(point_cloud)
-
-        if OutputCSV == 1:
-            print("Saving CSV")
-            np.savetxt(os.path.join(outpath_1, file_name_format[0] + "_image_Step" + str(
-                image_Step) + ".csv"), point_cloud, delimiter=",")
-        plane = fit_plane(point_cloud_local)
-        planes.extend(plane)
-    return planes, point_cloud
+        return self.yaml_msg

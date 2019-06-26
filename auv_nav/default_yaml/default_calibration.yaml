@@ -1,16 +1,39 @@
 cameras:
   - name: Cam51707923
-    camera_calibration: image/cameraCal/Cam51707923
-    laser_calibration: image/laserCal/Cam51707923
+    camera_calibration:
+      path: image/cameraCal/Cam51707923
+      extension: tiff
+    laser_calibration:
+      path: image/laserCal/Cam51707923
+      extension: tiff
   - name: Cam51707925
-    camera_calibration: image/cameraCal/Cam51707925
-    laser_calibration: image/laserCal/Cam51707925
+    camera_calibration:
+      path: image/cameraCal/Cam51707925
+      extension: tiff
+    laser_calibration:
+      path: image/laserCal/Cam51707925
+      extension: tiff
   - name: LM165
-    camera_calibration: image/cameraCal/LM165
-    laser_calibration: image/laserCal/LM165
+    camera_calibration:
+      path: image/cameraCal/LM165
+      extension: tiff
+    laser_calibration:
+      path: image/laserCal/LM165
+      extension: tiff
 
-calibration:
+camera_calibration:
   pattern: circles
   cols: 7
   rows: 7
   size: 0.1
+
+laser_calibration:
+  min_greenness_value: 15
+  ransac_iterations: 100
+  remap: true
+  continuous_interpolation: true
+  window_size: 5
+  image_step: 1
+  image_sample_size: 100
+  num_iterations: 100
+  num_columns: 50

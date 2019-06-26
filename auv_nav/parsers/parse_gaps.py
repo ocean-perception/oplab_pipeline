@@ -102,6 +102,16 @@ def parse_gaps(mission,
                                 secs = 0
                                 broken_packet_flag = True
 
+                            if mins >= 60:
+                                hour += 1
+                                mins = 0
+                                broken_packet_flag = True
+
+                            if hour >= 24:
+                                dd += 1
+                                hour = 0
+                                broken_packet_flag = True
+
                             epoch_time = date_time_to_epoch(
                                 yyyy, mm, dd, hour, mins, secs, timezone_offset)
 
@@ -156,6 +166,16 @@ def parse_gaps(mission,
                             if secs >= 60:
                                 mins += 1
                                 secs = 0
+                                broken_packet_flag = True
+
+                            if mins >= 60:
+                                hour += 1
+                                mins = 0
+                                broken_packet_flag = True
+
+                            if hour >= 24:
+                                dd += 1
+                                hour = 0
                                 broken_packet_flag = True
 
                             epoch_time = date_time_to_epoch(

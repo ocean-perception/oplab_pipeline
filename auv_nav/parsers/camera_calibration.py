@@ -62,17 +62,20 @@ class MonoCamera():
 
 
 class StereoCamera():
-    def __init__(self, filename=None):
-        self.left = MonoCamera()
-        self.right = MonoCamera()
+    def __init__(self, filename=None, left=None, right=None):
+        self.left = MonoCamera(left)
+        self.right = MonoCamera(right)
         self.R = np.eye(3)
         self.t = np.zeros((3, 1))
 
         if filename is not None:
-            d = yaml.safe_load(filename)
+            print(filename)
+            filename = Path(filename)
+            stream = filename.open('r')
+            d = yaml.safe_load(stream)
             self.left.from_node(d['left'])
             self.right.from_node(d['right'])
-            self.from_node(d)
+            self.from_node(d['extrinsics'])
 
     def from_node(self, node):
         self.R = node['rotation_matrix']

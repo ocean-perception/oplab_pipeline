@@ -46,6 +46,7 @@ import tarfile
 import time
 from distutils.version import LooseVersion
 from pathlib import Path
+from auv_nav.parsers.camera_calibration import StereoCamera
 
 
 # Supported calibration patterns
@@ -226,7 +227,7 @@ def _is_sharp(img, corners, board):
     lap_var = cv2.Laplacian(img_roi, cv2.CV_64F).var()
     # TODO: what is a good value here?
     # source: https://www.pyimagesearch.com/2015/09/07/blur-detection-with-opencv/
-    return lap_var > 18.0
+    return lap_var > 25.0
 
 
 def _get_circles(img, board, pattern, invert=False):
@@ -286,7 +287,7 @@ class Calibrator(object):
 
         # Set to true after we perform calibration
         self.calibrated = False
-        self.debug = False
+        self.debug = True
         self.calib_flags = flags
         self.checkerboard_flags = checkerboard_flags
         self.pattern = pattern
@@ -350,7 +351,7 @@ class Calibrator(object):
         d = min([param_distance(params, p) for p in db_params])
         # print("d = %.3f" % d)  # DEBUG
         # TODO What's a good threshold here? Should it be configurable?
-        if d <= 0.2:
+        if d <= 0.25:
             return False
 
         if self.max_chessboard_speed > 0:
@@ -478,43 +479,6 @@ class Calibrator(object):
         print("R = ", numpy.ravel(r).tolist())
         print("P = ", numpy.ravel(p).tolist())
 
-    def lrost(self, name, d, k, r, p):
-        calmessage = (
-            "# oST version 5.0 parameters\n"
-            + "\n"
-            + "\n"
-            + "[image]\n"
-            + "\n"
-            + "width\n"
-            + str(self.size[0]) + "\n"
-            + "\n"
-            + "height\n"
-            + str(self.size[1]) + "\n"
-            + "\n"
-            + "[%s]" % name + "\n"
-            + "\n"
-            + "camera matrix\n"
-            + " ".join(["%8f" % k[0, i] for i in range(3)]) + "\n"
-            + " ".join(["%8f" % k[1, i] for i in range(3)]) + "\n"
-            + " ".join(["%8f" % k[2, i] for i in range(3)]) + "\n"
-            + "\n"
-            + "distortion\n"
-            + " ".join(["%8f" % d[i, 0] for i in range(d.shape[0])]) + "\n"
-            + "\n"
-            + "rectification\n"
-            + " ".join(["%8f" % r[0, i] for i in range(3)]) + "\n"
-            + " ".join(["%8f" % r[1, i] for i in range(3)]) + "\n"
-            + " ".join(["%8f" % r[2, i] for i in range(3)]) + "\n"
-            + "\n"
-            + "projection\n"
-            + " ".join(["%8f" % p[0, i] for i in range(4)]) + "\n"
-            + " ".join(["%8f" % p[1, i] for i in range(4)]) + "\n"
-            + " ".join(["%8f" % p[2, i] for i in range(4)]) + "\n"
-            + "\n")
-        assert len(
-            calmessage) < 525, "Calibration info must be less than 525 bytes"
-        return calmessage
-
     def lryaml(self, name, d, k, r, p):
         calmessage = (""
                       + "image_width: " + str(self.size[0]) + "\n"
@@ -559,6 +523,8 @@ class MonoCalibrator(Calibrator):
         if 'name' not in kwargs:
             kwargs['name'] = 'narrow_stereo/left'
         super(MonoCalibrator, self).__init__(*args, **kwargs)
+        self.R = numpy.eye(3, dtype=numpy.float64)
+        self.P = numpy.zeros((3, 4), dtype=numpy.float64)
 
     def cal(self, images_list):
         """
@@ -595,11 +561,11 @@ class MonoCalibrator(Calibrator):
                     print(("*** Added sample %d, p_x = %.3f, p_y = %.3f, p_size = %.3f, skew = %.3f" %
                            tuple([len(self.db)] + params)))
 
-                    if self.debug:
-                        img = cv2.drawChessboardCorners(gray, (board.n_cols, board.n_rows), corners, ok)
-                        name = Path(i).stem
-                        print('Writing debug image to /tmp/' + name + '_corners.png')
-                        cv2.imwrite('/tmp/' + name + '_corners.png', img)
+                # if self.debug:
+                #        img = cv2.drawChessboardCorners(gray, (board.n_cols, board.n_rows), corners, ok)
+                #        name = Path(i).stem
+                #        print('Writing debug image to /tmp/' + name + '_corners.png')
+                #        cv2.imwrite('/tmp/' + name + '_corners.png', img)
                 elif self.debug:
                     print("Image " + i + " is blurry, discarded.")
 
@@ -638,7 +604,14 @@ class MonoCalibrator(Calibrator):
         self.R = numpy.eye(3, dtype=numpy.float64)
         self.P = numpy.zeros((3, 4), dtype=numpy.float64)
 
-        self.set_alpha(0.0)
+        self.set_alpha(1.0)
+
+        if self.debug:
+            for i, (params, img) in enumerate(self.db):
+                # img = self.db[0][1]
+                img = self.remap(img)
+                print('Writing debug remap image to /tmp/test_' + self.name + '_remap.png')
+                cv2.imwrite('/tmp/test_' + str(i) + '_' + self.name + '_remap.png', img)
 
     def set_alpha(self, a):
         """
@@ -681,8 +654,6 @@ class MonoCalibrator(Calibrator):
     def report(self):
         self.lrreport(self.distortion, self.intrinsics, self.R, self.P)
 
-    def ost(self):
-        return self.lrost(self.name, self.distortion, self.intrinsics, self.R, self.P)
 
     def yaml(self):
         return self.lryaml(self.name, self.distortion, self.intrinsics, self.R, self.P)
@@ -741,7 +712,7 @@ class StereoCalibrator(Calibrator):
 
     is_mono = False
 
-    def __init__(self, name='camera1', name2='camera2', *args, **kwargs):
+    def __init__(self, stereo_camera_model, name='camera1', name2='camera2', *args, **kwargs):
         if 'name' not in kwargs:
             kwargs['name'] = 'camera1'
         super(StereoCalibrator, self).__init__(*args, **kwargs)
@@ -752,6 +723,11 @@ class StereoCalibrator(Calibrator):
         self.param_ranges[0] = 0.4
         self.name = name
         self.name2 = name2
+
+        self.l.intrinsics = stereo_camera_model.left.K
+        self.l.distortion = stereo_camera_model.left.d
+        self.r.intrinsics = stereo_camera_model.right.K
+        self.r.distortion = stereo_camera_model.right.d
 
     def cal(self, limages_list, rimages_list):
         """
@@ -810,10 +786,10 @@ class StereoCalibrator(Calibrator):
 
     def cal_fromcorners(self, good):
         # Perform monocular calibrations
-        lcorners = [(l, b) for (l, r, b) in good]
-        rcorners = [(r, b) for (l, r, b) in good]
-        self.l.cal_fromcorners(lcorners)
-        self.r.cal_fromcorners(rcorners)
+        # lcorners = [(l, b) for (l, r, b) in good]
+        # rcorners = [(r, b) for (l, r, b) in good]
+        # self.l.cal_fromcorners(lcorners)
+        # self.r.cal_fromcorners(rcorners)
 
         lipts = [l for (l, _, _) in good]
         ripts = [r for (_, r, _) in good]
@@ -846,7 +822,16 @@ class StereoCalibrator(Calibrator):
                                           cv2.TERM_CRITERIA_EPS, 1000, 1e-6),
                                 flags=flags)
 
-        self.set_alpha(0.0)
+        self.set_alpha(1.0)
+
+        if self.debug:
+            for i, (params, limg, rimg) in enumerate(self.db):
+                # img = self.db[0][1]
+                limg = self.l.remap(limg)
+                rimg = self.r.remap(rimg)
+                print('Writing debug remap image to \n\t * /tmp/test_' + self.name + '_stereo_remap.png \n\t * /tmp/test_' + self.name2 + '_stereo_remap.png')
+                cv2.imwrite('/tmp/test_' + str(i) + '_' + self.name + '_stereo_remap.png', img)
+                cv2.imwrite('/tmp/test_' + str(i) + '_' + self.name2 + '_stereo_remap.png', img)
 
     def set_alpha(self, a):
         """
@@ -878,10 +863,6 @@ class StereoCalibrator(Calibrator):
         self.lrreport(self.r.distortion, self.r.intrinsics, self.r.R, self.r.P)
         print("self.T ", numpy.ravel(self.T).tolist())
         print("self.R ", numpy.ravel(self.R).tolist())
-
-    def ost(self):
-        return (self.lrost(self.name + "/left", self.l.distortion, self.l.intrinsics, self.l.R, self.l.P) +
-                self.lrost(self.name + "/right", self.r.distortion, self.r.intrinsics, self.r.R, self.r.P))
 
     def yaml(self):
         d1 = self.l.distortion
@@ -941,17 +922,17 @@ class StereoCalibrator(Calibrator):
                       + "    rows: 3\n"
                       + "    cols: 4\n"
                       + "    data: [" + ", ".join(["%8f" % i for i in p2.reshape(1, 12)[0]]) + "]\n"
-                      + "rotation_matrix:\n"
-                      + "  rows: 3\n"
-                      + "  cols: 3\n"
-                      + "  data: [" + ", ".join(["%8f" % i for i in self.R.reshape(1, 9)[0]]) + "]\n"
-                      + "translation_vector:\n"
-                      + "  rows: 3\n"
-                      + "  cols: 1\n"
-                      + "  data: [" + ", ".join(["%8f" % i for i in self.T.reshape(1, 3)[0]]) + "]\n"
+                      + "extrinsics:\n"
+                      + "  rotation_matrix:\n"
+                      + "    rows: 3\n"
+                      + "    cols: 3\n"
+                      + "    data: [" + ", ".join(["%8f" % i for i in self.R.reshape(1, 9)[0]]) + "]\n"
+                      + "  translation_vector:\n"
+                      + "    rows: 3\n"
+                      + "    cols: 1\n"
+                      + "    data: [" + ", ".join(["%8f" % i for i in self.T.reshape(1, 3)[0]]) + "]\n"
                       + "")
         return calmessage
-
 
     # TODO Get rid of "from_images" versions of these, instead have function to get undistorted corners
     def epipolar_error_from_images(self, limage, rimage):
