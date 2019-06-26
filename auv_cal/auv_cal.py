@@ -3,7 +3,7 @@
 Copyright (c) 2018, University of Southampton
 All rights reserved.
 """
-from auv_nav.calibration.calibration import Calibrator
+from auv_cal.calibration import Calibrator
 from auv_nav.tools.console import Console
 
 import sys

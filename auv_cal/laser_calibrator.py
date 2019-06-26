@@ -6,7 +6,7 @@ from scipy import interpolate
 import yaml
 import math
 import random
-from auv_nav.calibration.ransac import plane_fitting_ransac
+from auv_cal.ransac import plane_fitting_ransac
 from auv_nav.tools.console import Console
 
 
