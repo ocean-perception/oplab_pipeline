@@ -1,7 +1,7 @@
 import yaml
 
-class Image:
 
+class Image:
     def __init__(self, cdict):
         self.format = cdict['format']
         self.timezone = cdict['timezone']
@@ -10,42 +10,42 @@ class Image:
         self.cameras_1 = cdict['cameras'][1]
         self.cameras_2 = cdict['cameras'][2]
 
-class config:
 
+class config:
     def __init__(self, cdict):
         self.auv_nav_path = cdict['auv_nav_path']
         self.src_img_index = cdict['src_img_index']
-        
-class attenuation_correction:
 
+
+class attenuation_correction:
     def __init__(self, cdict):
         self.altitude_max = cdict['altitude'][0]
         self.altitude_min = cdict['altitude'][1]
         self.sampling_method = cdict['sampling_method'][0]
         self.median_filter_kernel_size = cdict['median_filter_kernel_size']
 
-class normalization:
 
+class normalization:
     def __init__(self, cdict):
         self.target_mean = cdict['target_mean']
         self.target_std = cdict['target_std']
         self.debayer_option = cdict['debayer_option']    
 
-class output:
 
+class output:
     def __init__(self, cdict):
         self.dst_file_format = cdict['dst_file_format']
 
-class flags:
 
+class flags:
     def __init__(self, cdict):
         self.apply_attenuation_correction = cdict['apply_attenuation_correction']
         self.apply_gamma_correction = cdict['apply_gamma_correction']
         self.apply_distortion_correction = cdict['apply_distortion_correction']
         self.camera_parameter_file_path = cdict['camera_parameter_file_path'][0]
 
-class Parameters:
 
+class Parameters:
     def __init__(self, file,type):
 
         with open(file, 'r') as f:
@@ -69,6 +69,7 @@ class Parameters:
             cdict = params['flags']
             self.flags = flags(cdict)
             
+
 def read_params(path,type):
 	pm = Parameters(path,type)
 	return pm

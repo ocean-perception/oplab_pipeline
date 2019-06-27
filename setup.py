@@ -21,6 +21,7 @@ setuptools.setup(
         'console_scripts': [
             'auv_nav = auv_nav.auv_nav:main',
             'auv_cal = auv_cal.auv_cal:main',
+            'debayer_folder = correct_images.debayer_folder:main',
             'correct_images = correct_images.correct_images:main'
         ],
     },
