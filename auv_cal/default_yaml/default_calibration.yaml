@@ -22,10 +22,11 @@ cameras:
       extension: tiff
 
 camera_calibration:
-  pattern: circles
+  pattern: Circles
   cols: 7
   rows: 7
   size: 0.1
+  invert: True
 
 laser_calibration:
   min_greenness_value: 15

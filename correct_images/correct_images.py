@@ -3,12 +3,15 @@ import sys
 import os
 from shutil import copyfile
 
+from correct_images.calculate_correction_parameters import load_xviii_bayer_from_binary
 from correct_images.calculate_correction_parameters import calculate_correction_parameters
 from correct_images.develop_corrected_images import develop_corrected_image
 from auv_nav.tools.folder_structure import get_raw_folder
 from auv_nav.tools.folder_structure import get_processed_folder
 from auv_nav.tools.folder_structure import get_config_folder
-
+import numpy as np
+from colour_demosaicing import demosaicing_CFA_Bayer_bilinear
+import cv2
 
 # def batch_correct(method, target_mean, target_std, filelist, mission):
 #
@@ -61,12 +64,24 @@ def main(args=None):
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
 
+    subparser_debayer = subparsers.add_parser(
+        'debayer', help='Debayer without correction')
+    subparser_debayer.add_argument(
+        'path', help="Path to bayer image.")
+    subparser_debayer.add_argument(
+        '-a', '--all', action='store_true', help="For all files in given path or specific file. If True next arguments are ignored")
+    subparser_debayer.add_argument(
+        '-i', '--image', default=None, help="Single raw image to test.")
+    subparser_debayer.add_argument(
+        '-e', '--extension', default=None, help="extension type of image.")
+    subparser_debayer.set_defaults(func=call_debayer)
+
     subparser_correct_attenuation = subparsers.add_parser(
         'parse', help='Calculate attenuation correction parameters')
     subparser_correct_attenuation.add_argument(
         'path', help="Path to raw directory till dive.")
     subparser_correct_attenuation.add_argument(
-        '-f','--force', type=str2bool, default = False,
+        '-f', '--force', action='store_true',
         help="Force overwrite if correction parameters already exist.")
     subparser_correct_attenuation.set_defaults(func=call_calculate_attenuation_correction_parameter)
 
@@ -75,7 +90,7 @@ def main(args=None):
     subparser_correct_attenuation.add_argument(
         'path', help="Path to processed directory till dive.")
     subparser_correct_attenuation.add_argument(
-        '-f', '--force', type=str2bool, default = False,
+        '-f', '--force', action='store_true',
         help="Force overwrite if processed images already exist.")
 
     subparser_correct_attenuation.set_defaults(func=call_develop_corrected_image)
@@ -87,6 +102,46 @@ def main(args=None):
 
     args = parser.parse_args()
     args.func(args)
+
+
+def call_debayer(args):
+    display_min = 1000
+    display_max = 10000
+
+    def display(image, display_min, display_max): # copied from Bi Rico
+        # Here I set copy=True in order to ensure the original image is not
+        # modified. If you don't mind modifying the original image, you can
+        # set copy=False or skip this step.
+        image = np.array(image, copy=True)
+        image.clip(display_min, display_max, out=image)
+        image -= display_min
+        np.floor_divide(image, (display_max - display_min + 1) / 256,
+                        out=image, casting='unsafe')
+        return image.astype(np.uint8)
+    def lut_display(image, display_min, display_max) :
+        lut = np.arange(2**16, dtype='uint32')
+        lut = display(lut, display_min, display_max)
+        return np.take(lut, image)
+    if args.all:
+        i = 0
+        for f in os.listdir(args.path):
+            p = args.path + f
+            xviii_binary_data = np.fromfile(os.path.expanduser(p), dtype=np.uint8)
+            img = load_xviii_bayer_from_binary(xviii_binary_data)
+            img_rgb = np.array(demosaicing_CFA_Bayer_bilinear(img, pattern='GRBG'))
+            p_ = './' + str(i) + '.png'
+            cv2.imwrite(os.path.expanduser(p_), img_rgb)
+            i = i + 1
+            print('{} done.'.format(str(f)))
+    else:
+        p = args.path + args.image + args.extension
+        xviii_binary_data = np.fromfile(os.path.expanduser(p), dtype=np.uint8)
+        img = load_xviii_bayer_from_binary(xviii_binary_data)
+        img_rgb = np.array(demosaicing_CFA_Bayer_bilinear(img, pattern='GRBG'))
+        img_lut = lut_display(img_rgb, display_min, display_max)
+        p_ = './' + args.image + '.png'
+        cv2.imwrite(os.path.expanduser(p_), img_lut)
+        print('{0}.{1} done.'.format(args.image, args.extension))
 
 
 def call_calculate_attenuation_correction_parameter(args):

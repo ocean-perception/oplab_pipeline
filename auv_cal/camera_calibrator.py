@@ -819,9 +819,9 @@ class StereoCalibrator(Calibrator):
                 # img = self.db[0][1]
                 limg = self.l.remap(limg)
                 rimg = self.r.remap(rimg)
-                print('Writing debug remap image to \n\t * /tmp/test_' + self.name + '_stereo_remap.png \n\t * /tmp/test_' + self.name2 + '_stereo_remap.png')
-                cv2.imwrite('/tmp/test_' + str(i) + '_' + self.name + '_stereo_remap.png', img)
-                cv2.imwrite('/tmp/test_' + str(i) + '_' + self.name2 + '_stereo_remap.png', img)
+                print('Writing debug remap image to \n\t * /tmp/test_' + str(i) + '_' + self.name + '_stereo_remap.png \n\t * /tmp/test_' + str(i) + '_' + self.name2 + '_stereo_remap.png')
+                cv2.imwrite('/tmp/test_' + str(i) + '_' + self.name + '_stereo_remap.png', limg)
+                cv2.imwrite('/tmp/test_' + str(i) + '_' + self.name2 + '_stereo_remap.png', rimg)
 
     def set_alpha(self, a):
         """
