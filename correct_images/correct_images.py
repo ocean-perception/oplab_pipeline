@@ -12,6 +12,7 @@ from auv_nav.tools.folder_structure import get_config_folder
 import numpy as np
 from colour_demosaicing import demosaicing_CFA_Bayer_bilinear
 import cv2
+from pathlib import Path
 
 # def batch_correct(method, target_mean, target_std, filelist, mission):
 #
@@ -67,13 +68,11 @@ def main(args=None):
     subparser_debayer = subparsers.add_parser(
         'debayer', help='Debayer without correction')
     subparser_debayer.add_argument(
-        'path', help="Path to bayer image.")
-    subparser_debayer.add_argument(
-        '-a', '--all', action='store_true', help="For all files in given path or specific file. If True next arguments are ignored")
+        'path', help="Path to bayer images.")
     subparser_debayer.add_argument(
         '-i', '--image', default=None, help="Single raw image to test.")
     subparser_debayer.add_argument(
-        '-e', '--extension', default=None, help="extension type of image.")
+        '-o', '--output', default=None, help="Output folder.")
     subparser_debayer.set_defaults(func=call_debayer)
 
     subparser_correct_attenuation = subparsers.add_parser(
@@ -105,43 +104,33 @@ def main(args=None):
 
 
 def call_debayer(args):
-    display_min = 1000
-    display_max = 10000
-
-    def display(image, display_min, display_max): # copied from Bi Rico
-        # Here I set copy=True in order to ensure the original image is not
-        # modified. If you don't mind modifying the original image, you can
-        # set copy=False or skip this step.
-        image = np.array(image, copy=True)
-        image.clip(display_min, display_max, out=image)
-        image -= display_min
-        np.floor_divide(image, (display_max - display_min + 1) / 256,
-                        out=image, casting='unsafe')
-        return image.astype(np.uint8)
-    def lut_display(image, display_min, display_max) :
-        lut = np.arange(2**16, dtype='uint32')
-        lut = display(lut, display_min, display_max)
-        return np.take(lut, image)
-    if args.all:
-        i = 0
-        for f in os.listdir(args.path):
-            p = args.path + f
-            xviii_binary_data = np.fromfile(os.path.expanduser(p), dtype=np.uint8)
-            img = load_xviii_bayer_from_binary(xviii_binary_data)
-            img_rgb = np.array(demosaicing_CFA_Bayer_bilinear(img, pattern='GRBG'))
-            p_ = './' + str(i) + '.png'
-            cv2.imwrite(os.path.expanduser(p_), img_rgb)
-            i = i + 1
-            print('{} done.'.format(str(f)))
-    else:
-        p = args.path + args.image + args.extension
-        xviii_binary_data = np.fromfile(os.path.expanduser(p), dtype=np.uint8)
+    def debayer_image(image_path):
+        xviii_binary_data = np.fromfile(str(image_path), dtype=np.uint8)
         img = load_xviii_bayer_from_binary(xviii_binary_data)
+        img = img / 128
         img_rgb = np.array(demosaicing_CFA_Bayer_bilinear(img, pattern='GRBG'))
-        img_lut = lut_display(img_rgb, display_min, display_max)
-        p_ = './' + args.image + '.png'
-        cv2.imwrite(os.path.expanduser(p_), img_lut)
-        print('{0}.{1} done.'.format(args.image, args.extension))
+        return img_rgb
+
+    ouput_dir = Path(args.output)
+    if not args.image:
+        image_dir = Path(args.path)
+        print('Debayering folder {} to {}'.format(image_dir, ouput_dir))
+        image_list = list(image_dir.glob('*.raw'))
+        print('Found ' + str(len(image_list)) + ' images.')
+
+        for image_path in image_list:
+            print('Debayering image {}'.format(image_path.name))
+            img_rgb = debayer_image(image_path)
+            image_name = str(image_path.stem) + '.png'
+            output_image_path = Path(ouput_dir) / image_name
+            cv2.imwrite(str(output_image_path), img_rgb)
+    else:
+        single_image = Path(args.image)
+        print('Debayering single image {} to {}'.format(single_image.name, ouput_dir))
+        img_rgb = debayer_image(single_image)
+        image_name = str(single_image.stem) + '.png'
+        output_image_path = Path(ouput_dir) / image_name
+        cv2.imwrite(str(output_image_path), img_rgb)
 
 
 def call_calculate_attenuation_correction_parameter(args):
