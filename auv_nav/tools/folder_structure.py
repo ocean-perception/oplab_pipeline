@@ -8,10 +8,15 @@ def change_subfolder(path, prior, new):
     parts = list(path.parts)
     parts[index] = new
     new_path = Path(*parts)
-    if not new_path.exists():
-        dummy_path = Path(*parts[:-1])
-        Console.info('The path {} does not exist. I am creating it for you.'.format(path))
-        dummy_path.mkdir(exist_ok=True, parents=True)
+    if new_path.is_dir():
+        if not new_path.exists():
+            dummy_path = Path(*parts[:-1])
+            Console.info('The path {} does not exist. I am creating it for you.'.format(path))
+            dummy_path.mkdir(exist_ok=True, parents=True)
+    elif new_path.is_file():
+        # check if parent directories are created
+        if not new_path.parent.exists():
+            new_path.parent.mkdir(exist_ok=True, parents=True)
     return new_path
 
 

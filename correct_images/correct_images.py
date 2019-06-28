@@ -1,14 +1,11 @@
 import argparse
 import sys
 import os
-from shutil import copyfile
 
 from correct_images.calculate_correction_parameters import load_xviii_bayer_from_binary
 from correct_images.calculate_correction_parameters import calculate_correction_parameters
 from correct_images.develop_corrected_images import develop_corrected_image
-from auv_nav.tools.folder_structure import get_raw_folder
-from auv_nav.tools.folder_structure import get_processed_folder
-from auv_nav.tools.folder_structure import get_config_folder
+from auv_nav.tools.console import Console
 import numpy as np
 from colour_demosaicing import demosaicing_CFA_Bayer_bilinear
 import cv2
@@ -40,16 +37,6 @@ from pathlib import Path
 # other than that they shoulld not contain an additional /raw/
 #
 
-def str2bool(v):
-    if isinstance(v, bool):
-        return v
-    if v.lower() in ('yes', 'true', 't', 'y', '1'):
-        return True
-    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
-        return False
-    else:
-        raise argparse.ArgumentTypeError('Boolean value expected.')
-
 
 def main(args=None):
     """
@@ -61,6 +48,8 @@ def main(args=None):
     parse/process -h will populate positional arguments
 
     """
+    os.system('')  # enable VT100 Escape Sequence for WINDOWS 10 for Console outputs  https://stackoverflow.com/questions/16755142/how-to-make-win32-console-recognize-ansi-vt100-escape-sequences
+    Console.info('Running correct_images version ' + str(Console.get_version()))
 
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
@@ -97,10 +86,9 @@ def main(args=None):
     if len(sys.argv) == 1 and args is None:
         # Show help if no args provided
         parser.print_help(sys.stderr)
-        sys.exit(1)
-
-    args = parser.parse_args()
-    args.func(args)
+    else:
+        args = parser.parse_args()
+        args.func(args)
 
 
 def call_debayer(args):
@@ -134,44 +122,11 @@ def call_debayer(args):
 
 
 def call_calculate_attenuation_correction_parameter(args):
-    sr = get_raw_folder(args.path)
-    sp = get_processed_folder(args.path)
-    sc = get_config_folder(args.path)
-    pc = sc / "correct_images.yaml"
-    if not pc.exists():
-        print('Config File does not exist in target configuration folder.')
-        print('Copying default configuration.')
-
-        root = Path(__file__).parents[1]
-        default_file = root / 'correct_images/default_yaml' / 'correct_images.yaml'
-        print("Cannot find {}, generating default from {}".format(
-            pc, default_file))
-        # save localisation yaml to processed directory
-        default_file.copy(pc)
-
-        print('Default configuration copied to target configuration folder.')
-    path_mission = sr / "mission.yaml"
-    path_correct = pc
-    path_raw = sr
-    path_processed = sp
-    calculate_correction_parameters(path_raw, path_processed, path_mission, path_correct, args.force)
+    calculate_correction_parameters(args.path, args.force)
 
 
 def call_develop_corrected_image(args):
-    sr = get_raw_folder(args.path)
-    sp = get_processed_folder(args.path)
-    sc = get_config_folder(args.path)
-    pc = os.path.join(str(sc), "correct_images.yaml")
-    if os.path.isfile(pc) is False:
-        print('Config File does not exist in target configuration folder.')
-        print('Copying default configuration.')
-        copyfile('./correct_images/correct_images.yaml', pc)
-        print('Default configuration copied to target configuration folder.')
-    path_mission = sr / "mission.yaml"
-    path_correct = pc
-    path_processed = sp
-
-    develop_corrected_image(path_processed, path_mission, path_correct, args.force)
+    develop_corrected_image(args.path, args.force)
 
 
 if __name__ == '__main__':
