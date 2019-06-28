@@ -21,8 +21,7 @@ def change_subfolder(path, prior, new):
 
 
 def get_folder(path, name):
-    if not isinstance(path, Path):
-        path = Path(path)
+    path = Path(path).resolve()
     if name in path.parts:
         return path
     elif 'processed' in path.parts:
