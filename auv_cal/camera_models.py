@@ -6,7 +6,12 @@ from pathlib import Path
 def cv2np(node):
     rows = node['rows']
     cols = node['cols']
-    a = np.asarray(node['data']).reshape((int(rows), int(cols)))
+    if rows == 1:
+        a = np.array(node['data']).reshape((int(cols), 1))
+    elif cols == 1:
+        a = np.array(node['data']).reshape((int(rows), 1))
+    else:
+        a = np.asarray(node['data']).reshape((int(rows), int(cols)))
     return a
 
 

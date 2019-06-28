@@ -134,14 +134,21 @@ def call_debayer(args):
 
 
 def call_calculate_attenuation_correction_parameter(args):
-    sr = get_raw_folder(args.path)
-    sp = get_processed_folder(args.path)
-    sc = get_config_folder(args.path)
-    pc = os.path.join(sc, "correct_images.yaml")
+    sr = str(get_raw_folder(args.path))
+    sp = str(get_processed_folder(args.path))
+    sc = str(get_config_folder(args.path))
+    pc = os.path.join(str(sc), "correct_images.yaml")
     if os.path.isfile(pc) is False:
         print('Config File does not exist in target configuration folder.')
         print('Copying default configuration.')
-        copyfile('./correct_images/correct_images.yaml', pc)
+
+        root = Path(__file__).parents[1]
+        default_file = root / 'correct_images/default_yaml' / 'correct_images.yaml'
+        print("Cannot find {}, generating default from {}".format(
+            pc, default_file))
+        # save localisation yaml to processed directory
+        default_file.copy(pc)
+
         print('Default configuration copied to target configuration folder.')
     path_mission = os.path.join(sr, "mission.yaml")
     path_correct = pc
@@ -154,7 +161,7 @@ def call_develop_corrected_image(args):
     sr = get_raw_folder(args.path)
     sp = get_processed_folder(args.path)
     sc = get_config_folder(args.path)
-    pc = os.path.join(sc, "correct_images.yaml")
+    pc = os.path.join(str(sc), "correct_images.yaml")
     if os.path.isfile(pc) is False:
         print('Config File does not exist in target configuration folder.')
         print('Copying default configuration.')
@@ -162,10 +169,9 @@ def call_develop_corrected_image(args):
         print('Default configuration copied to target configuration folder.')
     path_mission = os.path.join(sr, "mission.yaml")
     path_correct = pc
-    path_raw = sr
     path_processed = sp
 
-    develop_corrected_image(path_processed,path_mission,path_correct,args.force)
+    develop_corrected_image(path_processed, path_mission, path_correct, args.force)
 
 
 if __name__ == '__main__':

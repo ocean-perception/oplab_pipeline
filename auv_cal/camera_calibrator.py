@@ -713,6 +713,7 @@ class StereoCalibrator(Calibrator):
         self.param_ranges[0] = 0.4
         self.name = name
         self.name2 = name2
+        self.inliers = []
 
         self.l.intrinsics = stereo_camera_model.left.K
         self.l.distortion = stereo_camera_model.left.d
@@ -732,8 +733,21 @@ class StereoCalibrator(Calibrator):
         self.size = (test_img.shape[1], test_img.shape[0])
         self.l.size = self.size
         self.r.size = self.size
-        goodcorners = self.collect_corners(limages_list, rimages_list)
-        self.cal_fromcorners(goodcorners)
+        self.goodcorners = self.collect_corners(limages_list, rimages_list)
+        self.cal_fromcorners(self.goodcorners)
+
+        # Refine
+        print('Refining step...')
+        inlier_corners = []
+        for lgray, rgray, lcorners, lboard, rcorners, rboard in self.inliers:
+            error = self.epipolar_error_from_images(lgray, rgray)
+            print(str(error))
+            if error is None:
+                continue
+            if error < 1.5:
+                inlier_corners.append((lcorners, rcorners, rboard))
+
+        self.cal_fromcorners(inlier_corners)
         self.calibrated = True
 
     def collect_corners(self, limages_list, rimages_list):
@@ -758,6 +772,8 @@ class StereoCalibrator(Calibrator):
                     self.good_corners.append((lcorners, rcorners, lboard))
                     print(("*** Added sample %d, p_x = %.3f, p_y = %.3f, p_size = %.3f, skew = %.3f" %
                            tuple([len(self.db)] + params)))
+
+                    self.inliers.append((lgray, rgray, lcorners, lboard, rcorners, rboard))
 
                     if self.debug:
                         limg = cv2.drawChessboardCorners(lgray, (lboard.n_cols, lboard.n_rows), lcorners, lok)
@@ -793,24 +809,29 @@ class StereoCalibrator(Calibrator):
         self.R = numpy.eye(3, dtype=numpy.float64)
         print("Calibrating stereo...")
         if LooseVersion(cv2.__version__).version[0] == 2:
-            cv2.stereoCalibrate(opts, lipts, ripts, self.size,
-                                self.l.intrinsics, self.l.distortion,
-                                self.r.intrinsics, self.r.distortion,
-                                self.R,                            # R
-                                self.T,                            # T
-                                criteria=(cv2.TERM_CRITERIA_MAX_ITER + \
-                                          cv2.TERM_CRITERIA_EPS, 1000, 1e-6),
-                                flags=flags)
+            rms = cv2.stereoCalibrate(
+                opts, lipts, ripts, self.size,
+                self.l.intrinsics, self.l.distortion,
+                self.r.intrinsics, self.r.distortion,
+                self.R,                            # R
+                self.T,                            # T
+                criteria=(cv2.TERM_CRITERIA_MAX_ITER + \
+                          cv2.TERM_CRITERIA_EPS, 1000, 1e-6),
+                flags=flags)
         else:
-            cv2.stereoCalibrate(opts, lipts, ripts,
-                                self.l.intrinsics, self.l.distortion,
-                                self.r.intrinsics, self.r.distortion,
-                                self.size,
-                                self.R,                            # R
-                                self.T,                            # T
-                                criteria=(cv2.TERM_CRITERIA_MAX_ITER + \
-                                          cv2.TERM_CRITERIA_EPS, 1000, 1e-6),
-                                flags=flags)
+            rms = cv2.stereoCalibrate(
+                opts, lipts, ripts,
+                self.l.intrinsics, self.l.distortion,
+                self.r.intrinsics, self.r.distortion,
+                self.size,
+                self.R,                            # R
+                self.T,                            # T
+                criteria=(cv2.TERM_CRITERIA_MAX_ITER + \
+                          cv2.TERM_CRITERIA_EPS, 1000, 1e-6),
+                flags=flags)
+        print('Calibrated with RMS = {}'.format(str(rms)))
+
+
 
         self.set_alpha(1.0)
 
@@ -831,18 +852,31 @@ class StereoCalibrator(Calibrator):
         original image are in calibrated image).
         """
         print("Rectifying stereo...")
-        cv2.stereoRectify(self.l.intrinsics,
-                          self.l.distortion,
-                          self.r.intrinsics,
-                          self.r.distortion,
-                          self.size,
-                          self.R,
-                          self.T,
-                          self.l.R, self.r.R, self.l.P, self.r.P,
-                          alpha=a)
+        self.l.R, self.r.R, self.l.P, self.r.P = cv2.stereoRectify(
+            self.l.intrinsics,
+            self.l.distortion,
+            self.r.intrinsics,
+            self.r.distortion,
+            self.size,
+            self.R,
+            self.T,
+            flags=cv2.CALIB_ZERO_DISPARITY,
+            alpha=a)[0:4]
 
-        self.l.mapx, self.l.mapy = cv2.initUndistortRectifyMap(self.l.intrinsics, self.l.distortion, self.l.R, self.l.P, self.size, cv2.CV_32FC1)
-        self.r.mapx, self.r.mapy = cv2.initUndistortRectifyMap(self.r.intrinsics, self.r.distortion, self.r.R, self.r.P, self.size, cv2.CV_32FC1)
+        self.l.mapx, self.l.mapy = cv2.initUndistortRectifyMap(
+            self.l.intrinsics,
+            self.l.distortion,
+            self.l.R,
+            self.l.P,
+            self.size,
+            cv2.CV_32FC1)
+        self.r.mapx, self.r.mapy = cv2.initUndistortRectifyMap(
+            self.r.intrinsics,
+            self.r.distortion,
+            self.r.R,
+            self.r.P,
+            self.size,
+            cv2.CV_32FC1)
 
     def report(self):
         print("\nLeft:")
@@ -928,8 +962,13 @@ class StereoCalibrator(Calibrator):
         Detect the checkerboard in both images and compute the epipolar error.
         Mainly for use in tests.
         """
-        lcorners = self.downsample_and_detect(limage)[1]
-        rcorners = self.downsample_and_detect(rimage)[1]
+        lcorners = self.get_corners(limage)[1]
+        rcorners = self.get_corners(rimage)[1]
+
+        cv2.imshow('test1', limage)
+        cv2.imshow('test2', rimage)
+        cv2.waitKey(0)
+
         if lcorners is None or rcorners is None:
             return None
 
