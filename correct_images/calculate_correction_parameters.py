@@ -135,7 +135,7 @@ def calculate_correction_parameters(path, force):
         else:
             Console.warn('Code will quit - correction parameters already exist.')
             Console.warn(
-                'Run correct_images with [parse] [-f] option for overwriting existing correction parameters.')
+                'Run correct_images with [parse] [-F] option for overwriting existing correction parameters.')
             sys.exit()
     else:
         Console.info('code will compute correction parameters for first time.')
@@ -380,8 +380,7 @@ def calculate_correction_parameters(path, force):
         calculated_atn_crr_params_path = dir_path_image_crr_params / 'atn_crr_params.npy'
 
     # visualise attenuation parameters
-    outpath = calculated_atn_crr_params_path[:(
-        len(calculated_atn_crr_params_path) - 4)]
+    outpath = calculated_atn_crr_params_path.parent
     if not outpath.exists():
         outpath.mkdir(parents=True)
 
