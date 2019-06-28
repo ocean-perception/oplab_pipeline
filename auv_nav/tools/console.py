@@ -31,6 +31,18 @@ class Console:
         print(bcolors.FAIL + "[****]: " + bcolors.ENDC + "Reason: " + " ".join(map(str, args)), **kwargs)
         quit()
 
+    def banner():
+        print('  @@@    @@@   ___________________________ ')
+        print(' @@@@@  @@@@@ |                           |')
+        print('  @@@    @@@  |    - OCEAN PERCEPTION -   |')
+        print('              |                           |')
+        print('  @@@     @   | University of Southampton |')
+        print(' @@@@@   @@@  |                           |')
+        print('  @@@   @@@@@ |___________________________|')
+        print('                                           ')
+        print(' Copyright (C) 2017-2020 Univ. Southampton ')
+        print('                                           ')
+
     def get_username():
         return getpass.getuser()
 

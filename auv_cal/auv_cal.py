@@ -25,7 +25,8 @@ def main(args=None):
     """
 
     os.system('')  # enable VT100 Escape Sequence for WINDOWS 10 for Console outputs  https://stackoverflow.com/questions/16755142/how-to-make-win32-console-recognize-ansi-vt100-escape-sequences
-    Console.info('Running auv_calibrate version ' + str(Console.get_version()))
+    Console.banner()
+    Console.info('Running auv_cal version ' + str(Console.get_version()))
 
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
