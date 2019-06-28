@@ -134,11 +134,11 @@ def call_debayer(args):
 
 
 def call_calculate_attenuation_correction_parameter(args):
-    sr = str(get_raw_folder(args.path))
-    sp = str(get_processed_folder(args.path))
-    sc = str(get_config_folder(args.path))
-    pc = os.path.join(str(sc), "correct_images.yaml")
-    if os.path.isfile(pc) is False:
+    sr = get_raw_folder(args.path)
+    sp = get_processed_folder(args.path)
+    sc = get_config_folder(args.path)
+    pc = sc / "correct_images.yaml"
+    if not pc.exists():
         print('Config File does not exist in target configuration folder.')
         print('Copying default configuration.')
 
@@ -150,7 +150,7 @@ def call_calculate_attenuation_correction_parameter(args):
         default_file.copy(pc)
 
         print('Default configuration copied to target configuration folder.')
-    path_mission = os.path.join(sr, "mission.yaml")
+    path_mission = sr / "mission.yaml"
     path_correct = pc
     path_raw = sr
     path_processed = sp
@@ -167,7 +167,7 @@ def call_develop_corrected_image(args):
         print('Copying default configuration.')
         copyfile('./correct_images/correct_images.yaml', pc)
         print('Default configuration copied to target configuration folder.')
-    path_mission = os.path.join(sr, "mission.yaml")
+    path_mission = sr / "mission.yaml"
     path_correct = pc
     path_processed = sp
 
