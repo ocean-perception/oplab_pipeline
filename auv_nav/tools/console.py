@@ -17,18 +17,18 @@ class bcolors:
 
 class Console:
     def warn(*args, **kwargs):
-        print(bcolors.WARNING + "[WARN]:" + bcolors.ENDC + " ".join(map(str, args)), **kwargs)
+        print(bcolors.WARNING + "[WARN]: " + bcolors.ENDC + " ".join(map(str, args)), **kwargs)
 
     def error(*args, **kwargs):
-        print(bcolors.FAIL + "[ERROR]:" + bcolors.ENDC + " ".join(map(str, args)), **kwargs)
+        print(bcolors.FAIL + "[ERROR]: " + bcolors.ENDC + " ".join(map(str, args)), **kwargs)
 
     def info(*args, **kwargs):
-        print(bcolors.OKBLUE + "[INFO]:" + bcolors.ENDC + " ".join(map(str, args)), **kwargs)
+        print(bcolors.OKBLUE + "[INFO]: " + bcolors.ENDC + " ".join(map(str, args)), **kwargs)
 
     def quit(*args, **kwargs):
         print('\n')
         print(bcolors.FAIL + "[****]: " + bcolors.ENDC + "Exitting auv_nav.")
-        print(bcolors.FAIL + "[****]:" + bcolors.ENDC + "Reason: " + " ".join(map(str, args)), **kwargs)
+        print(bcolors.FAIL + "[****]: " + bcolors.ENDC + "Reason: " + " ".join(map(str, args)), **kwargs)
         quit()
 
     def get_username():
