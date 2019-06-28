@@ -55,11 +55,34 @@ class CameraEntry:
             self.name = node['name']
             self.type = node['type']
             self.path = node['path']
+            if 'camera_calibration' in node:
+                self.camera_calibration = node['camera_calibration']
+            if 'laser_calibration' in node:
+                self.laser_calibration = node['laser_calibration']
 
     def write(self, node):
         node['name'] = self.name
         node['type'] = self.type
         node['path'] = self.path
+        if 'camera_calibration' in node:
+            node['camera_calibration'] = self.camera_calibration
+        if 'laser_calibration' in node:
+            node['laser_calibration'] = self.laser_calibration
+
+
+class CalibrationEntry:
+    def __init__(self, node=None):
+        if node is not None:
+            self.pattern = node['pattern']
+            self.cols = node['cols']
+            self.rows = node['rows']
+            self.size = node['size']
+
+    def write(self, node):
+        node['pattern'] = self.pattern
+        node['cols'] = self.cols
+        node['rows'] = self.rows
+        node['size'] = self.size
 
 
 class ImageEntry:
@@ -68,12 +91,13 @@ class ImageEntry:
         self.timezone = 0
         self.timeoffset = 0
         self.cameras = []
+        self.calibration = None
         self._empty = True
 
     def empty(self):
         return self._empty
 
-    def load(self, node, version = 1):
+    def load(self, node, version=1):
         self._empty = False
         self.format = node['format']
         self.timezone = node['timezone']
@@ -102,6 +126,8 @@ class ImageEntry:
                 self.cameras[1].name = node['camera2']
                 self.cameras[1].type = 'bayer_rggb'
                 self.cameras[1].path = node['filepath']
+        if 'calibration' in node:
+            self.calibration = CalibrationEntry(node['calibration'])
 
     def write(self, node):
         node['format'] = self.format
@@ -112,6 +138,10 @@ class ImageEntry:
             cam_dict = OrderedDict()
             c.write(cam_dict)
             node['cameras'].append(cam_dict)
+        if 'calibration' in node:
+            calibration_dict = OrderedDict()
+            self.calibration.write(calibration_dict)
+            node['calibration'].append(calibration_dict)
 
 
 class DefaultEntry:
