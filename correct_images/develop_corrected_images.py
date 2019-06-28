@@ -34,8 +34,8 @@ def develop_corrected_image(path, force):
     path_processed = get_processed_folder(path)
 
     # load configuration from mission.yaml, correct_images.yaml files
-    Console.info('loading', path_mission, datetime.datetime.now())
-    Console.info('loading', path_correct, datetime.datetime.now())
+    Console.info('Lading', path_mission, datetime.datetime.now())
+    Console.info('Lading', path_correct, datetime.datetime.now())
 
     mission = read_params(path_mission, 'mission')  # read_params(path to file, type of file: mission/correct_config)
     config_ = read_params(path_correct, 'correct')
