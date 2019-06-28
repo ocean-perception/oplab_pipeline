@@ -69,7 +69,7 @@ def main(args=None):
     subparser_correct_attenuation.add_argument(
         'path', help="Path to raw directory till dive.")
     subparser_correct_attenuation.add_argument(
-        '-f', '--force', action='store_true',
+        '-F', '--Force', dest='force', action='store_true',
         help="Force overwrite if correction parameters already exist.")
     subparser_correct_attenuation.set_defaults(func=call_calculate_attenuation_correction_parameter)
 
@@ -78,7 +78,7 @@ def main(args=None):
     subparser_correct_attenuation.add_argument(
         'path', help="Path to processed directory till dive.")
     subparser_correct_attenuation.add_argument(
-        '-f', '--force', action='store_true',
+        '-F', '--Force', dest='force', action='store_true',
         help="Force overwrite if processed images already exist.")
 
     subparser_correct_attenuation.set_defaults(func=call_develop_corrected_image)
