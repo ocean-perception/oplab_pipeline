@@ -5,10 +5,10 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="auv_nav",
-    version='0.0.1.6',
-    author="Jin Lim, Blair Thornton",
-    author_email="author@example.com",
-    description="Parsers for navigation data for oplab and acfr formats",
+    version='0.0.2.0',
+    author="Miquel Massot, Takaki Yamada, Subhra Das, Jin Lim & Blair Thornton",
+    author_email="miquel.massot-campos@soton.ac.uk",
+    description="Toolchain for auv dive processing",
     long_description=long_description,
     url="https://github.com/ocean-perception/auv_nav",
     packages=setuptools.find_packages(),
@@ -20,9 +20,15 @@ setuptools.setup(
     entry_points={  # Optional
         'console_scripts': [
             'auv_nav = auv_nav.auv_nav:main',
+            'auv_cal = auv_cal.auv_cal:main',
+            'debayer_folder = correct_images.debayer_folder:main',
+            'correct_images = correct_images.correct_images:main'
         ],
     },
-    package_data={'auv_nav': ['default_yaml/*.yaml']},
+    package_data={
+        'auv_nav': ['default_yaml/*.yaml'],
+        'auv_cal': ['default_yaml/*.yaml'],
+        'correct_images': ['default_yaml/*.yaml']},
     install_requires=[
         'matplotlib>=2.1.2',
         'numpy>=1.14.5',

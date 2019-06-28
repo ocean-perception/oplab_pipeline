@@ -62,7 +62,6 @@ def parse_ae2000(mission,
         timestamp = time_column[row_index].split(':')
         if len(timestamp) < 3:
             continue
-
         hour = int(timestamp[0])
         mins = int(timestamp[1])
         timestamp_s_ms = timestamp[2].split('.')
