@@ -14,6 +14,7 @@ from auv_nav.tools.folder_structure import get_processed_folder
 from auv_nav.tools.folder_structure import get_config_folder
 from pathlib import Path
 import yaml
+import json
 
 
 def collect_image_files(image_dir, file_pattern):
@@ -55,6 +56,9 @@ def calibrate_mono(name, filepath, extension, config, output_file):
         Console.info('Writting calibration to '"'{}'"''.format(output_file))
         with output_file.open('w') as f:
             f.write(mc.yaml())
+        image_list_file = output_file.with_suffix('.json')
+        with image_list_file.open('w') as f:
+            json.dump(mc.json, f)
     except CalibrationException:
         Console.error('The calibration pattern was not found in the images.')
 
@@ -72,16 +76,19 @@ def calibrate_stereo(left_name, left_filepath, left_extension, left_calib,
         Console.error('Too few images. Try to get more.')
         return
     try:
+        with open(left_calib.with_suffix('.json'), 'r') as f:
+            left_json = json.load(f)
+        with open(right_calib.with_suffix('.json'), 'r') as f:
+            right_json = json.load(f)
         model = StereoCamera(left=left_calib, right=right_calib)
         sc = StereoCalibrator(stereo_camera_model=model,
                               boards=[ChessboardInfo(config["rows"],
                                                      config["cols"],
                                                      config["size"])],
                               pattern=check_pattern(config),
-                              invert=config["invert"],
-                              name=left_name,
-                              name2=right_name)
-        sc.cal(left_image_list, right_image_list)
+                              invert=config["invert"])
+        # sc.cal(left_image_list, right_image_list)
+        sc.cal_from_json(left_json=left_json, right_json=right_json,)
         sc.report()
         Console.info('Writting calibration to '"'{}'"''.format(output_file))
         with output_file.open('w') as f:
