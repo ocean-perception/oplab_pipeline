@@ -33,10 +33,9 @@ def develop_corrected_image(path, force):
     path_mission = get_raw_folder(path) / "mission.yaml"
     path_processed = get_processed_folder(path)
 
-
     # load configuration from mission.yaml, correct_images.yaml files
-    print('loading', path_mission, datetime.datetime.now())
-    print('loading', path_correct, datetime.datetime.now())
+    Console.info('loading', path_mission, datetime.datetime.now())
+    Console.info('loading', path_correct, datetime.datetime.now())
 
     mission = read_params(path_mission, 'mission')  # read_params(path to file, type of file: mission/correct_config)
     config_ = read_params(path_correct, 'correct')
@@ -53,9 +52,9 @@ def develop_corrected_image(path, force):
     if filelist_path.exists():
         df_filelist = pd.read_csv(filelist_path)
     else:
-        print('Code will quit now - filelist.csv not found in target folder.')
-        print('Run correct_images [parse] before [process].')
-        print(filelist_path)
+        Console.warn('Code will quit now - filelist.csv not found in target folder.')
+        Console.warn('Run correct_images [parse] before [process].')
+        Console.warn(filelist_path)
         sys.exit()
 
     # load config.yaml
@@ -198,7 +197,7 @@ def develop_corrected_image(path, force):
     cfg_filepath = dst_dir_path / 'config.yaml'
     with cfg_filepath.open('w') as cfg_file:
         yaml.dump(dict_cfg, cfg_file, default_flow_style=False)
-    print('Done. Configurations are saved to ', cfg_filepath, datetime.datetime.now())
+    Console.info('Done. Configurations are saved to ', cfg_filepath, datetime.datetime.now())
 
 
 def filter_atn_parm_median(src_atn_param, kernel_size):
