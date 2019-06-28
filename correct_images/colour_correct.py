@@ -30,9 +30,7 @@ from correct_images.utilities import get_filenames, generate_filelist, validate_
 #                   images
 #
 
-
-
-#TODO: write tests for functions, and split functions down further
+# TODO: write tests for functions, and split functions down further
 
 
 def mean_per_pixel(directory, filenames, debayer, filter_pattern):

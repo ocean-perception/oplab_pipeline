@@ -1,5 +1,4 @@
 import datetime
-import os
 import sys
 
 import cv2
@@ -79,7 +78,6 @@ def develop_corrected_image(path, force):
     label_altitude = load_data_config['label_altitude']
     target_altitude = load_data_config['target_altitude']
     src_file_format = load_data_config['src_file_format']
-    label_raw_file = load_data_config['label_raw_file']
 
     # load .npy files
     pdp = str(params_dir_path)

@@ -425,8 +425,7 @@ def calculate_correction_parameters(path, force):
 
     # convert bayer_file_path from absolute path to relative path
     for i_bayer_file in range(len(bayer_filelist)):
-        bayer_filelist[i_bayer_file] = bayer_filelist[i_bayer_file].replace(
-            dirpath, '..')
+        bayer_filelist[i_bayer_file] = '..' / bayer_filelist[i_bayer_file].relative_to(dirpath.parent)
 
     # save file list includes altitude and filepath of bayer image
     file_list_name = dir_path_image_crr_params / 'filelist.csv'
@@ -460,7 +459,7 @@ def calculate_correction_parameters(path, force):
     }
 
     cfg_filepath = dir_path_image_crr_params / 'config.yaml'
-    with open(cfg_filepath, 'w') as cfg_file:
+    with cfg_filepath.open('w') as cfg_file:
         yaml.dump(dict_cfg, cfg_file, default_flow_style=False)
     Console.info('Done. Configurations are saved to ',
                  cfg_filepath, datetime.datetime.now())
