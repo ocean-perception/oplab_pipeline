@@ -46,9 +46,8 @@ class flags:
 
 
 class Parameters:
-    def __init__(self, file,type):
-
-        with open(file, 'r') as f:
+    def __init__(self, file, type):
+        with file.open('r') as f:
             params = yaml.safe_load(f)
 
         if type is 'mission':
@@ -70,6 +69,6 @@ class Parameters:
             self.flags = flags(cdict)
             
 
-def read_params(path,type):
-	pm = Parameters(path,type)
+def read_params(path, type):
+	pm = Parameters(path, type)
 	return pm

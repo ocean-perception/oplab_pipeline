@@ -1,5 +1,4 @@
 import datetime
-import os
 import sys
 import random
 import socket
@@ -15,29 +14,43 @@ import scipy.ndimage.filters as filters
 import yaml
 from scipy import optimize
 from tqdm import trange
+from pathlib import Path
 
+from auv_nav.tools.console import Console
+from auv_nav.tools.folder_structure import get_raw_folder
+from auv_nav.tools.folder_structure import get_processed_folder
+from auv_nav.tools.folder_structure import get_config_folder
 from correct_images.read_mission import read_params
 
 
-def calculate_correction_parameters(path_raw, path_processed, path_mission, path_correct, force):
+def calculate_correction_parameters(path, force):
     '''
 
     :param path_mission: Path to 'mission.yaml'.
     :param path_correct: Path to 'correct_images.yaml'
     :return: None. Result image files and configurations are saved as files.
     '''
+
+    path_correct = get_config_folder(path) / "correct_images.yaml"
+    if not path_correct.exists():
+        root = Path(__file__).parents[1]
+        default_file = root / 'correct_images/default_yaml' / 'correct_images.yaml'
+        Console.warn("Cannot find {}, generating default from {}".format(
+            path_correct, default_file))
+        # save localisation yaml to processed directory
+        default_file.copy(path_correct)
+    path_mission = get_raw_folder(path) / "mission.yaml"
+    path_raw = get_raw_folder(path)
+    path_processed = get_processed_folder(path)
+
     # calculate parameters before demosaicing to reduce calculation
     # load configuration from yaml file
-    path_r = os.path.expanduser(path_raw)
-    path_p = os.path.expanduser(path_processed)
-    path_m = os.path.expanduser(path_mission)
-    path_c = os.path.expanduser(path_correct)
-    print('loading', path_m, datetime.datetime.now())
-    print('loading', path_c, datetime.datetime.now())
+    print('loading', path_mission, datetime.datetime.now())
+    print('loading', path_correct, datetime.datetime.now())
 
     # read_params(path to file, type of file: mission/correct_config)
-    mission = read_params(path_m, 'mission')
-    config_ = read_params(path_c, 'correct')
+    mission = read_params(path_mission, 'mission')
+    config_ = read_params(path_correct, 'correct')
 
     # load parameters from correct_images.yaml
     label_raw_file = 'raw file'
@@ -46,12 +59,10 @@ def calculate_correction_parameters(path_raw, path_processed, path_mission, path
     altitude_min = config_.attenuation_correction.altitude_min.get('min')
     calculated_atn_crr_params_path = None
     sampling_method = config_.attenuation_correction.sampling_method
-    camera_ = mission.image.format
-    print(camera_)
 
-    if camera_ == 'seaxerocks_3':
+    if mission.image.format == 'seaxerocks_3':
         src_file_format = 'raw'
-    if camera_ == 'unagi':
+    if mission.image.format == 'unagi':
         src_file_format = 'tif'
         camera_lr = 'LC'
 
@@ -59,7 +70,6 @@ def calculate_correction_parameters(path_raw, path_processed, path_mission, path
     else:
         src_file_format = 'tif'
     '''
-    #camera_lr = 'LC'
     dst_file_format = config_.output.dst_file_format
     joblib_verbose = 3
     init_atn_crr_params_path = None
@@ -68,7 +78,7 @@ def calculate_correction_parameters(path_raw, path_processed, path_mission, path
     # load src file or target files to data frame
     src_filelist_path = None
     if src_filelist_path is not None:
-        df_all = pd.read_csv(os.path.expanduser(src_filelist_path))
+        df_all = pd.read_csv(str(src_filelist_path))
         if src_file_format == 'tif' or src_file_format == 'tif':
             # for tunasand camera, left camera (LC) or right camera (RC) should be selected
             if camera_lr == 'LC':
@@ -81,18 +91,16 @@ def calculate_correction_parameters(path_raw, path_processed, path_mission, path
     else:
         img_path = mission.image.cameras_1.get('path')
         anf = config_.config.auv_nav_path
-        src_file_dirpath = path_r + '/' + img_path
-        auv_nav_filepath = path_p + '/' + anf + '/csv/dead_reckoning/auv_dr_aft.csv'
+        src_file_dirpath = path_raw / img_path
+        auv_nav_filepath = path_processed / anf / 'csv/dead_reckoning/auv_dr_aft.csv'
 
         df_all = pd.read_csv(auv_nav_filepath, dtype={'Imagenumber': object})
         raw_file_list = [None] * len(df_all)
         for i_file in range(len(raw_file_list)):
             if src_file_format == 'raw':
-                raw_file_list[i_file] = os.path.expanduser(
-                    src_file_dirpath) + '/' + df_all['Imagenumber'][i_file].zfill(7) + '.raw'
+                raw_file_list[i_file] = src_file_dirpath / str(df_all['Imagenumber'][i_file].zfill(7) + '.raw')
             elif src_file_format == 'tif':
-                raw_file_list[i_file] = os.path.expanduser(
-                    src_file_dirpath) + '/' + df_all['Imagenumber'][i_file]
+                raw_file_list[i_file] = src_file_dirpath / df_all['Imagenumber'][i_file]
             else:
                 print('src_file_format:', src_file_format, 'is incorrect.')
                 return
@@ -116,14 +124,10 @@ def calculate_correction_parameters(path_raw, path_processed, path_mission, path
         (altitudes_all >= altitude_min) & (altitudes_all <= altitude_max))
 
     # configure output file path
-    dirpath = os.path.dirname(src_filelist[0])
-    #dirpath = os.path.dirname(os.path.expanduser(src_filelist[0]))
-    print(dirpath)
-    if 'raw' in dirpath:
-        dirpath = dirpath.replace('raw', 'processed', 1)
-    print(dirpath)
+    dirpath = src_filelist[0].parent
+    dirpath = get_processed_folder(dirpath)
 
-    if os.path.exists(dirpath) is True:
+    if dirpath.exists():
         if force is True:
             print('Attenuation correction parameters already exist.')
             print('Code will overwrite existing parameters.')
@@ -136,15 +140,13 @@ def calculate_correction_parameters(path_raw, path_processed, path_mission, path
     else:
         print('code will compute correction parameters for first time.')
 
-    dirpath = dirpath + '/attenuation_correction'
-    if not os.path.exists(dirpath):
-        os.makedirs(dirpath)
-    dirpath_atn_crr = dirpath + '/tmp_atn_crr'
-    # if not os.path.exists(dirpath_atn_crr):
-    #     os.makedirs(dirpath_atn_crr)
-    dirpath_bayer = dirpath + '/bayer'
-    if not os.path.exists(dirpath_bayer):
-        os.makedirs(dirpath_bayer)
+    dirpath = dirpath / 'attenuation_correction'
+    if not dirpath.exists():
+        dirpath.mkdir(parents=True)
+    dirpath_atn_crr = dirpath / 'tmp_atn_crr'
+    dirpath_bayer = dirpath / 'bayer'
+    if not dirpath_bayer.exists():
+        dirpath_bayer.mkdir(parents=True)
 
     # file path of output image data
     dst_filelist = [None] * len(df_all)
@@ -152,40 +154,24 @@ def calculate_correction_parameters(path_raw, path_processed, path_mission, path
     atn_crr_filelist = [None] * len(df_all)
     for i_dst_file in range(len(dst_filelist)):
         tmp_filepath = src_filelist[i_dst_file]
-        if '/raw/' in tmp_filepath:
-            tmp_filepath = tmp_filepath.replace('/raw/', '/processed/', 1)
-        dst_file_name = os.path.basename(tmp_filepath)
-        title, ext = os.path.splitext(dst_file_name)
-
-        dst_filelist[i_dst_file] = dirpath + \
-            '/' + title + '.' + dst_file_format
-        bayer_filelist[i_dst_file] = dirpath_bayer + '/' + title + '.npy'
-        atn_crr_filelist[i_dst_file] = dirpath_atn_crr + '/' + title + '.npy'
+        tmp_filepath = get_processed_folder(tmp_filepath)
+        dst_filelist[i_dst_file] = dirpath / tmp_filepath.with_suffix('.' + dst_file_format)
+        bayer_filelist[i_dst_file] = dirpath_bayer / tmp_filepath.with_suffix('.npy')
+        atn_crr_filelist[i_dst_file] = dirpath_atn_crr / tmp_filepath.with_suffix('.npy')
 
     # file path of metadata
     if src_file_format == 'raw':
-        dir_path_image_crr_params = os.path.expanduser(
-            os.path.dirname(dst_filelist[0])) + '/params'
+        dir_path_image_crr_params = dst_filelist[0].parent / 'params'
     elif src_file_format == 'tiff' or src_file_format == 'tif':
         if camera_lr == 'LC':
-            dir_path_image_crr_params = os.path.expanduser(
-                os.path.dirname(dst_filelist[0])) + '/params_LC'
+            dir_path_image_crr_params = dst_filelist[0].parent / 'params_LC'
         elif camera_lr == 'RC':
-            dir_path_image_crr_params = os.path.expanduser(
-                os.path.dirname(dst_filelist[0])) + '/params_RC'
-
-    if os.path.exists(dir_path_image_crr_params):
-        dir_path_image_crr_params_org = dir_path_image_crr_params
-        count = 1
-        while os.path.exists(dir_path_image_crr_params):
-            dir_path_image_crr_params = dir_path_image_crr_params_org + \
-                '_' + str(count).zfill(3)
-            count = count + 1
-    if not os.path.exists(dir_path_image_crr_params):
-        os.makedirs(dir_path_image_crr_params)
+            dir_path_image_crr_params = dst_filelist[0].parent / 'params_RC'
+    if not dir_path_image_crr_params.exists():
+        dir_path_image_crr_params.mkdir(parents=True)
 
     if calculated_atn_crr_params_path is None:
-        calculated_atn_crr_params_path = dir_path_image_crr_params + '/atn_crr_params.npy'
+        calculated_atn_crr_params_path = dir_path_image_crr_params / 'atn_crr_params.npy'
 
     file_list_raw = df_all[label_raw_file].values.tolist()
 
@@ -198,7 +184,7 @@ def calculate_correction_parameters(path_raw, path_processed, path_mission, path
         src_file_list_not_exist = []
         bayer_file_list_not_exsit = []
         for idx_raw in range(len(file_list_raw)):
-            if not os.path.exists(bayer_filelist[idx_raw]):
+            if not bayer_filelist[idx_raw].exists():
                 src_file_list_not_exist.append(file_list_raw[idx_raw])
                 bayer_file_list_not_exsit.append(bayer_filelist[idx_raw])
 
@@ -222,13 +208,13 @@ def calculate_correction_parameters(path_raw, path_processed, path_mission, path
             if end_idx > len(bayer_file_list_not_exsit):
                 end_idx = len(bayer_file_list_not_exsit)
 
-            raw_img_for_size = np.fromfile(os.path.expanduser(
+            raw_img_for_size = np.fromfile(str(
                 src_file_list_not_exist[start_idx]), dtype=np.uint8)
             arg_bayer_img = np.zeros(
                 (end_idx - start_idx, raw_img_for_size.shape[0]), dtype=raw_img_for_size.dtype)
             for idx_raw in range(start_idx, end_idx):
                 arg_bayer_img[idx_raw - start_idx, :] = np.fromfile(
-                    os.path.expanduser(src_file_list_not_exist[idx_raw]),
+                    str(src_file_list_not_exist[idx_raw]),
                     dtype=raw_img_for_size.dtype)
 
             results = joblib.Parallel(n_jobs=-2, verbose=joblib_verbose)([joblib.delayed(load_xviii_bayer_from_binary)(
@@ -236,8 +222,7 @@ def calculate_correction_parameters(path_raw, path_processed, path_mission, path
                 range(end_idx - start_idx)])
 
             for idx_raw in range(start_idx, end_idx):
-                np.save(
-                    bayer_file_list_not_exsit[idx_raw], results[idx_raw - start_idx])
+                np.save(bayer_file_list_not_exsit[idx_raw], results[idx_raw - start_idx])
 
             start_idx = end_idx
 
@@ -248,7 +233,7 @@ def calculate_correction_parameters(path_raw, path_processed, path_mission, path
         src_file_list_not_exist = []
         bayer_file_list_not_exsit = []
         for idx_raw in range(len(file_list_raw)):
-            if not os.path.exists(bayer_filelist[idx_raw]):
+            if not bayer_filelist[idx_raw].exists():
                 src_file_list_not_exist.append(file_list_raw[idx_raw])
                 bayer_file_list_not_exsit.append(bayer_filelist[idx_raw])
 
@@ -286,10 +271,10 @@ def calculate_correction_parameters(path_raw, path_processed, path_mission, path
     # img_mean_raw = 0
     # img_std_raw = 0
 
-    dirpath_img_mean_raw = dir_path_image_crr_params + '/bayer_img_mean_raw'
-    dirpath_img_std_raw = dir_path_image_crr_params + '/bayer_img_std_raw'
-    np.save(dirpath_img_mean_raw, img_mean_raw)
-    np.save(dirpath_img_std_raw, img_std_raw)
+    dirpath_img_mean_raw = dir_path_image_crr_params / 'bayer_img_mean_raw'
+    dirpath_img_std_raw = dir_path_image_crr_params / 'bayer_img_std_raw'
+    np.save(str(dirpath_img_mean_raw), img_mean_raw)
+    np.save(str(dirpath_img_std_raw), img_std_raw)
 
     list_dirpath = [dirpath_img_mean_raw, dirpath_img_std_raw]
     list_img = [img_mean_raw, img_std_raw]
@@ -394,15 +379,15 @@ def calculate_correction_parameters(path_raw, path_processed, path_mission, path
     atn_crr_params = atn_crr_params.reshape([a, b, 3])
 
     if calculated_atn_crr_params_path is None:
-        calculated_atn_crr_params_path = dir_path_image_crr_params + '/atn_crr_params.npy'
+        calculated_atn_crr_params_path = dir_path_image_crr_params / 'atn_crr_params.npy'
 
     # visualise attenuation parameters
     outpath = calculated_atn_crr_params_path[:(
         len(calculated_atn_crr_params_path) - 4)]
-    if not os.path.exists(outpath):
-        os.makedirs(outpath)
+    if not outpath.exists():
+        outpath.mkdir(parents=True)
 
-    np.save(calculated_atn_crr_params_path, atn_crr_params)
+    np.save(str(calculated_atn_crr_params_path), atn_crr_params)
     print('atn_crr_params has been saved to',
           calculated_atn_crr_params_path, datetime.datetime.now())
 
@@ -410,7 +395,7 @@ def calculate_correction_parameters(path_raw, path_processed, path_mission, path
 
     # apply median filter to attenuation parameter
     # if median_filter_kernel_size != 1:
-    #atn_crr_params = filter_atn_parm_median(atn_crr_params, median_filter_kernel_size)
+    # atn_crr_params = filter_atn_parm_median(atn_crr_params, median_filter_kernel_size)
 
     # apply attenuation correction parameters to raw images in memmap
     gain = calc_attenuation_correction_gain(target_altitude, atn_crr_params)
@@ -426,14 +411,14 @@ def calculate_correction_parameters(path_raw, path_processed, path_mission, path
     img_mean_atn_crr, img_std_atn_crr = calc_img_mean_and_std_trimmed(memmap_raw, trim_ratio, calc_std=True,
                                                                       effective_index=idx_effective_data)
 
-    # dirpath_img_mean_raw = dir_path_image_crr_params + '/bayer_img_mean_raw'
-    # dirpath_img_std_raw = dir_path_image_crr_params + '/bayer_img_std_raw'
-    dirpath_img_mean_atn_crr = dir_path_image_crr_params + '/bayer_img_mean_atn_crr'
-    dirpath_img_std_atn_crr = dir_path_image_crr_params + '/bayer_img_std_atn_crr'
+    # dirpath_img_mean_raw = dir_path_image_crr_params / 'bayer_img_mean_raw'
+    # dirpath_img_std_raw = dir_path_image_crr_params / 'bayer_img_std_raw'
+    dirpath_img_mean_atn_crr = dir_path_image_crr_params / 'bayer_img_mean_atn_crr'
+    dirpath_img_std_atn_crr = dir_path_image_crr_params / 'bayer_img_std_atn_crr'
     # np.save(dirpath_img_mean_raw, img_mean_raw)
     # np.save(dirpath_img_std_raw, img_std_raw)
-    np.save(dirpath_img_mean_atn_crr, img_mean_atn_crr)
-    np.save(dirpath_img_std_atn_crr, img_std_atn_crr)
+    np.save(str(dirpath_img_mean_atn_crr), img_mean_atn_crr)
+    np.save(str(dirpath_img_std_atn_crr), img_std_atn_crr)
 
     # visualize mean and std images
     list_dirpath = [dirpath_img_mean_atn_crr, dirpath_img_std_atn_crr]
@@ -447,7 +432,7 @@ def calculate_correction_parameters(path_raw, path_processed, path_mission, path
             dirpath, '..')
 
     # save file list includes altitude and filepath of bayer image
-    file_list_name = dir_path_image_crr_params + '/filelist.csv'
+    file_list_name = dir_path_image_crr_params / 'filelist.csv'
     df_all = pd.concat([df_all, pd.DataFrame(
         bayer_filelist, columns=['bayer file'])], axis=1)
     df_all.to_csv(file_list_name)
@@ -477,14 +462,14 @@ def calculate_correction_parameters(path_raw, path_processed, path_mission, path
         'max_sample_per_bin': max_sample_per_bin
     }
 
-    cfg_filepath = dir_path_image_crr_params + '/config.yaml'
+    cfg_filepath = dir_path_image_crr_params / 'config.yaml'
     with open(cfg_filepath, 'w') as cfg_file:
         yaml.dump(dict_cfg, cfg_file, default_flow_style=False)
     print('Done. Configurations are saved to ',
           cfg_filepath, datetime.datetime.now())
 
     del memmap_raw
-    os.remove(file_name_memmap_raw)
+    file_name_memmap_raw.remove()
 
 
 def load_xviii_bayer_from_binary(xviii_binary_data):
@@ -582,7 +567,7 @@ def save_atn_crr_params_png(dst_dirpath, atn_crr_params):
             plt.colorbar(cax)
             filename = 'ch_' + str(i_ch) + '_param_' + str(i_param) + '.png'
             plt.title(filename[:len(filename) - 4])
-            plt.savefig(os.path.join(dst_dirpath, filename))
+            plt.savefig(str(dst_dirpath / filename))
             plt.close()
 
 
@@ -605,14 +590,14 @@ def save_bayer_array_png(dst_dirpath, bayer_img_array):
     result_table_vis[:, :, 2] = params_b[:, :, ...]
     result_table_vis[:, :, 3] = params_g2[:, :, ...]
 
-    if not os.path.exists(dst_dirpath):
-        os.makedirs(dst_dirpath)
+    if not dst_dirpath.exists():
+        dst_dirpath.mkdir(parents=True)
 
     for i_ch in range(4):
         cax = plt.matshow(result_table_vis[:, :, i_ch, ...])
         plt.colorbar(cax)
         plt.title('ch_' + str(i_ch))
-        plt.savefig(dst_dirpath + '/ch_' + str(i_ch) + '.png')
+        plt.savefig(dst_dirpath / 'ch_' + str(i_ch) + '.png')
         plt.close()
 
 
@@ -653,7 +638,7 @@ def filter_atn_parm_median(src_atn_param, kernel_size):
 def load_memmap_from_npy_filelist(list_raw_files):
     filename_images_map = 'memmap_raw_img_' + str(uuid.uuid4()) + '.map'
 
-    I = np.load(os.path.expanduser(list_raw_files[0]))
+    I = np.load(str(list_raw_files[0]))
     list_shape = [len(list_raw_files)]
     list_shape = list_shape + list(I.shape)
     # memmap = np.memmap(filename=filename_images_map, mode='w+', shape=tuple(list_shape),dtype=I.dtype)
@@ -778,7 +763,7 @@ def calc_attenuation_correction_gain(target_altitude, atn_crr_params):
 
 
 def correct_attenuation(src_img_file_path, dst_img_file_path, src_altitude, gain, table_correct_params):
-    src_img = np.array(imageio.imread(os.path.expanduser(src_img_file_path)))
+    src_img = np.array(imageio.imread(str(src_img_file_path)))
 
     dst_img = gain / (
         table_correct_params[:, :, :, 0] *
