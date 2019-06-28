@@ -45,8 +45,8 @@ def calculate_correction_parameters(path, force):
 
     # calculate parameters before demosaicing to reduce calculation
     # load configuration from yaml file
-    print('loading', path_mission, datetime.datetime.now())
-    print('loading', path_correct, datetime.datetime.now())
+    Console.info('loading', path_mission, datetime.datetime.now())
+    Console.info('loading', path_correct, datetime.datetime.now())
 
     # read_params(path to file, type of file: mission/correct_config)
     mission = read_params(path_mission, 'mission')
@@ -102,7 +102,7 @@ def calculate_correction_parameters(path, force):
             elif src_file_format == 'tif':
                 raw_file_list[i_file] = src_file_dirpath / df_all['Imagenumber'][i_file]
             else:
-                print('src_file_format:', src_file_format, 'is incorrect.')
+                Console.error('src_file_format:', src_file_format, 'is incorrect.')
                 return
         df_all = pd.concat([df_all, pd.DataFrame(
             raw_file_list, columns=[label_raw_file])], axis=1)
@@ -129,16 +129,16 @@ def calculate_correction_parameters(path, force):
 
     if dirpath.exists():
         if force is True:
-            print('Attenuation correction parameters already exist.')
-            print('Code will overwrite existing parameters.')
+            Console.warn('Attenuation correction parameters already exist.')
+            Console.warn('Code will overwrite existing parameters.')
 
         else:
-            print('Code will quit - correction parameters already exist.')
-            print(
+            Console.warn('Code will quit - correction parameters already exist.')
+            Console.warn(
                 'Run correct_images with [parse] [-f] option for overwriting existing correction parameters.')
             sys.exit()
     else:
-        print('code will compute correction parameters for first time.')
+        Console.info('code will compute correction parameters for first time.')
 
     dirpath = dirpath / 'attenuation_correction'
     if not dirpath.exists():
@@ -179,8 +179,8 @@ def calculate_correction_parameters(path, force):
         # xviii camera
         a, b = 1024, 1280
         # developing .raw data to bayer data of uint32 numpy array.
-        print('start loading bayer images', len(file_list_raw),
-              'files to', dirpath_bayer, datetime.datetime.now())
+        Console.info('start loading bayer images', len(file_list_raw),
+                     'files to', dirpath_bayer, datetime.datetime.now())
         src_file_list_not_exist = []
         bayer_file_list_not_exsit = []
         for idx_raw in range(len(file_list_raw)):
@@ -188,8 +188,8 @@ def calculate_correction_parameters(path, force):
                 src_file_list_not_exist.append(file_list_raw[idx_raw])
                 bayer_file_list_not_exsit.append(bayer_filelist[idx_raw])
 
-        print(len(file_list_raw) - len(bayer_file_list_not_exsit),
-              'files have already existed.')
+        Console.info(len(file_list_raw) - len(bayer_file_list_not_exsit),
+                     'files have already existed.')
 
         task_num = 100
         num_loop = int(len(bayer_file_list_not_exsit) / task_num) + 1
@@ -200,9 +200,10 @@ def calculate_correction_parameters(path, force):
             # for debug
             #     break
 
-            print('processing load_xviii_bayer_from_binary', int(start_idx / task_num) + 1, '/', num_loop, 'of total',
-                  len(bayer_file_list_not_exsit), 'files',
-                  datetime.datetime.now(), flush=True)
+            Console.info(
+                'processing load_xviii_bayer_from_binary', int(start_idx / task_num) + 1, '/', num_loop, 'of total',
+                 len(bayer_file_list_not_exsit), 'files',
+                 datetime.datetime.now(), flush=True)
 
             end_idx = start_idx + task_num
             if end_idx > len(bayer_file_list_not_exsit):
@@ -228,8 +229,8 @@ def calculate_correction_parameters(path, force):
 
     elif src_file_format == 'tif' or src_file_format == 'tiff':
         # unaggi camera
-        print('start loading tif images', len(file_list_raw),
-              'files to', dirpath_bayer, datetime.datetime.now())
+        Console.info('start loading tif images', len(file_list_raw),
+                     'files to', dirpath_bayer, datetime.datetime.now())
         src_file_list_not_exist = []
         bayer_file_list_not_exsit = []
         for idx_raw in range(len(file_list_raw)):
@@ -237,8 +238,8 @@ def calculate_correction_parameters(path, force):
                 src_file_list_not_exist.append(file_list_raw[idx_raw])
                 bayer_file_list_not_exsit.append(bayer_filelist[idx_raw])
 
-        print(len(file_list_raw) - len(bayer_file_list_not_exsit),
-              'files have already existed.')
+        Console.info(len(file_list_raw) - len(bayer_file_list_not_exsit),
+                     'files have already existed.')
 
         tmp_tif_for_size = imageio.imread(file_list_raw[0])
         a = tmp_tif_for_size.shape[0]
@@ -261,7 +262,7 @@ def calculate_correction_parameters(path, force):
     # file_name_memmap_raw = '/home/ty1u18/PycharmProjects/correct_images/memmap_raw_img_d953693d-47aa-403d-9ece-f8f3b19d8b98.map'
     # memmap_raw = np.memmap(file_name_memmap_raw, np.float32, 'r', shape=(8619, 2056, 2464))
 
-    print('start calculate mean and std of raw img', datetime.datetime.now())
+    Console.info('start calculate mean and std of raw img', datetime.datetime.now())
 
     img_mean_raw, img_std_raw = \
         calc_img_mean_and_std_trimmed(memmap_raw, trim_ratio,
@@ -282,7 +283,7 @@ def calculate_correction_parameters(path, force):
         save_bayer_array_png(list_dirpath[i_img], list_img[i_img])
 
     # calculate regression parameters for all pixels and channels
-    print('start attenuation correction parameter calculation.')
+    Console.info('start attenuation correction parameter calculation.')
 
     # 3 is number of parameter in exp_curve other than x
     atn_crr_params = np.zeros([a, b, 3])
@@ -330,15 +331,12 @@ def calculate_correction_parameters(path, force):
             altitudes_ret.append(tmp_altitude_sample)
 
     imgs_for_calc_atn = np.array(each_bin_image_list)
-    # TODO for debug
-    # print('len of each_bin_image_list', len(each_bin_image_list))
-    # print('shape of images for calc atn', imgs_for_calc_atn.shape)
 
     imgs_for_calc_atn = imgs_for_calc_atn.reshape(
         [len(each_bin_image_list), a * b])
     altitudes_for_calc_atn = altitudes_ret
 
-    print('start curve fitting', datetime.datetime.now())
+    Console.info('start curve fitting', datetime.datetime.now())
     if init_atn_crr_params_path is not None:
         initial_atn_crr_params = np.load(init_atn_crr_params_path)
         initial_atn_crr_params = initial_atn_crr_params.reshape([a * b, 3])
@@ -388,8 +386,8 @@ def calculate_correction_parameters(path, force):
         outpath.mkdir(parents=True)
 
     np.save(str(calculated_atn_crr_params_path), atn_crr_params)
-    print('atn_crr_params has been saved to',
-          calculated_atn_crr_params_path, datetime.datetime.now())
+    Console.info('atn_crr_params has been saved to',
+                 calculated_atn_crr_params_path, datetime.datetime.now())
 
     save_atn_crr_params_png(outpath, atn_crr_params)
 
@@ -406,8 +404,8 @@ def calculate_correction_parameters(path, force):
         memmap_raw[i_img, ...] = apply_atn_crr_2_img(
             memmap_raw[i_img, ...], altitudes_all[i_img], atn_crr_params, gain)
 
-    print('start calculating mean and std of attenuation corrected images',
-          datetime.datetime.now(), flush=True)
+    Console.info('start calculating mean and std of attenuation corrected images',
+                 datetime.datetime.now(), flush=True)
     img_mean_atn_crr, img_std_atn_crr = calc_img_mean_and_std_trimmed(memmap_raw, trim_ratio, calc_std=True,
                                                                       effective_index=idx_effective_data)
 
@@ -465,8 +463,8 @@ def calculate_correction_parameters(path, force):
     cfg_filepath = dir_path_image_crr_params / 'config.yaml'
     with open(cfg_filepath, 'w') as cfg_file:
         yaml.dump(dict_cfg, cfg_file, default_flow_style=False)
-    print('Done. Configurations are saved to ',
-          cfg_filepath, datetime.datetime.now())
+    Console.info('Done. Configurations are saved to ',
+                 cfg_filepath, datetime.datetime.now())
 
     del memmap_raw
     file_name_memmap_raw.remove()
@@ -729,7 +727,6 @@ def optim_exp_curve_param_auto_init(altitudes, intensities, num_of_trials=1):
             b = -0.01
 
         init_params = np.array([a, b, c])
-        # print(init_params)
         # tmp_params=None
         try:
             tmp_params = optimize.least_squares(residual_exp_curve, init_params, loss=loss,
@@ -741,7 +738,7 @@ def optim_exp_curve_param_auto_init(altitudes, intensities, num_of_trials=1):
                 ret_params = tmp_params.x
 
         except (ValueError, UnboundLocalError) as e:
-            print('Value Error', a, b, c)
+            Console.error('Value Error', a, b, c)
 
     return ret_params
 
