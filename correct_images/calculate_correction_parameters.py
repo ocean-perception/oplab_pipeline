@@ -595,7 +595,8 @@ def save_bayer_array_png(dst_dirpath, bayer_img_array):
         cax = plt.matshow(result_table_vis[:, :, i_ch, ...])
         plt.colorbar(cax)
         plt.title('ch_' + str(i_ch))
-        plt.savefig(dst_dirpath / 'ch_' + str(i_ch) + '.png')
+        filename = 'ch_' + str(i_ch) + '.png'
+        plt.savefig(str(dst_dirpath / filename))
         plt.close()
 
 
