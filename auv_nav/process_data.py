@@ -132,6 +132,8 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
         Console.warn("Cannot find {}, generating default from {}".format(
             localisation_file, default_localisation))
         # save localisation yaml to processed directory
+        if not localisation_file.parent.exists():
+            localisation_file.parent.mkdir(parents=True)
         default_localisation.copy(localisation_file)
 
     with localisation_file.open('r') as stream:
