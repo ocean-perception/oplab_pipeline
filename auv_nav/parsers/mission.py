@@ -3,8 +3,6 @@ import sys
 from auv_nav.tools.folder_structure import get_config_folder
 from auv_nav.tools.folder_structure import get_raw_folder
 from auv_nav.tools.console import Console
-
-
 # Workaround to dump OrderedDict into YAML files
 from collections import OrderedDict
 
@@ -55,34 +53,11 @@ class CameraEntry:
             self.name = node['name']
             self.type = node['type']
             self.path = node['path']
-            if 'camera_calibration' in node:
-                self.camera_calibration = node['camera_calibration']
-            if 'laser_calibration' in node:
-                self.laser_calibration = node['laser_calibration']
 
     def write(self, node):
         node['name'] = self.name
         node['type'] = self.type
         node['path'] = self.path
-        if 'camera_calibration' in node:
-            node['camera_calibration'] = self.camera_calibration
-        if 'laser_calibration' in node:
-            node['laser_calibration'] = self.laser_calibration
-
-
-class CalibrationEntry:
-    def __init__(self, node=None):
-        if node is not None:
-            self.pattern = node['pattern']
-            self.cols = node['cols']
-            self.rows = node['rows']
-            self.size = node['size']
-
-    def write(self, node):
-        node['pattern'] = self.pattern
-        node['cols'] = self.cols
-        node['rows'] = self.rows
-        node['size'] = self.size
 
 
 class ImageEntry:
@@ -126,8 +101,6 @@ class ImageEntry:
                 self.cameras[1].name = node['camera2']
                 self.cameras[1].type = 'bayer_rggb'
                 self.cameras[1].path = node['filepath']
-        if 'calibration' in node:
-            self.calibration = CalibrationEntry(node['calibration'])
 
     def write(self, node):
         node['format'] = self.format
@@ -238,6 +211,8 @@ class Mission:
         node['version'] = Console.get_version()
 
     def write(self, filename):
+        if not filename.parent.exists():
+            filename.parent.mkdir(parents=True)
         with filename.open('w') as f:
             mission_dict = OrderedDict()
             mission_dict['version'] = 1
