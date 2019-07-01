@@ -202,24 +202,34 @@ class Mission:
 
         if filename is None:
             return
-
-        with filename.open('r') as stream:
-            data = yaml.safe_load(stream)
-            if 'version' in data:
-                self.version = data['version']
-            self.origin.load(data['origin'])
-            if 'velocity' in data:
-                self.velocity.load(data['velocity'])
-            if 'orientation' in data:
-                self.orientation.load(data['orientation'])
-            if 'depth' in data:
-                self.depth.load(data['depth'])
-            if 'altitude' in data:
-                self.altitude.load(data['altitude'])
-            if 'usbl' in data:
-                self.usbl.load(data['usbl'])
-            if 'image' in data:
-                self.image.load(data['image'], self.version)
+        try:
+            mission_file = get_raw_folder(filename)
+            with mission_file.open('r') as stream:
+                data = yaml.safe_load(stream)
+                if 'version' in data:
+                    self.version = data['version']
+                self.origin.load(data['origin'])
+                if 'velocity' in data:
+                    self.velocity.load(data['velocity'])
+                if 'orientation' in data:
+                    self.orientation.load(data['orientation'])
+                if 'depth' in data:
+                    self.depth.load(data['depth'])
+                if 'altitude' in data:
+                    self.altitude.load(data['altitude'])
+                if 'usbl' in data:
+                    self.usbl.load(data['usbl'])
+                if 'image' in data:
+                    self.image.load(data['image'], self.version)
+        except FileNotFoundError:
+            Console.error('The file mission.yaml could not be found at the location:')
+            Console.error(mission_file)
+            Console.quit('mission.yaml not provided')
+        except PermissionError:
+            Console.error('The file mission.yaml could not be opened at the location:')
+            Console.error(mission_file)
+            Console.error('Please make sure you have the correct access rights.')
+            Console.quit('mission.yaml not provided')
 
     def write_metadata(self, node):
         node['username'] = Console.get_username()

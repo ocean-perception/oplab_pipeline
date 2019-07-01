@@ -57,33 +57,43 @@ class Vehicle:
         old_format = False
         mission_data = []
 
-        with vehicle_file.open('r') as stream:
-            data = yaml.safe_load(stream)
-            if 'origin' in data:
-                self.origin.load(data['origin'])
-                if 'x_offset' in data['origin']:
-                    mission_stream = mission_file.open('r')
-                    mission_data = yaml.safe_load(mission_stream)
-                    old_format = True
-            if 'ins' in data:
-                if old_format:
-                    self.ins.load(data['ins'], mission_data['orientation'])
-                else:
-                    self.ins.load(data['ins'])
-            if 'dvl' in data:
-                if old_format:
-                    self.dvl.load(data['dvl'], mission_data['velocity'])
-                else:
-                    self.dvl.load(data['dvl'])
-            if 'depth' in data:
-                self.depth.load(data['depth'])
-            if 'usbl' in data:
-                self.usbl.load(data['usbl'])
-            if 'camera1' in data:
-                self.camera1.load(data['camera1'])
-            if 'camera2' in data:
-                self.camera2.load(data['camera2'])
-            if 'camera3' in data:
-                self.camera3.load(data['camera3'])
-            if 'chemical' in data:
-                self.chemical.load(data['chemical'])
+        try:
+            with vehicle_file.open('r') as stream:
+                data = yaml.safe_load(stream)
+                if 'origin' in data:
+                    self.origin.load(data['origin'])
+                    if 'x_offset' in data['origin']:
+                        mission_stream = mission_file.open('r')
+                        mission_data = yaml.safe_load(mission_stream)
+                        old_format = True
+                if 'ins' in data:
+                    if old_format:
+                        self.ins.load(data['ins'], mission_data['orientation'])
+                    else:
+                        self.ins.load(data['ins'])
+                if 'dvl' in data:
+                    if old_format:
+                        self.dvl.load(data['dvl'], mission_data['velocity'])
+                    else:
+                        self.dvl.load(data['dvl'])
+                if 'depth' in data:
+                    self.depth.load(data['depth'])
+                if 'usbl' in data:
+                    self.usbl.load(data['usbl'])
+                if 'camera1' in data:
+                    self.camera1.load(data['camera1'])
+                if 'camera2' in data:
+                    self.camera2.load(data['camera2'])
+                if 'camera3' in data:
+                    self.camera3.load(data['camera3'])
+                if 'chemical' in data:
+                    self.chemical.load(data['chemical'])
+        except FileNotFoundError:
+            Console.error('The file vehicle.yaml could not be found at the location:')
+            Console.error(vehicle_file)
+            Console.quit('vehicle.yaml not provided')
+        except PermissionError:
+            Console.error('The file mission.yaml could not be opened at the location:')
+            Console.error(vehicle_file)
+            Console.error('Please make sure you have the correct access rights.')
+            Console.quit('vehicle.yaml not provided')
