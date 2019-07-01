@@ -3,7 +3,7 @@ from pathlib import Path
 
 
 def change_subfolder(path, prior, new):
-    path = path.absolute()
+    #path = path.resolve(strict=False)
     index = path.parts.index(prior)
     parts = list(path.parts)
     parts[index] = new
@@ -21,7 +21,7 @@ def change_subfolder(path, prior, new):
 
 
 def get_folder(path, name):
-    path = Path(path).resolve()
+    path = Path(path)  # .resolve(strict=False)
     if name in path.parts:
         return path
     elif 'processed' in path.parts:
