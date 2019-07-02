@@ -155,10 +155,10 @@ def calculate_correction_parameters(path, force):
     atn_crr_filelist = [None] * len(df_all)
     for i_dst_file in range(len(dst_filelist)):
         tmp_filepath = src_filelist[i_dst_file]
-        tmp_filepath = get_processed_folder(tmp_filepath)
-        dst_filelist[i_dst_file] = dirpath / tmp_filepath.with_suffix('.' + dst_file_format)
-        bayer_filelist[i_dst_file] = dirpath_bayer / tmp_filepath.with_suffix('.npy')
-        atn_crr_filelist[i_dst_file] = dirpath_atn_crr / tmp_filepath.with_suffix('.npy')
+        file_stem = get_processed_folder(tmp_filepath).stem
+        dst_filelist[i_dst_file] = dirpath / str(file_stem + '.' + dst_file_format)
+        bayer_filelist[i_dst_file] = dirpath_bayer / str(file_stem + '.npy')
+        atn_crr_filelist[i_dst_file] = dirpath_atn_crr / str(file_stem + '.npy')
 
     # file path of metadata
     if src_file_format == 'raw':
