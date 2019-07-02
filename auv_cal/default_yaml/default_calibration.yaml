@@ -1,25 +1,25 @@
 cameras:
   - name: Cam51707923
     camera_calibration:
-      path: image/cameraCal/Cam51707923
+      path: ../calibration_images/SeaXeroxData20171221_calibration_sx3_xenon/SeaXeroxData20171221_200233_cameraCal/Xviii_tiff/Cam51707923
       extension: tiff
     laser_calibration:
-      path: image/laserCal/Cam51707923
-      extension: tiff
+      path: ../YYYYMMDD_hhmmss_platform_sensor_calib/image/SeaXerocksData20181119_073812_laserCal/Xviii_png/Cam51707923
+      extension: png
   - name: Cam51707925
     camera_calibration:
-      path: image/cameraCal/Cam51707925
+      path: ../calibration_images/SeaXeroxData20171221_calibration_sx3_xenon/SeaXeroxData20171221_200233_cameraCal/Xviii_tiff/Cam51707925
       extension: tiff
     laser_calibration:
-      path: image/laserCal/Cam51707925
-      extension: tiff
+      path: ../YYYYMMDD_hhmmss_platform_sensor_calib/image/SeaXerocksData20181119_073812_laserCal/Xviii_png/Cam51707925
+      extension: png
   - name: LM165
     camera_calibration:
-      path: image/cameraCal/LM165
-      extension: tiff
+      path: ../calibration_images/SeaXeroxData20171221_calibration_sx3_xenon/SeaXeroxData20171221_200233_cameraCal/LM165/000
+      extension: tif
     laser_calibration:
-      path: image/laserCal/LM165
-      extension: tiff
+      path: ../YYYYMMDD_hhmmss_platform_sensor_calib/image/SeaXerocksData20181119_073812_laserCal/LM165/000
+      extension: tif
 
 camera_calibration:
   pattern: Circles
@@ -35,6 +35,6 @@ laser_calibration:
   continuous_interpolation: true
   window_size: 5
   image_step: 1
-  image_sample_size: 100
+  image_sample_size: 25
   num_iterations: 100
-  num_columns: 50
+  num_columns: 1024
