@@ -30,6 +30,7 @@ def calculate_correction_parameters(path, force):
     :param path_correct: Path to 'correct_images.yaml'
     :return: None. Result image files and configurations are saved as files.
     '''
+    path = Path(path).resolve()
 
     path_correct = get_config_folder(path) / "correct_images.yaml"
     if not path_correct.exists():
