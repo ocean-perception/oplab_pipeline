@@ -176,8 +176,7 @@ class Mission:
         if filename is None:
             return
         try:
-            mission_file = get_raw_folder(filename)
-            with mission_file.open('r') as stream:
+            with filename.open('r') as stream:
                 data = yaml.safe_load(stream)
                 if 'version' in data:
                     self.version = data['version']
@@ -196,11 +195,11 @@ class Mission:
                     self.image.load(data['image'], self.version)
         except FileNotFoundError:
             Console.error('The file mission.yaml could not be found at the location:')
-            Console.error(mission_file)
+            Console.error(filename)
             Console.quit('mission.yaml not provided')
         except PermissionError:
             Console.error('The file mission.yaml could not be opened at the location:')
-            Console.error(mission_file)
+            Console.error(filename)
             Console.error('Please make sure you have the correct access rights.')
             Console.quit('mission.yaml not provided')
 

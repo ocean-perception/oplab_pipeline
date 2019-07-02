@@ -52,13 +52,12 @@ class Vehicle:
         if filename is None:
             return
 
-        vehicle_file = get_raw_folder(filename)
-        mission_file = vehicle_file.parents[0] / 'mission.yaml'
+        mission_file = filename.parent / 'mission.yaml'
         old_format = False
         mission_data = []
 
         try:
-            with vehicle_file.open('r') as stream:
+            with filename.open('r') as stream:
                 data = yaml.safe_load(stream)
                 if 'origin' in data:
                     self.origin.load(data['origin'])
@@ -90,10 +89,10 @@ class Vehicle:
                     self.chemical.load(data['chemical'])
         except FileNotFoundError:
             Console.error('The file vehicle.yaml could not be found at the location:')
-            Console.error(vehicle_file)
+            Console.error(filename)
             Console.quit('vehicle.yaml not provided')
         except PermissionError:
             Console.error('The file mission.yaml could not be opened at the location:')
-            Console.error(vehicle_file)
+            Console.error(filename)
             Console.error('Please make sure you have the correct access rights.')
             Console.quit('vehicle.yaml not provided')
