@@ -201,7 +201,7 @@ class BodyVelocity(OutputFormat):
                          + line[6] + ' Exception: ' + str(exc))
         return epoch_time_dvl
 
-    def from_json(self, json):
+    def from_json(self, json, sensor_std):
         self.epoch_timestamp = json['epoch_timestamp_dvl']
         self.x_velocity = json['data'][0]['x_velocity']
         self.y_velocity = json['data'][1]['y_velocity']
@@ -209,6 +209,18 @@ class BodyVelocity(OutputFormat):
         self.x_velocity_std = json['data'][0]['x_velocity_std']
         self.y_velocity_std = json['data'][1]['y_velocity_std']
         self.z_velocity_std = json['data'][2]['z_velocity_std']
+
+        if sensor_std['model'] is 'json':
+            self.x_velocity_std = json['data'][0]['x_velocity_std']
+            self.y_velocity_std = json['data'][1]['y_velocity_std']
+            self.z_velocity_std = json['data'][2]['z_velocity_std']
+        elif sensor_std['model'] is 'linear':
+            self.x_velocity_std = sensor_std['offset'] + sensor_std['factor']*self.x_velocity
+            self.y_velocity_std = sensor_std['offset'] + sensor_std['factor']*self.y_velocity
+            self.z_velocity_std = sensor_std['offset'] + sensor_std['factor']*self.z_velocity
+        else:
+            Console.error('The STD model you entered for USBL is not supported.')
+            Console.quit('STD model not supported.')
 
     def write_csv_header(self):
         return ('epoch_timestamp,'
@@ -413,14 +425,23 @@ class Orientation(OutputFormat):
                 0, 0, self.yaw_offset,
                 self.roll_std, self.pitch_std, self.yaw_std)
 
-    def from_json(self, json):
+    def from_json(self, json, sensor_std):
         self.epoch_timestamp = json['epoch_timestamp']
         self.roll = json['data'][1]['roll']
         self.pitch = json['data'][2]['pitch']
         self.yaw = json['data'][0]['heading']
-        self.roll_std = json['data'][1]['roll_std']
-        self.pitch_std = json['data'][2]['pitch_std']
-        self.yaw_std = json['data'][0]['heading_std']
+
+        if sensor_std['model'] is 'json':
+            self.roll_std = json['data'][1]['roll_std']
+            self.pitch_std = json['data'][2]['pitch_std']
+            self.yaw_std = json['data'][0]['heading_std']
+        elif sensor_std['model'] is 'linear':
+            self.roll_std = sensor_std['offset'] + sensor_std['factor']*self.roll
+            self.pitch_std = sensor_std['offset'] + sensor_std['factor']*self.pitch
+            self.yaw_std = sensor_std['offset'] + sensor_std['factor']*self.yaw
+        else:
+            Console.error('The STD model you entered for USBL is not supported.')
+            Console.quit('STD model not supported.')
 
     def write_csv_header(self):
         return ('epoch_timestamp,'
@@ -515,11 +536,17 @@ class Depth(OutputFormat):
             Console.warn('Badly formatted packet (DEPTH TIME): '
                          + time_string + ' Exception: ' + str(exc))
 
-    def from_json(self, json):
+    def from_json(self, json, sensor_std):
         self.epoch_timestamp = json['epoch_timestamp']
         self.depth_timestamp = json['epoch_timestamp_depth']
         self.depth = json['data'][0]['depth']
-        self.depth_std = json['data'][0]['depth_std']
+        if sensor_std['model'] is 'json':
+            self.depth_std = json['data'][0]['depth_std']
+        elif sensor_std['model'] is 'linear':
+            self.depth_std = sensor_std['offset'] + sensor_std['factor']*self.depth
+        else:
+            Console.error('The STD model you entered for USBL is not supported.')
+            Console.quit('STD model not supported.')
 
     def write_csv_header(self):
         return ('epoch_timestamp,'
@@ -708,19 +735,30 @@ class Usbl(OutputFormat):
         self.latitude_std = self.depth / 111.111e3
         self.longitude_std = self.latitude_std * cos(self.latitude*pi/180.0)
 
-    def from_json(self, json):
+    def from_json(self, json, sensor_std):
         self.epoch_timestamp = json['epoch_timestamp']
         self.latitude = json['data_target'][0]['latitude']
-        self.latitude_std = json['data_target'][0]['latitude_std']
         self.longitude = json['data_target'][1]['longitude']
-        self.longitude_std = json['data_target'][1]['longitude_std']
         self.northings = json['data_target'][2]['northings']
-        self.northings_std = json['data_target'][2]['northings_std']
         self.eastings = json['data_target'][3]['eastings']
-        self.eastings_std = json['data_target'][3]['eastings_std']
         self.depth = json['data_target'][4]['depth']
         self.depth_std = json['data_target'][4]['depth_std']
         self.distance_to_ship = json['data_target'][5]['distance_to_ship']
+
+        if sensor_std['model'] is 'json':
+            self.latitude_std = json['data_target'][0]['latitude_std']
+            self.longitude_std = json['data_target'][1]['longitude_std']
+            self.northings_std = json['data_target'][2]['northings_std']
+            self.eastings_std = json['data_target'][3]['eastings_std']
+        elif sensor_std['model'] is 'linear':
+            self.northings_std = sensor_std['offset'] + sensor_std['factor']*self.distance_to_ship
+            self.eastings_std = sensor_std['offset'] + sensor_std['factor']*self.distance_to_ship
+            self.latitude_std = self.eastings_std / 111.111e3
+            self.longitude_std = self.northings_std / 111.111e3
+
+        else:
+            Console.error('The STD model you entered for USBL is not supported.')
+            Console.quit('STD model not supported.')
         try:
             self.latitude_ship = json['data_ship'][0]['latitude']
             self.longitude_ship = json['data_ship'][0]['longitude']
