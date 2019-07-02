@@ -350,7 +350,7 @@ class Calibrator(object):
         d = min([param_distance(params, p) for p in db_params])
         # print("d = %.3f" % d)  # DEBUG
         # TODO What's a good threshold here? Should it be configurable?
-        if d <= 0.2:
+        if d <= 0.15:
             return False
 
         if last_frame_corners is not None:
@@ -609,7 +609,7 @@ class MonoCalibrator(Calibrator):
         self.R = numpy.eye(3, dtype=numpy.float64)
         self.P = numpy.zeros((3, 4), dtype=numpy.float64)
 
-        self.set_alpha(0.0)
+        self.set_alpha(-1)
 
         if self.debug:
             for i, (params, img) in enumerate(self.db):
@@ -706,6 +706,9 @@ class MonoCalibrator(Calibrator):
 def find_common_filenames(list1, list2):
     lf = [Path(d['file']).stem for d in list1]
     rf = [Path(d['file']).stem for d in list2]
+
+    if 'image' in rf[0][0:5]:
+        rf = [Path(d['file']).stem[5:] for d in list2]
     result = []
 
     for i, lname in enumerate(lf):
@@ -742,13 +745,13 @@ class StereoCalibrator(Calibrator):
         self.inliers = []
 
         self.l.name = stereo_camera_model.left.name
-        self.r.name = stereo_camera_model.right.name
+        self.l.size = (stereo_camera_model.left.image_width, stereo_camera_model.left.image_height)
         self.l.intrinsics = stereo_camera_model.left.K
         self.l.distortion = stereo_camera_model.left.d
+        self.r.name = stereo_camera_model.right.name
+        self.r.size = (stereo_camera_model.right.image_width, stereo_camera_model.right.image_height)
         self.r.intrinsics = stereo_camera_model.right.K
         self.r.distortion = stereo_camera_model.right.d
-        self.l.size = (stereo_camera_model.left.image_width, stereo_camera_model.left.image_height)
-        self.r.size = (stereo_camera_model.right.image_width, stereo_camera_model.right.image_height)
 
     def cal_from_json(self, left_json, right_json):
         common = find_common_filenames(left_json, right_json)
@@ -763,7 +766,7 @@ class StereoCalibrator(Calibrator):
             if self.is_good_sample(params, lcorners):
                 lgray = cv2.imread(lf['file'])
                 rgray = cv2.imread(rf['file'])
-                print(lf['file'], rf['file'])
+                # print(lf['file'], rf['file'])
                 self.db.append((params, lgray, rgray))
                 self.good_corners.append((lcorners, rcorners, lboard))
         print('Using ' + str(len(self.good_corners)) + ' inlier files!')
@@ -849,16 +852,38 @@ class StereoCalibrator(Calibrator):
             flags=flags)
         print('Calibrated with RMS = {}'.format(str(rms)))
 
-        self.set_alpha(0.0)
+        self.set_alpha(-1)
 
         if self.debug:
+            errors = []
             for i, (params, limg, rimg) in enumerate(self.db):
-                # img = self.db[0][1]
+                error = self.epipolar_error_from_images(limg, rimg)
+
                 limg = self.l.remap(limg)
                 rimg = self.r.remap(rimg)
-                print('Writing debug remap image to \n\t * /tmp/test_' + str(i) + '_' + self.l.name + '_stereo_remap.png \n\t * /tmp/test_' + str(i) + '_' + self.r.name + '_stereo_remap.png')
-                cv2.imwrite('/tmp/test_' + str(i) + '_' + self.l.name + '_stereo_remap.png', limg)
-                cv2.imwrite('/tmp/test_' + str(i) + '_' + self.r.name + '_stereo_remap.png', rimg)
+
+                lh, lw, lc = limg.shape
+                rh, rw, rc = rimg.shape
+
+                # find the max width of all the images
+                max_width = lw
+                if rw > max_width:
+                    max_width = rw
+                # the total height of the images (vertical stacking)
+                total_height = lh + rh
+                # create a new array with a size large enough to contain all the images
+                final_image = np.zeros((total_height, max_width, 3), dtype=np.uint8)
+                final_image[:lh, :lw, :] = limg
+                final_image[lh:lh + rh, :rw, :] = rimg
+
+                cv2.imshow('Final images', final_image)
+                cv2.waitKey(3)
+
+                print('Writing debug images to /tmp/stereo_' + str(i) + '_' + self.l.name + '_' + self.r.name + '_remap.png')
+                cv2.imwrite('/tmp/stereo_' + str(i) + '_' + self.l.name + '_' + self.r.name + '_remap.png', final_image)
+                if error is not None:
+                    errors.append(error)
+            print(errors)
 
     def set_alpha(self, a):
         """
@@ -912,6 +937,8 @@ class StereoCalibrator(Calibrator):
         k2 = self.r.intrinsics
         r2 = self.r.R
         p2 = self.r.P
+
+        print(p2)
 
         calmessage = (""
                       + "left:\n"
@@ -978,12 +1005,8 @@ class StereoCalibrator(Calibrator):
         Detect the checkerboard in both images and compute the epipolar error.
         Mainly for use in tests.
         """
-        lcorners = self.get_corners(limage)[1]
-        rcorners = self.get_corners(rimage)[1]
-
-        cv2.imshow('test1', limage)
-        cv2.imshow('test2', rimage)
-        cv2.waitKey(0)
+        lok, lcorners, lboard = self.get_corners(limage)
+        rok, rcorners, rboard = self.get_corners(rimage)
 
         if lcorners is None or rcorners is None:
             return None

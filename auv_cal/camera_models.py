@@ -74,7 +74,6 @@ class StereoCamera():
         self.t = np.zeros((3, 1))
 
         if filename is not None:
-            print(filename)
             filename = Path(filename)
             stream = filename.open('r')
             d = yaml.safe_load(stream)
@@ -83,8 +82,8 @@ class StereoCamera():
             self.from_node(d['extrinsics'])
 
     def from_node(self, node):
-        self.R = node['rotation_matrix']
-        self.t = node['translation_vector']
+        self.R = cv2np(node['rotation_matrix'])
+        self.t = cv2np(node['translation_vector'])
 
     def to_str(self):
         msg = (""
@@ -95,8 +94,7 @@ class StereoCamera():
                + "translation_vector:\n"
                + "  rows: 1\n"
                + "  cols: 3\n"
-               + "  data: [" + ", ".join(["%8f" % self.t[i,0] for i in range(self.t.shape[0])]) + "]\n"
-               + "")
+               + "  data: [" + ", ".join(["%8f" % self.t[i, 0] for i in range(self.t.shape[0])]) + "]\n")
         d = {}
         d['left'] = self.left.to_str()
         d['right'] = self.right.to_str()
