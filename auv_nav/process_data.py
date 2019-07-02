@@ -170,6 +170,14 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
                     'offset': std_offset_orientation
                 },
             }
+            if 'model' not in sensors_std['usbl']:
+                sensors_std['usbl']['model'] = 'json'
+            if 'model' not in sensors_std['dvl']:
+                sensors_std['dvl']['model'] = 'json'
+            if 'model' not in sensors_std['depth']:
+                sensors_std['depth']['model'] = 'json'
+            if 'model' not in sensors_std['orientation']:
+                sensors_std['orientation']['model'] = 'json'
         if 'ekf' in load_localisation:
             ekf_activate = load_localisation['ekf']['activate']
             ekf_process_noise_covariance = load_localisation['ekf']['process_noise_covariance']
@@ -292,7 +300,7 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
                         if (abs(parsed_json_data[i]['epoch_timestamp']
                            - parsed_json_data[i]['epoch_timestamp_dvl'])) < 1.0:
                             velocity_body = BodyVelocity()
-                            velocity_body.from_json(parsed_json_data[i])
+                            velocity_body.from_json(parsed_json_data[i], sensors_std['dvl'])
                             velocity_body_list.append(velocity_body)
                 if 'inertial' in parsed_json_data[i]['frame']:
                     velocity_inertial = InertialVelocity()
@@ -301,12 +309,12 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
 
             if 'orientation' in parsed_json_data[i]['category']:
                 orientation = Orientation()
-                orientation.from_json(parsed_json_data[i])
+                orientation.from_json(parsed_json_data[i], sensors_std['orientation'])
                 orientation_list.append(orientation)
 
             if 'depth' in parsed_json_data[i]['category']:
                 depth = Depth()
-                depth.from_json(parsed_json_data[i])
+                depth.from_json(parsed_json_data[i], sensors_std['depth'])
                 depth_list.append(depth)
 
             if 'altitude' in parsed_json_data[i]['category']:
@@ -316,7 +324,7 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
 
             if 'usbl' in parsed_json_data[i]['category']:
                 usbl = Usbl()
-                usbl.from_json(parsed_json_data[i])
+                usbl.from_json(parsed_json_data[i], sensors_std['usbl'])
                 usbl_list.append(usbl)
 
             if 'image' in parsed_json_data[i]['category']:
