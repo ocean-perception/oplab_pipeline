@@ -59,6 +59,7 @@ class Vehicle:
         try:
             with filename.open('r') as stream:
                 data = yaml.safe_load(stream)
+                self.data = data
                 if 'origin' in data:
                     self.origin.load(data['origin'])
                     if 'x_offset' in data['origin']:
