@@ -62,6 +62,8 @@ def get_processed_folder(path):
 def _copy(self, target):
     import shutil
     assert self.is_file()
+    if not target.parent.exists():
+        target.parent.mkdir(exist_ok=True, parents=True)
     shutil.copy(str(self), str(target))  # str() only there for Python < (3, 6)
 
 
