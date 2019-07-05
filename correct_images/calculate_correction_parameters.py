@@ -60,12 +60,14 @@ def calculate_correction_parameters(path, force):
     altitude_min = config_.attenuation_correction.altitude_min.get('min')
     calculated_atn_crr_params_path = None
     sampling_method = config_.attenuation_correction.sampling_method
+    camera_format = mission.image.format
+    camera = config_.config.camera
 
     if mission.image.format == 'seaxerocks_3':
         src_file_format = 'raw'
-    if mission.image.format == 'unagi':
+    else:
         src_file_format = 'tif'
-        camera_lr = 'LC'
+        camera_lr = camera
 
     '''
     else:
@@ -90,11 +92,36 @@ def calculate_correction_parameters(path, force):
                     'Imagenumber.str.contains("RC")', engine='python')
 
     else:
-        img_path = mission.image.cameras_1.get('path')
+        if camera_format == 'seaxerocks_3':
+            img_p = mission.image.cameras_0.get('path')
+            
+            if camera in img_p:
+                img_path = img_p
+                camera_serial = mission.image.cameras_0.get('name')
+            else:
+                img_p = mission.image.cameras_1.get('path')
+                if camera in img_p:
+                    img_path = img_p
+                    camera_serial = mission.image.cameras_1.get('name')
+                else:
+                    img_p = mission.image.cameras_2.get('path')
+                    if camera in img_p:
+                        img_path = img_p
+                        camera_serial = mission.image.cameras_2.get('name')
+                    else:
+                        print('Mission yaml file does not have path to camera: ',camera)
+                        sys.exit()
+        else:
+            img_path = mission.image.cameras_0.get('path')
         anf = config_.config.auv_nav_path
         src_file_dirpath = path_raw / img_path
-        auv_nav_filepath = path_processed / anf / 'csv/dead_reckoning/auv_dr_aft.csv'
-
+        if camera_format == 'seaxerocks_3':
+            csv_path = 'csv/dead_reckoning/auv_dr_' + camera_serial + '.csv'
+        else:
+            csv_path = 'csv/dead_reckoning/auv_dr_' + camera_lr + '.csv'
+        auv_nav_filepath = path_processed / anf
+        auv_nav_filepath = auv_nav_filepath / csv_path
+        
         df_all = pd.read_csv(auv_nav_filepath, dtype={'Imagenumber': object})
         raw_file_list = [None] * len(df_all)
         for i_file in range(len(raw_file_list)):

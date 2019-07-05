@@ -6,15 +6,19 @@ class Image:
         self.format = cdict['format']
         self.timezone = cdict['timezone']
         self.timeoffset = cdict['timeoffset']
-        self.cameras_0 = cdict['cameras'][0]
-        self.cameras_1 = cdict['cameras'][1]
-        self.cameras_2 = cdict['cameras'][2]
-
+        if self.format == 'seaxerocks_3':
+            self.cameras_0 = cdict['cameras'][0]
+            self.cameras_1 = cdict['cameras'][1]
+            self.cameras_2 = cdict['cameras'][2]
+        else:
+            self.cameras_0 = cdict['cameras'][0]
+            self.cameras_1 = cdict['cameras'][1]
 
 class config:
     def __init__(self, cdict):
         self.auv_nav_path = cdict['auv_nav_path']
         self.src_img_index = cdict['src_img_index']
+        self.camera = cdict['camera']
 
 
 class attenuation_correction:
