@@ -503,8 +503,8 @@ class ExtendedKalmanFilter(object):
         """
         state0, dr_idx, usbl_idx = self.get_init_state(dr_list,
                                                        usbl_list)
-        # Get first measurement
-        start_time = dr_list[dr_idx].epoch_timestamp
+        # Get first measurement (e.g. zero) as a start
+        start_time = dr_list[0].epoch_timestamp
         current_time = start_time
 
         self.ekf = EkfImpl()
@@ -549,16 +549,17 @@ class ExtendedKalmanFilter(object):
     def get_smoothed_result(self):
         return self.ekf.get_smoothed_states()
 
-    def build_state(self, usbl, dr):
-        x = usbl.northings
-        y = usbl.eastings
-        z = dr.depth
-        roll = dr.roll*math.pi/180.
-        pitch = dr.pitch*math.pi/180.
-        heading = dr.yaw*math.pi/180.
-        vx = dr.x_velocity
-        vy = dr.y_velocity
-        vz = dr.z_velocity
+    def build_state(self, usbl, dr, init_dr):
+        # Guess origin from first USBL position
+        x = usbl.northings - dr.northings + init_dr.northings
+        y = usbl.eastings - dr.eastings + init_dr.eastings
+        z = init_dr.depth
+        roll = init_dr.roll*math.pi/180.
+        pitch = init_dr.pitch*math.pi/180.
+        heading = init_dr.yaw*math.pi/180.
+        vx = init_dr.x_velocity
+        vy = init_dr.y_velocity
+        vz = init_dr.z_velocity
         state = np.array([[x, y, z,
                           roll, pitch, heading,
                           vx, vy, vz,
@@ -571,6 +572,7 @@ class ExtendedKalmanFilter(object):
         dr_index = 0
         state = []
 
+        # Interpolate DR to USBL updates
         dr_eastings = []
         dr_northings = []
         for i in range(len(usbl_list)):
@@ -604,7 +606,11 @@ class ExtendedKalmanFilter(object):
             while usbl_index < len(usbl_list) and dr_list[dr_index].epoch_timestamp > usbl_list[usbl_index].epoch_timestamp:
                 usbl_index += 1
 
-        state = self.build_state(usbl_list[usbl_index], dr_list[dr_index])
+        # Build state from first known USBL and DR, and use that displacement
+        # error at the start of DR.
+        state = self.build_state(usbl_list[usbl_index], dr_list[dr_index], dr_list[0])
+        # Fix DR to index zero
+        dr_index = 0
         state[0, Index.X] = state[0, Index.X] - northings_mean
         state[0, Index.Y] = state[0, Index.Y] - eastings_mean
         return state.T, dr_index, usbl_index
