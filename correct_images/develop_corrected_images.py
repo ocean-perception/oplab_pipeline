@@ -8,6 +8,7 @@ import pandas as pd
 import scipy.ndimage.filters as filters
 import yaml
 from tqdm import tqdm
+from pathlib import Path
 
 from auv_nav.tools.console import Console
 from auv_nav.tools.folder_structure import get_raw_folder
@@ -38,13 +39,38 @@ def develop_corrected_image(path, force):
 
     mission = read_params(path_mission, 'mission')  # read_params(path to file, type of file: mission/correct_config)
     config_ = read_params(path_correct, 'correct')
+    camera_format = mission.image.format
+    camera = config_.config.camera
 
     # load src_file_dirpath from correct_images.yaml
     # sfd = config_.config.path_0.get('src_file_dirpath') # load_data.get('src_file_dirpath', None)
-    img_path = mission.image.cameras_1.get('path')
+    if camera_format == 'seaxerocks_3':
+            img_p = mission.image.cameras_0.get('path')
+            
+            if camera in img_p:
+                img_path = img_p
+            else:
+                img_p = mission.image.cameras_1.get('path')
+                if camera in img_p:
+                    img_path = img_p
+                else:
+                    img_p = mission.image.cameras_2.get('path')
+                    if camera in img_p:
+                        img_path = img_p
+                    else:
+                        print('Mission yaml file does not have path to camera: ',camera)
+                        sys.exit()
+    else:
+        img_path = mission.image.cameras_0.get('path')
     # params_dir_path = './processed/' + sfd + '/' + img_path + '/attenuation_correction/params'
 
-    params_dir_path = path_processed / img_path / 'attenuation_correction/params'
+    if camera_format == 'seaxerocks_3':
+        params_folder = 'attenuation_correction/params'
+    else:
+        params_folder = 'attenuation_correction/params_' + camera
+
+    params_dir_path = path_processed / img_path
+    params_dir_path = params_dir_path / params_folder
 
     # load filelist
     filelist_path = params_dir_path / 'filelist.csv'
@@ -55,6 +81,27 @@ def develop_corrected_image(path, force):
         Console.warn('Run correct_images [parse] before [process].')
         Console.warn(filelist_path)
         sys.exit()
+
+    if camera_format == 'seaxerocks_3':
+        dst_folder = 'attenuation_correction/developed'
+    else:
+        dst_folder = 'attenuation_correction/developed_' + camera
+
+    dst_dir_path = params_dir_path / dst_folder
+    
+    if not dst_dir_path.exists():
+        dst_dir_path.mkdir(parents=True)
+        Console.info('Code will write images for the first time')
+    else:
+        if force is True:
+            Console.warn('Processed images for this Camera already exist.')
+            Console.warn('Code will overwrite existing images.')
+
+        else:
+            Console.warn('Code will quit - Processed Images for this Camera already exist.')
+            Console.warn(
+                'Run correct_images with [process] [-F] option for overwriting existing processed images.')
+            sys.exit()
 
     # load config.yaml
     path_config = params_dir_path / 'config.yaml'
@@ -69,7 +116,7 @@ def develop_corrected_image(path, force):
     apply_gamma_correction = config_.flags.apply_gamma_correction # load_data.get('apply_gamma_correction', True)
     apply_distortion_correction = config_.flags.apply_distortion_correction # load_data.get('apply_distortion_correction', True)
     camera_parameter_file_path = config_.flags.camera_parameter_file_path # load_data.get('camera_parameter_file_path', None)
-    dst_dir_path = None # load_data.get('dst_dir_path', None)
+    #dst_dir_path = None # load_data.get('dst_dir_path', None)
     dst_img_format = config_.output.dst_file_format # load_data.get('dst_img_format', 'png')
     median_filter_kernel_size = config_.attenuation_correction.median_filter_kernel_size # load_data.get('median_filter_kernel_size', 1)
     debayer_option = config_.normalization.debayer_option # load_data.get('debayer_option', 'linear')
@@ -132,15 +179,13 @@ def develop_corrected_image(path, force):
     # if developing target are not designated, develop all files in filelist.csv
     if src_img_index == -1:
         src_img_index = range(len(df_filelist))
-
+    '''
     # determine destination path
     if dst_dir_path is None:
         # new directory is created in the same directory of 'params_dir_path'
         dst_dir_path = params_dir_path / 'developed'
-
-    if not dst_dir_path.exists():
-        dst_dir_path.mkdir(parents=True)
-
+    '''
+    
     message = 'developing images ' + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     list_dst_name = []
     for i_img in tqdm(src_img_index, ascii=True, desc=message):

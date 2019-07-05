@@ -2,15 +2,21 @@
 
 config:
   # path of the CSV file. mention only the 'dive_start_end_time' name
-  auv_nav_path: 'json_renav_20180803_012500_20180803_230450'
+  auv_nav_path: 'json_renav_20180809_193000_20180809_235527'
+
+  # Camera system to which the target data set belongs---------------- 
+  # Cam51707923 / Cam51707925 / LM165 for format: seaxerocks_3
+  # LC / RC for format: acfr_standard
+  camera: RC
+  
   # the index of processed images. If -1 is given, all images in filelist.csv are processed
   src_img_index: -1  # example: src_img_index: [100,101,102,103] or src_img_index: [99]
 
 attenuation_correction:
   # the images captured at the altitude only in the range from altitude_min to altitude_max are used for calculating parameters.
   altitude:
-    - max: 12
-    - min: 4
+    - max: 3
+    - min: 1.4
 
   sampling_method: 'median' # sampling method from raw data. for local computers, 'median' is preferable because the calculation cost is low.
   median_filter_kernel_size: 3 # If the attenuation correction parameter looks noisy.
