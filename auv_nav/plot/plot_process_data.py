@@ -533,6 +533,11 @@ def plot_2d_deadreckoning(camera1_list,
                   [float(j.eastings) for j in i[1]],
                   [float(j.northings) for j in i[1]],
                   visibility=i[2])
+    if len(ekf_centre_list) > 1:
+        make_data(figure, 'ekf_centre',
+                  [float(i.eastings) for i in ekf_centre_list],
+                  [float(i.northings) for i in ekf_centre_list],
+                  visibility='legendonly')
     if len(pf_fusion_centre_list) > 1:
         make_data(figure, 'pf_camera1',
                   [float(i.eastings) for i in camera1_pf_list],
@@ -595,12 +600,6 @@ def plot_2d_deadreckoning(camera1_list,
                           mode='markers',
                           opacity=0.5)
                 resampling_index += 1
-
-    if len(ekf_centre_list) > 1:
-        make_data(figure, 'ekf_centre',
-                  [float(i.eastings) for i in ekf_centre_list],
-                  [float(i.northings) for i in ekf_centre_list],
-                  visibility='legendonly')
 
     config = {'scrollZoom': True}
 
