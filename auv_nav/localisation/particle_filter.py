@@ -91,18 +91,31 @@ class ParticleFilter:
             return roll_estimate, pitch_estimate, yaw_estimate
         # ========== End Noise models ========== #
 
-        def initialize_particles(N, usbl_datapoint, dvl_imu_datapoint):
+        def initialize_particles(N, usbl_datapoint, dvl_imu_datapoint, init_dvl_imu_datapoint):
             particles = []
+            northings_estimate = usbl_datapoint.northings - dvl_imu_datapoint.northings + init_dvl_imu_datapoint.northings
+            eastings_estimate = usbl_datapoint.eastings - dvl_imu_datapoint.eastings + init_dvl_imu_datapoint.eastings
             for i in range(N):
                 temp_particle = Particle()
 
-                roll_estimate, pitch_estimate, yaw_estimate = imu_noise(0, dvl_imu_datapoint, 0)
-                x_velocity_estimate, y_velocity_estimate, z_velocity_estimate = dvl_noise(dvl_imu_datapoint)
+                roll_estimate, pitch_estimate, yaw_estimate = imu_noise(0, init_dvl_imu_datapoint, 0)
+                x_velocity_estimate, y_velocity_estimate, z_velocity_estimate = dvl_noise(init_dvl_imu_datapoint)
 
                 usbl_uncertainty = usbl_noise(usbl_datapoint)
                 # usbl_uncertainty = 0
 
-                temp_particle.set(random.gauss(dvl_imu_datapoint.eastings, usbl_uncertainty), random.gauss(dvl_imu_datapoint.northings,usbl_uncertainty), dvl_imu_datapoint.epoch_timestamp, x_velocity_estimate, y_velocity_estimate, z_velocity_estimate, roll_estimate, pitch_estimate, yaw_estimate, dvl_imu_datapoint.altitude, dvl_imu_datapoint.depth)
+                temp_particle.set(
+                    random.gauss(eastings_estimate, usbl_uncertainty),
+                    random.gauss(northings_estimate, usbl_uncertainty),
+                    init_dvl_imu_datapoint.epoch_timestamp,
+                    x_velocity_estimate,
+                    y_velocity_estimate,
+                    z_velocity_estimate,
+                    roll_estimate,
+                    pitch_estimate,
+                    yaw_estimate,
+                    init_dvl_imu_datapoint.altitude,
+                    init_dvl_imu_datapoint.depth)
                 temp_particle.set_weight(1)
                 particles.append(temp_particle)
 
@@ -252,7 +265,7 @@ class ParticleFilter:
             while usbl_data[usbl_data_index].epoch_timestamp > dvl_imu_data[dvl_imu_data_index].epoch_timestamp:
                 dvl_imu_data_index += 1
         if dvl_imu_data[dvl_imu_data_index].epoch_timestamp == usbl_data[usbl_data_index].epoch_timestamp:
-            particles = initialize_particles(N, usbl_data[usbl_data_index], dvl_imu_data[dvl_imu_data_index]) #*For now assume eastings_std = northings_std, usbl_data[usbl_data_index].eastings_std)
+            particles = initialize_particles(N, usbl_data[usbl_data_index], dvl_imu_data[dvl_imu_data_index], dvl_imu_data[0]) #*For now assume eastings_std = northings_std, usbl_data[usbl_data_index].eastings_std)
             usbl_data_index += 1
             dvl_imu_data_index += 1
         elif usbl_data[usbl_data_index].epoch_timestamp < dvl_imu_data[dvl_imu_data_index].epoch_timestamp:
@@ -265,13 +278,15 @@ class ParticleFilter:
             interpolated_data = interpolate_usbl(dvl_imu_data[dvl_imu_data_index].epoch_timestamp, usbl_data[usbl_data_index], usbl_data[usbl_data_index+1])
             # dvl_imu_data.insert(dvl_imu_data_index+1, interpolated_data)
             usbl_data.insert(usbl_data_index+1, interpolated_data)
-            particles = initialize_particles(N, usbl_data[usbl_data_index], dvl_imu_data[dvl_imu_data_index+1]) #*For now assume eastings_std = northings_std, usbl_data[usbl_data_index].eastings_std)
+            particles = initialize_particles(N, usbl_data[usbl_data_index], dvl_imu_data[dvl_imu_data_index+1], dvl_imu_data[0]) #*For now assume eastings_std = northings_std, usbl_data[usbl_data_index].eastings_std)
             usbl_data_index += 1
             dvl_imu_data_index += 1
         else:
             Console.quit("Check dvl_imu_data and usbl_data in particle_filter.py.")
         usbl_datapoints.append(usbl_data[usbl_data_index-1])
         particles_list.append(particles)
+        # Force to start at DR init
+        dvl_imu_data_index = 0
 
         x_, y_ = mean_trajectory(particles)
         x_list.append(x_)
