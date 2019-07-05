@@ -1,6 +1,24 @@
 import yaml
 from auv_nav.tools.folder_structure import get_config_folder
 from auv_nav.tools.folder_structure import get_raw_folder
+from auv_nav.tools.console import Console
+# Workaround to dump OrderedDict into YAML files
+from collections import OrderedDict
+
+
+def represent_ordereddict(dumper, data):
+    value = []
+
+    for item_key, item_value in data.items():
+        node_key = dumper.represent_data(item_key)
+        node_value = dumper.represent_data(item_value)
+
+        value.append((node_key, node_value))
+
+    return yaml.nodes.MappingNode(u'tag:yaml.org,2002:map', value)
+
+
+yaml.add_representer(OrderedDict, represent_ordereddict)
 
 
 class SensorOffset:
@@ -14,7 +32,7 @@ class SensorOffset:
         self._empty = True
 
     def empty(self):
-        return self._emtpy
+        return self._empty
 
     def load(self, node, mission_node=[]):
         self._empty = False
@@ -31,6 +49,14 @@ class SensorOffset:
             self.heave = node['z_offset']
             if mission_node:
                 self.yaw = mission_node['headingoffset']
+
+    def write(self, node):
+        node['surge_m'] = self.surge
+        node['sway_m'] = self.sway
+        node['heave_m'] = self.heave
+        node['roll_deg'] = self.roll
+        node['pitch_deg'] = self.pitch
+        node['yaw_deg'] = self.yaw
 
     def print(self, name):
         print('{}: XYZ ({:.2f}, {:.2f}, {:.2f}) RPY ({:.2f}, {:.2f}, {:.2f})'.format(name, self.surge, self.sway, self.heave, self.roll, self.pitch, self.yaw))
@@ -97,3 +123,45 @@ class Vehicle:
             Console.error(filename)
             Console.error('Please make sure you have the correct access rights.')
             Console.quit('vehicle.yaml not provided')
+
+    def write_metadata(self, node):
+        node['username'] = Console.get_username()
+        node['date'] = Console.get_date()
+        node['hostname'] = Console.get_hostname()
+        node['version'] = Console.get_version()
+
+    def write(self, filename):
+        if not filename.parent.exists():
+            filename.parent.mkdir(parents=True)
+        with filename.open('w') as f:
+            vehicle_dict = OrderedDict()
+            vehicle_dict['version'] = 1
+            vehicle_dict['metadata'] = OrderedDict()
+            self.write_metadata(vehicle_dict['metadata'])
+            vehicle_dict['origin'] = OrderedDict()
+            self.origin.write(vehicle_dict['origin'])
+            if not self.ins.empty():
+                vehicle_dict['ins'] = OrderedDict()
+                self.ins.write(vehicle_dict['ins'])
+            if not self.dvl.empty():
+                vehicle_dict['dvl'] = OrderedDict()
+                self.dvl.write(vehicle_dict['dvl'])
+            if not self.depth.empty():
+                vehicle_dict['depth'] = OrderedDict()
+                self.depth.write(vehicle_dict['depth'])
+            if not self.usbl.empty():
+                vehicle_dict['usbl'] = OrderedDict()
+                self.usbl.write(vehicle_dict['usbl'])
+            if not self.camera1.empty():
+                vehicle_dict['camera1'] = OrderedDict()
+                self.camera1.write(vehicle_dict['camera1'])
+            if not self.camera2.empty():
+                vehicle_dict['camera2'] = OrderedDict()
+                self.camera2.write(vehicle_dict['camera2'])
+            if not self.camera3.empty():
+                vehicle_dict['camera3'] = OrderedDict()
+                self.camera3.write(vehicle_dict['camera3'])
+            if not self.chemical.empty():
+                vehicle_dict['chemical'] = OrderedDict()
+                self.chemical.write(vehicle_dict['chemical'])
+            yaml.dump(vehicle_dict, f, allow_unicode=True, default_flow_style=False)

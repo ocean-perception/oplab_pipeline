@@ -279,18 +279,24 @@ class Mission:
             mission_dict['version'] = 1
             mission_dict['metadata'] = OrderedDict()
             mission_dict['origin'] = OrderedDict()
-            mission_dict['velocity'] = OrderedDict()
-            mission_dict['orientation'] = OrderedDict()
-            mission_dict['depth'] = OrderedDict()
-            mission_dict['altitude'] = OrderedDict()
-            mission_dict['usbl'] = OrderedDict()
-            mission_dict['image'] = OrderedDict()
             self.write_metadata(mission_dict['metadata'])
             self.origin.write(mission_dict['origin'])
-            self.velocity.write(mission_dict['velocity'])
-            self.orientation.write(mission_dict['orientation'])
-            self.depth.write(mission_dict['depth'])
-            self.altitude.write(mission_dict['altitude'])
-            self.usbl.write(mission_dict['usbl'])
-            self.image.write(mission_dict['image'])
+            if not self.velocity.empty():
+                mission_dict['velocity'] = OrderedDict()
+                self.velocity.write(mission_dict['velocity'])
+            if not self.orientation.empty():
+                mission_dict['orientation'] = OrderedDict()
+                self.orientation.write(mission_dict['orientation'])
+            if not self.depth.empty():
+                mission_dict['depth'] = OrderedDict()
+                self.depth.write(mission_dict['depth'])
+            if not self.altitude.empty():
+                mission_dict['altitude'] = OrderedDict()
+                self.altitude.write(mission_dict['altitude'])
+            if not self.usbl.empty():
+                mission_dict['usbl'] = OrderedDict()
+                self.usbl.write(mission_dict['usbl'])
+            if not self.image.empty():
+                mission_dict['image'] = OrderedDict()
+                self.image.write(mission_dict['image'])
             yaml.dump(mission_dict, f, allow_unicode=True, default_flow_style=False)

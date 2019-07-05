@@ -116,7 +116,7 @@ def parse_data(filepath, force_overwite):
     # Write mission with metadata (username, date and hostname)
     mission.write(mission_processed)
     # mission_file.copy(mission_processed)
-    vehicle_file.copy(vehicle_processed)
+    vehicle.write(vehicle_processed)
 
     # check for recognised formats and create nav file
     outpath = get_processed_folder(filepath)
