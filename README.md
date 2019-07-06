@@ -22,7 +22,6 @@ You can also use [Anaconda](https://www.anaconda.com/download/), which comes wit
 The auv_nav project is compiled into a binary. Navigate to the auv_nav folder, where setup.py is saved and execute
 ```
 python3 setup.py install
-python3 setup.py test
 ```
 `auv_nav` can now be used as a command from any folder on your computer. You can test that by trying to display the help: 
 ```
