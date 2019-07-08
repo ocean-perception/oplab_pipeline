@@ -71,6 +71,7 @@ def develop_corrected_image(path, force):
 
     params_dir_path = path_processed / img_path
     params_dir_path = params_dir_path / params_folder
+    bayer_path = params_dir_path.parents[0] / 'bayer'
 
     # load filelist
     filelist_path = params_dir_path / 'filelist.csv'
@@ -83,12 +84,13 @@ def develop_corrected_image(path, force):
         sys.exit()
 
     if camera_format == 'seaxerocks_3':
-        dst_folder = 'attenuation_correction/developed'
+        dst_folder = 'developed'
     else:
-        dst_folder = 'attenuation_correction/developed_' + camera
+        dst_folder = 'developed_' + camera
 
-    dst_dir_path = params_dir_path / dst_folder
-    
+    dst_dir_path = params_dir_path.parents[0] / dst_folder
+    print(dst_dir_path)
+
     if not dst_dir_path.exists():
         dst_dir_path.mkdir(parents=True)
         Console.info('Code will write images for the first time')
@@ -128,6 +130,7 @@ def develop_corrected_image(path, force):
 
     # load .npy files
     pdp = str(params_dir_path)
+    print(pdp)
     atn_crr_params = np.load(pdp + '/atn_crr_params.npy')
     bayer_img_mean = np.load(pdp + '/bayer_img_mean_raw.npy')
     bayer_img_std = np.load(pdp + '/bayer_img_std_raw.npy')
@@ -135,11 +138,13 @@ def develop_corrected_image(path, force):
     bayer_img_corrected_std = np.load(pdp + '/bayer_img_std_atn_crr.npy')
 
     # load values from file list
+
     list_altitude = df_filelist[label_altitude].values
     list_bayer_file = df_filelist['bayer file'].values
     # convert from relative path to real path
     for i_bayer_file in range(len(list_bayer_file)):
-        list_bayer_file[i_bayer_file] = params_dir_path / list_bayer_file[i_bayer_file]
+        #list_bayer_file[i_bayer_file] = params_dir_path / list_bayer_file[i_bayer_file]
+        list_bayer_file[i_bayer_file] = bayer_path / list_bayer_file[i_bayer_file]
 
     # get image size
     bayer_sample = np.load(str(list_bayer_file[0]))

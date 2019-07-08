@@ -154,7 +154,7 @@ def calculate_correction_parameters(path, force):
     # configure output file path
     dirpath = src_filelist[0].parent
     dirpath = get_processed_folder(dirpath)
-
+    '''
     if dirpath.exists():
         if force is True:
             Console.warn('Attenuation correction parameters already exist.')
@@ -167,7 +167,7 @@ def calculate_correction_parameters(path, force):
             sys.exit()
     else:
         Console.info('code will compute correction parameters for first time.')
-
+    '''
     dirpath = dirpath / 'attenuation_correction'
     if not dirpath.exists():
         dirpath.mkdir(parents=True)
@@ -197,6 +197,17 @@ def calculate_correction_parameters(path, force):
             dir_path_image_crr_params = dst_filelist[0].parent / 'params_RC'
     if not dir_path_image_crr_params.exists():
         dir_path_image_crr_params.mkdir(parents=True)
+        Console.info('code will compute correction parameters for this Camera for first time.')
+    else:
+        if force is True:
+            Console.warn('Attenuation correction parameters already exist.')
+            Console.warn('Code will overwrite existing parameters.')
+
+        else:
+            Console.warn('Code will quit - correction parameters already exist.')
+            Console.warn(
+                'Run correct_images with [parse] [-F] option for overwriting existing correction parameters.')
+            sys.exit()
 
     if calculated_atn_crr_params_path is None:
         calculated_atn_crr_params_path = dir_path_image_crr_params / 'atn_crr_params.npy'
@@ -451,9 +462,12 @@ def calculate_correction_parameters(path, force):
     for i_img in range(len(list_img)):
         save_bayer_array_png(list_dirpath[i_img], list_img[i_img])
 
-    # convert bayer_file_path from absolute path to relative path
+    # convert bayer_file_path from absolute path to filename
     for i_bayer_file in range(len(bayer_filelist)):
-        bayer_filelist[i_bayer_file] = '..' / bayer_filelist[i_bayer_file].relative_to(dirpath.parent)
+        tmp_filepath = src_filelist[i_bayer_file]
+        file_stem = get_processed_folder(tmp_filepath).stem
+        bayer_filelist[i_bayer_file] = str(file_stem + '.npy')
+        #bayer_filelist[i_bayer_file] = '..' / bayer_filelist[i_bayer_file].relative_to(dirpath.parent)
 
     # save file list includes altitude and filepath of bayer image
     file_list_name = dir_path_image_crr_params / 'filelist.csv'
@@ -467,7 +481,7 @@ def calculate_correction_parameters(path, force):
         'label_altitude': label_altitude,
         'altitude_min': altitude_min,
         'altitude_max': altitude_max,
-        'calculated_atn_crr_params_path': calculated_atn_crr_params_path,
+        'calculated_atn_crr_params_path': str(calculated_atn_crr_params_path.resolve()),
         'median_filter_kernel_size': median_filter_kernel_size,
         'sampling_method': sampling_method,
         'dst_file_format': dst_file_format,
@@ -493,7 +507,7 @@ def calculate_correction_parameters(path, force):
                  cfg_filepath, datetime.datetime.now())
 
     del memmap_raw
-    file_name_memmap_raw.remove()
+    Path(file_name_memmap_raw).unlink()
 
 
 def load_xviii_bayer_from_binary(xviii_binary_data):
