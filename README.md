@@ -60,7 +60,7 @@ Below is a list of the required libraries. You should not need to install them m
 6. [xlrd](https://pypi.org/project/xlrd/) (version used: 1.1.0) `pip3 install xlrd`
 7. [prettytable](https://pypi.python.org/pypi/PrettyTable) (version used: 0.7.2) `pip3 install prettytable`
 8. [opencv](https://pypi.org/project/opencv-python/) (version used: X.Y.Z) `pip3 install opencv-python`
-9. [prettytable](https://pypi.org/project/imageio/) (version used: 2.5.0) `pip3 install imageio`
+9. [imageio](https://pypi.org/project/imageio/) (version used: 2.5.0) `pip3 install imageio`
 
 
 (The commands for installing the libaries are for standard python 3. If you are using Anaconda, `pip3` is replaced either by `conda` or by `pip`.)
