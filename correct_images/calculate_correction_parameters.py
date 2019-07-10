@@ -3,6 +3,7 @@ import sys
 import random
 import socket
 import uuid
+import os
 
 import cv2
 import imageio
@@ -51,16 +52,39 @@ def calculate_correction_parameters(path, force):
 
     # read_params(path to file, type of file: mission/correct_config)
     mission = read_params(path_mission, 'mission')
-    config_ = read_params(path_correct, 'correct')
+    
 
+    # discovering default parameters for default correct_images.yaml
+    camera_format = mission.image.format
+   
+    for entry in os.scandir(path_processed):
+            #print(entry)
+            if entry.is_dir():
+                if 'json_renav_' in entry.path:
+                    json_path = entry.path
+    with path_correct.open('r') as f:
+            params = yaml.safe_load(f)
+            params['config']['auv_nav_path'] = json_path
+            if camera_format == 'seaxerocks_3':
+                params['config']['camera1'] = 'Cam51707925'
+                params['config']['camera2'] = 'Cam51707923'
+                params['config']['camera3'] = 'LM165'
+            elif camera_format == 'acfr_standard' or camera_format == 'unaggi':
+                params['config']['camera1'] = 'LC'
+                params['config']['camera2'] = 'RC'
+    # dump default parameters camera and auv_nav_path to correct_images.yaml file
+    with path_correct.open('w') as f:
+            yaml.dump(params, f)
+    
     # load parameters from correct_images.yaml
+    config_ = read_params(path_correct, 'correct')
     label_raw_file = 'raw file'
     label_altitude = ' Altitude [m]'
     altitude_max = config_.attenuation_correction.altitude_max.get('max')
     altitude_min = config_.attenuation_correction.altitude_min.get('min')
     calculated_atn_crr_params_path = None
     sampling_method = config_.attenuation_correction.sampling_method
-    camera_format = mission.image.format
+    
     camera = config_.config.camera
 
     if mission.image.format == 'seaxerocks_3':
@@ -113,13 +137,13 @@ def calculate_correction_parameters(path, force):
                         sys.exit()
         else:
             img_path = mission.image.cameras_0.get('path')
-        anf = config_.config.auv_nav_path
+        auv_nav_filepath = Path(config_.config.auv_nav_path).resolve()
         src_file_dirpath = path_raw / img_path
         if camera_format == 'seaxerocks_3':
             csv_path = 'csv/dead_reckoning/auv_dr_' + camera_serial + '.csv'
         else:
             csv_path = 'csv/dead_reckoning/auv_dr_' + camera_lr + '.csv'
-        auv_nav_filepath = path_processed / anf
+        #auv_nav_filepath = path_processed / anf
         auv_nav_filepath = auv_nav_filepath / csv_path
         
         df_all = pd.read_csv(auv_nav_filepath, dtype={'Imagenumber': object})

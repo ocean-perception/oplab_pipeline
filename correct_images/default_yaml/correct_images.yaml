@@ -7,8 +7,9 @@ config:
   # Camera system to which the target data set belongs---------------- 
   # Cam51707923 / Cam51707925 / LM165 for format: seaxerocks_3
   # LC / RC for format: acfr_standard
-  camera: RC
-  
+  camera1: RC
+  camera2: LC
+
   # the index of processed images. If -1 is given, all images in filelist.csv are processed
   src_img_index: -1  # example: src_img_index: [100,101,102,103] or src_img_index: [99]
 
