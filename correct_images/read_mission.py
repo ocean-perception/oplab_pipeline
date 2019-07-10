@@ -18,7 +18,7 @@ class config:
     def __init__(self, cdict):
         self.auv_nav_path = cdict['auv_nav_path']
         self.src_img_index = cdict['src_img_index']
-        self.camera = cdict['camera']
+        self.camera = cdict['camera1']
 
 
 class attenuation_correction:
