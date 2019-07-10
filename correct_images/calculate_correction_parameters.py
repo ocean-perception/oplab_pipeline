@@ -469,6 +469,7 @@ def calculate_correction_parameters(path, force):
         bayer_filelist[i_bayer_file] = str(file_stem + '.npy')
         #bayer_filelist[i_bayer_file] = '..' / bayer_filelist[i_bayer_file].relative_to(dirpath.parent)
 
+
     # save file list includes altitude and filepath of bayer image
     file_list_name = dir_path_image_crr_params / 'filelist.csv'
     df_all = pd.concat([df_all, pd.DataFrame(
