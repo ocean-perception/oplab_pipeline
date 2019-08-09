@@ -3,12 +3,12 @@
 config:
   # path of the CSV file. mention only the 'dive_start_end_time' name
   auv_nav_path: 'json_renav_20180809_193000_20180809_235527'
-
+  format: 'seaxerocks_3'
   # Camera system to which the target data set belongs---------------- 
   # Cam51707923 / Cam51707925 / LM165 for format: seaxerocks_3
   # LC / RC for format: acfr_standard
-  camera1: RC
-  camera2: LC
+  camera1: 'RC'
+  camera2: 'LC'
 
   # the index of processed images. If -1 is given, all images in filelist.csv are processed
   src_img_index: -1  # example: src_img_index: [100,101,102,103] or src_img_index: [99]
@@ -34,4 +34,4 @@ flags:
   apply_attenuation_correction: True # If false, the process will develop only pixel stat applied image
   apply_gamma_correction: True        
   apply_distortion_correction: False
-  camera_parameter_file_path: 'None' # needed if apply_distortion_correction is True
+  camera_parameter_file_path: None # needed if apply_distortion_correction is True

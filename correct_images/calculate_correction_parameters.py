@@ -32,15 +32,6 @@ def calculate_correction_parameters(path, force):
     :return: None. Result image files and configurations are saved as files.
     '''
     path = Path(path).resolve()
-
-    path_correct = get_config_folder(path) / "correct_images.yaml"
-    if not path_correct.exists():
-        root = Path(__file__).parents[1]
-        default_file = root / 'correct_images/default_yaml' / 'correct_images.yaml'
-        Console.warn("Cannot find {}, generating default from {}".format(
-            path_correct, default_file))
-        # save localisation yaml to processed directory
-        default_file.copy(path_correct)
     path_mission = get_raw_folder(path) / "mission.yaml"
     path_raw = get_raw_folder(path)
     path_processed = get_processed_folder(path)
@@ -48,33 +39,44 @@ def calculate_correction_parameters(path, force):
     # calculate parameters before demosaicing to reduce calculation
     # load configuration from yaml file
     Console.info('loading', path_mission, datetime.datetime.now())
-    Console.info('loading', path_correct, datetime.datetime.now())
+    
 
     # read_params(path to file, type of file: mission/correct_config)
     mission = read_params(path_mission, 'mission')
+    camera_format = mission.image.format   
+    path_correct = get_config_folder(path) / "correct_images.yaml"
     
+    if not path_correct.exists():
+        root = Path(__file__).parents[1]
+        default_file = root / 'correct_images/default_yaml' / 'correct_images.yaml'
+        Console.warn("Cannot find {}, generating default from {}".format(
+            path_correct, default_file))
+        # save localisation yaml to processed directory
+        default_file.copy(path_correct)
+        Console.info('loading', path_correct, datetime.datetime.now())
 
-    # discovering default parameters for default correct_images.yaml
-    camera_format = mission.image.format
-   
-    for entry in os.scandir(path_processed):
-            #print(entry)
-            if entry.is_dir():
-                if 'json_renav_' in entry.path:
-                    json_path = entry.path
-    with path_correct.open('r') as f:
-            params = yaml.safe_load(f)
-            params['config']['auv_nav_path'] = json_path
-            if camera_format == 'seaxerocks_3':
-                params['config']['camera1'] = 'Cam51707925'
-                params['config']['camera2'] = 'Cam51707923'
-                params['config']['camera3'] = 'LM165'
-            elif camera_format == 'acfr_standard' or camera_format == 'unaggi':
-                params['config']['camera1'] = 'LC'
-                params['config']['camera2'] = 'RC'
-    # dump default parameters camera and auv_nav_path to correct_images.yaml file
-    with path_correct.open('w') as f:
-            yaml.dump(params, f)
+        # discovering default parameters for default correct_images.yaml
+ 
+       
+        for entry in os.scandir(path_processed):
+                #print(entry)
+                if entry.is_dir():
+                    if 'json_renav_' in entry.path:
+                        json_path = entry.path
+        with path_correct.open('r') as f:
+                params = yaml.safe_load(f)
+                params['config']['auv_nav_path'] = json_path
+                params['config']['format'] = camera_format
+                if camera_format == 'seaxerocks_3':
+                    params['config']['camera1'] = 'Cam51707925'
+                    params['config']['camera2'] = 'Cam51707923'
+                    params['config']['camera3'] = 'LM165'
+                elif camera_format == 'acfr_standard' or camera_format == 'unaggi':
+                    params['config']['camera1'] = 'LC'
+                    params['config']['camera2'] = 'RC'
+        # dump default parameters camera and auv_nav_path to correct_images.yaml file
+        with path_correct.open('w') as f:
+                yaml.dump(params, f)
     
     # load parameters from correct_images.yaml
     config_ = read_params(path_correct, 'correct')
@@ -82,457 +84,932 @@ def calculate_correction_parameters(path, force):
     label_altitude = ' Altitude [m]'
     altitude_max = config_.attenuation_correction.altitude_max.get('max')
     altitude_min = config_.attenuation_correction.altitude_min.get('min')
-    calculated_atn_crr_params_path = None
     sampling_method = config_.attenuation_correction.sampling_method
+    format_ = config_.config.format
     
-    camera = config_.config.camera
-
-    if mission.image.format == 'seaxerocks_3':
-        src_file_format = 'raw'
-    else:
-        src_file_format = 'tif'
-        camera_lr = camera
-
-    '''
-    else:
-        src_file_format = 'tif'
-    '''
-    dst_file_format = config_.output.dst_file_format
-    joblib_verbose = 3
-    init_atn_crr_params_path = None
-    trim_ratio = 0.2
-
-    # load src file or target files to data frame
-    src_filelist_path = None
-    if src_filelist_path is not None:
-        df_all = pd.read_csv(str(src_filelist_path))
-        if src_file_format == 'tif' or src_file_format == 'tif':
-            # for tunasand camera, left camera (LC) or right camera (RC) should be selected
-            if camera_lr == 'LC':
-                df_all = df_all.query(
-                    'Imagenumber.str.contains("LC")', engine='python')
-            elif camera_lr == 'RC':
-                df_all = df_all.query(
-                    'Imagenumber.str.contains("RC")', engine='python')
-
-    else:
-        if camera_format == 'seaxerocks_3':
-            img_p = mission.image.cameras_0.get('path')
-            
-            if camera in img_p:
-                img_path = img_p
-                camera_serial = mission.image.cameras_0.get('name')
+    if format_ == 'seaxerocks_3':
+        range_ = 3
+        for i in range(range_):
+            if i is 0:
+                camera = config_.config.camera_1
+            elif i is 1:
+                camera = config_.config.camera_2
+            elif i is 2:
+                camera = config_.config.camera_3
+            if mission.image.format == 'seaxerocks_3':
+                src_file_format = 'raw'
             else:
-                img_p = mission.image.cameras_1.get('path')
-                if camera in img_p:
-                    img_path = img_p
-                    camera_serial = mission.image.cameras_1.get('name')
-                else:
-                    img_p = mission.image.cameras_2.get('path')
+                src_file_format = 'tif'
+                camera_lr = camera
+            calculated_atn_crr_params_path = None
+            '''
+            else:
+                src_file_format = 'tif'
+            '''
+            dst_file_format = config_.output.dst_file_format
+            joblib_verbose = 3
+            init_atn_crr_params_path = None
+            trim_ratio = 0.2
+
+            # load src file or target files to data frame
+            src_filelist_path = None
+            if src_filelist_path is not None:
+                df_all = pd.read_csv(str(src_filelist_path))
+                if src_file_format == 'tif' or src_file_format == 'tif':
+                    # for tunasand camera, left camera (LC) or right camera (RC) should be selected
+                    if camera_lr == 'LC':
+                        df_all = df_all.query(
+                            'Imagenumber.str.contains("LC")', engine='python')
+                    elif camera_lr == 'RC':
+                        df_all = df_all.query(
+                            'Imagenumber.str.contains("RC")', engine='python')
+
+            else:
+                if camera_format == 'seaxerocks_3':
+                    img_p = mission.image.cameras_0.get('path')
+                    
                     if camera in img_p:
                         img_path = img_p
-                        camera_serial = mission.image.cameras_2.get('name')
+                        camera_serial = mission.image.cameras_0.get('name')
                     else:
-                        print('Mission yaml file does not have path to camera: ',camera)
-                        sys.exit()
-        else:
-            img_path = mission.image.cameras_0.get('path')
-        auv_nav_filepath = Path(config_.config.auv_nav_path).resolve()
-        src_file_dirpath = path_raw / img_path
-        if camera_format == 'seaxerocks_3':
-            csv_path = 'csv/dead_reckoning/auv_dr_' + camera_serial + '.csv'
-        else:
-            csv_path = 'csv/dead_reckoning/auv_dr_' + camera_lr + '.csv'
-        #auv_nav_filepath = path_processed / anf
-        auv_nav_filepath = auv_nav_filepath / csv_path
-        
-        df_all = pd.read_csv(auv_nav_filepath, dtype={'Imagenumber': object})
-        raw_file_list = [None] * len(df_all)
-        for i_file in range(len(raw_file_list)):
-            if src_file_format == 'raw':
-                raw_file_list[i_file] = src_file_dirpath / str(df_all['Imagenumber'][i_file].zfill(7) + '.raw')
-            elif src_file_format == 'tif':
-                raw_file_list[i_file] = src_file_dirpath / df_all['Imagenumber'][i_file]
+                        img_p = mission.image.cameras_1.get('path')
+                        if camera in img_p:
+                            img_path = img_p
+                            camera_serial = mission.image.cameras_1.get('name')
+                        else:
+                            img_p = mission.image.cameras_2.get('path')
+                            if camera in img_p:
+                                img_path = img_p
+                                camera_serial = mission.image.cameras_2.get('name')
+                            else:
+                                print('Mission yaml file does not have path to camera: ',camera)
+                                continue
+                else:
+                    img_path = mission.image.cameras_0.get('path')
+                auv_nav_filepath = Path(config_.config.auv_nav_path).resolve()
+                src_file_dirpath = path_raw / img_path
+                if camera_format == 'seaxerocks_3':
+                    csv_path = 'csv/dead_reckoning/auv_dr_' + camera_serial + '.csv'
+                else:
+                    csv_path = 'csv/dead_reckoning/auv_dr_' + camera_lr + '.csv'
+                #auv_nav_filepath = path_processed / anf
+                auv_nav_filepath = auv_nav_filepath / csv_path
+                
+                df_all = pd.read_csv(auv_nav_filepath, dtype={'Imagenumber': object})
+                raw_file_list = [None] * len(df_all)
+                for i_file in range(len(raw_file_list)):
+                    if src_file_format == 'raw':
+                        raw_file_list[i_file] = src_file_dirpath / str(df_all['Imagenumber'][i_file].zfill(7) + '.raw')
+                    elif src_file_format == 'tif':
+                        raw_file_list[i_file] = src_file_dirpath / df_all['Imagenumber'][i_file]
+                    else:
+                        Console.error('src_file_format:', src_file_format, 'is incorrect.')
+                        return
+                df_all = pd.concat([df_all, pd.DataFrame(
+                    raw_file_list, columns=[label_raw_file])], axis=1)
+            src_filelist = df_all[label_raw_file]
+
+            # for attenuation correction
+            target_altitude = None  # load_data.get('target_altitude', None)
+            curve_fit_trial_num = 1  # load_data.get('curve_fit_trial_num', 1)
+            # attenuation_correction_parameter_file_path = load_data.get('attenuation_correction_parameter_file_path', None)
+            bin_band = 0.1  # load_data.get('bin_band', 0.1)  # 0.1m for AE2000
+            min_sample_per_bin = 5  # load_data.get('min_sample_per_bin', 5)
+            max_sample_per_bin = 100  # load_data.get('max_sample_per_bin', 100)
+            # load_data.get('median_filter_kernel_size', 1)
+            median_filter_kernel_size = 1
+
+            # remove too low or too high altitude file and too small file size file
+            altitudes_all = df_all[label_altitude].values
+            idx_effective_data = np.where(
+                (altitudes_all >= altitude_min) & (altitudes_all <= altitude_max))
+            if len(idx_effective_data) < 1:
+                Console.warn('altitude values in dive dataset do not match with minimum and maximum altitude provided in correct_images.yaml')
+                sys.exit()               
+            # configure output file path
+            dirpath = src_filelist[0].parent
+            dirpath = get_processed_folder(dirpath)
+            '''
+            if dirpath.exists():
+                if force is True:
+                    Console.warn('Attenuation correction parameters already exist.')
+                    Console.warn('Code will overwrite existing parameters.')
+
+                else:
+                    Console.warn('Code will quit - correction parameters already exist.')
+                    Console.warn(
+                        'Run correct_images with [parse] [-F] option for overwriting existing correction parameters.')
+                    sys.exit()
             else:
-                Console.error('src_file_format:', src_file_format, 'is incorrect.')
-                return
-        df_all = pd.concat([df_all, pd.DataFrame(
-            raw_file_list, columns=[label_raw_file])], axis=1)
-    src_filelist = df_all[label_raw_file]
+                Console.info('code will compute correction parameters for first time.')
+            '''
+            dirpath = dirpath / 'attenuation_correction'
+            if not dirpath.exists():
+                dirpath.mkdir(parents=True)
+            dirpath_atn_crr = dirpath / 'tmp_atn_crr'
+            bayer_folder_name = 'bayer' + camera
+            dirpath_bayer = dirpath / bayer_folder_name
+            if not dirpath_bayer.exists():
+                dirpath_bayer.mkdir(parents=True)
 
-    # for attenuation correction
-    target_altitude = None  # load_data.get('target_altitude', None)
-    curve_fit_trial_num = 1  # load_data.get('curve_fit_trial_num', 1)
-    # attenuation_correction_parameter_file_path = load_data.get('attenuation_correction_parameter_file_path', None)
-    bin_band = 0.1  # load_data.get('bin_band', 0.1)  # 0.1m for AE2000
-    min_sample_per_bin = 5  # load_data.get('min_sample_per_bin', 5)
-    max_sample_per_bin = 100  # load_data.get('max_sample_per_bin', 100)
-    # load_data.get('median_filter_kernel_size', 1)
-    median_filter_kernel_size = 1
+            # file path of output image data
+            dst_filelist = [None] * len(df_all)
+            bayer_filelist = [None] * len(df_all)
+            atn_crr_filelist = [None] * len(df_all)
+            for i_dst_file in range(len(dst_filelist)):
+                tmp_filepath = src_filelist[i_dst_file]
+                file_stem = get_processed_folder(tmp_filepath).stem
+                dst_filelist[i_dst_file] = dirpath / str(file_stem + '.' + dst_file_format)
+                bayer_filelist[i_dst_file] = dirpath_bayer / str(file_stem + '.npy')
+                atn_crr_filelist[i_dst_file] = dirpath_atn_crr / str(file_stem + '.npy')
 
-    # remove too low or too high altitude file and too small file size file
-    altitudes_all = df_all[label_altitude].values
-    idx_effective_data = np.where(
-        (altitudes_all >= altitude_min) & (altitudes_all <= altitude_max))
+            # file path of metadata
+            params_folder_name = 'params_' + camera
+            dir_path_image_crr_params = dst_filelist[0].parent / params_folder_name
+            '''
+            if src_file_format == 'raw':
+                
+            elif src_file_format == 'tiff' or src_file_format == 'tif':
+                if camera_lr == 'LC':
+                    dir_path_image_crr_params = dst_filelist[0].parent / 'params_LC'
+                elif camera_lr == 'RC':
+                    dir_path_image_crr_params = dst_filelist[0].parent / 'params_RC'
+            '''
+            if not dir_path_image_crr_params.exists():
+                dir_path_image_crr_params.mkdir(parents=True)
+                Console.info('code will compute correction parameters for this Camera for first time.')
+            else:
+                print(dir_path_image_crr_params)
+                if force is True:
+                    Console.warn('Attenuation correction parameters already exist.')
+                    Console.warn('Code will overwrite existing parameters.')
 
-    # configure output file path
-    dirpath = src_filelist[0].parent
-    dirpath = get_processed_folder(dirpath)
-    '''
-    if dirpath.exists():
-        if force is True:
-            Console.warn('Attenuation correction parameters already exist.')
-            Console.warn('Code will overwrite existing parameters.')
+                else:
+                    Console.warn('Code will quit - correction parameters already exist.')
+                    Console.warn(
+                        'Run correct_images with [parse] [-F] option for overwriting existing correction parameters.')
+                    sys.exit()
 
-        else:
-            Console.warn('Code will quit - correction parameters already exist.')
-            Console.warn(
-                'Run correct_images with [parse] [-F] option for overwriting existing correction parameters.')
-            sys.exit()
+            if calculated_atn_crr_params_path is None:
+                calculated_atn_crr_params_path = dir_path_image_crr_params / 'atn_crr_params.npy'
+
+            file_list_raw = df_all[label_raw_file].values.tolist()
+
+            if src_file_format == 'raw':
+                # xviii camera
+                a, b = 1024, 1280
+                # developing .raw data to bayer data of uint32 numpy array.
+                Console.info('start loading bayer images', len(file_list_raw),
+                             'files to', dirpath_bayer, datetime.datetime.now())
+                src_file_list_not_exist = []
+                bayer_file_list_not_exsit = []
+                for idx_raw in range(len(file_list_raw)):
+                    if not bayer_filelist[idx_raw].exists():
+                        src_file_list_not_exist.append(file_list_raw[idx_raw])
+                        bayer_file_list_not_exsit.append(bayer_filelist[idx_raw])
+
+                Console.info(len(file_list_raw) - len(bayer_file_list_not_exsit),
+                             'files have already existed.')
+
+                task_num = 100
+                num_loop = int(len(bayer_file_list_not_exsit) / task_num) + 1
+                start_idx = 0
+                idx_total = start_idx
+                end_idx = 0
+                while start_idx < len(bayer_file_list_not_exsit):
+                    # for debug
+                    #     break
+
+                    Console.info(
+                        'processing load_xviii_bayer_from_binary', int(start_idx / task_num) + 1, '/', num_loop, 'of total',
+                         len(bayer_file_list_not_exsit), 'files',
+                         datetime.datetime.now(), flush=True)
+
+                    end_idx = start_idx + task_num
+                    if end_idx > len(bayer_file_list_not_exsit):
+                        end_idx = len(bayer_file_list_not_exsit)
+
+                    raw_img_for_size = np.fromfile(str(
+                        src_file_list_not_exist[start_idx]), dtype=np.uint8)
+                    arg_bayer_img = np.zeros(
+                        (end_idx - start_idx, raw_img_for_size.shape[0]), dtype=raw_img_for_size.dtype)
+                    for idx_raw in range(start_idx, end_idx):
+                        arg_bayer_img[idx_raw - start_idx, :] = np.fromfile(
+                            str(src_file_list_not_exist[idx_raw]),
+                            dtype=raw_img_for_size.dtype)
+
+                    results = joblib.Parallel(n_jobs=-2, verbose=joblib_verbose)([joblib.delayed(load_xviii_bayer_from_binary)(
+                        arg_bayer_img[idx_arg, :]) for idx_arg in
+                        range(end_idx - start_idx)])
+
+                    for idx_raw in range(start_idx, end_idx):
+                        np.save(bayer_file_list_not_exsit[idx_raw], results[idx_raw - start_idx])
+
+                    start_idx = end_idx
+
+            elif src_file_format == 'tif' or src_file_format == 'tiff':
+                # unaggi camera
+                Console.info('start loading tif images', len(file_list_raw),
+                             'files to', dirpath_bayer, datetime.datetime.now())
+                src_file_list_not_exist = []
+                bayer_file_list_not_exsit = []
+                for idx_raw in range(len(file_list_raw)):
+                    if not bayer_filelist[idx_raw].exists():
+                        src_file_list_not_exist.append(file_list_raw[idx_raw])
+                        bayer_file_list_not_exsit.append(bayer_filelist[idx_raw])
+
+                Console.info(len(file_list_raw) - len(bayer_file_list_not_exsit),
+                             'files have already existed.')
+
+                tmp_tif_for_size = imageio.imread(file_list_raw[0])
+                a = tmp_tif_for_size.shape[0]
+                b = tmp_tif_for_size.shape[1]
+
+                for i_file_not_exist in range(len(src_file_list_not_exist)):
+                    tmp_tif = imageio.imread(src_file_list_not_exist[i_file_not_exist])
+                    tmp_npy = np.zeros([a, b], np.uint16)
+                    tmp_npy[:, :] = np.array(tmp_tif, np.uint16)
+                    np.save(bayer_file_list_not_exsit[i_file_not_exist], tmp_npy)
+
+            # caluculate attenuation correction parameter
+            if target_altitude is None:
+                target_altitude = float(np.mean(altitudes_all[idx_effective_data]))
+
+            # memmap is created at local directory
+            file_name_memmap_raw, memmap_raw = load_memmap_from_npy_filelist(
+                bayer_filelist)
+            # TODO for debug. read existing file.
+            # file_name_memmap_raw = '/home/ty1u18/PycharmProjects/correct_images/memmap_raw_img_d953693d-47aa-403d-9ece-f8f3b19d8b98.map'
+            # memmap_raw = np.memmap(file_name_memmap_raw, np.float32, 'r', shape=(8619, 2056, 2464))
+
+            Console.info('start calculate mean and std of raw img', datetime.datetime.now())
+
+            img_mean_raw, img_std_raw = \
+                calc_img_mean_and_std_trimmed(memmap_raw, trim_ratio,
+                                              calc_std=True,
+                                              effective_index=idx_effective_data)
+            # TODO for debug. not calculate raw
+            # img_mean_raw = 0
+            # img_std_raw = 0
+
+            dirpath_img_mean_raw = dir_path_image_crr_params / 'bayer_img_mean_raw'
+            dirpath_img_std_raw = dir_path_image_crr_params / 'bayer_img_std_raw'
+            np.save(str(dirpath_img_mean_raw), img_mean_raw)
+            np.save(str(dirpath_img_std_raw), img_std_raw)
+
+            list_dirpath = [dirpath_img_mean_raw, dirpath_img_std_raw]
+            list_img = [img_mean_raw, img_std_raw]
+            for i_img in range(len(list_img)):
+                save_bayer_array_png(list_dirpath[i_img], list_img[i_img])
+
+            # calculate regression parameters for all pixels and channels
+            Console.info('start attenuation correction parameter calculation.')
+
+            # 3 is number of parameter in exp_curve other than x
+            atn_crr_params = np.zeros([a, b, 3])
+            atn_crr_params = atn_crr_params.reshape([a * b, 3])
+
+            hist_bounds = np.arange(altitude_min, altitude_max, bin_band)
+            idxs = np.digitize(altitudes_all, hist_bounds)
+            altitudes_ret = []
+            each_bin_image_list = []
+            tmp_altitude_sample = 0.0
+            message = 'start calculating histogram ' + \
+                datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            for idx_bin in trange(1, hist_bounds.size, ascii=True, desc=message):
+                tmp_altitudes = altitudes_all[np.where(idxs == idx_bin)]
+                if len(tmp_altitudes) > min_sample_per_bin:
+                    # calculate sample image in this bin
+                    tmp_idx = np.where(idxs == idx_bin)[0]
+                    if len(tmp_idx) > max_sample_per_bin:
+                        tmp_idx = random.sample(list(tmp_idx), max_sample_per_bin)
+                        tmp_altitudes = altitudes_all[tmp_idx]
+
+                    tmp_bin_imgs = memmap_raw[tmp_idx]
+                    # calculate sample image of current bin
+                    tmp_bin_img_sample = np.zeros((a, b), np.float32)
+
+                    if sampling_method == 'mean':
+                        tmp_bin_img_sample = np.mean(tmp_bin_imgs, axis=0)
+                        tmp_altitude_sample = np.mean(tmp_altitudes)
+
+                    elif sampling_method == 'median':
+                        tmp_bin_img_sample = np.median(tmp_bin_imgs, axis=0)
+                        tmp_altitude_sample = np.mean(
+                            tmp_altitudes)
+                        # altitude value is calculated as mean because it has less varieance.
+
+                    elif sampling_method == 'mean_trimmed':
+                        #     TOOD implement trimmed mean and std
+                        tmp_bin_img_sample, dummy = calc_img_mean_and_std_trimmed(tmp_bin_imgs, trim_ratio, calc_std=False,
+                                                                                  effective_index=-1)
+                        tmp_altitude_sample = np.mean(tmp_altitudes)
+
+                    del tmp_bin_imgs
+
+                    each_bin_image_list.append(tmp_bin_img_sample)
+                    altitudes_ret.append(tmp_altitude_sample)
+
+            imgs_for_calc_atn = np.array(each_bin_image_list)
+
+            imgs_for_calc_atn = imgs_for_calc_atn.reshape(
+                [len(each_bin_image_list), a * b])
+            altitudes_for_calc_atn = altitudes_ret
+
+            Console.info('start curve fitting', datetime.datetime.now())
+            if init_atn_crr_params_path is not None:
+                initial_atn_crr_params = np.load(init_atn_crr_params_path)
+                initial_atn_crr_params = initial_atn_crr_params.reshape([a * b, 3])
+
+                # all pixels
+                results = joblib.Parallel(n_jobs=-2, verbose=joblib_verbose)(
+                    [joblib.delayed(optim_exp_curve_param_with_init)(
+                        altitudes_for_calc_atn, imgs_for_calc_atn[:, i_pixel], initial_atn_crr_params[i_pixel, :]) for i_pixel
+                        in
+                        range(a * b)])
+                atn_crr_params = np.array(results)
+
+                # TODO for debug only 100 pixels
+                # results = joblib.Parallel(n_jobs=-2, verbose=joblib_verbose)(
+                #     [joblib.delayed(optim_exp_curve_param_with_init)(
+                #         altitudes_for_calc_atn, imgs_for_calc_atn[:, i_pixel], initial_atn_crr_params[i_pixel, :]) for i_pixel
+                #         in
+                #         range(100)])
+                # atn_crr_params = np.zeros([a * b, 3])
+                # atn_crr_params[0:100, :] = np.array(results)
+
+            else:
+                #     auto initialisation
+                results = joblib.Parallel(n_jobs=-2, verbose=joblib_verbose)(
+                    [joblib.delayed(optim_exp_curve_param_auto_init)(
+                        altitudes_for_calc_atn, imgs_for_calc_atn[:, i_pixel], curve_fit_trial_num) for i_pixel in
+                        range(a * b)])
+                atn_crr_params = np.array(results)
+
+                # TODO for debug only 100 pixels
+                # results = joblib.Parallel(n_jobs=-2, verbose=joblib_verbose)(
+                #     [joblib.delayed(optim_exp_curve_param_auto_init)(
+                #         altitudes_for_calc_atn, imgs_for_calc_atn[:,i_pixel], curve_fit_trial_num) for i_pixel in
+                #         range(100)])
+                # atn_crr_params=np.zeros([a*b,3])
+                # atn_crr_params[0:100,:]=np.array(results)
+
+            atn_crr_params = atn_crr_params.reshape([a, b, 3])
+
+            if calculated_atn_crr_params_path is None:
+                calculated_atn_crr_params_path = dir_path_image_crr_params / 'atn_crr_params.npy'
+
+            # visualise attenuation parameters
+            outpath = calculated_atn_crr_params_path.parent
+            if not outpath.exists():
+                outpath.mkdir(parents=True)
+
+            np.save(str(calculated_atn_crr_params_path), atn_crr_params)
+            Console.info('atn_crr_params has been saved to',
+                         calculated_atn_crr_params_path, datetime.datetime.now())
+
+            save_atn_crr_params_png(outpath, atn_crr_params)
+
+            # apply median filter to attenuation parameter
+            # if median_filter_kernel_size != 1:
+            # atn_crr_params = filter_atn_parm_median(atn_crr_params, median_filter_kernel_size)
+
+            # apply attenuation correction parameters to raw images in memmap
+            gain = calc_attenuation_correction_gain(target_altitude, atn_crr_params)
+            message = 'applying attenuation correction to raw ' + \
+                datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            for i_img in trange(memmap_raw.shape[0], ascii=True, desc=message):
+                # memmap data can not be updated in joblib .
+                memmap_raw[i_img, ...] = apply_atn_crr_2_img(
+                    memmap_raw[i_img, ...], altitudes_all[i_img], atn_crr_params, gain)
+
+            Console.info('start calculating mean and std of attenuation corrected images',
+                         datetime.datetime.now(), flush=True)
+            img_mean_atn_crr, img_std_atn_crr = calc_img_mean_and_std_trimmed(memmap_raw, trim_ratio, calc_std=True,
+                                                                              effective_index=idx_effective_data)
+
+            # dirpath_img_mean_raw = dir_path_image_crr_params / 'bayer_img_mean_raw'
+            # dirpath_img_std_raw = dir_path_image_crr_params / 'bayer_img_std_raw'
+            dirpath_img_mean_atn_crr = dir_path_image_crr_params / 'bayer_img_mean_atn_crr'
+            dirpath_img_std_atn_crr = dir_path_image_crr_params / 'bayer_img_std_atn_crr'
+            # np.save(dirpath_img_mean_raw, img_mean_raw)
+            # np.save(dirpath_img_std_raw, img_std_raw)
+            np.save(str(dirpath_img_mean_atn_crr), img_mean_atn_crr)
+            np.save(str(dirpath_img_std_atn_crr), img_std_atn_crr)
+
+            # visualize mean and std images
+            list_dirpath = [dirpath_img_mean_atn_crr, dirpath_img_std_atn_crr]
+            list_img = [img_mean_atn_crr, img_std_atn_crr]
+            for i_img in range(len(list_img)):
+                save_bayer_array_png(list_dirpath[i_img], list_img[i_img])
+
+            # convert bayer_file_path from absolute path to filename
+            for i_bayer_file in range(len(bayer_filelist)):
+                tmp_filepath = src_filelist[i_bayer_file]
+                file_stem = get_processed_folder(tmp_filepath).stem
+                bayer_filelist[i_bayer_file] = str(file_stem + '.npy')
+                #bayer_filelist[i_bayer_file] = '..' / bayer_filelist[i_bayer_file].relative_to(dirpath.parent)
+
+
+            # save file list includes altitude and filepath of bayer image
+            file_list_name = dir_path_image_crr_params / 'filelist.csv'
+            df_all = pd.concat([df_all, pd.DataFrame(
+                bayer_filelist, columns=['bayer file'])], axis=1)
+            df_all.to_csv(file_list_name)
+
+            dict_cfg = {
+                'src_filelist_path': src_filelist_path,
+                'label_raw_file': label_raw_file,
+                'label_altitude': label_altitude,
+                'altitude_min': altitude_min,
+                'altitude_max': altitude_max,
+                'calculated_atn_crr_params_path': str(calculated_atn_crr_params_path.resolve()),
+                'median_filter_kernel_size': median_filter_kernel_size,
+                'sampling_method': sampling_method,
+                'dst_file_format': dst_file_format,
+                # 'apply_attenuation_correction': apply_attenuation_correction,
+                'target_altitude': target_altitude,
+                'curve_fit_trial_num': curve_fit_trial_num,
+                # 'target_mean': target_mean,
+                # 'target_std': target_std,
+                # 'apply_gamma_correction': apply_gamma_correction,
+                # 'apply_distortion_correction': apply_distortion_correction,
+                # 'camera_parameter_file_path': camera_parameter_file_path,
+                'src_file_format': src_file_format,
+                # 'attenuation_correction_parameter_file_path': attenuation_correction_parameter_file_path,
+                'bin_band': bin_band,
+                'min_sample_per_bin': min_sample_per_bin,
+                'max_sample_per_bin': max_sample_per_bin
+            }
+
+            cfg_filepath = dir_path_image_crr_params / 'config.yaml'
+            with cfg_filepath.open('w') as cfg_file:
+                yaml.dump(dict_cfg, cfg_file, default_flow_style=False)
+            Console.info('Done. Configurations are saved to ',
+                         cfg_filepath, datetime.datetime.now())
+
+            del memmap_raw
+            Path(file_name_memmap_raw).unlink()
     else:
-        Console.info('code will compute correction parameters for first time.')
-    '''
-    dirpath = dirpath / 'attenuation_correction'
-    if not dirpath.exists():
-        dirpath.mkdir(parents=True)
-    dirpath_atn_crr = dirpath / 'tmp_atn_crr'
-    dirpath_bayer = dirpath / 'bayer'
-    if not dirpath_bayer.exists():
-        dirpath_bayer.mkdir(parents=True)
+        range_ = 2
+        for i in range(range_):
+            if i is 0:
+                camera = config_.config.camera_1
+            elif i is 1:
+                camera = config_.config.camera_2
+            if mission.image.format == 'seaxerocks_3':
+                src_file_format = 'raw'
+            else:
+                src_file_format = 'tif'
+                camera_lr = camera
 
-    # file path of output image data
-    dst_filelist = [None] * len(df_all)
-    bayer_filelist = [None] * len(df_all)
-    atn_crr_filelist = [None] * len(df_all)
-    for i_dst_file in range(len(dst_filelist)):
-        tmp_filepath = src_filelist[i_dst_file]
-        file_stem = get_processed_folder(tmp_filepath).stem
-        dst_filelist[i_dst_file] = dirpath / str(file_stem + '.' + dst_file_format)
-        bayer_filelist[i_dst_file] = dirpath_bayer / str(file_stem + '.npy')
-        atn_crr_filelist[i_dst_file] = dirpath_atn_crr / str(file_stem + '.npy')
+            '''
+            else:
+                src_file_format = 'tif'
+            '''
+            dst_file_format = config_.output.dst_file_format
+            joblib_verbose = 3
+            init_atn_crr_params_path = None
+            trim_ratio = 0.2
 
-    # file path of metadata
-    if src_file_format == 'raw':
-        dir_path_image_crr_params = dst_filelist[0].parent / 'params'
-    elif src_file_format == 'tiff' or src_file_format == 'tif':
-        if camera_lr == 'LC':
-            dir_path_image_crr_params = dst_filelist[0].parent / 'params_LC'
-        elif camera_lr == 'RC':
-            dir_path_image_crr_params = dst_filelist[0].parent / 'params_RC'
-    if not dir_path_image_crr_params.exists():
-        dir_path_image_crr_params.mkdir(parents=True)
-        Console.info('code will compute correction parameters for this Camera for first time.')
-    else:
-        if force is True:
-            Console.warn('Attenuation correction parameters already exist.')
-            Console.warn('Code will overwrite existing parameters.')
+            # load src file or target files to data frame
+            src_filelist_path = None
+            if src_filelist_path is not None:
+                df_all = pd.read_csv(str(src_filelist_path))
+                if src_file_format == 'tif' or src_file_format == 'tif':
+                    # for tunasand camera, left camera (LC) or right camera (RC) should be selected
+                    if camera_lr == 'LC':
+                        df_all = df_all.query(
+                            'Imagenumber.str.contains("LC")', engine='python')
+                    elif camera_lr == 'RC':
+                        df_all = df_all.query(
+                            'Imagenumber.str.contains("RC")', engine='python')
 
-        else:
-            Console.warn('Code will quit - correction parameters already exist.')
-            Console.warn(
-                'Run correct_images with [parse] [-F] option for overwriting existing correction parameters.')
-            sys.exit()
+            else:
+                if camera_format == 'seaxerocks_3':
+                    img_p = mission.image.cameras_0.get('path')
+                    
+                    if camera in img_p:
+                        img_path = img_p
+                        camera_serial = mission.image.cameras_0.get('name')
+                    else:
+                        img_p = mission.image.cameras_1.get('path')
+                        if camera in img_p:
+                            img_path = img_p
+                            camera_serial = mission.image.cameras_1.get('name')
+                        else:
+                            img_p = mission.image.cameras_2.get('path')
+                            if camera in img_p:
+                                img_path = img_p
+                                camera_serial = mission.image.cameras_2.get('name')
+                            else:
+                                print('Mission yaml file does not have path to camera: ',camera)
+                                sys.exit()
+                else:
+                    img_path = mission.image.cameras_0.get('path')
+                auv_nav_filepath = Path(config_.config.auv_nav_path).resolve()
+                src_file_dirpath = path_raw / img_path
+                if camera_format == 'seaxerocks_3':
+                    csv_path = 'csv/dead_reckoning/auv_dr_' + camera_serial + '.csv'
+                else:
+                    csv_path = 'csv/dead_reckoning/auv_dr_' + camera_lr + '.csv'
+                #auv_nav_filepath = path_processed / anf
+                auv_nav_filepath = auv_nav_filepath / csv_path
+                
+                df_all = pd.read_csv(auv_nav_filepath, dtype={'Imagenumber': object})
+                raw_file_list = [None] * len(df_all)
+                for i_file in range(len(raw_file_list)):
+                    if src_file_format == 'raw':
+                        raw_file_list[i_file] = src_file_dirpath / str(df_all['Imagenumber'][i_file].zfill(7) + '.raw')
+                    elif src_file_format == 'tif':
+                        raw_file_list[i_file] = src_file_dirpath / df_all['Imagenumber'][i_file]
+                    else:
+                        Console.error('src_file_format:', src_file_format, 'is incorrect.')
+                        return
+                df_all = pd.concat([df_all, pd.DataFrame(
+                    raw_file_list, columns=[label_raw_file])], axis=1)
+            src_filelist = df_all[label_raw_file]
 
-    if calculated_atn_crr_params_path is None:
-        calculated_atn_crr_params_path = dir_path_image_crr_params / 'atn_crr_params.npy'
+            # for attenuation correction
+            target_altitude = None  # load_data.get('target_altitude', None)
+            curve_fit_trial_num = 1  # load_data.get('curve_fit_trial_num', 1)
+            # attenuation_correction_parameter_file_path = load_data.get('attenuation_correction_parameter_file_path', None)
+            bin_band = 0.1  # load_data.get('bin_band', 0.1)  # 0.1m for AE2000
+            min_sample_per_bin = 5  # load_data.get('min_sample_per_bin', 5)
+            max_sample_per_bin = 100  # load_data.get('max_sample_per_bin', 100)
+            # load_data.get('median_filter_kernel_size', 1)
+            median_filter_kernel_size = 1
 
-    file_list_raw = df_all[label_raw_file].values.tolist()
+            # remove too low or too high altitude file and too small file size file
+            altitudes_all = df_all[label_altitude].values
+            idx_effective_data = np.where(
+                (altitudes_all >= altitude_min) & (altitudes_all <= altitude_max))
 
-    if src_file_format == 'raw':
-        # xviii camera
-        a, b = 1024, 1280
-        # developing .raw data to bayer data of uint32 numpy array.
-        Console.info('start loading bayer images', len(file_list_raw),
-                     'files to', dirpath_bayer, datetime.datetime.now())
-        src_file_list_not_exist = []
-        bayer_file_list_not_exsit = []
-        for idx_raw in range(len(file_list_raw)):
-            if not bayer_filelist[idx_raw].exists():
-                src_file_list_not_exist.append(file_list_raw[idx_raw])
-                bayer_file_list_not_exsit.append(bayer_filelist[idx_raw])
+            # configure output file path
+            dirpath = src_filelist[0].parent
+            dirpath = get_processed_folder(dirpath)
+            '''
+            if dirpath.exists():
+                if force is True:
+                    Console.warn('Attenuation correction parameters already exist.')
+                    Console.warn('Code will overwrite existing parameters.')
 
-        Console.info(len(file_list_raw) - len(bayer_file_list_not_exsit),
-                     'files have already existed.')
+                else:
+                    Console.warn('Code will quit - correction parameters already exist.')
+                    Console.warn(
+                        'Run correct_images with [parse] [-F] option for overwriting existing correction parameters.')
+                    sys.exit()
+            else:
+                Console.info('code will compute correction parameters for first time.')
+            '''
+            dirpath = dirpath / 'attenuation_correction'
+            if not dirpath.exists():
+                dirpath.mkdir(parents=True)
+            dirpath_atn_crr = dirpath / 'tmp_atn_crr'
+            bayer_folder_name = 'bayer' + camera
+            dirpath_bayer = dirpath / bayer_folder_name
+            if not dirpath_bayer.exists():
+                dirpath_bayer.mkdir(parents=True)
 
-        task_num = 100
-        num_loop = int(len(bayer_file_list_not_exsit) / task_num) + 1
-        start_idx = 0
-        idx_total = start_idx
-        end_idx = 0
-        while start_idx < len(bayer_file_list_not_exsit):
-            # for debug
-            #     break
+            # file path of output image data
+            dst_filelist = [None] * len(df_all)
+            bayer_filelist = [None] * len(df_all)
+            atn_crr_filelist = [None] * len(df_all)
+            for i_dst_file in range(len(dst_filelist)):
+                tmp_filepath = src_filelist[i_dst_file]
+                file_stem = get_processed_folder(tmp_filepath).stem
+                dst_filelist[i_dst_file] = dirpath / str(file_stem + '.' + dst_file_format)
+                bayer_filelist[i_dst_file] = dirpath_bayer / str(file_stem + '.npy')
+                atn_crr_filelist[i_dst_file] = dirpath_atn_crr / str(file_stem + '.npy')
 
-            Console.info(
-                'processing load_xviii_bayer_from_binary', int(start_idx / task_num) + 1, '/', num_loop, 'of total',
-                 len(bayer_file_list_not_exsit), 'files',
-                 datetime.datetime.now(), flush=True)
+            # file path of metadata
+            params_folder_name = 'params_' + camera
+            dir_path_image_crr_params = dst_filelist[0].parent / params_folder_name
+            '''
+            if src_file_format == 'raw':
+                
+            elif src_file_format == 'tiff' or src_file_format == 'tif':
+                if camera_lr == 'LC':
+                    dir_path_image_crr_params = dst_filelist[0].parent / 'params_LC'
+                elif camera_lr == 'RC':
+                    dir_path_image_crr_params = dst_filelist[0].parent / 'params_RC'
+            '''
+            if not dir_path_image_crr_params.exists():
+                dir_path_image_crr_params.mkdir(parents=True)
+                Console.info('code will compute correction parameters for this Camera for first time.')
+            else:
+                print(dir_path_image_crr_params)
+                if force is True:
+                    Console.warn('Attenuation correction parameters already exist.')
+                    Console.warn('Code will overwrite existing parameters.')
 
-            end_idx = start_idx + task_num
-            if end_idx > len(bayer_file_list_not_exsit):
-                end_idx = len(bayer_file_list_not_exsit)
+                else:
+                    Console.warn('Code will quit - correction parameters already exist.')
+                    Console.warn(
+                        'Run correct_images with [parse] [-F] option for overwriting existing correction parameters.')
+                    sys.exit()
 
-            raw_img_for_size = np.fromfile(str(
-                src_file_list_not_exist[start_idx]), dtype=np.uint8)
-            arg_bayer_img = np.zeros(
-                (end_idx - start_idx, raw_img_for_size.shape[0]), dtype=raw_img_for_size.dtype)
-            for idx_raw in range(start_idx, end_idx):
-                arg_bayer_img[idx_raw - start_idx, :] = np.fromfile(
-                    str(src_file_list_not_exist[idx_raw]),
-                    dtype=raw_img_for_size.dtype)
+            if calculated_atn_crr_params_path is None:
+                calculated_atn_crr_params_path = dir_path_image_crr_params / 'atn_crr_params.npy'
 
-            results = joblib.Parallel(n_jobs=-2, verbose=joblib_verbose)([joblib.delayed(load_xviii_bayer_from_binary)(
-                arg_bayer_img[idx_arg, :]) for idx_arg in
-                range(end_idx - start_idx)])
+            file_list_raw = df_all[label_raw_file].values.tolist()
 
-            for idx_raw in range(start_idx, end_idx):
-                np.save(bayer_file_list_not_exsit[idx_raw], results[idx_raw - start_idx])
+            if src_file_format == 'raw':
+                # xviii camera
+                a, b = 1024, 1280
+                # developing .raw data to bayer data of uint32 numpy array.
+                Console.info('start loading bayer images', len(file_list_raw),
+                             'files to', dirpath_bayer, datetime.datetime.now())
+                src_file_list_not_exist = []
+                bayer_file_list_not_exsit = []
+                for idx_raw in range(len(file_list_raw)):
+                    if not bayer_filelist[idx_raw].exists():
+                        src_file_list_not_exist.append(file_list_raw[idx_raw])
+                        bayer_file_list_not_exsit.append(bayer_filelist[idx_raw])
 
-            start_idx = end_idx
+                Console.info(len(file_list_raw) - len(bayer_file_list_not_exsit),
+                             'files have already existed.')
 
-    elif src_file_format == 'tif' or src_file_format == 'tiff':
-        # unaggi camera
-        Console.info('start loading tif images', len(file_list_raw),
-                     'files to', dirpath_bayer, datetime.datetime.now())
-        src_file_list_not_exist = []
-        bayer_file_list_not_exsit = []
-        for idx_raw in range(len(file_list_raw)):
-            if not bayer_filelist[idx_raw].exists():
-                src_file_list_not_exist.append(file_list_raw[idx_raw])
-                bayer_file_list_not_exsit.append(bayer_filelist[idx_raw])
+                task_num = 100
+                num_loop = int(len(bayer_file_list_not_exsit) / task_num) + 1
+                start_idx = 0
+                idx_total = start_idx
+                end_idx = 0
+                while start_idx < len(bayer_file_list_not_exsit):
+                    # for debug
+                    #     break
 
-        Console.info(len(file_list_raw) - len(bayer_file_list_not_exsit),
-                     'files have already existed.')
+                    Console.info(
+                        'processing load_xviii_bayer_from_binary', int(start_idx / task_num) + 1, '/', num_loop, 'of total',
+                         len(bayer_file_list_not_exsit), 'files',
+                         datetime.datetime.now(), flush=True)
 
-        tmp_tif_for_size = imageio.imread(file_list_raw[0])
-        a = tmp_tif_for_size.shape[0]
-        b = tmp_tif_for_size.shape[1]
+                    end_idx = start_idx + task_num
+                    if end_idx > len(bayer_file_list_not_exsit):
+                        end_idx = len(bayer_file_list_not_exsit)
 
-        for i_file_not_exist in range(len(src_file_list_not_exist)):
-            tmp_tif = imageio.imread(src_file_list_not_exist[i_file_not_exist])
-            tmp_npy = np.zeros([a, b], np.uint16)
-            tmp_npy[:, :] = np.array(tmp_tif, np.uint16)
-            np.save(bayer_file_list_not_exsit[i_file_not_exist], tmp_npy)
+                    raw_img_for_size = np.fromfile(str(
+                        src_file_list_not_exist[start_idx]), dtype=np.uint8)
+                    arg_bayer_img = np.zeros(
+                        (end_idx - start_idx, raw_img_for_size.shape[0]), dtype=raw_img_for_size.dtype)
+                    for idx_raw in range(start_idx, end_idx):
+                        arg_bayer_img[idx_raw - start_idx, :] = np.fromfile(
+                            str(src_file_list_not_exist[idx_raw]),
+                            dtype=raw_img_for_size.dtype)
 
-    # caluculate attenuation correction parameter
-    if target_altitude is None:
-        target_altitude = float(np.mean(altitudes_all[idx_effective_data]))
+                    results = joblib.Parallel(n_jobs=-2, verbose=joblib_verbose)([joblib.delayed(load_xviii_bayer_from_binary)(
+                        arg_bayer_img[idx_arg, :]) for idx_arg in
+                        range(end_idx - start_idx)])
 
-    # memmap is created at local directory
-    file_name_memmap_raw, memmap_raw = load_memmap_from_npy_filelist(
-        bayer_filelist)
-    # TODO for debug. read existing file.
-    # file_name_memmap_raw = '/home/ty1u18/PycharmProjects/correct_images/memmap_raw_img_d953693d-47aa-403d-9ece-f8f3b19d8b98.map'
-    # memmap_raw = np.memmap(file_name_memmap_raw, np.float32, 'r', shape=(8619, 2056, 2464))
+                    for idx_raw in range(start_idx, end_idx):
+                        np.save(bayer_file_list_not_exsit[idx_raw], results[idx_raw - start_idx])
 
-    Console.info('start calculate mean and std of raw img', datetime.datetime.now())
+                    start_idx = end_idx
 
-    img_mean_raw, img_std_raw = \
-        calc_img_mean_and_std_trimmed(memmap_raw, trim_ratio,
-                                      calc_std=True,
-                                      effective_index=idx_effective_data)
-    # TODO for debug. not calculate raw
-    # img_mean_raw = 0
-    # img_std_raw = 0
+            elif src_file_format == 'tif' or src_file_format == 'tiff':
+                # unaggi camera
+                Console.info('start loading tif images', len(file_list_raw),
+                             'files to', dirpath_bayer, datetime.datetime.now())
+                src_file_list_not_exist = []
+                bayer_file_list_not_exsit = []
+                for idx_raw in range(len(file_list_raw)):
+                    if not bayer_filelist[idx_raw].exists():
+                        src_file_list_not_exist.append(file_list_raw[idx_raw])
+                        bayer_file_list_not_exsit.append(bayer_filelist[idx_raw])
 
-    dirpath_img_mean_raw = dir_path_image_crr_params / 'bayer_img_mean_raw'
-    dirpath_img_std_raw = dir_path_image_crr_params / 'bayer_img_std_raw'
-    np.save(str(dirpath_img_mean_raw), img_mean_raw)
-    np.save(str(dirpath_img_std_raw), img_std_raw)
+                Console.info(len(file_list_raw) - len(bayer_file_list_not_exsit),
+                             'files have already existed.')
 
-    list_dirpath = [dirpath_img_mean_raw, dirpath_img_std_raw]
-    list_img = [img_mean_raw, img_std_raw]
-    for i_img in range(len(list_img)):
-        save_bayer_array_png(list_dirpath[i_img], list_img[i_img])
+                tmp_tif_for_size = imageio.imread(file_list_raw[0])
+                a = tmp_tif_for_size.shape[0]
+                b = tmp_tif_for_size.shape[1]
 
-    # calculate regression parameters for all pixels and channels
-    Console.info('start attenuation correction parameter calculation.')
+                for i_file_not_exist in range(len(src_file_list_not_exist)):
+                    tmp_tif = imageio.imread(src_file_list_not_exist[i_file_not_exist])
+                    tmp_npy = np.zeros([a, b], np.uint16)
+                    tmp_npy[:, :] = np.array(tmp_tif, np.uint16)
+                    np.save(bayer_file_list_not_exsit[i_file_not_exist], tmp_npy)
 
-    # 3 is number of parameter in exp_curve other than x
-    atn_crr_params = np.zeros([a, b, 3])
-    atn_crr_params = atn_crr_params.reshape([a * b, 3])
+            # caluculate attenuation correction parameter
+            if target_altitude is None:
+                target_altitude = float(np.mean(altitudes_all[idx_effective_data]))
 
-    hist_bounds = np.arange(altitude_min, altitude_max, bin_band)
-    idxs = np.digitize(altitudes_all, hist_bounds)
-    altitudes_ret = []
-    each_bin_image_list = []
-    tmp_altitude_sample = 0.0
-    message = 'start calculating histogram ' + \
-        datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    for idx_bin in trange(1, hist_bounds.size, ascii=True, desc=message):
-        tmp_altitudes = altitudes_all[np.where(idxs == idx_bin)]
-        if len(tmp_altitudes) > min_sample_per_bin:
-            # calculate sample image in this bin
-            tmp_idx = np.where(idxs == idx_bin)[0]
-            if len(tmp_idx) > max_sample_per_bin:
-                tmp_idx = random.sample(list(tmp_idx), max_sample_per_bin)
-                tmp_altitudes = altitudes_all[tmp_idx]
+            # memmap is created at local directory
+            file_name_memmap_raw, memmap_raw = load_memmap_from_npy_filelist(
+                bayer_filelist)
+            # TODO for debug. read existing file.
+            # file_name_memmap_raw = '/home/ty1u18/PycharmProjects/correct_images/memmap_raw_img_d953693d-47aa-403d-9ece-f8f3b19d8b98.map'
+            # memmap_raw = np.memmap(file_name_memmap_raw, np.float32, 'r', shape=(8619, 2056, 2464))
 
-            tmp_bin_imgs = memmap_raw[tmp_idx]
-            # calculate sample image of current bin
-            tmp_bin_img_sample = np.zeros((a, b), np.float32)
+            Console.info('start calculate mean and std of raw img', datetime.datetime.now())
 
-            if sampling_method == 'mean':
-                tmp_bin_img_sample = np.mean(tmp_bin_imgs, axis=0)
-                tmp_altitude_sample = np.mean(tmp_altitudes)
+            img_mean_raw, img_std_raw = \
+                calc_img_mean_and_std_trimmed(memmap_raw, trim_ratio,
+                                              calc_std=True,
+                                              effective_index=idx_effective_data)
+            # TODO for debug. not calculate raw
+            # img_mean_raw = 0
+            # img_std_raw = 0
 
-            elif sampling_method == 'median':
-                tmp_bin_img_sample = np.median(tmp_bin_imgs, axis=0)
-                tmp_altitude_sample = np.mean(
-                    tmp_altitudes)
-                # altitude value is calculated as mean because it has less varieance.
+            dirpath_img_mean_raw = dir_path_image_crr_params / 'bayer_img_mean_raw'
+            dirpath_img_std_raw = dir_path_image_crr_params / 'bayer_img_std_raw'
+            np.save(str(dirpath_img_mean_raw), img_mean_raw)
+            np.save(str(dirpath_img_std_raw), img_std_raw)
 
-            elif sampling_method == 'mean_trimmed':
-                #     TOOD implement trimmed mean and std
-                tmp_bin_img_sample, dummy = calc_img_mean_and_std_trimmed(tmp_bin_imgs, trim_ratio, calc_std=False,
-                                                                          effective_index=-1)
-                tmp_altitude_sample = np.mean(tmp_altitudes)
+            list_dirpath = [dirpath_img_mean_raw, dirpath_img_std_raw]
+            list_img = [img_mean_raw, img_std_raw]
+            for i_img in range(len(list_img)):
+                save_bayer_array_png(list_dirpath[i_img], list_img[i_img])
 
-            del tmp_bin_imgs
+            # calculate regression parameters for all pixels and channels
+            Console.info('start attenuation correction parameter calculation.')
 
-            each_bin_image_list.append(tmp_bin_img_sample)
-            altitudes_ret.append(tmp_altitude_sample)
+            # 3 is number of parameter in exp_curve other than x
+            atn_crr_params = np.zeros([a, b, 3])
+            atn_crr_params = atn_crr_params.reshape([a * b, 3])
 
-    imgs_for_calc_atn = np.array(each_bin_image_list)
+            hist_bounds = np.arange(altitude_min, altitude_max, bin_band)
+            idxs = np.digitize(altitudes_all, hist_bounds)
+            altitudes_ret = []
+            each_bin_image_list = []
+            tmp_altitude_sample = 0.0
+            message = 'start calculating histogram ' + \
+                datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            for idx_bin in trange(1, hist_bounds.size, ascii=True, desc=message):
+                tmp_altitudes = altitudes_all[np.where(idxs == idx_bin)]
+                if len(tmp_altitudes) > min_sample_per_bin:
+                    # calculate sample image in this bin
+                    tmp_idx = np.where(idxs == idx_bin)[0]
+                    if len(tmp_idx) > max_sample_per_bin:
+                        tmp_idx = random.sample(list(tmp_idx), max_sample_per_bin)
+                        tmp_altitudes = altitudes_all[tmp_idx]
 
-    imgs_for_calc_atn = imgs_for_calc_atn.reshape(
-        [len(each_bin_image_list), a * b])
-    altitudes_for_calc_atn = altitudes_ret
+                    tmp_bin_imgs = memmap_raw[tmp_idx]
+                    # calculate sample image of current bin
+                    tmp_bin_img_sample = np.zeros((a, b), np.float32)
 
-    Console.info('start curve fitting', datetime.datetime.now())
-    if init_atn_crr_params_path is not None:
-        initial_atn_crr_params = np.load(init_atn_crr_params_path)
-        initial_atn_crr_params = initial_atn_crr_params.reshape([a * b, 3])
+                    if sampling_method == 'mean':
+                        tmp_bin_img_sample = np.mean(tmp_bin_imgs, axis=0)
+                        tmp_altitude_sample = np.mean(tmp_altitudes)
 
-        # all pixels
-        results = joblib.Parallel(n_jobs=-2, verbose=joblib_verbose)(
-            [joblib.delayed(optim_exp_curve_param_with_init)(
-                altitudes_for_calc_atn, imgs_for_calc_atn[:, i_pixel], initial_atn_crr_params[i_pixel, :]) for i_pixel
-                in
-                range(a * b)])
-        atn_crr_params = np.array(results)
+                    elif sampling_method == 'median':
+                        tmp_bin_img_sample = np.median(tmp_bin_imgs, axis=0)
+                        tmp_altitude_sample = np.mean(
+                            tmp_altitudes)
+                        # altitude value is calculated as mean because it has less varieance.
 
-        # TODO for debug only 100 pixels
-        # results = joblib.Parallel(n_jobs=-2, verbose=joblib_verbose)(
-        #     [joblib.delayed(optim_exp_curve_param_with_init)(
-        #         altitudes_for_calc_atn, imgs_for_calc_atn[:, i_pixel], initial_atn_crr_params[i_pixel, :]) for i_pixel
-        #         in
-        #         range(100)])
-        # atn_crr_params = np.zeros([a * b, 3])
-        # atn_crr_params[0:100, :] = np.array(results)
+                    elif sampling_method == 'mean_trimmed':
+                        #     TOOD implement trimmed mean and std
+                        tmp_bin_img_sample, dummy = calc_img_mean_and_std_trimmed(tmp_bin_imgs, trim_ratio, calc_std=False,
+                                                                                  effective_index=-1)
+                        tmp_altitude_sample = np.mean(tmp_altitudes)
 
-    else:
-        #     auto initialisation
-        results = joblib.Parallel(n_jobs=-2, verbose=joblib_verbose)(
-            [joblib.delayed(optim_exp_curve_param_auto_init)(
-                altitudes_for_calc_atn, imgs_for_calc_atn[:, i_pixel], curve_fit_trial_num) for i_pixel in
-                range(a * b)])
-        atn_crr_params = np.array(results)
+                    del tmp_bin_imgs
 
-        # TODO for debug only 100 pixels
-        # results = joblib.Parallel(n_jobs=-2, verbose=joblib_verbose)(
-        #     [joblib.delayed(optim_exp_curve_param_auto_init)(
-        #         altitudes_for_calc_atn, imgs_for_calc_atn[:,i_pixel], curve_fit_trial_num) for i_pixel in
-        #         range(100)])
-        # atn_crr_params=np.zeros([a*b,3])
-        # atn_crr_params[0:100,:]=np.array(results)
+                    each_bin_image_list.append(tmp_bin_img_sample)
+                    altitudes_ret.append(tmp_altitude_sample)
 
-    atn_crr_params = atn_crr_params.reshape([a, b, 3])
+            imgs_for_calc_atn = np.array(each_bin_image_list)
 
-    if calculated_atn_crr_params_path is None:
-        calculated_atn_crr_params_path = dir_path_image_crr_params / 'atn_crr_params.npy'
+            imgs_for_calc_atn = imgs_for_calc_atn.reshape(
+                [len(each_bin_image_list), a * b])
+            altitudes_for_calc_atn = altitudes_ret
 
-    # visualise attenuation parameters
-    outpath = calculated_atn_crr_params_path.parent
-    if not outpath.exists():
-        outpath.mkdir(parents=True)
+            Console.info('start curve fitting', datetime.datetime.now())
+            if init_atn_crr_params_path is not None:
+                initial_atn_crr_params = np.load(init_atn_crr_params_path)
+                initial_atn_crr_params = initial_atn_crr_params.reshape([a * b, 3])
 
-    np.save(str(calculated_atn_crr_params_path), atn_crr_params)
-    Console.info('atn_crr_params has been saved to',
-                 calculated_atn_crr_params_path, datetime.datetime.now())
+                # all pixels
+                results = joblib.Parallel(n_jobs=-2, verbose=joblib_verbose)(
+                    [joblib.delayed(optim_exp_curve_param_with_init)(
+                        altitudes_for_calc_atn, imgs_for_calc_atn[:, i_pixel], initial_atn_crr_params[i_pixel, :]) for i_pixel
+                        in
+                        range(a * b)])
+                atn_crr_params = np.array(results)
 
-    save_atn_crr_params_png(outpath, atn_crr_params)
+                # TODO for debug only 100 pixels
+                # results = joblib.Parallel(n_jobs=-2, verbose=joblib_verbose)(
+                #     [joblib.delayed(optim_exp_curve_param_with_init)(
+                #         altitudes_for_calc_atn, imgs_for_calc_atn[:, i_pixel], initial_atn_crr_params[i_pixel, :]) for i_pixel
+                #         in
+                #         range(100)])
+                # atn_crr_params = np.zeros([a * b, 3])
+                # atn_crr_params[0:100, :] = np.array(results)
 
-    # apply median filter to attenuation parameter
-    # if median_filter_kernel_size != 1:
-    # atn_crr_params = filter_atn_parm_median(atn_crr_params, median_filter_kernel_size)
+            else:
+                #     auto initialisation
+                results = joblib.Parallel(n_jobs=-2, verbose=joblib_verbose)(
+                    [joblib.delayed(optim_exp_curve_param_auto_init)(
+                        altitudes_for_calc_atn, imgs_for_calc_atn[:, i_pixel], curve_fit_trial_num) for i_pixel in
+                        range(a * b)])
+                atn_crr_params = np.array(results)
 
-    # apply attenuation correction parameters to raw images in memmap
-    gain = calc_attenuation_correction_gain(target_altitude, atn_crr_params)
-    message = 'applying attenuation correction to raw ' + \
-        datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    for i_img in trange(memmap_raw.shape[0], ascii=True, desc=message):
-        # memmap data can not be updated in joblib .
-        memmap_raw[i_img, ...] = apply_atn_crr_2_img(
-            memmap_raw[i_img, ...], altitudes_all[i_img], atn_crr_params, gain)
+                # TODO for debug only 100 pixels
+                # results = joblib.Parallel(n_jobs=-2, verbose=joblib_verbose)(
+                #     [joblib.delayed(optim_exp_curve_param_auto_init)(
+                #         altitudes_for_calc_atn, imgs_for_calc_atn[:,i_pixel], curve_fit_trial_num) for i_pixel in
+                #         range(100)])
+                # atn_crr_params=np.zeros([a*b,3])
+                # atn_crr_params[0:100,:]=np.array(results)
 
-    Console.info('start calculating mean and std of attenuation corrected images',
-                 datetime.datetime.now(), flush=True)
-    img_mean_atn_crr, img_std_atn_crr = calc_img_mean_and_std_trimmed(memmap_raw, trim_ratio, calc_std=True,
-                                                                      effective_index=idx_effective_data)
+            atn_crr_params = atn_crr_params.reshape([a, b, 3])
 
-    # dirpath_img_mean_raw = dir_path_image_crr_params / 'bayer_img_mean_raw'
-    # dirpath_img_std_raw = dir_path_image_crr_params / 'bayer_img_std_raw'
-    dirpath_img_mean_atn_crr = dir_path_image_crr_params / 'bayer_img_mean_atn_crr'
-    dirpath_img_std_atn_crr = dir_path_image_crr_params / 'bayer_img_std_atn_crr'
-    # np.save(dirpath_img_mean_raw, img_mean_raw)
-    # np.save(dirpath_img_std_raw, img_std_raw)
-    np.save(str(dirpath_img_mean_atn_crr), img_mean_atn_crr)
-    np.save(str(dirpath_img_std_atn_crr), img_std_atn_crr)
+            if calculated_atn_crr_params_path is None:
+                calculated_atn_crr_params_path = dir_path_image_crr_params / 'atn_crr_params.npy'
 
-    # visualize mean and std images
-    list_dirpath = [dirpath_img_mean_atn_crr, dirpath_img_std_atn_crr]
-    list_img = [img_mean_atn_crr, img_std_atn_crr]
-    for i_img in range(len(list_img)):
-        save_bayer_array_png(list_dirpath[i_img], list_img[i_img])
+            # visualise attenuation parameters
+            outpath = calculated_atn_crr_params_path.parent
+            if not outpath.exists():
+                outpath.mkdir(parents=True)
 
-    # convert bayer_file_path from absolute path to filename
-    for i_bayer_file in range(len(bayer_filelist)):
-        tmp_filepath = src_filelist[i_bayer_file]
-        file_stem = get_processed_folder(tmp_filepath).stem
-        bayer_filelist[i_bayer_file] = str(file_stem + '.npy')
-        #bayer_filelist[i_bayer_file] = '..' / bayer_filelist[i_bayer_file].relative_to(dirpath.parent)
+            np.save(str(calculated_atn_crr_params_path), atn_crr_params)
+            Console.info('atn_crr_params has been saved to',
+                         calculated_atn_crr_params_path, datetime.datetime.now())
+
+            save_atn_crr_params_png(outpath, atn_crr_params)
+
+            # apply median filter to attenuation parameter
+            # if median_filter_kernel_size != 1:
+            # atn_crr_params = filter_atn_parm_median(atn_crr_params, median_filter_kernel_size)
+
+            # apply attenuation correction parameters to raw images in memmap
+            gain = calc_attenuation_correction_gain(target_altitude, atn_crr_params)
+            message = 'applying attenuation correction to raw ' + \
+                datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            for i_img in trange(memmap_raw.shape[0], ascii=True, desc=message):
+                # memmap data can not be updated in joblib .
+                memmap_raw[i_img, ...] = apply_atn_crr_2_img(
+                    memmap_raw[i_img, ...], altitudes_all[i_img], atn_crr_params, gain)
+
+            Console.info('start calculating mean and std of attenuation corrected images',
+                         datetime.datetime.now(), flush=True)
+            img_mean_atn_crr, img_std_atn_crr = calc_img_mean_and_std_trimmed(memmap_raw, trim_ratio, calc_std=True,
+                                                                              effective_index=idx_effective_data)
+
+            # dirpath_img_mean_raw = dir_path_image_crr_params / 'bayer_img_mean_raw'
+            # dirpath_img_std_raw = dir_path_image_crr_params / 'bayer_img_std_raw'
+            dirpath_img_mean_atn_crr = dir_path_image_crr_params / 'bayer_img_mean_atn_crr'
+            dirpath_img_std_atn_crr = dir_path_image_crr_params / 'bayer_img_std_atn_crr'
+            # np.save(dirpath_img_mean_raw, img_mean_raw)
+            # np.save(dirpath_img_std_raw, img_std_raw)
+            np.save(str(dirpath_img_mean_atn_crr), img_mean_atn_crr)
+            np.save(str(dirpath_img_std_atn_crr), img_std_atn_crr)
+
+            # visualize mean and std images
+            list_dirpath = [dirpath_img_mean_atn_crr, dirpath_img_std_atn_crr]
+            list_img = [img_mean_atn_crr, img_std_atn_crr]
+            for i_img in range(len(list_img)):
+                save_bayer_array_png(list_dirpath[i_img], list_img[i_img])
+
+            # convert bayer_file_path from absolute path to filename
+            for i_bayer_file in range(len(bayer_filelist)):
+                tmp_filepath = src_filelist[i_bayer_file]
+                file_stem = get_processed_folder(tmp_filepath).stem
+                bayer_filelist[i_bayer_file] = str(file_stem + '.npy')
+                #bayer_filelist[i_bayer_file] = '..' / bayer_filelist[i_bayer_file].relative_to(dirpath.parent)
 
 
-    # save file list includes altitude and filepath of bayer image
-    file_list_name = dir_path_image_crr_params / 'filelist.csv'
-    df_all = pd.concat([df_all, pd.DataFrame(
-        bayer_filelist, columns=['bayer file'])], axis=1)
-    df_all.to_csv(file_list_name)
+            # save file list includes altitude and filepath of bayer image
+            file_list_name = dir_path_image_crr_params / 'filelist.csv'
+            df_all = pd.concat([df_all, pd.DataFrame(
+                bayer_filelist, columns=['bayer file'])], axis=1)
+            df_all.to_csv(file_list_name)
 
-    dict_cfg = {
-        'src_filelist_path': src_filelist_path,
-        'label_raw_file': label_raw_file,
-        'label_altitude': label_altitude,
-        'altitude_min': altitude_min,
-        'altitude_max': altitude_max,
-        'calculated_atn_crr_params_path': str(calculated_atn_crr_params_path.resolve()),
-        'median_filter_kernel_size': median_filter_kernel_size,
-        'sampling_method': sampling_method,
-        'dst_file_format': dst_file_format,
-        # 'apply_attenuation_correction': apply_attenuation_correction,
-        'target_altitude': target_altitude,
-        'curve_fit_trial_num': curve_fit_trial_num,
-        # 'target_mean': target_mean,
-        # 'target_std': target_std,
-        # 'apply_gamma_correction': apply_gamma_correction,
-        # 'apply_distortion_correction': apply_distortion_correction,
-        # 'camera_parameter_file_path': camera_parameter_file_path,
-        'src_file_format': src_file_format,
-        # 'attenuation_correction_parameter_file_path': attenuation_correction_parameter_file_path,
-        'bin_band': bin_band,
-        'min_sample_per_bin': min_sample_per_bin,
-        'max_sample_per_bin': max_sample_per_bin
-    }
+            dict_cfg = {
+                'src_filelist_path': src_filelist_path,
+                'label_raw_file': label_raw_file,
+                'label_altitude': label_altitude,
+                'altitude_min': altitude_min,
+                'altitude_max': altitude_max,
+                'calculated_atn_crr_params_path': str(calculated_atn_crr_params_path.resolve()),
+                'median_filter_kernel_size': median_filter_kernel_size,
+                'sampling_method': sampling_method,
+                'dst_file_format': dst_file_format,
+                # 'apply_attenuation_correction': apply_attenuation_correction,
+                'target_altitude': target_altitude,
+                'curve_fit_trial_num': curve_fit_trial_num,
+                # 'target_mean': target_mean,
+                # 'target_std': target_std,
+                # 'apply_gamma_correction': apply_gamma_correction,
+                # 'apply_distortion_correction': apply_distortion_correction,
+                # 'camera_parameter_file_path': camera_parameter_file_path,
+                'src_file_format': src_file_format,
+                # 'attenuation_correction_parameter_file_path': attenuation_correction_parameter_file_path,
+                'bin_band': bin_band,
+                'min_sample_per_bin': min_sample_per_bin,
+                'max_sample_per_bin': max_sample_per_bin
+            }
 
-    cfg_filepath = dir_path_image_crr_params / 'config.yaml'
-    with cfg_filepath.open('w') as cfg_file:
-        yaml.dump(dict_cfg, cfg_file, default_flow_style=False)
-    Console.info('Done. Configurations are saved to ',
-                 cfg_filepath, datetime.datetime.now())
+            cfg_filepath = dir_path_image_crr_params / 'config.yaml'
+            with cfg_filepath.open('w') as cfg_file:
+                yaml.dump(dict_cfg, cfg_file, default_flow_style=False)
+            Console.info('Done. Configurations are saved to ',
+                         cfg_filepath, datetime.datetime.now())
 
-    del memmap_raw
-    Path(file_name_memmap_raw).unlink()
+            del memmap_raw
+            Path(file_name_memmap_raw).unlink()
+                     
 
 
 def load_xviii_bayer_from_binary(xviii_binary_data):
