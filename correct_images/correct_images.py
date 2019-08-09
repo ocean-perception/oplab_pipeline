@@ -60,9 +60,11 @@ def main(args=None):
     subparser_debayer.add_argument(
         'path', help="Path to bayer images.")
     subparser_debayer.add_argument(
+        'filetype', help = "type of image: raw / tif / tiff")
+    subparser_debayer.add_argument(
         '-i', '--image', default=None, help="Single raw image to test.")
     subparser_debayer.add_argument(
-        '-o', '--output', default=None, help="Output folder.")
+        '-o', '--output', default='.', help="Output folder.")
     subparser_debayer.set_defaults(func=call_debayer)
 
     subparser_correct_attenuation = subparsers.add_parser(
@@ -93,11 +95,15 @@ def main(args=None):
 
 
 def call_debayer(args):
-    def debayer_image(image_path):
-        xviii_binary_data = np.fromfile(str(image_path), dtype=np.uint8)
-        img = load_xviii_bayer_from_binary(xviii_binary_data)
-        img = img / 128
-        img_rgb = np.array(demosaicing_CFA_Bayer_bilinear(img, pattern='GRBG'))
+    def debayer_image(image_path,filetype):
+        if filetype is 'raw':
+            xviii_binary_data = np.fromfile(str(image_path), dtype=np.uint8)
+            img = load_xviii_bayer_from_binary(xviii_binary_data)
+            img = img / 128
+        else:
+            print(image_path)
+            img = cv2.imread(str(image_path),cv2.IMREAD_GRAYSCALE)
+        img_rgb = np.array(demosaicing_CFA_Bayer_bilinear(img, pattern='GRBG')) 
         return img_rgb
 
     ouput_dir = Path(args.output)
@@ -109,14 +115,14 @@ def call_debayer(args):
 
         for image_path in image_list:
             print('Debayering image {}'.format(image_path.name))
-            img_rgb = debayer_image(image_path)
+            img_rgb = debayer_image(image_path,args.filetype)
             image_name = str(image_path.stem) + '.png'
             output_image_path = Path(ouput_dir) / image_name
             cv2.imwrite(str(output_image_path), img_rgb)
     else:
         single_image = Path(args.image)
         print('Debayering single image {} to {}'.format(single_image.name, ouput_dir))
-        img_rgb = debayer_image(single_image)
+        img_rgb = debayer_image(single_image,args.filetype)
         image_name = str(single_image.stem) + '.png'
         output_image_path = Path(ouput_dir) / image_name
         cv2.imwrite(str(output_image_path), img_rgb)
