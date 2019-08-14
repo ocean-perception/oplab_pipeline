@@ -1459,8 +1459,8 @@ def optim_exp_curve_param_log_transform(altitudes, intensities):
     altitudes_with1[:, 1] = altitudes
 
     # singularity check
-    assert altitudes_with1.transpose().dot(
-        altitudes_with1) != 0, altitudes_with1
+    assert np.linalg.det(altitudes_with1.transpose().dot(
+        altitudes_with1)) != 0, altitudes_with1
 
     theta = inv(altitudes_with1.transpose().dot(altitudes_with1)).dot(
         altitudes_with1.transpose()).dot(intensities_log)
