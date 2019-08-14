@@ -95,22 +95,22 @@ def main(args=None):
 
 
 def call_debayer(args):
-    def debayer_image(image_path,filetype):
+    def debayer_image(image_path, filetype):
         if filetype is 'raw':
             xviii_binary_data = np.fromfile(str(image_path), dtype=np.uint8)
             img = load_xviii_bayer_from_binary(xviii_binary_data)
             img = img / 128
         else:
-            print(image_path)
             img = cv2.imread(str(image_path),cv2.IMREAD_GRAYSCALE)
         img_rgb = np.array(demosaicing_CFA_Bayer_bilinear(img, pattern='GRBG')) 
         return img_rgb
 
     ouput_dir = Path(args.output)
+    print(ouput_dir)
     if not args.image:
         image_dir = Path(args.path)
         print('Debayering folder {} to {}'.format(image_dir, ouput_dir))
-        image_list = list(image_dir.glob('*.raw'))
+        image_list = list(image_dir.glob('*.' + args.filetype))
         print('Found ' + str(len(image_list)) + ' images.')
 
         for image_path in image_list:
