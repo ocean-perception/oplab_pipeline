@@ -99,7 +99,7 @@ def main(args=None):
 
 def call_debayer(args):
     def debayer_image(image_path, filetype, pattern, output_dir):
-        print('Debayering image {}'.format(image_path.name))
+        Console.info('Debayering image {}'.format(image_path.name))
         if filetype is 'raw':
             xviii_binary_data = np.fromfile(str(image_path), dtype=np.uint8)
             img = load_xviii_bayer_from_binary(xviii_binary_data)
@@ -112,12 +112,16 @@ def call_debayer(args):
         cv2.imwrite(str(output_image_path), img_rgb)
 
     output_dir = Path(args.output)
-    print(output_dir)
+    if not output_dir.exist():
+        Console.info('Creating output dir {}'.format(output_dir))
+        output_dir.mkdir(parents=True)
+    else:
+        Console.info('Using output dir {}'.format(output_dir))
     if not args.image:
         image_dir = Path(args.path)
-        print('Debayering folder {} to {}'.format(image_dir, output_dir))
+        Console.info('Debayering folder {} to {}'.format(image_dir, output_dir))
         image_list = list(image_dir.glob('*.' + args.filetype))
-        print('Found ' + str(len(image_list)) + ' images.')
+        Console.info('Found ' + str(len(image_list)) + ' images.')
         joblib.Parallel(n_jobs=-2)([
             joblib.delayed(debayer_image)(
                 image_path,
