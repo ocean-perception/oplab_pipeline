@@ -17,9 +17,14 @@ import yaml
 import json
 
 
-def collect_image_files(image_dir, file_pattern):
+def collect_image_files(image_dirs, file_pattern):
     # TODO try all different formats: png, jpeg, tif
-    images = list(image_dir.glob(file_pattern))
+    images = []
+    if isinstance(image_dirs, list):
+        for d in image_dirs:
+            images.extend(list(d.glob(file_pattern)))
+    else:
+        images = list(image_dirs.glob(file_pattern))
     images.sort()
     return images
 
@@ -36,9 +41,9 @@ def check_pattern(config):
     return pattern
 
 
-def calibrate_mono(name, filepath, extension, config, output_file):
-    Console.info('Looking for {} calibration images in {}'.format(extension, filepath))
-    image_list = collect_image_files(filepath, extension)
+def calibrate_mono(name, filepaths, extension, config, output_file):
+    Console.info('Looking for {} calibration images in {}'.format(extension, filepaths))
+    image_list = collect_image_files(filepaths, extension)
     Console.info('Found ' + str(len(image_list)) + ' images.')
     if len(image_list) < 8:
         Console.error('Too few images. Try to get more.')
@@ -63,14 +68,14 @@ def calibrate_mono(name, filepath, extension, config, output_file):
         Console.error('The calibration pattern was not found in the images.')
 
 
-def calibrate_stereo(left_name, left_filepath, left_extension, left_calib,
-                     right_name, right_filepath, right_extension, right_calib,
+def calibrate_stereo(left_name, left_filepaths, left_extension, left_calib,
+                     right_name, right_filepaths, right_extension, right_calib,
                      config, output_file):
-    Console.info('Looking for calibration images in {}'.format(left_filepath))
-    left_image_list = collect_image_files(left_filepath, left_extension)
+    Console.info('Looking for calibration images in {}'.format(left_filepaths))
+    left_image_list = collect_image_files(left_filepaths, left_extension)
     Console.info('Found ' + str(len(left_image_list)) + ' left images.')
-    Console.info('Looking for calibration images in {}'.format(right_filepath))
-    right_image_list = collect_image_files(right_filepath, right_extension)
+    Console.info('Looking for calibration images in {}'.format(right_filepaths))
+    right_image_list = collect_image_files(right_filepaths, right_extension)
     Console.info('Found ' + str(len(right_image_list)) + ' right images.')
     if len(left_image_list) < 8 or len(right_image_list) < 8:
         Console.error('Too few images. Try to get more.')
@@ -130,6 +135,16 @@ def calibrate_laser(left_name, left_filepath, left_extension,
         Console.error('The calibration pattern was not found in the images.')
 
 
+def build_filepath(base, paths):
+    filepaths = []
+    if not isinstance(paths, list):
+        filepaths = base / str(paths)
+    else:
+        for p in paths:
+            filepaths.append(base / p)
+    return filepaths
+
+
 class Calibrator():
     def __init__(self, filepath, force_overwite=False):
         filepath = Path(filepath).resolve()
@@ -176,8 +191,9 @@ class Calibrator():
                 Console.warn('The camera ' + c['name'] + ' has already been calibrated. If you want to overwrite the calibration, use the -F flag.')
             else:
                 Console.info('The camera is not calibrated, running mono calibration...')
+                filepaths = build_filepath(self.filepath, c['camera_calibration']['path'])
                 calibrate_mono(cam_name,
-                               self.filepath / str(c['camera_calibration']['path']),
+                               filepaths,
                                '*.' + str(c['camera_calibration']['extension']),
                                self.calibration_config['camera_calibration'],
                                calibration_file)
@@ -198,19 +214,21 @@ class Calibrator():
                 right_name = ''
                 right_filepath = ''
                 right_extension = ''
+
+                left_filepaths = build_filepath(self.filepath, c0['camera_calibration']['path'])
+                right_filepaths = build_filepath(self.filepath, c1['camera_calibration']['path'])
+
+
                 if self.mission.image.format == 'seaxerocks_3':
                     left_name = c0['name']
-                    left_filepath = self.filepath / str(c0['camera_calibration']['path'])
                     left_extension = '*.' + str(c0['camera_calibration']['extension'])
                     right_name = c1['name']
-                    right_filepath = self.filepath / str(c1['camera_calibration']['path'])
                     right_extension = '*.' + str(c1['camera_calibration']['extension'])
                 elif self.mission.image.format == 'acfr_standard':
                     left_name = c0['name']
                     left_filepath = self.filepath / str(c0['camera_calibration']['path'])
                     left_extension = '*LC16.' + str(c0['camera_calibration']['extension'])
                     right_name = c1['name']
-                    right_filepath = self.filepath / str(c1['camera_calibration']['path'])
                     right_extension = '*RC16.' + str(c1['camera_calibration']['extension'])
                 left_calibration_file = self.calibration_path / 'calibration' / str('mono_' + left_name + '.yaml')
                 right_calibration_file = self.calibration_path / 'calibration' / str('mono_' + right_name + '.yaml')
@@ -224,11 +242,11 @@ class Calibrator():
                     Console.info('Loading previous monocular calibrations at \
                                   \n\t * {}\n\t * {}'.format(str(left_calibration_file), str(right_calibration_file)))
                 calibrate_stereo(left_name,
-                                 left_filepath,
+                                 left_filepaths,
                                  left_extension,
                                  left_calibration_file,
                                  right_name,
-                                 right_filepath,
+                                 right_filepaths,
                                  right_extension,
                                  right_calibration_file,
                                  self.calibration_config['camera_calibration'],
@@ -243,12 +261,11 @@ class Calibrator():
                 Console.warn('The stereo pair ' + c0['name'] + '_' + c1['name'] + ' has already been calibrated. If you want to overwrite the calibration, use the -F flag.')
             else:
                 Console.info('The stereo camera is not calibrated, running stereo calibration...')
-
                 left_name = c0['name']
-                left_filepath = self.filepath / str(c0['camera_calibration']['path'])
+                left_filepaths = build_filepath(self.filepath, c0['camera_calibration']['path'])
                 left_extension = '*.' + str(c0['camera_calibration']['extension'])
                 right_name = c1['name']
-                right_filepath = self.filepath / str(c1['camera_calibration']['path'])
+                right_filepaths = build_filepath(self.filepath, c1['camera_calibration']['path'])
                 right_extension = '*.' + str(c1['camera_calibration']['extension'])
                 left_calibration_file = self.calibration_path / 'calibration' / str('mono_' + left_name + '.yaml')
                 right_calibration_file = self.calibration_path / 'calibration' / str('mono_' + right_name + '.yaml')
@@ -262,11 +279,11 @@ class Calibrator():
                     Console.info('Loading previous monocular calibrations at \
                                   \n\t * {}\n\t * {}'.format(str(left_calibration_file), str(right_calibration_file)))
                 calibrate_stereo(left_name,
-                                 left_filepath,
+                                 left_filepaths,
                                  left_extension,
                                  left_calibration_file,
                                  right_name,
-                                 right_filepath,
+                                 right_filepaths,
                                  right_extension,
                                  right_calibration_file,
                                  self.calibration_config['camera_calibration'],
