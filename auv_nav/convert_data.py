@@ -149,6 +149,21 @@ def convert_data(filepath, ftype, start_datetime, finish_datetime):
     else:
         epoch_finish_time = string_to_epoch(finish_datetime)
 
+    sensors_std = {
+        'usbl': {
+            'model': 'json'
+        },
+        'dvl': {
+            'model': 'json'
+        },
+        'depth': {
+            'model': 'json'
+        },
+        'orientation': {
+            'model': 'json'
+        }
+    }
+
     # read in data from json file
     # i here is the number of the data packet
     for i in range(len(parsed_json_data)):
@@ -163,7 +178,7 @@ def convert_data(filepath, ftype, start_datetime, finish_datetime):
                         if (abs(parsed_json_data[i]['epoch_timestamp']
                            - parsed_json_data[i]['epoch_timestamp_dvl'])) < 1.0:
                             velocity_body = BodyVelocity()
-                            velocity_body.from_json(parsed_json_data[i])
+                            velocity_body.from_json(parsed_json_data[i], sensors_std['dvl'])
                             converter.add(velocity_body)
                 if 'inertial' in parsed_json_data[i]['frame']:
                     velocity_inertial = InertialVelocity()
@@ -172,12 +187,12 @@ def convert_data(filepath, ftype, start_datetime, finish_datetime):
 
             if 'orientation' in parsed_json_data[i]['category']:
                 orientation = Orientation()
-                orientation.from_json(parsed_json_data[i])
+                orientation.from_json(parsed_json_data[i], sensors_std['orientation'])
                 converter.add(orientation)
 
             if 'depth' in parsed_json_data[i]['category']:
                 depth = Depth()
-                depth.from_json(parsed_json_data[i])
+                depth.from_json(parsed_json_data[i], sensors_std['depth'])
                 converter.add(depth)
 
             if 'altitude' in parsed_json_data[i]['category']:
@@ -187,7 +202,7 @@ def convert_data(filepath, ftype, start_datetime, finish_datetime):
 
             if 'usbl' in parsed_json_data[i]['category']:
                 usbl = Usbl()
-                usbl.from_json(parsed_json_data[i])
+                usbl.from_json(parsed_json_data[i], sensors_std['usbl'])
                 converter.add(usbl)
 
             if 'image' in parsed_json_data[i]['category']:
