@@ -194,7 +194,7 @@ class Calibrator():
                 filepaths = build_filepath(self.filepath, c['camera_calibration']['path'])
                 calibrate_mono(cam_name,
                                filepaths,
-                               '*.' + str(c['camera_calibration']['extension']),
+                               '*.' + str(c['camera_calibration']['glob_pattern']),
                                self.calibration_config['camera_calibration'],
                                calibration_file)
 
@@ -208,28 +208,13 @@ class Calibrator():
                 Console.warn('The stereo pair ' + c0['name'] + '_' + c1['name'] + ' has already been calibrated. If you want to overwrite the calibration, use the -F flag.')
             else:
                 Console.info('The stereo camera is not calibrated, running stereo calibration...')
-                left_name = ''
-                left_filepath = ''
-                left_extension = ''
-                right_name = ''
-                right_filepath = ''
-                right_extension = ''
 
                 left_filepaths = build_filepath(self.filepath, c0['camera_calibration']['path'])
                 right_filepaths = build_filepath(self.filepath, c1['camera_calibration']['path'])
-
-
-                if self.mission.image.format == 'seaxerocks_3':
-                    left_name = c0['name']
-                    left_extension = '*.' + str(c0['camera_calibration']['extension'])
-                    right_name = c1['name']
-                    right_extension = '*.' + str(c1['camera_calibration']['extension'])
-                elif self.mission.image.format == 'acfr_standard':
-                    left_name = c0['name']
-                    left_filepath = self.filepath / str(c0['camera_calibration']['path'])
-                    left_extension = '*LC16.' + str(c0['camera_calibration']['extension'])
-                    right_name = c1['name']
-                    right_extension = '*RC16.' + str(c1['camera_calibration']['extension'])
+                left_name = c0['name']
+                left_extension = str(c0['camera_calibration']['glob_pattern'])
+                right_name = c1['name']
+                right_extension = str(c1['camera_calibration']['glob_pattern'])
                 left_calibration_file = self.calibration_path / 'calibration' / str('mono_' + left_name + '.yaml')
                 right_calibration_file = self.calibration_path / 'calibration' / str('mono_' + right_name + '.yaml')
                 if not left_calibration_file.exists() or not right_calibration_file.exists():
@@ -263,10 +248,10 @@ class Calibrator():
                 Console.info('The stereo camera is not calibrated, running stereo calibration...')
                 left_name = c0['name']
                 left_filepaths = build_filepath(self.filepath, c0['camera_calibration']['path'])
-                left_extension = '*.' + str(c0['camera_calibration']['extension'])
+                left_extension = '*.' + str(c0['camera_calibration']['glob_pattern'])
                 right_name = c1['name']
                 right_filepaths = build_filepath(self.filepath, c1['camera_calibration']['path'])
-                right_extension = '*.' + str(c1['camera_calibration']['extension'])
+                right_extension = '*.' + str(c1['camera_calibration']['glob_pattern'])
                 left_calibration_file = self.calibration_path / 'calibration' / str('mono_' + left_name + '.yaml')
                 right_calibration_file = self.calibration_path / 'calibration' / str('mono_' + right_name + '.yaml')
                 if not left_calibration_file.exists() or not right_calibration_file.exists():
@@ -307,10 +292,10 @@ class Calibrator():
                     self.stereo()
                 left_name = c0['name']
                 left_filepath = self.filepath / str(c0['laser_calibration']['path'])
-                left_extension = '*.' + str(c0['laser_calibration']['extension'])
+                left_extension = '*.' + str(c0['laser_calibration']['glob_pattern'])
                 right_name = c1['name']
                 right_filepath = self.filepath / str(c1['laser_calibration']['path'])
-                right_extension = '*.' + str(c1['laser_calibration']['extension'])
+                right_extension = '*.' + str(c1['laser_calibration']['glob_pattern'])
                 calibrate_laser(left_name,
                                 left_filepath,
                                 left_extension,
