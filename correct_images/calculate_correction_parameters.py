@@ -408,6 +408,8 @@ def calculate_correction_parameters(path, force):
             tmp_altitude_sample = 0.0
             message = 'start calculating histogram ' + \
                       datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+            # print('sampling_method', sampling_method)
             for idx_bin in trange(1, hist_bounds.size, ascii=True,
                                   desc=message):
                 tmp_altitudes = altitudes_all[np.where(idxs == idx_bin)]
@@ -427,11 +429,6 @@ def calculate_correction_parameters(path, force):
                         tmp_bin_img_sample = np.mean(tmp_bin_imgs, axis=0)
                         tmp_altitude_sample = np.mean(tmp_altitudes)
 
-                    elif sampling_method == 'median':
-                        tmp_bin_img_sample = np.median(tmp_bin_imgs, axis=0)
-                        tmp_altitude_sample = np.mean(
-                            tmp_altitudes)
-                        # altitude value is calculated as mean because it has less varieance.
 
                     elif sampling_method == 'mean_trimmed':
                         #     TOOD implement trimmed mean and std
@@ -440,9 +437,20 @@ def calculate_correction_parameters(path, force):
                             effective_index=-1)
                         tmp_altitude_sample = np.mean(tmp_altitudes)
 
+
+                    elif sampling_method == 'median':
+                    # else:
+                        tmp_bin_img_sample = np.median(tmp_bin_imgs, axis=0)
+                        tmp_altitude_sample = np.mean(
+                            tmp_altitudes)
+                        # altitude value is calculated as mean because it has less varieance.
+
+
                     del tmp_bin_imgs
 
                     each_bin_image_list.append(tmp_bin_img_sample)
+
+                    # print('added altitude value', tmp_altitude_sample)
                     altitudes_ret.append(tmp_altitude_sample)
 
             imgs_for_calc_atn = np.array(each_bin_image_list)
@@ -483,6 +491,7 @@ def calculate_correction_parameters(path, force):
                 #         range(a * b)])
 
                 # logarithm
+                # print(altitudes_for_calc_atn)
                 results = joblib.Parallel(n_jobs=-2, verbose=joblib_verbose)(
                     [joblib.delayed(optim_exp_curve_param_log_transform)(
                         altitudes_for_calc_atn, imgs_for_calc_atn[:, i_pixel])

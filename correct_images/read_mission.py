@@ -35,7 +35,7 @@ class attenuation_correction:
     def __init__(self, cdict):
         self.altitude_max = cdict['altitude'][0]
         self.altitude_min = cdict['altitude'][1]
-        self.sampling_method = cdict['sampling_method'][0]
+        self.sampling_method = cdict['sampling_method']
         self.median_filter_kernel_size = cdict['median_filter_kernel_size']
 
 
