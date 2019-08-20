@@ -112,7 +112,7 @@ def call_debayer(args):
         cv2.imwrite(str(output_image_path), img_rgb)
 
     output_dir = Path(args.output)
-    if not output_dir.exist():
+    if not output_dir.exists():
         Console.info('Creating output dir {}'.format(output_dir))
         output_dir.mkdir(parents=True)
     else:
