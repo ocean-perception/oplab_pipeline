@@ -70,7 +70,7 @@ def calculate_correction_parameters(path, force):
             if camera_format == 'seaxerocks_3':
                 params['config']['camera1'] = 'Cam51707925'
                 params['config']['camera2'] = 'Cam51707923'
-                params['config']['camera3'] = 'LM165'
+                #params['config']['camera3'] = 'LM165'
             elif camera_format == 'acfr_standard' or camera_format == 'unaggi':
                 params['config']['camera1'] = 'LC'
                 params['config']['camera2'] = 'RC'
@@ -94,8 +94,8 @@ def calculate_correction_parameters(path, force):
                 camera = config_.config.camera_1
             elif i is 1:
                 camera = config_.config.camera_2
-            elif i is 2:
-                camera = config_.config.camera_3
+            #elif i is 2:
+                #camera = config_.config.camera_3
             if mission.image.format == 'seaxerocks_3':
                 src_file_format = 'raw'
             else:
