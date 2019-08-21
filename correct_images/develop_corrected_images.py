@@ -47,8 +47,8 @@ def develop_corrected_image(path, force):
                 camera = config_.config.camera_1
             elif i is 1:
                 camera = config_.config.camera_2
-            elif i is 2:
-                camera = config_.config.camera_3
+            #elif i is 2:
+                #camera = config_.config.camera_3
             
             src_file_format = 'raw'
             
