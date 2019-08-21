@@ -202,7 +202,7 @@ def develop_corrected_image(path, force):
                     #elif src_file_format == 'tif' or src_file_format == 'tiff':
                         #camera_parameter_file_path = 'camera_params/camera_parameters_unagi6k.yml'
                 else:
-                    camera_calib_name = 'mono_' + camera + '.yml'
+                    camera_calib_name = Path('mono_' + camera + '.yml').resolve()
                     camera_parameter_file_path = camera_parameter_file_path / camera_calib_name
                     print(camera_parameter_file_path)
                     map_x, map_y = calc_distortion_mapping(camera_parameter_file_path, a, b)
@@ -551,7 +551,7 @@ def filter_atn_parm_median(src_atn_param, kernel_size):
 
 
 def calc_distortion_mapping(camera_parameter_file_path, a, b):
-    fs = cv2.FileStorage(camera_parameter_file_path, cv2.FILE_STORAGE_READ)
+    fs = cv2.FileStorage(str(camera_parameter_file_path), cv2.FILE_STORAGE_READ)
     fn = fs.getNode('camera_matrix')
     camera_matrix = fn.mat()
     fn = fs.getNode('distortion_coefficients')
