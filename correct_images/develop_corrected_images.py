@@ -191,12 +191,20 @@ def develop_corrected_image(path, force):
             # calculate distortion correction paramters
             if apply_distortion_correction:
                 if camera_parameter_file_path is None:
-                    if src_file_format == 'raw':
+                    Console.info('Camera parameters path not provided')
+                    Console.info('Please provide path to camera parameters')
+                    Console.info('Or Rerun process with apply_distortion_correction flag set to False')
+                    sys.exit()
+                    #if src_file_format == 'raw':
                         #         load AE2000 camera param
-                        camera_parameter_file_path = 'camera_params/camera_parameters_20171221_200233_xviii51707923_1_of_100.yml'
-                    elif src_file_format == 'tif' or src_file_format == 'tiff':
-                        camera_parameter_file_path = 'camera_params/camera_parameters_unagi6k.yml'
-                map_x, map_y = calc_distortion_mapping(camera_parameter_file_path, a, b)
+                        #camera_parameter_file_path = 'camera_params/camera_parameters_20171221_200233_xviii51707923_1_of_100.yml'
+                    #elif src_file_format == 'tif' or src_file_format == 'tiff':
+                        #camera_parameter_file_path = 'camera_params/camera_parameters_unagi6k.yml'
+                else:
+                    camera_calib_name = 'mono_' + camera + '.yaml'
+                    camera_parameter_file_path = camera_parameter_file_path / camera_calib_name
+                    print(camera_parameter_file_path)
+                    map_x, map_y = calc_distortion_mapping(camera_parameter_file_path, a, b)
 
             # if developing target are not designated, develop all files in filelist.csv
             if src_img_index == -1:
@@ -420,12 +428,20 @@ def develop_corrected_image(path, force):
             # calculate distortion correction paramters
             if apply_distortion_correction:
                 if camera_parameter_file_path is None:
-                    if src_file_format == 'raw':
+                    Console.info('Camera parameters path not provided')
+                    Console.info('Please provide path to camera parameters')
+                    Console.info('Or Rerun process with apply_distortion_correction flag set to False')
+                    sys.exit()
+                    #if src_file_format == 'raw':
                         #         load AE2000 camera param
-                        camera_parameter_file_path = 'camera_params/camera_parameters_20171221_200233_xviii51707923_1_of_100.yml'
-                    elif src_file_format == 'tif' or src_file_format == 'tiff':
-                        camera_parameter_file_path = 'camera_params/camera_parameters_unagi6k.yml'
-                map_x, map_y = calc_distortion_mapping(camera_parameter_file_path, a, b)
+                        #camera_parameter_file_path = 'camera_params/camera_parameters_20171221_200233_xviii51707923_1_of_100.yml'
+                    #elif src_file_format == 'tif' or src_file_format == 'tiff':
+                        #camera_parameter_file_path = 'camera_params/camera_parameters_unagi6k.yml'
+                else:
+                    camera_calib_name = 'mono_' + camera + '.yaml'
+                    camera_parameter_file_path = camera_parameter_file_path / camera_calib_name
+                    print(camera_parameter_file_path)
+                    map_x, map_y = calc_distortion_mapping(camera_parameter_file_path, a, b)
 
             # if developing target are not designated, develop all files in filelist.csv
             if src_img_index == -1:
