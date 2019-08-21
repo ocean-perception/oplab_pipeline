@@ -202,7 +202,7 @@ def develop_corrected_image(path, force):
                     #elif src_file_format == 'tif' or src_file_format == 'tiff':
                         #camera_parameter_file_path = 'camera_params/camera_parameters_unagi6k.yml'
                 else:
-                    camera_calib_name = 'mono_' + camera + '.yaml'
+                    camera_calib_name = 'mono_' + camera + '.yml'
                     camera_parameter_file_path = camera_parameter_file_path / camera_calib_name
                     print(camera_parameter_file_path)
                     map_x, map_y = calc_distortion_mapping(camera_parameter_file_path, a, b)
@@ -370,7 +370,8 @@ def develop_corrected_image(path, force):
             apply_attenuation_correction = config_.flags.apply_attenuation_correction # load_data.get('apply_attenuation_correction', True)
             apply_gamma_correction = config_.flags.apply_gamma_correction # load_data.get('apply_gamma_correction', True)
             apply_distortion_correction = config_.flags.apply_distortion_correction # load_data.get('apply_distortion_correction', True)
-            camera_parameter_file_path = config_.flags.camera_parameter_file_path # load_data.get('camera_parameter_file_path', None)
+            camera_parameter_path = config_.flags.camera_parameter_file_path # load_data.get('camera_parameter_file_path', None)
+            camera_parameter_file_path = Path(camera_parameter_path).resolve()
             #dst_dir_path = None # load_data.get('dst_dir_path', None)
             dst_img_format = config_.output.dst_file_format # load_data.get('dst_img_format', 'png')
             median_filter_kernel_size = config_.attenuation_correction.median_filter_kernel_size # load_data.get('median_filter_kernel_size', 1)
@@ -439,7 +440,7 @@ def develop_corrected_image(path, force):
                     #elif src_file_format == 'tif' or src_file_format == 'tiff':
                         #camera_parameter_file_path = 'camera_params/camera_parameters_unagi6k.yml'
                 else:
-                    camera_calib_name = 'mono_' + camera + '.yaml'
+                    camera_calib_name = 'mono_' + camera + '.yml'
                     camera_parameter_file_path = camera_parameter_file_path / camera_calib_name
                     print(camera_parameter_file_path)
                     map_x, map_y = calc_distortion_mapping(camera_parameter_file_path, a, b)
