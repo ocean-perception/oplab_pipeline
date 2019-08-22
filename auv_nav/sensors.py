@@ -863,6 +863,9 @@ class Camera():
         self.roll = 0
         self.pitch = 0
         self.yaw = 0
+        self.x_velocity = 0
+        self.y_velocity = 0
+        self.z_velocity = 0
 
         self.altitude = 0
         self.covariance = None
