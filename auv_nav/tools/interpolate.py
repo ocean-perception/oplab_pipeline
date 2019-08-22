@@ -207,7 +207,24 @@ def interpolate_sensor_list(sensor_list,
                     _centre_list[j].epoch_timestamp,
                     _centre_list[j-1].yaw,
                     _centre_list[j].yaw)
-
+            sensor_list[i].x_velocity = interpolate(
+                sensor_list[i].epoch_timestamp,
+                _centre_list[j-1].epoch_timestamp,
+                _centre_list[j].epoch_timestamp,
+                _centre_list[j-1].x_velocity,
+                _centre_list[j].x_velocity)
+            sensor_list[i].y_velocity = interpolate(
+                sensor_list[i].epoch_timestamp,
+                _centre_list[j-1].epoch_timestamp,
+                _centre_list[j].epoch_timestamp,
+                _centre_list[j-1].y_velocity,
+                _centre_list[j].y_velocity)
+            sensor_list[i].z_velocity = interpolate(
+                sensor_list[i].epoch_timestamp,
+                _centre_list[j-1].epoch_timestamp,
+                _centre_list[j].epoch_timestamp,
+                _centre_list[j-1].z_velocity,
+                _centre_list[j].z_velocity)
             # while n<len(time_altitude)-1 and time_altitude[n+1]<time_camera1[i]:
             #     n += 1
             # camera1_altitude.append(interpolate(time_camera1[i],time_altitude[n],time_altitude[n+1],altitude[n],altitude[n+1]))
