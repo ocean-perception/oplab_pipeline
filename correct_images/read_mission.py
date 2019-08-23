@@ -56,7 +56,7 @@ class flags:
         self.apply_attenuation_correction = cdict['apply_attenuation_correction']
         self.apply_gamma_correction = cdict['apply_gamma_correction']
         self.apply_distortion_correction = cdict['apply_distortion_correction']
-        self.camera_parameter_file_path = cdict['camera_parameter_file_path'][0]
+        self.camera_parameter_file_path = cdict['camera_parameter_file_path']
 
 
 class Parameters:
