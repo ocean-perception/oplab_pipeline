@@ -35,7 +35,7 @@ class attenuation_correction:
     def __init__(self, cdict):
         self.altitude_max = cdict['altitude'][0]
         self.altitude_min = cdict['altitude'][1]
-        self.sampling_method = cdict['sampling_method'][0]
+        self.sampling_method = cdict['sampling_method']
         self.median_filter_kernel_size = cdict['median_filter_kernel_size']
 
 
@@ -56,7 +56,7 @@ class flags:
         self.apply_attenuation_correction = cdict['apply_attenuation_correction']
         self.apply_gamma_correction = cdict['apply_gamma_correction']
         self.apply_distortion_correction = cdict['apply_distortion_correction']
-        self.camera_parameter_file_path = cdict['camera_parameter_file_path'][0]
+        self.camera_parameter_file_path = cdict['camera_parameter_file_path']
 
 
 class Parameters:
