@@ -1,7 +1,6 @@
 # Encoding: utf-8
 
 from auv_nav.tools.console import Console
-from auv_nav.parsers.mission import Mission
 from auv_cal.camera_models import StereoCamera
 from auv_cal.camera_calibrator import CalibrationException
 from auv_cal.camera_calibrator import MonoCalibrator
@@ -41,7 +40,7 @@ def check_pattern(config):
     return pattern
 
 
-def calibrate_mono(name, filepaths, extension, config, output_file):
+def calibrate_mono(name, filepaths, extension, config, output_file, overwrite):
     Console.info('Looking for {} calibration images in {}'.format(extension, filepaths))
     image_list = collect_image_files(filepaths, extension)
     Console.info('Found ' + str(len(image_list)) + ' images.')
@@ -56,14 +55,17 @@ def calibrate_mono(name, filepaths, extension, config, output_file):
                         invert=config["invert"],
                         name=name)
     try:
-        mc.cal(image_list)
+        image_list_file = output_file.with_suffix('.json')
+        if overwrite:
+            mc.cal(image_list)
+            with image_list_file.open('w') as f:
+                json.dump(mc.json, f)
+        else:
+            mc.cal_from_json(image_list_file)
         mc.report()
         Console.info('Writting calibration to '"'{}'"''.format(output_file))
         with output_file.open('w') as f:
             f.write(mc.yaml())
-        image_list_file = output_file.with_suffix('.json')
-        with image_list_file.open('w') as f:
-            json.dump(mc.json, f)
     except CalibrationException:
         Console.error('The calibration pattern was not found in the images.')
 
@@ -151,12 +153,7 @@ class Calibrator():
         self.filepath = get_raw_folder(filepath)
         self.fo = force_overwite
 
-        # load mission.yaml config file
-        mission_file = get_raw_folder(filepath) / 'mission.yaml'
-        Console.info('Loading mission.yaml at {0}'.format(mission_file))
-        self.mission = Mission(mission_file)
-
-        calibration_config_file = get_config_folder(filepath)  / 'calibration.yaml'
+        calibration_config_file = get_config_folder(filepath) / 'calibration.yaml'
         if calibration_config_file.exists():
             Console.info("Loading existing calibration.yaml at {}".format(calibration_config_file))
         else:
@@ -188,15 +185,16 @@ class Calibrator():
             calibration_file = self.calibration_path / 'calibration' / str('mono_' + cam_name + '.yaml')
             Console.info('Looking for a calibration file at ' + str(calibration_file))
             if calibration_file.exists() and not self.fo:
-                Console.warn('The camera ' + c['name'] + ' has already been calibrated. If you want to overwrite the calibration, use the -F flag.')
+                Console.warn('The camera ' + c['name'] + ' has already been calibrated. If you want to overwrite the JSON, use the -F flag.')
             else:
                 Console.info('The camera is not calibrated, running mono calibration...')
-                filepaths = build_filepath(self.filepath, c['camera_calibration']['path'])
-                calibrate_mono(cam_name,
-                               filepaths,
-                               '*.' + str(c['camera_calibration']['glob_pattern']),
-                               self.calibration_config['camera_calibration'],
-                               calibration_file)
+            filepaths = build_filepath(self.filepath, c['camera_calibration']['path'])
+            calibrate_mono(cam_name,
+                           filepaths,
+                           str(c['camera_calibration']['glob_pattern']),
+                           self.calibration_config['camera_calibration'],
+                           calibration_file,
+                           self.fo)
 
     def stereo(self):
         if len(self.calibration_config['cameras']) > 1:
