@@ -16,8 +16,8 @@ config:
 attenuation_correction:
   # the images captured at the altitude only in the range from altitude_min to altitude_max are used for calculating parameters.
   altitude:
-    - max: 3
-    - min: 1.4
+    - max: 10
+    - min: 4
 
   sampling_method: 'median' # sampling method from raw data. for local computers, 'median' is preferable because the calculation cost is low.
   median_filter_kernel_size: 3 # If the attenuation correction parameter looks noisy.

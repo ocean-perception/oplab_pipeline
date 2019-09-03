@@ -16,6 +16,7 @@ from auv_nav.tools.folder_structure import get_processed_folder
 from auv_nav.tools.folder_structure import get_config_folder
 from correct_images.calculate_correction_parameters import calc_attenuation_correction_gain, apply_atn_crr_2_img
 from correct_images.read_mission import read_params
+from correct_images.utilities import *
 
 
 def develop_corrected_image(path, force):
@@ -41,14 +42,14 @@ def develop_corrected_image(path, force):
     config_ = read_params(path_correct, 'correct')
     camera_format = mission.image.format
     if camera_format == 'seaxerocks_3':
-        range_ = 3
+        range_ = 2
         for i in range(range_):
             if i is 0:
                 camera = config_.config.camera_1
             elif i is 1:
                 camera = config_.config.camera_2
-            elif i is 2:
-                camera = config_.config.camera_3
+            #elif i is 2:
+                #camera = config_.config.camera_3
             
             src_file_format = 'raw'
             
@@ -133,6 +134,8 @@ def develop_corrected_image(path, force):
             apply_gamma_correction = config_.flags.apply_gamma_correction # load_data.get('apply_gamma_correction', True)
             apply_distortion_correction = config_.flags.apply_distortion_correction # load_data.get('apply_distortion_correction', True)
             camera_parameter_file_path = config_.flags.camera_parameter_file_path # load_data.get('camera_parameter_file_path', None)
+            
+            #camera_parameter_file_path = Path(camera_parameter_path).resolve()
             #dst_dir_path = None # load_data.get('dst_dir_path', None)
             dst_img_format = config_.output.dst_file_format # load_data.get('dst_img_format', 'png')
             median_filter_kernel_size = config_.attenuation_correction.median_filter_kernel_size # load_data.get('median_filter_kernel_size', 1)
@@ -190,13 +193,30 @@ def develop_corrected_image(path, force):
 
             # calculate distortion correction paramters
             if apply_distortion_correction:
-                if camera_parameter_file_path is None:
-                    if src_file_format == 'raw':
+                if camera_parameter_file_path == 'None':
+                    Console.info('Camera parameters path not provided')
+                    Console.info('Please provide path to camera parameters')
+                    Console.info('Or Rerun process with apply_distortion_correction flag set to False')
+                    sys.exit()
+                    #if src_file_format == 'raw':
                         #         load AE2000 camera param
-                        camera_parameter_file_path = 'camera_params/camera_parameters_20171221_200233_xviii51707923_1_of_100.yml'
-                    elif src_file_format == 'tif' or src_file_format == 'tiff':
-                        camera_parameter_file_path = 'camera_params/camera_parameters_unagi6k.yml'
-                map_x, map_y = calc_distortion_mapping(camera_parameter_file_path, a, b)
+                        #camera_parameter_file_path = 'camera_params/camera_parameters_20171221_200233_xviii51707923_1_of_100.yml'
+                    #elif src_file_format == 'tif' or src_file_format == 'tiff':
+                        #camera_parameter_file_path = 'camera_params/camera_parameters_unagi6k.yml'
+                else:
+                    #camera_calib_name = 'mono_' + camera + '.yml').resolve()
+                    #camera_calib_name = Path('mission.yaml').resolve()
+                    #camera_parameter_file_path = './mission.yaml' #camera_parameter_file_path + './mission.yaml'#/mono_' + camera + '.yml'
+                    #camera_params_path = Path(camera_parameter_file_path).resolve()
+                    camera_calib_name = '/mono_' + camera + '.yaml'
+                    camera_parameter_file_path = camera_parameter_file_path + camera_calib_name
+                    camera_params_path = Path(camera_parameter_file_path).resolve()
+                    
+                    if not Path(camera_params_path).exists():
+                        print('Path to camera parameters does not exist')
+                        sys.exit()
+                    else:
+                        map_x, map_y = calc_distortion_mapping(camera_params_path, b, a)
 
             # if developing target are not designated, develop all files in filelist.csv
             if src_img_index == -1:
@@ -361,7 +381,8 @@ def develop_corrected_image(path, force):
             apply_attenuation_correction = config_.flags.apply_attenuation_correction # load_data.get('apply_attenuation_correction', True)
             apply_gamma_correction = config_.flags.apply_gamma_correction # load_data.get('apply_gamma_correction', True)
             apply_distortion_correction = config_.flags.apply_distortion_correction # load_data.get('apply_distortion_correction', True)
-            camera_parameter_file_path = config_.flags.camera_parameter_file_path # load_data.get('camera_parameter_file_path', None)
+            camera_parameter_path = config_.flags.camera_parameter_file_path # load_data.get('camera_parameter_file_path', None)
+            camera_parameter_file_path = Path(camera_parameter_path).resolve()
             #dst_dir_path = None # load_data.get('dst_dir_path', None)
             dst_img_format = config_.output.dst_file_format # load_data.get('dst_img_format', 'png')
             median_filter_kernel_size = config_.attenuation_correction.median_filter_kernel_size # load_data.get('median_filter_kernel_size', 1)
@@ -419,14 +440,26 @@ def develop_corrected_image(path, force):
 
             # calculate distortion correction paramters
             if apply_distortion_correction:
-                if camera_parameter_file_path is None:
-                    if src_file_format == 'raw':
+                if camera_parameter_file_path == 'None':
+                    Console.info('Camera parameters path not provided')
+                    Console.info('Please provide path to camera parameters')
+                    Console.info('Or Rerun process with apply_distortion_correction flag set to False')
+                    sys.exit()
+                    #if src_file_format == 'raw':
                         #         load AE2000 camera param
-                        camera_parameter_file_path = 'camera_params/camera_parameters_20171221_200233_xviii51707923_1_of_100.yml'
-                    elif src_file_format == 'tif' or src_file_format == 'tiff':
-                        camera_parameter_file_path = 'camera_params/camera_parameters_unagi6k.yml'
-                map_x, map_y = calc_distortion_mapping(camera_parameter_file_path, a, b)
-
+                        #camera_parameter_file_path = 'camera_params/camera_parameters_20171221_200233_xviii51707923_1_of_100.yml'
+                    #elif src_file_format == 'tif' or src_file_format == 'tiff':
+                        #camera_parameter_file_path = 'camera_params/camera_parameters_unagi6k.yml'
+                else:
+                    camera_calib_name = '/mono_' + camera + '.yaml'
+                    camera_parameter_file_path = camera_parameter_file_path + camera_calib_name
+                    camera_params_path = Path(camera_parameter_file_path).resolve()
+                    
+                    if not Path(camera_params_path).exists():
+                        print('Path to camera parameters does not exist')
+                        sys.exit()
+                    else:
+                        map_x, map_y = calc_distortion_mapping(camera_params_path, b, a)
             # if developing target are not designated, develop all files in filelist.csv
             if src_img_index == -1:
                 src_img_index = range(len(df_filelist))
@@ -531,15 +564,10 @@ def filter_atn_parm_median(src_atn_param, kernel_size):
 
     return ret
 
-
 def calc_distortion_mapping(camera_parameter_file_path, a, b):
-    fs = cv2.FileStorage(camera_parameter_file_path, cv2.FILE_STORAGE_READ)
-    fn = fs.getNode('camera_matrix')
-    camera_matrix = fn.mat()
-    fn = fs.getNode('distortion_coefficients')
-    distortion_coefficients = fn.mat()
-    cam_mat, roi = cv2.getOptimalNewCameraMatrix(camera_matrix, distortion_coefficients, (b, a), 0)
-    map_x, map_y = cv2.initUndistortRectifyMap(camera_matrix, distortion_coefficients, None, cam_mat, (b, a), 5)
+    mono_cam = MonoCamera(camera_parameter_file_path) # MonoCamera is a Class to read camera parameters: defined in utilities.py
+    cam_mat, _ = cv2.getOptimalNewCameraMatrix(mono_cam.K, mono_cam.d, (a, b), 0)
+    map_x, map_y = cv2.initUndistortRectifyMap(mono_cam.K, mono_cam.d, None, cam_mat, (b, a), 5)
     return map_x, map_y
 
 
