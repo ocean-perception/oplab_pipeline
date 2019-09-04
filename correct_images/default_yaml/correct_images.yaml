@@ -25,9 +25,11 @@ attenuation_correction:
 normalization:
   target_mean: 30 # target mean and standard deviation for pixel stat
   target_std: 3
-  debayer_option: 'vng' # debayer option. 'linear', 'ea' or 'vng'. default = 'linear'
+  
 
 output:
+  debayer_option: 'vng' # debayer option. 'linear', 'ea' or 'vng'. default = 'linear'
+  bayer_pattern: 'BGGR' # bayer pattern for biocam: BGGR, ae2000: GRBG, tuna sand: RGGB
   dst_file_format: 'png' # The format of developed images. Currently, only png can be given.
   
 flags:

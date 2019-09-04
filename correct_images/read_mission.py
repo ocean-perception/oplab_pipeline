@@ -8,13 +8,19 @@ class Image:
         self.timeoffset = cdict['timeoffset']
         self.cameras = cdict['cameras']
         self.cameras_number = self.cameras
+
         if self.format == 'seaxerocks_3':
             self.cameras_0 = cdict['cameras'][0]
             self.cameras_1 = cdict['cameras'][1]
             self.cameras_2 = cdict['cameras'][2]
+        elif self.format == 'biocam':
+            self.cameras_0 = cdict['cameras'][0]
+            self.cameras_1 = cdict['cameras'][1]
+
         else:
             self.cameras_0 = cdict['cameras'][0]
             self.cameras_1 = cdict['cameras'][1]
+
 
 class config:
     def __init__(self, cdict):
@@ -24,7 +30,7 @@ class config:
         if self.format == 'seaxerocks_3':
             self.camera_1 = cdict['camera1']
             self.camera_2 = cdict['camera2']
-            self.camera_3 = cdict['camera3']
+            #self.camera_3 = cdict['camera3']
         else:
             self.camera_1 = cdict['camera1']
             self.camera_2 = cdict['camera2']
@@ -43,11 +49,13 @@ class normalization:
     def __init__(self, cdict):
         self.target_mean = cdict['target_mean']
         self.target_std = cdict['target_std']
-        self.debayer_option = cdict['debayer_option']    
+            
 
 
 class output:
     def __init__(self, cdict):
+        self.debayer_option = cdict['debayer_option']
+        self.bayer_pattern = cdict['bayer_pattern']
         self.dst_file_format = cdict['dst_file_format']
 
 
