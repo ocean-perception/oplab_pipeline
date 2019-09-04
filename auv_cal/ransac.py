@@ -25,12 +25,14 @@ def run_ransac(data, estimate, is_inlier, sample_size, goal_inliers, max_iterati
     # random.sample cannot deal with "data" being a numpy array
     data = list(data)
     for i in range(max_iterations):
+        inliers = []
         s = random.sample(data, int(sample_size))
         m = estimate(s)
         ic = 0
         for j in range(len(data)):
             if is_inlier(m, data[j]):
                 ic += 1
+                inliers.append(data[j])
 
         #print(s)
         #print('estimate:', m,)
@@ -42,11 +44,11 @@ def run_ransac(data, estimate, is_inlier, sample_size, goal_inliers, max_iterati
             if ic > goal_inliers and stop_at_goal:
                 break
     #print('took iterations:', i+1, 'best model:', best_model, 'explains:', best_ic)
-    return best_model, best_ic
+    return best_model, inliers
 
 
 def plot_plane(a, b, c, d):
-        xx, yy = np.mgrid[:10, :10]
+        xx, yy = np.mgrid[-5:5, 2:6]
         return xx, yy, (-d - a * xx - b * yy) / c
 
 
@@ -72,9 +74,8 @@ def plane_fitting_ransac(cloud_xyz,
         ax.scatter3D(cloud_xyz.T[0], cloud_xyz.T[1], cloud_xyz.T[2])
         xx, yy, zz = plot_plane(a, b, c, d)
         ax.plot_surface(xx, yy, zz, color=(0, 1, 0, 0.5))
-        print('Best model:', model, 'explains:', inliers)
         plt.show()
-    return (a, b, c, d)
+    return (a, b, c, d), inliers
 
 
 if __name__ == '__main__':

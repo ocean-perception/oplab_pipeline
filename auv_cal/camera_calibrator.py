@@ -38,6 +38,8 @@ import numpy.linalg
 from distutils.version import LooseVersion
 from pathlib import Path
 import numpy as np
+import json
+import joblib
 
 
 # Supported calibration patterns
@@ -222,11 +224,11 @@ def _is_sharp(img, corners, board):
     max_y = int(max(y1, y2, y3, y4))
 
     img_roi = img[min_y:max_y, min_x:max_x]
-    # cv2.imshow("ROI", img_roi)
+    #cv2.imshow("ROI", img_roi)
     lap_var = cv2.Laplacian(img_roi, cv2.CV_64F).var()
     # TODO: what is a good value here?
     # source: https://www.pyimagesearch.com/2015/09/07/blur-detection-with-opencv/
-    return lap_var > 25.0
+    return lap_var > 0.26
 
 
 def _get_circles(img, board, pattern, invert=False):
@@ -243,14 +245,23 @@ def _get_circles(img, board, pattern, invert=False):
     if invert:
         (thresh, mono) = cv2.threshold(
             mono, 140, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)
+        #cv2.imshow('Test', mono)
+        #cv2.waitKey(3)
 
     flag = cv2.CALIB_CB_SYMMETRIC_GRID
     if pattern == Patterns.ACircles:
         flag = cv2.CALIB_CB_ASYMMETRIC_GRID
     mono_arr = numpy.array(mono)
+
+    params = cv2.SimpleBlobDetector_Params()
+    params.minArea = 10
+    params.minDistBetweenBlobs = 5
+
+    detector = cv2.SimpleBlobDetector_create(params)
+
     (ok, corners) = cv2.findCirclesGrid(mono_arr,
                                         (board.n_cols, board.n_rows),
-                                        flags=flag)
+                                        flags=flag, blobDetector=detector)
 
     # In symmetric case, findCirclesGrid does not detect the target if it's turned sideways. So we try
     # again with dimensions swapped - not so efficient.
@@ -286,7 +297,7 @@ class Calibrator(object):
 
         # Set to true after we perform calibration
         self.calibrated = False
-        self.debug = True
+        self.debug = False
         self.calib_flags = flags
         self.checkerboard_flags = checkerboard_flags
         self.pattern = pattern
@@ -298,7 +309,6 @@ class Calibrator(object):
         # For each db sample, we also record the detected corners.
         self.good_corners = []
         # Set to true when we have sufficiently varied samples to calibrate
-        self.param_ranges = [0.7, 0.7, 0.4, 0.5]
         self.name = name
         self.last_frame_corners = None
         self.max_chessboard_speed = max_chessboard_speed
@@ -350,16 +360,7 @@ class Calibrator(object):
         d = min([param_distance(params, p) for p in db_params])
         # print("d = %.3f" % d)  # DEBUG
         # TODO What's a good threshold here? Should it be configurable?
-        if d <= 0.15:
-            return False
-
-        if last_frame_corners is not None:
-            if self.max_chessboard_speed > 0:
-                if not self.is_slow_moving(corners, last_frame_corners):
-                    return False
-
-        # All tests passed, image should be good for calibration
-        return True
+        return d > 0.2
 
     def mk_object_points(self, boards):
         opts = []
@@ -394,6 +395,7 @@ class Calibrator(object):
             else:
                 (ok, corners) = _get_circles(img, b, self.pattern, self.invert)
 
+            """
             show_img = img.copy()
             cv2.namedWindow('Corners ' + self.name, 0)
             if ok:
@@ -405,71 +407,12 @@ class Calibrator(object):
                 cv2.namedWindow('Corners ' + self.name, 0)
                 cv2.imshow('Corners ' + self.name, show_img)
                 cv2.waitKey(3)
+            """
+
 
             if ok:
                 return (ok, corners, b)
         return (False, None, None)
-
-    def downsample_and_detect(self, img):
-        """
-        Downsample the input image to approximately VGA resolution and detect the
-        calibration target corners in the full-size image.
-
-        Combines these apparently orthogonal duties as an optimization. Checkerboard
-        detection is too expensive on large images, so it's better to do detection on
-        the smaller display image and scale the corners back up to the correct size.
-
-        Returns (scrib, corners, downsampled_corners, board, (x_scale, y_scale)).
-        """
-        # Scale the input image down to ~VGA size
-        height = img.shape[0]
-        width = img.shape[1]
-        scale = math.sqrt((width*height) / (640.*480.))
-        if scale > 1.0:
-            scrib = cv2.resize(img, (int(width / scale), int(height / scale)))
-        else:
-            scrib = img
-        # Due to rounding, actual horizontal/vertical scaling may differ slightly
-        x_scale = float(width) / scrib.shape[1]
-        y_scale = float(height) / scrib.shape[0]
-
-        if self.pattern == Patterns.Chessboard:
-            # Detect checkerboard
-            (ok, downsampled_corners, board) = self.get_corners(scrib, refine=True)
-
-            # Scale corners back to full size image
-            corners = None
-            if ok:
-                if scale > 1.0:
-                    # Refine up-scaled corners in the original full-res image
-                    # TODO Does this really make a difference in practice?
-                    corners_unrefined = downsampled_corners.copy()
-                    corners_unrefined[:, :, 0] *= x_scale
-                    corners_unrefined[:, :, 1] *= y_scale
-                    radius = int(math.ceil(scale))
-                    if len(img.shape) == 3 and img.shape[2] == 3:
-                        mono = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-                    else:
-                        mono = img
-                    cv2.cornerSubPix(mono, corners_unrefined, (radius, radius), (-1, -1),
-                                     (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.1))
-                    corners = corners_unrefined
-                else:
-                    corners = downsampled_corners
-        else:
-            # Circle grid detection is fast even on large images
-            (ok, corners, board) = self.get_corners(img)
-            # Scale corners to downsampled image for display
-            downsampled_corners = None
-            if ok:
-                if scale > 1.0:
-                    downsampled_corners = corners.copy()
-                    downsampled_corners[:, :, 0] /= x_scale
-                    downsampled_corners[:, :, 1] /= y_scale
-                else:
-                    downsampled_corners = corners
-
-        return (scrib, corners, downsampled_corners, board, (x_scale, y_scale))
 
     def lrreport(self, d, k, r, p):
         print("D = ", numpy.ravel(d).tolist())
@@ -528,9 +471,27 @@ class MonoCalibrator(Calibrator):
         """
         Calibrate camera from given images
         """
-        goodcorners = self.collect_corners(images_list)
-        self.cal_fromcorners(goodcorners)
+        self.collect_corners(images_list)
+        self.cal_fromcorners()
         self.calibrated = True
+
+    def cal_from_json(self, json_file, images_list):
+        self.good_corners = []
+        test_image = cv2.imread(str(images_list[0]))
+        self.size = (test_image.shape[1], test_image.shape[0])
+        with open(json_file) as f:
+            data = json.load(f)
+            for lf in data:
+                lboard = ChessboardInfo()
+                lboard.fromlist(lf['board'])
+                lcorners = np.array(lf['corners'], dtype=np.float32)
+                params = self.get_parameters(lcorners, lboard, lf['size'])
+                if self.is_good_sample(params, lcorners):
+                    lgray = cv2.imread(lf['file'])
+                    self.db.append((params, lgray))
+                    self.good_corners.append((lcorners, lboard))
+            print('Using ' + str(len(self.good_corners)) + ' inlier files!')
+            self.cal_fromcorners()
 
     def collect_corners(self, images_list):
         """
@@ -544,50 +505,93 @@ class MonoCalibrator(Calibrator):
         test_image = cv2.imread(str(images_list[0]))
         self.size = (test_image.shape[1], test_image.shape[0])
         self.good_corners = []
+        self.db = []
         self.json = []
-        for i in images_list:
+        good_corners_names = []
+
+        def get_image_corners(i):
             gray = cv2.imread(str(i))
             ok, corners, board = self.get_corners(gray)
             if not ok:
-                continue
+                print('Chessboard NOT detected in ' + str(i.name))
+                return
             # Add sample to database only if it's sufficiently different from
             # any previous sample.
             params = self.get_parameters(corners, board, self.size)
             if _is_sharp(gray, corners, board):
-                self.json.append({
-                        'file': str(i),
-                        'corners': corners.tolist(),
-                        'board': board.tolist()
-                    })
-                if self.is_good_sample(params, corners, self.last_frame_corners):
-                    self.db.append((params, gray))
-                    self.good_corners.append((corners, board))
-                    # print(("*** Added sample %d, p_x = %.3f, p_y = %.3f, p_size = %.3f, skew = %.3f" %
-                    #        tuple([len(self.db)] + params)))
+                print('Chessboard detected! in ' + str(i.name))
 
-                # if self.debug:
-                #        img = cv2.drawChessboardCorners(gray, (board.n_cols, board.n_rows), corners, ok)
-                #        name = Path(i).stem
-                #        print('Writing debug image to /tmp/' + name + '_corners.png')
-                #        cv2.imwrite('/tmp/' + name + '_corners.png', img)
-            elif self.debug:
-                print("Image " + str(i) + " is blurry, discarded.")
+                if self.debug:
+                    img = cv2.drawChessboardCorners(gray, (board.n_cols, board.n_rows), corners, ok)
+                    name = Path(i).stem
+                    filename = Path('/tmp/' + self.name + '/' + name + '_corners.png')
+                    if not filename.parents[0].exists():
+                        filename.parents[0].mkdir(parents=True)
+                    print('Writing debug image to ' + str(filename))
+                    cv2.imwrite(str(filename), img)
 
-            self.last_frame_corners = corners
+                return [(params, gray), (corners, board), i]
+
+            else:
+                print("Image " + str(i.name) + " is blurry, discarded.")
+
+        result = joblib.Parallel(n_jobs=-2)([
+            joblib.delayed(get_image_corners)(i)
+            for i in images_list])
+
+        name = ''
+        good_corners_names = []
+        all_detections = None
+        for i in result:
+            if i is not None:
+                if len(i) > 2:
+                    (params, gray) = i[0]
+                    (corners, board) = i[1]
+                    if all_detections is None:
+                        all_detections = gray.copy()
+                    if self.is_good_sample(params, corners, self.last_frame_corners):
+                        print("*** Added sample p_x = %.3f, p_y = %.3f, p_size = %.3f, skew = %.3f" %
+                              tuple(params))
+                        self.last_frame_corners = corners
+                        self.db.append(i[0])
+                        self.good_corners.append(i[1])
+                        self.json.append({
+                            'file': str(i[2]),
+                            'corners': corners.tolist(),
+                            'board': board.tolist(),
+                            'size': self.size
+                        })
+                        good_corners_names.append(str(i[2]))
+
+                        all_detections = cv2.drawChessboardCorners(all_detections, (board.n_cols, board.n_rows), corners, True)
+
+                        if name == '':
+                            name = i[2].stem
+        filename = Path('/tmp/' + self.name + '_corners.png')
+        if not filename.parents[0].exists():
+            filename.parents[0].mkdir(parents=True)
+        print('Writing corners image to ' + str(filename))
+        cv2.imwrite(str(filename), all_detections)
+
         if not self.good_corners:
             raise CalibrationException("No corners found in images!")
         print('Using ' + str(len(self.good_corners)) + ' inlier files!')
-        return self.good_corners
+        filename = Path('/tmp/' + self.name + '/' + name + '_inliers.txt')
+        if not filename.parents[0].exists():
+            filename.parents[0].mkdir(parents=True)
+        with filename.open('w') as f:
+            for n in good_corners_names:
+                f.write("%s\n" % n)
 
-    def cal_fromcorners(self, good):
+    def cal_fromcorners(self, check_error=True):
         """
         :param good: Good corner positions and boards
         :type good: [(corners, ChessboardInfo)]
         """
         print("Calibrating monocular...")
-        boards = [b for (_, b) in good]
+        boards = [b for (_, b) in self.good_corners]
 
-        ipts = [points for (points, _) in good]
+        ipts = [points for (points, _) in self.good_corners]
         opts = self.mk_object_points(boards)
 
         self.intrinsics = numpy.zeros((3, 3), numpy.float64)
@@ -603,7 +607,7 @@ class MonoCalibrator(Calibrator):
             self.distortion,
             flags=self.calib_flags,
             criteria=(cv2.TERM_CRITERIA_MAX_ITER +
-                      cv2.TERM_CRITERIA_EPS, 1000, 1e-6))
+                      cv2.TERM_CRITERIA_EPS, 100, 1e-3))
 
         # R is identity matrix for monocular calibration
         self.R = numpy.eye(3, dtype=numpy.float64)
@@ -611,12 +615,34 @@ class MonoCalibrator(Calibrator):
 
         self.set_alpha(-1)
 
+        linear_error = []
+        for (params, gray) in self.db:
+            error = self.linear_error_from_image(gray)
+            if error is not None:
+                linear_error.append(error)
+            else:
+                linear_error.append(1e3)
+        print(linear_error)
+        print(self.intrinsics)
+        print(self.distortion)
+        if check_error:
+            lin_error_mean = np.mean(np.array(linear_error))
+            lin_error_std = np.std(np.array(linear_error))
+            self.good_corners = [c for c, e in zip(self.good_corners, linear_error)
+                                 if e < lin_error_mean + 2*lin_error_std]
+            print('Using ' + str(len(self.good_corners)) + ' inlier files after filtering!')
+            self.cal_fromcorners(check_error=False)
+
         if self.debug:
             for i, (params, img) in enumerate(self.db):
                 # img = self.db[0][1]
                 img = self.remap(img)
-                print('Writing debug remap image to /tmp/test_' + self.name + '_remap.png')
-                cv2.imwrite('/tmp/test_' + str(i) + '_' + self.name + '_remap.png', img)
+
+                filename = Path('/tmp/' + self.name + '_remap/' + str(i) + '_' + self.name + '_remap.png')
+                if not filename.parents[0].exists():
+                    filename.parents[0].mkdir(parents=True)
+                print('Writing debug remap image to ' + str(filename))
+                cv2.imwrite(str(filename), img)
 
     def set_alpha(self, a):
         """
@@ -659,7 +685,6 @@ class MonoCalibrator(Calibrator):
     def report(self):
         self.lrreport(self.distortion, self.intrinsics, self.R, self.P)
 
-
     def yaml(self):
         return self.lryaml(self.name, self.distortion, self.intrinsics, self.R, self.P)
 
@@ -668,7 +693,7 @@ class MonoCalibrator(Calibrator):
         Detect the checkerboard and compute the linear error.
         Mainly for use in tests.
         """
-        _, corners, _, board, _ = self.downsample_and_detect(image)
+        _, corners, board = self.get_corners(image)
         if corners is None:
             return None
 
@@ -708,7 +733,13 @@ def find_common_filenames(list1, list2):
     rf = [Path(d['file']).stem for d in list2]
 
     if 'image' in rf[0][0:5]:
-        rf = [Path(d['file']).stem[5:] for d in list2]
+        if len(lf[0]) == 32:
+            # Hack for Biocam
+            lf = [Path(d['file']).stem[13:28] for d in list1]
+            rf = [Path(d['file']).stem[13:28] for d in list2]
+        else:
+            lf = [Path(d['file']).stem[5:] for d in list1]
+            rf = [Path(d['file']).stem[5:] for d in list2]
     result = []
 
     for i, lname in enumerate(lf):
@@ -741,7 +772,6 @@ class StereoCalibrator(Calibrator):
         self.r = MonoCalibrator(*args, **kwargs)
         # Collecting from two cameras in a horizontal stereo rig, can't get
         # full X range in the left camera.
-        self.param_ranges[0] = 0.4
         self.inliers = []
 
         self.l.name = stereo_camera_model.left.name
@@ -805,21 +835,28 @@ class StereoCalibrator(Calibrator):
                 if _is_sharp(lgray, lcorners, lboard) and _is_sharp(rgray, rcorners, rboard):
                     self.db.append((params, lgray, rgray))
                     self.good_corners.append((lcorners, rcorners, lboard))
-                    print(("*** Added sample %d, p_x = %.3f, p_y = %.3f, p_size = %.3f, skew = %.3f" %
-                           tuple([len(self.db)] + params)))
+                    # print(("*** Added sample %d, p_x = %.3f, p_y = %.3f, p_size = %.3f, skew = %.3f" %
+                    #        tuple([len(self.db)] + params)))
 
                     self.inliers.append((lgray, rgray, lcorners, lboard, rcorners, rboard))
 
+                    print('Writing debug images to /tmp/')
                     if self.debug:
                         limg = cv2.drawChessboardCorners(lgray, (lboard.n_cols, lboard.n_rows), lcorners, lok)
                         rimg = cv2.drawChessboardCorners(rgray, (rboard.n_cols, rboard.n_rows), rcorners, rok)
                         lname = Path(i).stem
                         rname = Path(j).stem
-                        print('Writing debug images to /tmp/' + lname + '_left_corners.png and /tmp/' + rname + '_right_corners.png and')
-                        cv2.imwrite('/tmp/' + lname + '_left_corners.png', limg)
-                        cv2.imwrite('/tmp/' + rname + '_right_corners.png', rimg)
+
+                        lfilename = Path('/tmp/stereo_' + self.name + '/' + lname + '_left_corners.png')
+                        rfilename = Path('/tmp/stereo_' + self.name + '/' + lname + '_right_corners.png')
+                        if not lfilename.parents[0].exists():
+                            lfilename.parents[0].mkdir(parents=True)
+                        if not rfilename.parents[0].exists():
+                            rfilename.parents[0].mkdir(parents=True)
+                        cv2.imwrite(str(lfilename), limg)
+                        cv2.imwrite(str(rfilename), rimg)
                 elif self.debug:
-                    print("Image " + str(i)  + ' or ' + str(j) + " are blurry, pair discarded.")
+                    print("Image " + str(i) + ' or ' + str(j) + " are blurry, pair discarded.")
             self.last_frame_corners = lcorners
         if len(self.good_corners) == 0:
             raise CalibrationException("No corners found in images!")
@@ -848,7 +885,7 @@ class StereoCalibrator(Calibrator):
             self.r.intrinsics, self.r.distortion,
             self.l.size,
             criteria=(cv2.TERM_CRITERIA_MAX_ITER + \
-                      cv2.TERM_CRITERIA_EPS, 100, 1e-8),
+                      cv2.TERM_CRITERIA_EPS, 100, 1e-3),
             flags=flags)
         print('Calibrated with RMS = {}'.format(str(rms)))
 
@@ -856,6 +893,7 @@ class StereoCalibrator(Calibrator):
 
         if self.debug:
             errors = []
+            print('Writing debug images to /tmp/')
             for i, (params, limg, rimg) in enumerate(self.db):
                 error = self.epipolar_error_from_images(limg, rimg)
 
@@ -876,11 +914,16 @@ class StereoCalibrator(Calibrator):
                 final_image[:lh, :lw, :] = limg
                 final_image[lh:lh + rh, :rw, :] = rimg
 
-                cv2.imshow('Final images', final_image)
-                cv2.waitKey(3)
+                #cv2.imshow('Final images', final_image)
+                #cv2.waitKey(3)
 
-                print('Writing debug images to /tmp/stereo_' + str(i) + '_' + self.l.name + '_' + self.r.name + '_remap.png')
-                cv2.imwrite('/tmp/stereo_' + str(i) + '_' + self.l.name + '_' + self.r.name + '_remap.png', final_image)
+                filename = Path('/tmp/stereo_' + self.name + '_remap/stereo_' + str(i) + '_' + self.l.name + '_' + self.r.name + '_remap.png')
+                if not lfilename.parents[0].exists():
+                    lfilename.parents[0].mkdir(parents=True)
+                if not rfilename.parents[0].exists():
+                    rfilename.parents[0].mkdir(parents=True)
+
+                cv2.imwrite(str(filename), final_image)
                 if error is not None:
                     errors.append(error)
             print(errors)
@@ -937,8 +980,6 @@ class StereoCalibrator(Calibrator):
         k2 = self.r.intrinsics
         r2 = self.r.R
         p2 = self.r.P
-
-        print(p2)
 
         calmessage = (""
                       + "left:\n"
@@ -1013,6 +1054,9 @@ class StereoCalibrator(Calibrator):
 
         lundistorted = self.l.undistort_points(lcorners)
         rundistorted = self.r.undistort_points(rcorners)
+
+        print('L', lcorners[0, 0, 0], lcorners[0, 0, 1], 'to', lundistorted[0, 0, 0], lundistorted[0, 0, 1])
+        print('R', rcorners[0, 0, 0], rcorners[0, 0, 1], 'to', rundistorted[0, 0, 0], rundistorted[0, 0, 1])
 
         return self.epipolar_error(lundistorted, rundistorted)
 
