@@ -228,7 +228,7 @@ def _is_sharp(img, corners, board):
     lap_var = cv2.Laplacian(img_roi, cv2.CV_64F).var()
     # TODO: what is a good value here?
     # source: https://www.pyimagesearch.com/2015/09/07/blur-detection-with-opencv/
-    return lap_var > 0.25
+    return lap_var > 0.26
 
 
 def _get_circles(img, board, pattern, invert=False):
@@ -252,9 +252,16 @@ def _get_circles(img, board, pattern, invert=False):
     if pattern == Patterns.ACircles:
         flag = cv2.CALIB_CB_ASYMMETRIC_GRID
     mono_arr = numpy.array(mono)
+
+    params = cv2.SimpleBlobDetector_Params()
+    params.minArea = 10
+    params.minDistBetweenBlobs = 5
+
+    detector = cv2.SimpleBlobDetector_create(params)
+
     (ok, corners) = cv2.findCirclesGrid(mono_arr,
                                         (board.n_cols, board.n_rows),
-                                        flags=flag)
+                                        flags=flag, blobDetector=detector)
 
     # In symmetric case, findCirclesGrid does not detect the target if it's turned sideways. So we try
     # again with dimensions swapped - not so efficient.
@@ -351,9 +358,9 @@ class Calibrator(object):
 
         db_params = [sample[0] for sample in self.db]
         d = min([param_distance(params, p) for p in db_params])
-        print("d = %.3f" % d)  # DEBUG
+        # print("d = %.3f" % d)  # DEBUG
         # TODO What's a good threshold here? Should it be configurable?
-        return d > 0.26
+        return d > 0.2
 
     def mk_object_points(self, boards):
         opts = []
@@ -468,8 +475,10 @@ class MonoCalibrator(Calibrator):
         self.cal_fromcorners()
         self.calibrated = True
 
-    def cal_from_json(self, json_file):
+    def cal_from_json(self, json_file, images_list):
         self.good_corners = []
+        test_image = cv2.imread(str(images_list[0]))
+        self.size = (test_image.shape[1], test_image.shape[0])
         with open(json_file) as f:
             data = json.load(f)
             for lf in data:
@@ -574,7 +583,7 @@ class MonoCalibrator(Calibrator):
             for n in good_corners_names:
                 f.write("%s\n" % n)
 
-    def cal_fromcorners(self):
+    def cal_fromcorners(self, check_error=True):
         """
         :param good: Good corner positions and boards
         :type good: [(corners, ChessboardInfo)]
@@ -598,7 +607,7 @@ class MonoCalibrator(Calibrator):
             self.distortion,
             flags=self.calib_flags,
             criteria=(cv2.TERM_CRITERIA_MAX_ITER +
-                      cv2.TERM_CRITERIA_EPS, 1000, 1e-8))
+                      cv2.TERM_CRITERIA_EPS, 100, 1e-3))
 
         # R is identity matrix for monocular calibration
         self.R = numpy.eye(3, dtype=numpy.float64)
@@ -608,8 +617,21 @@ class MonoCalibrator(Calibrator):
 
         linear_error = []
         for (params, gray) in self.db:
-            linear_error.append(self.linear_error_from_image(gray))
+            error = self.linear_error_from_image(gray)
+            if error is not None:
+                linear_error.append(error)
+            else:
+                linear_error.append(1e3)
         print(linear_error)
+        print(self.intrinsics)
+        print(self.distortion)
+        if check_error:
+            lin_error_mean = np.mean(np.array(linear_error))
+            lin_error_std = np.std(np.array(linear_error))
+            self.good_corners = [c for c, e in zip(self.good_corners, linear_error)
+                                 if e < lin_error_mean + 2*lin_error_std]
+            print('Using ' + str(len(self.good_corners)) + ' inlier files after filtering!')
+            self.cal_fromcorners(check_error=False)
 
         if self.debug:
             for i, (params, img) in enumerate(self.db):
@@ -863,7 +885,7 @@ class StereoCalibrator(Calibrator):
             self.r.intrinsics, self.r.distortion,
             self.l.size,
             criteria=(cv2.TERM_CRITERIA_MAX_ITER + \
-                      cv2.TERM_CRITERIA_EPS, 100, 1e-8),
+                      cv2.TERM_CRITERIA_EPS, 100, 1e-3),
             flags=flags)
         print('Calibrated with RMS = {}'.format(str(rms)))
 
