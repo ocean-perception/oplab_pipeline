@@ -61,7 +61,7 @@ def calibrate_mono(name, filepaths, extension, config, output_file, overwrite):
             with image_list_file.open('w') as f:
                 json.dump(mc.json, f)
         else:
-            mc.cal_from_json(image_list_file)
+            mc.cal_from_json(image_list_file, image_list)
         mc.report()
         Console.info('Writting calibration to '"'{}'"''.format(output_file))
         with output_file.open('w') as f:
