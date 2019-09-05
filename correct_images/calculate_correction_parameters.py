@@ -189,7 +189,6 @@ def calculate_correction_parameters(path, force):
             print(dirpath)
             
             dirpath = dirpath / 'attenuation_correction'
-            print('DIRPATH: ', dirpath)
             if not dirpath.exists():
                 dirpath.mkdir(parents=True)
             dirpath_atn_crr = dirpath / 'tmp_atn_crr'
@@ -534,7 +533,9 @@ def calculate_correction_parameters(path, force):
 
             del memmap_raw
             
-            for file_name in Path(file_name_memmap_raw).glob('*.map'):
+            path_parent = Path(path).parents[4]
+
+            for file_name in Path(path_parent).glob('*.map'):
                 Path(file_name).unlink()
             
 
@@ -1005,7 +1006,9 @@ def calculate_correction_parameters(path, force):
 
             del memmap_raw
             
-            for file_name in Path(file_name_memmap_raw).glob('*.map'):
+            path_parent = Path(path).parents[4]
+
+            for file_name in Path(path_parent).glob('*.map'):
                 Path(file_name).unlink()
             
 
@@ -1457,7 +1460,9 @@ def calculate_correction_parameters(path, force):
 
             del memmap_raw
             
-            for file_name in Path(file_name_memmap_raw).glob('*.map'):
+            path_parent = Path(path).parents[4]
+
+            for file_name in Path(path_parent).glob('*.map'):
                 Path(file_name).unlink()
             
 
