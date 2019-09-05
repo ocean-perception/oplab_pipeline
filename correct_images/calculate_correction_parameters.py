@@ -204,12 +204,9 @@ def calculate_correction_parameters(path, force):
                     (altitudes_all >= altitude_min)
                     & (altitudes_all <= altitude_max))[0]
 
-            # print('altitude_min', altitude_min, 'altitude_max',
-            #       altitude_max)
-            # print(idx_effective_data)
-            # configure output file path
-            dirpath = path_processed / 'image/attenuation_correction'
-            print('DIRPATH: ', dirpath)
+            dirpath = get_processed_folder(dirpath)
+            print(dirpath)
+            dirpath = dirpath / 'attenuation_correction'
             if not dirpath.exists():
                 dirpath.mkdir(parents=True)
             dirpath_atn_crr = dirpath / 'tmp_atn_crr'
@@ -595,8 +592,9 @@ def calculate_correction_parameters(path, force):
                          cfg_filepath, datetime.datetime.now())
 
             del memmap_raw
+            path_parent = Path(path).parents[4]
 
-            for file_name in Path(file_name_memmap_raw).glob('*.map'):
+            for file_name in Path(path_parent).glob('*.map'):
                 Path(file_name).unlink()
 
             Console.info(
@@ -1067,8 +1065,9 @@ def calculate_correction_parameters(path, force):
                          cfg_filepath, datetime.datetime.now())
 
             del memmap_raw
+            path_parent = Path(path).parents[4]
 
-            for file_name in Path(file_name_memmap_raw).glob('*.map'):
+            for file_name in Path(path_parent).glob('*.map'):
                 Path(file_name).unlink()
 
             Console.info(
@@ -1520,8 +1519,8 @@ def calculate_correction_parameters(path, force):
                          cfg_filepath, datetime.datetime.now())
 
             del memmap_raw
-
-            for file_name in Path(file_name_memmap_raw).glob('*.map'):
+            path_parent = Path(path).parents[4]
+            for file_name in Path(path_parent).glob('*.map'):
                 Path(file_name).unlink()
 
             Console.info(
