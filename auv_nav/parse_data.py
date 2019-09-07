@@ -22,6 +22,7 @@ from auv_nav.parsers.parse_autosub import parse_autosub
 from auv_nav.parsers.parse_gaps import parse_gaps
 from auv_nav.parsers.parse_usbl_dump import parse_usbl_dump
 from auv_nav.parsers.parse_acfr_images import parse_acfr_images
+from auv_nav.parsers.parse_biocam_images import parse_biocam_images
 from auv_nav.parsers.parse_seaxerocks_images import parse_seaxerocks_images
 from auv_nav.parsers.parse_interlacer import parse_interlacer
 # from lib_sensors.parse_chemical import parse_chemical
@@ -160,6 +161,11 @@ def parse_data(filepath, force_overwite):
             elif mission.image.format == "seaxerocks_3":
                 pool_list.append(
                     pool.apply_async(parse_seaxerocks_images,
+                                     [mission, vehicle, 'images',
+                                      ftype, outpath, filename]))
+            elif mission.image.format == "biocam":
+                pool_list.append(
+                    pool.apply_async(parse_biocam_images,
                                      [mission, vehicle, 'images',
                                       ftype, outpath, filename]))
             else:
