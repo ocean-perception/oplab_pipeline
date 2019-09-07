@@ -66,22 +66,22 @@ def parse_biocam_images(mission,
 
     # determine file paths
 
-    filepath1 = get_raw_folder(outpath / '..' / filepath / str(camera1_label + '_*/*.*'))
-    filepath2 = get_raw_folder(outpath / '..' / filepath / str(camera2_label + '_*/*.*'))
+    filepath1 = get_raw_folder(outpath / '..' / filepath / str(camera1_label + '_strobe/*.*'))
+    filepath1b = get_raw_folder(outpath / '..' / filepath / str(camera1_label + '_laser/*.*'))
+    filepath2 = get_raw_folder(outpath / '..' / filepath / str(camera2_label + '_strobe/*.*'))
+    filepath2b = get_raw_folder(outpath / '..' / filepath / str(camera2_label + '_laser/*.*'))
 
     camera1_list = glob.glob(str(filepath1))
+    camera1_list.extend(glob.glob(str(filepath1b)))
     camera2_list = glob.glob(str(filepath2))
+    camera2_list.extend(glob.glob(str(filepath2b)))
 
     camera1_filename = [
         line for line in camera1_list if '.txt' not in line and '._' not in line]
     camera2_filename = [
         line for line in camera2_list if '.txt' not in line and '._' not in line]
 
-    print(filepath1)
-    print(filepath2)
-    print(camera1_list[0])
-    print(camera1_list[1])
-    print('Found ' + str(len(camera2_filename) + len(camera1_filename)) + ' images!')
+    Console.info('Found ' + str(len(camera2_filename) + len(camera1_filename)) + ' BioCam images!')
 
     data_list = []
     if ftype == 'acfr':
