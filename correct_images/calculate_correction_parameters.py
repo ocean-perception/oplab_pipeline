@@ -96,7 +96,7 @@ def calculate_correction_parameters(path, force):
     # load parameters from correct_images.yaml if it already exists
     config_ = read_params(path_correct, 'correct')
     label_raw_file = 'raw file'
-    label_altitude = ' Altitude [m]'
+    label_altitude = 'Altitude [m]'
     altitude_max = config_.attenuation_correction.altitude_max.get('max')
     altitude_min = config_.attenuation_correction.altitude_min.get('min')
     sampling_method = config_.attenuation_correction.sampling_method
@@ -129,13 +129,7 @@ def calculate_correction_parameters(path, force):
             img_path = 'image'
 
             # read path to CSV file
-            print('path_processed', path_processed)
-            print('config', config_.config.auv_nav_path)
-            config_dirname = os.path.basename(config_.config.auv_nav_path)
-            # auv_nav_filepath = path_processed / config_.config.auv_nav_path
-            auv_nav_filepath = path_processed / config_dirname
-
-            print('auv_nav_filepath', auv_nav_filepath)
+            auv_nav_filepath = path_processed / config_.config.auv_nav_path
             src_file_dirpath = path_raw / img_path
             csv_path = 'csv/dead_reckoning/auv_dr_' + camera + '.csv'
             auv_nav_filepath = auv_nav_filepath / csv_path
@@ -144,28 +138,10 @@ def calculate_correction_parameters(path, force):
             filepath1b = src_file_dirpath / str(camera + '_laser/*.*')
 
             camera_list = glob.glob(str(filepath1))
+            camera_list.extend(glob.glob(str(filepath1b)))
 
-            df_all = pd.read_csv(auv_nav_filepath,
-                                 dtype={'Imagenumber': object},
-                                 engine='python')
-
-            # TODO process only strobe
-            # camera_list.extend(glob.glob(str(filepath1b)))
-
-            # TODO taking care of order in 'raw file list'
-            raw_file_list_all = [line for line in camera_list if
-                                 '.txt' not in line and '._' not in line]
-
-            raw_file_list = [None] * len(df_all)
-            print('length', len(df_all))
-            for i_raw_file in range(len(raw_file_list)):
-                # print('i_raw_file', i_raw_file)
-
-                tmp_filename = df_all['Imagenumber'][i_raw_file]
-                raw_file_list[i_raw_file] = \
-                    src_file_dirpath / str(camera + '_strobe') \
-                    / os.path.basename(tmp_filename)
-
+            raw_file_list = [line for line in camera_list if '.txt' not in line and '._' not in line]
+            df_all = pd.read_csv(auv_nav_filepath, dtype={'Imagenumber': object}, engine='python')
             df_all = pd.concat([df_all, pd.DataFrame(
                 raw_file_list, columns=[label_raw_file])], axis=1)
 
@@ -185,28 +161,27 @@ def calculate_correction_parameters(path, force):
             # remove too low or too high altitude file and too small file size file
             altitudes_all = df_all[label_altitude].values
             match_count = 0
-
-            # print('df_all', df_all)
-
             # check if altitudes match with min and max provided in correct_images.yaml
             for i in range(len(altitudes_all)):
                 if altitudes_all[i] <= altitude_max and altitudes_all[
                     i] >= altitude_min:
                     match_count = match_count + 1
             if match_count < 1:
-                Console.quit(
-                    'Altitude values in dive dataset do not match '
-                    + 'with minimum and maximum altitude provided '
-                    + 'in correct_images.yaml')
+                Console.quit('Altitude values in dive dataset do not match '
+                             + 'with minimum and maximum altitude provided '
+                             + 'in correct_images.yaml')
             else:
                 # print('altitudes_all', altitudes_all)
                 idx_effective_data = np.where(
                     (altitudes_all >= altitude_min)
-                    & (altitudes_all <= altitude_max))[0]
+                    & (altitudes_all <= altitude_max))
+            # configure output file path
+            dirpath = src_filelist[0].parent
 
             dirpath = get_processed_folder(dirpath)
             print(dirpath)
             dirpath = dirpath / 'attenuation_correction'
+
             if not dirpath.exists():
                 dirpath.mkdir(parents=True)
             dirpath_atn_crr = dirpath / 'tmp_atn_crr'
