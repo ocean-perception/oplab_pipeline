@@ -41,9 +41,6 @@ def calculate_correction_parameters(path, force):
     print('path', path)
 
     path_processed = get_processed_folder(path)
-
-    print('path_processed', path_processed)
-
     Console.info('loading', path_mission, datetime.datetime.now())
     # load parameters from mission.yaml and correct_images.yaml
     # read_params(path to file, type of file: mission/correct_config)
@@ -96,7 +93,7 @@ def calculate_correction_parameters(path, force):
     # load parameters from correct_images.yaml if it already exists
     config_ = read_params(path_correct, 'correct')
     label_raw_file = 'raw file'
-    label_altitude = 'Altitude [m]'
+    label_altitude = ' Altitude [m]'
     altitude_max = config_.attenuation_correction.altitude_max.get('max')
     altitude_min = config_.attenuation_correction.altitude_min.get('min')
     sampling_method = config_.attenuation_correction.sampling_method
@@ -140,8 +137,11 @@ def calculate_correction_parameters(path, force):
             camera_list = glob.glob(str(filepath1))
             camera_list.extend(glob.glob(str(filepath1b)))
 
-            raw_file_list = [line for line in camera_list if '.txt' not in line and '._' not in line]
-            df_all = pd.read_csv(auv_nav_filepath, dtype={'Imagenumber': object}, engine='python')
+            raw_file_list = [line for line in camera_list if
+                             '.txt' not in line and '._' not in line]
+            df_all = pd.read_csv(auv_nav_filepath,
+                                 dtype={'Imagenumber': object},
+                                 engine='python')
             df_all = pd.concat([df_all, pd.DataFrame(
                 raw_file_list, columns=[label_raw_file])], axis=1)
 
@@ -161,6 +161,7 @@ def calculate_correction_parameters(path, force):
             # remove too low or too high altitude file and too small file size file
             altitudes_all = df_all[label_altitude].values
             match_count = 0
+
             # check if altitudes match with min and max provided in correct_images.yaml
             for i in range(len(altitudes_all)):
                 if altitudes_all[i] <= altitude_max and altitudes_all[
@@ -174,7 +175,11 @@ def calculate_correction_parameters(path, force):
                 # print('altitudes_all', altitudes_all)
                 idx_effective_data = np.where(
                     (altitudes_all >= altitude_min)
-                    & (altitudes_all <= altitude_max))
+                    & (altitudes_all <= altitude_max))[0]
+
+                # print('altitude_min', altitude_min, 'altitude_max',
+                #       altitude_max)
+                # print(idx_effective_data)
             # configure output file path
             dirpath = src_filelist[0].parent
 
@@ -218,22 +223,21 @@ def calculate_correction_parameters(path, force):
                 # if not dir_path_image_crr_params.exists():
                 if not dir_path_image_crr_params.exists():
                     dir_path_image_crr_params.mkdir(parents=True)
-                    Console.info(
-                        'code will compute correction parameters for this Camera for first time.')
+                Console.info(
+                    'code will compute correction parameters for this Camera for first time.')
             else:
                 print(dir_path_image_crr_params)
             if force is True:
                 Console.warn(
                     'Attenuation correction parameters already exist.')
                 Console.warn('Code will overwrite existing parameters.')
-
-            else:
-                Console.warn(
-                    'Code will quit - correction parameters already exist.')
-                Console.warn(
-                    'Run correct_images with [parse] [-F] option for overwriting existing correction parameters.')
-                continue
-            # sys.exit()
+                else:
+                    Console.warn(
+                        'Code will quit - correction parameters already exist.')
+                    Console.warn(
+                        'Run correct_images with [parse] [-F] option for overwriting existing correction parameters.')
+                    continue
+                    # sys.exit()
 
             if calculated_atn_crr_params_path is None:
                 calculated_atn_crr_params_path = dir_path_image_crr_params / 'atn_crr_params.npy'
@@ -340,22 +344,19 @@ def calculate_correction_parameters(path, force):
             downsampling_memmap = True
 
             num_downsample = 500
-
             print('len', len(idx_effective_data))
-
             if len(idx_effective_data) > num_downsample:
                 copy_idx_effective_data = idx_effective_data.copy()
                 idx_effective_data = np.random.shuffle(
                     copy_idx_effective_data)
                 idx_effective_data = copy_idx_effective_data[0:num_downsample]
+
             # print('down sampled idx effective data', idx_effective_data)
 
             # TODO optimisation
             bayer_filelist_for_memmap = [None] * len(idx_effective_data)
             for i_idx_effective in range(len(idx_effective_data)):
-                bayer_filelist_for_memmap[
-                    i_idx_effective] = bayer_filelist[idx_effective_data[
-                    i_idx_effective]]
+                bayer_filelist_for_memmap[i_idx_effective] = bayer_filelist[idx_effective_data[i_idx_effective]]
 
             file_name_memmap_raw, memmap_raw = \
                 load_memmap_from_npy_filelist(
@@ -414,6 +415,7 @@ def calculate_correction_parameters(path, force):
                         tmp_idx.append(idx_effective_data[i_idx])
                         tmp_idx_for_memmap.append(i_idx)
 
+
                 if len(tmp_idx) == 0:
                     continue
 
@@ -428,14 +430,12 @@ def calculate_correction_parameters(path, force):
                     tmp_bin_img_sample = np.mean(tmp_bin_imgs, axis=0)
                     tmp_altitude_sample = np.mean(tmp_altitudes)
 
-
                 elif sampling_method == 'mean_trimmed':
                     #     TOOD implement trimmed mean and std
                     tmp_bin_img_sample, dummy = calc_img_mean_and_std_trimmed(
                         tmp_bin_imgs, trim_ratio, calc_std=False,
                         effective_index=-1)
                     tmp_altitude_sample = np.mean(tmp_altitudes)
-
 
                 elif sampling_method == 'median':
                     # else:
@@ -568,8 +568,8 @@ def calculate_correction_parameters(path, force):
 
             del memmap_raw
             path_parent = Path(path).parents[4]
-
             for file_name in Path(path_parent).glob('*.map'):
+
                 Path(file_name).unlink()
 
             Console.info(
@@ -1041,8 +1041,8 @@ def calculate_correction_parameters(path, force):
 
             del memmap_raw
             path_parent = Path(path).parents[4]
-
             for file_name in Path(path_parent).glob('*.map'):
+
                 Path(file_name).unlink()
 
             Console.info(
@@ -1496,6 +1496,7 @@ def calculate_correction_parameters(path, force):
             del memmap_raw
             path_parent = Path(path).parents[4]
             for file_name in Path(path_parent).glob('*.map'):
+
                 Path(file_name).unlink()
 
             Console.info(
@@ -1792,12 +1793,13 @@ def optim_exp_curve_param_auto_init(altitudes, intensities, num_of_trials=1):
         init_params = np.array([a, b, c])
         # tmp_params=None
         try:
-            tmp_params = optimize.least_squares(residual_exp_curve,
-                                                init_params, loss=loss,
-                                                method=method, args=(
-                    altitudes, intensities),
-                                                bounds=(
-                                                    bound_lower, bound_upper))
+            tmp_params = optimize.least_squares(
+                residual_exp_curve,
+                init_params,
+                loss=loss,
+                method=method,
+                args=(altitudes, intensities),
+                bounds=(bound_lower, bound_upper))
             if tmp_params.cost < min_cost:
                 min_cost = tmp_params.cost
                 ret_params = tmp_params.x
