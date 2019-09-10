@@ -42,6 +42,8 @@ def parse_NOC_nmea(mission,
             with file.open('r', errors='ignore') as nmea_file:
                 for line in nmea_file.readlines():
                     parts = line.split('\t')
+                    if len(parts) < 2:
+                        continue
                     msg = pynmea2.parse(parts[1])
                     date_str = line.split(' ')[0]
                     hour_str = str(parts[1]).split(',')[1]
