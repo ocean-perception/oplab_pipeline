@@ -72,6 +72,8 @@ class Parameters:
         with file.open('r') as f:
             params = yaml.safe_load(f)
 
+        print('filepath:',file)
+
         if type is 'mission':
             # image parameters
             cdict = params['image']
