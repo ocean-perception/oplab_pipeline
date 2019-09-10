@@ -522,7 +522,7 @@ def develop_corrected_image(path, force):
             # read image path from mission.yaml
             img_path = mission.image.cameras_0.get('path')
 
-            if not Path(img_path).exists():
+            if not Path(path_processed / img_path).exists():
                 Console.warn('Image path does not exist for camera', camera)
                 continue
 
@@ -586,10 +586,10 @@ def develop_corrected_image(path, force):
             apply_distortion_correction = config_.flags.apply_distortion_correction  # load_data.get('apply_distortion_correction', True)
             camera_parameter_path = config_.flags.camera_parameter_file_path  # load_data.get('camera_parameter_file_path', None)
             camera_parameter_file_path = Path(camera_parameter_path).resolve()
-            # dst_dir_path = None # load_data.get('dst_dir_path', None)
-            dst_img_format = config_.output.dst_file_format  # load_data.get('dst_img_format', 'png')
-            median_filter_kernel_size = config_.attenuation_correction.median_filter_kernel_size  # load_data.get('median_filter_kernel_size', 1)
-            debayer_option = config_.normalization.debayer_option  # load_data.get('debayer_option', 'linear')
+            #dst_dir_path = None # load_data.get('dst_dir_path', None)
+            dst_img_format = config_.output.dst_file_format # load_data.get('dst_img_format', 'png')
+            median_filter_kernel_size = config_.attenuation_correction.median_filter_kernel_size # load_data.get('median_filter_kernel_size', 1)
+            debayer_option = config_.output.debayer_option # load_data.get('debayer_option', 'linear')
 
             # load .npy files
             pdp = str(params_dir_path)
