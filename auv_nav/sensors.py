@@ -720,7 +720,7 @@ class Usbl(OutputFormat):
         lateral_distance, bearing = latlon_to_metres(
             self.latitude, self.longitude,
             self.latitude_reference, self.longitude_reference)
-        self.distance_to_ship = lateral_distance
+        self.distance_to_ship = sqrt(lateral_distance**2 + self.depth**2)
         self.eastings = sin(
             bearing*pi/180.0)*lateral_distance
         self.northings = cos(
@@ -834,7 +834,6 @@ class Usbl(OutputFormat):
     def to_acfr(self):
         distance_range = sqrt(self.distance_to_ship**2 - self.depth**2)
         bearing = atan2(self.eastings, self.northings)*180/pi
-
         data = ('SSBL_FIX: ' + str(float(self.epoch_timestamp))
                 + ' ship_x: ' + str(float(self.northings_ship))
                 + ' ship_y: ' + str(float(self.eastings_ship))
