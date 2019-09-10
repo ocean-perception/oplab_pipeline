@@ -21,6 +21,7 @@ from correct_images.calculate_correction_parameters import \
 from correct_images.read_mission import read_params
 from correct_images.utilities import *
 from colour_demosaicing import demosaicing_CFA_Bayer_bilinear
+from auv_nav.correct_images.utilities import MonoCamera
 
 
 def develop_corrected_image(path, force):
@@ -64,10 +65,8 @@ def develop_corrected_image(path, force):
             src_file_format = 'tif'
             # read image path from mission.yaml
             # img_p = mission.image.cameras_0.get('path')
-
             print('camera', camera, ', type', type(camera))
             print('img_p', img_p, ', type', type(img_p))
-
             print('Bool camera in img_p', (camera in img_p))
             if camera in img_p:
                 img_path = img_p
@@ -221,6 +220,7 @@ def develop_corrected_image(path, force):
             if src_img_index == -1:
                 src_img_index = range(len(df_filelist))
 
+
             message = 'developing images ' + datetime.datetime.now().strftime(
                 "%Y-%m-%d %H:%M:%S")
             list_dst_name = []
@@ -228,22 +228,22 @@ def develop_corrected_image(path, force):
 
             list_dst_name = joblib.Parallel(n_jobs=-2,
                                             verbose=3)(
-                [joblib.delayed(process_img)(apply_attenuation_correction,
-                                             apply_distortion_correction,
-                                             apply_gamma_correction,
-                                             atn_crr_params,
-                                             bayer_img_corrected_mean,
-                                             bayer_img_corrected_std,
-                                             bayer_img_mean,
-                                             bayer_img_std, bayer_pattern,
-                                             dst_dir_path, dst_img_format,
-                                             i_img,
-                                             list_altitude, list_bayer_file,
-                                             list_bayer_file_path, map_x,
-                                             map_y,
-                                             target_altitude, target_mean,
-                                             target_std) for i_img in
-                 src_img_index])
+                [joblib.delayed(process_img)(
+                    apply_attenuation_correction,
+                    apply_distortion_correction,
+                    apply_gamma_correction,
+                    atn_crr_params,
+                    bayer_img_corrected_mean,
+                    bayer_img_corrected_std,
+                    bayer_img_mean,
+                    bayer_img_std, bayer_pattern,
+                    dst_dir_path, dst_img_format,
+                    i_img,
+                    list_altitude, list_bayer_file,
+                    list_bayer_file_path, map_x,
+                    map_y,
+                    target_altitude, target_mean,
+                    target_std) for i_img in src_img_index])
 
             # for i_img in tqdm(src_img_index, ascii=True, desc=message):
             #     # attenuation correction or only pixel stat
@@ -591,6 +591,7 @@ def develop_corrected_image(path, force):
             median_filter_kernel_size = config_.attenuation_correction.median_filter_kernel_size # load_data.get('median_filter_kernel_size', 1)
             debayer_option = config_.output.debayer_option # load_data.get('debayer_option', 'linear')
 
+
             # load .npy files
             pdp = str(params_dir_path)
             atn_crr_params = np.load(pdp + '/atn_crr_params.npy')
@@ -723,7 +724,6 @@ def develop_corrected_image(path, force):
             # remove the bayer folder containing npy files 
             shutil.rmtree(bayer_path)
 
-
 def process_img(apply_attenuation_correction, apply_distortion_correction,
                 apply_gamma_correction, atn_crr_params,
                 bayer_img_corrected_mean, bayer_img_corrected_std,
@@ -797,8 +797,8 @@ def filter_atn_parm_median(src_atn_param, kernel_size):
 
 
 def calc_distortion_mapping(camera_parameter_file_path, a, b):
-    mono_cam = MonoCamera(
-        camera_parameter_file_path)  # MonoCamera is a Class to read camera parameters: defined in utilities.py
+    # MonoCamera is a Class to read camera parameters: defined in utilities.py
+    mono_cam = MonoCamera(camera_parameter_file_path)
     cam_mat, _ = cv2.getOptimalNewCameraMatrix(mono_cam.K, mono_cam.d, (a, b),
                                                0)
     map_x, map_y = cv2.initUndistortRectifyMap(mono_cam.K, mono_cam.d, None,
