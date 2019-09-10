@@ -39,7 +39,6 @@ def calculate_correction_parameters(path, force):
     path_raw = get_raw_folder(path)
     path_processed = get_processed_folder(path)
 
-    
     Console.info('loading', path_mission, datetime.datetime.now())
     # load parameters from mission.yaml and correct_images.yaml
     # read_params(path to file, type of file: mission/correct_config)
@@ -53,7 +52,7 @@ def calculate_correction_parameters(path, force):
         default_file = root / 'correct_images/default_yaml' / 'correct_images.yaml'
         Console.warn("Cannot find {}, generating default from {}".format(
             path_correct, default_file))
-        
+
         default_file.copy(path_correct)
         Console.info('loading', path_correct, datetime.datetime.now())
 
@@ -72,28 +71,33 @@ def calculate_correction_parameters(path, force):
             if camera_format == 'seaxerocks_3':
                 params['config']['camera1'] = 'Cam51707925'
                 params['config']['camera2'] = 'Cam51707923'
-                #params['config']['camera3'] = 'LM165'
+                # params['config']['camera3'] = 'LM165'
             elif camera_format == 'acfr_standard' or camera_format == 'unaggi':
                 params['config']['camera1'] = 'LC'
                 params['config']['camera2'] = 'RC'
             elif camera_format == 'biocam':
-                params['config']['camera1'] = 'cam61003146_strobe'
-                params['config']['camera2'] = 'cam61004444_strobe'
+                # TODO check convention
+                # params['config']['camera1'] = 'cam61003146_strobe'
+                # params['config']['camera2'] = 'cam61004444_strobe'
+                params['config']['camera1'] = 'cam61003146'
+                params['config']['camera2'] = 'cam61004444'
+
         # dump default parameters camera and auv_nav_path to correct_images.yaml file
         with path_correct.open('w') as f:
             yaml.dump(params, f)
 
+    print('path_correct', path_correct)
+
     # load parameters from correct_images.yaml if it already exists
     config_ = read_params(path_correct, 'correct')
     label_raw_file = 'raw file'
-    label_altitude = 'Altitude [m]'
+    label_altitude = ' Altitude [m]'
     altitude_max = config_.attenuation_correction.altitude_max.get('max')
     altitude_min = config_.attenuation_correction.altitude_min.get('min')
     sampling_method = config_.attenuation_correction.sampling_method
     format_ = config_.config.format
 
-
-    #check for image format: biocam, seaxerocks_3, acfr_standard
+    # check for image format: biocam, seaxerocks_3, acfr_standard
     if format_ == 'biocam':
         camera_iterations = 2
         for i in range(camera_iterations):
@@ -101,19 +105,21 @@ def calculate_correction_parameters(path, force):
                 camera = config_.config.camera_1
             elif i is 1:
                 camera = config_.config.camera_2
-            
+
+            print('CAMERA', camera)
+
             src_file_format = 'tif'
             calculated_atn_crr_params_path = None
-            
+
             dst_file_format = config_.output.dst_file_format
             joblib_verbose = 3
             init_atn_crr_params_path = None
             trim_ratio = 0.2
 
             # load src file or target files to data frame
-            
+
             src_filelist_path = None
-            
+
             # read path to raw images from mission.yaml file
             img_path = 'image'
 
@@ -129,37 +135,51 @@ def calculate_correction_parameters(path, force):
             camera_list = glob.glob(str(filepath1))
             camera_list.extend(glob.glob(str(filepath1b)))
 
-            raw_file_list = [line for line in camera_list if '.txt' not in line and '._' not in line]
-            df_all = pd.read_csv(auv_nav_filepath, dtype={'Imagenumber': object}, engine='python')
+            raw_file_list = [line for line in camera_list if
+                             '.txt' not in line and '._' not in line]
+            df_all = pd.read_csv(auv_nav_filepath,
+                                 dtype={'Imagenumber': object},
+                                 engine='python')
             df_all = pd.concat([df_all, pd.DataFrame(
                 raw_file_list, columns=[label_raw_file])], axis=1)
+
+            print('auv_nav_filepath:', auv_nav_filepath)
+
             src_filelist = df_all[label_raw_file]
 
             # set up parameters for attenuation correction
-            target_altitude = None  
-            curve_fit_trial_num = 1 
-            
-            bin_band = 0.1  
-            min_sample_per_bin = 5  
-            max_sample_per_bin = 100  
+            target_altitude = None
+            curve_fit_trial_num = 1
+
+            bin_band = 0.1
+            min_sample_per_bin = 5
+            max_sample_per_bin = 100
             median_filter_kernel_size = 1
 
             # remove too low or too high altitude file and too small file size file
             altitudes_all = df_all[label_altitude].values
             match_count = 0
 
+            # print('df_all', df_all)
+
             # check if altitudes match with min and max provided in correct_images.yaml
             for i in range(len(altitudes_all)):
-                if altitudes_all[i] <= altitude_max and altitudes_all[i] >= altitude_min:
+                if altitudes_all[i] <= altitude_max and altitudes_all[
+                    i] >= altitude_min:
                     match_count = match_count + 1
             if match_count < 1:
                 Console.quit('Altitude values in dive dataset do not match '
                              + 'with minimum and maximum altitude provided '
                              + 'in correct_images.yaml')
             else:
+                # print('altitudes_all', altitudes_all)
                 idx_effective_data = np.where(
                     (altitudes_all >= altitude_min)
-                    & (altitudes_all <= altitude_max))
+                    & (altitudes_all <= altitude_max))[0]
+
+                # print('altitude_min', altitude_min, 'altitude_max',
+                #       altitude_max)
+                # print(idx_effective_data)
             # configure output file path
             dirpath = src_filelist[0].parent
 
@@ -171,7 +191,7 @@ def calculate_correction_parameters(path, force):
             if not dirpath.exists():
                 dirpath.mkdir(parents=True)
             dirpath_atn_crr = dirpath / 'tmp_atn_crr'
-            bayer_folder_name = 'bayer' + camera
+            bayer_folder_name = 'bayer_' + camera
             dirpath_bayer = dirpath / bayer_folder_name
             if not dirpath_bayer.exists():
                 dirpath_bayer.mkdir(parents=True)
@@ -194,9 +214,13 @@ def calculate_correction_parameters(path, force):
             params_folder_name = 'params_' + camera
             dir_path_image_crr_params = dst_filelist[
                                             0].parent / params_folder_name
-            
-            if not dir_path_image_crr_params.exists():
-                dir_path_image_crr_params.mkdir(parents=True)
+            # check whether config.yaml exists or not, because it
+            file_path_config_yaml = dir_path_image_crr_params / 'config.yaml'
+
+            if not file_path_config_yaml.exists():
+                # if not dir_path_image_crr_params.exists():
+                if not dir_path_image_crr_params.exists():
+                    dir_path_image_crr_params.mkdir(parents=True)
                 Console.info(
                     'code will compute correction parameters for this Camera for first time.')
             else:
@@ -211,7 +235,8 @@ def calculate_correction_parameters(path, force):
                         'Code will quit - correction parameters already exist.')
                     Console.warn(
                         'Run correct_images with [parse] [-F] option for overwriting existing correction parameters.')
-                    sys.exit()
+                    continue
+                    # sys.exit()
 
             if calculated_atn_crr_params_path is None:
                 calculated_atn_crr_params_path = dir_path_image_crr_params / 'atn_crr_params.npy'
@@ -295,12 +320,14 @@ def calculate_correction_parameters(path, force):
                 Console.info(
                     len(file_list_raw) - len(bayer_file_list_not_exsit),
                     'files have already existed.')
+                Console.info(len(bayer_file_list_not_exsit), 'files will be '
+                                                             'loaded.')
 
                 tmp_tif_for_size = imageio.imread(file_list_raw[0])
                 a = tmp_tif_for_size.shape[0]
                 b = tmp_tif_for_size.shape[1]
 
-                for i_file_not_exist in range(len(src_file_list_not_exist)):
+                for i_file_not_exist in trange(len(src_file_list_not_exist)):
                     tmp_tif = imageio.imread(
                         src_file_list_not_exist[i_file_not_exist])
                     tmp_npy = np.zeros([a, b], np.uint16)
@@ -313,18 +340,83 @@ def calculate_correction_parameters(path, force):
                 target_altitude = float(
                     np.mean(altitudes_all[idx_effective_data]))
 
-            # memmap is created at local directory
-            file_name_memmap_raw, memmap_raw = load_memmap_from_npy_filelist(
-                bayer_filelist)
-            print('Memmap directory: ', file_name_memmap_raw)
+            downsampling_memmap = True
+
+            num_downsample = 1000
+
+            print('len', len(idx_effective_data))
+
+            if len(idx_effective_data) <= num_downsample:
+                downsampling_memmap = False
+            # if not downsampling_memmap:
+            #     print('NOT DOWNSAMPLING')
+            #
+            #     # memmap is created at local directory
+            #     file_name_memmap_raw, memmap_raw = load_memmap_from_npy_filelist(
+            #         bayer_filelist)
+            #     print('Memmap directory: ', file_name_memmap_raw)
+            # else:
+            if True:
+                # print('DOWNSAMPLING')
+                # with down sampling
+                copy_idx_effective_data = idx_effective_data.copy()
+                idx_effective_data = np.random.shuffle(
+                    copy_idx_effective_data)
+                idx_effective_data = copy_idx_effective_data[0:num_downsample]
+                # print('down sampled idx effective data', idx_effective_data)
+
+                ###### down sampling from each bin
+                # list_idxs_downsampled = []
+                # num_sample_per_bin_down_sampled = int(len(df_all) * 0.005)
+                #
+                # tmp_min = altitude_min
+                # tmp_max = altitude_min + bin_band
+                # while True:
+                #     list_idxs_in_tmp_bin = df_all[(df_all['Altitude [m]'] >=
+                #                                    tmp_min)
+                #                                   & (df_all['Altitude [m]'] <
+                #                                      tmp_max)].index.to_list()
+                #     if len(list_idxs_in_tmp_bin) >= \
+                #             num_sample_per_bin_down_sampled:
+                #         np.random.shuffle(list_idxs_in_tmp_bin)
+                #         list_idxs_downsampled = list_idxs_downsampled + list_idxs_in_tmp_bin
+                #
+                #     tmp_min += bin_band
+                #     tmp_max += bin_band
+                #     if tmp_min >= altitude_max:
+                #         break
+                #
+                ###### down sampling from each bin
+
+                # TODO optimisation
+                bayer_filelist_for_memmap = [None] * len(idx_effective_data)
+                for i_idx_effective in range(len(idx_effective_data)):
+                    bayer_filelist_for_memmap[
+                        i_idx_effective] = bayer_filelist[idx_effective_data[
+                        i_idx_effective]]
+
+                file_name_memmap_raw, memmap_raw = \
+                    load_memmap_from_npy_filelist(
+                        bayer_filelist_for_memmap)
+                print('Memmap directory: ', file_name_memmap_raw)
 
             Console.info('start calculate mean and std of raw img',
                          datetime.datetime.now())
 
-            img_mean_raw, img_std_raw = \
-                calc_img_mean_and_std_trimmed(memmap_raw, trim_ratio,
-                                              calc_std=True,
-                                              effective_index=idx_effective_data)
+            # if not downsampling_memmap:
+            #     img_mean_raw, img_std_raw = \
+            #         calc_img_mean_and_std_trimmed(memmap_raw, trim_ratio,
+            #                                       calc_std=True,
+            #                                       effective_index=idx_effective_data)
+            #
+            # else:
+            if True:
+                # TODO debug
+                # trim_ratio = 0
+                img_mean_raw, img_std_raw = \
+                    calc_img_mean_and_std_trimmed(memmap_raw, trim_ratio,
+                                                  calc_std=True,
+                                                  effective_index=-1)
 
             dirpath_img_mean_raw = dir_path_image_crr_params / 'bayer_img_mean_raw'
             dirpath_img_std_raw = dir_path_image_crr_params / 'bayer_img_std_raw'
@@ -354,17 +446,39 @@ def calculate_correction_parameters(path, force):
             # print('sampling_method', sampling_method)
             for idx_bin in trange(1, hist_bounds.size, ascii=True,
                                   desc=message):
-                tmp_altitudes = altitudes_all[np.where(idxs == idx_bin)]
-                if len(tmp_altitudes) > min_sample_per_bin:
-                    # calculate sample image in this bin
-                    tmp_idx = np.where(idxs == idx_bin)[0]
-                    if len(tmp_idx) > max_sample_per_bin:
-                        tmp_idx = random.sample(list(tmp_idx),
-                                                max_sample_per_bin)
-                        tmp_altitudes = altitudes_all[tmp_idx]
+                tmp_min = altitude_min + idx_bin * bin_band
+                tmp_max = altitude_min + (idx_bin + 1) * bin_band
 
-                    tmp_bin_imgs = memmap_raw[tmp_idx]
-                    
+                # TODO optimisation
+                tmp_idx = []
+                tmp_idx_for_memmap = []
+                for i_idx in range(len(idx_effective_data)):
+                    if altitudes_all[idx_effective_data[i_idx]] >= tmp_min and \
+                            altitudes_all[idx_effective_data[i_idx]] < tmp_max:
+                        tmp_idx.append(idx_effective_data[i_idx])
+                        tmp_idx_for_memmap.append(i_idx)
+
+                if len(tmp_idx) == 0:
+                    continue
+
+                # print(i_idx)
+
+                # if len(tmp_altitudes) > min_sample_per_bin:
+                #     # calculate sample image in this bin
+                #     tmp_idx = np.where(idxs == idx_bin)[0]
+
+                if True:
+                    pass
+
+                    # if len(tmp_idx) > max_sample_per_bin:
+                    #     tmp_idx = random.sample(list(tmp_idx),
+                    #                             max_sample_per_bin)
+                    #     tmp_altitudes = altitudes_all[tmp_idx]
+
+                    # tmp_bin_imgs = memmap_raw[tmp_idx]
+                    tmp_altitudes = altitudes_all[tmp_idx]
+                    tmp_bin_imgs = memmap_raw[tmp_idx_for_memmap]
+
                     # calculate sample image of current bin
                     tmp_bin_img_sample = np.zeros((a, b), np.float32)
 
@@ -382,12 +496,11 @@ def calculate_correction_parameters(path, force):
 
 
                     elif sampling_method == 'median':
-                    # else:
+                        # else:
                         tmp_bin_img_sample = np.median(tmp_bin_imgs, axis=0)
                         tmp_altitude_sample = np.mean(
                             tmp_altitudes)
                         # altitude value is calculated as mean because it has less varieance.
-
 
                     del tmp_bin_imgs
 
@@ -426,7 +539,6 @@ def calculate_correction_parameters(path, force):
 
                 atn_crr_params = np.array(results)
 
-
             atn_crr_params = atn_crr_params.reshape([a, b, 3])
 
             if calculated_atn_crr_params_path is None:
@@ -452,15 +564,28 @@ def calculate_correction_parameters(path, force):
             for i_img in trange(memmap_raw.shape[0], ascii=True, desc=message):
                 # memmap data can not be updated in joblib .
                 memmap_raw[i_img, ...] = apply_atn_crr_2_img(
-                    memmap_raw[i_img, ...], altitudes_all[i_img],
+                    memmap_raw[i_img, ...], altitudes_all[
+                        idx_effective_data[i_img]],
                     atn_crr_params, gain)
 
             Console.info(
                 'start calculating mean and std of attenuation corrected images',
                 datetime.datetime.now(), flush=True)
-            img_mean_atn_crr, img_std_atn_crr = calc_img_mean_and_std_trimmed(
-                memmap_raw, trim_ratio, calc_std=True,
-                effective_index=idx_effective_data)
+
+            # if not downsampling_memmap:
+            #     img_mean_atn_crr, img_std_atn_crr = \
+            #         calc_img_mean_and_std_trimmed(memmap_raw, trim_ratio,
+            #                                       calc_std=True,
+            #                                       effective_index=idx_effective_data)
+            #
+            # else:
+            if True:
+                # TODO debug
+                # trim_ratio = 0
+                img_mean_atn_crr, img_std_atn_crr = \
+                    calc_img_mean_and_std_trimmed(memmap_raw, trim_ratio,
+                                                  calc_std=True,
+                                                  effective_index=-1)
 
             dirpath_img_mean_atn_crr = dir_path_image_crr_params / 'bayer_img_mean_atn_crr'
             dirpath_img_std_atn_crr = dir_path_image_crr_params / 'bayer_img_std_atn_crr'
@@ -511,15 +636,11 @@ def calculate_correction_parameters(path, force):
                          cfg_filepath, datetime.datetime.now())
 
             del memmap_raw
-            
-            path_parent = Path(path).parents[4]
-
-            for file_name in Path(path_parent).glob('*.map'):
+            for file_name in Path(file_name_memmap_raw).glob('*.map'):
                 Path(file_name).unlink()
-            
 
-            Console.info('#########.......Parse is completed ........#########')
-
+            Console.info(
+                '#########.......Parse is completed ........#########')
 
     if format_ == 'seaxerocks_3':
         camera_iterations = 2
@@ -528,9 +649,9 @@ def calculate_correction_parameters(path, force):
                 camera = config_.config.camera_1
             elif i is 1:
                 camera = config_.config.camera_2
-            
+
             src_file_format = 'raw'
-           
+
             calculated_atn_crr_params_path = None
 
             dst_file_format = config_.output.dst_file_format
@@ -617,28 +738,29 @@ def calculate_correction_parameters(path, force):
             # remove too low or too high altitude file and too small file size file
             altitudes_all = df_all[label_altitude].values
             match_count = 0
-            
+
             # check if altitudes match with min and max provided in correct_images.yaml
             for i in range(len(altitudes_all)):
-                if altitudes_all[i] <= altitude_max and altitudes_all[i] >= altitude_min:
+                if altitudes_all[i] <= altitude_max and altitudes_all[
+                    i] >= altitude_min:
                     match_count = match_count + 1
             if match_count < 1:
                 Console.quit(
                     'altitude values in dive dataset do not match with minimum and maximum altitude provided in correct_images.yaml')
             else:
                 idx_effective_data = np.where(
-                (altitudes_all >= altitude_min) & (
-                        altitudes_all <= altitude_max))
-            
+                    (altitudes_all >= altitude_min) & (
+                            altitudes_all <= altitude_max))
+
                 # configure output file path
             dirpath = src_filelist[0].parent
             dirpath = get_processed_folder(dirpath)
-         
+
             dirpath = dirpath / 'attenuation_correction'
             if not dirpath.exists():
                 dirpath.mkdir(parents=True)
             dirpath_atn_crr = dirpath / 'tmp_atn_crr'
-            bayer_folder_name = 'bayer' + camera
+            bayer_folder_name = 'bayer_' + camera
             dirpath_bayer = dirpath / bayer_folder_name
             if not dirpath_bayer.exists():
                 dirpath_bayer.mkdir(parents=True)
@@ -761,12 +883,14 @@ def calculate_correction_parameters(path, force):
                 Console.info(
                     len(file_list_raw) - len(bayer_file_list_not_exsit),
                     'files have already existed.')
+                Console.info(len(bayer_file_list_not_exsit), 'files will be '
+                                                             'loaded.')
 
                 tmp_tif_for_size = imageio.imread(file_list_raw[0])
                 a = tmp_tif_for_size.shape[0]
                 b = tmp_tif_for_size.shape[1]
 
-                for i_file_not_exist in range(len(src_file_list_not_exist)):
+                for i_file_not_exist in trange(len(src_file_list_not_exist)):
                     tmp_tif = imageio.imread(
                         src_file_list_not_exist[i_file_not_exist])
                     tmp_npy = np.zeros([a, b], np.uint16)
@@ -852,12 +976,11 @@ def calculate_correction_parameters(path, force):
 
 
                     elif sampling_method == 'median':
-                    # else:
+                        # else:
                         tmp_bin_img_sample = np.median(tmp_bin_imgs, axis=0)
                         tmp_altitude_sample = np.mean(
                             tmp_altitudes)
                         # altitude value is calculated as mean because it has less varieance.
-
 
                     del tmp_bin_imgs
 
@@ -984,15 +1107,12 @@ def calculate_correction_parameters(path, force):
                          cfg_filepath, datetime.datetime.now())
 
             del memmap_raw
-            
-            path_parent = Path(path).parents[4]
-
-            for file_name in Path(path_parent).glob('*.map'):
+            for file_name in Path(file_name_memmap_raw).glob('*.map'):
                 Path(file_name).unlink()
-            
 
-            Console.info('#########.......Parse is completed ........#########')
-    
+            Console.info(
+                '#########.......Parse is completed ........#########')
+
     if format_ == 'acfr_standard':
         camera_iterations = 2
         for i in range(camera_iterations):
@@ -1000,9 +1120,9 @@ def calculate_correction_parameters(path, force):
                 camera = config_.config.camera_1
             elif i is 1:
                 camera = config_.config.camera_2
-            
+
             src_file_format = 'tif'
-            
+
             camera_lr = camera
             calculated_atn_crr_params_path = None
             dst_file_format = config_.output.dst_file_format
@@ -1088,18 +1208,19 @@ def calculate_correction_parameters(path, force):
             # remove too low or too high altitude file and too small file size file
             altitudes_all = df_all[label_altitude].values
             match_count = 0
-            
+
             # check if altitudes match with min and max provided in correct_images.yaml
             for i in range(len(altitudes_all)):
-                if altitudes_all[i] <= altitude_max and altitudes_all[i] >= altitude_min:
+                if altitudes_all[i] <= altitude_max and altitudes_all[
+                    i] >= altitude_min:
                     match_count = match_count + 1
             if match_count < 1:
                 Console.quit(
                     'altitude values in dive dataset do not match with minimum and maximum altitude provided in correct_images.yaml')
             else:
                 idx_effective_data = np.where(
-                (altitudes_all >= altitude_min) & (
-                        altitudes_all <= altitude_max))
+                    (altitudes_all >= altitude_min) & (
+                            altitudes_all <= altitude_max))
 
             # configure output file path
             dirpath = src_filelist[0].parent
@@ -1108,7 +1229,7 @@ def calculate_correction_parameters(path, force):
             if not dirpath.exists():
                 dirpath.mkdir(parents=True)
             dirpath_atn_crr = dirpath / 'tmp_atn_crr'
-            bayer_folder_name = 'bayer' + camera
+            bayer_folder_name = 'bayer_' + camera
             dirpath_bayer = dirpath / bayer_folder_name
             if not dirpath_bayer.exists():
                 dirpath_bayer.mkdir(parents=True)
@@ -1438,14 +1559,11 @@ def calculate_correction_parameters(path, force):
                          cfg_filepath, datetime.datetime.now())
 
             del memmap_raw
-            
-            path_parent = Path(path).parents[4]
-
-            for file_name in Path(path_parent).glob('*.map'):
+            for file_name in Path(file_name_memmap_raw).glob('*.map'):
                 Path(file_name).unlink()
-            
 
-            Console.info('#########.......Parse is completed ........#########')
+            Console.info(
+                '#########.......Parse is completed ........#########')
 
 
 def load_xviii_bayer_from_binary(xviii_binary_data):
@@ -1500,28 +1618,42 @@ def calc_img_mean_and_std_trimmed(src_imgs, ratio_trimming, calc_std=True,
 
     message = 'calculating trimmed mean and std of images ' + \
               datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    for idx_a in trange(a, ascii=True, desc=message):
-        results = joblib.Parallel(n_jobs=-2, verbose=0)(
-            [joblib.delayed(calc_mean_and_std_trimmed)(
-                src_imgs[effective_index, idx_a, idx_b][0], ratio_trimming,
-                calc_std) for idx_b in
-                range(b)])
-        ret_mean[idx_a, :] = np.array(results)[:, 0]
-        ret_std[idx_a, :] = np.array(results)[:, 1]
+
+    if ratio_trimming <= 0:
+        ret_mean = np.mean(src_imgs, axis=0)
+        ret_std = np.std(src_imgs, axis=0)
+
+    else:
+        for idx_a in trange(a, ascii=True, desc=message):
+            results = joblib.Parallel(n_jobs=-2, verbose=0)(
+                [joblib.delayed(calc_mean_and_std_trimmed)(
+                    src_imgs[effective_index, idx_a, idx_b][0], ratio_trimming,
+                    calc_std) for idx_b in
+                    range(b)])
+            ret_mean[idx_a, :] = np.array(results)[:, 0]
+            ret_std[idx_a, :] = np.array(results)[:, 1]
 
     return ret_mean, ret_std
 
 
 def calc_mean_and_std_trimmed(src_values, rate_trimming, calc_std=True):
-    sorted_values = np.sort(src_values)
-    idx_left_limit = int(len(src_values) * rate_trimming / 2.0)
-    idx_right_limit = int(len(src_values) * (1.0 - rate_trimming / 2.0))
+    if rate_trimming <= 0:
+        mean = np.mean(src_values)
 
-    mean = np.mean(sorted_values[idx_left_limit:idx_right_limit])
-    std = 0
+        if calc_std:
+            std = np.std(src_values)
 
-    if calc_std:
-        std = np.std(sorted_values[idx_left_limit:idx_right_limit])
+    else:
+        sorted_values = np.sort(src_values)
+        idx_left_limit = int(len(src_values) * rate_trimming / 2.0)
+        idx_right_limit = int(len(src_values) * (1.0 - rate_trimming / 2.0))
+
+        mean = np.mean(sorted_values[idx_left_limit:idx_right_limit])
+        std = 0
+
+        if calc_std:
+            std = np.std(sorted_values[idx_left_limit:idx_right_limit])
+
     return np.array([mean, std])
 
 
@@ -1620,6 +1752,8 @@ def filter_atn_parm_median(src_atn_param, kernel_size):
 
 
 def load_memmap_from_npy_filelist(list_raw_files):
+    # TODO optimise dtype of memmap. 16 bit is enough?
+
     filename_images_map = 'memmap_raw_img_' + str(uuid.uuid4()) + '.map'
 
     I = np.load(str(list_raw_files[0]))
@@ -1648,6 +1782,7 @@ def load_memmap_from_npy_filelist(list_raw_files):
         memmap = np.memmap(filename=filename_images_map, mode='w+',
                            shape=tuple(list_shape),
                            dtype=np.float32)  # loaded as float32 because this memmap used for restoring attenuation corrected data later.
+
         message = 'loading raw data to memmap ' + \
                   datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
@@ -1805,19 +1940,20 @@ def optim_exp_curve_param_log_transform(altitudes, intensities):
     altitudes_with1[:, 1] = altitudes
 
     # singularity check
-    #assert np.linalg.det(altitudes_with1.transpose().dot(altitudes_with1)) != 0, altitudes_with1
+    # assert np.linalg.det(altitudes_with1.transpose().dot(altitudes_with1)) != 0, altitudes_with1
 
-    
-    #theta = np.inv(altitudes_with1.transpose().dot(altitudes_with1)).dot(
-        #altitudes_with1.transpose()).dot(intensities_log)
-    
+    # theta = np.inv(altitudes_with1.transpose().dot(altitudes_with1)).dot(
+    # altitudes_with1.transpose()).dot(intensities_log)
+
     # pinv is used to remove singularity when working with a small set of images. when
     # working with a large dataset uncomment code in lines 1827 and 1828
-    theta = np.linalg.pinv(altitudes_with1.transpose().dot(altitudes_with1)).dot(
+    theta = np.linalg.pinv(
+        altitudes_with1.transpose().dot(altitudes_with1)).dot(
         altitudes_with1.transpose()).dot(intensities_log)
-
 
     a = np.exp(theta[0])
     b = theta[1]
+
+    # print('a', a, 'b', b, 'c', c)
 
     return np.array([a, b, c])
