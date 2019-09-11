@@ -64,7 +64,7 @@ class AcfrConverter():
         with config_filename.open('w') as f:
             data = ('MAG_VAR_LAT ' + str(float(self.mission.origin.latitude))
                     + '\nMAG_VAR_LNG ' + str(float(self.mission.origin.longitude))
-                    + '\nMAG_VAR_DATE ' + str(self.mission.origin.date)
+                    + '\nMAG_VAR_DATE "' + str(self.mission.origin.date) + '"'
                     + '\nMAGNETIC_VAR_DEG ' + str(float(0)))
             f.write(data)
         # keep the file opened
