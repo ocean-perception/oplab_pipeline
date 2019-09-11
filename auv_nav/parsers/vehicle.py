@@ -78,42 +78,44 @@ class Vehicle:
         if filename is None:
             return
 
+        self.filename = filename
+
         mission_file = filename.parent / 'mission.yaml'
         old_format = False
         mission_data = []
 
         try:
             with filename.open('r') as stream:
-                data = yaml.safe_load(stream)
-                self.data = data
-                if 'origin' in data:
-                    self.origin.load(data['origin'])
-                    if 'x_offset' in data['origin']:
+                self.data = OrderedDict()
+                self.data = yaml.safe_load(stream)
+                if 'origin' in self.data:
+                    self.origin.load(self.data['origin'])
+                    if 'x_offset' in self.data['origin']:
                         mission_stream = mission_file.open('r')
                         mission_data = yaml.safe_load(mission_stream)
                         old_format = True
-                if 'ins' in data:
+                if 'ins' in self.data:
                     if old_format:
-                        self.ins.load(data['ins'], mission_data['orientation'])
+                        self.ins.load(self.data['ins'], mission_data['orientation'])
                     else:
-                        self.ins.load(data['ins'])
-                if 'dvl' in data:
+                        self.ins.load(self.data['ins'])
+                if 'dvl' in self.data:
                     if old_format:
-                        self.dvl.load(data['dvl'], mission_data['velocity'])
+                        self.dvl.load(self.data['dvl'], mission_data['velocity'])
                     else:
-                        self.dvl.load(data['dvl'])
-                if 'depth' in data:
-                    self.depth.load(data['depth'])
-                if 'usbl' in data:
-                    self.usbl.load(data['usbl'])
-                if 'camera1' in data:
-                    self.camera1.load(data['camera1'])
-                if 'camera2' in data:
-                    self.camera2.load(data['camera2'])
-                if 'camera3' in data:
-                    self.camera3.load(data['camera3'])
-                if 'chemical' in data:
-                    self.chemical.load(data['chemical'])
+                        self.dvl.load(self.data['dvl'])
+                if 'depth' in self.data:
+                    self.depth.load(self.data['depth'])
+                if 'usbl' in self.data:
+                    self.usbl.load(self.data['usbl'])
+                if 'camera1' in self.data:
+                    self.camera1.load(self.data['camera1'])
+                if 'camera2' in self.data:
+                    self.camera2.load(self.data['camera2'])
+                if 'camera3' in self.data:
+                    self.camera3.load(self.data['camera3'])
+                if 'chemical' in self.data:
+                    self.chemical.load(self.data['chemical'])
         except FileNotFoundError:
             Console.error('The file vehicle.yaml could not be found at the location:')
             Console.error(filename)
@@ -128,40 +130,15 @@ class Vehicle:
         node['username'] = Console.get_username()
         node['date'] = Console.get_date()
         node['hostname'] = Console.get_hostname()
-        node['version'] = Console.get_version()
+        node['firmware'] = Console.get_version()
 
     def write(self, filename):
         if not filename.parent.exists():
             filename.parent.mkdir(parents=True)
-        with filename.open('w') as f:
-            vehicle_dict = OrderedDict()
-            vehicle_dict['version'] = 1
-            vehicle_dict['metadata'] = OrderedDict()
-            self.write_metadata(vehicle_dict['metadata'])
-            vehicle_dict['origin'] = OrderedDict()
-            self.origin.write(vehicle_dict['origin'])
-            if not self.ins.empty():
-                vehicle_dict['ins'] = OrderedDict()
-                self.ins.write(vehicle_dict['ins'])
-            if not self.dvl.empty():
-                vehicle_dict['dvl'] = OrderedDict()
-                self.dvl.write(vehicle_dict['dvl'])
-            if not self.depth.empty():
-                vehicle_dict['depth'] = OrderedDict()
-                self.depth.write(vehicle_dict['depth'])
-            if not self.usbl.empty():
-                vehicle_dict['usbl'] = OrderedDict()
-                self.usbl.write(vehicle_dict['usbl'])
-            if not self.camera1.empty():
-                vehicle_dict['camera1'] = OrderedDict()
-                self.camera1.write(vehicle_dict['camera1'])
-            if not self.camera2.empty():
-                vehicle_dict['camera2'] = OrderedDict()
-                self.camera2.write(vehicle_dict['camera2'])
-            if not self.camera3.empty():
-                vehicle_dict['camera3'] = OrderedDict()
-                self.camera3.write(vehicle_dict['camera3'])
-            if not self.chemical.empty():
-                vehicle_dict['chemical'] = OrderedDict()
-                self.chemical.write(vehicle_dict['chemical'])
-            yaml.dump(vehicle_dict, f, allow_unicode=True, default_flow_style=False)
+        self.filename.copy(filename)
+        with filename.open('a') as f:
+            f.write('\n\nmetadata:\n')
+            f.write('    username: ' + str(Console.get_username()) + '\n')
+            f.write('    date: ' + str(Console.get_date()) + '\n')
+            f.write('    hostname: ' + str(Console.get_hostname()) + '\n')
+            f.write('    firmware: ' + str(Console.get_version()) + '\n')
