@@ -18,6 +18,7 @@ from pathlib import Path
 from auv_nav.parsers.parse_phins import parse_phins
 from auv_nav.parsers.parse_ae2000 import parse_ae2000
 from auv_nav.parsers.parse_NOC_nmea import parse_NOC_nmea
+from auv_nav.parsers.parse_NOC_polpred import parse_NOC_polpred         # included parser for tide model from NOC POLPRED
 from auv_nav.parsers.parse_autosub import parse_autosub
 from auv_nav.parsers.parse_gaps import parse_gaps
 from auv_nav.parsers.parse_usbl_dump import parse_usbl_dump
@@ -64,6 +65,8 @@ def parse_data(filepath, force_overwite):
     std_offset_dvl = 0.002
     std_factor_depth = 0
     std_offset_depth = 0.01
+    std_factor_tide = 0
+    std_offset_tide = 0.01
     std_factor_orientation = 0.
     std_offset_orientation = 0.003
     std_factor_altitude = 0.
@@ -87,6 +90,12 @@ def parse_data(filepath, force_overwite):
     if mission.depth.std_offset == 0 and std_offset_depth != 0:
         # print('Depth standard deviation offset not provided. Using default of {}'.format(std_offset_depth))
         mission.depth.std_offset = std_offset_depth
+    if mission.tide.std_factor == 0 and std_factor_tide != 0:
+        # print('Tide standard deviation factor not provided. Using default of {}'.format(std_factor_tide))
+        mission.tide.std_factor = std_factor_tide
+    if mission.tide.std_offset == 0 and std_offset_tide != 0:
+        # print('Tide standard deviation offset not provided. Using default of {}'.format(std_offset_tide))
+        mission.tide.std_offset = std_offset_tide   
     if mission.orientation.std_factor == 0 and std_factor_orientation != 0:
         # print('Orientation standard deviation factor not provided. Using default of {}'.format(std_factor_orientation))
         mission.orientation.std_factor = std_factor_orientation
@@ -242,6 +251,18 @@ def parse_data(filepath, force_overwite):
             else:
                 Console.quit('Mission orientation format {} not supported.'
                              .format(mission.orientation.format))
+
+        if not mission.tide.empty():
+            print('Loading tide data...')
+            if mission.tide.format == "NOC_polpred":
+                pool_list.append(
+                    pool.apply_async(
+                        parse_NOC_polpred,
+                        [mission, vehicle, 'tide',
+                         ftype, outpath, filename]))
+            else:
+                Console.quit('Mission tide format {} not supported.'
+                             .format(mission.tide.format))
 
         if not mission.depth.empty():
             print('Loading depth data...')
