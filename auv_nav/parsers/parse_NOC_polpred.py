@@ -10,12 +10,13 @@ from auv_nav.tools.time_conversions import date_time_to_epoch
 from auv_nav.tools.time_conversions import read_timezone
 from auv_nav.tools.console import Console
 
+
 def parse_NOC_polpred(mission,
-                   vehicle,
-                   category,
-                   ftype,
-                   outpath,
-                   fileoutname):
+                      vehicle,
+                      category,
+                      ftype,
+                      outpath,
+                      fileoutname):
     # parser meta data
     class_string = 'measurement'
     sensor_string = 'autosub'
@@ -48,7 +49,7 @@ def parse_NOC_polpred(mission,
 
         for file in file_list:
             with file.open('r', errors='ignore') as tide_file:
-                for line in tide_file.readlines()[6:15]:
+                for line in tide_file.readlines()[6:]:
                     # we have to skip the first 5 rows of the file
                     dd = int(line[0:2])
                     mm = int(line[3:5])

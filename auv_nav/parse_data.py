@@ -343,21 +343,21 @@ def parse_data(filepath, force_overwite):
                     Console.info("Tidal correction of depth vector...")
                     # Offset depth to acknowledge for tides
                     j = 0
-                    for i in range(len(results)):
-                        while j < len(tide_list)-1 and tide_list[j]['epoch_timestamp'] < results[i]['epoch_timestamp']:
+                    for k in range(len(results)):
+                        while j < len(tide_list) and tide_list[j]['epoch_timestamp'] < results[k]['epoch_timestamp']:
                             j = j + 1
 
                         if j >= 1:
                             _result = interpolate(
-                                results[i]['epoch_timestamp'],
+                                results[k]['epoch_timestamp'],
                                 tide_list[j-1]['epoch_timestamp'],
                                 tide_list[j]['epoch_timestamp'],
                                 tide_list[j-1]['data'][0]['height'],
                                 tide_list[j]['data'][0]['height'])
                             if results[0]['category'] == Category.DEPTH:
-                                results[i]['data'][0]['depth'] = results[i]['data'][0]['depth'] - _result
+                                results[k]['data'][0]['depth'] = results[k]['data'][0]['depth'] - _result
                             elif results[0]['category'] == Category.USBL:
-                                results[i]['data_target'][4]['depth'] = results[i]['data_target'][4]['depth'] - _result
+                                results[k]['data_target'][4]['depth'] = results[k]['data_target'][4]['depth'] - _result
             data_list.append(results)
 
         Console.info('...done compiling data list.')
