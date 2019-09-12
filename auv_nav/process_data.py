@@ -17,6 +17,7 @@ from auv_nav.tools.csv_tools import other_data_csv
 from auv_nav.tools.csv_tools import spp_csv
 from auv_nav.sensors import BodyVelocity, InertialVelocity
 from auv_nav.sensors import Altitude, Depth, Usbl, Orientation
+from auv_nav.sensors import Tide
 from auv_nav.sensors import Other, Camera
 from auv_nav.sensors import SyncedOrientationBodyVelocity
 from auv_nav.localisation.dead_reckoning import dead_reckoning
@@ -89,6 +90,9 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
     camera3_list = []
     camera3_pf_list = []
 
+    # tide placeholder
+    tide_list = []
+    
     # placeholders for interpolated velocity body measurements based on orientation and transformed coordinates
     dead_reckoning_centre_list = []
     dead_reckoning_dvl_list = []
