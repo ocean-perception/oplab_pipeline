@@ -14,8 +14,6 @@ import multiprocessing
 import json
 from pathlib import Path
 
-import objbrowser as browser
-
 # sys.path.append("..")
 from auv_nav.parsers.parse_phins import parse_phins
 from auv_nav.parsers.parse_ae2000 import parse_ae2000
