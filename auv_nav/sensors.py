@@ -493,7 +493,6 @@ class Orientation(OutputFormat):
                 + ' std_h: ' + str(float(self.yaw_std)) + '\n')
         return data
 
-
 class Depth(OutputFormat):
     def __init__(self, depth_std_factor=0.0001, ts=None):
         self.epoch_timestamp = None

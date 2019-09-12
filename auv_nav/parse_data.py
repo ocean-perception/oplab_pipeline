@@ -14,6 +14,8 @@ import multiprocessing
 import json
 from pathlib import Path
 
+import objbrowser as browser
+
 # sys.path.append("..")
 from auv_nav.parsers.parse_phins import parse_phins
 from auv_nav.parsers.parse_ae2000 import parse_ae2000
@@ -35,11 +37,18 @@ from auv_nav.tools.console import Console
 from auv_nav.parsers.vehicle import Vehicle
 from auv_nav.parsers.mission import Mission
 
+from auv_nav.tools.interpolate import interpolate
+from auv_nav.tools.interpolate import interpolate_sensor_list
+from auv_nav.tools.time_conversions import string_to_epoch
+from auv_nav.tools.time_conversions import epoch_from_json
+from auv_nav.tools.time_conversions import epoch_to_datetime
+
+from auv_nav.sensors import Category
+
 
 def parse_data(filepath, force_overwite):
     # initiate data and processing flags
     filepath = Path(filepath).resolve()
-
     filepath = get_raw_folder(filepath)
 
     ftype = 'oplab'
@@ -303,22 +312,15 @@ def parse_data(filepath, force_overwite):
         if not mission.tide.empty():
             print('Loading tide data...')
             if mission.tide.format == "NOC_polpred":
-                pool_list.append(
-                    pool.apply_async(
-                        parse_NOC_polpred,
-                        [mission, vehicle, 'tide',
-                         ftype, outpath, filename]))
-
+                tide_list = parse_NOC_polpred(mission, vehicle, 'tide',
+                         ftype, outpath, filename)
             else:
                 Console.quit('Mission tide format {} not supported.'
                              .format(mission.tide.format))
-
-#        browse(pool_list)
-
         pool.close()
         pool.join()
-        Console.info('...done loading raw data.')
 
+        Console.info('...done loading raw data.')
         Console.info('Compile data list...')
 
         data_list = [[{
@@ -335,20 +337,48 @@ def parse_data(filepath, force_overwite):
 
         for i in pool_list:
             results = i.get()
+            # If current retrieved data is DEPTH
+            # and if TIDE data is available
+            if (results[0]['category'] == Category.DEPTH and mission.tide is not None):
+                # proceed to tidal correction
+                Console.info ("Tidal correction of depth vector...")
+                depth_list = results
+
+#                browser.browse (tide_list)
+                j = 0
+                for i in range(len(depth_list)):
+                    while j < len(tide_list)-1 and tide_list[j]['epoch_timestamp'] < depth_list[i]['epoch_timestamp']:
+                        j = j + 1
+
+                    if j >= 1:
+                        _result = interpolate(
+                            depth_list[i]['epoch_timestamp'],
+                            tide_list[j-1]['epoch_timestamp'],
+                            tide_list[j]['epoch_timestamp'],
+                            tide_list[j-1]['data'][0]['height'],
+                            tide_list[j]['data'][0]['height'])
+
+                        depth_list[i]['data'][0]['depth'] = depth_list[i]['data'][0]['depth'] - _result
+
+                results = depth_list
             data_list.append(results)
+
         Console.info('...done compiling data list.')
 
         Console.info('Writing to output file...')
         data_list_temp = []
         for i in data_list:
             data_list_temp += i
-#            print (data_list_temp)
 
         json.dump(data_list_temp, fileout, indent=2)
+
         del data_list_temp
         del data_list
 
     fileout.close()
+
+
+
     # interlace the data based on timestamps
     Console.info('Interlacing data...')
     parse_interlacer(outpath, filename)
