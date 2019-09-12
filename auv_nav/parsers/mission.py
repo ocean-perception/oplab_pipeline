@@ -195,6 +195,7 @@ class Mission:
         self.altitude = DefaultEntry()
         self.usbl = DefaultEntry()
         self.image = ImageEntry()
+        self.tide = DefaultEntry()
 
         if filename is None:
             return
@@ -253,6 +254,10 @@ class Mission:
                     else:
                         Console.warn('The usbl sensor mounted at ' + self.usbl.origin + ' does not correspond to any frame in vehicle.yaml.')
                         warn_and_exit()
+
+                if 'tide' in data:
+                    self.tide.load(data['tide'])
+
                 if 'image' in data:
                     self.image.load(data['image'], self.version)
         except FileNotFoundError:
