@@ -252,18 +252,6 @@ def parse_data(filepath, force_overwite):
                 Console.quit('Mission orientation format {} not supported.'
                              .format(mission.orientation.format))
 
-        if not mission.tide.empty():
-            print('Loading tide data...')
-            if mission.tide.format == "NOC_polpred":
-                pool_list.append(
-                    pool.apply_async(
-                        parse_NOC_polpred,
-                        [mission, vehicle, 'tide',
-                         ftype, outpath, filename]))
-            else:
-                Console.quit('Mission tide format {} not supported.'
-                             .format(mission.tide.format))
-
         if not mission.depth.empty():
             print('Loading depth data...')
             if mission.depth.format == "phins":
@@ -311,6 +299,22 @@ def parse_data(filepath, force_overwite):
             else:
                 Console.quit('Mission altitude format {} not supported.'
                              .format(mission.altitude.format))
+
+        if not mission.tide.empty():
+            print('Loading tide data...')
+            if mission.tide.format == "NOC_polpred":
+                pool_list.append(
+                    pool.apply_async(
+                        parse_NOC_polpred,
+                        [mission, vehicle, 'tide',
+                         ftype, outpath, filename]))
+
+            else:
+                Console.quit('Mission tide format {} not supported.'
+                             .format(mission.tide.format))
+
+#        browse(pool_list)
+
         pool.close()
         pool.join()
         Console.info('...done loading raw data.')
@@ -338,10 +342,11 @@ def parse_data(filepath, force_overwite):
         data_list_temp = []
         for i in data_list:
             data_list_temp += i
+#            print (data_list_temp)
+
         json.dump(data_list_temp, fileout, indent=2)
         del data_list_temp
         del data_list
-        Console.info('... done writing to output file.')
 
     fileout.close()
     # interlace the data based on timestamps
