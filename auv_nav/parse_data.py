@@ -337,28 +337,27 @@ def parse_data(filepath, force_overwite):
             results = i.get()
             # If current retrieved data is DEPTH
             # and if TIDE data is available
-            if (results[0]['category'] == Category.DEPTH and mission.tide is not None):
-                # proceed to tidal correction
-                Console.info ("Tidal correction of depth vector...")
-                depth_list = results
+            if (results[0]['category'] == Category.DEPTH or results[0]['category'] == Category.USBL):
+                if mission.tide is not None:
+                    # proceed to tidal correction
+                    Console.info("Tidal correction of depth vector...")
+                    # Offset depth to acknowledge for tides
+                    j = 0
+                    for i in range(len(results)):
+                        while j < len(tide_list)-1 and tide_list[j]['epoch_timestamp'] < results[i]['epoch_timestamp']:
+                            j = j + 1
 
-#                browser.browse (tide_list)
-                j = 0
-                for i in range(len(depth_list)):
-                    while j < len(tide_list)-1 and tide_list[j]['epoch_timestamp'] < depth_list[i]['epoch_timestamp']:
-                        j = j + 1
-
-                    if j >= 1:
-                        _result = interpolate(
-                            depth_list[i]['epoch_timestamp'],
-                            tide_list[j-1]['epoch_timestamp'],
-                            tide_list[j]['epoch_timestamp'],
-                            tide_list[j-1]['data'][0]['height'],
-                            tide_list[j]['data'][0]['height'])
-
-                        depth_list[i]['data'][0]['depth'] = depth_list[i]['data'][0]['depth'] - _result
-
-                results = depth_list
+                        if j >= 1:
+                            _result = interpolate(
+                                results[i]['epoch_timestamp'],
+                                tide_list[j-1]['epoch_timestamp'],
+                                tide_list[j]['epoch_timestamp'],
+                                tide_list[j-1]['data'][0]['height'],
+                                tide_list[j]['data'][0]['height'])
+                            if results[0]['category'] == Category.DEPTH:
+                                results[i]['data'][0]['depth'] = results[i]['data'][0]['depth'] - _result
+                            elif results[0]['category'] == Category.USBL:
+                                results[i]['data_target'][4]['depth'] = results[i]['data_target'][4]['depth'] - _result
             data_list.append(results)
 
         Console.info('...done compiling data list.')
