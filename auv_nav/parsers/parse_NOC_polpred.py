@@ -60,7 +60,6 @@ def parse_NOC_polpred(mission,
                     epoch_time = date_time_to_epoch(
                                     yyyy, mm, dd, hour, mins, secs, timezone_offset)
                     epoch_timestamp = epoch_time+msec/1000+timeoffset
-
                     tide.epoch_timestamp = epoch_timestamp
                     tide.height = float(line[22:28])
                     tide.height_std = tide.height*tide.height_std_factor
