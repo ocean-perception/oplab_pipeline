@@ -133,13 +133,47 @@ def calculate_correction_parameters(path, force):
             filepath1b = src_file_dirpath / str(camera + '_laser/*.*')
 
             camera_list = glob.glob(str(filepath1))
-            camera_list.extend(glob.glob(str(filepath1b)))
 
-            raw_file_list = [line for line in camera_list if
-                             '.txt' not in line and '._' not in line]
             df_all = pd.read_csv(auv_nav_filepath,
                                  dtype={'Imagenumber': object},
                                  engine='python')
+
+            # TODO process only strobe
+            # camera_list.extend(glob.glob(str(filepath1b)))
+
+            # TODO taking care of order in 'raw file list'
+            raw_file_list_all = [line for line in camera_list if
+                                 '.txt' not in line and '._' not in line]
+
+            raw_file_list = [None] * len(df_all)
+            print('length', len(df_all))
+            for i_raw_file in range(len(raw_file_list)):
+                # print('i_raw_file', i_raw_file)
+
+                tmp_filename = df_all['Imagenumber'][i_raw_file]
+                raw_file_list[i_raw_file] = \
+                    src_file_dirpath / str(camera + '_strobe') \
+                    / os.path.basename(tmp_filename)
+
+                # if i_raw_file < 5:
+                #     print('i_raw_file', i_raw_file)
+                #     print(tmp_filename)
+                #     print(raw_file_list[i_raw_file])
+
+                # print('camera_list:')
+                # print(camera_list[0])
+                # print(camera_list[1])
+                # print(camera_list[2])
+                # print(camera_list[3])
+                # print(camera_list[4])
+                #
+                # print('raw_file_list')
+                # print(raw_file_list[0])
+                # print(raw_file_list[1])
+                # print(raw_file_list[2])
+                # print(raw_file_list[3])
+                # print(raw_file_list[4])
+
             df_all = pd.concat([df_all, pd.DataFrame(
                 raw_file_list, columns=[label_raw_file])], axis=1)
 
@@ -168,18 +202,19 @@ def calculate_correction_parameters(path, force):
                     i] >= altitude_min:
                     match_count = match_count + 1
             if match_count < 1:
-                Console.quit('Altitude values in dive dataset do not match '
-                             + 'with minimum and maximum altitude provided '
-                             + 'in correct_images.yaml')
+                Console.quit(
+                    'Altitude values in dive dataset do not match '
+                    + 'with minimum and maximum altitude provided '
+                    + 'in correct_images.yaml')
             else:
                 # print('altitudes_all', altitudes_all)
                 idx_effective_data = np.where(
                     (altitudes_all >= altitude_min)
                     & (altitudes_all <= altitude_max))[0]
 
-                # print('altitude_min', altitude_min, 'altitude_max',
-                #       altitude_max)
-                # print(idx_effective_data)
+            # print('altitude_min', altitude_min, 'altitude_max',
+            #       altitude_max)
+            # print(idx_effective_data)
             # configure output file path
             dirpath = path_processed / 'image/attenuation_correction'
             print('DIRPATH: ', dirpath)
@@ -205,6 +240,9 @@ def calculate_correction_parameters(path, force):
                 atn_crr_filelist[i_dst_file] = dirpath_atn_crr / str(
                     file_stem + '.npy')
 
+            # print('df_all', df_all)
+            # print('bayer_filelist', bayer_filelist)
+
             # file path of metadata
             params_folder_name = 'params_' + camera
             dir_path_image_crr_params = dst_filelist[
@@ -216,22 +254,22 @@ def calculate_correction_parameters(path, force):
                 # if not dir_path_image_crr_params.exists():
                 if not dir_path_image_crr_params.exists():
                     dir_path_image_crr_params.mkdir(parents=True)
-                Console.info(
-                    'code will compute correction parameters for this Camera for first time.')
+                    Console.info(
+                        'code will compute correction parameters for this Camera for first time.')
             else:
                 print(dir_path_image_crr_params)
-                if force is True:
-                    Console.warn(
-                        'Attenuation correction parameters already exist.')
-                    Console.warn('Code will overwrite existing parameters.')
+            if force is True:
+                Console.warn(
+                    'Attenuation correction parameters already exist.')
+                Console.warn('Code will overwrite existing parameters.')
 
-                else:
-                    Console.warn(
-                        'Code will quit - correction parameters already exist.')
-                    Console.warn(
-                        'Run correct_images with [parse] [-F] option for overwriting existing correction parameters.')
-                    continue
-                    # sys.exit()
+            else:
+                Console.warn(
+                    'Code will quit - correction parameters already exist.')
+                Console.warn(
+                    'Run correct_images with [parse] [-F] option for overwriting existing correction parameters.')
+                continue
+            # sys.exit()
 
             if calculated_atn_crr_params_path is None:
                 calculated_atn_crr_params_path = dir_path_image_crr_params / 'atn_crr_params.npy'
