@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="auv_nav",
-    version='0.0.2.0',
+    version='0.0.2.1',
     author="Miquel Massot, Takaki Yamada, Subhra Das, Jin Lim & Blair Thornton",
     author_email="miquel.massot-campos@soton.ac.uk",
     description="Toolchain for auv dive processing",

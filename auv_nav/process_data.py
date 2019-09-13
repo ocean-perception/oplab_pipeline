@@ -6,17 +6,19 @@ All rights reserved.
 
 from auv_nav.tools.interpolate import interpolate
 from auv_nav.tools.interpolate import interpolate_sensor_list
+from auv_nav.tools.interpolate import interpolate_altitude
 from auv_nav.tools.time_conversions import string_to_epoch
 from auv_nav.tools.time_conversions import epoch_from_json
 from auv_nav.tools.time_conversions import epoch_to_datetime
 from auv_nav.tools.latlon_wgs84 import metres_to_latlon
 from auv_nav.tools.body_to_inertial import body_to_inertial
-from auv_nav.tools.csv_tools import write_csv, write_raw_sensor_csv
+from auv_nav.tools.csv_tools import write_csv, write_raw_sensor_csv, write_sidescan_csv
 from auv_nav.tools.csv_tools import camera_csv
 from auv_nav.tools.csv_tools import other_data_csv
 from auv_nav.tools.csv_tools import spp_csv
 from auv_nav.sensors import BodyVelocity, InertialVelocity
 from auv_nav.sensors import Altitude, Depth, Usbl, Orientation
+from auv_nav.sensors import Tide
 from auv_nav.sensors import Other, Camera
 from auv_nav.sensors import SyncedOrientationBodyVelocity
 from auv_nav.localisation.dead_reckoning import dead_reckoning
@@ -89,6 +91,9 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
     camera3_list = []
     camera3_pf_list = []
 
+    # tide placeholder
+    tide_list = []
+    
     # placeholders for interpolated velocity body measurements based on orientation and transformed coordinates
     dead_reckoning_centre_list = []
     dead_reckoning_dvl_list = []
@@ -808,18 +813,18 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
         for s in ekf_states:
             b = SyncedOrientationBodyVelocity()
             b.epoch_timestamp = s.time
-            b.northings = s.state[Index.X]
-            b.eastings = s.state[Index.Y]
-            b.depth = s.state[Index.Z]
-            b.roll = s.state[Index.ROLL]*180.0/math.pi
-            b.pitch = s.state[Index.PITCH]*180.0/math.pi
-            b.yaw = s.state[Index.YAW]*180.0/math.pi
+            b.northings = s.state[Index.X, 0]
+            b.eastings = s.state[Index.Y, 0]
+            b.depth = s.state[Index.Z, 0]
+            b.roll = s.state[Index.ROLL, 0]*180.0/math.pi
+            b.pitch = s.state[Index.PITCH, 0]*180.0/math.pi
+            b.yaw = s.state[Index.YAW, 0]*180.0/math.pi
             b.roll_std = s.covariance[Index.ROLL, Index.ROLL]*180.0/math.pi
             b.pitch_std = s.covariance[Index.PITCH, Index.PITCH]*180.0/math.pi
             b.yaw_std = s.covariance[Index.YAW, Index.YAW]*180.0/math.pi
-            b.x_velocity = s.state[Index.VX]
-            b.y_velocity = s.state[Index.VY]
-            b.z_velocity = s.state[Index.VZ]
+            b.x_velocity = s.state[Index.VX, 0]
+            b.y_velocity = s.state[Index.VY, 0]
+            b.z_velocity = s.state[Index.VZ, 0]
             b.x_velocity_std = s.covariance[Index.VX, Index.VX]
             b.y_velocity_std = s.covariance[Index.VY, Index.VY]
             b.z_velocity_std = s.covariance[Index.VZ, Index.VZ]
@@ -835,6 +840,8 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
                 mission.origin.latitude, mission.origin.longitude,
                 b.eastings, b.northings)
             b.covariance = s.covariance
+            b.altitude = interpolate_altitude(b.epoch_timestamp,
+                                              dead_reckoning_dvl_list)
             ekf_list.append(b)
 
     origin_offsets = [vehicle.origin.surge, vehicle.origin.sway, vehicle.origin.heave]
@@ -952,30 +959,30 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
 
             t = threading.Thread(target=plot_orientation_vs_time,
                                  args=[orientation_list,
-                                   plotlypath])
+                                       plotlypath])
             t.start()
             threads.append(t)
             t = threading.Thread(target=plot_velocity_vs_time,
                                  args=[dead_reckoning_dvl_list,
-                                   velocity_inertial_list,
-                                   dead_reckoning_centre_list,
-                                   mission.velocity.format,
-                                   plotlypath])
+                                       velocity_inertial_list,
+                                       dead_reckoning_centre_list,
+                                       mission.velocity.format,
+                                       plotlypath])
             t.start()
             threads.append(t)
             t = threading.Thread(target=plot_deadreckoning_vs_time,
                                  args=[dead_reckoning_dvl_list,
-                                   velocity_inertial_list,
-                                   usbl_list,
-                                   dead_reckoning_centre_list,
-                                   altitude_list,
-                                   depth_list,
-                                   mission.velocity.format,
-                                   plotlypath])
+                                       velocity_inertial_list,
+                                       usbl_list,
+                                       dead_reckoning_centre_list,
+                                       altitude_list,
+                                       depth_list,
+                                       mission.velocity.format,
+                                       plotlypath])
             t.start()
             threads.append(t)
             t = threading.Thread(target=plot_uncertainty,
-                                     args=[orientation_list,
+                                 args=[orientation_list,
                                        velocity_body_list,
                                        depth_list,
                                        usbl_list,
@@ -987,24 +994,24 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
             if particle_filter_activate:
                 t = threading.Thread(target=plot_pf_uncertainty,
                                      args=[pf_fusion_dvl_list,
-                                       pf_northings_std,
-                                       pf_eastings_std,
-                                       pf_yaw_std,
-                                       plotlypath])
+                                           pf_northings_std,
+                                           pf_eastings_std,
+                                           pf_yaw_std,
+                                           plotlypath])
                 t.start()
                 threads.append(t)
             t = threading.Thread(target=plot_2d_deadreckoning,
                                  args=[camera1_list,
-                                   dead_reckoning_centre_list,
-                                   dead_reckoning_dvl_list,
-                                   pf_fusion_centre_list,
-                                   ekf_list,
-                                   camera1_pf_list,
-                                   pf_fusion_dvl_list,
-                                   particles_time_interval,
-                                   pf_particles_list,
-                                   usbl_list,
-                                   plotlypath])
+                                       dead_reckoning_centre_list,
+                                       dead_reckoning_dvl_list,
+                                       pf_fusion_centre_list,
+                                       ekf_list,
+                                       camera1_pf_list,
+                                       pf_fusion_dvl_list,
+                                       particles_time_interval,
+                                       pf_particles_list,
+                                       usbl_list,
+                                       plotlypath])
             t.start()
             threads.append(t)
 
@@ -1040,134 +1047,157 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
 
         t = threading.Thread(target=write_csv,
                              args=[drcsvpath,
-                               dead_reckoning_centre_list,
-                               'auv_dr_centre',
-                               csv_dr_auv_centre])
+                                   dead_reckoning_centre_list,
+                                   'auv_dr_centre',
+                                   csv_dr_auv_centre])
         t.start()
         threads.append(t)
 
         t = threading.Thread(target=write_csv,
                              args=[drcsvpath,
-                               dead_reckoning_dvl_list,
-                               'auv_dr_dvl',
-                               csv_dr_auv_dvl])
+                                   dead_reckoning_dvl_list,
+                                   'auv_dr_dvl',
+                                   csv_dr_auv_dvl])
         t.start()
         threads.append(t)
 
         t = threading.Thread(target=other_data_csv,
                              args=[chemical_list,
-                               'auv_dr_chemical',
-                               drcsvpath,
-                               csv_dr_chemical])
+                                   'auv_dr_chemical',
+                                   drcsvpath,
+                                   csv_dr_chemical])
         t.start()
         threads.append(t)
 
         t = threading.Thread(target=write_csv,
                              args=[pfcsvpath,
-                               pf_fusion_centre_list,
-                               'auv_pf_centre',
-                               csv_pf_auv_centre])
+                                   pf_fusion_centre_list,
+                                   'auv_pf_centre',
+                                   csv_pf_auv_centre])
         t.start()
         threads.append(t)
 
         t = threading.Thread(target=write_csv,
                              args=[pfcsvpath,
-                               pf_fusion_dvl_list,
-                               'auv_pf_dvl',
-                               csv_pf_auv_dvl])
+                                   pf_fusion_dvl_list,
+                                   'auv_pf_dvl',
+                                   csv_pf_auv_dvl])
         t.start()
         threads.append(t)
 
         t = threading.Thread(target=other_data_csv,
                              args=[chemical_list,
-                               'auv_pf_chemical',
-                               pfcsvpath,
-                               csv_pf_chemical])
+                                   'auv_pf_chemical',
+                                   pfcsvpath,
+                                   csv_pf_chemical])
         t.start()
         threads.append(t)
 
         t = threading.Thread(target=write_csv,
                              args=[ekfcsvpath,
-                               ekf_list,
-                               'auv_ekf_centre',
-                               csv_ekf_auv_centre])
+                                   ekf_list,
+                                   'auv_ekf_centre',
+                                   csv_ekf_auv_centre])
         t.start()
         threads.append(t)
 
         t = threading.Thread(target=other_data_csv,
                              args=[chemical_list,
-                               'auv_ekf_chemical',
-                               ekfcsvpath,
-                               csv_pf_chemical])
+                                   'auv_ekf_chemical',
+                                   ekfcsvpath,
+                                   csv_pf_chemical])
         t.start()
         threads.append(t)
 
         if len(camera1_list) > 0:
             t = threading.Thread(target=camera_csv,
                                  args=[camera1_list,
-                                   'auv_dr_' + mission.image.cameras[0].name,
-                                   drcsvpath,
-                                   csv_dr_camera_1])
+                                       'auv_dr_' + mission.image.cameras[0].name,
+                                       drcsvpath,
+                                       csv_dr_camera_1])
             t.start()
             threads.append(t)
             t = threading.Thread(target=camera_csv,
                                  args=[camera1_pf_list,
-                                   'auv_pf_' + mission.image.cameras[0].name,
-                                   pfcsvpath,
-                                   csv_pf_camera_1])
+                                       'auv_pf_' + mission.image.cameras[0].name,
+                                       pfcsvpath,
+                                       csv_pf_camera_1])
             t.start()
             threads.append(t)
             t = threading.Thread(target=camera_csv,
                                  args=[camera1_ekf_list,
-                                   'auv_ekf_' + mission.image.cameras[0].name,
-                                   ekfcsvpath,
-                                   csv_ekf_camera_1])
+                                       'auv_ekf_' + mission.image.cameras[0].name,
+                                       ekfcsvpath,
+                                       csv_ekf_camera_1])
             t.start()
             threads.append(t)
         if len(camera2_list) > 1:
             t = threading.Thread(target=camera_csv,
                                  args=[camera2_list,
-                                   'auv_dr_' + mission.image.cameras[1].name,
-                                   drcsvpath,
-                                   csv_dr_camera_2])
+                                       'auv_dr_' + mission.image.cameras[1].name,
+                                       drcsvpath,
+                                       csv_dr_camera_2])
             t.start()
             threads.append(t)
             t = threading.Thread(target=camera_csv,
                                  args=[camera2_pf_list,
-                                   'auv_pf_' + mission.image.cameras[1].name,
-                                   pfcsvpath,
-                                   csv_pf_camera_2])
+                                       'auv_pf_' + mission.image.cameras[1].name,
+                                       pfcsvpath,
+                                       csv_pf_camera_2])
             t.start()
             threads.append(t)
             t = threading.Thread(target=camera_csv,
                                  args=[camera2_ekf_list,
-                                   'auv_ekf_' + mission.image.cameras[1].name,
-                                   ekfcsvpath,
-                                   csv_ekf_camera_2])
+                                       'auv_ekf_' + mission.image.cameras[1].name,
+                                       ekfcsvpath,
+                                       csv_ekf_camera_2])
             t.start()
             threads.append(t)
         if len(camera3_list) > 1:
             t = threading.Thread(target=camera_csv,
                                  args=[camera3_list,
-                                   'auv_dr_' + mission.image.cameras[2].name,
-                                   drcsvpath,
-                                   csv_dr_camera_3])
+                                       'auv_dr_' + mission.image.cameras[2].name,
+                                       drcsvpath,
+                                       csv_dr_camera_3])
             t.start()
             threads.append(t)
             t = threading.Thread(target=camera_csv,
                                  args=[camera3_pf_list,
-                                   'auv_pf_' + mission.image.cameras[2].name,
-                                   pfcsvpath,
-                                   csv_pf_camera_3])
+                                       'auv_pf_' + mission.image.cameras[2].name,
+                                       pfcsvpath,
+                                       csv_pf_camera_3])
             t.start()
             threads.append(t)
             t = threading.Thread(target=camera_csv,
                                  args=[camera3_ekf_list,
-                                   'auv_ekf_' + mission.image.cameras[2].name,
-                                   ekfcsvpath,
-                                   csv_ekf_camera_3])
+                                       'auv_ekf_' + mission.image.cameras[2].name,
+                                       ekfcsvpath,
+                                       csv_ekf_camera_3])
             t.start()
             threads.append(t)
+
+        # Sidescan sonar outputs
+        t = threading.Thread(target=write_sidescan_csv,
+                             args=[drcsvpath,
+                                   dead_reckoning_centre_list,
+                                   'auv_dr_centre_sss',
+                                   csv_dr_auv_centre])
+        t.start()
+        threads.append(t)
+        t = threading.Thread(target=write_sidescan_csv,
+                             args=[pfcsvpath,
+                                   pf_fusion_centre_list,
+                                   'auv_pf_centre_sss',
+                                   csv_pf_auv_centre])
+        t.start()
+        threads.append(t)
+        t = threading.Thread(target=write_sidescan_csv,
+                             args=[ekfcsvpath,
+                                   ekf_list,
+                                   'auv_ekf_centre_sss',
+                                   csv_ekf_auv_centre])
+        t.start()
+        threads.append(t)
     if spp_output_activate:
         Console.info("Converting covariance matrices into information matrices...")
         for i in range(len(camera1_ekf_list)):

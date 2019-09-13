@@ -51,6 +51,14 @@ usbl:
   std_factor: 0.01
   std_offset: 2.0
   
+tide:
+  format: NOC_polpred
+  filepath: nav/tide/
+  filename: dy_108_polpred_tide_60m.txt
+  timezone: utc
+  timeoffset: 0.0
+  std_factor: 0.0
+  std_offset: 0.0
 
 image:
   format: biocam

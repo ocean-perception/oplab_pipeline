@@ -18,6 +18,7 @@ from pathlib import Path
 from auv_nav.parsers.parse_phins import parse_phins
 from auv_nav.parsers.parse_ae2000 import parse_ae2000
 from auv_nav.parsers.parse_NOC_nmea import parse_NOC_nmea
+from auv_nav.parsers.parse_NOC_polpred import parse_NOC_polpred         # included parser for tide model from NOC POLPRED
 from auv_nav.parsers.parse_autosub import parse_autosub
 from auv_nav.parsers.parse_gaps import parse_gaps
 from auv_nav.parsers.parse_usbl_dump import parse_usbl_dump
@@ -34,11 +35,18 @@ from auv_nav.tools.console import Console
 from auv_nav.parsers.vehicle import Vehicle
 from auv_nav.parsers.mission import Mission
 
+from auv_nav.tools.interpolate import interpolate
+from auv_nav.tools.interpolate import interpolate_sensor_list
+from auv_nav.tools.time_conversions import string_to_epoch
+from auv_nav.tools.time_conversions import epoch_from_json
+from auv_nav.tools.time_conversions import epoch_to_datetime
+
+from auv_nav.sensors import Category
+
 
 def parse_data(filepath, force_overwite):
     # initiate data and processing flags
     filepath = Path(filepath).resolve()
-
     filepath = get_raw_folder(filepath)
 
     ftype = 'oplab'
@@ -64,6 +72,8 @@ def parse_data(filepath, force_overwite):
     std_offset_dvl = 0.002
     std_factor_depth = 0
     std_offset_depth = 0.01
+    std_factor_tide = 0
+    std_offset_tide = 0.01
     std_factor_orientation = 0.
     std_offset_orientation = 0.003
     std_factor_altitude = 0.
@@ -87,6 +97,12 @@ def parse_data(filepath, force_overwite):
     if mission.depth.std_offset == 0 and std_offset_depth != 0:
         # print('Depth standard deviation offset not provided. Using default of {}'.format(std_offset_depth))
         mission.depth.std_offset = std_offset_depth
+    if mission.tide.std_factor == 0 and std_factor_tide != 0:
+        # print('Tide standard deviation factor not provided. Using default of {}'.format(std_factor_tide))
+        mission.tide.std_factor = std_factor_tide
+    if mission.tide.std_offset == 0 and std_offset_tide != 0:
+        # print('Tide standard deviation offset not provided. Using default of {}'.format(std_offset_tide))
+        mission.tide.std_offset = std_offset_tide   
     if mission.orientation.std_factor == 0 and std_factor_orientation != 0:
         # print('Orientation standard deviation factor not provided. Using default of {}'.format(std_factor_orientation))
         mission.orientation.std_factor = std_factor_orientation
@@ -290,10 +306,19 @@ def parse_data(filepath, force_overwite):
             else:
                 Console.quit('Mission altitude format {} not supported.'
                              .format(mission.altitude.format))
+
+        if not mission.tide.empty():
+            print('Loading tide data...')
+            if mission.tide.format == "NOC_polpred":
+                tide_list = parse_NOC_polpred(mission, vehicle, 'tide',
+                         ftype, outpath, filename)
+            else:
+                Console.quit('Mission tide format {} not supported.'
+                             .format(mission.tide.format))
         pool.close()
         pool.join()
-        Console.info('...done loading raw data.')
 
+        Console.info('...done loading raw data.')
         Console.info('Compile data list...')
 
         data_list = [[{
@@ -310,19 +335,47 @@ def parse_data(filepath, force_overwite):
 
         for i in pool_list:
             results = i.get()
+            # If current retrieved data is DEPTH
+            # and if TIDE data is available
+            if (results[0]['category'] == Category.DEPTH or results[0]['category'] == Category.USBL):
+                if mission.tide is not None:
+                    # proceed to tidal correction
+                    Console.info("Tidal correction of depth vector...")
+                    # Offset depth to acknowledge for tides
+                    j = 0
+                    for k in range(len(results)):
+                        while j < len(tide_list) and tide_list[j]['epoch_timestamp'] < results[k]['epoch_timestamp']:
+                            j = j + 1
+
+                        if j >= 1:
+                            _result = interpolate(
+                                results[k]['epoch_timestamp'],
+                                tide_list[j-1]['epoch_timestamp'],
+                                tide_list[j]['epoch_timestamp'],
+                                tide_list[j-1]['data'][0]['height'],
+                                tide_list[j]['data'][0]['height'])
+                            if results[0]['category'] == Category.DEPTH:
+                                results[k]['data'][0]['depth'] = results[k]['data'][0]['depth'] - _result
+                            elif results[0]['category'] == Category.USBL:
+                                results[k]['data_target'][4]['depth'] = results[k]['data_target'][4]['depth'] - _result
             data_list.append(results)
+
         Console.info('...done compiling data list.')
 
         Console.info('Writing to output file...')
         data_list_temp = []
         for i in data_list:
             data_list_temp += i
+
         json.dump(data_list_temp, fileout, indent=2)
+
         del data_list_temp
         del data_list
-        Console.info('... done writing to output file.')
 
     fileout.close()
+
+
+
     # interlace the data based on timestamps
     Console.info('Interlacing data...')
     parse_interlacer(outpath, filename)
