@@ -10,6 +10,7 @@ from auv_nav.tools.body_to_inertial import body_to_inertial
 
 import numpy as np
 
+
 # Scripts to interpolate values
 def interpolate(x_query, x_lower, x_upper, y_lower, y_upper):
     if x_upper == x_lower:
@@ -17,6 +18,17 @@ def interpolate(x_query, x_lower, x_upper, y_lower, y_upper):
     else:
         y_query = (y_upper-y_lower)/(x_upper-x_lower)*(x_query-x_lower)+y_lower
     return y_query
+
+
+def interpolate_altitude(query_timestamp, data):
+    i = 1
+    while i < len(data) and data[i].epoch_timestamp < query_timestamp:
+        i += 1
+    return interpolate(query_timestamp,
+                       data[i-1].epoch_timestamp,
+                       data[i].epoch_timestamp,
+                       data[i-1].altitude,
+                       data[i].altitude)
 
 
 def interpolate_dvl(query_timestamp, data_1, data_2):
