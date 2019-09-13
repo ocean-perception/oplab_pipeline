@@ -252,6 +252,7 @@ def develop_corrected_image(path, force):
             #     list_dst_name.append(dst_path.name)
             #     # img_index = img_index + 1
 
+
             df_dst_filelist = df_filelist.iloc[src_img_index].copy()
             df_dst_filelist['image file name'] = list_dst_name
             dst_filelist_path = dst_dir_path / 'filelist.csv'
