@@ -37,7 +37,12 @@ def calculate_correction_parameters(path, force):
     path = Path(path).resolve()
     path_mission = get_raw_folder(path) / "mission.yaml"
     path_raw = get_raw_folder(path)
+
+    print('path', path)
+
     path_processed = get_processed_folder(path)
+
+    print('path_processed', path_processed)
 
     Console.info('loading', path_mission, datetime.datetime.now())
     # load parameters from mission.yaml and correct_images.yaml
@@ -124,7 +129,13 @@ def calculate_correction_parameters(path, force):
             img_path = 'image'
 
             # read path to CSV file
-            auv_nav_filepath = path_processed / config_.config.auv_nav_path
+            print('path_processed', path_processed)
+            print('config', config_.config.auv_nav_path)
+            config_dirname = os.path.basename(config_.config.auv_nav_path)
+            # auv_nav_filepath = path_processed / config_.config.auv_nav_path
+            auv_nav_filepath = path_processed / config_dirname
+
+            print('auv_nav_filepath', auv_nav_filepath)
             src_file_dirpath = path_raw / img_path
             csv_path = 'csv/dead_reckoning/auv_dr_' + camera + '.csv'
             auv_nav_filepath = auv_nav_filepath / csv_path
@@ -154,25 +165,6 @@ def calculate_correction_parameters(path, force):
                 raw_file_list[i_raw_file] = \
                     src_file_dirpath / str(camera + '_strobe') \
                     / os.path.basename(tmp_filename)
-
-                # if i_raw_file < 5:
-                #     print('i_raw_file', i_raw_file)
-                #     print(tmp_filename)
-                #     print(raw_file_list[i_raw_file])
-
-                # print('camera_list:')
-                # print(camera_list[0])
-                # print(camera_list[1])
-                # print(camera_list[2])
-                # print(camera_list[3])
-                # print(camera_list[4])
-                #
-                # print('raw_file_list')
-                # print(raw_file_list[0])
-                # print(raw_file_list[1])
-                # print(raw_file_list[2])
-                # print(raw_file_list[3])
-                # print(raw_file_list[4])
 
             df_all = pd.concat([df_all, pd.DataFrame(
                 raw_file_list, columns=[label_raw_file])], axis=1)
@@ -380,81 +372,37 @@ def calculate_correction_parameters(path, force):
 
             downsampling_memmap = True
 
-            num_downsample = 1000
+            num_downsample = 500
 
             print('len', len(idx_effective_data))
 
-            if len(idx_effective_data) <= num_downsample:
-                downsampling_memmap = False
-            # if not downsampling_memmap:
-            #     print('NOT DOWNSAMPLING')
-            #
-            #     # memmap is created at local directory
-            #     file_name_memmap_raw, memmap_raw = load_memmap_from_npy_filelist(
-            #         bayer_filelist)
-            #     print('Memmap directory: ', file_name_memmap_raw)
-            # else:
-            if True:
-                # print('DOWNSAMPLING')
-                # with down sampling
+            if len(idx_effective_data) > num_downsample:
                 copy_idx_effective_data = idx_effective_data.copy()
                 idx_effective_data = np.random.shuffle(
                     copy_idx_effective_data)
                 idx_effective_data = copy_idx_effective_data[0:num_downsample]
-                # print('down sampled idx effective data', idx_effective_data)
+            # print('down sampled idx effective data', idx_effective_data)
 
-                ###### down sampling from each bin
-                # list_idxs_downsampled = []
-                # num_sample_per_bin_down_sampled = int(len(df_all) * 0.005)
-                #
-                # tmp_min = altitude_min
-                # tmp_max = altitude_min + bin_band
-                # while True:
-                #     list_idxs_in_tmp_bin = df_all[(df_all['Altitude [m]'] >=
-                #                                    tmp_min)
-                #                                   & (df_all['Altitude [m]'] <
-                #                                      tmp_max)].index.to_list()
-                #     if len(list_idxs_in_tmp_bin) >= \
-                #             num_sample_per_bin_down_sampled:
-                #         np.random.shuffle(list_idxs_in_tmp_bin)
-                #         list_idxs_downsampled = list_idxs_downsampled + list_idxs_in_tmp_bin
-                #
-                #     tmp_min += bin_band
-                #     tmp_max += bin_band
-                #     if tmp_min >= altitude_max:
-                #         break
-                #
-                ###### down sampling from each bin
+            # TODO optimisation
+            bayer_filelist_for_memmap = [None] * len(idx_effective_data)
+            for i_idx_effective in range(len(idx_effective_data)):
+                bayer_filelist_for_memmap[
+                    i_idx_effective] = bayer_filelist[idx_effective_data[
+                    i_idx_effective]]
 
-                # TODO optimisation
-                bayer_filelist_for_memmap = [None] * len(idx_effective_data)
-                for i_idx_effective in range(len(idx_effective_data)):
-                    bayer_filelist_for_memmap[
-                        i_idx_effective] = bayer_filelist[idx_effective_data[
-                        i_idx_effective]]
-
-                file_name_memmap_raw, memmap_raw = \
-                    load_memmap_from_npy_filelist(
-                        bayer_filelist_for_memmap)
-                print('Memmap directory: ', file_name_memmap_raw)
+            file_name_memmap_raw, memmap_raw = \
+                load_memmap_from_npy_filelist(
+                    bayer_filelist_for_memmap)
+            print('Memmap directory: ', file_name_memmap_raw)
 
             Console.info('start calculate mean and std of raw img',
                          datetime.datetime.now())
-
-            # if not downsampling_memmap:
-            #     img_mean_raw, img_std_raw = \
-            #         calc_img_mean_and_std_trimmed(memmap_raw, trim_ratio,
-            #                                       calc_std=True,
-            #                                       effective_index=idx_effective_data)
-            #
-            # else:
-            if True:
-                # TODO debug
-                # trim_ratio = 0
-                img_mean_raw, img_std_raw = \
-                    calc_img_mean_and_std_trimmed(memmap_raw, trim_ratio,
-                                                  calc_std=True,
-                                                  effective_index=-1)
+            # TODO debug
+            # trim_ratio = 0
+            img_mean_raw, img_std_raw = \
+                calc_img_mean_and_std_trimmed(memmap_raw, trim_ratio,
+                                              calc_std=True,
+                                              effective_index=-1)
 
             dirpath_img_mean_raw = dir_path_image_crr_params / 'bayer_img_mean_raw'
             dirpath_img_std_raw = dir_path_image_crr_params / 'bayer_img_std_raw'
@@ -475,6 +423,9 @@ def calculate_correction_parameters(path, force):
 
             hist_bounds = np.arange(altitude_min, altitude_max, bin_band)
             idxs = np.digitize(altitudes_all, hist_bounds)
+
+            num_bin = int((altitude_max - altitude_min) / bin_band)
+
             altitudes_ret = []
             each_bin_image_list = []
             tmp_altitude_sample = 0.0
@@ -482,7 +433,7 @@ def calculate_correction_parameters(path, force):
                       datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
             # print('sampling_method', sampling_method)
-            for idx_bin in trange(1, hist_bounds.size, ascii=True,
+            for idx_bin in trange(num_bin, ascii=True,
                                   desc=message):
                 tmp_min = altitude_min + idx_bin * bin_band
                 tmp_max = altitude_min + (idx_bin + 1) * bin_band
@@ -499,56 +450,39 @@ def calculate_correction_parameters(path, force):
                 if len(tmp_idx) == 0:
                     continue
 
-                # print(i_idx)
+                # tmp_bin_imgs = memmap_raw[tmp_idx]
+                tmp_altitudes = altitudes_all[tmp_idx]
+                tmp_bin_imgs = memmap_raw[tmp_idx_for_memmap]
 
-                # if len(tmp_altitudes) > min_sample_per_bin:
-                #     # calculate sample image in this bin
-                #     tmp_idx = np.where(idxs == idx_bin)[0]
+                # calculate sample image of current bin
+                tmp_bin_img_sample = np.zeros((a, b), np.float32)
 
-                if True:
-                    pass
-
-                    # if len(tmp_idx) > max_sample_per_bin:
-                    #     tmp_idx = random.sample(list(tmp_idx),
-                    #                             max_sample_per_bin)
-                    #     tmp_altitudes = altitudes_all[tmp_idx]
-
-                    # tmp_bin_imgs = memmap_raw[tmp_idx]
-                    tmp_altitudes = altitudes_all[tmp_idx]
-                    tmp_bin_imgs = memmap_raw[tmp_idx_for_memmap]
-
-                    # calculate sample image of current bin
-                    tmp_bin_img_sample = np.zeros((a, b), np.float32)
-
-                    if sampling_method == 'mean':
-                        tmp_bin_img_sample = np.mean(tmp_bin_imgs, axis=0)
-                        tmp_altitude_sample = np.mean(tmp_altitudes)
+                if sampling_method == 'mean':
+                    tmp_bin_img_sample = np.mean(tmp_bin_imgs, axis=0)
+                    tmp_altitude_sample = np.mean(tmp_altitudes)
 
 
-                    elif sampling_method == 'mean_trimmed':
-                        #     TOOD implement trimmed mean and std
-                        tmp_bin_img_sample, dummy = calc_img_mean_and_std_trimmed(
-                            tmp_bin_imgs, trim_ratio, calc_std=False,
-                            effective_index=-1)
-                        tmp_altitude_sample = np.mean(tmp_altitudes)
+                elif sampling_method == 'mean_trimmed':
+                    #     TOOD implement trimmed mean and std
+                    tmp_bin_img_sample, dummy = calc_img_mean_and_std_trimmed(
+                        tmp_bin_imgs, trim_ratio, calc_std=False,
+                        effective_index=-1)
+                    tmp_altitude_sample = np.mean(tmp_altitudes)
 
 
-                    elif sampling_method == 'median':
-                        # else:
-                        tmp_bin_img_sample = np.median(tmp_bin_imgs, axis=0)
-                        tmp_altitude_sample = np.mean(
-                            tmp_altitudes)
-                        # altitude value is calculated as mean because it has less varieance.
+                elif sampling_method == 'median':
+                    # else:
+                    tmp_bin_img_sample = np.median(tmp_bin_imgs, axis=0)
+                    tmp_altitude_sample = np.mean(
+                        tmp_altitudes)
+                    # altitude value is calculated as mean because it has less varieance.
 
-                    del tmp_bin_imgs
+                del tmp_bin_imgs
 
-                    each_bin_image_list.append(tmp_bin_img_sample)
-
-                    # print('added altitude value', tmp_altitude_sample)
-                    altitudes_ret.append(tmp_altitude_sample)
+                each_bin_image_list.append(tmp_bin_img_sample)
+                altitudes_ret.append(tmp_altitude_sample)
 
             imgs_for_calc_atn = np.array(each_bin_image_list)
-
             imgs_for_calc_atn = imgs_for_calc_atn.reshape(
                 [len(each_bin_image_list), a * b])
             altitudes_for_calc_atn = altitudes_ret
@@ -610,20 +544,12 @@ def calculate_correction_parameters(path, force):
                 'start calculating mean and std of attenuation corrected images',
                 datetime.datetime.now(), flush=True)
 
-            # if not downsampling_memmap:
-            #     img_mean_atn_crr, img_std_atn_crr = \
-            #         calc_img_mean_and_std_trimmed(memmap_raw, trim_ratio,
-            #                                       calc_std=True,
-            #                                       effective_index=idx_effective_data)
-            #
-            # else:
-            if True:
-                # TODO debug
-                # trim_ratio = 0
-                img_mean_atn_crr, img_std_atn_crr = \
-                    calc_img_mean_and_std_trimmed(memmap_raw, trim_ratio,
-                                                  calc_std=True,
-                                                  effective_index=-1)
+            # TODO debug
+            # trim_ratio = 0
+            img_mean_atn_crr, img_std_atn_crr = \
+                calc_img_mean_and_std_trimmed(memmap_raw, trim_ratio,
+                                              calc_std=True,
+                                              effective_index=-1)
 
             dirpath_img_mean_atn_crr = dir_path_image_crr_params / 'bayer_img_mean_atn_crr'
             dirpath_img_std_atn_crr = dir_path_image_crr_params / 'bayer_img_std_atn_crr'
