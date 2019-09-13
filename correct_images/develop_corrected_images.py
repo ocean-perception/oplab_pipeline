@@ -216,7 +216,7 @@ def develop_corrected_image(path, force):
             message = 'developing images ' + datetime.datetime.now().strftime(
                 "%Y-%m-%d %H:%M:%S")
             list_dst_name = []
-            img_index = 0
+            # img_index = 0
             for i_img in tqdm(src_img_index, ascii=True, desc=message):
                 # attenuation correction or only pixel stat
                 if apply_attenuation_correction:
@@ -246,12 +246,13 @@ def develop_corrected_image(path, force):
 
                 corrected_rgb_img = corrected_rgb_img.astype(np.uint8)
 
-                image_name = list_bayer_file[img_index].stem
+                image_name = list_bayer_file[i_img].stem
+                # image_name = list_bayer_file[img_index].stem
                 image_name_str = str(image_name + '.' + dst_img_format)
                 dst_path = dst_dir_path / image_name_str
                 imageio.imwrite(dst_path, corrected_rgb_img)
                 list_dst_name.append(dst_path.name)
-                img_index = img_index + 1
+                # img_index = img_index + 1
 
             df_dst_filelist = df_filelist.iloc[src_img_index].copy()
             df_dst_filelist['image file name'] = list_dst_name
