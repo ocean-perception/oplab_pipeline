@@ -1,8 +1,9 @@
 from auv_nav.tools.console import Console
 from pathlib import Path
 import pandas as pd
-
+import time
 import numpy as np
+
 
 def write_csv(csv_filepath, data_list, csv_filename, csv_flag):
     if csv_flag is True:
@@ -22,8 +23,7 @@ def write_csv(csv_filepath, data_list, csv_filename, csv_flag):
                 cov = ['x', 'y', 'z',
                        'roll', 'pitch', 'yaw',
                        'vx', 'vy', 'vz',
-                       'vroll', 'vpitch', 'vyaw',
-                       'ax', 'ay', 'az']
+                       'vroll', 'vpitch', 'vyaw']
                 for a in cov:
                     for b in cov:
                         str_to_write += ', cov_'+a+'_'+b
@@ -48,6 +48,46 @@ def write_csv(csv_filepath, data_list, csv_filename, csv_flag):
                         for c in cov:
                             str_to_write += ',' + str(c)
                     str_to_write += '\n'
+                except IndexError:
+                    break
+            with file.open('w') as fileout:
+                fileout.write(str_to_write)
+        else:
+            Console.warn('Empty data list {}'.format(str(csv_filename)))
+
+
+def write_sidescan_csv(csv_filepath, data_list, csv_filename, csv_flag):
+    """
+    Mission Date Time  NorthDeg  EastDeg HeadingDeg  RollDeg  PitchDeg Altitude Depth Speed
+    M150       20190910 093646 56.803696  -7.418816  74.891 -2.757 21.851 92.682 122.245 1.074
+    """
+    # check the relvant folders exist and if note create them
+
+    if csv_flag:
+        csv_file = Path(csv_filepath)
+        if not csv_file.exists():
+            csv_file.mkdir(parents=True, exist_ok=True)
+
+        Console.info("Writing SSS outputs to {}.txt ...".format(csv_filename))
+        file = csv_file / '{}.txt'.format(csv_filename)
+        str_to_write = ''
+        str_to_write += '#Mission Date Time  NorthDeg  EastDeg HeadingDeg  RollDeg  PitchDeg Altitude Depth Speed'
+        if len(data_list) > 0:
+            str_to_write += '\n'
+            for i in range(len(data_list)):
+                try:
+                    datetime_str = time.strftime('%Y%m%d %H%M%S', time.gmtime(data_list[i].epoch_timestamp))
+
+                    str_to_write += (
+                        'M150 ' + datetime_str + ' '
+                        + str(data_list[i].latitude) + ' '
+                        + str(data_list[i].longitude) + ' '
+                        + str(data_list[i].yaw) + ' '
+                        + str(data_list[i].roll) + ' '
+                        + str(data_list[i].pitch) + ' '
+                        + str(data_list[i].altitude) + ' '
+                        + str(data_list[i].depth) + ' '
+                        + str(data_list[i].x_velocity) + '\n')
                 except IndexError:
                     break
             with file.open('w') as fileout:
