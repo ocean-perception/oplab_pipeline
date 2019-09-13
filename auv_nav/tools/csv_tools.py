@@ -80,14 +80,14 @@ def write_sidescan_csv(csv_filepath, data_list, csv_filename, csv_flag):
 
                     str_to_write += (
                         'M150 ' + datetime_str + ' '
-                        + str(data_list[i].latitude) + ' '
-                        + str(data_list[i].longitude) + ' '
-                        + str(data_list[i].yaw) + ' '
-                        + str(data_list[i].roll) + ' '
-                        + str(data_list[i].pitch) + ' '
-                        + str(data_list[i].altitude) + ' '
-                        + str(data_list[i].depth) + ' '
-                        + str(data_list[i].x_velocity) + '\n')
+                        + "{:.6f}".format(data_list[i].latitude) + ' '
+                        + "{:.6f}".format(data_list[i].longitude) + ' '
+                        + "{:.3f}".format(data_list[i].yaw) + ' '
+                        + "{:.3f}".format(data_list[i].roll) + ' '
+                        + "{:.3f}".format(data_list[i].pitch) + ' '
+                        + "{:.3f}".format(data_list[i].altitude) + ' '
+                        + "{:.3f}".format(data_list[i].depth) + ' '
+                        + "{:.3f}".format(data_list[i].x_velocity) + '\n')
                 except IndexError:
                     break
             with file.open('w') as fileout:
