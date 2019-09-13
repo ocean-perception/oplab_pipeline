@@ -4,6 +4,7 @@ import shutil
 
 import cv2
 import imageio
+import joblib
 import numpy as np
 import pandas as pd
 import scipy.ndimage.filters as filters
@@ -191,6 +192,8 @@ def develop_corrected_image(path, force):
                 code = cv2.COLOR_BAYER_GR2BGR_VNG
 
             # calculate distortion correction paramters
+            map_x = None
+            map_y = None
             if apply_distortion_correction:
                 if camera_parameter_file_path == 'None':
                     Console.quit(
@@ -217,42 +220,32 @@ def develop_corrected_image(path, force):
                 "%Y-%m-%d %H:%M:%S")
             list_dst_name = []
             # img_index = 0
-            for i_img in tqdm(src_img_index, ascii=True, desc=message):
-                # attenuation correction or only pixel stat
-                if apply_attenuation_correction:
-                    corrected_bayer_img = attenuation_correction_bayer(
-                        np.load(str(list_bayer_file_path[i_img])),
-                        bayer_img_corrected_mean, bayer_img_corrected_std,
-                        target_mean, target_std, atn_crr_params,
-                        list_altitude[i_img], target_altitude, True, 8)
 
-                else:
-                    corrected_bayer_img = pixel_stat_bayer(
-                        np.load(str(list_bayer_file_path[i_img])),
-                        bayer_img_mean, bayer_img_std,
-                        target_mean, target_std, 8)
+            list_dst_name = joblib.Parallel(n_jobs=-2,
+                                            verbose=3)(
+                [joblib.delayed(process_img)(apply_attenuation_correction,
+                                             apply_distortion_correction,
+                                             apply_gamma_correction,
+                                             atn_crr_params,
+                                             bayer_img_corrected_mean,
+                                             bayer_img_corrected_std,
+                                             bayer_img_mean,
+                                             bayer_img_std, bayer_pattern,
+                                             dst_dir_path, dst_img_format,
+                                             i_img,
+                                             list_altitude, list_bayer_file,
+                                             list_bayer_file_path, map_x,
+                                             map_y,
+                                             target_altitude, target_mean,
+                                             target_std) for i_img in
+                 src_img_index])
 
-                # Debayer image
-                corrected_rgb_img = demosaicing_CFA_Bayer_bilinear(
-                    corrected_bayer_img, bayer_pattern)
-                # corrected_rgb_img = cv2.cvtColor(corrected_bayer_img.astype(np.uint8), code)
-
-                if apply_distortion_correction:
-                    corrected_rgb_img = correct_distortion(corrected_rgb_img,
-                                                           map_x, map_y, 8)
-
-                if apply_gamma_correction:
-                    corrected_rgb_img = gamma_correct(corrected_rgb_img, 8)
-
-                corrected_rgb_img = corrected_rgb_img.astype(np.uint8)
-
-                image_name = list_bayer_file[i_img].stem
-                # image_name = list_bayer_file[img_index].stem
-                image_name_str = str(image_name + '.' + dst_img_format)
-                dst_path = dst_dir_path / image_name_str
-                imageio.imwrite(dst_path, corrected_rgb_img)
-                list_dst_name.append(dst_path.name)
-                # img_index = img_index + 1
+            # for i_img in tqdm(src_img_index, ascii=True, desc=message):
+            #     # attenuation correction or only pixel stat
+            #     dst_path = process_img()
+            #
+            #     list_dst_name.append(dst_path.name)
+            #     # img_index = img_index + 1
 
             df_dst_filelist = df_filelist.iloc[src_img_index].copy()
             df_dst_filelist['image file name'] = list_dst_name
@@ -631,6 +624,8 @@ def develop_corrected_image(path, force):
                 code = cv2.COLOR_BAYER_GR2BGR_VNG
 
             # calculate distortion correction paramters
+            map_x = None
+            map_y = None
             if apply_distortion_correction:
                 if camera_parameter_file_path == 'None':
                     Console.quit(
@@ -722,6 +717,46 @@ def develop_corrected_image(path, force):
 
             # remove the bayer folder containing npy files 
             shutil.rmtree(bayer_path)
+
+
+def process_img(apply_attenuation_correction, apply_distortion_correction,
+                apply_gamma_correction, atn_crr_params,
+                bayer_img_corrected_mean, bayer_img_corrected_std,
+                bayer_img_mean, bayer_img_std, bayer_pattern, dst_dir_path,
+                dst_img_format, i_img, list_altitude, list_bayer_file,
+                list_bayer_file_path, map_x, map_y, target_altitude,
+                target_mean, target_std):
+    if apply_attenuation_correction:
+        corrected_bayer_img = attenuation_correction_bayer(
+            np.load(str(list_bayer_file_path[i_img])),
+            bayer_img_corrected_mean, bayer_img_corrected_std,
+            target_mean, target_std, atn_crr_params,
+            list_altitude[i_img], target_altitude, True, 8)
+
+    else:
+        corrected_bayer_img = pixel_stat_bayer(
+            np.load(str(list_bayer_file_path[i_img])),
+            bayer_img_mean, bayer_img_std,
+            target_mean, target_std, 8)
+    # Debayer image
+    if bayer_pattern == 'greyscale':
+        corrected_rgb_img = corrected_bayer_img
+    else:
+        corrected_rgb_img = demosaicing_CFA_Bayer_bilinear(
+            corrected_bayer_img, bayer_pattern)
+    # corrected_rgb_img = cv2.cvtColor(corrected_bayer_img.astype(np.uint8), code)
+    if apply_distortion_correction:
+        corrected_rgb_img = correct_distortion(corrected_rgb_img,
+                                               map_x, map_y, 8)
+    if apply_gamma_correction:
+        corrected_rgb_img = gamma_correct(corrected_rgb_img, 8)
+    corrected_rgb_img = corrected_rgb_img.astype(np.uint8)
+    image_name = list_bayer_file[i_img].stem
+    # image_name = list_bayer_file[img_index].stem
+    image_name_str = str(image_name + '.' + dst_img_format)
+    dst_path = dst_dir_path / image_name_str
+    imageio.imwrite(dst_path, corrected_rgb_img)
+    return dst_path
 
 
 def filter_atn_parm_median(src_atn_param, kernel_size):
