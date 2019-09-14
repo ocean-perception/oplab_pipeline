@@ -810,6 +810,7 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
         ekf_elapsed_time = ekf_end_time - ekf_start_time
         Console.info("EKF took {} mins".format(ekf_elapsed_time/60))
         # TODO: convert from EKF states in meters to lat lon
+        dr_idx = 1
         for s in ekf_states:
             b = SyncedOrientationBodyVelocity()
             b.epoch_timestamp = s.time
@@ -840,8 +841,13 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
                 mission.origin.latitude, mission.origin.longitude,
                 b.eastings, b.northings)
             b.covariance = s.covariance
-            b.altitude = interpolate_altitude(b.epoch_timestamp,
-                                              dead_reckoning_dvl_list)
+            while dr_idx < len(dead_reckoning_dvl_list) and dead_reckoning_dvl_list[dr_idx].epoch_timestamp < b.epoch_timestamp:
+                dr_idx += 1
+            b.altitude = interpolate(b.epoch_timestamp,
+                                     dead_reckoning_dvl_list[dr_idx-1].epoch_timestamp,
+                                     dead_reckoning_dvl_list[dr_idx].epoch_timestamp,
+                                     dead_reckoning_dvl_list[dr_idx-1].altitude,
+                                     dead_reckoning_dvl_list[dr_idx].altitude)
             ekf_list.append(b)
 
     origin_offsets = [vehicle.origin.surge, vehicle.origin.sway, vehicle.origin.heave]
