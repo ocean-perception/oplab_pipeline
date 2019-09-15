@@ -151,6 +151,11 @@ def develop_corrected_image(path, force):
 
             debayer_option = config_.output.debayer_option
             bayer_pattern = config_.output.bayer_pattern
+
+            # TODO should be read from yaml file
+            if i is 1:
+                bayer_pattern = 'greyscale'
+
             dst_img_format = config_.output.dst_file_format
             median_filter_kernel_size = config_.attenuation_correction.median_filter_kernel_size
 
