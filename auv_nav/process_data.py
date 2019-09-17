@@ -871,13 +871,23 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
             latlon_reference,
             dead_reckoning_centre_list)
     if len(camera3_list) > 1:
-        interpolate_sensor_list(
-            camera3_list,
-            mission.image.cameras[2].name,
-            camera3_offsets,
-            origin_offsets,
-            latlon_reference,
-            dead_reckoning_centre_list)
+        if len(mission.image.cameras) > 2:
+            interpolate_sensor_list(
+                camera3_list,
+                mission.image.cameras[2].name,
+                camera3_offsets,
+                origin_offsets,
+                latlon_reference,
+                dead_reckoning_centre_list)
+        elif len(mission.image.cameras) == 2:  # Biocam
+            interpolate_sensor_list(
+                camera3_list,
+                mission.image.cameras[1].name + '_laser',
+                camera3_offsets,
+                origin_offsets,
+                latlon_reference,
+                dead_reckoning_centre_list)
+
     if len(pf_fusion_centre_list) > 1:
         if len(camera1_pf_list) > 1:
             interpolate_sensor_list(
@@ -896,13 +906,22 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
                 latlon_reference,
                 pf_fusion_centre_list)
         if len(camera3_pf_list) > 1:
-            interpolate_sensor_list(
-                camera3_pf_list,
-                mission.image.cameras[2].name,
-                camera3_offsets,
-                origin_offsets,
-                latlon_reference,
-                pf_fusion_centre_list)
+            if len(mission.image.cameras) > 2:
+                interpolate_sensor_list(
+                    camera3_pf_list,
+                    mission.image.cameras[2].name,
+                    camera3_offsets,
+                    origin_offsets,
+                    latlon_reference,
+                    pf_fusion_centre_list)
+            elif len(mission.image.cameras) == 2:  # Biocam
+                interpolate_sensor_list(
+                    camera3_list,
+                    mission.image.cameras[1].name + '_laser',
+                    camera3_offsets,
+                    origin_offsets,
+                    latlon_reference,
+                    dead_reckoning_centre_list)
     if len(ekf_list) > 1:
         if len(camera1_ekf_list) > 1:
             interpolate_sensor_list(
@@ -921,13 +940,22 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
                 latlon_reference,
                 ekf_list)
         if len(camera3_ekf_list) > 1:
-            interpolate_sensor_list(
-                camera3_ekf_list,
-                mission.image.cameras[2].name,
-                camera3_offsets,
-                origin_offsets,
-                latlon_reference,
-                ekf_list)
+            if len(mission.image.cameras) > 2:
+                interpolate_sensor_list(
+                    camera3_ekf_list,
+                    mission.image.cameras[2].name,
+                    camera3_offsets,
+                    origin_offsets,
+                    latlon_reference,
+                    ekf_list)
+            elif len(mission.image.cameras) == 2:  # Biocam
+                interpolate_sensor_list(
+                    camera3_list,
+                    mission.image.cameras[1].name + '_laser',
+                    camera3_offsets,
+                    origin_offsets,
+                    latlon_reference,
+                    dead_reckoning_centre_list)
 
     # perform interpolations of state data to chemical time stamps for both
     # DR and PF
@@ -1159,27 +1187,50 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
             t.start()
             threads.append(t)
         if len(camera3_list) > 1:
-            t = threading.Thread(target=camera_csv,
-                                 args=[camera3_list,
-                                       'auv_dr_' + mission.image.cameras[2].name,
-                                       drcsvpath,
-                                       csv_dr_camera_3])
-            t.start()
-            threads.append(t)
-            t = threading.Thread(target=camera_csv,
-                                 args=[camera3_pf_list,
-                                       'auv_pf_' + mission.image.cameras[2].name,
-                                       pfcsvpath,
-                                       csv_pf_camera_3])
-            t.start()
-            threads.append(t)
-            t = threading.Thread(target=camera_csv,
-                                 args=[camera3_ekf_list,
-                                       'auv_ekf_' + mission.image.cameras[2].name,
-                                       ekfcsvpath,
-                                       csv_ekf_camera_3])
-            t.start()
-            threads.append(t)
+            if len(mission.image.cameras) > 2:
+                t = threading.Thread(target=camera_csv,
+                                     args=[camera3_list,
+                                           'auv_dr_' + mission.image.cameras[2].name,
+                                           drcsvpath,
+                                           csv_dr_camera_3])
+                t.start()
+                threads.append(t)
+                t = threading.Thread(target=camera_csv,
+                                     args=[camera3_pf_list,
+                                           'auv_pf_' + mission.image.cameras[2].name,
+                                           pfcsvpath,
+                                           csv_pf_camera_3])
+                t.start()
+                threads.append(t)
+                t = threading.Thread(target=camera_csv,
+                                     args=[camera3_ekf_list,
+                                           'auv_ekf_' + mission.image.cameras[2].name,
+                                           ekfcsvpath,
+                                           csv_ekf_camera_3])
+                t.start()
+                threads.append(t)
+            elif len(mission.image.cameras) == 2:
+                t = threading.Thread(target=camera_csv,
+                                     args=[camera3_list,
+                                           'auv_dr_' + mission.image.cameras[1].name + '_laser',
+                                           drcsvpath,
+                                           csv_dr_camera_3])
+                t.start()
+                threads.append(t)
+                t = threading.Thread(target=camera_csv,
+                                     args=[camera3_pf_list,
+                                           'auv_pf_' + mission.image.cameras[1].name + '_laser',
+                                           pfcsvpath,
+                                           csv_pf_camera_3])
+                t.start()
+                threads.append(t)
+                t = threading.Thread(target=camera_csv,
+                                     args=[camera3_ekf_list,
+                                           'auv_ekf_' + mission.image.cameras[1].name + '_laser',
+                                           ekfcsvpath,
+                                           csv_ekf_camera_3])
+                t.start()
+                threads.append(t)
 
         # Sidescan sonar outputs
         t = threading.Thread(target=write_sidescan_csv,
@@ -1223,28 +1274,41 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
             camera1_ekf_list[i].information = camera1_ekf_list[i+1].information
         camera1_ekf_list = camera1_ekf_list[:-1]
 
-        t = threading.Thread(target=spp_csv,
-                             args=[camera1_ekf_list, 'auv_ekf_' +
-                               mission.image.cameras[0].name,
-                               ekfcsvpath,
-                               spp_ekf_camera_1])
+        t = threading.Thread(
+            target=spp_csv,
+            args=[camera1_ekf_list, 'auv_ekf_' +
+                  mission.image.cameras[0].name,
+                  ekfcsvpath,
+                  spp_ekf_camera_1])
         t.start()
         threads.append(t)
-        t = threading.Thread(target=spp_csv,
-                             args=[camera2_ekf_list, 'auv_ekf_' +
-                               mission.image.cameras[1].name,
-                               ekfcsvpath,
-                               spp_ekf_camera_2])
+        t = threading.Thread(
+            target=spp_csv,
+            args=[camera2_ekf_list, 'auv_ekf_' +
+                  mission.image.cameras[1].name,
+                  ekfcsvpath,
+                  spp_ekf_camera_2])
         t.start()
         threads.append(t)
         if len(camera3_list) > 1:
-            t = threading.Thread(target=spp_csv,
-                                 args=[camera3_ekf_list, 'auv_ekf_' +
-                                   mission.image.cameras[2].name,
-                                   ekfcsvpath,
-                                   spp_ekf_camera_3])
-            t.start()
-            threads.append(t)
+            if len(mission.image.cameras) > 2:
+                t = threading.Thread(
+                    target=spp_csv,
+                    args=[camera3_ekf_list, 'auv_ekf_' +
+                          mission.image.cameras[2].name,
+                          ekfcsvpath,
+                          spp_ekf_camera_3])
+                t.start()
+                threads.append(t)
+            elif len(mission.image.cameras) == 2:
+                t = threading.Thread(
+                    target=spp_csv,
+                    args=[camera3_ekf_list, 'auv_ekf_' +
+                          mission.image.cameras[1].name + '_laser',
+                          ekfcsvpath,
+                          spp_ekf_camera_3])
+                t.start()
+                threads.append(t)
     Console.info("Waiting for all threads to finish")
     for t in threads:
         t.join()
