@@ -550,10 +550,10 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
             n += 1
         dead_reckoning_dvl.altitude = interpolate(
             orientation_list[i].epoch_timestamp,
+            altitude_list[n-1].epoch_timestamp,
             altitude_list[n].epoch_timestamp,
-            altitude_list[n+1].epoch_timestamp,
-            altitude_list[n].altitude,
-            altitude_list[n+1].altitude)
+            altitude_list[n-1].altitude,
+            altitude_list[n].altitude)
 
         while k < len(depth_list)-1 and depth_list[k].epoch_timestamp < orientation_list[i].epoch_timestamp:
             k += 1
