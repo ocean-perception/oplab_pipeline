@@ -35,7 +35,7 @@ def develop_corrected_image(path, force):
     path_correct = get_config_folder(path) / "correct_images.yaml"
     if not path_correct.exists():
         Console.warn(
-            'Config File does not exist. Did you parse first this dive?')
+            'Config File does not exist. Did you parse this dive first?')
         Console.quit('run correct_images parse first.')
     path_mission = get_raw_folder(path) / "mission.yaml"
     path_processed = get_processed_folder(path)
