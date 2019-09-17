@@ -220,7 +220,6 @@ def develop_corrected_image(path, force):
             if src_img_index == -1:
                 src_img_index = range(len(df_filelist))
 
-
             message = 'developing images ' + datetime.datetime.now().strftime(
                 "%Y-%m-%d %H:%M:%S")
             list_dst_name = []
@@ -245,13 +244,13 @@ def develop_corrected_image(path, force):
                     target_altitude, target_mean,
                     target_std) for i_img in src_img_index])
 
+
             # for i_img in tqdm(src_img_index, ascii=True, desc=message):
             #     # attenuation correction or only pixel stat
             #     dst_path = process_img()
             #
             #     list_dst_name.append(dst_path.name)
             #     # img_index = img_index + 1
-
 
             df_dst_filelist = df_filelist.iloc[src_img_index].copy()
             df_dst_filelist['image file name'] = list_dst_name
@@ -522,7 +521,6 @@ def develop_corrected_image(path, force):
 
             # read image path from mission.yaml
             img_path = mission.image.cameras_0.get('path')
-
             if not Path(path_processed / img_path).exists():
                 Console.warn('Image path does not exist for camera', camera)
                 continue
@@ -724,6 +722,7 @@ def develop_corrected_image(path, force):
 
             # remove the bayer folder containing npy files 
             shutil.rmtree(bayer_path)
+
 
 def process_img(apply_attenuation_correction, apply_distortion_correction,
                 apply_gamma_correction, atn_crr_params,

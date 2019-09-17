@@ -39,8 +39,9 @@ def calculate_correction_parameters(path, force):
     path_raw = get_raw_folder(path)
 
     print('path', path)
-
     path_processed = get_processed_folder(path)
+    print('path_processed', path_processed)
+
     Console.info('loading', path_mission, datetime.datetime.now())
     # load parameters from mission.yaml and correct_images.yaml
     # read_params(path to file, type of file: mission/correct_config)
@@ -126,6 +127,7 @@ def calculate_correction_parameters(path, force):
             img_path = 'image'
 
             # read path to CSV file
+
             auv_nav_filepath = path_processed / config_.config.auv_nav_path
             src_file_dirpath = path_raw / img_path
             csv_path = 'csv/dead_reckoning/auv_dr_' + camera + '.csv'
@@ -156,26 +158,6 @@ def calculate_correction_parameters(path, force):
                 raw_file_list[i_raw_file] = \
                     src_file_dirpath / str(camera + '_strobe') \
                     / os.path.basename(tmp_filename)
-
-                # if i_raw_file < 5:
-                #     print('i_raw_file', i_raw_file)
-                #     print(tmp_filename)
-                #     print(raw_file_list[i_raw_file])
-
-                # print('camera_list:')
-                # print(camera_list[0])
-                # print(camera_list[1])
-                # print(camera_list[2])
-                # print(camera_list[3])
-                # print(camera_list[4])
-                #
-                # print('raw_file_list')
-                # print(raw_file_list[0])
-                # print(raw_file_list[1])
-                # print(raw_file_list[2])
-                # print(raw_file_list[3])
-                # print(raw_file_list[4])
-
             df_all = pd.concat([df_all, pd.DataFrame(
                 raw_file_list, columns=[label_raw_file])], axis=1)
 
@@ -383,7 +365,6 @@ def calculate_correction_parameters(path, force):
                 idx_effective_data = np.random.shuffle(
                     copy_idx_effective_data)
                 idx_effective_data = copy_idx_effective_data[0:num_downsample]
-
             # print('down sampled idx effective data', idx_effective_data)
 
             # TODO optimisation
@@ -600,9 +581,9 @@ def calculate_correction_parameters(path, force):
                          cfg_filepath, datetime.datetime.now())
 
             del memmap_raw
+
             path_parent = Path(path).parents[4]
             for file_name in Path(path_parent).glob('*.map'):
-
                 Path(file_name).unlink()
 
             Console.info(
@@ -1075,7 +1056,6 @@ def calculate_correction_parameters(path, force):
             del memmap_raw
             path_parent = Path(path).parents[4]
             for file_name in Path(path_parent).glob('*.map'):
-
                 Path(file_name).unlink()
 
             Console.info(
@@ -1529,7 +1509,6 @@ def calculate_correction_parameters(path, force):
             del memmap_raw
             path_parent = Path(path).parents[4]
             for file_name in Path(path_parent).glob('*.map'):
-
                 Path(file_name).unlink()
 
             Console.info(
