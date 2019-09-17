@@ -23,6 +23,7 @@ def parse_NOC_nmea(mission,
         filename = mission.usbl.filename
         filepath = mission.usbl.filepath
         timezone = mission.usbl.timezone
+        beacon_id = mission.usbl.label
         timeoffset = mission.usbl.timeoffset
         timezone_offset = read_timezone(timezone)
         latitude_reference = mission.origin.latitude
@@ -42,7 +43,13 @@ def parse_NOC_nmea(mission,
             with file.open('r', errors='ignore') as nmea_file:
                 for line in nmea_file.readlines():
                     parts = line.split('\t')
+                    if len(parts) < 2:
+                        continue
                     msg = pynmea2.parse(parts[1])
+
+                    if int(msg.ref_station_id) != beacon_id:
+                        continue
+
                     date_str = line.split(' ')[0]
                     hour_str = str(parts[1]).split(',')[1]
 

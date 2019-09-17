@@ -4,6 +4,7 @@ import shutil
 
 import cv2
 import imageio
+import joblib
 import numpy as np
 import pandas as pd
 import scipy.ndimage.filters as filters
@@ -15,10 +16,12 @@ from auv_nav.tools.console import Console
 from auv_nav.tools.folder_structure import get_raw_folder
 from auv_nav.tools.folder_structure import get_processed_folder
 from auv_nav.tools.folder_structure import get_config_folder
-from correct_images.calculate_correction_parameters import calc_attenuation_correction_gain, apply_atn_crr_2_img
+from correct_images.calculate_correction_parameters import \
+    calc_attenuation_correction_gain, apply_atn_crr_2_img
 from correct_images.read_mission import read_params
 from correct_images.utilities import *
 from colour_demosaicing import demosaicing_CFA_Bayer_bilinear
+from auv_nav.correct_images.utilities import MonoCamera
 
 
 def develop_corrected_image(path, force):
@@ -31,7 +34,8 @@ def develop_corrected_image(path, force):
     path = Path(path).resolve()
     path_correct = get_config_folder(path) / "correct_images.yaml"
     if not path_correct.exists():
-        Console.warn('Config File does not exist. Did you parse first this dive?')
+        Console.warn(
+            'Config File does not exist. Did you parse first this dive?')
         Console.quit('run correct_images parse first.')
     path_mission = get_raw_folder(path) / "mission.yaml"
     path_processed = get_processed_folder(path)
@@ -40,7 +44,11 @@ def develop_corrected_image(path, force):
     Console.info('Loading', path_mission, datetime.datetime.now())
     Console.info('Loading', path_correct, datetime.datetime.now())
 
-    mission = read_params(path_mission, 'mission')  # read_params(path to file, type of file: mission/correct_config)
+    mission = read_params(path_mission,
+                          'mission')  # read_params(path to file, type of file: mission/correct_config)
+
+    print('mission:', path_mission)
+
     config_ = read_params(path_correct, 'correct')
     camera_format = mission.image.format
     
@@ -90,7 +98,9 @@ def develop_corrected_image(path, force):
                     if camera in img_p:
                         img_path = img_p
                     else:
-                        print('Mission yaml file does not have path to camera: ',camera)
+                        print(
+                            'Mission yaml file does not have path to camera: ',
+                            camera)
                         continue
 
     print('path to image', Path(path_processed / img_path))
@@ -301,17 +311,15 @@ def develop_corrected_image(path, force):
             'params_dir_path': params_dir_path,
             'debayer_option': debayer_option
         }
-        cfg_filepath = dst_dir_path / 'config.yaml'
-        with cfg_filepath.open('w') as cfg_file:
-            yaml.dump(dict_cfg, cfg_file, default_flow_style=False)
-        Console.info('Done. Configurations are saved to ', cfg_filepath, datetime.datetime.now())
-        Console.info('#### ------ Process completed ------ #####')
+    cfg_filepath = dst_dir_path / 'config.yaml'
+    with cfg_filepath.open('w') as cfg_file:
+        yaml.dump(dict_cfg, cfg_file, default_flow_style=False)
+    Console.info('Done. Configurations are saved to ', cfg_filepath, datetime.datetime.now())
+    Console.info('#### ------ Process completed ------ #####')
 
-        # remove the bayer folder containing npy files 
-        shutil.rmtree(bayer_path)    
+    # remove the bayer folder containing npy files 
+    shutil.rmtree(bayer_path)    
 
-    
-            
 
 def filter_atn_parm_median(src_atn_param, kernel_size):
     #  0 1
@@ -332,8 +340,9 @@ def filter_atn_parm_median(src_atn_param, kernel_size):
     for i_mos in range(len(list_params)):
         for i in range(np.size(list_params[i_mos], axis=2)):
             for j in range(np.size(list_params[i_mos], axis=3)):
-                list_params_fil[i_mos][:, :, i, j] = filters.median_filter(list_params[i_mos][:, :, i, j],
-                                                                           (kernel_size, kernel_size))
+                list_params_fil[i_mos][:, :, i, j] = filters.median_filter(
+                    list_params[i_mos][:, :, i, j],
+                    (kernel_size, kernel_size))
 
     ret = np.zeros(src_atn_param.shape, src_atn_param.dtype)
     ret[0::2, 0::2, :, :] = params_0_fil
@@ -343,27 +352,36 @@ def filter_atn_parm_median(src_atn_param, kernel_size):
 
     return ret
 
+
 def calc_distortion_mapping(camera_parameter_file_path, a, b):
-    mono_cam = MonoCamera(camera_parameter_file_path) # MonoCamera is a Class to read camera parameters: defined in utilities.py
-    cam_mat, _ = cv2.getOptimalNewCameraMatrix(mono_cam.K, mono_cam.d, (a, b), 0)
-    map_x, map_y = cv2.initUndistortRectifyMap(mono_cam.K, mono_cam.d, None, cam_mat, (b, a), 5)
+    # MonoCamera is a Class to read camera parameters: defined in utilities.py
+    mono_cam = MonoCamera(camera_parameter_file_path)
+    cam_mat, _ = cv2.getOptimalNewCameraMatrix(mono_cam.K, mono_cam.d, (a, b),
+                                               0)
+    map_x, map_y = cv2.initUndistortRectifyMap(mono_cam.K, mono_cam.d, None,
+                                               cam_mat, (b, a), 5)
     return map_x, map_y
 
 
-def attenuation_correction_bayer(bayer_img, bayer_img_mean, bayer_img_std, target_mean, target_std, atn_crr_params,
-                                 src_altitude, target_altitude, apply_attenuation_correction=True, dst_bit=8):
+def attenuation_correction_bayer(bayer_img, bayer_img_mean, bayer_img_std,
+                                 target_mean, target_std, atn_crr_params,
+                                 src_altitude, target_altitude,
+                                 apply_attenuation_correction=True, dst_bit=8):
     gain = calc_attenuation_correction_gain(target_altitude, atn_crr_params)
     ret = apply_atn_crr_2_img(bayer_img, src_altitude, atn_crr_params, gain)
-    ret = pixel_stat_bayer(ret, bayer_img_mean, bayer_img_std, target_mean, target_std, dst_bit)
+    ret = pixel_stat_bayer(ret, bayer_img_mean, bayer_img_std, target_mean,
+                           target_std, dst_bit)
     ret = np.clip(ret, 0, 2 ** dst_bit - 1)
     return ret
 
 
-def pixel_stat_bayer(bayer_img, bayer_img_mean, bayer_img_std, target_mean, target_std, dst_bit=8):
+def pixel_stat_bayer(bayer_img, bayer_img_mean, bayer_img_std, target_mean,
+                     target_std, dst_bit=8):
     # target_mean and target std should be given in 0 - 100 scale
     target_mean_in_bitdeph = target_mean / 100.0 * (2.0 ** dst_bit - 1.0)
     target_std_in_bitdeph = target_std / 100.0 * (2.0 ** dst_bit - 1.0)
-    ret = (bayer_img - bayer_img_mean) / bayer_img_std * target_std_in_bitdeph + target_mean_in_bitdeph
+    ret = (
+                  bayer_img - bayer_img_mean) / bayer_img_std * target_std_in_bitdeph + target_mean_in_bitdeph
     ret = np.clip(ret, 0, 2 ** dst_bit - 1)
     return ret
 

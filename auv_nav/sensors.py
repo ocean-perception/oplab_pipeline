@@ -71,6 +71,7 @@ class Category():
     DEPTH = 'depth'
     ALTITUDE = 'altitude'
     USBL = 'usbl'
+    TIDE = 'tide'
 
 
 class OutputFormat():
@@ -492,7 +493,6 @@ class Orientation(OutputFormat):
                 + ' std_h: ' + str(float(self.yaw_std)) + '\n')
         return data
 
-
 class Depth(OutputFormat):
     def __init__(self, depth_std_factor=0.0001, ts=None):
         self.epoch_timestamp = None
@@ -720,7 +720,7 @@ class Usbl(OutputFormat):
         lateral_distance, bearing = latlon_to_metres(
             self.latitude, self.longitude,
             self.latitude_reference, self.longitude_reference)
-        self.distance_to_ship = lateral_distance
+        self.distance_to_ship = sqrt(lateral_distance**2 + self.depth**2)
         self.eastings = sin(
             bearing*pi/180.0)*lateral_distance
         self.northings = cos(
@@ -834,7 +834,6 @@ class Usbl(OutputFormat):
     def to_acfr(self):
         distance_range = sqrt(self.distance_to_ship**2 - self.depth**2)
         bearing = atan2(self.eastings, self.northings)*180/pi
-
         data = ('SSBL_FIX: ' + str(float(self.epoch_timestamp))
                 + ' ship_x: ' + str(float(self.northings_ship))
                 + ' ship_y: ' + str(float(self.eastings_ship))
@@ -897,6 +896,60 @@ class Camera():
         return (str(self.epoch_timestamp) + ','
                 + str(self.filename) + '\n')
 
+
+class Tide(OutputFormat):
+    def __init__(self, height_std_factor=0.0001, ts=None):
+        self.epoch_timestamp = None
+        self.ts = ts
+        self.height_std_factor = height_std_factor
+        self.sensor_string = 'unknown'
+        self.clear()
+
+    def clear(self):
+        self.height = None
+        self.height_std = None
+
+    def valid(self):
+        return (self.height is not None
+                and self.epoch_timestamp is not None)
+
+    def from_json(self, json, sensor_std):
+        self.epoch_timestamp = json['epoch_timestamp']
+#        self.tide_timestamp = json['epoch_timestamp_tide']
+        self.height = json['data'][0]['tide']
+
+        if sensor_std['model'] is 'json':
+            self.height_std = json['data'][0]['tide_std']
+        elif sensor_std['model'] is 'linear':
+            self.height_std = sensor_std['offset'] + sensor_std['factor']*self.height
+        else:
+            Console.error('The STD model you entered for TIDE is not supported.')
+            Console.quit('STD model not supported.')
+
+    def write_csv_header(self):
+        return ('epoch_timestamp,'
+                + 'height,'
+                + 'height_std\n')
+
+    def to_csv(self):
+        return (str(self.epoch_timestamp) + ','
+                + str(self.height) + ','
+                + str(self.height_std) + '\n')
+
+    def _to_json(self):
+        data = {
+            'epoch_timestamp': float(self.epoch_timestamp),
+            'class': 'measurement',
+            'sensor': self.sensor_string,
+            'frame': 'inertial',
+            'category': Category.TIDE,
+            'data': [
+                {
+                    'height': float(self.height),
+                    'height_std': float(self.height_std)
+                }]
+            }
+        return data
 
 class Other():
     def __init__(self, timestamp=None):
