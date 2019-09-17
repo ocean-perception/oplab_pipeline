@@ -546,13 +546,12 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
         dead_reckoning_dvl.east_velocity_std = y_offset
         dead_reckoning_dvl.down_velocity_std = z_offset
 
-        # double check this step, i.e. what if velocity_body_list timestamps not = altitude timestamps
-        while n < len(altitude_list)-1 and n < len(velocity_body_list)-1 and orientation_list[i].epoch_timestamp > altitude_list[n+1].epoch_timestamp and orientation_list[i].epoch_timestamp > velocity_body_list[n+1].epoch_timestamp:
+        while n < len(altitude_list)-1 and orientation_list[i].epoch_timestamp > altitude_list[n].epoch_timestamp:
             n += 1
         dead_reckoning_dvl.altitude = interpolate(
             orientation_list[i].epoch_timestamp,
-            velocity_body_list[n].epoch_timestamp,
-            velocity_body_list[n+1].epoch_timestamp,
+            altitude_list[n].epoch_timestamp,
+            altitude_list[n+1].epoch_timestamp,
             altitude_list[n].altitude,
             altitude_list[n+1].altitude)
 
