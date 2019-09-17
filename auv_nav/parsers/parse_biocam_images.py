@@ -123,36 +123,40 @@ def parse_biocam_images(mission,
     # determine file paths
 
     filepath1 = get_raw_folder(outpath / '..' / filepath / str(camera1_label + '_strobe/*.*'))
-    filepath1b = get_raw_folder(outpath / '..' / filepath / str(camera1_label + '_laser/*.*'))
+    filepath1b = get_raw_folder(outpath / '..' / filepath / str(camera1_label + '_laser/**/*.*'))
     filepath2 = get_raw_folder(outpath / '..' / filepath / str(camera2_label + '_strobe/*.*'))
-    filepath2b = get_raw_folder(outpath / '..' / filepath / str(camera2_label + '_laser/*.*'))
+    filepath2b = get_raw_folder(outpath / '..' / filepath / str(camera2_label + '_laser/**/*.*'))
 
     camera1_list = glob.glob(str(filepath1))
-    camera1_list.extend(glob.glob(str(filepath1b)))
+    camera1_list.extend(glob.glob(str(filepath1b), recursive=True))
     camera2_list = glob.glob(str(filepath2))
-    camera2_list.extend(glob.glob(str(filepath2b)))
+    camera2_list.extend(glob.glob(str(filepath2b), recursive=True))
 
     camera1_filename = [
         line for line in camera1_list if '.txt' not in line and '._' not in line]
     camera2_filename = [
-        line for line in camera2_list if '.txt' not in line and '._' not in line]
+        line for line in camera2_list if '.txt' not in line and '.jpg' not in line]
+    camera3_filename = [
+        line for line in camera2_list if '.jpg' in line]
 
-    Console.info('Found ' + str(len(camera2_filename) + len(camera1_filename)) + ' BioCam images!')
+    Console.info('Found ' + str(len(camera2_filename) + len(camera1_filename) + len(camera3_filename)) + ' BioCam images!')
 
     data_list = []
     if ftype == 'acfr':
         data_list = ''
 
     for i in range(len(camera1_filename)):
-        t1, tc1 = biocam_timestamp_from_filename(Path(camera1_filename[i]).name,
-                                                 timezone_offset,
-                                                 timeoffset)
+        t1, tc1 = biocam_timestamp_from_filename(
+            Path(camera1_filename[i]).name,
+            timezone_offset,
+            timeoffset)
         stamp_pc1.append(str(t1))
         stamp_cam1.append(str(tc1))
     for i in range(len(camera2_filename)):
-        t2, tc2 = biocam_timestamp_from_filename(Path(camera2_filename[i]).name,
-                                                 timezone_offset,
-                                                 timeoffset)
+        t2, tc2 = biocam_timestamp_from_filename(
+            Path(camera2_filename[i]).name,
+            timezone_offset,
+            timeoffset)
         stamp_pc2.append(str(t2))
         stamp_cam2.append(str(tc2))
 
@@ -195,4 +199,22 @@ def parse_biocam_images(mission,
                 # fileout.write(data)
                 data_list += data
 
+    for i in range(len(camera3_filename)):
+        t3, tc3 = biocam_timestamp_from_filename(
+            Path(camera3_filename[i]).name,
+            timezone_offset,
+            timeoffset)
+        data = {
+            'epoch_timestamp': float(t3),
+            'class': class_string,
+            'sensor': sensor_string,
+            'frame': frame_string,
+            'category': 'laser',
+            'camera3': [{
+                'epoch_timestamp': float(t3),
+                'epoch_timestamp_cam': float(tc3),
+                'filename': str(camera3_filename[i])
+            }]
+        }
+        data_list.append(data)
     return data_list
