@@ -916,12 +916,12 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
                     pf_fusion_centre_list)
             elif len(mission.image.cameras) == 2:  # Biocam
                 interpolate_sensor_list(
-                    camera3_list,
+                    camera3_pf_list,
                     mission.image.cameras[1].name + '_laser',
                     camera3_offsets,
                     origin_offsets,
                     latlon_reference,
-                    dead_reckoning_centre_list)
+                    pf_fusion_centre_list)
     if len(ekf_list) > 1:
         if len(camera1_ekf_list) > 1:
             interpolate_sensor_list(
@@ -950,12 +950,12 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
                     ekf_list)
             elif len(mission.image.cameras) == 2:  # Biocam
                 interpolate_sensor_list(
-                    camera3_list,
+                    camera3_ekf_list,
                     mission.image.cameras[1].name + '_laser',
                     camera3_offsets,
                     origin_offsets,
                     latlon_reference,
-                    dead_reckoning_centre_list)
+                    ekf_list)
 
     # perform interpolations of state data to chemical time stamps for both
     # DR and PF
