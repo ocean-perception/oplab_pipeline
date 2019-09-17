@@ -77,8 +77,8 @@ def plot_orientation_vs_time(orientation_list,
     pitch = [i.pitch for i in orientation_list]
     roll = [i.roll for i in orientation_list]
     tr_yaw = create_trace(orientation_time, yaw, 'Yaw', 'red')
-    tr_pitch = create_trace(orientation_time, pitch, 'Roll', 'blue')
-    tr_roll = create_trace(orientation_time, roll, 'Pitch', 'green')
+    tr_pitch = create_trace(orientation_time, pitch, 'Pitch', 'blue')
+    tr_roll = create_trace(orientation_time, roll, 'Roll', 'green')
 
     layout = go.Layout(
         title='Orientation vs Time',
