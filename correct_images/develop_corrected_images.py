@@ -49,26 +49,35 @@ def develop_corrected_image(path, force):
     for i in range(camera_iterations):
         if i is 0:
             camera = config_.config.camera_1
+            img_p = mission.image.cameras_0.get('path')
         elif i is 1:
             camera = config_.config.camera_2
+            img_p = mission.image.cameras_1.get('path')
+
 
     if camera_format == 'seaxerocks_3':
         src_file_format = 'raw'
     else:
         src_file_format = 'tif'
 
-    img_p = mission.image.cameras_0.get('path')
+
+    print('camera', camera, ', type', type(camera))
+    print('img_p', img_p, ', type', type(img_p))
+    print('Bool camera in img_p', (camera in img_p))
 
     if camera_format == 'biocam':
         if camera in img_p:
                 img_path = img_p
             else:
                 img_p = mission.image.cameras_1.get('path')
-                if camera in img_p:
-                    img_path = img_p
-                else:
-                    print('Mission yaml file does not have path to camera: ', camera)
-                    continue
+
+                # TODO skip if
+                img_path = img_p
+                # if camera in img_p:
+                #     img_path = img_p
+                # else:
+                #     print('Mission yaml file does not have path to camera: ', camera)
+                #     continue
     elif camera_format == 'seaxerocks_3':
         if camera in img_p:
                 img_path = img_p
@@ -84,9 +93,11 @@ def develop_corrected_image(path, force):
                         print('Mission yaml file does not have path to camera: ',camera)
                         continue
 
+    print('path to image', Path(path_processed / img_path))
     if not Path(path_processed / img_path).exists():
         Console.info('Image path does not exist for camera', camera)
         continue
+
     # find path to attenuation parameters
     params_folder = 'attenuation_correction/params_' + camera
     params_dir_path = path_processed / img_path
@@ -147,6 +158,10 @@ def develop_corrected_image(path, force):
         camera_parameter_path = config_.flags.camera_parameter_file_path # load_data.get('camera_parameter_file_path', None)
         camera_parameter_file_path = Path(camera_parameter_path).resolve()
 
+    # TODO should be read from yaml file
+    if i is 1:
+        bayer_pattern = 'greyscale'
+
     # load .npy files
     pdp = str(params_dir_path)
     
@@ -179,7 +194,8 @@ def develop_corrected_image(path, force):
     elif debayer_option == 'vng':
         code = cv2.COLOR_BAYER_GR2BGR_VNG
            
-
+    map_x = None
+    map_y = None
     if apply_distortion_correction:
         if camera_parameter_file_path == 'None':
             Console.quit('Camera parameters path not provided with distortion correction flag set to True')
@@ -201,9 +217,40 @@ def develop_corrected_image(path, force):
     if src_img_index == -1:
             src_img_index = range(len(df_filelist))
         
-        message = 'developing images ' + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        list_dst_name = []
-        img_index = 0
+    message = 'developing images ' + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    list_dst_name = []
+    # img_index = 0
+
+    if camera_format == 'biocam':
+        list_dst_name = joblib.Parallel(n_jobs=-2,
+                                                verbose=3)(
+                    [joblib.delayed(process_img)(
+                        apply_attenuation_correction,
+                        apply_distortion_correction,
+                        apply_gamma_correction,
+                        atn_crr_params,
+                        bayer_img_corrected_mean,
+                        bayer_img_corrected_std,
+                        bayer_img_mean,
+                        bayer_img_std, bayer_pattern,
+                        dst_dir_path, dst_img_format,
+                        i_img,
+                        list_altitude, list_bayer_file,
+                        list_bayer_file_path, map_x,
+                        map_y,
+                        target_altitude, target_mean,
+                        target_std) for i_img in src_img_index])
+
+        # for i_img in tqdm(src_img_index, ascii=True, desc=message):
+        #     # attenuation correction or only pixel stat
+        #     dst_path = process_img()
+        #
+        #     list_dst_name.append(dst_path.name)
+        #     # img_index = img_index + 1
+
+
+    else:
+
         for i_img in tqdm(src_img_index, ascii=True, desc=message):
             # attenuation correction or only pixel stat
             if apply_attenuation_correction:
@@ -235,33 +282,33 @@ def develop_corrected_image(path, force):
             list_dst_name.append(dst_path.name)
             img_index = img_index + 1
 
-        df_dst_filelist = df_filelist.iloc[src_img_index].copy()
-        df_dst_filelist['image file name'] = list_dst_name
-        dst_filelist_path = dst_dir_path / 'filelist.csv'
-        df_dst_filelist.to_csv(dst_filelist_path)
+    df_dst_filelist = df_filelist.iloc[src_img_index].copy()
+    df_dst_filelist['image file name'] = list_dst_name
+    dst_filelist_path = dst_dir_path / 'filelist.csv'
+    df_dst_filelist.to_csv(dst_filelist_path)
 
-        dict_cfg = {
-                'target_mean': target_mean,
-                'target_std': target_std,
-                'src_img_index': src_img_index,
-                'apply_attenuation_correction': apply_attenuation_correction,
-                'apply_gamma_correction': apply_gamma_correction,
-                'apply_distortion_correction': apply_distortion_correction,
-                'camera_parameter_file_path': camera_parameter_file_path,
-                'dst_dir_path': dst_dir_path,
-                'dst_img_format': dst_img_format,
-                'median_filter_kernel_size': median_filter_kernel_size,
-                'params_dir_path': params_dir_path,
-                'debayer_option': debayer_option
-            }
-            cfg_filepath = dst_dir_path / 'config.yaml'
-            with cfg_filepath.open('w') as cfg_file:
-                yaml.dump(dict_cfg, cfg_file, default_flow_style=False)
-            Console.info('Done. Configurations are saved to ', cfg_filepath, datetime.datetime.now())
-            Console.info('#### ------ Process completed ------ #####')
+    dict_cfg = {
+            'target_mean': target_mean,
+            'target_std': target_std,
+            'src_img_index': src_img_index,
+            'apply_attenuation_correction': apply_attenuation_correction,
+            'apply_gamma_correction': apply_gamma_correction,
+            'apply_distortion_correction': apply_distortion_correction,
+            'camera_parameter_file_path': camera_parameter_file_path,
+            'dst_dir_path': dst_dir_path,
+            'dst_img_format': dst_img_format,
+            'median_filter_kernel_size': median_filter_kernel_size,
+            'params_dir_path': params_dir_path,
+            'debayer_option': debayer_option
+        }
+        cfg_filepath = dst_dir_path / 'config.yaml'
+        with cfg_filepath.open('w') as cfg_file:
+            yaml.dump(dict_cfg, cfg_file, default_flow_style=False)
+        Console.info('Done. Configurations are saved to ', cfg_filepath, datetime.datetime.now())
+        Console.info('#### ------ Process completed ------ #####')
 
-            # remove the bayer folder containing npy files 
-            shutil.rmtree(bayer_path)    
+        # remove the bayer folder containing npy files 
+        shutil.rmtree(bayer_path)    
 
     
             
