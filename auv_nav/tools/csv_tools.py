@@ -71,7 +71,7 @@ def write_sidescan_csv(csv_filepath, data_list, csv_filename, csv_flag):
         Console.info("Writing SSS outputs to {}.txt ...".format(csv_filename))
         file = csv_file / '{}.txt'.format(csv_filename)
         str_to_write = ''
-        str_to_write += '#Mission Date Time  NorthDeg  EastDeg HeadingDeg  RollDeg  PitchDeg Altitude Depth Speed'
+        str_to_write += '#Mission Date Time NorthDeg EastDeg HeadingDeg RollDeg PitchDeg Altitude Depth Speed'
         if len(data_list) > 0:
             str_to_write += '\n'
             for i in range(len(data_list)):
