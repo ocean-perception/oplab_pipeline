@@ -59,7 +59,7 @@ ekf:
       factor: 0.
 
 particle_filter:
-  activate: True
+  activate: False
   mode: usbl
   dvl_noise_sigma_factor: 2
   imu_noise_sigma_factor: 2
