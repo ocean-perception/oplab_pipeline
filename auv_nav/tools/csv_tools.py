@@ -213,7 +213,9 @@ def camera_csv(camera_list, camera_name, csv_filepath, csv_flag):
                     if imagenumber.isdigit():
                         image_filename = imagenumber
                     else:
-                        image_filename = camera_list[i].filename
+                        p = Path(camera_list[i].filename)
+                        p = p.relative_to(p.parents[2])
+                        image_filename = str(p)
                     str_to_write += (
                         str(image_filename) + ','
                         + str(camera_list[i].northings) + ','
