@@ -715,12 +715,6 @@ def calculate_correction_parameters(path, force):
 
 
 
-
-
-
-
-   
-
 def load_xviii_bayer_from_binary(xviii_binary_data):
     """
     Load bayer data of Xviii camera image from raw binary data.
