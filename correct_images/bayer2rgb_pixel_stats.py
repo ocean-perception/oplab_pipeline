@@ -18,7 +18,7 @@ def bayer2rgb_pixel_stats(filepath,filename,filter_pattern,current_mean,current_
 ###########################################################################
 
     #read in image, shape, and bitdepth
-    I = read_image(filepath + filename, debayer, filter_pattern)
+    I = read_image(filepath + filename)
     datatype=I.dtype
     [m, n, channels] = I.shape
     bitdepth = getBitDepth(I)
