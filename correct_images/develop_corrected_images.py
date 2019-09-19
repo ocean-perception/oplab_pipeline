@@ -43,10 +43,10 @@ def develop_corrected_image(path, force):
     Console.info('Loading', path_mission, datetime.datetime.now())
     Console.info('Loading', path_correct, datetime.datetime.now())
 
+    print('mission:', path_mission)
+
     mission = read_params(path_mission,
                           'mission')  # read_params(path to file, type of file: mission/correct_config)
-
-    print('mission:', path_mission)
 
     config_ = read_params(path_correct, 'correct')
     camera_format = mission.image.format
@@ -189,12 +189,13 @@ def develop_corrected_image(path, force):
             b = bayer_sample.shape[1]
 
             # identify debayer parameters for opencv
+            # TODO bayer pattern should be loaded from mission.yaml
             if debayer_option == 'linear':
-                code = cv2.COLOR_BAYER_GR2BGR
+                code = cv2.COLOR_BAYER_RG2BGR
             elif debayer_option == 'ea':
-                code = cv2.COLOR_BAYER_GR2BGR_EA
+                code = cv2.COLOR_BAYER_RG2BGR_EA
             elif debayer_option == 'vng':
-                code = cv2.COLOR_BAYER_GR2BGR_VNG
+                code = cv2.COLOR_BAYER_RG2BGR_VNG
 
             # calculate distortion correction paramters
             map_x = None

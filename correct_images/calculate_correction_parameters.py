@@ -248,20 +248,22 @@ def calculate_correction_parameters(path, force):
                     dir_path_image_crr_params.mkdir(parents=True)
                     Console.info(
                         'code will compute correction parameters for this Camera for first time.')
-            else:
-                print(dir_path_image_crr_params)
-            if force is True:
-                Console.warn(
-                    'Attenuation correction parameters already exist.')
-                Console.warn('Code will overwrite existing parameters.')
+                else:
+                    print(dir_path_image_crr_params)
 
             else:
-                Console.warn(
-                    'Code will quit - correction parameters already exist.')
-                Console.warn(
-                    'Run correct_images with [parse] [-F] option for overwriting existing correction parameters.')
-                continue
-            # sys.exit()
+                if force is True:
+                    Console.warn(
+                        'Attenuation correction parameters already exist.')
+                    Console.warn('Code will overwrite existing parameters.')
+
+                else:
+                    Console.warn(
+                        'Code will quit - correction parameters already exist.')
+                    Console.warn(
+                        'Run correct_images with [parse] [-F] option for overwriting existing correction parameters.')
+                    continue
+                    # sys.exit()
 
             if calculated_atn_crr_params_path is None:
                 calculated_atn_crr_params_path = dir_path_image_crr_params / 'atn_crr_params.npy'
