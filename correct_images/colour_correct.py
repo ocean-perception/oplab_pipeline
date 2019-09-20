@@ -34,7 +34,7 @@ from correct_images.utilities import get_filenames, generate_filelist, validate_
 
 
 def mean_per_pixel(directory, filenames, debayer, filter_pattern):
-    I = read_image(os.path.join(directory, filenames[0]), debayer, filter_pattern)
+    I = read_image(os.path.join(directory, filenames[0]))
     # print("Type in which images are saved: " + str(I.dtype))
     [a, b, channels] = I.shape
     Istats_mean = np.zeros([a, b, channels])
@@ -43,7 +43,7 @@ def mean_per_pixel(directory, filenames, debayer, filter_pattern):
     k = 0
     for file in filenames:
         if file != '':
-            I = read_image(os.path.join(directory, file), debayer, filter_pattern)
+            I = read_image(os.path.join(directory, file))
             Istats_mean = update_mean_per_pixel(I, Istats_mean, num_of_files)
             progress = str(k+1) + ' of '+ str(num_of_files) + ' images pass 1 of 3'
             print(progress)
@@ -64,14 +64,14 @@ def update_mean_per_pixel(image, Istats_mean, num_of_files):
 
 def sum_delta_mean_squared(directory, filenames, Istats_mean, debayer, filter_pattern):
     #compute standard deviation of intensity of each pixel in each image specified in <list>
-    I = read_image(os.path.join(directory, filenames[0]), debayer, filter_pattern)
+    I = read_image(os.path.join(directory, filenames[0]))
     [a, b, channels] = I.shape
     current_sum_delta_mean_squared = np.zeros([a, b, channels])
     num_files = len(filenames)
     k = 0
     for file in filenames:
         if file != '':
-            I = read_image(os.path.join(directory, file), debayer, filter_pattern)
+            I = read_image(os.path.join(directory, file))
             current_sum_delta_mean_squared = update_delta_mean_squared(I, current_sum_delta_mean_squared, Istats_mean)
         progress = str(k+1) + ' of ' + str(num_files)+ ' images pass 2 of 3'
         print(progress)
@@ -135,13 +135,13 @@ def std_per_pixel_parallel(arguments, threads, file_count):
 
 
 def save_images_to_memorymap(directory, filenames, debayer, filter_pattern):
-    I = read_image(os.path.join(directory, filenames[0]), debayer, filter_pattern)
+    I = read_image(os.path.join(directory, filenames[0]))
     [a, b, channels] = I.shape
     filename_images_map = os.path.realpath(os.path.join(directory, "../images.map"))
     memmap = np.memmap(filename=filename_images_map, mode='w+', shape=(len(filenames), a, b, channels), dtype=I.dtype)
     i = 0
     for imagename in filenames:
-        I = read_image(os.path.join(directory,imagename), debayer, filter_pattern)
+        I = read_image(os.path.join(directory,imagename))
         I = np.array(I)
         memmap[i] = I
         i += 1
@@ -151,7 +151,7 @@ def save_images_to_memorymap(directory, filenames, debayer, filter_pattern):
 
 
 def mean_per_pixel_memorymap(directory, filenames, debayer, filter_pattern):
-    I = read_image(os.path.join(directory, filenames[0]), debayer, filter_pattern)
+    I = read_image(os.path.join(directory, filenames[0]))
     [a, b, channels] = I.shape
     filename_images_map = os.path.realpath(os.path.join(directory, "../images.map"))
     memmap = np.memmap(filename=filename_images_map, mode='r+', shape=(len(filenames), a, b, channels), dtype=I.dtype)

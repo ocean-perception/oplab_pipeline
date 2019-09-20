@@ -90,13 +90,9 @@ def adjust_to_bitdepth(f, bitdepth):
     return (float(f)/100)*((2**int(bitdepth))-1)
 
 
-def read_image(filepath, debayer, filter_pattern):
+def read_image(filepath):
     I = imageio.imread(filepath)
-    if debayer:
-        I = np.array(I)
-        # I = np.array(demosaicing_CFA_Bayer_Menon2007(I, filter_pattern))
-    else:
-        I = np.array(I)
+    I = np.array(I)
     if I.ndim == 3:
         return I
     elif I.ndim == 2:
