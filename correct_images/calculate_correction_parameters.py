@@ -248,10 +248,8 @@ def calculate_correction_parameters(path, force):
                     dir_path_image_crr_params.mkdir(parents=True)
                     Console.info(
                         'code will compute correction parameters for this Camera for first time.')
-                else:
-                    print(dir_path_image_crr_params)
-
             else:
+                print(dir_path_image_crr_params)
                 if force is True:
                     Console.warn(
                         'Attenuation correction parameters already exist.')
@@ -263,7 +261,7 @@ def calculate_correction_parameters(path, force):
                     Console.warn(
                         'Run correct_images with [parse] [-F] option for overwriting existing correction parameters.')
                     continue
-                    # sys.exit()
+            # sys.exit()
 
             if calculated_atn_crr_params_path is None:
                 calculated_atn_crr_params_path = dir_path_image_crr_params / 'atn_crr_params.npy'
@@ -332,6 +330,7 @@ def calculate_correction_parameters(path, force):
                     start_idx = end_idx
 
             elif src_file_format == 'tif' or src_file_format == 'tiff':
+                '''
                 # unaggi camera
                 Console.info('start loading tif images', len(file_list_raw),
                              'files to', dirpath_bayer,
@@ -350,10 +349,12 @@ def calculate_correction_parameters(path, force):
                 Console.info(len(bayer_file_list_not_exsit), 'files will be '
                                                              'loaded.')
 
+                '''
                 tmp_tif_for_size = imageio.imread(file_list_raw[0])
                 a = tmp_tif_for_size.shape[0]
                 b = tmp_tif_for_size.shape[1]
 
+                '''
                 for i_file_not_exist in trange(len(src_file_list_not_exist)):
                     tmp_tif = imageio.imread(
                         src_file_list_not_exist[i_file_not_exist])
@@ -361,7 +362,7 @@ def calculate_correction_parameters(path, force):
                     tmp_npy[:, :] = np.array(tmp_tif, np.uint16)
                     np.save(bayer_file_list_not_exsit[i_file_not_exist],
                             tmp_npy)
-
+                '''
             # caluculate attenuation correction parameter
             if target_altitude is None:
                 target_altitude = float(
@@ -381,15 +382,29 @@ def calculate_correction_parameters(path, force):
             # print('down sampled idx effective data', idx_effective_data)
 
             # TODO optimisation
-            bayer_filelist_for_memmap = [None] * len(idx_effective_data)
-            for i_idx_effective in range(len(idx_effective_data)):
-                bayer_filelist_for_memmap[
-                    i_idx_effective] = bayer_filelist[idx_effective_data[
-                    i_idx_effective]]
+            if src_file_format == 'raw':
+                # load from npy file
+                bayer_filelist_for_memmap = [None] * len(idx_effective_data)
+                for i_idx_effective in range(len(idx_effective_data)):
+                    bayer_filelist_for_memmap[
+                        i_idx_effective] = bayer_filelist[idx_effective_data[
+                        i_idx_effective]]
 
-            file_name_memmap_raw, memmap_raw = \
-                load_memmap_from_npy_filelist(
-                    bayer_filelist_for_memmap)
+                file_name_memmap_raw, memmap_raw = \
+                    load_memmap_from_filelist(
+                        bayer_filelist_for_memmap)
+            else:
+                # load directly from tif file
+                tif_filelist_for_memmap = [None] * len(idx_effective_data)
+                for i_idx_effective in range(len(idx_effective_data)):
+                    tif_filelist_for_memmap[
+                        i_idx_effective] = raw_file_list[idx_effective_data[
+                        i_idx_effective]]
+
+                file_name_memmap_raw, memmap_raw = \
+                    load_memmap_from_filelist(
+                        tif_filelist_for_memmap)
+
             print('Memmap directory: ', file_name_memmap_raw)
 
             Console.info('start calculate mean and std of raw img',
@@ -866,7 +881,7 @@ def calculate_correction_parameters(path, force):
                     np.mean(altitudes_all[idx_effective_data]))
 
             # memmap is created at local directory
-            file_name_memmap_raw, memmap_raw = load_memmap_from_npy_filelist(
+            file_name_memmap_raw, memmap_raw = load_memmap_from_filelist(
                 bayer_filelist)
             # TODO for debug. read existing file.
             # file_name_memmap_raw = '/home/ty1u18/PycharmProjects/correct_images/memmap_raw_img_d953693d-47aa-403d-9ece-f8f3b19d8b98.map'
@@ -1332,7 +1347,7 @@ def calculate_correction_parameters(path, force):
                     np.mean(altitudes_all[idx_effective_data]))
 
             # memmap is created at local directory
-            file_name_memmap_raw, memmap_raw = load_memmap_from_npy_filelist(
+            file_name_memmap_raw, memmap_raw = load_memmap_from_filelist(
                 bayer_filelist)
 
             Console.info('start calculate mean and std of raw img',
@@ -1715,15 +1730,22 @@ def filter_atn_parm_median(src_atn_param, kernel_size):
     return ret
 
 
-def load_memmap_from_npy_filelist(list_raw_files):
+def load_memmap_from_filelist(list_raw_files):
     # TODO optimise dtype of memmap. 16 bit is enough?
 
     filename_images_map = 'memmap_raw_img_' + str(uuid.uuid4()) + '.map'
 
-    I = np.load(str(list_raw_files[0]))
-    list_shape = [len(list_raw_files)]
-    list_shape = list_shape + list(I.shape)
-    # memmap = np.memmap(filename=filename_images_map, mode='w+', shape=tuple(list_shape),dtype=I.dtype)
+    file_format = Path(list_raw_files[0]).suffix
+
+    print('fileformat', file_format)
+    if file_format == '.npy':
+        I = np.load(str(list_raw_files[0]))
+        list_shape = [len(list_raw_files)]
+        list_shape = list_shape + list(I.shape)
+    elif file_format == '.tif' or file_format == '.tiff':
+        I = imageio.imread(str(list_raw_files[0]))
+        list_shape = [len(list_raw_files)]
+        list_shape = list_shape + list(I.shape)
 
     if 'red' in socket.gethostname():
         #     if executed on HPC, the raw data are loaded on RAM
@@ -1752,8 +1774,13 @@ def load_memmap_from_npy_filelist(list_raw_files):
 
     memmap[0, ...] = I.astype(np.float32)
 
-    for i_file in trange(1, len(list_raw_files), ascii=True, desc=message):
-        memmap[i_file, ...] = np.load(list_raw_files[i_file])
+    if file_format == '.npy':
+        for i_file in trange(1, len(list_raw_files), ascii=True, desc=message):
+            memmap[i_file, ...] = np.load(list_raw_files[i_file])
+
+    elif file_format == '.tif' or file_format == 'tiff':
+        for i_file in trange(1, len(list_raw_files), ascii=True, desc=message):
+            memmap[i_file, ...] = imageio.imread(list_raw_files[i_file])
 
     return filename_images_map, memmap
 

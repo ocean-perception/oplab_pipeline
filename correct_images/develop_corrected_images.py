@@ -38,15 +38,16 @@ def develop_corrected_image(path, force):
         Console.quit('run correct_images parse first.')
     path_mission = get_raw_folder(path) / "mission.yaml"
     path_processed = get_processed_folder(path)
+    path_raw = get_raw_folder(path)
 
     # load configuration from mission.yaml, correct_images.yaml files
     Console.info('Loading', path_mission, datetime.datetime.now())
     Console.info('Loading', path_correct, datetime.datetime.now())
 
-    print('mission:', path_mission)
-
     mission = read_params(path_mission,
                           'mission')  # read_params(path to file, type of file: mission/correct_config)
+
+    print('mission:', path_mission)
 
     config_ = read_params(path_correct, 'correct')
     camera_format = mission.image.format
@@ -108,7 +109,7 @@ def develop_corrected_image(path, force):
                 Console.warn(filelist_path)
                 continue
 
-            # destination folder for corrected images 
+            # destination folder for corrected images
             dst_folder = 'developed_' + camera
             dst_dir_path = params_dir_path.parents[0] / dst_folder
 
@@ -171,20 +172,23 @@ def develop_corrected_image(path, force):
                 pdp + '/bayer_img_std_atn_crr.npy')
 
             # load values from file list
-
             list_altitude = df_filelist[label_altitude].values
             list_bayer_file = df_filelist['bayer file'].values
-
             list_bayer_file_path = list_bayer_file
+            list_tif_file_path = df_filelist['Imagenumber'].values
 
             # convert from relative to absolute path
             for i_bayer_file in range(len(list_bayer_file)):
                 list_bayer_file_path[i_bayer_file] = bayer_path / \
                                                      list_bayer_file[
                                                          i_bayer_file]
+            for i_tif_file in range(len(list_tif_file_path)):
+                list_tif_file_path[i_tif_file] = path_raw / list_tif_file_path[
+                    i_tif_file]
 
-            # get image size
-            bayer_sample = np.load(str(list_bayer_file_path[0]))
+                # get image size
+            # bayer_sample = np.load(str(list_bayer_file_path[0]))
+            bayer_sample = imageio.imread(str(list_tif_file_path[0]))
             a = bayer_sample.shape[0]
             b = bayer_sample.shape[1]
 
@@ -240,7 +244,7 @@ def develop_corrected_image(path, force):
                                              dst_dir_path, dst_img_format,
                                              i_img,
                                              list_altitude, list_bayer_file,
-                                             list_bayer_file_path, map_x,
+                                             list_tif_file_path, map_x,
                                              map_y,
                                              target_altitude, target_mean,
                                              target_std) for i_img in
@@ -336,11 +340,11 @@ def develop_corrected_image(path, force):
                 Console.warn(filelist_path)
                 continue
 
-            # destination folder for corrected images 
+            # destination folder for corrected images
             dst_folder = 'developed_' + camera
             dst_dir_path = params_dir_path.parents[0] / dst_folder
 
-            # check if the images are going to be overwritten or newly written 
+            # check if the images are going to be overwritten or newly written
             if not dst_dir_path.exists():
                 dst_dir_path.mkdir(parents=True)
                 Console.info(
@@ -506,7 +510,7 @@ def develop_corrected_image(path, force):
 
             Console.info('#### ------ Process completed ------ #####')
 
-            # remove the bayer folder containing npy files 
+            # remove the bayer folder containing npy files
             shutil.rmtree(bayer_path)
 
     if camera_format == 'acfr_standard' or camera_format == 'unnagi':
@@ -721,7 +725,7 @@ def develop_corrected_image(path, force):
 
             Console.info('#### ------ Process completed ------ #####')
 
-            # remove the bayer folder containing npy files 
+            # remove the bayer folder containing npy files
             shutil.rmtree(bayer_path)
 
 
@@ -732,16 +736,23 @@ def process_img(apply_attenuation_correction, apply_distortion_correction,
                 dst_img_format, i_img, list_altitude, list_bayer_file,
                 list_bayer_file_path, map_x, map_y, target_altitude,
                 target_mean, target_std):
+    tmp_src_filepath = str(list_bayer_file_path[i_img])
+    format = Path(tmp_src_filepath).suffix
+    if format == '.npy':
+        tmp_img = np.load(tmp_src_filepath)
+    elif format == '.tiff' or format == '.tif':
+        tmp_img = imageio.imread(tmp_src_filepath)
+
     if apply_attenuation_correction:
         corrected_bayer_img = attenuation_correction_bayer(
-            np.load(str(list_bayer_file_path[i_img])),
+            tmp_img,
             bayer_img_corrected_mean, bayer_img_corrected_std,
             target_mean, target_std, atn_crr_params,
             list_altitude[i_img], target_altitude, True, 8)
 
     else:
         corrected_bayer_img = pixel_stat_bayer(
-            np.load(str(list_bayer_file_path[i_img])),
+            tmp_img,
             bayer_img_mean, bayer_img_std,
             target_mean, target_std, 8)
     # Debayer image
