@@ -337,6 +337,8 @@ def parse_data(filepath, force_overwite):
             results = i.get()
             # If current retrieved data is DEPTH
             # and if TIDE data is available
+            if len(results) < 1:
+                continue
             if (results[0]['category'] == Category.DEPTH or results[0]['category'] == Category.USBL):
                 if mission.tide is not None:
                     # proceed to tidal correction

@@ -214,13 +214,13 @@ def convert_data(filepath, ftype, start_datetime, finish_datetime):
                 camera2.from_json(parsed_json_data[i], 'camera2')
                 converter.add(camera2)
 
-            if 'laser' in parsed_json_data[i]['category']:
-                camera3 = Camera()
-                camera3.from_json(parsed_json_data[i], 'camera3')
-                converter.add(camera3)
+            # if 'laser' in parsed_json_data[i]['category']:
+            #     camera3 = Camera()
+            #     camera3.from_json(parsed_json_data[i], 'camera3')
+            #     converter.add(camera3)
 
-            if 'chemical' in parsed_json_data[i]['category']:
-                chemical = Other()
-                chemical.from_json(parsed_json_data[i])
-                converter.add(chemical)
+            # if 'chemical' in parsed_json_data[i]['category']:
+            #     chemical = Other()
+            #     chemical.from_json(parsed_json_data[i])
+            #     converter.add(chemical)
     Console.info('Conversion to {} finished!'.format(ftype))

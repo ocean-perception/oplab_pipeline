@@ -742,6 +742,9 @@ def process_img(apply_attenuation_correction, apply_distortion_correction,
         tmp_img = np.load(tmp_src_filepath)
     elif format == '.tiff' or format == '.tif':
         tmp_img = imageio.imread(tmp_src_filepath)
+        # Remove black noise (estimated to be around 300)
+        tmp_img = tmp_img - 280
+        tmp_img[tmp_img < 0] = 0
 
     if apply_attenuation_correction:
         corrected_bayer_img = attenuation_correction_bayer(
