@@ -102,7 +102,7 @@ def calculate_correction_parameters(path, force):
     sampling_method = config_.attenuation_correction.sampling_method
     format_ = config_.config.format
 
-    # check for image format: biocam, seaxerocks_3, acfr_standard
+    # check for image format: biocam, seaxerocks_3, acfr_standard,
     if format_ == 'biocam':
         camera_iterations = 2
         for i in range(camera_iterations):
@@ -1744,6 +1744,9 @@ def load_memmap_from_filelist(list_raw_files):
         list_shape = list_shape + list(I.shape)
     elif file_format == '.tif' or file_format == '.tiff':
         I = imageio.imread(str(list_raw_files[0]))
+        # Remove black noise (estimated to be around 300)
+        I = I - 280
+        I[I < 0] = 0
         list_shape = [len(list_raw_files)]
         list_shape = list_shape + list(I.shape)
 
