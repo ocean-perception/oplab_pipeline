@@ -29,7 +29,8 @@ def parse_NOC_nmea(mission,
         latitude_reference = mission.origin.latitude
         longitude_reference = mission.origin.longitude
 
-        usbl = Usbl(mission.usbl.std_offset,
+        usbl = Usbl(mission.usbl.std_factor,
+                    mission.usbl.std_offset,
                     latitude_reference,
                     longitude_reference)
         usbl.sensor_string = sensor_string
