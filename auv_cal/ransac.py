@@ -47,8 +47,15 @@ def run_ransac(data, estimate, is_inlier, sample_size, goal_inliers, max_iterati
     return best_model, inliers
 
 
-def plot_plane(a, b, c, d):
-        xx, yy = np.mgrid[-5:5, 2:6]
+def bounding_box(iterable):
+    print(iterable.shape)
+    min_x, min_y = np.min(iterable, axis=0)
+    max_x, max_y = np.max(iterable, axis=0)
+    return min_x, max_x, min_y, max_y
+
+
+def plot_plane(a, b, c, d, min_x, max_x, min_y, max_y):
+        xx, yy = np.mgrid[min_x:max_x, min_y:max_y]
         return xx, yy, (-d - a * xx - b * yy) / c
 
 
@@ -72,8 +79,12 @@ def plane_fitting_ransac(cloud_xyz,
         fig = plt.figure()
         ax = Axes3D(fig)
         ax.scatter3D(cloud_xyz.T[0], cloud_xyz.T[1], cloud_xyz.T[2])
-        xx, yy, zz = plot_plane(a, b, c, d)
+        min_x, max_x, min_y, max_y = bounding_box(cloud_xyz[:, 0:2])
+        xx, yy, zz = plot_plane(a, b, c, d, min_x, max_x, min_y, max_y)
         ax.plot_surface(xx, yy, zz, color=(0, 1, 0, 0.5))
+        ax.set_xlabel('$X$')
+        ax.set_ylabel('$Y$')
+        ax.set_zlabel('$Z$')
         plt.show()
     return (a, b, c, d), inliers
 

@@ -1,18 +1,7 @@
 import numpy as np
 import yaml
 from pathlib import Path
-
-
-def cv2np(node):
-    rows = node['rows']
-    cols = node['cols']
-    if rows == 1:
-        a = np.array(node['data']).reshape((int(cols), 1))
-    elif cols == 1:
-        a = np.array(node['data']).reshape((int(rows), 1))
-    else:
-        a = np.asarray(node['data']).reshape((int(rows), int(cols)))
-    return a
+import cv2
 
 
 class MonoCamera():
@@ -27,18 +16,17 @@ class MonoCamera():
 
         if filename is not None:
             filename = Path(filename)
-            stream = filename.open('r')
-            d = yaml.safe_load(stream)
-            self.from_node(d)
+            fs = cv2.FileStorage(str(filename), cv2.FILE_STORAGE_READ)
+            self.from_node(fs)
 
-    def from_node(self, node):
-        self.name = node['camera_name']
-        self.image_width = node['image_width']
-        self.image_height = node['image_height']
-        self.K = cv2np(node['camera_matrix'])
-        self.d = cv2np(node['distortion_coefficients'])
-        self.R = cv2np(node['rectification_matrix'])
-        self.P = cv2np(node['projection_matrix'])
+    def from_node(self, fs):
+        self.name = fs.getNode('camera_name').string()
+        self.image_width = int(fs.getNode('image_width').real())
+        self.image_height = int(fs.getNode('image_height').real())
+        self.K = fs.getNode('camera_matrix').mat()
+        self.d = fs.getNode('distortion_coefficients').mat()
+        self.R = fs.getNode('rectification_matrix').mat()
+        self.P = fs.getNode('projection_matrix').mat()
 
     def to_str(self):
         msg = (""
@@ -74,16 +62,16 @@ class StereoCamera():
         self.t = np.zeros((3, 1))
 
         if filename is not None:
+            print(filename)
             filename = Path(filename)
-            stream = filename.open('r')
-            d = yaml.safe_load(stream)
-            self.left.from_node(d['left'])
-            self.right.from_node(d['right'])
-            self.from_node(d['extrinsics'])
+            fs = cv2.FileStorage(str(filename), cv2.FILE_STORAGE_READ)
+            self.left.from_node(fs.getNode('left'))
+            self.right.from_node(fs.getNode('right'))
+            self.from_node(fs.getNode('extrinsics'))
 
-    def from_node(self, node):
-        self.R = cv2np(node['rotation_matrix'])
-        self.t = cv2np(node['translation_vector'])
+    def from_node(self, fs):
+        self.R = fs.getNode('rotation_matrix').mat()
+        self.t = fs.getNode('translation_vector').mat()
 
     def to_str(self):
         msg = (""

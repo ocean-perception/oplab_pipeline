@@ -36,9 +36,11 @@ import cv2
 import math
 import numpy.linalg
 from distutils.version import LooseVersion
+from auv_nav.parsers.parse_biocam_images import biocam_timestamp_from_filename
 from pathlib import Path
 import numpy as np
 import json
+import datetime
 import joblib
 
 
@@ -254,8 +256,8 @@ def _get_circles(img, board, pattern, invert=False):
     mono_arr = numpy.array(mono)
 
     params = cv2.SimpleBlobDetector_Params()
-    params.minArea = 10
-    params.minDistBetweenBlobs = 5
+    params.minArea = 15
+    params.minDistBetweenBlobs = 7
 
     detector = cv2.SimpleBlobDetector_create(params)
 
@@ -268,7 +270,7 @@ def _get_circles(img, board, pattern, invert=False):
     # TODO Better to add as second board? Corner ordering will change.
     if not ok and pattern == Patterns.Circles:
         (ok, corners) = cv2.findCirclesGrid(
-            mono_arr, (board.n_rows, board.n_cols), flags=flag)
+            mono_arr, (board.n_cols, board.n_rows), flags=flag)
     return (ok, corners)
 
 
@@ -346,7 +348,7 @@ class Calibrator(object):
             numpy.linalg.norm(corner_deltas, axis=1))
         return average_motion <= self.max_chessboard_speed
 
-    def is_good_sample(self, params, corners, last_frame_corners=None):
+    def is_good_sample(self, params, corners, last_frame_corners=None, threshold=0.2):
         """
         Returns true if the checkerboard detection described by params should be added to the database.
         """
@@ -360,20 +362,22 @@ class Calibrator(object):
         d = min([param_distance(params, p) for p in db_params])
         # print("d = %.3f" % d)  # DEBUG
         # TODO What's a good threshold here? Should it be configurable?
-        return d > 0.2
+        return d > threshold
 
     def mk_object_points(self, boards):
         opts = []
         for i, b in enumerate(boards):
             num_pts = b.n_cols * b.n_rows
             opts_loc = numpy.zeros((num_pts, 1, 3), numpy.float32)
-            for j in range(num_pts):
-                opts_loc[j, 0, 0] = int(j / b.n_cols) * b.dim
-                if self.pattern == Patterns.ACircles:
-                    opts_loc[j, 0, 1] = 2 * \
-                        (j % b.n_cols) + (opts_loc[j, 0, 0] % 2) * b.dim
-                else:
-                    opts_loc[j, 0, 1] = (j % b.n_cols) * b.dim
+
+            for i in range(b.n_rows):
+                for j in range(b.n_cols):
+                    if self.pattern == Patterns.ACircles:
+                        opts_loc[j+i*b.n_cols, 0, 0] = (2*j + i % 2)*b.dim
+                        opts_loc[j+i*b.n_cols, 0, 1] = i*b.dim
+                    else:
+                        opts_loc[j+i*b.n_cols, 0, 0] = j*b.dim
+                        opts_loc[j+i*b.n_cols, 0, 1] = i*b.dim
                 opts_loc[j, 0, 2] = 0
             opts.append(opts_loc)
         return opts
@@ -420,30 +424,37 @@ class Calibrator(object):
         print("R = ", numpy.ravel(r).tolist())
         print("P = ", numpy.ravel(p).tolist())
 
-    def lryaml(self, name, d, k, r, p):
-        calmessage = (""
+    def lryaml(self, name, d, k, r, p, num_images, error):
+        calmessage = ("%YAML:1.0\n"
                       + "image_width: " + str(self.size[0]) + "\n"
                       + "image_height: " + str(self.size[1]) + "\n"
                       + "camera_name: " + name + "\n"
-                      + "camera_matrix:\n"
+                      + "camera_matrix: !!opencv-matrix\n"
                       + "  rows: 3\n"
                       + "  cols: 3\n"
+                      + "  dt: d\n"
                       + "  data: [" + ", ".join(["%8f" % i for i in k.reshape(1, 9)[0]]) + "]\n"
                       + "distortion_model: " +
                       ("rational_polynomial" if d.size > 5 else "plumb_bob") + "\n"
-                      + "distortion_coefficients:\n"
+                      + "distortion_coefficients: !!opencv-matrix\n"
                       + "  rows: 1\n"
                       + "  cols: 5\n"
+                      + "  dt: d\n"
                       + "  data: [" + ", ".join(["%8f" % d[i, 0]
                                                  for i in range(d.shape[0])]) + "]\n"
-                      + "rectification_matrix:\n"
+                      + "rectification_matrix: !!opencv-matrix\n"
                       + "  rows: 3\n"
                       + "  cols: 3\n"
+                      + "  dt: d\n"
                       + "  data: [" + ", ".join(["%8f" % i for i in r.reshape(1, 9)[0]]) + "]\n"
-                      + "projection_matrix:\n"
+                      + "projection_matrix: !!opencv-matrix\n"
                       + "  rows: 3\n"
                       + "  cols: 4\n"
+                      + "  dt: d\n"
                       + "  data: [" + ", ".join(["%8f" % i for i in p.reshape(1, 12)[0]]) + "]\n"
+                      + 'date: \"' + str(datetime.datetime.now()) + "\" \n"
+                      + "number_of_images: " + str(num_images) + "\n"
+                      + "avg_reprojection_error: " + str(error) + "\n"
                       + "")
         return calmessage
 
@@ -479,15 +490,22 @@ class MonoCalibrator(Calibrator):
         self.good_corners = []
         test_image = cv2.imread(str(images_list[0]))
         self.size = (test_image.shape[1], test_image.shape[0])
-        with open(json_file) as f:
+        with json_file.open('r') as f:
             data = json.load(f)
             for lf in data:
                 lboard = ChessboardInfo()
                 lboard.fromlist(lf['board'])
                 lcorners = np.array(lf['corners'], dtype=np.float32)
                 params = self.get_parameters(lcorners, lboard, lf['size'])
-                if self.is_good_sample(params, lcorners):
+                if self.is_good_sample(params, lcorners, self.last_frame_corners, 0.15):
                     lgray = cv2.imread(lf['file'])
+                    print("*** Added sample p_x = %.3f, p_y = %.3f, p_size = %.3f, skew = %.3f" %
+                          tuple(params))
+                    # limg = cv2.drawChessboardCorners(lgray, (lboard.n_cols, lboard.n_rows), lcorners, True)
+                    # cv2.namedWindow("Mono calibration1", 0)
+                    # cv2.imshow("Mono calibration1", limg)
+                    # cv2.waitKey(3)
+                    self.last_frame_corners = lcorners
                     self.db.append((params, lgray))
                     self.good_corners.append((lcorners, lboard))
             print('Using ' + str(len(self.good_corners)) + ' inlier files!')
@@ -520,22 +538,23 @@ class MonoCalibrator(Calibrator):
             params = self.get_parameters(corners, board, self.size)
             if _is_sharp(gray, corners, board):
                 print('Chessboard detected! in ' + str(i.name))
-
                 if self.debug:
                     img = cv2.drawChessboardCorners(gray, (board.n_cols, board.n_rows), corners, ok)
+                    cv2.imshow("Monocular calibration", img)
+                    cv2.waitKey(3)
                     name = Path(i).stem
                     filename = Path('/tmp/' + self.name + '/' + name + '_corners.png')
                     if not filename.parents[0].exists():
                         filename.parents[0].mkdir(parents=True)
-                    print('Writing debug image to ' + str(filename))
-                    cv2.imwrite(str(filename), img)
+                    # print('Writing debug image to ' + str(filename))
+                    # cv2.imwrite(str(filename), img)
 
                 return [(params, gray), (corners, board), i]
 
             else:
                 print("Image " + str(i.name) + " is blurry, discarded.")
 
-        result = joblib.Parallel(n_jobs=-2)([
+        result = joblib.Parallel(n_jobs=4)([
             joblib.delayed(get_image_corners)(i)
             for i in images_list])
 
@@ -549,20 +568,19 @@ class MonoCalibrator(Calibrator):
                     (corners, board) = i[1]
                     if all_detections is None:
                         all_detections = gray.copy()
+                    self.json.append({
+                            'file': str(i[2]),
+                            'corners': corners.tolist(),
+                            'board': board.tolist(),
+                            'size': self.size
+                        })
                     if self.is_good_sample(params, corners, self.last_frame_corners):
                         print("*** Added sample p_x = %.3f, p_y = %.3f, p_size = %.3f, skew = %.3f" %
                               tuple(params))
                         self.last_frame_corners = corners
                         self.db.append(i[0])
                         self.good_corners.append(i[1])
-                        self.json.append({
-                            'file': str(i[2]),
-                            'corners': corners.tolist(),
-                            'board': board.tolist(),
-                            'size': self.size
-                        })
                         good_corners_names.append(str(i[2]))
-
                         all_detections = cv2.drawChessboardCorners(all_detections, (board.n_cols, board.n_rows), corners, True)
 
                         if name == '':
@@ -583,7 +601,7 @@ class MonoCalibrator(Calibrator):
             for n in good_corners_names:
                 f.write("%s\n" % n)
 
-    def cal_fromcorners(self, check_error=True):
+    def cal_fromcorners(self, iteration=0):
         """
         :param good: Good corner positions and boards
         :type good: [(corners, ChessboardInfo)]
@@ -601,13 +619,11 @@ class MonoCalibrator(Calibrator):
         else:
             self.distortion = numpy.zeros((5, 1), numpy.float64)  # plumb bob
 
-        cv2.calibrateCamera(
-            opts, ipts,
-            self.size, self.intrinsics,
-            self.distortion,
-            flags=self.calib_flags,
-            criteria=(cv2.TERM_CRITERIA_MAX_ITER +
-                      cv2.TERM_CRITERIA_EPS, 100, 1e-3))
+        self.num_images = len(self.good_corners)
+        self.avg_reprojection_error = cv2.calibrateCamera(
+            opts, ipts, self.size, self.intrinsics, self.distortion)[0]
+
+        print('Calibrate camera error: ' + str(self.avg_reprojection_error))
 
         # R is identity matrix for monocular calibration
         self.R = numpy.eye(3, dtype=numpy.float64)
@@ -616,22 +632,28 @@ class MonoCalibrator(Calibrator):
         self.set_alpha(-1)
 
         linear_error = []
+        rmse = 0
         for (params, gray) in self.db:
             error = self.linear_error_from_image(gray)
+            rmse += error
             if error is not None:
                 linear_error.append(error)
             else:
                 linear_error.append(1e3)
-        print(linear_error)
-        print(self.intrinsics)
-        print(self.distortion)
-        if check_error:
+        rmse = math.sqrt((rmse**2)/len(linear_error))
+        # print(linear_error)
+        # print('RSME: ' + str(rmse))
+        # print(self.intrinsics)
+        # print(self.distortion)
+        if iteration < 5 and self.avg_reprojection_error > 0.5:
             lin_error_mean = np.mean(np.array(linear_error))
             lin_error_std = np.std(np.array(linear_error))
+            # print('Mean: ' + str(lin_error_mean))
+            # print('Std: ' + str(lin_error_std))
             self.good_corners = [c for c, e in zip(self.good_corners, linear_error)
                                  if e < lin_error_mean + 2*lin_error_std]
             print('Using ' + str(len(self.good_corners)) + ' inlier files after filtering!')
-            self.cal_fromcorners(check_error=False)
+            self.cal_fromcorners(iteration=iteration + 1)
 
         if self.debug:
             for i, (params, img) in enumerate(self.db):
@@ -686,7 +708,7 @@ class MonoCalibrator(Calibrator):
         self.lrreport(self.distortion, self.intrinsics, self.R, self.P)
 
     def yaml(self):
-        return self.lryaml(self.name, self.distortion, self.intrinsics, self.R, self.P)
+        return self.lryaml(self.name, self.distortion, self.intrinsics, self.R, self.P, self.num_images, self.avg_reprojection_error)
 
     def linear_error_from_image(self, image):
         """
@@ -729,24 +751,48 @@ class MonoCalibrator(Calibrator):
 
 
 def find_common_filenames(list1, list2):
-    lf = [Path(d['file']).stem for d in list1]
-    rf = [Path(d['file']).stem for d in list2]
+    lf = [Path(d['file']).stem[5:] for d in list1]
+    rf = [Path(d['file']).stem[5:] for d in list2]
 
-    if 'image' in rf[0][0:5]:
-        if len(lf[0]) == 32:
-            # Hack for Biocam
-            lf = [Path(d['file']).stem[13:28] for d in list1]
-            rf = [Path(d['file']).stem[13:28] for d in list2]
-        else:
-            lf = [Path(d['file']).stem[5:] for d in list1]
-            rf = [Path(d['file']).stem[5:] for d in list2]
     result = []
 
-    for i, lname in enumerate(lf):
-        for j, rname in enumerate(rf):
-            if lname == rname:
-                # print(list1[i]['file'], list2[j]['file'])
-                result.append((list1[i], list2[j]))
+    camera_format = 'seaxerocks3'
+    if len(lf[0]) > 26:
+        camera_format = 'biocam'
+
+    if camera_format == 'seaxerocks3':
+        for i, lname in enumerate(lf):
+            for j, rname in enumerate(rf):
+                if lname == rname:
+                    # print(list1[i]['file'], list2[j]['file'])
+                    result.append((list1[i], list2[j]))
+    elif camera_format == 'biocam':
+        stamp_pc1 = []
+        stamp_cam1 = []
+        stamp_pc2 = []
+        stamp_cam2 = []
+        for i in range(len(lf)):
+            t1, tc1 = biocam_timestamp_from_filename(lf[i], 0, 0)
+            stamp_pc1.append(float(t1))
+            stamp_cam1.append(float(tc1))
+        for i in range(len(rf)):
+            t1, tc1 = biocam_timestamp_from_filename(rf[i], 0, 0)
+            stamp_pc2.append(float(t1))
+            stamp_cam2.append(float(tc1))
+
+        tolerance = 0.05  # stereo pair must be within 50ms of each other
+
+        for i in range(len(lf)):
+            values = []
+            for j in range(len(rf)):
+                values.append(abs(stamp_pc1[i]-stamp_pc2[j]))
+
+            (sync_difference, sync_pair) = min((v, k) for k, v in enumerate(values))
+            if sync_difference < tolerance:
+                #print(lf[i] + ' syncs with ' + rf[sync_pair] + ' with dif ' + str(sync_difference))
+                result.append((list1[i], list2[sync_pair]))
+    else:
+        print('\n\n\n[ERROR]: Stereo format not known, calibration will not work\n\n\n')
     return result
 
 
@@ -792,15 +838,24 @@ class StereoCalibrator(Calibrator):
             lboard.fromlist(lf['board'])
             lcorners = np.array(lf['corners'], dtype=np.float32)
             rcorners = np.array(rf['corners'], dtype=np.float32)
-            params = self.get_parameters(lcorners, lboard, self.l.size)
-            if self.is_good_sample(params, lcorners):
+            lparams = self.get_parameters(lcorners, lboard, self.l.size)
+            rparams = self.get_parameters(rcorners, lboard, self.r.size)
+            if self.is_good_sample(lparams, lcorners, threshold=0.15):
                 lgray = cv2.imread(lf['file'])
                 rgray = cv2.imread(rf['file'])
+                print(("*** Added sample %d, p_x = %.3f, p_y = %.3f, p_size = %.3f, skew = %.3f" %
+                      tuple([len(self.db)] + lparams)))
+                # limg = cv2.drawChessboardCorners(lgray, (lboard.n_cols, lboard.n_rows), lcorners, True)
+                # rimg = cv2.drawChessboardCorners(rgray, (lboard.n_cols, lboard.n_rows), rcorners, True)
+                # vis = np.concatenate((limg, rimg), axis=1)
+                # cv2.namedWindow("Stereo calibration", 0)
+                # cv2.imshow("Stereo calibration", vis)
+                # cv2.waitKey(3)
                 # print(lf['file'], rf['file'])
-                self.db.append((params, lgray, rgray))
+                self.db.append((lparams, lgray, rgray))
                 self.good_corners.append((lcorners, rcorners, lboard))
         print('Using ' + str(len(self.good_corners)) + ' inlier files!')
-        self.cal_fromcorners(self.good_corners)
+        self.cal_fromcorners()
 
     def cal(self, limages_list, rimages_list):
         """
@@ -811,8 +866,8 @@ class StereoCalibrator(Calibrator):
 
         Find chessboards in images, and runs the OpenCV calibration solver.
         """
-        self.good_corners = self.collect_corners(limages_list, rimages_list)
-        self.cal_fromcorners(self.good_corners)
+        self.collect_corners(limages_list, rimages_list)
+        self.cal_fromcorners()
         self.calibrated = True
 
     def collect_corners(self, limages_list, rimages_list):
@@ -842,8 +897,8 @@ class StereoCalibrator(Calibrator):
 
                     print('Writing debug images to /tmp/')
                     if self.debug:
-                        limg = cv2.drawChessboardCorners(lgray, (lboard.n_cols, lboard.n_rows), lcorners, lok)
-                        rimg = cv2.drawChessboardCorners(rgray, (rboard.n_cols, rboard.n_rows), rcorners, rok)
+                        # limg = cv2.drawChessboardCorners(lgray, (lboard.n_cols, lboard.n_rows), lcorners, lok)
+                        # rimg = cv2.drawChessboardCorners(rgray, (rboard.n_cols, rboard.n_rows), rcorners, rok)
                         lname = Path(i).stem
                         rname = Path(j).stem
 
@@ -860,36 +915,52 @@ class StereoCalibrator(Calibrator):
             self.last_frame_corners = lcorners
         if len(self.good_corners) == 0:
             raise CalibrationException("No corners found in images!")
-        return self.good_corners
 
-    def cal_fromcorners(self, good):
-        # Perform monocular calibrations
-        # lcorners = [(l, b) for (l, r, b) in good]
-        # rcorners = [(r, b) for (l, r, b) in good]
-        # self.l.cal_fromcorners(lcorners)
-        # self.r.cal_fromcorners(rcorners)
-
-        lipts = [l for (l, _, _) in good]
-        ripts = [r for (_, r, _) in good]
-        boards = [b for (_, _, b) in good]
+    def cal_fromcorners(self, iteration=0):
+        lipts = [l for (l, _, _) in self.good_corners]
+        ripts = [r for (_, r, _) in self.good_corners]
+        boards = [b for (_, _, b) in self.good_corners]
 
         opts = self.mk_object_points(boards)
 
         flags = cv2.CALIB_FIX_INTRINSIC
+        #flags = cv2.CALIB_USE_INTRINSIC_GUESS
         self.T = numpy.zeros((3, 1), dtype=numpy.float64)
         self.R = numpy.eye(3, dtype=numpy.float64)
-        print("Calibrating stereo...")
-        rms, self.l.intrinsics, self.l.distortion,  self.r.intrinsics, self.r.distortion,  self.R, self.T, self.E, self.F = cv2.stereoCalibrate(
+
+        print("Calibrating stereo with " + str(len(self.good_corners)) + " image pairs...")
+        self.num_images = len(self.good_corners)
+        self.avg_reprojection_error, self.l.intrinsics, self.l.distortion,  self.r.intrinsics, self.r.distortion,  self.R, self.T, self.E, self.F = cv2.stereoCalibrate(
             opts, lipts, ripts,
             self.l.intrinsics, self.l.distortion,
             self.r.intrinsics, self.r.distortion,
-            self.l.size,
-            criteria=(cv2.TERM_CRITERIA_MAX_ITER + \
-                      cv2.TERM_CRITERIA_EPS, 100, 1e-3),
-            flags=flags)
-        print('Calibrated with RMS = {}'.format(str(rms)))
+            self.l.size, flags=flags)
+        print('Calibrated with RMS = {}'.format(str(self.avg_reprojection_error)))
+
+        # print(self.l.intrinsics)
+        # print(self.l.distortion)
+        # print(self.R)
+        # print(self.T)
 
         self.set_alpha(-1)
+
+        epipolar_error = []
+        for (params, lgray, rgray) in self.db:
+            error = self.epipolar_error_from_images(lgray, rgray)
+            if error is not None:
+                epipolar_error.append(error)
+            else:
+                epipolar_error.append(1e3)
+
+        # print(epipolar_error)
+
+        if iteration < 5 and self.avg_reprojection_error > 0.5:
+            epi_error_mean = np.mean(np.array(epipolar_error))
+            epi_error_std = np.std(np.array(epipolar_error))
+            self.good_corners = [c for c, e in zip(self.good_corners, epipolar_error)
+                                 if e < epi_error_mean + 2*epi_error_std]
+            print('Using ' + str(len(self.good_corners)) + ' inlier files after filtering!')
+            self.cal_fromcorners(iteration=iteration + 1)
 
         if self.debug:
             errors = []
@@ -926,7 +997,7 @@ class StereoCalibrator(Calibrator):
                 cv2.imwrite(str(filename), final_image)
                 if error is not None:
                     errors.append(error)
-            print(errors)
+            # print(errors)
 
     def set_alpha(self, a):
         """
@@ -980,63 +1051,79 @@ class StereoCalibrator(Calibrator):
         k2 = self.r.intrinsics
         r2 = self.r.R
         p2 = self.r.P
+        print(d1.shape)
+        num_images = self.num_images
+        error = self.avg_reprojection_error
 
-        calmessage = (""
+        calmessage = ("%YAML:1.0\n"
                       + "left:\n"
                       + "  image_width: " + str(self.l.size[0]) + "\n"
                       + "  image_height: " + str(self.l.size[1]) + "\n"
                       + "  camera_name: " + self.l.name + "\n"
-                      + "  camera_matrix:\n"
+                      + "  camera_matrix: !!opencv-matrix\n"
                       + "    rows: 3\n"
                       + "    cols: 3\n"
+                      + "    dt: d\n"
                       + "    data: [" + ", ".join(["%8f" % i for i in k1.reshape(1, 9)[0]]) + "]\n"
                       + "  distortion_model: " +
                       ("rational_polynomial" if d1.size > 5 else "plumb_bob") + "\n"
-                      + "  distortion_coefficients:\n"
+                      + "  distortion_coefficients: !!opencv-matrix\n"
                       + "    rows: 1\n"
                       + "    cols: 5\n"
-                      + "    data: [" + ", ".join(["%8f" % d1[i, 0]
-                                                   for i in range(d1.shape[0])]) + "]\n"
-                      + "  rectification_matrix:\n"
+                      + "    dt: d\n"
+                      + "    data: [" + ", ".join(["%8f" % d1[0, i]
+                                                  for i in range(d1.shape[1])]) + "]\n"
+                      + "  rectification_matrix: !!opencv-matrix\n"
                       + "    rows: 3\n"
                       + "    cols: 3\n"
+                      + "    dt: d\n"
                       + "    data: [" + ", ".join(["%8f" % i for i in r1.reshape(1, 9)[0]]) + "]\n"
-                      + "  projection_matrix:\n"
+                      + "  projection_matrix: !!opencv-matrix\n"
                       + "    rows: 3\n"
                       + "    cols: 4\n"
+                      + "    dt: d\n"
                       + "    data: [" + ", ".join(["%8f" % i for i in p1.reshape(1, 12)[0]]) + "]\n"
                       + "right:\n"
                       + "  image_width: " + str(self.r.size[0]) + "\n"
                       + "  image_height: " + str(self.r.size[1]) + "\n"
                       + "  camera_name: " + self.r.name + "\n"
-                      + "  camera_matrix:\n"
+                      + "  camera_matrix: !!opencv-matrix\n"
                       + "    rows: 3\n"
                       + "    cols: 3\n"
+                      + "    dt: d\n"
                       + "    data: [" + ", ".join(["%8f" % i for i in k2.reshape(1, 9)[0]]) + "]\n"
                       + "  distortion_model: " +
                       ("rational_polynomial" if d2.size > 5 else "plumb_bob") + "\n"
-                      + "  distortion_coefficients:\n"
+                      + "  distortion_coefficients: !!opencv-matrix\n"
                       + "    rows: 1\n"
                       + "    cols: 5\n"
-                      + "    data: [" + ", ".join(["%8f" % d2[i, 0]
-                                                   for i in range(d2.shape[0])]) + "]\n"
-                      + "  rectification_matrix:\n"
+                      + "    dt: d\n"
+                      + "    data: [" + ", ".join(["%8f" % d2[0, i]
+                                                  for i in range(d2.shape[1])]) + "]\n"
+                      + "  rectification_matrix: !!opencv-matrix\n"
                       + "    rows: 3\n"
                       + "    cols: 3\n"
+                      + "    dt: d\n"
                       + "    data: [" + ", ".join(["%8f" % i for i in r2.reshape(1, 9)[0]]) + "]\n"
-                      + "  projection_matrix:\n"
+                      + "  projection_matrix: !!opencv-matrix\n"
                       + "    rows: 3\n"
                       + "    cols: 4\n"
+                      + "    dt: d\n"
                       + "    data: [" + ", ".join(["%8f" % i for i in p2.reshape(1, 12)[0]]) + "]\n"
                       + "extrinsics:\n"
-                      + "  rotation_matrix:\n"
+                      + "  rotation_matrix: !!opencv-matrix\n"
                       + "    rows: 3\n"
                       + "    cols: 3\n"
+                      + "    dt: d\n"
                       + "    data: [" + ", ".join(["%8f" % i for i in self.R.reshape(1, 9)[0]]) + "]\n"
-                      + "  translation_vector:\n"
+                      + "  translation_vector: !!opencv-matrix\n"
                       + "    rows: 3\n"
                       + "    cols: 1\n"
+                      + "    dt: d\n"
                       + "    data: [" + ", ".join(["%8f" % i for i in self.T.reshape(1, 3)[0]]) + "]\n"
+                      + 'date: \"' + str(datetime.datetime.now()) + "\" \n"
+                      + "number_of_images: " + str(num_images) + "\n"
+                      + "avg_reprojection_error: " + str(error) + "\n"
                       + "")
         return calmessage
 
@@ -1049,14 +1136,20 @@ class StereoCalibrator(Calibrator):
         lok, lcorners, lboard = self.get_corners(limage)
         rok, rcorners, rboard = self.get_corners(rimage)
 
+        # vis = np.concatenate((limage, rimage), axis=1)
+        # cv2.namedWindow("Stereo error", 0)
+        # cv2.imshow("Stereo error", vis)
+        # cv2.waitKey(3)
+
         if lcorners is None or rcorners is None:
+            print("ERROR cannot find the calibration pattern!!")
             return None
 
         lundistorted = self.l.undistort_points(lcorners)
         rundistorted = self.r.undistort_points(rcorners)
 
-        print('L', lcorners[0, 0, 0], lcorners[0, 0, 1], 'to', lundistorted[0, 0, 0], lundistorted[0, 0, 1])
-        print('R', rcorners[0, 0, 0], rcorners[0, 0, 1], 'to', rundistorted[0, 0, 0], rundistorted[0, 0, 1])
+        # print('L', lcorners[0, 0, 0], lcorners[0, 0, 1], 'to', lundistorted[0, 0, 0], lundistorted[0, 0, 1])
+        # print('R', rcorners[0, 0, 0], rcorners[0, 0, 1], 'to', rundistorted[0, 0, 0], rundistorted[0, 0, 1])
 
         return self.epipolar_error(lundistorted, rundistorted)
 
