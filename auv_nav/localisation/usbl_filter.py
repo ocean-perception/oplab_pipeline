@@ -18,6 +18,7 @@ from auv_nav.tools.console import Console
 def depth_filter(usbl, depth, depth_std, sigma_factor):
     depth_difference = abs(usbl.depth - depth)
     depth_uncertainty_envelope = abs(usbl.depth_std) + abs(depth_std)
+    # print(depth_difference, depth_uncertainty_envelope)
     return depth_difference <= sigma_factor*depth_uncertainty_envelope
 
 

@@ -81,7 +81,7 @@ def parse_autosub(mission,
     alr_log = loadmat(str(path))
     alr_acdp = alr_log['missionData']['ADCPbin00']
     alr_ins = alr_log['missionData']['INSAttitude']
-    alr_ctd = alr_log['missionData']['CTD']
+    alr_dep_ctl = alr_log['missionData']['DepCtlNode']
     alr_acdp_log1 = alr_log['missionData']['ADCPLog_1']
 
     data_list = []
@@ -99,8 +99,8 @@ def parse_autosub(mission,
             data_list.append(data)
     if category == Category.DEPTH:
         Console.info('...... parsing autosub depth')
-        for i in range(len(alr_ctd['eTime'])):
-            depth.from_autosub(alr_ctd, i)
+        for i in range(len(alr_dep_ctl['eTime'])):
+            depth.from_autosub(alr_dep_ctl, i)
             data = depth.export(output_format)
             data_list.append(data)
     if category == Category.ALTITUDE:

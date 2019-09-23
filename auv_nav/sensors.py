@@ -493,6 +493,7 @@ class Orientation(OutputFormat):
                 + ' std_h: ' + str(float(self.yaw_std)) + '\n')
         return data
 
+
 class Depth(OutputFormat):
     def __init__(self, depth_std_factor=0.0001, ts=None):
         self.epoch_timestamp = None
@@ -514,7 +515,7 @@ class Depth(OutputFormat):
     def from_autosub(self, data, i):
         self.epoch_timestamp = data['eTime'][i]
         self.depth_timestamp = self.epoch_timestamp
-        self.depth = data['depSM'][i]
+        self.depth = data['DepCtldepth'][i]
         self.depth_std = self.depth*self.depth_std_factor
 
     def from_phins(self, line):
@@ -652,7 +653,7 @@ class Altitude(OutputFormat):
 
 
 class Usbl(OutputFormat):
-    def __init__(self, std_offset=None,
+    def __init__(self, std_factor=None, std_offset=None,
                  latitude_reference=None, longitude_reference=None):
         self.epoch_timestamp = None
         self.sensor_string = 'unknown'
@@ -689,6 +690,8 @@ class Usbl(OutputFormat):
         self.distance = 0
         self.bearing = 0
 
+        if std_factor is not None:
+            self.std_factor = std_factor
         if std_offset is not None:
             self.std_offset = std_offset
         if latitude_reference is not None:
@@ -725,9 +728,9 @@ class Usbl(OutputFormat):
             bearing*pi/180.0)*lateral_distance
         self.northings = cos(
             bearing*pi/180.0)*lateral_distance
-        self.eastings_std = self.std_offset
-        self.northings_std = self.std_offset
-        self.depth_std = self.std_offset
+        self.eastings_std = self.std_factor*self.depth + self.std_offset
+        self.northings_std = self.std_factor*self.depth + self.std_offset
+        self.depth_std = self.std_factor*self.depth + self.std_offset
         # If your displacements aren't too great (less than a few kilometers)
         # and you're not right at the poles, use the quick and dirty estimate
         # that 111,111 meters (111.111 km) in the y direction is 1 degree (of
@@ -833,8 +836,13 @@ class Usbl(OutputFormat):
 
     def to_acfr(self):
         distance_range = -1.0
-        if self.distance_to_ship > self.depth:
-            distance_range = sqrt(self.distance_to_ship**2 - self.depth**2)
+        if self.distance_to_ship > self.depth and self.distance_to_ship > 0:
+            try:
+                distance_range = sqrt(self.distance_to_ship**2 - self.depth**2)
+            except ValueError:
+                print('Value error:')
+                print('Value distance_to_ship: ' + str(self.distance_to_ship))
+                print('Value depth:            ' + str(self.depth))
         bearing = atan2(self.eastings, self.northings)*180/pi
         data = ('SSBL_FIX: ' + str(float(self.epoch_timestamp))
                 + ' ship_x: ' + str(float(self.northings_ship))
