@@ -9,6 +9,8 @@ import os
 import glob
 from pathlib import Path
 # from datetime import datetime
+import numpy as np
+#from matplotlib import pyplot as plt
 
 # sys.path.append("..")
 from auv_nav.tools.time_conversions import date_time_to_epoch
@@ -179,11 +181,15 @@ def parse_biocam_images(mission,
                     'category': category,
                     'camera1': [{
                         'epoch_timestamp': float(stamp_pc1[i]),
+                        # Duplicate for timestamp prediction purposes
+                        'epoch_timestamp_cpu': float(stamp_pc1[i]),
                         'epoch_timestamp_cam': float(stamp_cam1[i]),
                         'filename': str(camera1_filename[i])
                     }],
                     'camera2':  [{
                         'epoch_timestamp': float(stamp_pc2[sync_pair]),
+                        # Duplicate for timestamp prediction purposes
+                        'epoch_timestamp_cpu': float(stamp_pc2[sync_pair]),
                         'epoch_timestamp_cam': float(stamp_cam2[sync_pair]),
                         'filename': str(camera2_filename[sync_pair])
                     }]
@@ -212,9 +218,134 @@ def parse_biocam_images(mission,
             'category': 'laser',
             'camera3': [{
                 'epoch_timestamp': float(t3),
+                # Duplicate for timestamp prediction purposes
+                'epoch_timestamp_cpu': float(t3),
                 'epoch_timestamp_cam': float(tc3),
                 'filename': str(camera3_filename[i])
             }]
         }
         data_list.append(data)
+    return data_list
+
+
+def correct_timestamps(data_list):
+    cam1_cam_list = []
+    cam1_offset_list = []
+    cam2_cam_list = []
+    cam2_offset_list = []
+    cam3_cam_list = []
+    cam3_offset_list = []
+    for data in data_list:
+        category = data['category']
+        if category == 'image':
+            # Grab data
+            cpu1_timestamp = data['camera1'][0]['epoch_timestamp_cpu']
+            cam1_timestamp = data['camera1'][0]['epoch_timestamp_cam']
+            cpu2_timestamp = data['camera2'][0]['epoch_timestamp_cpu']
+            cam2_timestamp = data['camera2'][0]['epoch_timestamp_cam']
+            # Calculate offsets
+            cam1_offset = cpu1_timestamp - cam1_timestamp
+            cam2_offset = cpu2_timestamp - cam2_timestamp
+            # Store
+            cam1_cam_list.append(cam1_timestamp)
+            cam1_offset_list.append(cam1_offset)
+            cam2_cam_list.append(cam2_timestamp)
+            cam2_offset_list.append(cam2_offset)
+        elif category == 'laser':
+            # Grab data
+            cpu3_timestamp = data['camera3'][0]['epoch_timestamp_cpu']
+            cam3_timestamp = data['camera3'][0]['epoch_timestamp_cam']
+            # Calculate offset
+            cam3_offset = cpu3_timestamp - cam3_timestamp
+            # Store
+            cam3_cam_list.append(cam3_timestamp)
+            cam3_offset_list.append(cam3_offset)
+        else:
+            continue
+    # Use all data available for camera2 (camera3 defined in
+    # parse_biocam_images as same camera as camera2)
+    comb_cam_list = cam2_cam_list + cam3_cam_list
+    comb_offset_list = cam2_offset_list + cam3_offset_list
+    # Perform PCA to find best fit line and place at height of lowest datapoint
+    # in PCA frame
+    X1 = np.array([[cam1_cam_list[i], cam1_offset_list[i]] for i
+                   in range(1,len(cam1_offset_list)-1)])
+    X2 = np.array([[comb_cam_list[i], comb_offset_list[i]] for i
+                   in range(1,len(comb_offset_list)-1)])
+    
+    def PCA(data):
+        mean = data.mean(0)
+        data_0 = data - mean
+        n, m = data_0.shape
+        # Ensure properly mean-centred
+        while not np.allclose(data_0.mean(axis=0), np.zeros(m)):
+            sub_mean = data_0.mean(0)
+            mean += sub_mean
+            data_0 -= sub_mean
+            n, m = data_0.shape
+        # Compute covariance matrix
+        C = np.dot(data_0.T, data_0) / (n-1)
+        # Eigen decomposition
+        eigen_vals, eigen_vecs = np.linalg.eig(C)
+        PC = eigen_vecs.transpose()[eigen_vals.argmax()]
+        m = PC[1]/PC[0]
+        data_PCA = np.dot(data_0, eigen_vecs)
+        lowest_p = data_PCA[:,1].argmin()
+        c = data[lowest_p,1] - m*data[lowest_p,0]
+        return m, c
+    
+    m1, c1 = PCA(X1)
+    m2, c2 = PCA(X2)
+    
+    def predict_cpu_time(cam_list, m, c):
+        pred_list = []
+        for x in cam_list:
+            # offset = (cpu - cam) = m*(cam) + c
+            y = (m+1)*x + c
+            pred_list.append(y)
+        return pred_list
+    
+    cam1_pred_list = predict_cpu_time(cam1_cam_list, m1, c1)
+    cam2_pred_list = predict_cpu_time(cam2_cam_list, m2, c2)
+    cam3_pred_list = predict_cpu_time(cam3_cam_list, m2, c2)
+    
+#    # Code to show plot of what the best fit lines look like on the data
+#    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    line1 = [[cam1_cam_list[1], cam1_cam_list[-2]],
+             [m1*cam1_cam_list[1]+c1, m1*cam1_cam_list[-2]+c1]]
+    line2 = [[cam2_cam_list[1], cam2_cam_list[-2]],
+             [m2*cam2_cam_list[1]+c2, m2*cam2_cam_list[-2]+c2]]
+    
+#    plt.figure("test preds - offset vs cam time")
+#    plt.plot(cam2_cam_list, cam2_offset_list, '.r')
+#    plt.plot(cam3_cam_list, cam3_offset_list, '.r')
+#    plt.plot(cam1_cam_list, cam1_offset_list, '.c')
+#    plt.plot(line1[0], line1[1], '-b')
+#    plt.plot(line2[0], line2[1], '-m')
+#    plt.show()
+    
+    Console.info("...... Divergence over time of cpu clock to cam1 clock:", m1/100, '%')
+    Console.info("...... Initial offset of cpu clock to cam1 clock:", line1[1][0], 's')
+    Console.info("...... Divergence over time of cpu clock to cam2 clock:", m2/100, '%')
+    Console.info("...... Initial offset of cpu clock to cam2 clock:", line2[1][0], 's')
+    
+    i = 0
+    j = 0
+    for data in data_list:
+        category = data['category']
+        if category == 'image':
+            data['epoch_timestamp'] = cam1_pred_list[i]
+            data['camera1'][0]['epoch_timestamp'] = cam1_pred_list[i]
+            data['camera2'][0]['epoch_timestamp'] = cam2_pred_list[i]
+            i += 1
+
+        elif category == 'laser':
+            data['epoch_timestamp'] = cam3_pred_list[j]
+            data['camera3'][0]['epoch_timestamp'] = cam3_pred_list[j]
+            j += 1
+        else:
+            continue
+    
+    Console.info("...done correcting timestamps.")
+
     return data_list

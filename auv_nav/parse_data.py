@@ -24,6 +24,7 @@ from auv_nav.parsers.parse_gaps import parse_gaps
 from auv_nav.parsers.parse_usbl_dump import parse_usbl_dump
 from auv_nav.parsers.parse_acfr_images import parse_acfr_images
 from auv_nav.parsers.parse_biocam_images import parse_biocam_images
+from auv_nav.parsers.parse_biocam_images import correct_timestamps
 from auv_nav.parsers.parse_seaxerocks_images import parse_seaxerocks_images
 from auv_nav.parsers.parse_interlacer import parse_interlacer
 # from lib_sensors.parse_chemical import parse_chemical
@@ -333,12 +334,21 @@ def parse_data(filepath, force_overwite):
             }]
         }]]
 
+        # Set advance True/False flag so not comparing for every i in pool_list
+        if mission.image.format == "biocam":
+            correcting_timestamps = True
+        else:
+            correcting_timestamps = False
         for i in pool_list:
             results = i.get()
             # If current retrieved data is DEPTH
             # and if TIDE data is available
             if len(results) < 1:
                 continue
+            if correcting_timestamps:
+                if (results[0]['category'] == 'image'):
+                    Console.info("Correction of BioCam cpu timestamps...")
+                    results = correct_timestamps(results)
             if (results[0]['category'] == Category.DEPTH or results[0]['category'] == Category.USBL):
                 if mission.tide is not None:
                     # proceed to tidal correction
