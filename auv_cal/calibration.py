@@ -174,6 +174,7 @@ class Calibrator():
     def __init__(self, filepath, force_overwite=False):
         filepath = Path(filepath).resolve()
         self.filepath = get_raw_folder(filepath)
+        self.filepath = self.filepath.parent
         self.fo = force_overwite
 
         calibration_config_file = get_config_folder(filepath) / 'calibration.yaml'
@@ -197,6 +198,7 @@ class Calibrator():
         self.calibration_path = get_processed_folder(filepath)
         if not self.calibration_path.exists():
             self.calibration_path.mkdir(parents=True)
+        self.calibration_path = self.calibration_path.parent
         output_folder = self.calibration_path / 'calibration'
         if not output_folder.exists():
             output_folder.mkdir(parents=True)

@@ -54,9 +54,9 @@ def bounding_box(iterable):
     return min_x, max_x, min_y, max_y
 
 
-def plot_plane(a, b, c, d, min_x, max_x, min_y, max_y):
-        xx, yy = np.mgrid[min_x:max_x, min_y:max_y]
-        return xx, yy, (-d - a * xx - b * yy) / c
+def plot_plane(a, b, c, d):
+        yy, zz = np.mgrid[-4:4, 0:8]
+        return (-d - c * zz - b * yy) / a, yy, zz
 
 
 def plane_fitting_ransac(cloud_xyz,
@@ -78,10 +78,10 @@ def plane_fitting_ransac(cloud_xyz,
         from mpl_toolkits.mplot3d import Axes3D
         fig = plt.figure()
         ax = Axes3D(fig)
-        ax.scatter3D(cloud_xyz.T[0], cloud_xyz.T[1], cloud_xyz.T[2])
-        min_x, max_x, min_y, max_y = bounding_box(cloud_xyz[:, 0:2])
-        xx, yy, zz = plot_plane(a, b, c, d, min_x, max_x, min_y, max_y)
+        #min_x, max_x, min_y, max_y = bounding_box(cloud_xyz[:, 0:2])
+        xx, yy, zz = plot_plane(a, b, c, d)  # , min_x, max_x, min_y, max_y)
         ax.plot_surface(xx, yy, zz, color=(0, 1, 0, 0.5))
+        ax.scatter3D(cloud_xyz.T[0], cloud_xyz.T[1], cloud_xyz.T[2])
         ax.set_xlabel('$X$')
         ax.set_ylabel('$Y$')
         ax.set_zlabel('$Z$')
