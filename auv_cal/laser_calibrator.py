@@ -11,16 +11,6 @@ from auv_nav.parsers.parse_biocam_images import biocam_timestamp_from_filename
 import joblib
 import yaml
 
-
-class LaserPoint:
-    def __init__(self, row, col):
-        self.row = row
-        self.col = col
-
-    def __str__(self):
-        return ' (' + str(self.row) + ', ' + str(self.col) + ')'
-
-
 def gaussian_window(length):
     d = []
     for i in range(length):
@@ -37,6 +27,47 @@ def build_plane(pitch, yaw, point):
         plane = np.array([a, b, c, d])
         offset = (d - point[1]*b)/a
         return plane, normal, offset
+
+
+def findLaserInImage(img, min_green_val, k, min_area, num_columns, start_row=0, end_row=-1, prior=None, debug=False):
+    height, width = img.shape
+    peaks = []
+    width_array = np.array(range(50, width-50))
+
+    if end_row == -1:
+        end_row = height
+
+    if prior is None:
+        if num_columns > 0:
+            incr = int(len(width_array) / num_columns) - 1
+            columns = [width_array[i] for i in range(0, len(width_array), incr)]
+        else:
+            columns = width_array
+    else:
+        columns = [i[1] for i in prior]
+
+    for u in columns:
+        gmax = 0
+        vw = start_row
+        while vw < end_row - k:
+            gt = 0
+            gt_m = 0
+            gt_mv = 0
+            v = vw
+            while v < vw + k:
+                weight = 1-2*abs(vw+float(k-1)/2.0-v)/k
+                intensity = img[v, u]
+                gt += weight*intensity
+                gt_m += intensity
+                gt_mv += (v-vw)*intensity
+                v += 1
+            if gt>gmax:
+                gmax = gt                  # gmax:  highest integrated green value
+                vgmax = vw+(gt_mv/gt_m)    # vgmax: v value in image, where gmax occurrs
+            vw += 1
+        if gmax > min_green_val:    # If `true`, there is a point in the current column, which presumably belongs to the laser line
+            peaks.append([vgmax, u])
+    return np.array(peaks)
 
 
 def detect_laser_px(img, min_green_val, k, min_area, num_columns, start_row=0, end_row=-1, prior=None, debug=False):
@@ -56,7 +87,7 @@ def detect_laser_px(img, min_green_val, k, min_area, num_columns, start_row=0, e
         else:
             columns = width_array
     else:
-        columns = [i.col for i in prior]
+        columns = [i[1] for i in prior]
 
     window = gaussian_window(k)
 
@@ -79,8 +110,8 @@ def detect_laser_px(img, min_green_val, k, min_area, num_columns, start_row=0, e
                 # print('cog: ' + str(cog))
                 # print('final: ' + str(start_row + max_ind + cog) + ' start_row: ' + str(start_row))
                 # TODO compute center of mass
-                peaks.append(LaserPoint(start_row + max_ind + cog, i))
-    return peaks
+                peaks.append([start_row + max_ind + cog, i])
+    return np.array(peaks, dtype=np.float32)
 
 
 def triangulate_lst(x1, x2, P1, P2):
@@ -89,8 +120,8 @@ def triangulate_lst(x1, x2, P1, P2):
     M = np.zeros((6, 6))
     M[:3, :4] = P1
     M[3:, :4] = P2
-    M[:3, 4] = -np.array([x1.col, x1.row, 1.0])
-    M[3:, 5] = -np.array([x2.col, x2.row, 1.0])
+    M[:3, 4] = -np.array([x1[1], x1[0], 1.0])
+    M[3:, 5] = -np.array([x2[1], x2[0], 1.0])
     U, S, V = np.linalg.svd(M)
     X = V[-1, :3]
     return X / V[-1, 3]
@@ -105,10 +136,10 @@ def triangulate_dlt(p1, p2, P1, P2):
     """
     # for info on SVD, see Hartley & Zisserman (2003) p. 593 (see also p. 587)
     A = []
-    A.append(float(p1.col)*P1[2, :] - P1[0, :])
-    A.append(float(p1.row)*P1[2, :] - P1[1, :])
-    A.append(float(p2.col)*P2[2, :] - P2[0, :])
-    A.append(float(p2.row)*P2[2, :] - P2[1, :])
+    A.append(float(p1[1])*P1[2, :] - P1[0, :])
+    A.append(float(p1[0])*P1[2, :] - P1[1, :])
+    A.append(float(p2[1])*P2[2, :] - P2[0, :])
+    A.append(float(p2[0])*P2[2, :] - P2[1, :])
     A = np.array(A)
     u, s, vt = np.linalg.svd(A)
     X = vt[-1, 0:3]/vt[-1, 3]  # normalize
@@ -169,99 +200,91 @@ def draw_laser(left_image_name, left_maps, top_left, top_right, bottom_left, bot
         img_colour = np.zeros((img.shape[0], img.shape[1], 3), dtype=np.uint8)
         img_colour[:, :, 1] = img
         for p in top_left:
-            cv2.circle(img_colour, (p.col, int(p.row)), 1, (0, 0, 255), -1)
+            cv2.circle(img_colour, (int(p[1]), int(p[0])), 1, (0, 0, 255), -1)
         for p in top_right:
-            cv2.circle(img_colour, (p.col, int(p.row)), 1, (255, 0, 255), -1)
+            cv2.circle(img_colour, (int(p[1]), int(p[0])), 1, (255, 0, 255), -1)
         for p in bottom_left:
-            cv2.circle(img_colour, (p.col, int(p.row)), 1, (255, 0, 127), -1)
+            cv2.circle(img_colour, (int(p[1]), int(p[0])), 1, (255, 0, 127), -1)
         for p in bottom_right:
-            cv2.circle(img_colour, (p.col, int(p.row)), 1, (0, 255, 127), -1)
+            cv2.circle(img_colour, (int(p[1]), int(p[0])), 1, (0, 255, 127), -1)
         cv2.imwrite(str(filename), img_colour)
         print('Saved ' + str(filename))
 
 
 def thread_detect(left_image_name, left_maps, right_image_name, right_maps, min_greenness_value, k, min_area, num_columns, start_row, end_row, start_row_b, end_row_b, two_lasers):
-        def write_file(filename, image_name, maps, min_greenness_value, k, min_area, num_columns, start_row, end_row, start_row_b, end_row_b, two_lasers):
-            p1b = []
-            img1 = cv2.imread(str(image_name), cv2.IMREAD_ANYDEPTH)
-            img1 = cv2.remap(img1, maps[0], maps[1], cv2.INTER_LANCZOS4)
+    def write_file(filename, image_name, maps, min_greenness_value, k, min_area, num_columns, start_row, end_row, start_row_b, end_row_b, two_lasers):
+        p1b = []
+        img1 = cv2.imread(str(image_name), cv2.IMREAD_ANYDEPTH)
+        img1 = cv2.remap(img1, maps[0], maps[1], cv2.INTER_LANCZOS4)
+        p1 = findLaserInImage(img1, min_greenness_value, k, min_area, num_columns, start_row=start_row, end_row=end_row)
+        if two_lasers:
+            p1b = findLaserInImage(img1, min_greenness_value, k, min_area, num_columns, start_row=start_row_b, end_row=end_row_b, debug=True)
 
-            # lh, lw = img1.shape
-            # final_image = np.zeros((lh, lw, 3), dtype=np.uint8)
-            # final_image[:lh, :lw, 1] = img1
-            # cv2.namedWindow('Laser distorted', 0)
-            # cv2.imshow('Laser distorted', final_image)
-            # cv2.waitKey(0)
+        write_str = "top: \n- " + "- ".join(["[" + str(p1[i][0]) + ", " + str(p1[i][1]) + ']\n'for i in range(len(p1))])
+        write_str += "bottom: \n- " + "- ".join(["[" + str(p1b[i][0]) + ", " + str(p1b[i][1]) + ']\n'for i in range(len(p1b))])
+        with filename.open('w') as f:
+            f.write(write_str)
+        p1 = np.array(p1, dtype=np.float32)
+        p1b = np.array(p1b, dtype=np.float32)
+        return p1, p1b
 
-            # cv2.namedWindow('Laser remap', 0)
-            # final_image[:lh, :lw, 1] = img1
-            # cv2.imshow('Laser remap', final_image)
-            # cv2.waitKey(0)
-            p1 = detect_laser_px(img1, min_greenness_value, k, min_area, num_columns, start_row=start_row, end_row=end_row)
-            if two_lasers:
-                p1b = detect_laser_px(img1, min_greenness_value, k, min_area, num_columns, start_row=start_row_b, end_row=end_row_b, debug=True)
+    def do_image(image_name, maps, min_greenness_value, k, min_area, num_columns, start_row, end_row, start_row_b, end_row_b, two_lasers):
+        # Load image
+        points = []
+        points_b = []
 
-            write_str = "top: \n- " + "- ".join(["[" + str(i.row) + ", " + str(i.col) + ']\n'for i in p1])
-            write_str += "bottom: \n- " + "- ".join(["[" + str(i.row) + ", " + str(i.col) + ']\n'for i in p1b])
-            with filename.open('w') as f:
-                f.write(write_str)
-            return p1, p1b
-
-        def do_image(image_name, maps, min_greenness_value, k, min_area, num_columns, start_row, end_row, start_row_b, end_row_b, two_lasers):
-            # Load image
-            points = []
-            points_b = []
-
-            output_path = get_processed_folder(image_name.parent)
-            # print(str(image_name))
-            if not output_path.exists():
-                output_path.mkdir(parents=True, exist_ok=True)
-            fstem = str(image_name.stem) + '.txt'
-            filename = output_path / fstem
-            if filename.exists():
-                # print('Opening ' + filename.name)
-                with filename.open('r') as f:
-                    r = yaml.safe_load(f)
-                if r is not None:
-                    a1 = r['top']
-                    a1b = r['bottom']
-                    i = 0
-                    for i in range(len(a1)):
-                        points.append(LaserPoint(a1[i][0], a1[i][1]))
-                    for i in range(len(a1b)):
-                        points_b.append(LaserPoint(a1b[i][0], a1b[i][1]))
-                else:
-                    points, points_b = write_file(filename, image_name, maps, min_greenness_value, k, min_area, num_columns, start_row, end_row, start_row_b, end_row_b, two_lasers)
+        output_path = get_processed_folder(image_name.parent)
+        # print(str(image_name))
+        if not output_path.exists():
+            output_path.mkdir(parents=True, exist_ok=True)
+        fstem = str(image_name.stem) + '.txt'
+        filename = output_path / fstem
+        if filename.exists():
+            # print('Opening ' + filename.name)
+            with filename.open('r') as f:
+                r = yaml.safe_load(f)
+            if r is not None:
+                a1 = r['top']
+                a1b = r['bottom']
+                i = 0
+                for i in range(len(a1)):
+                    points.append([a1[i][0], a1[i][1]])
+                for i in range(len(a1b)):
+                    points_b.append([a1b[i][0], a1b[i][1]])
+                points = np.array(points, dtype=np.float32)
+                points_b = np.array(points_b, dtype=np.float32)
             else:
                 points, points_b = write_file(filename, image_name, maps, min_greenness_value, k, min_area, num_columns, start_row, end_row, start_row_b, end_row_b, two_lasers)
-            return points, points_b
-        # print('PAIR: ' + left_image_name.stem + ' - ' + right_image_name.stem)
-        p1, p1b = do_image(
-            left_image_name,
-            left_maps,
-            min_greenness_value,
-            k,
-            min_area,
-            num_columns,
-            start_row,
-            end_row,
-            start_row_b,
-            end_row_b,
-            two_lasers)
-        p2, p2b = do_image(
-            right_image_name,
-            right_maps,
-            min_greenness_value,
-            k,
-            min_area,
-            num_columns,
-            start_row,
-            end_row,
-            start_row_b,
-            end_row_b,
-            two_lasers)
-        draw_laser(left_image_name, left_maps, p1, p2, p1b, p2b)
-        return p1, p2, p1b, p2b
+        else:
+            points, points_b = write_file(filename, image_name, maps, min_greenness_value, k, min_area, num_columns, start_row, end_row, start_row_b, end_row_b, two_lasers)
+        return points, points_b
+    # print('PAIR: ' + left_image_name.stem + ' - ' + right_image_name.stem)
+    p1, p1b = do_image(
+        left_image_name,
+        left_maps,
+        min_greenness_value,
+        k,
+        min_area,
+        num_columns,
+        start_row,
+        end_row,
+        start_row_b,
+        end_row_b,
+        two_lasers)
+    p2, p2b = do_image(
+        right_image_name,
+        right_maps,
+        min_greenness_value,
+        k,
+        min_area,
+        num_columns,
+        start_row,
+        end_row,
+        start_row_b,
+        end_row_b,
+        two_lasers)
+    draw_laser(left_image_name, left_maps, p1, p2, p1b, p2b)
+    return p1, p2, p1b, p2b
 
 
 def save_cloud(filename, cloud):
@@ -333,10 +356,9 @@ class LaserCalibrator():
             (self.sc.right.image_width, self.sc.right.image_height),
             cv2.CV_32FC1)
 
+
     def cal(self, limages, rimages):
-
         # Synchronise images
-
         stamp_pc1 = []
         stamp_cam1 = []
         stamp_pc2 = []
@@ -393,28 +415,9 @@ class LaserCalibrator():
         count2l = 0
         count1lb = 0
         count2lb = 0
-        # 13 histogram bins from 70 to 200
-        # bin 0: from 70 to 80
-        # bin 1: from 80 to 90
-        # bin 2: from 90 to 100
-        # ...
-        # bin 12: from 190 to 200
-        # histogram_bins = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         for p1l, p2l, p1bl, p2bl in result:
             if p1l is None or p2l is None:
                 continue
-            # p1l = np.array(p1l)
-            # p2l = np.array(p2l)
-            # if len(p2l) != len(p1l):
-            #     continue
-            # disp = p2l - p1l
-            # disp_mean = int(np.mean(disp))
-
-            # disp_idx = int((disp_mean - 70)/10)
-
-            # if histogram_bins[disp_idx] > 10:
-            #     continue
-
             peaks1.append(p1l)
             count1l += len(p1l)
             peaks2.append(p2l)
@@ -443,14 +446,15 @@ class LaserCalibrator():
             i2 = 0
             for i1 in range(len(pk1)):
                 while i2 < len(pk2):
-                    if pk2[i2].col >= pk1[i1].col:
+                    if pk2[i2][1] >= pk1[i1][1]:
                         break
                     i2 += 1
                 if i2 == len(pk2):
                     continue
-                if pk2[i2].col == pk1[i1].col:
-                    if ((pk1[i1].row - pk2[i2].row > 70 and pk1[i1].row - pk2[i2].row < 200)
-                        or (pk2[i2].row - pk1[i1].row > 70 and pk2[i2].row - pk1[i1].row < 200)):
+                # print(pk2[i2][1] - pk1[i1][1])
+                if pk2[i2][1] - pk1[i1][1] < 1.0:
+                    if ((pk1[i1][0] - pk2[i2][0] > 70 and pk1[i1][0] - pk2[i2][0] < 200)
+                        or (pk2[i2][0] - pk1[i1][0] > 70 and pk2[i2][0] - pk1[i1][0] < 200)):
                         p = triangulate_lst(pk1[i1], pk2[i2], self.sc.left.P, self.sc.right.P)
                         if p[2] < 0 or p is None:
                             count_inversed += 1
@@ -518,7 +522,6 @@ class LaserCalibrator():
                 cloud_sample_size = int(0.5 * len(inliers_cloud))
                 point_cloud_local = np.array(random.sample(inliers_cloud, cloud_sample_size))
                 plane = fit_plane(point_cloud_local)
-                print(plane)
                 planes.append(plane)
                 Console.progress(i, self.num_iterations, prefix='Iterating planes')
 
@@ -589,7 +592,7 @@ class LaserCalibrator():
             def valid(p):
                 first = (p[0] > -10.0) and (p[0] < 10.0)
                 second = (p[1] > -10.0) and (p[1] < 10.0)
-                third = (p[2] > 0.0) and (p[2] < 10.0)
+                third = (p[2] > 0.0) and (p[2] < 7.0)
                 return first and second and third
             return [p for p in cloud if valid(p)]
 
