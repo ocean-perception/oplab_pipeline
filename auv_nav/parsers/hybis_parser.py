@@ -235,7 +235,7 @@ def parse_hybis(navigation_file,
     output_file = Path(output_file)
     with output_file.open('w', encoding="utf-8") as fileout:
         for line in data:
-            fileout.write(str(line).decode('utf-8'))
+            fileout.write(str(line))
     print('DONE!')
 
 

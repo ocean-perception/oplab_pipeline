@@ -237,6 +237,8 @@ def _get_circles(img, board, pattern, invert=False):
     """
     Get circle centers for a symmetric or asymmetric grid
     """
+    if img is None:
+        return False, []
     h = img.shape[0]
     w = img.shape[1]
     if len(img.shape) == 3 and img.shape[2] == 3:
@@ -635,6 +637,8 @@ class MonoCalibrator(Calibrator):
         rmse = 0
         for (params, gray) in self.db:
             error = self.linear_error_from_image(gray)
+            if error is None:
+                continue
             rmse += error
             if error is not None:
                 linear_error.append(error)
