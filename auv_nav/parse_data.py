@@ -316,6 +316,9 @@ def parse_data(filepath, force_overwite):
             else:
                 Console.quit('Mission tide format {} not supported.'
                              .format(mission.tide.format))
+        else:
+            tide_list = None
+        
         pool.close()
         pool.join()
 
@@ -350,7 +353,7 @@ def parse_data(filepath, force_overwite):
                     Console.info("Correction of BioCam cpu timestamps...")
                     results = correct_timestamps(results)
             if (results[0]['category'] == Category.DEPTH or results[0]['category'] == Category.USBL):
-                if mission.tide is not None:
+                if tide_list is not None:
                     # proceed to tidal correction
                     Console.info("Tidal correction of depth vector...")
                     # Offset depth to acknowledge for tides
