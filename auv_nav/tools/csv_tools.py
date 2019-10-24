@@ -196,7 +196,8 @@ def camera_csv(camera_list, camera_name, csv_filepath, csv_flag):
         str_to_write = ''
         str_to_write += 'Imagenumber, Northing [m], Easting [m], Depth [m], ' \
                         'Roll [deg], Pitch [deg], Heading [deg], Altitude '\
-                        '[m], Timestamp, Latitude [deg], Longitude [deg]'
+                        '[m], Timestamp, Latitude [deg], Longitude [deg]'\
+                        ', x_velocity, y_velocity, z_velocity'
         if len(camera_list) > 0:
             if camera_list[0].covariance is not None:
                 cov = ['x', 'y', 'z',
@@ -227,7 +228,10 @@ def camera_csv(camera_list, camera_name, csv_filepath, csv_flag):
                         + str(camera_list[i].altitude) + ','
                         + str(camera_list[i].epoch_timestamp) + ','
                         + str(camera_list[i].latitude) + ','
-                        + str(camera_list[i].longitude))
+                        + str(camera_list[i].longitude) + ','
+                        + str(camera_list[i].x_velocity) + ','
+                        + str(camera_list[i].y_velocity) + ','
+                        + str(camera_list[i].z_velocity))
                     if camera_list[i].covariance is not None:
                         cov = camera_list[i].covariance.flatten().tolist()
                         cov = [item for sublist in cov for item in sublist]
@@ -240,7 +244,6 @@ def camera_csv(camera_list, camera_name, csv_filepath, csv_flag):
                 fileout.write(str_to_write)
         else:
             Console.warn('Empty data list {}'.format(str(camera_name)))
-
 
 # if this works make all follow this format!
 def other_data_csv(data_list, data_name, csv_filepath, csv_flag):
