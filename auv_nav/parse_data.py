@@ -353,7 +353,7 @@ def parse_data(filepath, force_overwite):
                     Console.info("Correction of BioCam cpu timestamps...")
                     results = correct_timestamps(results)
             if (results[0]['category'] == Category.DEPTH or results[0]['category'] == Category.USBL):
-                if tide_list is not None:
+                if not mission.tide.empty():
                     # proceed to tidal correction
                     Console.info("Tidal correction of depth vector...")
                     # Offset depth to acknowledge for tides
