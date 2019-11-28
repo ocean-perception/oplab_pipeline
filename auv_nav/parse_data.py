@@ -1,15 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Sep 27 12:34:42 2018
-
-@author: Adrian
+Copyright (c) 2019, University of Southampton
+All rights reserved.
 """
-
-# Known issues: When running the code more than once from the same console,
-# line 206 pool = multiprocessing.Pool(cpu_to_use) causes an error.
-# A workaround is to close the console after eachr run
-
-
 import multiprocessing
 import json
 from pathlib import Path
@@ -18,7 +11,7 @@ from pathlib import Path
 from auv_nav.parsers.parse_phins import parse_phins
 from auv_nav.parsers.parse_ae2000 import parse_ae2000
 from auv_nav.parsers.parse_NOC_nmea import parse_NOC_nmea
-from auv_nav.parsers.parse_NOC_polpred import parse_NOC_polpred         # included parser for tide model from NOC POLPRED
+from auv_nav.parsers.parse_NOC_polpred import parse_NOC_polpred
 from auv_nav.parsers.parse_autosub import parse_autosub
 from auv_nav.parsers.parse_gaps import parse_gaps
 from auv_nav.parsers.parse_usbl_dump import parse_usbl_dump
@@ -81,40 +74,34 @@ def parse_data(filepath, force_overwite):
     std_offset_altitude = 0.01
 
     if mission.usbl.std_factor == 0 and std_factor_usbl != 0:
-        # print('USBL standard deviation factor not provided. Using default of {}'.format(std_factor_usbl))
+        print('USBL standard deviation factor not provided. Using default of {}'.format(std_factor_usbl))
         mission.usbl.std_factor = std_factor_usbl
     if mission.usbl.std_offset == 0 and std_offset_usbl != 0:
-        # print('USBL standard deviation offset not provided. Using default of {}'.format(std_offset_usbl))
+        print('USBL standard deviation offset not provided. Using default of {}'.format(std_offset_usbl))
         mission.usbl.std_offset = std_offset_usbl
     if mission.velocity.std_factor == 0 and std_factor_dvl != 0:
-        # print('DVL standard deviation factor not provided. Using default of {}'.format(std_factor_dvl))
+        print('DVL standard deviation factor not provided. Using default of {}'.format(std_factor_dvl))
         mission.velocity.std_factor = std_factor_dvl
     if mission.velocity.std_offset == 0 and std_offset_dvl != 0:
-        # print('DVL standard deviation offset not provided. Using default of {}'.format(std_offset_dvl))
+        print('DVL standard deviation offset not provided. Using default of {}'.format(std_offset_dvl))
         mission.velocity.std_offset = std_offset_dvl
     if mission.depth.std_factor == 0 and std_factor_depth != 0:
-        # print('Depth standard deviation factor not provided. Using default of {}'.format(std_factor_depth))
+        print('Depth standard deviation factor not provided. Using default of {}'.format(std_factor_depth))
         mission.depth.std_factor = std_factor_depth
     if mission.depth.std_offset == 0 and std_offset_depth != 0:
-        # print('Depth standard deviation offset not provided. Using default of {}'.format(std_offset_depth))
+        print('Depth standard deviation offset not provided. Using default of {}'.format(std_offset_depth))
         mission.depth.std_offset = std_offset_depth
-    if mission.tide.std_factor == 0 and std_factor_tide != 0:
-        # print('Tide standard deviation factor not provided. Using default of {}'.format(std_factor_tide))
-        mission.tide.std_factor = std_factor_tide
-    if mission.tide.std_offset == 0 and std_offset_tide != 0:
-        # print('Tide standard deviation offset not provided. Using default of {}'.format(std_offset_tide))
-        mission.tide.std_offset = std_offset_tide   
     if mission.orientation.std_factor == 0 and std_factor_orientation != 0:
-        # print('Orientation standard deviation factor not provided. Using default of {}'.format(std_factor_orientation))
+        print('Orientation standard deviation factor not provided. Using default of {}'.format(std_factor_orientation))
         mission.orientation.std_factor = std_factor_orientation
     if mission.orientation.std_offset == 0 and std_offset_orientation != 0:
-        # print('Orientation standard deviation offset not provided. Using default of {}'.format(std_offset_orientation))
+        print('Orientation standard deviation offset not provided. Using default of {}'.format(std_offset_orientation))
         mission.orientation.std_offset = std_offset_orientation
     if mission.altitude.std_factor == 0 and std_factor_altitude != 0:
-        # print('Altitude standard deviation factor not provided. Using default of {}'.format(std_factor_altitude))
+        print('Altitude standard deviation factor not provided. Using default of {}'.format(std_factor_altitude))
         mission.altitude.std_factor = std_factor_altitude
     if mission.altitude.std_offset == 0 and std_offset_altitude != 0:
-        # print('Altitude standard deviation offset not provided. Using default of {}'.format(std_offset_altitude))
+        print('Altitude standard deviation offset not provided. Using default of {}'.format(std_offset_altitude))
         mission.altitude.std_offset = std_offset_altitude
 
     # copy mission.yaml and vehicle.yaml to processed folder for process step
