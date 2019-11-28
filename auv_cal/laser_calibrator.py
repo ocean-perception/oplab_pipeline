@@ -509,9 +509,9 @@ class LaserCalibrator():
 
             mean_plane, inliers_cloud = plane_fitting_ransac(
                 cloud,
-                min_distance_threshold=0.0005,
-                sample_size=200,
-                goal_inliers=len(cloud)*0.85,
+                min_distance_threshold=0.002,
+                sample_size=0.8*total_no_points,
+                goal_inliers=len(cloud)*0.95,
                 max_iterations=5000,
                 plot=True)
 
