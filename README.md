@@ -1,6 +1,6 @@
 # auv_nav
 
-[![Build Status](https://travis-ci.com/ocean-perception/auv_nav.svg?branch=master)](https://travis-ci.com/ocean-perception/auv_nav)
+[![Build Status](https://travis-ci.com/ocean-perception/auv_nav.svg?token=UkLpgZyKjs3prWpXePir&branch=master)](https://travis-ci.com/ocean-perception/auv_nav)
 
 auv_nav is a python toolchain to process AUV dives from raw data into navigation and imaging products. It is divided in four main programs:
 * [auv_nav](../../wiki/auv_nav)
