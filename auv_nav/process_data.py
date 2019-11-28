@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2018, University of Southampton
+Copyright (c) 2019, University of Southampton
 All rights reserved.
 """
 
@@ -23,7 +23,7 @@ from auv_nav.sensors import Other, Camera
 from auv_nav.sensors import SyncedOrientationBodyVelocity
 from auv_nav.localisation.dead_reckoning import dead_reckoning
 from auv_nav.localisation.usbl_offset import usbl_offset
-from auv_nav.localisation.particle_filter import ParticleFilter
+from auv_nav.localisation.pf import run_particle_filter
 from auv_nav.localisation.ekf import ExtendedKalmanFilter, Index
 from auv_nav.localisation.usbl_filter import usbl_filter
 from auv_nav.plot.plot_process_data import plot_orientation_vs_time
@@ -754,7 +754,7 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
          pf_particles_list,
          pf_northings_std,
          pf_eastings_std,
-         pf_yaw_std] = ParticleFilter(
+         pf_yaw_std] = run_particle_filter(
             copy.deepcopy(usbl_list),
             copy.deepcopy(dead_reckoning_dvl_list),
             particles_number,
