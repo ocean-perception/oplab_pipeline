@@ -44,7 +44,7 @@ def usbl_offset(time_dead_reckoning,
                 else:
                     start_dead_reckoning = start_dead_reckoning+1
     else:
-        print('usbl starts after dead_reckoning')
+        # print('usbl starts after dead_reckoning')
         while exit_flag is False:
             if time_dead_reckoning[start_dead_reckoning]-time_usbl[start_usbl] < 0:
                 start_dead_reckoning = start_dead_reckoning+1

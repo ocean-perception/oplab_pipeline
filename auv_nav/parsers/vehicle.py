@@ -47,7 +47,7 @@ class SensorOffset:
             self.surge = node['x_offset']
             self.sway = node['y_offset']
             self.heave = node['z_offset']
-            if mission_node:
+            if mission_node and 'headingoffset' in mission_node:
                 self.yaw = mission_node['headingoffset']
 
     def write(self, node):
