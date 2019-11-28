@@ -3,7 +3,16 @@ python:
   - "3.6"      # current default Python on Travis CI
 # command to install dependencies
 install:
+  - pip install --user codecov pytest
   - pip install -r requirements.txt
 # command to run tests
 script:
-  - pytest
+  - pytest --cov-report term --cov=auv_nav
+env:
+- CODECOV_TOKEN=c86ba333-736f-4b14-bf54-44d0d363c338
+
+after_success:
+- codecov
+
+
+
