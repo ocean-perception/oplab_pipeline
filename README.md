@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/ocean-perception/auv_nav.svg?token=UkLpgZyKjs3prWpXePir&branch=master)](https://travis-ci.com/ocean-perception/auv_nav) [![Code Coverage](https://codecov.io/gh/ocean-perception/auv_nav/branch/master/graph/badge.svg)](https://codecov.io/gh/ocean-perception/auv_nav)
+[![Build Status](https://travis-ci.com/ocean-perception/auv_nav.svg?token=UkLpgZyKjs3prWpXePir&branch=master)](https://travis-ci.com/ocean-perception/auv_nav) [![Code Coverage](https://codecov.io/gh/ocean-perception/auv_nav/branch/master/graph/badge.svg?token=PJBfl6qhp5)](https://codecov.io/gh/ocean-perception/auv_nav)
 
 # auv_nav
 
