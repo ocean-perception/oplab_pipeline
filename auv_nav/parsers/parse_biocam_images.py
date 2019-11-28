@@ -6,6 +6,7 @@
 # Date: 31/08/2017
 
 import os
+from scipy.stats import linregress
 import glob
 from pathlib import Path
 # from datetime import datetime
@@ -161,7 +162,6 @@ def parse_biocam_images(mission,
             timeoffset)
         stamp_pc2.append(str(t2))
         stamp_cam2.append(str(tc2))
-
     for i in range(len(camera1_filename)):
         values = []
         for j in range(len(camera2_filename)):
@@ -204,7 +204,6 @@ def parse_biocam_images(mission,
                     stamp_pc2[sync_pair])) + '] ' + str(camera2_filename[sync_pair]) + ' exp: 0\n'
                 # fileout.write(data)
                 data_list += data
-
     for i in range(len(camera3_filename)):
         t3, tc3 = biocam_timestamp_from_filename(
             Path(camera3_filename[i]).name,
@@ -266,36 +265,20 @@ def correct_timestamps(data_list):
     # parse_biocam_images as same camera as camera2)
     comb_cam_list = cam2_cam_list + cam3_cam_list
     comb_offset_list = cam2_offset_list + cam3_offset_list
-    # Perform PCA to find best fit line and place at height of lowest datapoint
-    # in PCA frame
-    X1 = np.array([[cam1_cam_list[i], cam1_offset_list[i]] for i
-                   in range(1,len(cam1_offset_list)-1)])
-    X2 = np.array([[comb_cam_list[i], comb_offset_list[i]] for i
-                   in range(1,len(comb_offset_list)-1)])
+    
+    # Fit a straight line to the data, bounding the bottom of it
 
-    def PCA(data):
-        mean = data.mean(0)
-        data_0 = data - mean
-        n, m = data_0.shape
-        # Ensure properly mean-centred
-        while not np.allclose(data_0.mean(axis=0), np.zeros(m)):
-            sub_mean = data_0.mean(0)
-            mean += sub_mean
-            data_0 -= sub_mean
-            n, m = data_0.shape
-        # Compute covariance matrix
-        C = np.dot(data_0.T, data_0) / (n-1)
-        # Eigen decomposition
-        eigen_vals, eigen_vecs = np.linalg.eig(C)
-        PC = eigen_vecs.transpose()[eigen_vals.argmax()]
-        m = PC[1]/PC[0]
-        data_PCA = np.dot(data_0, eigen_vecs)
-        lowest_p = data_PCA[:,1].argmin()
-        c = data[lowest_p,1] - m*data[lowest_p,0]
+    def line_fit(x_data, y_data):
+        fit = linregress(x_data, y_data)
+        m = fit.slope
+        c = fit.intercept
+        max_diff = np.min([y_data[i] - m*x_data[i] - c for
+                           i in range(len(x_data))])
+        c = c + max_diff
         return m, c
 
-    m1, c1 = PCA(X1)
-    m2, c2 = PCA(X2)
+    m1, c1 = line_fit(cam1_cam_list, cam1_offset_list)
+    m2, c2 = line_fit(comb_cam_list, comb_offset_list)
 
     def predict_cpu_time(cam_list, m, c):
         pred_list = []
