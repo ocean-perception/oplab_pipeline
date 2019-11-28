@@ -5,6 +5,7 @@ python:
 install:
   - pip install codecov pytest pytest-cov
   - pip install -r requirements.txt
+  - pip install -e .
 # command to run tests
 script:
   - pytest --cov-report term --cov=auv_nav
