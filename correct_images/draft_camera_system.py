@@ -4,8 +4,15 @@ Copyright (c) 2019, University of Southampton
 All rights reserved.
 """
 
-class BiocamSystem:
+class DefaultSystem():
+    def __init__(self):
+        self.extension = None
+        self.pattern = None
+
+
+class BiocamSystem(DefaultSystem):
     def __init__(self, path, mission):
+        super().__init__()
         self.num_cameras = 2
         self.pattern = 'bggr'
         self.extension = 'tif'
@@ -14,8 +21,9 @@ class BiocamSystem:
         # TODO get navigation filename (data will be generic)
 
 
-class Sx3System:
+class Sx3System(DefaultSystem):
     def __init__(self, path, mission):
+        super().__init__()
         self.num_cameras = 3
         self.pattern = 'rggb'
         self.extension = 'tif'
@@ -24,8 +32,9 @@ class Sx3System:
         # TODO get navigation filename (data will be generic)
 
 
-class AcfrSystem:
+class AcfrSystem(DefaultSystem):
     def __init__(self, path, mission):
+        super().__init__()
         self.num_cameras = 2
         self.pattern = 'grgb'
         self.extension = 'tif'
