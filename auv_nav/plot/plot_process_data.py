@@ -590,15 +590,15 @@ def plot_2d_deadreckoning(camera1_list,
             resampling_index = 1
             for i in pf_particles_list:
                 make_data(figure, 'PF_Resampling{}'.format(resampling_index),
-                          [float(j.eastings[0]) for j in i],
-                          [float(j.northings[0]) for j in i],
+                          [float(j.eastings) for j in i],
+                          [float(j.northings) for j in i],
                           mode='markers',
                           opacity=0.5)
-                make_data(figure, 'PF_Propagation{}'.format(resampling_index),
-                          [float(j.eastings[-1]) for j in i],
-                          [float(j.northings[-1]) for j in i],
-                          mode='markers',
-                          opacity=0.5)
+                # make_data(figure, 'PF_Propagation{}'.format(resampling_index),
+                #           [float(j.eastings[-1]) for j in i],
+                #           [float(j.northings[-1]) for j in i],
+                #           mode='markers',
+                #           opacity=0.5)
                 resampling_index += 1
 
     config = {'scrollZoom': True}

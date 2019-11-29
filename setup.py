@@ -1,3 +1,8 @@
+"""
+Copyright (c) 2019, University of Southampton
+All rights reserved.
+"""
+
 import setuptools
 
 with open("README.md", "r") as fh:
