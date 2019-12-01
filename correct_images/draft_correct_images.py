@@ -35,6 +35,8 @@ class CorrectImages:
             Console.warn("Cannot find {}, generating default from {}".format(path_correct, default_file))
             default_file.copy(path_correct)
             Console.warn('File was not found. Copying default file instead.')
+            
+            # TODO Update default correct_images.yaml parameters with values specific to camera systems in mission.yaml 
         
         # TODO implement Configuration class to read in correct_images configuration (a.k.a. parser)
         self.config = Configuration(path_correct)
@@ -52,10 +54,15 @@ class CorrectImages:
 
         # TODO fix the output folder structure
 
+    def distortion_correct(self):
+        dc = DistortionCorrection(self.camera_system)
+    
     def debayer(self):
         d = DebayerCorrection(self.camera_system, self.config)
 
-    
+    def apply_corrector(self):
+        ac = ApplyCorrector(self.camera_system, self.distortioncorrected, self.corrector, output_dirs)
+        
     def parse(self):
         if self.config.pixel_stats:
             self.corrector = PixelStatsCorrection(
@@ -63,3 +70,12 @@ class CorrectImages:
         elif self.config.attenuation_correction:
             self.corrector = AttenuationCorrection(
                 self.camera_system, self.config)
+    
+    def process(self):
+        # TODO add code to check if calibration paremeters are available     
+        if (calibration != None):
+            self.dc = self.distortion_correction()
+        self.ac = self.apply_corrector()
+        self.d = self.debayer()
+        # TODO add code to write corrected images
+        
