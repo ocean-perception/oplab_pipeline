@@ -53,16 +53,21 @@ class CorrectImages:
         # 3.2) With laser bathymetry depth
 
         # TODO fix the output folder structure
+        # self.output_dirs = None ...
 
     def distortion_correct(self):
-        dc = DistortionCorrection(self.camera_system)
+        pass
+    
+    def apply_corrector(self):
+        pass
     
     def debayer(self):
         d = DebayerCorrection(self.camera_system, self.config)
-
-    def apply_corrector(self):
-        ac = ApplyCorrector(self.camera_system, self.distortioncorrected, self.corrector, output_dirs)
+        return d
         
+    def write_output(self.debayer_image, self.output_dirs):
+        pass
+
     def parse(self):
         if self.config.pixel_stats:
             self.corrector = PixelStatsCorrection(
@@ -74,8 +79,7 @@ class CorrectImages:
     def process(self):
         # TODO add code to check if calibration paremeters are available     
         if (calibration != None):
-            self.dc = self.distortion_correction()
-        self.ac = self.apply_corrector()
-        self.d = self.debayer()
-        # TODO add code to write corrected images
-        
+            self.distortion_correct()
+        self.apply_corrector()
+        self.debayer_image = self.debayer()
+        self.write_output(self.debayer_image, self.output_dirs)
