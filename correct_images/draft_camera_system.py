@@ -16,8 +16,8 @@ class BiocamSystem():
     def __init__(self, path, mission):
         self.cameras = []
         self.cameras.append(Camera('cam61003146', 'bggr', 'tif'))
-        self.cameras.append(Camera('cam61004444', 'bggr', 'tif'))
-        self.cameras.append(Camera('cam61004444_laser', 'bggr', 'jpg'))
+        self.cameras.append(Camera('cam61004444', 'mono', 'tif'))
+        self.cameras.append(Camera('cam61004444_laser', 'mono', 'jpg'))
         # TODO get list of images
         # TODO get navigation filename (data will be generic)
 
@@ -27,7 +27,7 @@ class Sx3System():
         self.cameras = []
         self.cameras.append(Camera('Cam51707923', 'rggb', 'tif'))
         self.cameras.append(Camera('Cam51707925', 'rggb', 'tif'))
-        self.cameras.append(Camera('LM165', 'rggb', 'tif'))
+        self.cameras.append(Camera('LM165', 'mono', 'tif'))
         # TODO get list of images
         # TODO get navigation filename (data will be generic)
 
@@ -36,7 +36,7 @@ class AcfrSystem():
     def __init__(self, path, mission):
         self.cameras = []
         self.cameras.append(Camera('LC', 'grgb', 'tif'))
-        self.cameras.append(Camera('RC', 'grgb', 'tif'))
+        self.cameras.append(Camera('RC', 'grgb', 'tif'))  # mono?
         # TODO get list of images
         # TODO get navigation filename (data will be generic)
 
