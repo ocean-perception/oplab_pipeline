@@ -4,6 +4,19 @@ Copyright (c) 2019, University of Southampton
 All rights reserved.
 """
 
+
+class Pattern:
+    MONO = 'mono'
+    BGGR = 'bggr'
+    RGGB = 'rggb'
+    GRGB = 'grgb'
+   
+
+class Extension:
+    TIF = 'tif'
+    JPG = 'jpg'
+
+    
 class Camera():
     def __init__(self, name, pattern, extension, navigation=None):
         self.name = name
@@ -15,9 +28,9 @@ class Camera():
 class BiocamSystem():
     def __init__(self, path, mission):
         self.cameras = []
-        self.cameras.append(Camera('cam61003146', 'bggr', 'tif'))
-        self.cameras.append(Camera('cam61004444', 'mono', 'tif'))
-        self.cameras.append(Camera('cam61004444_laser', 'mono', 'jpg'))
+        self.cameras.append(Camera('cam61003146', Pattern.BGGR, Extension.TIF))
+        self.cameras.append(Camera('cam61004444', Pattern.MONO, Extension.TIF))
+        self.cameras.append(Camera('cam61004444_laser', Pattern.MONO, Extension.JPG))
         # TODO get list of images
         # TODO get navigation filename (data will be generic)
 
@@ -25,9 +38,9 @@ class BiocamSystem():
 class Sx3System():
     def __init__(self, path, mission):
         self.cameras = []
-        self.cameras.append(Camera('Cam51707923', 'rggb', 'tif'))
-        self.cameras.append(Camera('Cam51707925', 'rggb', 'tif'))
-        self.cameras.append(Camera('LM165', 'mono', 'tif'))
+        self.cameras.append(Camera('Cam51707923', Pattern.RGGB, Extension.TIF))
+        self.cameras.append(Camera('Cam51707925', Pattern.RGGB, Extension.TIF))
+        self.cameras.append(Camera('LM165', Pattern.MONO, 'tif'))
         # TODO get list of images
         # TODO get navigation filename (data will be generic)
 
@@ -35,8 +48,8 @@ class Sx3System():
 class AcfrSystem():
     def __init__(self, path, mission):
         self.cameras = []
-        self.cameras.append(Camera('LC', 'grgb', 'tif'))
-        self.cameras.append(Camera('RC', 'grgb', 'tif'))  # mono?
+        self.cameras.append(Camera('LC', Pattern.GRGB, Extension.TIF))
+        self.cameras.append(Camera('RC', Pattern.GRGB, Extension.TIF))  # mono?
         # TODO get list of images
         # TODO get navigation filename (data will be generic)
 
