@@ -4,40 +4,39 @@ Copyright (c) 2019, University of Southampton
 All rights reserved.
 """
 
-class DefaultSystem():
-    def __init__(self):
-        self.extension = None
-        self.pattern = None
+class Camera():
+    def __init__(self, name, pattern, extension, navigation=None):
+        self.name = name
+        self.extension = pattern
+        self.pattern = extension
+        self.navigation = navigation
 
 
-class BiocamSystem(DefaultSystem):
+class BiocamSystem():
     def __init__(self, path, mission):
-        super().__init__()
-        self.num_cameras = 2
-        self.pattern = 'bggr'
-        self.extension = 'tif'
-        self.navigation = ['']*self.num_cameras
+        self.cameras = []
+        self.cameras.append(Camera('cam61003146', 'bggr', 'tif'))
+        self.cameras.append(Camera('cam61004444', 'bggr', 'tif'))
+        self.cameras.append(Camera('cam61004444_laser', 'bggr', 'jpg'))
         # TODO get list of images
         # TODO get navigation filename (data will be generic)
 
 
-class Sx3System(DefaultSystem):
+class Sx3System():
     def __init__(self, path, mission):
-        super().__init__()
-        self.num_cameras = 3
-        self.pattern = 'rggb'
-        self.extension = 'tif'
-        self.navigation = ['']*self.num_cameras
+        self.cameras = []
+        self.cameras.append(Camera('Cam51707923', 'rggb', 'tif'))
+        self.cameras.append(Camera('Cam51707925', 'rggb', 'tif'))
+        self.cameras.append(Camera('LM165', 'rggb', 'tif'))
         # TODO get list of images
         # TODO get navigation filename (data will be generic)
 
 
-class AcfrSystem(DefaultSystem):
+class AcfrSystem():
     def __init__(self, path, mission):
-        super().__init__()
-        self.num_cameras = 2
-        self.pattern = 'grgb'
-        self.extension = 'tif'
+        self.cameras = []
+        self.cameras.append(Camera('LC', 'grgb', 'tif'))
+        self.cameras.append(Camera('RC', 'grgb', 'tif'))
         # TODO get list of images
         # TODO get navigation filename (data will be generic)
 
