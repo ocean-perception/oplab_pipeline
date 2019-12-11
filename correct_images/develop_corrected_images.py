@@ -325,7 +325,7 @@ def develop_corrected_image(path, force):
             params_folder = 'attenuation_correction/params_' + camera
             params_dir_path = path_processed / img_path
             params_dir_path = params_dir_path / params_folder
-            bayer_folder = 'bayer' + camera
+            bayer_folder = 'bayer_' + camera
             bayer_path = params_dir_path.parents[0] / bayer_folder
 
             # load bayer files paths from filelist.csv
@@ -527,7 +527,7 @@ def develop_corrected_image(path, force):
             # read image path from mission.yaml
             img_path = mission.image.cameras_0.get('path')
 
-            if not Path(img_path).exists():
+            if not Path(path_processed / img_path).exists():
                 Console.warn('Image path does not exist for camera', camera)
                 continue
 
@@ -535,7 +535,7 @@ def develop_corrected_image(path, force):
             params_folder = 'attenuation_correction/params_' + camera
             params_dir_path = path_processed / img_path
             params_dir_path = params_dir_path / params_folder
-            bayer_folder = 'bayer' + camera
+            bayer_folder = 'bayer_' + camera
             bayer_path = params_dir_path.parents[0] / bayer_folder
 
             # load filelist
@@ -594,7 +594,7 @@ def develop_corrected_image(path, force):
             # dst_dir_path = None # load_data.get('dst_dir_path', None)
             dst_img_format = config_.output.dst_file_format  # load_data.get('dst_img_format', 'png')
             median_filter_kernel_size = config_.attenuation_correction.median_filter_kernel_size  # load_data.get('median_filter_kernel_size', 1)
-            debayer_option = config_.normalization.debayer_option  # load_data.get('debayer_option', 'linear')
+            debayer_option = config_.output.debayer_option  # load_data.get('debayer_option', 'linear')
 
             # load .npy files
             pdp = str(params_dir_path)
@@ -627,11 +627,14 @@ def develop_corrected_image(path, force):
 
             # identify debayer params for opencv
             if debayer_option == 'linear':
-                code = cv2.COLOR_BAYER_GR2BGR
+                code = cv2.COLOR_BAYER_RG2BGR
+                # code = cv2.COLOR_BAYER_GR2BGR
             elif debayer_option == 'ea':
-                code = cv2.COLOR_BAYER_GR2BGR_EA
+                code = cv2.COLOR_BAYER_RG2BGR_EA
+                # code = cv2.COLOR_BAYER_GR2BGR_EA
             elif debayer_option == 'vng':
-                code = cv2.COLOR_BAYER_GR2BGR_VNG
+                code = cv2.COLOR_BAYER_RG2BGR_VNG
+                # code = cv2.COLOR_BAYER_GR2BGR_VNG
 
             # calculate distortion correction paramters
             map_x = None
