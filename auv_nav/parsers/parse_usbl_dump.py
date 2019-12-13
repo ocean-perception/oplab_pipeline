@@ -46,7 +46,7 @@ def parse_usbl_dump(mission, vehicle, category, ftype, outpath, fileoutname):
     # timeoffset = -timezone_offset*60*60 + timeoffset
 
     # extract data from files
-    Console.info('...... parsing usbl dump')
+    Console.info('... parsing usbl dump')
     data_list = []
     if ftype == 'acfr':
         data_list = ''
