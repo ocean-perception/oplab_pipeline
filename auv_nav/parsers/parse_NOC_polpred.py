@@ -40,7 +40,7 @@ def parse_NOC_polpred(mission,
 
         data_list = []
 
-        Console.info('...... parsing NOC tide data')
+        Console.info('... parsing NOC tide data')
         # Data format sample
         #  Date      Time      Level     Speed    Direc'n
         #                         m        m/s       deg
