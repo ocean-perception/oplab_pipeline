@@ -3,7 +3,6 @@ import sys
 from auv_nav.tools.folder_structure import get_config_folder
 from auv_nav.tools.folder_structure import get_raw_folder
 from auv_nav.tools.console import Console
-from auv_nav.parsers.vehicle import Vehicle
 # Workaround to dump OrderedDict into YAML files
 from collections import OrderedDict
 
@@ -87,6 +86,19 @@ class ImageEntry:
         self._empty = False
         self.format = node['format']
         self.timezone = node['timezone']
+        # read in timezone
+        if isinstance(self.timezone, str):
+            if self.timezone == 'utc' or self.timezone == 'UTC':
+                self.timezone = 0
+            elif self.timezone == 'jst' or self.timezone == 'JST':
+                self.timezone = 9
+            else:
+                try:
+                    self.timezone = float(self.timezone)
+                except ValueError:
+                    print('Error: timezone', self.timezone,
+                          'in mission.yaml not recognised, please enter value from UTC in hours')
+
         self.timeoffset = node['timeoffset']
         if version == 1:
             for camera in node['cameras']:
@@ -202,7 +214,8 @@ class Mission:
         try:
             # Check that mission.yaml and vehicle.yaml are consistent
             vehicle_file = filename.parent / 'vehicle.yaml'
-            self._vehicle = Vehicle(vehicle_file)
+            vehicle_stream = vehicle_file.open('r')
+            vehicle_data = yaml.safe_load(vehicle_stream)
 
             with filename.open('r') as stream:
                 data = yaml.safe_load(stream)
@@ -213,7 +226,7 @@ class Mission:
                     self.velocity.load(data['velocity'])
                     if 'origin' not in data['velocity']:
                         self.velocity.origin = 'dvl'
-                    if self.velocity.origin in self._vehicle.data:
+                    if self.velocity.origin in vehicle_data:
                         Console.info('Using velocity sensor mounted at ' + self.velocity.origin)
                     else:
                         Console.warn('The velocity sensor mounted at ' + self.velocity.origin + ' does not correspond to any frame in vehicle.yaml.')
@@ -222,7 +235,7 @@ class Mission:
                     self.orientation.load(data['orientation'])
                     if 'origin' not in data['orientation']:
                         self.orientation.origin = 'ins'
-                    if self.orientation.origin in self._vehicle.data:
+                    if self.orientation.origin in vehicle_data:
                         Console.info('Using orientation sensor mounted at ' + self.orientation.origin)
                     else:
                         Console.warn('The orientation sensor mounted at ' + self.orientation.origin + ' does not correspond to any frame in vehicle.yaml.')
@@ -231,7 +244,7 @@ class Mission:
                     self.depth.load(data['depth'])
                     if 'origin' not in data['depth']:
                         self.depth.origin = 'depth'
-                    if self.depth.origin in self._vehicle.data:
+                    if self.depth.origin in vehicle_data:
                         Console.info('Using depth sensor mounted at ' + self.depth.origin)
                     else:
                         Console.warn('The depth sensor mounted at ' + self.depth.origin + ' does not correspond to any frame in vehicle.yaml.')
@@ -240,7 +253,7 @@ class Mission:
                     self.altitude.load(data['altitude'])
                     if 'origin' not in data['altitude']:
                         self.altitude.origin = 'dvl'
-                    if self.altitude.origin in self._vehicle.data:
+                    if self.altitude.origin in vehicle_data:
                         Console.info('Using altitude sensor mounted at ' + self.altitude.origin)
                     else:
                         Console.warn('The altitude sensor mounted at ' + self.altitude.origin + ' does not correspond to any frame in vehicle.yaml.')
@@ -249,7 +262,7 @@ class Mission:
                     self.usbl.load(data['usbl'])
                     if 'origin' not in data['usbl']:
                         self.usbl.origin = 'usbl'
-                    if self.usbl.origin in self._vehicle.data:
+                    if self.usbl.origin in vehicle_data:
                         Console.info('Using usbl sensor mounted at ' + self.usbl.origin)
                     else:
                         Console.warn('The usbl sensor mounted at ' + self.usbl.origin + ' does not correspond to any frame in vehicle.yaml.')
