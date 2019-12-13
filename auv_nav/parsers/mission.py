@@ -22,9 +22,10 @@ def represent_ordereddict(dumper, data):
 yaml.add_representer(OrderedDict, represent_ordereddict)
 
 
-def warn_and_exit():
-    Console.warn('If you specified a origin frame, check that they match. Otherwise, stick to default frame names:')
-    Console.warn('dvl ins depth usbl camera1 camera2 camera3')
+def error_and_exit():
+    Console.error('If you specified a origin frame, check that they match. Otherwise, stick to default frame names:')
+    Console.error('sensors: dvl ins depth usbl')
+    Console.error('cameras: use the same name in mission.yaml and in vehicle.yaml')
     Console.quit('Inconsistency between mission.yaml and vehicle.yaml')
 
 
@@ -96,17 +97,17 @@ class ImageEntry:
                 try:
                     self.timezone = float(self.timezone)
                 except ValueError:
-                    print('Error: timezone', self.timezone,
-                          'in mission.yaml not recognised, please enter value from UTC in hours')
+                    Console.quit('Error: timezone', self.timezone, 
+                        'in mission.yaml not recognised, please enter value from UTC in hours')
 
         self.timeoffset = node['timeoffset']
         if version == 1:
             for camera in node['cameras']:
                 self.cameras.append(CameraEntry(camera))
             if 'origin' not in node['cameras'][0]:
-                Console.warn('Assuming that the camera order in mission.yaml corresponds to the order in vehicle.yaml')
+                # Assuming that the camera names in mission.yaml corresponds to the frame names in vehicle.yaml
                 for i, camera in enumerate(self.cameras):
-                    camera.origin = 'camera' + str(i + 1)
+                    camera.origin = camera.name
         else:
             self.cameras.append(CameraEntry())
             self.cameras.append(CameraEntry())
@@ -226,53 +227,54 @@ class Mission:
                     self.velocity.load(data['velocity'])
                     if 'origin' not in data['velocity']:
                         self.velocity.origin = 'dvl'
-                    if self.velocity.origin in vehicle_data:
-                        Console.info('Using velocity sensor mounted at ' + self.velocity.origin)
-                    else:
-                        Console.warn('The velocity sensor mounted at ' + self.velocity.origin + ' does not correspond to any frame in vehicle.yaml.')
-                        warn_and_exit()
+                    if self.velocity.origin not in vehicle_data:
+                        Console.error('The velocity sensor mounted at ' + self.velocity.origin +
+                                      ' does not correspond to any frame in vehicle.yaml.')
+                        error_and_exit()
                 if 'orientation' in data:
                     self.orientation.load(data['orientation'])
                     if 'origin' not in data['orientation']:
                         self.orientation.origin = 'ins'
-                    if self.orientation.origin in vehicle_data:
-                        Console.info('Using orientation sensor mounted at ' + self.orientation.origin)
-                    else:
-                        Console.warn('The orientation sensor mounted at ' + self.orientation.origin + ' does not correspond to any frame in vehicle.yaml.')
-                        warn_and_exit()
+                    if self.orientation.origin not in vehicle_data:
+                        Console.error('The orientation sensor mounted at ' + self.orientation.origin +
+                                      ' does not correspond to any frame in vehicle.yaml.')
+                        error_and_exit()
                 if 'depth' in data:
                     self.depth.load(data['depth'])
                     if 'origin' not in data['depth']:
                         self.depth.origin = 'depth'
-                    if self.depth.origin in vehicle_data:
-                        Console.info('Using depth sensor mounted at ' + self.depth.origin)
-                    else:
-                        Console.warn('The depth sensor mounted at ' + self.depth.origin + ' does not correspond to any frame in vehicle.yaml.')
-                        warn_and_exit()
+                    if self.depth.origin not in vehicle_data:
+                        Console.error('The depth sensor mounted at ' + self.depth.origin +
+                                      ' does not correspond to any frame in vehicle.yaml.')
+                        error_and_exit()
                 if 'altitude' in data:
                     self.altitude.load(data['altitude'])
                     if 'origin' not in data['altitude']:
                         self.altitude.origin = 'dvl'
-                    if self.altitude.origin in vehicle_data:
-                        Console.info('Using altitude sensor mounted at ' + self.altitude.origin)
-                    else:
-                        Console.warn('The altitude sensor mounted at ' + self.altitude.origin + ' does not correspond to any frame in vehicle.yaml.')
-                        warn_and_exit()
+                    if self.altitude.origin not in vehicle_data:
+                        Console.error('The altitude sensor mounted at ' + self.altitude.origin +
+                                      ' does not correspond to any frame in vehicle.yaml.')
+                        error_and_exit()
                 if 'usbl' in data:
                     self.usbl.load(data['usbl'])
                     if 'origin' not in data['usbl']:
                         self.usbl.origin = 'usbl'
-                    if self.usbl.origin in vehicle_data:
-                        Console.info('Using usbl sensor mounted at ' + self.usbl.origin)
-                    else:
-                        Console.warn('The usbl sensor mounted at ' + self.usbl.origin + ' does not correspond to any frame in vehicle.yaml.')
-                        warn_and_exit()
+                    if self.usbl.origin not in vehicle_data:
+                        Console.error('The usbl sensor mounted at ' + self.usbl.origin +
+                                      ' does not correspond to any frame in vehicle.yaml.')
+                        error_and_exit()
 
                 if 'tide' in data:
                     self.tide.load(data['tide'])
 
                 if 'image' in data:
                     self.image.load(data['image'], self.version)
+                    for camera in self.image.cameras:
+                        if camera.origin not in vehicle_data:
+                            Console.error('The camera mounted at ' + camera.origin +
+                                        ' does not correspond to any frame in vehicle.yaml.')
+                            error_and_exit()
+                    
         except FileNotFoundError:
             Console.error('The file mission.yaml could not be found at the location:')
             Console.error(filename)

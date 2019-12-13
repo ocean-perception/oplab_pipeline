@@ -112,12 +112,33 @@ class Vehicle:
                     self.usbl.load(self.data['usbl'])
                 if len(mission.image.cameras) > 0:
                     camera_name = mission.image.cameras[0].name
+                    if camera_name not in self.data:
+                        Console.error(
+                            'Could not find the position of the camera with name: ', camera_name)
+                        Console.error('Please make sure that the name used in mission.yaml and \
+                            the frame name used in vehicle.yaml are the same.')
+                        Console.quit(
+                            'Your vehicle.yaml or your mission.yaml are malformed.')
                     self.camera1.load(self.data[camera_name])
                 if len(mission.image.cameras) > 1:
                     camera_name = mission.image.cameras[1].name
+                    if camera_name not in self.data:
+                        Console.error(
+                            'Could not find the position of the camera with name: ', camera_name)
+                        Console.error('Please make sure that the name used in mission.yaml and \
+                            the frame name used in vehicle.yaml are the same.')
+                        Console.quit(
+                            'Your vehicle.yaml or your mission.yaml are malformed.')
                     self.camera2.load(self.data[camera_name])
                 if len(mission.image.cameras) > 2:
                     camera_name = mission.image.cameras[2].name
+                    if camera_name not in self.data:
+                        Console.error(
+                            'Could not find the position of the camera with name: ', camera_name)
+                        Console.error('Please make sure that the name used in mission.yaml and \
+                            the frame name used in vehicle.yaml are the same.')
+                        Console.quit(
+                            'Your vehicle.yaml or your mission.yaml are malformed.')
                     self.camera3.load(self.data[camera_name])
                 if 'chemical' in self.data:
                     self.chemical.load(self.data['chemical'])

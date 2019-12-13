@@ -86,25 +86,25 @@ def parse_autosub(mission,
 
     data_list = []
     if category == Category.VELOCITY:
-        Console.info('...... parsing autosub velocity')
+        Console.info('... parsing autosub velocity')
         for i in range(len(alr_acdp['eTime'])):
             body_velocity.from_autosub(alr_acdp, i)
             data = body_velocity.export(output_format)
             data_list.append(data)
     if category == Category.ORIENTATION:
-        Console.info('...... parsing autosub orientation')
+        Console.info('... parsing autosub orientation')
         for i in range(len(alr_ins['eTime'])):
             orientation.from_autosub(alr_ins, i)
             data = orientation.export(output_format)
             data_list.append(data)
     if category == Category.DEPTH:
-        Console.info('...... parsing autosub depth')
+        Console.info('... parsing autosub depth')
         for i in range(len(alr_dep_ctl['eTime'])):
             depth.from_autosub(alr_dep_ctl, i)
             data = depth.export(output_format)
             data_list.append(data)
     if category == Category.ALTITUDE:
-        Console.info('...... parsing autosub altitude')
+        Console.info('... parsing autosub altitude')
         for i in range(len(alr_acdp_log1['eTime'])):
             altitude.from_autosub(alr_acdp_log1, i)
             data = altitude.export(output_format)
