@@ -277,7 +277,7 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
             camera3_offsets = [vehicle.camera1.surge,
                                vehicle.camera1.sway,
                                vehicle.camera1.heave]
-        elif mission.image.cameras[0].type == 'grayscale':
+        elif mission.image.cameras[1].type == 'grayscale':
             camera3_offsets = [vehicle.camera2.surge,
                                vehicle.camera2.sway,
                                vehicle.camera2.heave]
