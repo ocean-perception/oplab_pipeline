@@ -254,23 +254,39 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
     vehicle_file = get_processed_folder(vehicle_file)
     vehicle = Vehicle(vehicle_file)
 
+    Console.info('Loading mission.yaml')
+    mission_file = filepath / 'mission.yaml'
+    mission_file = get_processed_folder(mission_file)
+    mission = Mission(mission_file)
+
     camera1_offsets = [vehicle.camera1.surge,
                        vehicle.camera1.sway,
                        vehicle.camera1.heave]
     camera2_offsets = [vehicle.camera2.surge,
                        vehicle.camera2.sway,
                        vehicle.camera2.heave]
+    
+    # For BioCam, camera 3 is grayscale camera recording laser
+    # For SeaXerocks, camera 3 is a separate camera
     camera3_offsets = [vehicle.camera3.surge,
                        vehicle.camera3.sway,
                        vehicle.camera3.heave]
+
+    if mission.image.format == 'biocam':
+        if mission.image.cameras[0].type == 'grayscale':
+            camera3_offsets = [vehicle.camera1.surge,
+                               vehicle.camera1.sway,
+                               vehicle.camera1.heave]
+        elif mission.image.cameras[0].type == 'grayscale':
+            camera3_offsets = [vehicle.camera2.surge,
+                               vehicle.camera2.sway,
+                               vehicle.camera2.heave]
+        else:
+            Console.quit('BioCam format is expected to have a grayscale camera.')
+
     chemical_offset = [vehicle.chemical.surge,
                        vehicle.chemical.sway,
                        vehicle.chemical.heave]
-
-    Console.info('Loading mission.yaml')
-    mission_file = filepath / 'mission.yaml'
-    mission_file = get_processed_folder(mission_file)
-    mission = Mission(mission_file)
 
     outpath = filepath / 'nav'
 
