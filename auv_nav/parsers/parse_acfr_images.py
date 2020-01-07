@@ -57,7 +57,7 @@ def parse_acfr_images(mission,
     # convert to seconds from utc
     # timeoffset = -timezone_offset*60*60 + timeoffset
 
-    Console.info('Parsing ' + sensor_string + ' images')
+    Console.info('... parsing ' + sensor_string + ' images')
 
     # determine file paths
 
