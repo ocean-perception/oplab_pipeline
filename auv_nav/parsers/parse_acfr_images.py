@@ -72,13 +72,13 @@ def parse_acfr_images(mission,
             timezone_offset = 0
         elif timezone == 'jst' or timezone == 'JST':
             timezone_offset = 9
-        else:
-            try:
-                timezone_offset = float(timezone)
-            except ValueError:
-                print('Error: timezone', timezone,
-                      'in mission.cfg not recognised, please enter value from UTC in hours')
-                return
+    else:
+        try:
+            timezone_offset = float(timezone)
+        except ValueError:
+            print('Error: timezone', timezone,
+                  'in mission.cfg not recognised, please enter value from UTC in hours')
+            return
 
     # convert to seconds from utc
     # timeoffset = -timezone_offset*60*60 + timeoffset
