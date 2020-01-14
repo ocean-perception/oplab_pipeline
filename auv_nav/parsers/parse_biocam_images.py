@@ -29,60 +29,60 @@ tolerance = 0.05  # 0.01 # stereo pair must be within 10ms of each other
 
 def time_from_string(date_string, time_string, ms_time_string,
                      timezone_offset, timeoffset):
-            # read in date
-            yyyy = int(date_string[0:4])
-            mm = int(date_string[4:6])
-            dd = int(date_string[6:8])
+    # read in date
+    yyyy = int(date_string[0:4])
+    mm = int(date_string[4:6])
+    dd = int(date_string[6:8])
 
-            # read in time
-            hour = int(time_string[0:2])
-            mins = int(time_string[2:4])
-            secs = int(time_string[4:6])
-            if len(ms_time_string) == 6:
-                usec = int(ms_time_string[0:6])
-            elif len(ms_time_string) == 3:
-                usec = int(ms_time_string[0:3])*1000
+    # read in time
+    hour = int(time_string[0:2])
+    mins = int(time_string[2:4])
+    secs = int(time_string[4:6])
+    if len(ms_time_string) == 6:
+        usec = int(ms_time_string[0:6])
+    elif len(ms_time_string) == 3:
+        usec = int(ms_time_string[0:3])*1000
 
-            if yyyy < 2000:
-                return 0
-            epoch_time = date_time_to_epoch(
-                yyyy, mm, dd, hour, mins, secs, timezone_offset)
-            # dt_obj = datetime(yyyy,mm,dd,hour,mins,secs)
-            # time_tuple = dt_obj.timetuple()
-            # epoch_time = time.mktime(time_tuple)
-            epoch_timestamp = float(epoch_time+usec/1e6+timeoffset)
-            return epoch_timestamp
+    if yyyy < 2000:
+        return 0
+    epoch_time = date_time_to_epoch(
+        yyyy, mm, dd, hour, mins, secs, timezone_offset)
+    # dt_obj = datetime(yyyy,mm,dd,hour,mins,secs)
+    # time_tuple = dt_obj.timetuple()
+    # epoch_time = time.mktime(time_tuple)
+    epoch_timestamp = float(epoch_time+usec/1e6+timeoffset)
+    return epoch_timestamp
 
 
 def biocam_timestamp_from_filename(filename, timezone_offset, timeoffset):
-        filename_split = filename.strip().split('_')
+    filename_split = filename.strip().split('_')
 
-        if len(filename_split) > 4:
-            date_string = filename_split[0]
-            time_string = filename_split[1]
-            ms_time_string = filename_split[2]
-            cam_date_string = filename_split[3]
-            cam_time_string = filename_split[4]
-            cam_ms_time_string = filename_split[5]
-        else:
-            date_string = filename_split[1]
-            time_string = filename_split[2]
-            ms_time_string = filename_split[3]
-            cam_date_string = filename_split[1]
-            cam_time_string = filename_split[2]
-            cam_ms_time_string = filename_split[3]
+    if len(filename_split) > 4:
+        date_string = filename_split[0]
+        time_string = filename_split[1]
+        ms_time_string = filename_split[2]
+        cam_date_string = filename_split[3]
+        cam_time_string = filename_split[4]
+        cam_ms_time_string = filename_split[5]
+    else:
+        date_string = filename_split[1]
+        time_string = filename_split[2]
+        ms_time_string = filename_split[3]
+        cam_date_string = filename_split[1]
+        cam_time_string = filename_split[2]
+        cam_ms_time_string = filename_split[3]
 
-        epoch_timestamp = time_from_string(date_string,
-                                           time_string,
-                                           ms_time_string,
+    epoch_timestamp = time_from_string(date_string,
+                                       time_string,
+                                       ms_time_string,
+                                       timezone_offset,
+                                       timeoffset)
+    cam_epoch_timestamp = time_from_string(cam_date_string,
+                                           cam_time_string,
+                                           cam_ms_time_string,
                                            timezone_offset,
                                            timeoffset)
-        cam_epoch_timestamp = time_from_string(cam_date_string,
-                                               cam_time_string,
-                                               cam_ms_time_string,
-                                               timezone_offset,
-                                               timeoffset)
-        return epoch_timestamp, cam_epoch_timestamp
+    return epoch_timestamp, cam_epoch_timestamp
 
 
 def parse_biocam_images(mission,
