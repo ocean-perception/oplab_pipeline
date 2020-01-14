@@ -31,11 +31,11 @@ def collect_image_files(image_dirs, file_pattern):
 
 
 def check_pattern(config):
-    if config["pattern"] == 'Circles':
+    if config["pattern"] == 'Circles' or config["pattern"] == 'circles':
         pattern = Patterns.Circles
-    elif config["pattern"] == 'ACircles':
+    elif config["pattern"] == 'ACircles' or config["pattern"] == 'acircles':
         pattern = Patterns.ACircles
-    elif config["pattern"] == 'Chessboard':
+    elif config["pattern"] == 'Chessboard' or config["pattern"] == 'chessboard':
         pattern = Patterns.Chessboard
     else:
         Console.quit('The available patterns are: Circles, Chessboard or ACircles. Please check you did not misspell the pattern type.')
