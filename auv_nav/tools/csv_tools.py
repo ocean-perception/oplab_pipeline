@@ -213,10 +213,14 @@ def camera_csv(camera_list, camera_name, csv_filepath, csv_flag):
                     imagenumber = camera_list[i].filename[-11:-4]
                     if imagenumber.isdigit():
                         image_filename = imagenumber
-                    else:
+                    elif len(camera_list[i].filename.split('/')) > 1:
                         p = Path(camera_list[i].filename)
+                        print(str(camera_list[i].filename))
+                        print(str(p.parents))
                         p = p.relative_to(p.parents[2])
                         image_filename = str(p)
+                    else:
+                        image_filename = camera_list[i].filename
                     str_to_write += (
                         str(image_filename) + ','
                         + str(camera_list[i].northings) + ','
@@ -239,7 +243,7 @@ def camera_csv(camera_list, camera_name, csv_filepath, csv_flag):
                             str_to_write += ',' + str(c)
                     str_to_write += '\n'
                 except IndexError:
-                    break
+                    Console.quit('There is something wrong with camera filenames and indexing. Check camera_csv function.')
             with file.open('w') as fileout:
                 fileout.write(str_to_write)
         else:

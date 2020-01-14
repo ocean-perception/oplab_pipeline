@@ -124,7 +124,7 @@ class MonoCamera:
         if filename is not None:
             filename = Path(filename)
             stream = filename.open('r')
-            d = yaml.safe_load(stream)
+            d=yaml.load(stream, Loader=yaml.Loader)
             self.from_node(d)
 
     def from_node(self, node):
@@ -133,8 +133,9 @@ class MonoCamera:
         self.image_height = node['image_height']
         self.K = cv2np(node['camera_matrix'])
         self.d = cv2np(node['distortion_coefficients'])
-        self.R = cv2np(node['rectification_matrix'])
-        self.P = cv2np(node['projection_matrix'])
+        #following parameters not present in given camera paramter file
+        #self.R = cv2np(node['rectification_matrix'])
+        #self.P = cv2np(node['projection_matrix'])
 
     def to_str(self):
         msg = (""
