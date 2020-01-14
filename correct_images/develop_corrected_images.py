@@ -22,6 +22,12 @@ from correct_images.read_mission import read_params
 from correct_images.utilities import *
 from colour_demosaicing import demosaicing_CFA_Bayer_bilinear
 
+def opencv_matrix(loader, node):
+    mapping = loader.construct_mapping(node, deep=True)
+    mat = np.array(mapping["data"])
+    mat.resize(mapping["rows"], mapping["cols"])
+    return mapping
+yaml.add_constructor(u"tag:yaml.org,2002:opencv-matrix", opencv_matrix)
 
 def develop_corrected_image(path, force):
     '''
@@ -511,7 +517,7 @@ def develop_corrected_image(path, force):
             Console.info('#### ------ Process completed ------ #####')
 
             # remove the bayer folder containing npy files
-            shutil.rmtree(bayer_path)
+            #shutil.rmtree(bayer_path)
 
     if camera_format == 'acfr_standard' or camera_format == 'unnagi':
 
@@ -644,14 +650,15 @@ def develop_corrected_image(path, force):
                     Console.quit(
                         'Camera parameters path not provided with distortion correction flag set to True')
                 else:
-                    camera_calib_name = '/mono_' + camera + '.yaml'
-                    camera_parameter_file_path = camera_parameter_file_path + camera_calib_name
+                    #camera_calib_name = '/mono_' + camera + '.yaml'
+                    #print(camera_parameter_file_path)
+                    #camera_parameter_file_path = str(camera_parameter_file_path) + str(camera_calib_name)
                     camera_params_path = Path(
                         camera_parameter_file_path).resolve()
 
                     if not Path(camera_params_path).exists():
                         Console.quit(
-                            'Path to camera parameters does not exist')
+                            'Path to camera parameters does not exist - '+str(camera_params_path))
                     else:
                         map_x, map_y = calc_distortion_mapping(
                             camera_params_path, b, a)
@@ -729,7 +736,7 @@ def develop_corrected_image(path, force):
             Console.info('#### ------ Process completed ------ #####')
 
             # remove the bayer folder containing npy files
-            shutil.rmtree(bayer_path)
+            #shutil.rmtree(bayer_path)
 
 
 def process_img(apply_attenuation_correction, apply_distortion_correction,
