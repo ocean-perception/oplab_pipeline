@@ -37,6 +37,8 @@ import math
 import numpy.linalg
 from distutils.version import LooseVersion
 from auv_nav.parsers.parse_biocam_images import biocam_timestamp_from_filename
+from auv_nav.parsers.parse_acfr_images import acfr_timestamp_from_filename
+from auv_nav.tools.console import Console
 from pathlib import Path
 import numpy as np
 import json
@@ -755,14 +757,23 @@ class MonoCalibrator(Calibrator):
 
 
 def find_common_filenames(list1, list2):
-    lf = [Path(d['file']).stem[5:] for d in list1]
-    rf = [Path(d['file']).stem[5:] for d in list2]
-
     result = []
 
-    camera_format = 'seaxerocks3'
-    if len(lf[0]) > 26:
-        camera_format = 'biocam'
+    lf = [Path(d['file']).stem for d in list1]
+    rf = [Path(d['file']).stem for d in list2]
+    
+    if lf[0][23:25] == 'LC' or lf[0][23:25] == 'RC' or lf[0][23:25] == 'FC' or lf[0][23:25] == 'AC':
+        camera_format = 'acfr'
+    else:
+        lf = [Path(d['file']).stem[5:] for d in list1]
+        rf = [Path(d['file']).stem[5:] for d in list2]
+        camera_format = 'seaxerocks3'
+        if len(lf[0]) > 26:
+            camera_format = 'biocam'
+
+    # PR_20180619_120723_115_RC16.tif
+    # if lf[23:25] == 'LC' or lf[23:25] == 'RC' or lf[23:25] == 'FC' or lf[23:25] == 'AC':
+    #     camera_format = 'acfr'
 
     if camera_format == 'seaxerocks3':
         for i, lname in enumerate(lf):
@@ -794,6 +805,27 @@ def find_common_filenames(list1, list2):
             (sync_difference, sync_pair) = min((v, k) for k, v in enumerate(values))
             if sync_difference < tolerance:
                 #print(lf[i] + ' syncs with ' + rf[sync_pair] + ' with dif ' + str(sync_difference))
+                result.append((list1[i], list2[sync_pair]))
+    elif camera_format == 'acfr':
+        stamp_cam1 = []
+        stamp_cam2 = []
+        for i in range(len(lf)):
+            tc1 = acfr_timestamp_from_filename(lf[i], 0, 0)
+            stamp_cam1.append(float(tc1))
+        for i in range(len(rf)):
+            tc1 = acfr_timestamp_from_filename(rf[i], 0, 0)
+            stamp_cam2.append(float(tc1))
+
+        tolerance = 0.05  # stereo pair must be within 50ms of each other
+
+        for i in range(len(lf)):
+            values = []
+            for j in range(len(rf)):
+                values.append(abs(stamp_cam1[i]-stamp_cam2[j]))
+
+            (sync_difference, sync_pair) = min((v, k) for k, v in enumerate(values))
+            if sync_difference < tolerance:
+                # print(lf[i] + ' syncs with ' + rf[sync_pair] + ' with dif ' + str(sync_difference))
                 result.append((list1[i], list2[sync_pair]))
     else:
         print('\n\n\n[ERROR]: Stereo format not known, calibration will not work\n\n\n')
@@ -932,7 +964,11 @@ class StereoCalibrator(Calibrator):
         self.T = numpy.zeros((3, 1), dtype=numpy.float64)
         self.R = numpy.eye(3, dtype=numpy.float64)
 
-        print("Calibrating stereo with " + str(len(self.good_corners)) + " image pairs...")
+        print("Calibrating stereo with " + \
+              str(len(self.good_corners)) + " image pairs...")
+        if len(self.good_corners) < 8:
+            Console.quit('Too few stereo calibration images!')
+            
         self.num_images = len(self.good_corners)
         self.avg_reprojection_error, self.l.intrinsics, self.l.distortion,  self.r.intrinsics, self.r.distortion,  self.R, self.T, self.E, self.F = cv2.stereoCalibrate(
             opts, lipts, ripts,
