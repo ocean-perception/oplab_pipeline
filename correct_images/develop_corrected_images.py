@@ -31,7 +31,6 @@ yaml.add_constructor(u"tag:yaml.org,2002:opencv-matrix", opencv_matrix)
 
 def develop_corrected_image(path, force):
     '''
-
     :param path_mission: Path to 'mission.yaml'.
     :param path_correct: Path to 'correct_images.yaml'
     :return: None. Result image files and configurations are saved as files.
@@ -40,7 +39,7 @@ def develop_corrected_image(path, force):
     path_correct = get_config_folder(path) / "correct_images.yaml"
     if not path_correct.exists():
         Console.warn(
-            'Config File does not exist. Did you parse first this dive?')
+            'Config File does not exist. Did you parse this dive first?')
         Console.quit('run correct_images parse first.')
     path_mission = get_raw_folder(path) / "mission.yaml"
     path_processed = get_processed_folder(path)
@@ -60,14 +59,14 @@ def develop_corrected_image(path, force):
 
     camera_iterations = 2
     for i in range(camera_iterations):
-            if i is 0:
-                camera = config_.config.camera_1
-                if camera_format == 'biocam':
-                    img_p = mission.image.cameras_0.get('path')
-            elif i is 1:
-                camera = config_.config.camera_2
-                if camera_format == 'biocam':
-                    img_p = mission.image.cameras_1.get('path')
+        if i is 0:
+            camera = config_.config.camera_1
+            if camera_format == 'biocam':
+                img_p = mission.image.cameras_0.get('path')
+        elif i is 1:
+            camera = config_.config.camera_2
+            if camera_format == 'biocam':
+                img_p = mission.image.cameras_1.get('path')
 
         if camera_format == 'seaxerocks_3':
             src_file_format = 'raw'
