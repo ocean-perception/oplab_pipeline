@@ -215,8 +215,6 @@ def camera_csv(camera_list, camera_name, csv_filepath, csv_flag):
                         image_filename = imagenumber
                     elif len(camera_list[i].filename.split('/')) > 1:
                         p = Path(camera_list[i].filename)
-                        print(str(camera_list[i].filename))
-                        print(str(p.parents))
                         p = p.relative_to(p.parents[2])
                         image_filename = str(p)
                     else:
