@@ -194,21 +194,31 @@ def camera_csv(camera_list, camera_name, csv_filepath, csv_flag):
 
         Console.info("Writing outputs to {}.csv ...".format(camera_name))
         file = csv_file / '{}.csv'.format(camera_name)
-        str_to_write = ''
-        str_to_write += 'Imagenumber, Northing [m], Easting [m], Depth [m], ' \
-                        'Roll [deg], Pitch [deg], Heading [deg], Altitude '\
-                        '[m], Timestamp, Latitude [deg], Longitude [deg]'\
-                        ', x_velocity, y_velocity, z_velocity'
+        covariance_file = csv_file / '{}_cov.csv'.format(camera_name)
+
+        str_to_write = 'Imagenumber, Northing [m], Easting [m], Depth [m], ' \
+                       'Roll [deg], Pitch [deg], Heading [deg], Altitude '\
+                       '[m], Timestamp, Latitude [deg], Longitude [deg]'\
+                       ', x_velocity, y_velocity, z_velocity\n'
+        str_to_write_cov = 'Imagenumber'
+        cov = ['x', 'y', 'z',
+               'roll', 'pitch', 'yaw',
+               'vx', 'vy', 'vz',
+               'vroll', 'vpitch', 'vyaw']
+        for a in cov:
+            for b in cov:
+                str_to_write_cov += ', cov_'+a+'_'+b
+        str_to_write_cov += '\n'
+
         if len(camera_list) > 0:
-            if camera_list[0].covariance is not None:
-                cov = ['x', 'y', 'z',
-                       'roll', 'pitch', 'yaw',
-                       'vx', 'vy', 'vz',
-                       'vroll', 'vpitch', 'vyaw']
-                for a in cov:
-                    for b in cov:
-                        str_to_write += ', cov_'+a+'_'+b
-            str_to_write += '\n'
+            fileout = file.open('w')
+            fileout_cov = covariance_file.open('w')
+
+            # write headers
+            fileout.write(str_to_write)
+            fileout_cov.write(str_to_write_cov)
+
+            # Loop for each line in csv
             for i in range(len(camera_list)):
                 try:
                     imagenumber = camera_list[i].filename[-11:-4]
@@ -220,7 +230,7 @@ def camera_csv(camera_list, camera_name, csv_filepath, csv_flag):
                         image_filename = str(p)
                     else:
                         image_filename = camera_list[i].filename
-                    str_to_write += (
+                    str_to_write = (
                         str(image_filename) + ','
                         + str(camera_list[i].northings) + ','
                         + str(camera_list[i].eastings) + ','
@@ -234,17 +244,18 @@ def camera_csv(camera_list, camera_name, csv_filepath, csv_flag):
                         + str(camera_list[i].longitude) + ','
                         + str(camera_list[i].x_velocity) + ','
                         + str(camera_list[i].y_velocity) + ','
-                        + str(camera_list[i].z_velocity))
+                        + str(camera_list[i].z_velocity)) + '\n'
+                    fileout.write(str_to_write)
                     if camera_list[i].covariance is not None:
                         cov = camera_list[i].covariance.flatten().tolist()
                         cov = [item for sublist in cov for item in sublist]
+                        str_to_write_cov = str(image_filename)
                         for c in cov:
-                            str_to_write += ',' + str(c)
-                    str_to_write += '\n'
+                            str_to_write_cov += ', {:.6f}'.format(c)
+                        str_to_write_cov += '\n'
+                        fileout_cov.write(str_to_write_cov)
                 except IndexError:
                     Console.quit('There is something wrong with camera filenames and indexing. Check camera_csv function.')
-            with file.open('w') as fileout:
-                fileout.write(str_to_write)
         else:
             Console.warn('Empty data list {}'.format(str(camera_name)))
 
