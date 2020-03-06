@@ -59,6 +59,15 @@ def develop_corrected_image(path, force):
 
     camera_iterations = 2
     for i in range(camera_iterations):
+
+        #get source file format based on imaging system
+        if camera_format == 'seaxerocks_3':
+            src_file_format = 'raw'
+        else:
+            src_file_format = 'tif'
+
+
+        #get camera parameter from the configuration file
         if i is 0:
             camera = config_.config.camera_1
             if camera_format == 'biocam':
@@ -68,16 +77,10 @@ def develop_corrected_image(path, force):
             if camera_format == 'biocam':
                 img_p = mission.image.cameras_1.get('path')
 
-        if camera_format == 'seaxerocks_3':
-            src_file_format = 'raw'
-        else:
-            src_file_format = 'tif'
-
+        
         if camera_format == 'acfr_standard' or camera_format == 'unnagi':
-
             # read image path from mission.yaml
             img_path = mission.image.cameras_0.get('path')
-
         elif camera_format == 'seaxerocks_3':
             img_p = mission.image.cameras_0.get('path')
             if camera in img_p:
@@ -102,20 +105,10 @@ def develop_corrected_image(path, force):
             print('img_p', img_p, ', type', type(img_p))
 
             print('Bool camera in img_p', (camera in img_p))
-            if camera in img_p:
-                img_path = img_p
-            else:
+            if not (camera in img_p):
                 img_p = mission.image.cameras_1.get('path')
+            img_path = img_p
 
-                # TODO skip if
-                img_path = img_p
-
-                # if camera in img_p:
-                #     img_path = img_p
-                # else:
-                #     print('Mission yaml file does not have path to camera: ',
-                #           camera)
-                #     continue
 
         print('path to image', Path(path_processed / img_path))
         if not Path(path_processed / img_path).exists():
@@ -146,24 +139,9 @@ def develop_corrected_image(path, force):
         dst_dir_path = params_dir_path.parents[0] / dst_folder
 
 
-         # check if images will be overwritten or written for first time
-        if not dst_dir_path.exists():
-            dst_dir_path.mkdir(parents=True)
-            Console.info(
-                'Code will write images for the first time for camera ',
-                camera)
-        else:
-            if force is True:
-                Console.warn('Processed images already exist for camera ',
-                             camera)
-                Console.warn('Code will overwrite existing images.')
 
-            else:
-                Console.warn('Processed images already exist for camera ',
-                             camera)
-                Console.warn(
-                    'Run correct_images with [process] [-F] option for overwriting existing processed images.')
-                continue
+        # check if images will be overwritten or written for first time        
+        check_image_destination_directory(dst_dir_path, force)
 
         # load config.yaml
         path_config = params_dir_path / 'config.yaml'
@@ -444,12 +422,11 @@ def filter_atn_parm_median(src_atn_param, kernel_size):
 
 
 def calc_distortion_mapping(camera_parameter_file_path, a, b):
+    import pdb; pdb.set_trace()
     mono_cam = MonoCamera(
         camera_parameter_file_path)  # MonoCamera is a Class to read camera parameters: defined in utilities.py
-    cam_mat, _ = cv2.getOptimalNewCameraMatrix(mono_cam.K, mono_cam.d, (a, b),
-                                               0)
-    map_x, map_y = cv2.initUndistortRectifyMap(mono_cam.K, mono_cam.d, None,
-                                               cam_mat, (b, a), 5)
+    cam_mat, _ = cv2.getOptimalNewCameraMatrix(mono_cam.K, mono_cam.d, (a, b),0)
+    map_x, map_y = cv2.initUndistortRectifyMap(mono_cam.K, mono_cam.d, None, cam_mat, (b, a), 5)
     return map_x, map_y
 
 
@@ -481,6 +458,24 @@ def correct_distortion(src_img, map_x, map_y, dst_bit=8):
     dst_img = cv2.remap(src_img, map_x, map_y, cv2.INTER_LINEAR)
     return dst_img
 
+
+def check_image_destination_directory(dst_dir_path, force):
+    if not dst_dir_path.exists():
+        dst_dir_path.mkdir(parents=True)
+        Console.info(
+            'Code will write images for the first time for camera ',
+            camera)
+    else:
+        if force is True:
+            Console.warn('Processed images already exist for camera ',
+                         camera)
+            Console.warn('Code will overwrite existing images.')
+
+        else:
+            Console.warn('Processed images already exist for camera ',
+                         camera)
+            Console.warn(
+                'Run correct_images with [process] [-F] option for overwriting existing processed images.')
 
 def gamma_correct(colour, bitdepth):
     # translated to python by Jenny Walker jw22g14@soton.ac.uk
