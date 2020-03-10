@@ -43,6 +43,16 @@ def parse_data(filepath, force_overwite):
     filepath = Path(filepath).resolve()
     filepath = get_raw_folder(filepath)
 
+    if not force_overwite:
+        existing_files = check_output_files_exist(get_processed_folder(filepath))
+        if existing_files:
+            msg =   'It looks like this dataset has already been parsed.\n' \
+                  + 'The following file(s) already exist:\n' \
+                  + existing_files \
+                  + 'If you would like auv_nav to overwrite existing file, rerun it with the flag -F.\n' \
+                  + 'Example:   auv_nav parse -F PATH'
+            Console.quit(msg)
+
     ftype = 'oplab'
 
     # load mission.yaml config file
@@ -107,16 +117,6 @@ def parse_data(filepath, force_overwite):
     # copy mission.yaml and vehicle.yaml to processed folder for process step
     mission_processed = get_processed_folder(mission_file)
     vehicle_processed = get_processed_folder(vehicle_file)
-
-    # If there is a mission file in the destination folder means
-    # that the dataset has already been processed. So ask the user
-    # whether to overwrite it or not.
-    if mission_processed.exists() and not force_overwite:
-        Console.warn('Looks like this dataset has already been parsed.')
-        Console.warn('The default behaviour of auv_nav is NOT to overwrite an already parsed dataset.')
-        Console.warn('If you would like to force so, rerun auv_nav with the flag -F.')
-        Console.warn('Example:   auv_nav parse -F PATH')
-        Console.quit('auv_nav parse would overwrite mission.yaml in proccessed folder')
 
     # Write mission with metadata (username, date and hostname)
     mission.write(mission_processed)
@@ -370,11 +370,33 @@ def parse_data(filepath, force_overwite):
 
     fileout.close()
 
-
-
     # interlace the data based on timestamps
     Console.info('Interlacing data...')
     parse_interlacer(outpath, filename)
     Console.info('...done interlacing data. Output saved to {}'.format(outpath /filename))
     plot_parse_data(outpath, ftype)
     Console.info('Complete parse data')
+
+
+
+def check_output_files_exist(processed_dataset_folder):
+    """Check if any of the files exist, which `auv_nav parse` writes to disk"""
+    mission_file      = processed_dataset_folder / 'mission.yaml'
+    vehicle_file      = processed_dataset_folder / 'vehicle.yaml'
+    nav_file          = processed_dataset_folder / 'nav' / 'nav_standard.json'
+    data_plot_file    = processed_dataset_folder / 'nav' / 'json_data_info.html'
+    history_plot_file = processed_dataset_folder / 'nav' / 'timestamp_history.html'
+
+    existing_files = ''
+    if mission_file.exists():
+        existing_files += str(mission_file) + '\n'
+    if vehicle_file.exists():
+        existing_files += str(vehicle_file) + '\n'
+    if nav_file.exists():
+        existing_files += str(nav_file) + '\n'
+    if data_plot_file.exists():
+        existing_files += str(data_plot_file) + '\n'
+    if history_plot_file.exists():
+        existing_files += str(history_plot_file) + '\n'
+
+    return existing_files
