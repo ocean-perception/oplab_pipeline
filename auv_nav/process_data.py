@@ -606,15 +606,23 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
     dead_reckoning_centre_list = copy.deepcopy(
         dead_reckoning_dvl_list)  # [:] #.copy()
     for i in range(len(dead_reckoning_centre_list)):
-        [x_offset, y_offset, z_offset] = body_to_inertial(
+        [x_offset, y_offset, a_offset] = body_to_inertial(
             dead_reckoning_centre_list[i].roll,
             dead_reckoning_centre_list[i].pitch,
             dead_reckoning_centre_list[i].yaw,
             vehicle.origin.surge - vehicle.dvl.surge,
             vehicle.origin.sway - vehicle.dvl.sway,
             vehicle.origin.heave - vehicle.dvl.heave)
+        [_, _, z_offset] = body_to_inertial(
+            dead_reckoning_centre_list[i].roll,
+            dead_reckoning_centre_list[i].pitch,
+            dead_reckoning_centre_list[i].yaw,
+            vehicle.origin.surge - vehicle.depth.surge,
+            vehicle.origin.sway - vehicle.depth.sway,
+            vehicle.origin.heave - vehicle.depth.heave)
         dead_reckoning_centre_list[i].northings += x_offset
         dead_reckoning_centre_list[i].eastings += y_offset
+        dead_reckoning_centre_list[i].altitude += a_offset
         dead_reckoning_centre_list[i].depth += z_offset
     # correct for altitude and depth offset too!
 
