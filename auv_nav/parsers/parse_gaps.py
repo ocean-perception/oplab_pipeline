@@ -87,11 +87,11 @@ def parse_gaps(mission,
 
                             # read in time
                             time_string = str(line_split_no_checksum[2])
-                            hour = int(time_string[0:2])
-                            mins = int(time_string[2:4])
-                            secs = int(time_string[4:6])
 
                             try:
+                                hour = int(time_string[0:2])
+                                mins = int(time_string[2:4])
+                                secs = int(time_string[4:6])
                                 msec = int(time_string[7:10])
                             except ValueError as verr:
                                 broken_packet_flag = True
