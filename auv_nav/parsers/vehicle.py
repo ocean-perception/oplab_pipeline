@@ -72,7 +72,6 @@ class Vehicle:
         self.camera1 = SensorOffset()
         self.camera2 = SensorOffset()
         self.camera3 = SensorOffset()
-        self.camera3 = SensorOffset()
         self.chemical = SensorOffset()
 
         if filename is None:
