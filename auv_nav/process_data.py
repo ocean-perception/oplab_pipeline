@@ -394,10 +394,10 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
             print("Warning:", e)
     elif renavpath.is_dir() and not force_overwite:
         # Check if dataset has already been processed
-        Console.warn('Looks like this dataset has already been processed.')
-        Console.warn('The default behaviour of auv_nav is NOT to overwrite an already processed dataset.')
-        Console.warn('If you would like to force so, rerun auv_nav with the flag -F.')
-        Console.warn('Example:   auv_nav process -F PATH')
+        Console.error('It looks like this dataset has already been processed for the specified time span.')
+        Console.error('The following directory already exist: {}'.format(renavpath))
+        Console.error('To overwrite the contents of this directory rerun auv_nav with the flag -F.')
+        Console.error('Example:   auv_nav process -F PATH')
         Console.quit('auv_nav process would overwrite json_renav files')
 
     Console.info("Parsing has found:")

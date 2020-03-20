@@ -1,0 +1,5 @@
+timestamp_file: /media/oplab-source/raw/2018/fk180731/ae2000f/20180803_065749_ae2000f_sx3/image/SeaXerocksData20180803_084007/Xviii/FileTime.csv
+columns: [{'name': 'index', 'content': 'iiiiiii'},
+          {'name': 'date', 'content': 'YYYYMMDD'},
+          {'name': 'time', 'content': 'hhmmss'},
+          {'name': 'ms', 'content': 'fff'}]
