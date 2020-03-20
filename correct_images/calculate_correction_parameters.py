@@ -136,7 +136,7 @@ def calculate_correction_parameters(path, force):
             df_all = pd.read_csv(str(src_filelist_path))
             if src_file_format == "tif" or src_file_format == "tif":
                 df_all = df_all.query(
-                        'Imagenumber.str.contains("'+str(camera_lr)'")', engine="python"
+                        'Imagenumber.str.contains('+str(camera_lr)+')', engine="python"
                     )
 
         else:
@@ -161,7 +161,6 @@ def calculate_correction_parameters(path, force):
                                 "Mission yaml file does not have path to camera: ",
                                 camera,
                             )
-                            continue
             else:
                 img_path = mission.image.cameras_0.get("path")
             auv_nav_filepath = Path(config_.config.auv_nav_path).resolve()
@@ -478,8 +477,6 @@ def calculate_correction_parameters(path, force):
     file_name_memmap_raw, memmap_raw = load_memmap_from_filelist(bayer_filelist)
 
 
-    if format_ == "seaxerocks_3" or format_ =="acfr_standard":
-        # memmap is created at local directory
 
     Console.info(
         "start calculate mean and std of raw img", datetime.datetime.now()
