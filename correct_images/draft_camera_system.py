@@ -20,8 +20,8 @@ class Extension:
 class Camera():
     def __init__(self, name, pattern, extension, navigation=None):
         self.name = name
-        self.extension = pattern
-        self.pattern = extension
+        self.extension = extension
+        self.pattern = pattern
         self.navigation = navigation
 
 
