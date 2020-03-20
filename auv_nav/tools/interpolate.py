@@ -267,12 +267,18 @@ def interpolate_sensor_list(sensor_list,
                 _centre_list[j].epoch_timestamp,
                 _centre_list[j-1].eastings,
                 _centre_list[j].eastings)-y_offset
+            sensor_list[i].altitude = interpolate(
+                sensor_list[i].epoch_timestamp,
+                _centre_list[j-1].epoch_timestamp,
+                _centre_list[j].epoch_timestamp,
+                _centre_list[j-1].altitude,
+                _centre_list[j].altitude) -z_offset
             sensor_list[i].depth = interpolate(
                 sensor_list[i].epoch_timestamp,
                 _centre_list[j-1].epoch_timestamp,
                 _centre_list[j].epoch_timestamp,
                 _centre_list[j-1].depth,
-                _centre_list[j].depth) # -z_offset
+                _centre_list[j].depth) -z_offset
             [sensor_list[i].latitude,
              sensor_list[i].longitude] = metres_to_latlon(
                 latitude_reference,

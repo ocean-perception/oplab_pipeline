@@ -3,8 +3,8 @@ import unittest
 import imageio
 import tempfile
 import numpy as np
-from colour_correct import mean_per_pixel, std_per_pixel_parallel
-from utilities import generate_filelist, get_filenames, get_outpath, validate_filenames
+from correct_images.colour_correct import mean_per_pixel, std_per_pixel_parallel
+from correct_images.utilities import generate_filelist, get_filenames, get_outpath, validate_filenames
 
 # REQUIREMENTS
 # SUPPORT 8 and 16bit

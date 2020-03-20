@@ -394,10 +394,10 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
             print("Warning:", e)
     elif renavpath.is_dir() and not force_overwite:
         # Check if dataset has already been processed
-        Console.warn('Looks like this dataset has already been processed.')
-        Console.warn('The default behaviour of auv_nav is NOT to overwrite an already processed dataset.')
-        Console.warn('If you would like to force so, rerun auv_nav with the flag -F.')
-        Console.warn('Example:   auv_nav process -F PATH')
+        Console.error('It looks like this dataset has already been processed for the specified time span.')
+        Console.error('The following directory already exist: {}'.format(renavpath))
+        Console.error('To overwrite the contents of this directory rerun auv_nav with the flag -F.')
+        Console.error('Example:   auv_nav process -F PATH')
         Console.quit('auv_nav process would overwrite json_renav files')
 
     Console.info("Parsing has found:")
@@ -606,15 +606,23 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
     dead_reckoning_centre_list = copy.deepcopy(
         dead_reckoning_dvl_list)  # [:] #.copy()
     for i in range(len(dead_reckoning_centre_list)):
-        [x_offset, y_offset, z_offset] = body_to_inertial(
+        [x_offset, y_offset, a_offset] = body_to_inertial(
             dead_reckoning_centre_list[i].roll,
             dead_reckoning_centre_list[i].pitch,
             dead_reckoning_centre_list[i].yaw,
             vehicle.origin.surge - vehicle.dvl.surge,
             vehicle.origin.sway - vehicle.dvl.sway,
             vehicle.origin.heave - vehicle.dvl.heave)
+        [_, _, z_offset] = body_to_inertial(
+            dead_reckoning_centre_list[i].roll,
+            dead_reckoning_centre_list[i].pitch,
+            dead_reckoning_centre_list[i].yaw,
+            vehicle.origin.surge - vehicle.depth.surge,
+            vehicle.origin.sway - vehicle.depth.sway,
+            vehicle.origin.heave - vehicle.depth.heave)
         dead_reckoning_centre_list[i].northings += x_offset
         dead_reckoning_centre_list[i].eastings += y_offset
+        dead_reckoning_centre_list[i].altitude += a_offset
         dead_reckoning_centre_list[i].depth += z_offset
     # correct for altitude and depth offset too!
 
