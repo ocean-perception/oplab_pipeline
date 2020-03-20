@@ -5,7 +5,7 @@
 
 
 class Corrector:
-	def __init__(self, camera_system=None, correct_params=None):
+	def __init__(self, path_processed=None, camera_system=None, correct_params=None):
 		if correct_params is not None:
 			self.attenuation_correct = correct_params['apply_attenuation_correction']
 			self.distortion_correct = correct_params['apply_distortion_correction']
@@ -13,8 +13,9 @@ class Corrector:
 			self.camera_parameters_path = correct_params['camera_parameter_file_path']
 			self.target_mean = correct_params['target_mean']
 			self.target_std = correct_params['target_std']
+			self.path_processed = path_processed
 		if camera_system is not None:
-			self.camera_system = camera_system
+			self._system = camera_system._system
 
 
 	def Execute(self):

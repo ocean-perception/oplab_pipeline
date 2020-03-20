@@ -80,7 +80,27 @@ def call_correct(args):
 	path_processed = get_processed(args.path)
 	path_config = get_config(args.path)
 
+	# parse parameters from mission and config files
+	mission = read_mission.read_params(args.path, 'mission')
+	config = read_mission.read_params(args.path, 'correct')
+
 	# instantiate camera system
-	# instantiat corrector
+	camerasystem = CameraSystem(args.path, mission)
+
+	# instantiate corrector
+	corrector = Corrector(path_processed, camerasystem, config)
 
 	# execute corrector
+	corrector.Execute()
+
+
+def get_processed(path):
+	# TODO code for getting the processed path from raw
+	return processed_path
+
+def get_config(path):
+	# TODO code for getting the config path from raw
+	# 1. check if the file already exists
+	# 2. if file does not exist then copy default one and prompt user to update and continue
+	# 3. continue once user prompts file is updated
+	return path_config
