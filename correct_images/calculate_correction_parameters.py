@@ -161,7 +161,6 @@ def calculate_correction_parameters(path, force):
                                 "Mission yaml file does not have path to camera: ",
                                 camera,
                             )
-                            continue
             else:
                 img_path = mission.image.cameras_0.get("path")
             auv_nav_filepath = Path(config_.config.auv_nav_path).resolve()
