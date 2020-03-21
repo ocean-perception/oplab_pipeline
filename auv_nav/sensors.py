@@ -29,41 +29,6 @@ class PhinsHeaders():
     ALTITUDE = 'LOGDVL'
 
 
-class Timestamp():
-    def __init__(self, date, timezone, offset):
-        self.epoch_timestamp_from_zone_offset(date, timezone, offset)
-
-    def epoch_timestamp_from_zone_offset(self, date, timezone, offset):
-        self.year, self.month, self.day = date
-        self.tz_offset = read_timezone(timezone)
-        self.offset = offset
-
-    def get(self, hour, mins, secs, msec):
-        epoch_time = date_time_to_epoch(
-            self.year, self.month, self.day,
-            hour, mins, secs, self.tz_offset)
-        return epoch_time + msec/1000+self.offset
-
-    def epoch_timestamp_from_phins(self, line):
-        epoch_timestamp = None
-        time_string = str(line[2])
-        if len(time_string) == 10:
-            hour = int(time_string[0:2])
-            mins = int(time_string[2:4])
-            try:
-                secs = int(time_string[4:6])
-                # phins sometimes returns 60s...
-                if secs < 60:
-                    msec = int(time_string[7:10])
-                    epoch_timestamp = self.get(hour, mins, secs, msec)
-            except Exception as exc:
-                Console.warn('Badly formatted packet (PHINS TIME): '
-                             + time_string + ' Exception: ' + str(exc))
-        else:
-            Console.warn('Badly formatted packet (PHINS TIME): ' + str(line))
-        return epoch_timestamp
-
-
 class Category():
     POSITION = 'position'
     ORIENTATION = 'orientation'
