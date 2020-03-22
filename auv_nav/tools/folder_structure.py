@@ -2,6 +2,19 @@ from auv_nav.tools.console import Console
 from pathlib import Path
 
 
+def check_exists(p):
+    return Path(p).exists()
+
+
+def valid_dive(p):
+    p = Path(p)
+    a = check_exists(p)
+    if a:
+        b = check_exists(p / "mission.yaml")
+        c = check_exists(p / "vehicle.yaml")
+    return a and b and c
+
+
 def change_subfolder(path, prior, new):
     #path = path.resolve(strict=False)
     index = path.parts.index(prior)

@@ -23,7 +23,7 @@ class DisplayablePath(object):
         return self.path.name
 
     @classmethod
-    def make_tree(cls, root, parent=None, is_last=False, criteria=None, max_depth=None, this_depth=0):
+    def make_tree(cls, root, parent=None, is_last=False, criteria=None, max_depth=100, this_depth=0):
         root = Path(str(root))
         criteria = criteria or cls._default_criteria
 
@@ -51,7 +51,7 @@ class DisplayablePath(object):
             count += 1
 
     @classmethod
-    def show_tree(cls, root=None, max_depth=None):
+    def show_tree(cls, root=None, max_depth=100):
         paths = []
         if root is not None:
             paths = cls.make_tree(root, max_depth=max_depth)

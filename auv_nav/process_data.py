@@ -37,6 +37,7 @@ from auv_nav.tools.folder_structure import get_processed_folder
 from auv_nav.parsers.vehicle import Vehicle
 from auv_nav.parsers.mission import Mission
 from auv_nav.tools.console import Console
+from auv_nav.tools.folder_structure import valid_dive
 
 # Import librarys
 import yaml
@@ -126,6 +127,11 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
     filepath = get_processed_folder(filepath)
     localisation_file = filepath / 'auv_nav.yaml'
     localisation_file = get_config_folder(localisation_file)
+
+    # check that it is a valid dive folder
+    if not valid_dive(filepath):
+        Console.error("The dive folder supplied does not contain any mission or vehicle YAML files. Is the path correct?")
+        Console.quit("Invalid path")
 
     # check if auv_nav.yaml file exist, if not, generate one with default settings
     if localisation_file.exists():
