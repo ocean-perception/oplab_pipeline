@@ -22,6 +22,32 @@ tolerance = 0.05  # 0.01 # stereo pair must be within 10ms of each other
 # http://www.json.org/
 
 
+def acfr_timestamp_from_filename(filename, timezone_offset, timeoffset):
+    filename_split = filename.strip().split('_')
+    date_string = filename_split[1]
+    time_string = filename_split[2]
+    ms_time_string = filename_split[3]
+
+    # read in date
+    yyyy = int(date_string[0:4])
+    mm = int(date_string[4:6])
+    dd = int(date_string[6:8])
+
+    # read in time
+    hour = int(time_string[0:2])
+    mins = int(time_string[2:4])
+    secs = int(time_string[4:6])
+    msec = int(ms_time_string[0:3])
+
+    epoch_time = date_time_to_epoch(
+        yyyy, mm, dd, hour, mins, secs, timezone_offset)
+    # dt_obj = datetime(yyyy,mm,dd,hour,mins,secs)
+    # time_tuple = dt_obj.timetuple()
+    # epoch_time = time.mktime(time_tuple)
+    epoch_timestamp = float(epoch_time+msec/1000+timeoffset)
+    return epoch_timestamp
+
+
 def parse_acfr_images(mission,
                       vehicle,
                       category,
@@ -46,13 +72,13 @@ def parse_acfr_images(mission,
             timezone_offset = 0
         elif timezone == 'jst' or timezone == 'JST':
             timezone_offset = 9
-        else:
-            try:
-                timezone_offset = float(timezone)
-            except ValueError:
-                print('Error: timezone', timezone,
-                      'in mission.cfg not recognised, please enter value from UTC in hours')
-                return
+    else:
+        try:
+            timezone_offset = float(timezone)
+        except ValueError:
+            print('Error: timezone', timezone,
+                  'in mission.cfg not recognised, please enter value from UTC in hours')
+            return
 
     # convert to seconds from utc
     # timeoffset = -timezone_offset*60*60 + timeoffset
@@ -74,59 +100,15 @@ def parse_acfr_images(mission,
         data_list = ''
 
     for i in range(len(camera1_filename)):
-
-        camera1_filename_split = camera1_filename[i].strip().split('_')
-
-        date_string = camera1_filename_split[1]
-        time_string = camera1_filename_split[2]
-        ms_time_string = camera1_filename_split[3]
-
-        # read in date
-        yyyy = int(date_string[0:4])
-        mm = int(date_string[4:6])
-        dd = int(date_string[6:8])
-
-        # read in time
-        hour = int(time_string[0:2])
-        mins = int(time_string[2:4])
-        secs = int(time_string[4:6])
-        msec = int(ms_time_string[0:3])
-
-        epoch_time = date_time_to_epoch(
-            yyyy, mm, dd, hour, mins, secs, timezone_offset)
-        # dt_obj = datetime(yyyy,mm,dd,hour,mins,secs)
-        # time_tuple = dt_obj.timetuple()
-        # epoch_time = time.mktime(time_tuple)
-        epoch_timestamp = float(epoch_time+msec/1000+timeoffset)
-
+        epoch_timestamp = acfr_timestamp_from_filename(camera1_filename[i],
+                                                       timezone_offset,
+                                                       timeoffset)
         epoch_timestamp_camera1.append(str(epoch_timestamp))
 
     for i in range(len(camera2_filename)):
-
-        camera2_filename_split = camera2_filename[i].strip().split('_')
-
-        date_string = camera2_filename_split[1]
-        time_string = camera2_filename_split[2]
-        ms_time_string = camera2_filename_split[3]
-
-        # read in date
-        yyyy = int(date_string[0:4])
-        mm = int(date_string[4:6])
-        dd = int(date_string[6:8])
-
-        # read in time
-        hour = int(time_string[0:2])
-        mins = int(time_string[2:4])
-        secs = int(time_string[4:6])
-        msec = int(ms_time_string[0:3])
-
-        epoch_time = date_time_to_epoch(
-            yyyy, mm, dd, hour, mins, secs, timezone_offset)
-        # dt_obj = datetime(yyyy,mm,dd,hour,mins,secs)
-        # time_tuple = dt_obj.timetuple()
-        # epoch_time = time.mktime(time_tuple)
-        epoch_timestamp = float(epoch_time+msec/1000+timeoffset)
-
+        epoch_timestamp = acfr_timestamp_from_filename(camera2_filename[i],
+                                                       timezone_offset,
+                                                       timeoffset)
         epoch_timestamp_camera2.append(str(epoch_timestamp))
 
     for i in range(len(camera1_filename)):
