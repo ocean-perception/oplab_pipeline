@@ -765,8 +765,10 @@ def find_common_filenames(list1, list2):
     if lf[0][23:25] == 'LC' or lf[0][23:25] == 'RC' or lf[0][23:25] == 'FC' or lf[0][23:25] == 'AC':
         camera_format = 'acfr'
     else:
-        lf = [Path(d['file']).stem[5:] for d in list1]
-        rf = [Path(d['file']).stem[5:] for d in list2]
+        if lf[0][0:5] == 'image':
+            lf = [Path(d['file']).stem[5:] for d in list1]
+        if rf[0][0:5] == 'image':
+            rf = [Path(d['file']).stem[5:] for d in list2]
         camera_format = 'seaxerocks3'
         if len(lf[0]) > 26:
             camera_format = 'biocam'
@@ -779,7 +781,8 @@ def find_common_filenames(list1, list2):
         for i, lname in enumerate(lf):
             for j, rname in enumerate(rf):
                 if lname == rname:
-                    # print(list1[i]['file'], list2[j]['file'])
+                    #print(lname, rname)
+                    #print(list1[i]['file'], list2[j]['file'])
                     result.append((list1[i], list2[j]))
     elif camera_format == 'biocam':
         stamp_pc1 = []
