@@ -616,7 +616,8 @@ class LaserCalibrator():
 
         print('Saving clouds')
         save_cloud(processed_folder / '../points.ply', point_cloud_ned)
-        save_cloud(processed_folder / '../points_b.ply', point_cloud_ned_b)
+        if self.two_lasers:
+            save_cloud(processed_folder / '../points_b.ply', point_cloud_ned_b)
 
         print('Fitting a plane...')
         rs_size = min(len(point_cloud_ned), 10000)
