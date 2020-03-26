@@ -214,6 +214,11 @@ class Calibrator():
             else:
                 Console.info('The camera is not calibrated, running mono calibration...')
             filepaths = build_filepath(self.filepath, c['camera_calibration']['path'])
+
+            if not 'glob_pattern' in c['camera_calibration']:
+                Console.error('Could not find the key glob_pattern for the camera ', c['name'])
+                Console.quit('glob_pattern expected in calibration.yaml')
+
             calibrate_mono(cam_name,
                            filepaths,
                            str(c['camera_calibration']['glob_pattern']),
