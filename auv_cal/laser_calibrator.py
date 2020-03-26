@@ -251,10 +251,11 @@ def thread_detect(left_image_name, left_maps, right_image_name, right_maps, min_
                 i = 0
                 for i in range(len(a1)):
                     points.append([a1[i][0], a1[i][1]])
-                for i in range(len(a1b)):
-                    points_b.append([a1b[i][0], a1b[i][1]])
                 points = np.array(points, dtype=np.float32)
-                points_b = np.array(points_b, dtype=np.float32)
+                if two_lasers:
+                    for i in range(len(a1b)):
+                        points_b.append([a1b[i][0], a1b[i][1]])
+                    points_b = np.array(points_b, dtype=np.float32)
             else:
                 points, points_b = write_file(filename, image_name, maps, min_greenness_value, k, min_area, num_columns, start_row, end_row, start_row_b, end_row_b, two_lasers)
         else:
@@ -368,14 +369,12 @@ class LaserCalibrator():
         print(limages[0].stem)
 
         if len(limages[0].stem) < 26:
-            camera_format = 'seaxerocks3'
             for i, lname in enumerate(limages):
                 for j, rname in enumerate(rimages):
                     if lname.stem == rname.stem:
                         limages_sync.append(lname)
                         rimages_sync.append(rname)
         else:
-            camera_format = 'biocam'
             stamp_pc1 = []
             stamp_cam1 = []
             stamp_pc2 = []
@@ -515,10 +514,11 @@ class LaserCalibrator():
         point_cloud_ned = joblib.Parallel(n_jobs=-1)([
             joblib.delayed(opencv_to_ned)(i)
             for i in point_cloud])
-
-        point_cloud_ned_b = joblib.Parallel(n_jobs=-1)([
-            joblib.delayed(opencv_to_ned)(i)
-            for i in point_cloud_b])
+        
+        if self.two_lasers:
+            point_cloud_ned_b = joblib.Parallel(n_jobs=-1)([
+                joblib.delayed(opencv_to_ned)(i)
+                for i in point_cloud_b])
 
         def fit_and_save(cloud):
             total_no_points = len(cloud)
