@@ -219,11 +219,10 @@ def thread_detect(left_image_name, left_maps, right_image_name, right_maps, min_
         img1 = cv2.imread(str(image_name), cv2.IMREAD_ANYDEPTH)
         img1 = cv2.remap(img1, maps[0], maps[1], cv2.INTER_LANCZOS4)
         p1 = findLaserInImage(img1, min_greenness_value, k, min_area, num_columns, start_row=start_row, end_row=end_row)
+        write_str = "top: \n- " + "- ".join(["[" + str(p1[i][0]) + ", " + str(p1[i][1]) + ']\n'for i in range(len(p1))])
         if two_lasers:
             p1b = findLaserInImage(img1, min_greenness_value, k, min_area, num_columns, start_row=start_row_b, end_row=end_row_b, debug=True)
-
-        write_str = "top: \n- " + "- ".join(["[" + str(p1[i][0]) + ", " + str(p1[i][1]) + ']\n'for i in range(len(p1))])
-        write_str += "bottom: \n- " + "- ".join(["[" + str(p1b[i][0]) + ", " + str(p1b[i][1]) + ']\n'for i in range(len(p1b))])
+            write_str += "bottom: \n- " + "- ".join(["[" + str(p1b[i][0]) + ", " + str(p1b[i][1]) + ']\n'for i in range(len(p1b))])
         with filename.open('w') as f:
             f.write(write_str)
         p1 = np.array(p1, dtype=np.float32)
