@@ -240,8 +240,14 @@ class Calibrator():
                 left_filepaths = build_filepath(self.filepath, c0['camera_calibration']['path'])
                 right_filepaths = build_filepath(self.filepath, c1['camera_calibration']['path'])
                 left_name = c0['name']
+                if not 'glob_pattern' in c0['camera_calibration']:
+                    Console.error('Could not find the key glob_pattern for the camera ', c0['name'])
+                    Console.quit('glob_pattern expected in calibration.yaml')
                 left_extension = str(c0['camera_calibration']['glob_pattern'])
                 right_name = c1['name']
+                if not 'glob_pattern' in c1['camera_calibration']:
+                    Console.error('Could not find the key glob_pattern for the camera ', c1['name'])
+                    Console.quit('glob_pattern expected in calibration.yaml')
                 right_extension = str(c1['camera_calibration']['glob_pattern'])
                 left_calibration_file = self.calibration_path / 'calibration' / str('mono_' + left_name + '.yaml')
                 right_calibration_file = self.calibration_path / 'calibration' / str('mono_' + right_name + '.yaml')
