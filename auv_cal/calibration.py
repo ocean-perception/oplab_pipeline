@@ -332,6 +332,8 @@ class Calibrator():
                 right_name = c1['name']
                 right_filepath = self.filepath / str(c1['laser_calibration']['path'])
                 right_extension = str(c1['laser_calibration']['glob_pattern'])
+                if not 'skip_first' in self.calibration_config:
+                    self.calibration_config['skip_first'] = 0
                 calibrate_laser(left_name,
                                 left_filepath,
                                 left_extension,

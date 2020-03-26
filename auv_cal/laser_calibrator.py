@@ -361,34 +361,46 @@ class LaserCalibrator():
 
     def cal(self, limages, rimages):
         # Synchronise images
-        stamp_pc1 = []
-        stamp_cam1 = []
-        stamp_pc2 = []
-        stamp_cam2 = []
-        for i in range(len(limages)):
-            t1, tc1 = biocam_timestamp_from_filename(limages[i].stem, 0, 0)
-            stamp_pc1.append(float(t1))
-            stamp_cam1.append(float(tc1))
-        for i in range(len(rimages)):
-            t1, tc1 = biocam_timestamp_from_filename(rimages[i].stem, 0, 0)
-            stamp_pc2.append(float(t1))
-            stamp_cam2.append(float(tc1))
-
-        tolerance = 0.05  # stereo pair must be within 50ms of each other
-
         limages_sync = []
         rimages_sync = []
 
-        for i in range(len(limages)):
-            values = []
-            for j in range(len(rimages)):
-                values.append(abs(stamp_pc1[i]-stamp_pc2[j]))
+        print('lllllllllllllllllllllllllllllll')
+        print(limages[0].stem)
 
-            (sync_difference, sync_pair) = min((v, k) for k, v in enumerate(values))
-            if sync_difference < tolerance:
-                # print(limages[i].stem + ' syncs with ' + rimages[sync_pair].stem + ' with dif ' + str(sync_difference))
-                limages_sync.append(limages[i])
-                rimages_sync.append(rimages[sync_pair])
+        if len(limages[0].stem) < 26:
+            camera_format = 'seaxerocks3'
+            for i, lname in enumerate(limages):
+                for j, rname in enumerate(rimages):
+                    if lname.stem == rname.stem:
+                        limages_sync.append(lname)
+                        rimages_sync.append(rname)
+        else:
+            camera_format = 'biocam'
+            stamp_pc1 = []
+            stamp_cam1 = []
+            stamp_pc2 = []
+            stamp_cam2 = []
+            for i in range(len(limages)):
+                t1, tc1 = biocam_timestamp_from_filename(limages[i].stem, 0, 0)
+                stamp_pc1.append(float(t1))
+                stamp_cam1.append(float(tc1))
+            for i in range(len(rimages)):
+                t1, tc1 = biocam_timestamp_from_filename(rimages[i].stem, 0, 0)
+                stamp_pc2.append(float(t1))
+                stamp_cam2.append(float(tc1))
+
+            tolerance = 0.05  # stereo pair must be within 50ms of each other
+
+            for i in range(len(limages)):
+                values = []
+                for j in range(len(rimages)):
+                    values.append(abs(stamp_pc1[i]-stamp_pc2[j]))
+
+                (sync_difference, sync_pair) = min((v, k) for k, v in enumerate(values))
+                if sync_difference < tolerance:
+                    # print(limages[i].stem + ' syncs with ' + rimages[sync_pair].stem + ' with dif ' + str(sync_difference))
+                    limages_sync.append(limages[i])
+                    rimages_sync.append(rimages[sync_pair])
 
         peaks1 = []
         peaks2 = []
@@ -401,14 +413,18 @@ class LaserCalibrator():
         rimages_rs = []
 
         rs_size = 500
-        rs_size = int((len(limages_sync)/rs_size) - 1)
-        i = 0
-        while i < len(limages_sync):
-            limages_rs.append(limages_sync[i])
-            rimages_rs.append(rimages_sync[i])
-            i += rs_size
+        if len(limages) > rs_size:
+            rs_size = int((len(limages_sync)/rs_size) - 1)
+            i = 0
+            while i < len(limages_sync):
+                limages_rs.append(limages_sync[i])
+                rimages_rs.append(rimages_sync[i])
+                i += rs_size
+        else:
+            limages_rs = limages
+            rimages_rs = rimages
 
-        print('Processing images...')
+        print('Processing ', str(len(limages_sync)) , ' images...')
         result = joblib.Parallel(n_jobs=-1)([
             joblib.delayed(thread_detect)(i, self.left_maps, j, self.right_maps, self.min_greenness_value, self.k, self.min_area, self.num_columns, self.start_row, self.end_row, self.start_row_b, self.end_row_b, self.two_lasers)
             for i, j in zip(limages_rs, rimages_rs)])
@@ -592,9 +608,9 @@ class LaserCalibrator():
 
         def filter_cloud(cloud):
             def valid(p):
-                first = (p[0] > -10.0) and (p[0] < 10.0)
-                second = (p[1] > -10.0) and (p[1] < 10.0)
-                third = (p[2] > 0.0) and (p[2] < 7.0)
+                first = (p[0] > -30.0) and (p[0] < 30.0)
+                second = (p[1] > -30.0) and (p[1] < 30.0)
+                third = (p[2] > 0.0) and (p[2] < 15.0)
                 return first and second and third
             return [p for p in cloud if valid(p)]
 
