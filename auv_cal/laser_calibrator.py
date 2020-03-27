@@ -219,11 +219,10 @@ def thread_detect(left_image_name, left_maps, right_image_name, right_maps, min_
         img1 = cv2.imread(str(image_name), cv2.IMREAD_ANYDEPTH)
         img1 = cv2.remap(img1, maps[0], maps[1], cv2.INTER_LANCZOS4)
         p1 = findLaserInImage(img1, min_greenness_value, k, min_area, num_columns, start_row=start_row, end_row=end_row)
+        write_str = "top: \n- " + "- ".join(["[" + str(p1[i][0]) + ", " + str(p1[i][1]) + ']\n'for i in range(len(p1))])
         if two_lasers:
             p1b = findLaserInImage(img1, min_greenness_value, k, min_area, num_columns, start_row=start_row_b, end_row=end_row_b, debug=True)
-
-        write_str = "top: \n- " + "- ".join(["[" + str(p1[i][0]) + ", " + str(p1[i][1]) + ']\n'for i in range(len(p1))])
-        write_str += "bottom: \n- " + "- ".join(["[" + str(p1b[i][0]) + ", " + str(p1b[i][1]) + ']\n'for i in range(len(p1b))])
+            write_str += "bottom: \n- " + "- ".join(["[" + str(p1b[i][0]) + ", " + str(p1b[i][1]) + ']\n'for i in range(len(p1b))])
         with filename.open('w') as f:
             f.write(write_str)
         p1 = np.array(p1, dtype=np.float32)
@@ -251,10 +250,11 @@ def thread_detect(left_image_name, left_maps, right_image_name, right_maps, min_
                 i = 0
                 for i in range(len(a1)):
                     points.append([a1[i][0], a1[i][1]])
-                for i in range(len(a1b)):
-                    points_b.append([a1b[i][0], a1b[i][1]])
                 points = np.array(points, dtype=np.float32)
-                points_b = np.array(points_b, dtype=np.float32)
+                if two_lasers:
+                    for i in range(len(a1b)):
+                        points_b.append([a1b[i][0], a1b[i][1]])
+                    points_b = np.array(points_b, dtype=np.float32)
             else:
                 points, points_b = write_file(filename, image_name, maps, min_greenness_value, k, min_area, num_columns, start_row, end_row, start_row_b, end_row_b, two_lasers)
         else:
@@ -361,34 +361,44 @@ class LaserCalibrator():
 
     def cal(self, limages, rimages):
         # Synchronise images
-        stamp_pc1 = []
-        stamp_cam1 = []
-        stamp_pc2 = []
-        stamp_cam2 = []
-        for i in range(len(limages)):
-            t1, tc1 = biocam_timestamp_from_filename(limages[i].stem, 0, 0)
-            stamp_pc1.append(float(t1))
-            stamp_cam1.append(float(tc1))
-        for i in range(len(rimages)):
-            t1, tc1 = biocam_timestamp_from_filename(rimages[i].stem, 0, 0)
-            stamp_pc2.append(float(t1))
-            stamp_cam2.append(float(tc1))
-
-        tolerance = 0.05  # stereo pair must be within 50ms of each other
-
         limages_sync = []
         rimages_sync = []
 
-        for i in range(len(limages)):
-            values = []
-            for j in range(len(rimages)):
-                values.append(abs(stamp_pc1[i]-stamp_pc2[j]))
+        print('lllllllllllllllllllllllllllllll')
+        print(limages[0].stem)
 
-            (sync_difference, sync_pair) = min((v, k) for k, v in enumerate(values))
-            if sync_difference < tolerance:
-                # print(limages[i].stem + ' syncs with ' + rimages[sync_pair].stem + ' with dif ' + str(sync_difference))
-                limages_sync.append(limages[i])
-                rimages_sync.append(rimages[sync_pair])
+        if len(limages[0].stem) < 26:
+            for i, lname in enumerate(limages):
+                for j, rname in enumerate(rimages):
+                    if lname.stem == rname.stem:
+                        limages_sync.append(lname)
+                        rimages_sync.append(rname)
+        else:
+            stamp_pc1 = []
+            stamp_cam1 = []
+            stamp_pc2 = []
+            stamp_cam2 = []
+            for i in range(len(limages)):
+                t1, tc1 = biocam_timestamp_from_filename(limages[i].stem, 0, 0)
+                stamp_pc1.append(float(t1))
+                stamp_cam1.append(float(tc1))
+            for i in range(len(rimages)):
+                t1, tc1 = biocam_timestamp_from_filename(rimages[i].stem, 0, 0)
+                stamp_pc2.append(float(t1))
+                stamp_cam2.append(float(tc1))
+
+            tolerance = 0.05  # stereo pair must be within 50ms of each other
+
+            for i in range(len(limages)):
+                values = []
+                for j in range(len(rimages)):
+                    values.append(abs(stamp_pc1[i]-stamp_pc2[j]))
+
+                (sync_difference, sync_pair) = min((v, k) for k, v in enumerate(values))
+                if sync_difference < tolerance:
+                    # print(limages[i].stem + ' syncs with ' + rimages[sync_pair].stem + ' with dif ' + str(sync_difference))
+                    limages_sync.append(limages[i])
+                    rimages_sync.append(rimages[sync_pair])
 
         peaks1 = []
         peaks2 = []
@@ -401,14 +411,18 @@ class LaserCalibrator():
         rimages_rs = []
 
         rs_size = 500
-        rs_size = int((len(limages_sync)/rs_size) - 1)
-        i = 0
-        while i < len(limages_sync):
-            limages_rs.append(limages_sync[i])
-            rimages_rs.append(rimages_sync[i])
-            i += rs_size
+        if len(limages) > rs_size:
+            rs_size = int((len(limages_sync)/rs_size) - 1)
+            i = 0
+            while i < len(limages_sync):
+                limages_rs.append(limages_sync[i])
+                rimages_rs.append(rimages_sync[i])
+                i += rs_size
+        else:
+            limages_rs = limages
+            rimages_rs = rimages
 
-        print('Processing images...')
+        print('Processing ', str(len(limages_sync)) , ' images...')
         result = joblib.Parallel(n_jobs=-1)([
             joblib.delayed(thread_detect)(i, self.left_maps, j, self.right_maps, self.min_greenness_value, self.k, self.min_area, self.num_columns, self.start_row, self.end_row, self.start_row_b, self.end_row_b, self.two_lasers)
             for i, j in zip(limages_rs, rimages_rs)])
@@ -499,10 +513,11 @@ class LaserCalibrator():
         point_cloud_ned = joblib.Parallel(n_jobs=-1)([
             joblib.delayed(opencv_to_ned)(i)
             for i in point_cloud])
-
-        point_cloud_ned_b = joblib.Parallel(n_jobs=-1)([
-            joblib.delayed(opencv_to_ned)(i)
-            for i in point_cloud_b])
+        
+        if self.two_lasers:
+            point_cloud_ned_b = joblib.Parallel(n_jobs=-1)([
+                joblib.delayed(opencv_to_ned)(i)
+                for i in point_cloud_b])
 
         def fit_and_save(cloud):
             total_no_points = len(cloud)
@@ -592,15 +607,16 @@ class LaserCalibrator():
 
         def filter_cloud(cloud):
             def valid(p):
-                first = (p[0] > -10.0) and (p[0] < 10.0)
-                second = (p[1] > -10.0) and (p[1] < 10.0)
-                third = (p[2] > 0.0) and (p[2] < 7.0)
+                first = (p[0] > -30.0) and (p[0] < 30.0)
+                second = (p[1] > -30.0) and (p[1] < 30.0)
+                third = (p[2] > 0.0) and (p[2] < 15.0)
                 return first and second and third
             return [p for p in cloud if valid(p)]
 
         print('Saving clouds')
         save_cloud(processed_folder / '../points.ply', point_cloud_ned)
-        save_cloud(processed_folder / '../points_b.ply', point_cloud_ned_b)
+        if self.two_lasers:
+            save_cloud(processed_folder / '../points_b.ply', point_cloud_ned_b)
 
         print('Fitting a plane...')
         rs_size = min(len(point_cloud_ned), 10000)

@@ -214,6 +214,11 @@ class Calibrator():
             else:
                 Console.info('The camera is not calibrated, running mono calibration...')
             filepaths = build_filepath(self.filepath, c['camera_calibration']['path'])
+
+            if not 'glob_pattern' in c['camera_calibration']:
+                Console.error('Could not find the key glob_pattern for the camera ', c['name'])
+                Console.quit('glob_pattern expected in calibration.yaml')
+
             calibrate_mono(cam_name,
                            filepaths,
                            str(c['camera_calibration']['glob_pattern']),
@@ -235,8 +240,14 @@ class Calibrator():
                 left_filepaths = build_filepath(self.filepath, c0['camera_calibration']['path'])
                 right_filepaths = build_filepath(self.filepath, c1['camera_calibration']['path'])
                 left_name = c0['name']
+                if not 'glob_pattern' in c0['camera_calibration']:
+                    Console.error('Could not find the key glob_pattern for the camera ', c0['name'])
+                    Console.quit('glob_pattern expected in calibration.yaml')
                 left_extension = str(c0['camera_calibration']['glob_pattern'])
                 right_name = c1['name']
+                if not 'glob_pattern' in c1['camera_calibration']:
+                    Console.error('Could not find the key glob_pattern for the camera ', c1['name'])
+                    Console.quit('glob_pattern expected in calibration.yaml')
                 right_extension = str(c1['camera_calibration']['glob_pattern'])
                 left_calibration_file = self.calibration_path / 'calibration' / str('mono_' + left_name + '.yaml')
                 right_calibration_file = self.calibration_path / 'calibration' / str('mono_' + right_name + '.yaml')
@@ -321,6 +332,8 @@ class Calibrator():
                 right_name = c1['name']
                 right_filepath = self.filepath / str(c1['laser_calibration']['path'])
                 right_extension = str(c1['laser_calibration']['glob_pattern'])
+                if not 'skip_first' in self.calibration_config:
+                    self.calibration_config['skip_first'] = 0
                 calibrate_laser(left_name,
                                 left_filepath,
                                 left_extension,
