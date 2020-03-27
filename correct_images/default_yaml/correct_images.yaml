@@ -16,8 +16,8 @@ config:
 attenuation_correction:
   # the images captured at the altitude only in the range from altitude_min to altitude_max are used for calculating parameters.
   altitude:
-    - max: 12
-    - min: 4
+    max: 12
+    min: 4
 
   sampling_method: 'median' # sampling method from raw data. for local computers, 'median' is preferable because the calculation cost is low.
   median_filter_kernel_size: 3 # If the attenuation correction parameter looks noisy.
@@ -29,7 +29,7 @@ normalization:
 
 output:
   debayer_option: 'vng' # debayer option. 'linear', 'ea' or 'vng'. default = 'linear'
-  bayer_pattern: 'BGGR' # bayer pattern for biocam: BGGR, ae2000: GRBG, tuna sand: RGGB
+  bayer_pattern: 'RGGB' # bayer pattern for biocam: BGGR, ae2000: GRBG, tuna sand: RGGB
   dst_file_format: 'png' # The format of developed images. Currently, only png can be given.
   
 flags:

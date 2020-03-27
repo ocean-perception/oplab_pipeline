@@ -1,19 +1,49 @@
 # this is the main entry point to correct images
 # IMPORT --------------------------------
 # all imports go here 
+import datetime
+import sys
+import random
+import socket
+import uuid
+import os
+import argparse
+import cv2
+import imageio
+import joblib
+import glob
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import scipy.ndimage.filters as filters
+import yaml
+from scipy import optimize
+from tqdm import trange
+from pathlib import Path
+
+from auv_nav.tools.console import Console
+from auv_nav.tools.folder_structure import get_raw_folder
+from auv_nav.tools.folder_structure import get_processed_folder
+from auv_nav.tools.folder_structure import get_config_folder
+#from correct_images.read_mission import read_params
+import parameters_
+import draft_camera_system
+import draft_corrector
+
+from numpy.linalg import inv
+
 # -----------------------------------------
 
 
 # Main function
 def main(args=None):
     
-    Console.banner()
-    Console.info(
-        'Running correct_images version ' + str(Console.get_version()))
+    #Console.banner()
+    #Console.info('Running correct_images version ' + str(Console.get_version()))
 
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
-
+    # subparser debayer
     subparser_debayer = subparsers.add_parser(
         'debayer', help='Debayer without correction')
     subparser_debayer.add_argument(
@@ -29,28 +59,32 @@ def main(args=None):
         '-o', '--output', default='.', help="Output folder.")
     subparser_debayer.set_defaults(func=call_debayer)
 
+
+    # subparser correct
     subparser_correct = subparsers.add_parser(
         'correct', help='Correct images for attenuation / distortion / gamma and debayering')
-    subparser_correct_attenuation.add_argument(
+    subparser_correct.add_argument(
         'path', help="Path to raw directory till dive.")
-    subparser_correct_attenuation.add_argument(
+    subparser_correct.add_argument(
         '-F', '--Force', dest='force', action='store_true',
         help="Force overwrite if correction parameters already exist.")
-    subparser_correct_attenuation.set_defaults(
+    subparser_correct.set_defaults(
         func=call_correct)
+
 
     if len(sys.argv) == 1 and args is None:
         # Show help if no args provided
-        parser.print_help(sys.stderr)
+        # parser.print_help(sys.stderr)
+        print('No arguments')
     else:
         args = parser.parse_args()
         args.func(args)
 
 def call_debayer(args):
-	# instantiate Corrector object
-	corrector = Corrector()
+    # instantiate Corrector object
+    corrector = Corrector()
 
-	output_dir = Path(args.output)
+    output_dir = Path(args.output)
     if not output_dir.exists():
         Console.info('Creating output dir {}'.format(output_dir))
         output_dir.mkdir(parents=True)
@@ -59,14 +93,14 @@ def call_debayer(args):
     if not args.image:
         image_dir = Path(args.path)
         Console.info(
-            'Debayering folder {} to {}'.format(image_dir, output_dir))
+        'Debayering folder {} to {}'.format(image_dir, output_dir))
         image_list = list(image_dir.glob('*.' + args.filetype))
         Console.info('Found ' + str(len(image_list)) + ' images.')
         for image_path in image_list:
-        	rgb_image = corrector.debayer(image_path, args.pattern, args.filetype)
-        	image_name = str(image_path.stem) + '.png'
-        	output_image_path = Path(output_dir) / image_name
-        	cv2.imwrite(str(output_image_path), img_rgb)
+            rgb_image = corrector.debayer(image_path, args.pattern, args.filetype)
+            image_name = str(image_path.stem) + '.png'
+            output_image_path = Path(output_dir) / image_name
+            cv2.imwrite(str(output_image_path), img_rgb)
 
     else:
         single_image = Path(args.image)
@@ -76,31 +110,44 @@ def call_debayer(args):
         cv2.imwrite(str(output_image_path), img_rgb)
 
 def call_correct(args):
-	# resolve paths
-	path_processed = get_processed(args.path)
-	path_config = get_config(args.path)
+    
+    path = Path(args.path).resolve()
+    # resolve paths to raw, processed and config folders
+    path_raw = get_raw_folder(path)
+    path_processed = get_processed_folder(path)
+    path_config = get_config_folder(path)
+    
+    # resolve paths to mission.yaml, correct_config.yaml
+    path_mission = path_raw / "mission.yaml"
+    path_correct_config = path_config / "correct_images.yaml"
 
-	# parse parameters from mission and config files
-	mission = read_mission.read_params(args.path, 'mission')
-	config = read_mission.read_params(args.path, 'correct')
+    #print(path_raw)
+    #print(path_processed)
+    #print('-------------------------------------------------------------')
 
-	# instantiate camera system
-	camerasystem = CameraSystem(args.path, mission)
-
-	# instantiate corrector
-	corrector = Corrector(path_processed, camerasystem, config)
-
-	# execute corrector
-	corrector.Execute()
+    # parse parameters from mission and correct_config files
+    mission_parameters = parameters_.Parameters(path_mission, 'mission')
+    correct_parameters = parameters_.Parameters(path_correct_config, 'correct_config')
 
 
-def get_processed(path):
-	# TODO code for getting the processed path from raw
-	return processed_path
+    # instantiate camera system
+    camerasystem = draft_camera_system.CameraSystem(path_raw, mission_parameters, correct_parameters)
+    cameras = camerasystem.read_cameras()
 
-def get_config(path):
-	# TODO code for getting the config path from raw
-	# 1. check if the file already exists
-	# 2. if file does not exist then copy default one and prompt user to update and continue
-	# 3. continue once user prompts file is updated
-	return path_config
+    # instantiate corrector
+    corrector = draft_corrector.Corrector(path_processed, correct_parameters)
+    
+    # correct for each camera in the camerasystem
+    for camera in cameras:
+        imagename_altitude_df = corrector.read_imagename_altitudes(camera)
+        #print(imagename_altitude_df['Imagenumber'])
+        _, bayer_file_list = corrector.write_bayer_image(camera, imagename_altitude_df)
+        print('-------------------------')
+        # print(bayer_file_list)
+
+    # execute corrector
+    # corrector.Execute()
+
+if __name__ == '__main__':
+    main()
+
