@@ -84,7 +84,7 @@ class PhinsParser():
 
     def parse(self):
         # parse phins data
-        Console.info('...... parsing phins standard data')
+        Console.info('... parsing phins standard data')
 
         data_list = []
         path = get_raw_folder(self.outpath / '..' / self.filepath / self.filename)

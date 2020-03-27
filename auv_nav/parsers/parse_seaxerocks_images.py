@@ -91,7 +91,7 @@ def parse_seaxerocks_images(mission,
     # convert to seconds from utc
     # timeoffset = -timezone_offset*60*60 + timeoffset
 
-    Console.info('Parsing ' + sensor_string + 'images')
+    Console.info('... parsing ' + sensor_string + 'images')
 
     cam1_path = get_raw_folder(outpath / '..' / camera1_filepath / '..')
     cam1_filetime = cam1_path / 'FileTime.csv'

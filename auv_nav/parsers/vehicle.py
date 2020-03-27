@@ -82,7 +82,11 @@ class Vehicle:
 
         mission_file = filename.parent / 'mission.yaml'
         old_format = False
-        mission_data = []
+
+        from auv_nav.parsers.mission import Mission
+        mission = Mission(mission_file)
+        mission_stream = mission_file.open('r')
+        mission_data = yaml.safe_load(mission_stream)
 
         try:
             with filename.open('r') as stream:
@@ -91,8 +95,6 @@ class Vehicle:
                 if 'origin' in self.data:
                     self.origin.load(self.data['origin'])
                     if 'x_offset' in self.data['origin']:
-                        mission_stream = mission_file.open('r')
-                        mission_data = yaml.safe_load(mission_stream)
                         old_format = True
                 if 'ins' in self.data:
                     if old_format:
@@ -108,12 +110,36 @@ class Vehicle:
                     self.depth.load(self.data['depth'])
                 if 'usbl' in self.data:
                     self.usbl.load(self.data['usbl'])
-                if 'camera1' in self.data:
-                    self.camera1.load(self.data['camera1'])
-                if 'camera2' in self.data:
-                    self.camera2.load(self.data['camera2'])
-                if 'camera3' in self.data:
-                    self.camera3.load(self.data['camera3'])
+                if len(mission.image.cameras) > 0:
+                    camera_name = mission.image.cameras[0].name
+                    if camera_name not in self.data:
+                        Console.error(
+                            'Could not find the position of the camera with name: ', camera_name)
+                        Console.error('Please make sure that the name used in mission.yaml and \
+                            the frame name used in vehicle.yaml are the same.')
+                        Console.quit(
+                            'Your vehicle.yaml or your mission.yaml are malformed.')
+                    self.camera1.load(self.data[camera_name])
+                if len(mission.image.cameras) > 1:
+                    camera_name = mission.image.cameras[1].name
+                    if camera_name not in self.data:
+                        Console.error(
+                            'Could not find the position of the camera with name: ', camera_name)
+                        Console.error('Please make sure that the name used in mission.yaml and \
+                            the frame name used in vehicle.yaml are the same.')
+                        Console.quit(
+                            'Your vehicle.yaml or your mission.yaml are malformed.')
+                    self.camera2.load(self.data[camera_name])
+                if len(mission.image.cameras) > 2:
+                    camera_name = mission.image.cameras[2].name
+                    if camera_name not in self.data:
+                        Console.error(
+                            'Could not find the position of the camera with name: ', camera_name)
+                        Console.error('Please make sure that the name used in mission.yaml and \
+                            the frame name used in vehicle.yaml are the same.')
+                        Console.quit(
+                            'Your vehicle.yaml or your mission.yaml are malformed.')
+                    self.camera3.load(self.data[camera_name])
                 if 'chemical' in self.data:
                     self.chemical.load(self.data['chemical'])
         except FileNotFoundError:
@@ -121,7 +147,8 @@ class Vehicle:
             Console.error(filename)
             Console.quit('vehicle.yaml not provided')
         except PermissionError:
-            Console.error('The file mission.yaml could not be opened at the location:')
+            Console.error(
+                'The file vehicle.yaml could not be opened at the location:')
             Console.error(filename)
             Console.error('Please make sure you have the correct access rights.')
             Console.quit('vehicle.yaml not provided')
