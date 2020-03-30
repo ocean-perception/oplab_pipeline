@@ -27,8 +27,8 @@ from auv_nav.tools.folder_structure import get_processed_folder
 from auv_nav.tools.folder_structure import get_config_folder
 #from correct_images.read_mission import read_params
 import parameters_
-import draft_camera_system
-import draft_corrector
+from draft_camera_system import *
+from draft_corrector import *
 
 from numpy.linalg import inv
 
@@ -118,7 +118,7 @@ def call_correct(args):
     path_config = get_config_folder(path)
     
     # resolve paths to mission.yaml, correct_config.yaml
-    path_mission = path_raw / "mission.yaml"
+    # path_mission = path_raw / "mission.yaml"
     path_correct_config = path_config / "correct_images.yaml"
 
     #print(path_raw)
@@ -126,28 +126,49 @@ def call_correct(args):
     #print('-------------------------------------------------------------')
 
     # parse parameters from mission and correct_config files
-    mission_parameters = parameters_.Parameters(path_mission, 'mission')
-    correct_parameters = parameters_.Parameters(path_correct_config, 'correct_config')
+    # mission_parameters = parameters_.Parameters(path_mission, 'mission')
+    correct_parameters = parameters_.Parameters(path_correct_config)
 
+    # get relative path to camera images
+    camera_path_list = correct_parameters.camera_path_list
 
     # instantiate camera system
-    camerasystem = draft_camera_system.CameraSystem(path_raw, mission_parameters, correct_parameters)
-    cameras = camerasystem.read_cameras()
+    if correct_parameters.camera_system == 'acfr_standard':
+        camera_system = AcfrSystem(path_raw)
+        camera_system.set_image_paths(camera_path_list)
+    elif correct_parameters.camera_system == 'seaxerocks3':
+        camera_system = Sx3System(path_raw)
+        camera_system.set_image_paths(camera_path_list)
+    elif correct_parameters.camera_system == 'biocam':
+        camera_system = BiocamSystem(path_raw)
+        camera_system.set_image_paths(camera_path_list)
+    
+    # get cameras for the current camera system
+    cameras = camera_system.get_cameras()
 
     # instantiate corrector
-    corrector = draft_corrector.Corrector(path_processed, correct_parameters)
+    corrector = Corrector(path_processed, correct_parameters)
     
     # correct for each camera in the camerasystem
     for camera in cameras:
+        # get image and altitude list
         imagename_altitude_df = corrector.read_imagename_altitudes(camera)
-        #print(imagename_altitude_df['Imagenumber'])
-        _, bayer_file_list = corrector.write_bayer_image(camera, imagename_altitude_df)
+
+        # get filtered list of image paths
+        filtered_image_path_list = corrector.get_filtered_image_pathlist(camera, imagename_altitude_df)
+        
+        # get numpy filelist for source bayer images
+        np_file_list = corrector.get_np_filelist(camera, correct_parameters.camera_system, filtered_image_path_list)
+
+        # write numpy files for source bayer images
+        corrector.write_np_files(camera, np_file_list, filtered_image_path_list)
+
         print('-------------------------')
-        # print(bayer_file_list)
+        
 
     # execute corrector
     # corrector.Execute()
-
+    
 if __name__ == '__main__':
     main()
 
