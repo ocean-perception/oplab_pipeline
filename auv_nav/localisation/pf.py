@@ -18,6 +18,7 @@ from auv_nav.tools.console import Console
 # TODO: port uncertainty calculation from Jim
 # TODO: use 3D gaussian models for USBL
 
+
 def gaussian_pdf(mu, sigma, x):
     num = -((mu - x) ** 2) / (sigma ** 2) / 2.0
     den = math.sqrt(2.0 * math.pi * (sigma ** 2))
@@ -101,8 +102,8 @@ class UsblObservationModel():
         weight = 1.0
         if self.x is not None:
             dist = math.sqrt((self.x - p.state[Index.X, 0]) ** 2
-                        + (self.y - p.state[Index.Y, 0]) ** 2
-                        + (self.z - p.state[Index.Z, 0]) **2)
+                             + (self.y - p.state[Index.Y, 0]) ** 2
+                             + (self.z - p.state[Index.Z, 0]) ** 2)
             p.trajectory_error.append(dist)
             weight = gaussian_pdf(0, self.std, dist)
         return weight
@@ -153,14 +154,25 @@ class DeadReckoningMovementModel:
         k_dvl = self.dvl_noise_sigma_factor
         k_imu = self.imu_noise_sigma_factor
 
+        def linear_noise(idx, factor, offset, gain=1.0):
+            return (self.movement[idx, 0] + randn() * (self.movement[idx, 0] 
+                * factor + offset) * gain)
+
         # Propagate all states except for X and Y
-        p.state[Index.Z, 0] = self.movement[Index.Z, 0] + randn() * (self.movement[Index.Z, 0] * depth_std_factor + depth_std_offset)
-        p.state[Index.ROLL, 0] = self.movement[Index.ROLL, 0] + randn() * (self.movement[Index.ROLL, 0] * imu_noise_std_factor + imu_noise_std_factor)*k_imu
-        p.state[Index.PITCH, 0] = self.movement[Index.PITCH, 0] + randn() * (self.movement[Index.PITCH, 0] * imu_noise_std_factor + imu_noise_std_factor)*k_imu
-        p.state[Index.YAW, 0] = self.movement[Index.YAW, 0] + randn() * (self.movement[Index.YAW, 0] * imu_noise_std_factor + imu_noise_std_factor)*k_imu
-        p.state[Index.VX, 0] = self.movement[Index.VX, 0] + randn() * (self.movement[Index.VX, 0] * velocity_std_factor + velocity_std_offset)*k_dvl
-        p.state[Index.VY, 0] = self.movement[Index.VY, 0] + randn() * (self.movement[Index.VY, 0] * velocity_std_factor + velocity_std_offset)*k_dvl
-        p.state[Index.VZ, 0] = self.movement[Index.VZ, 0] + randn() * (self.movement[Index.VZ, 0] * velocity_std_factor + velocity_std_offset)*k_dvl
+        p.state[Index.Z, 0] = linear_noise(
+            Index.Z, depth_std_factor, depth_std_offset)
+        p.state[Index.ROLL, 0] = linear_noise(
+            Index.ROLL, imu_noise_std_factor, imu_noise_std_offset, k_imu)
+        p.state[Index.PITCH, 0] = linear_noise(
+            Index.PITCH, imu_noise_std_factor, imu_noise_std_offset, k_imu)
+        p.state[Index.YAW, 0] = linear_noise(
+            Index.YAW, imu_noise_std_factor, imu_noise_std_offset, k_imu)
+        p.state[Index.VX, 0] = linear_noise(
+            Index.VX, velocity_std_factor, velocity_std_offset, k_dvl)
+        p.state[Index.VY, 0] = linear_noise(
+            Index.VY, velocity_std_factor, velocity_std_offset, k_dvl)
+        p.state[Index.VZ, 0] = linear_noise(
+            Index.VZ, velocity_std_factor, velocity_std_offset, k_dvl)
 
         cr = math.cos(p.state[Index.ROLL, 0])
         sr = math.sin(p.state[Index.ROLL, 0])
@@ -188,24 +200,25 @@ class DeadReckoningMovementModel:
 
 
 class ParticleFilter:
-    def __init__(self, num_particles, 
-                 movement_model, 
+    def __init__(self, num_particles,
+                 movement_model,
                  observation_model,
                  expected_iterations=0):
         self.particles = []
         self.particles_history = []
         self.iteration = 0
-        self.iteration_step = int(float(expected_iterations) / 20.0)      
+        self.iteration_step = int(float(expected_iterations) / 20.0)
         self.mm = movement_model
         self.om = observation_model
         for i in range(0, num_particles):
             p = Particle()
             p.weight = 1.0 / float(num_particles)
             self.particles.append(p)
-        self.particles_history.append(self.particles)        
+        self.particles_history.append(self.particles)
 
     def __str__(self):
-        a = "Particle Filter with " + str(len(self.particles)) + " particles.\n"
+        a = "Particle Filter with " + \
+            str(len(self.particles)) + " particles.\n"
         for i, p in enumerate(self.particles):
             a += " Particle " + str(i) + "\n"
             a += (
@@ -282,7 +295,8 @@ class ParticleFilter:
                 # target sum reached
                 cumulative_weight += self.particles[source_index].weight
             # copy particle (via assignment operator)
-            new_particles[dest_index] = copy.deepcopy(self.particles[source_index])
+            new_particles[dest_index] = copy.deepcopy(
+                self.particles[source_index])
         # Update the particle list
         self.particles = new_particles
 
@@ -299,7 +313,7 @@ def ParticleToSyncedOrientationBodyVelocity(p):
         m.epoch_timestamp = t
         m.northings = x[Index.X, 0]
         m.eastings = x[Index.Y, 0]
-        m.depth = x[Index.Z, 0] 
+        m.depth = x[Index.Z, 0]
         m.roll = x[Index.ROLL, 0]*180.0/math.pi
         m.pitch = x[Index.PITCH, 0]*180.0/math.pi
         m.yaw = x[Index.YAW, 0]*180.0/math.pi
@@ -319,7 +333,7 @@ def get_prior(dr_list, usbl_list):
     dr_eastings = []
     dr_northings = []
     for i in range(len(usbl_list)):
-        while dr_index < len(dr_list) - 2 and usbl_list[i].epoch_timestamp > dr_list[dr_index+1].epoch_timestamp:
+        while (dr_index < len(dr_list) - 2 and usbl_list[i].epoch_timestamp > dr_list[dr_index+1].epoch_timestamp):
             dr_index += 1
         dr_eastings.append(interpolate(usbl_list[i].epoch_timestamp,
                                        dr_list[dr_index].epoch_timestamp,
@@ -365,8 +379,8 @@ def get_prior(dr_list, usbl_list):
     vy = dr_list[dr_index].y_velocity
     vz = dr_list[dr_index].z_velocity
     prior = Particle()
-    prior.state = np.array([[x - northings_mean], 
-                            [y - eastings_mean], 
+    prior.state = np.array([[x - northings_mean],
+                            [y - eastings_mean],
                             [z],
                             [roll], [pitch], [heading],
                             [vx], [vy], [vz],
@@ -419,7 +433,7 @@ def run_particle_filter(
     prior, dr_idx, usbl_idx = get_prior(dr_list, usbl_list)
 
     om = UsblObservationModel(usbl_noise_sigma_factor)
-    mm = DeadReckoningMovementModel(sensors_std, 
+    mm = DeadReckoningMovementModel(sensors_std,
                                     dvl_noise_sigma_factor,
                                     imu_noise_sigma_factor)
 
