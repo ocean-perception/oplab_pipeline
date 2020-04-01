@@ -147,6 +147,11 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
             localisation_file.parent.mkdir(parents=True)
         default_localisation.copy(localisation_file)
 
+    # Default to no EKF and PF and SPP
+    particle_filter_activate = False
+    ekf_activate = False
+    spp_output_activate = False
+
     with localisation_file.open('r') as stream:
         load_localisation = yaml.safe_load(stream)
         if 'usbl_filter' in load_localisation:
@@ -243,6 +248,11 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
             spp_ekf_camera_2 = load_localisation['spp_output']['ekf']['camera_2']
             spp_ekf_camera_3 = load_localisation['spp_output']['ekf']['camera_3']
             spp_ekf_chemical = load_localisation['spp_output']['ekf']['chemical']
+
+            if spp_output_activate and not ekf_activate:
+                Console.warn('SLAM++ will be disabled due to EKF being disabled. Enable EKF to make it work.')
+
+                spp_output_activate = False
         else:
             spp_output_activate = False
             Console.warn('SLAM++ output undefined in auv_nav.yaml. Has been'
@@ -373,15 +383,17 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
                 chemical.from_json(parsed_json_data[i])
                 chemical_list.append(chemical)
 
-    camera1_pf_list = copy.deepcopy(camera1_list)
-    camera2_pf_list = copy.deepcopy(camera2_list)
-    camera3_pf_list = copy.deepcopy(camera3_list)
-    chemical_pf_list = copy.deepcopy(chemical_list)
+    if particle_filter_activate:
+        camera1_pf_list = copy.deepcopy(camera1_list)
+        camera2_pf_list = copy.deepcopy(camera2_list)
+        camera3_pf_list = copy.deepcopy(camera3_list)
+        chemical_pf_list = copy.deepcopy(chemical_list)
 
-    camera1_ekf_list = copy.deepcopy(camera1_list)
-    camera2_ekf_list = copy.deepcopy(camera2_list)
-    camera3_ekf_list = copy.deepcopy(camera3_list)
-    chemical_ekf_list = copy.deepcopy(chemical_list)
+    if ekf_activate:
+        camera1_ekf_list = copy.deepcopy(camera1_list)
+        camera2_ekf_list = copy.deepcopy(camera2_list)
+        camera3_ekf_list = copy.deepcopy(camera3_list)
+        chemical_ekf_list = copy.deepcopy(chemical_list)
 
     # make path for processed outputs
     json_filename = ('json_renav_'
@@ -1180,20 +1192,22 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
                                        csv_dr_camera_1])
             t.start()
             threads.append(t)
-            t = threading.Thread(target=camera_csv,
-                                 args=[camera1_pf_list,
-                                       'auv_pf_' + mission.image.cameras[0].name,
-                                       pfcsvpath,
-                                       csv_pf_camera_1])
-            t.start()
-            threads.append(t)
-            t = threading.Thread(target=camera_csv,
-                                 args=[camera1_ekf_list,
-                                       'auv_ekf_' + mission.image.cameras[0].name,
-                                       ekfcsvpath,
-                                       csv_ekf_camera_1])
-            t.start()
-            threads.append(t)
+            if particle_filter_activate:
+                t = threading.Thread(target=camera_csv,
+                                    args=[camera1_pf_list,
+                                        'auv_pf_' + mission.image.cameras[0].name,
+                                        pfcsvpath,
+                                        csv_pf_camera_1])
+                t.start()
+                threads.append(t)
+            if ekf_activate:
+                t = threading.Thread(target=camera_csv,
+                                    args=[camera1_ekf_list,
+                                        'auv_ekf_' + mission.image.cameras[0].name,
+                                        ekfcsvpath,
+                                        csv_ekf_camera_1])
+                t.start()
+                threads.append(t)
         if len(camera2_list) > 1:
             t = threading.Thread(target=camera_csv,
                                  args=[camera2_list,
@@ -1202,20 +1216,22 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
                                        csv_dr_camera_2])
             t.start()
             threads.append(t)
-            t = threading.Thread(target=camera_csv,
-                                 args=[camera2_pf_list,
-                                       'auv_pf_' + mission.image.cameras[1].name,
-                                       pfcsvpath,
-                                       csv_pf_camera_2])
-            t.start()
-            threads.append(t)
-            t = threading.Thread(target=camera_csv,
-                                 args=[camera2_ekf_list,
-                                       'auv_ekf_' + mission.image.cameras[1].name,
-                                       ekfcsvpath,
-                                       csv_ekf_camera_2])
-            t.start()
-            threads.append(t)
+            if particle_filter_activate:
+                t = threading.Thread(target=camera_csv,
+                                    args=[camera2_pf_list,
+                                        'auv_pf_' + mission.image.cameras[1].name,
+                                        pfcsvpath,
+                                        csv_pf_camera_2])
+                t.start()
+                threads.append(t)
+            if ekf_activate:
+                t = threading.Thread(target=camera_csv,
+                                    args=[camera2_ekf_list,
+                                        'auv_ekf_' + mission.image.cameras[1].name,
+                                        ekfcsvpath,
+                                        csv_ekf_camera_2])
+                t.start()
+                threads.append(t)
         if len(camera3_list) > 1:
             if len(mission.image.cameras) > 2:
                 t = threading.Thread(target=camera_csv,
@@ -1225,20 +1241,22 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
                                            csv_dr_camera_3])
                 t.start()
                 threads.append(t)
-                t = threading.Thread(target=camera_csv,
-                                     args=[camera3_pf_list,
-                                           'auv_pf_' + mission.image.cameras[2].name,
-                                           pfcsvpath,
-                                           csv_pf_camera_3])
-                t.start()
-                threads.append(t)
-                t = threading.Thread(target=camera_csv,
-                                     args=[camera3_ekf_list,
-                                           'auv_ekf_' + mission.image.cameras[2].name,
-                                           ekfcsvpath,
-                                           csv_ekf_camera_3])
-                t.start()
-                threads.append(t)
+                if particle_filter_activate:
+                    t = threading.Thread(target=camera_csv,
+                                        args=[camera3_pf_list,
+                                            'auv_pf_' + mission.image.cameras[2].name,
+                                            pfcsvpath,
+                                                csv_pf_camera_3])
+                    t.start()
+                    threads.append(t)
+                if ekf_activate:
+                    t = threading.Thread(target=camera_csv,
+                                        args=[camera3_ekf_list,
+                                            'auv_ekf_' + mission.image.cameras[2].name,
+                                            ekfcsvpath,
+                                            csv_ekf_camera_3])
+                    t.start()
+                    threads.append(t)
             elif len(mission.image.cameras) == 2:
                 t = threading.Thread(target=camera_csv,
                                      args=[camera3_list,
@@ -1247,20 +1265,22 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
                                            csv_dr_camera_3])
                 t.start()
                 threads.append(t)
-                t = threading.Thread(target=camera_csv,
-                                     args=[camera3_pf_list,
-                                           'auv_pf_' + mission.image.cameras[1].name + '_laser',
-                                           pfcsvpath,
-                                           csv_pf_camera_3])
-                t.start()
-                threads.append(t)
-                t = threading.Thread(target=camera_csv,
-                                     args=[camera3_ekf_list,
-                                           'auv_ekf_' + mission.image.cameras[1].name + '_laser',
-                                           ekfcsvpath,
-                                           csv_ekf_camera_3])
-                t.start()
-                threads.append(t)
+                if particle_filter_activate:
+                    t = threading.Thread(target=camera_csv,
+                                        args=[camera3_pf_list,
+                                            'auv_pf_' + mission.image.cameras[1].name + '_laser',
+                                            pfcsvpath,
+                                            csv_pf_camera_3])
+                    t.start()
+                    threads.append(t)
+                if ekf_activate:
+                    t = threading.Thread(target=camera_csv,
+                                        args=[camera3_ekf_list,
+                                            'auv_ekf_' + mission.image.cameras[1].name + '_laser',
+                                            ekfcsvpath,
+                                            csv_ekf_camera_3])
+                    t.start()
+                    threads.append(t)
 
         # Sidescan sonar outputs
         t = threading.Thread(target=write_sidescan_csv,
@@ -1270,21 +1290,23 @@ def process_data(filepath, force_overwite, start_datetime, finish_datetime):
                                    csv_dr_auv_centre])
         t.start()
         threads.append(t)
-        t = threading.Thread(target=write_sidescan_csv,
-                             args=[pfcsvpath,
-                                   pf_fusion_centre_list,
-                                   'auv_pf_centre_sss',
-                                   csv_pf_auv_centre])
-        t.start()
-        threads.append(t)
-        t = threading.Thread(target=write_sidescan_csv,
-                             args=[ekfcsvpath,
-                                   ekf_list,
-                                   'auv_ekf_centre_sss',
-                                   csv_ekf_auv_centre])
-        t.start()
-        threads.append(t)
-    if spp_output_activate:
+        if particle_filter_activate:
+            t = threading.Thread(target=write_sidescan_csv,
+                                args=[pfcsvpath,
+                                    pf_fusion_centre_list,
+                                    'auv_pf_centre_sss',
+                                    csv_pf_auv_centre])
+            t.start()
+            threads.append(t)
+        if ekf_activate:
+            t = threading.Thread(target=write_sidescan_csv,
+                                args=[ekfcsvpath,
+                                    ekf_list,
+                                    'auv_ekf_centre_sss',
+                                    csv_ekf_auv_centre])
+            t.start()
+            threads.append(t)
+    if spp_output_activate and ekf_activate:
         Console.info("Converting covariance matrices into information matrices...")
         for i in range(len(camera1_ekf_list)):
             camera1_ekf_list[i].get_info()
