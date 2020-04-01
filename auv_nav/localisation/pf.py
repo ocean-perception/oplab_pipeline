@@ -87,8 +87,10 @@ class UsblObservationModel():
         self.y = value.eastings
         self.z = value.depth
         # TODO: Could we use a 3D Gaussian instead of a 1D?
-        self.std = self.usbl_noise_sigma_factor * math.sqrt(
-            value.northings_std**2 + value.eastings_std**2 + value.depth_std**2)
+        sigma = math.sqrt(value.northings_std**2
+                          + value.eastings_std**2
+                          + value.depth_std**2)
+        self.std = self.usbl_noise_sigma_factor * sigma
 
     def measure(self, p):
         """
@@ -97,7 +99,7 @@ class UsblObservationModel():
         an importance weight for the state.
         Define this method in your sub-class!
         @param state Reference to the state that has to be weightened.
-        @return importance weight for the given state (positive, non-zero value).
+        @return importance weight for the state (positive, non-zero value).
         """
         weight = 1.0
         if self.x is not None:
@@ -113,8 +115,8 @@ class DeadReckoningMovementModel:
     """
     @class MovementModel
     @brief Interface for movement models for particle filters.
-    The movement model in a particle filter defines how a particle's state changes
-    over time.
+    The movement model in a particle filter defines how a particle's state
+    changes over time.
     """
 
     def __init__(self, sensors_std,
@@ -138,9 +140,9 @@ class DeadReckoningMovementModel:
     def propagate(self, p, dt):
         """
         This is the main method of MovementModel. It takes a state reference as
-        argument and is supposed to extract the state's variables and manipulate
-        them. dt means delta t and defines the time in seconds that has passed
-        since the last filter update.
+        argument and is supposed to extract the state's variables and
+        manipulate them. dt means delta t and defines the time in seconds that
+        has passed since the last filter update.
         @param state Reference to the state that has to be manipulated.
         @param dt time that has passed since the last filter update in seconds.
         """
@@ -155,8 +157,8 @@ class DeadReckoningMovementModel:
         k_imu = self.imu_noise_sigma_factor
 
         def linear_noise(idx, factor, offset, gain=1.0):
-            return (self.movement[idx, 0] + randn() * (self.movement[idx, 0] 
-                * factor + offset) * gain)
+            return (self.movement[idx, 0] + randn() * (self.movement[idx, 0]
+                    * factor + offset) * gain)
 
         # Propagate all states except for X and Y
         p.state[Index.Z, 0] = linear_noise(
@@ -250,8 +252,6 @@ class ParticleFilter:
     def propagate(self, dt):
         for p in self.particles:
             self.mm.propagate(p, dt)
-        # Update the history
-        hist_size = len(self.particles_history)
         if self.iteration == self.iteration_step:
             self.particles_history.append(copy.deepcopy(self.particles))
             self.iteration = 0
@@ -327,13 +327,16 @@ def ParticleToSyncedOrientationBodyVelocity(p):
 
 def get_prior(dr_list, usbl_list):
     dr_index = 0
-    state = []
 
     # Interpolate DR to USBL updates
     dr_eastings = []
     dr_northings = []
     for i in range(len(usbl_list)):
-        while (dr_index < len(dr_list) - 2 and usbl_list[i].epoch_timestamp > dr_list[dr_index+1].epoch_timestamp):
+        usbl_t = usbl_list[i].epoch_timestamp
+        dr_t = dr_list[dr_index+1].epoch_timestamp
+        while (dr_index < len(dr_list) - 2 and usbl_t > dr_t):
+            usbl_t = usbl_list[i].epoch_timestamp
+            dr_t = dr_list[dr_index+1].epoch_timestamp
             dr_index += 1
         dr_eastings.append(interpolate(usbl_list[i].epoch_timestamp,
                                        dr_list[dr_index].epoch_timestamp,
@@ -352,16 +355,19 @@ def get_prior(dr_list, usbl_list):
     eastings_mean = np.mean(eastings_error)
     northings_mean = np.mean(northings_error)
 
-    # print('Offsetting DR navigation by USBL error offset: ({:.2f}, {:.2f})'.format(northings_mean, eastings_mean))
-
     dr_index = 0
     usbl_index = 0
-    if usbl_list[usbl_index].epoch_timestamp > dr_list[dr_index].epoch_timestamp:
-        while dr_index < len(dr_list) and usbl_list[usbl_index].epoch_timestamp > dr_list[dr_index].epoch_timestamp:
-            dr_index += 1
-    elif dr_list[dr_index].epoch_timestamp > usbl_list[usbl_index].epoch_timestamp:
-        while usbl_index < len(usbl_list) and dr_list[dr_index].epoch_timestamp > usbl_list[usbl_index].epoch_timestamp:
-            usbl_index += 1
+    usbl_t = usbl_list[usbl_index].epoch_timestamp
+    dr_t = dr_list[usbl_index].epoch_timestamp
+
+    while dr_index < len(dr_list) and usbl_t > dr_t:
+        usbl_t = usbl_list[usbl_index].epoch_timestamp
+        dr_t = dr_list[usbl_index].epoch_timestamp
+        dr_index += 1
+    while usbl_index < len(usbl_list) and usbl_t < dr_t:
+        usbl_t = usbl_list[usbl_index].epoch_timestamp
+        dr_t = dr_list[usbl_index].epoch_timestamp
+        usbl_index += 1
 
     # Fix DR to index zero
     dr_index = 0
@@ -408,7 +414,8 @@ def run_particle_filter(
          dvl_noise_sigma_factor (float): DVL noise std multiplication factor
          imu_noise_sigma_factor (float): IMU noise std multiplication factor
          usbl_noise_sigma_factor (float): USBL noise std multiplication factor
-         measurement_update_flag (bool, optional): Whether to perform updates or not.
+         measurement_update_flag (bool, optional): Whether to perform updates
+         or not.
     Returns:
         List: List containing at position
             0: Output PF localisation
@@ -421,13 +428,21 @@ def run_particle_filter(
     Console.info("Running Particle Filter with:")
     Console.info("\t* Number of particles: {}".format(num_particles))
     Console.info(
-        "\t* DVL noise std: f(x)={}x+{} m/s".format(sensors_std['dvl']['factor'], sensors_std['dvl']['offset']))
+        "\t* DVL noise std: f(x)={}x+{} m/s".format(
+            sensors_std['dvl']['factor'],
+            sensors_std['dvl']['offset']))
     Console.info(
-        "\t* IMU noise std: f(x)={}x+{} deg".format(sensors_std['orientation']['factor'], sensors_std['orientation']['offset']))
+        "\t* IMU noise std: f(x)={}x+{} deg".format(
+            sensors_std['orientation']['factor'],
+            sensors_std['orientation']['offset']))
     Console.info(
-        "\t* Depth noise std: f(x)={}x+{} meters".format(sensors_std['depth']['factor'], sensors_std['depth']['offset']))
+        "\t* Depth noise std: f(x)={}x+{} meters".format(
+            sensors_std['depth']['factor'],
+            sensors_std['depth']['offset']))
     Console.info(
-        "\t* USBL noise std: f(x)={}x+{} meters".format(sensors_std['usbl']['factor'], sensors_std['usbl']['offset']))
+        "\t* USBL noise std: f(x)={}x+{} meters".format(
+            sensors_std['usbl']['factor'],
+            sensors_std['usbl']['offset']))
     Console.info("Running {} iterations...".format(len(dr_list)))
 
     prior, dr_idx, usbl_idx = get_prior(dr_list, usbl_list)
