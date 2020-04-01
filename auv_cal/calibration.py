@@ -152,6 +152,8 @@ def calibrate_laser(left_name, left_filepath, left_extension,
         Console.info('Writting calibration to '"'{}'"''.format(output_file))
         with output_file.open('w') as f:
             f.write(lc.yaml())
+        if not 'two_lasers' in config:
+            return
         if config['two_lasers']:
             Console.info('Writting calibration to '"'{}'"''.format(output_file_b))
             with output_file_b.open('w') as f:

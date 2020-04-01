@@ -189,28 +189,39 @@ def fit_plane(xyz):
     return [a, b, c, d, plane_angle, pitch_angle, yaw_angle]
 
 
-def draw_laser(left_image_name, left_maps, top_left, top_right, bottom_left, bottom_right):
-    filename = left_image_name.name
-    processed_folder = get_processed_folder(left_image_name.parent)
-    saving_folder = processed_folder / 'calibration/laser_detection'
-    if not saving_folder.exists():
-        saving_folder.mkdir(parents=True, exist_ok=True)
-    filename = saving_folder / filename
-    if not filename.exists():
-        img = cv2.imread(str(left_image_name), cv2.IMREAD_ANYDEPTH)
-        img = cv2.remap(img, left_maps[0], left_maps[1], cv2.INTER_LANCZOS4)
-        img_colour = np.zeros((img.shape[0], img.shape[1], 3), dtype=np.uint8)
-        img_colour[:, :, 1] = img
+def draw_laser(left_image_name, right_image_name, left_maps, right_maps, top_left, top_right, bottom_left, bottom_right):
+    lfilename = left_image_name.name
+    rfilename = right_image_name.name
+    lprocessed_folder = get_processed_folder(left_image_name.parent)
+    rprocessed_folder = get_processed_folder(right_image_name.parent)
+    lsaving_folder = lprocessed_folder / 'laser_detection'
+    rsaving_folder = rprocessed_folder / 'laser_detection'
+    if not lsaving_folder.exists():
+        lsaving_folder.mkdir(parents=True, exist_ok=True)
+    if not rsaving_folder.exists():
+        rsaving_folder.mkdir(parents=True, exist_ok=True)
+    lfilename = lsaving_folder / lfilename
+    rfilename = rsaving_folder / rfilename
+    if not lfilename.exists() or not rfilename.exists():
+        limg = cv2.imread(str(left_image_name), cv2.IMREAD_ANYDEPTH)
+        rimg = cv2.imread(str(right_image_name), cv2.IMREAD_ANYDEPTH)
+        limg_remap = cv2.remap(limg, left_maps[0], left_maps[1], cv2.INTER_LANCZOS4)
+        rimg_remap = cv2.remap(rimg, right_maps[0], right_maps[1], cv2.INTER_LANCZOS4)
+        limg_colour = np.zeros((limg_remap.shape[0], limg_remap.shape[1], 3), dtype=np.uint8)
+        rimg_colour = np.zeros((rimg_remap.shape[0], rimg_remap.shape[1], 3), dtype=np.uint8)
+        limg_colour[:, :, 1] = limg_remap
+        rimg_colour[:, :, 1] = rimg_remap
         for p in top_left:
-            cv2.circle(img_colour, (int(p[1]), int(p[0])), 1, (0, 0, 255), -1)
+            cv2.circle(limg_colour, (int(p[1]), int(p[0])), 1, (0, 0, 255), -1)
         for p in top_right:
-            cv2.circle(img_colour, (int(p[1]), int(p[0])), 1, (255, 0, 255), -1)
+            cv2.circle(rimg_colour, (int(p[1]), int(p[0])), 1, (255, 0, 0), -1)
         for p in bottom_left:
-            cv2.circle(img_colour, (int(p[1]), int(p[0])), 1, (255, 0, 127), -1)
+            cv2.circle(limg_colour, (int(p[1]), int(p[0])), 1, (255, 0, 127), -1)
         for p in bottom_right:
-            cv2.circle(img_colour, (int(p[1]), int(p[0])), 1, (0, 255, 127), -1)
-        cv2.imwrite(str(filename), img_colour)
-        print('Saved ' + str(filename))
+            cv2.circle(rimg_colour, (int(p[1]), int(p[0])), 1, (0, 255, 127), -1)
+        cv2.imwrite(str(lfilename), limg_colour)
+        cv2.imwrite(str(rfilename), rimg_colour)
+        print('Saved ' + str(lfilename) + ' and ' + str(rfilename))
 
 
 def thread_detect(left_image_name, left_maps, right_image_name, right_maps, min_greenness_value, k, min_area, num_columns, start_row, end_row, start_row_b, end_row_b, two_lasers):
@@ -246,7 +257,10 @@ def thread_detect(left_image_name, left_maps, right_image_name, right_maps, min_
                 r = yaml.safe_load(f)
             if r is not None:
                 a1 = r['top']
-                a1b = r['bottom']
+                if 'bottom' in r:
+                    a1b = r['bottom']
+                else:
+                    a1b = []
                 i = 0
                 for i in range(len(a1)):
                     points.append([a1[i][0], a1[i][1]])
@@ -285,7 +299,7 @@ def thread_detect(left_image_name, left_maps, right_image_name, right_maps, min_
         start_row_b,
         end_row_b,
         two_lasers)
-    draw_laser(left_image_name, left_maps, p1, p2, p1b, p2b)
+    draw_laser(left_image_name, right_image_name, left_maps, right_maps, p1, p2, p1b, p2b)
     return p1, p2, p1b, p2b
 
 
@@ -363,9 +377,6 @@ class LaserCalibrator():
         # Synchronise images
         limages_sync = []
         rimages_sync = []
-
-        print('lllllllllllllllllllllllllllllll')
-        print(limages[0].stem)
 
         if len(limages[0].stem) < 26:
             for i, lname in enumerate(limages):
@@ -467,16 +478,19 @@ class LaserCalibrator():
                     i2 += 1
                 if i2 == len(pk2):
                     continue
-                # print(pk2[i2][1] - pk1[i1][1])
+                #print(pk2[i2][1] - pk1[i1][1])
                 if pk2[i2][1] - pk1[i1][1] < 1.0:
-                    if ((pk1[i1][0] - pk2[i2][0] > 70 and pk1[i1][0] - pk2[i2][0] < 200)
-                        or (pk2[i2][0] - pk1[i1][0] > 70 and pk2[i2][0] - pk1[i1][0] < 200)):
-                        p = triangulate_lst(pk1[i1], pk2[i2], self.sc.left.P, self.sc.right.P)
-                        if p[2] < 0 or p is None:
-                            count_inversed += 1
-                        else:
-                            count += 1
-                            cloud.append(p)
+                    #if ((pk1[i1][0] - pk2[i2][0] > 70 and pk1[i1][0] - pk2[i2][0] < 200)
+                    #    or (pk2[i2][0] - pk1[i1][0] > 70 and pk2[i2][0] - pk1[i1][0] < 200)):
+                    
+                    p = triangulate_lst(pk1[i1], pk2[i2], self.sc.left.P, self.sc.right.P)
+                    # print(pk2[i2][0] - pk1[i1][0])
+                    # print(pk1[i1], pk2[i2], p)
+                    if p[2] < 0 or p is None:
+                        count_inversed += 1
+                    else:
+                        count += 1
+                        cloud.append(p)
                 i += 1
             return cloud, count, count_inversed
 
