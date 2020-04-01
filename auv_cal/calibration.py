@@ -11,6 +11,7 @@ from auv_cal.laser_calibrator import LaserCalibrator
 from auv_nav.tools.folder_structure import get_raw_folder
 from auv_nav.tools.folder_structure import get_processed_folder
 from auv_nav.tools.folder_structure import get_config_folder
+from auv_nav.tools.folder_structure import valid_dive
 from pathlib import Path
 import yaml
 import json
@@ -176,6 +177,12 @@ class Calibrator():
     def __init__(self, filepath, force_overwite=False):
         filepath = Path(filepath).resolve()
         self.filepath = get_raw_folder(filepath)
+        
+        if not valid_dive(self.filepath):
+            Console.error('This code expects you to run it inside a dive folder.')
+            Console.quit('The folder specified is not a valid dive.')
+
+        # Go one folder up
         self.filepath = self.filepath.parent
         self.fo = force_overwite
 
