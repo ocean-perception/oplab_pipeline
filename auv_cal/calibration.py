@@ -182,13 +182,11 @@ class Calibrator():
             Console.error('This code expects you to run it inside a dive folder.')
             Console.quit('The folder specified is not a valid dive.')
 
-        # Go one folder up
-        self.filepath = self.filepath.parent
-        # And create the calibration folder at the same level as the dives
-        self.output_path = get_processed_folder(self.filepath) / 'calibration'
-        self.configuration_path = get_config_folder(self.filepath) / 'calibration'
-        if not self.calibration_path.exists():
-            self.calibration_path.mkdir(parents=True)
+        # Create the calibration folder at the same level as the dives
+        self.output_path = get_processed_folder(self.filepath.parent) / 'calibration'
+        self.configuration_path = get_config_folder(self.filepath.parent) / 'calibration'
+        if not self.output_path.exists():
+            self.output_path.mkdir(parents=True)
         if not self.configuration_path.exists():
             self.configuration_path.mkdir(parents=True)
 
@@ -216,7 +214,7 @@ class Calibrator():
         for c in self.calibration_config['cameras']:
             cam_name = c['name']
             # Find if the calibration file exists
-            calibration_file = self.calibration_path / str('mono_' + cam_name + '.yaml')
+            calibration_file = self.output_path / str('mono_' + cam_name + '.yaml')
             Console.info('Looking for a calibration file at ' + str(calibration_file))
             if calibration_file.exists() and not self.fo:
                 Console.warn('The camera ' + c['name'] + ' has already been calibrated. If you want to overwrite the JSON, use the -F flag.')
@@ -239,7 +237,7 @@ class Calibrator():
         if len(self.calibration_config['cameras']) > 1:
             c0 = self.calibration_config['cameras'][0]
             c1 = self.calibration_config['cameras'][1]
-            calibration_file = self.calibration_path / str('stereo_' + c0['name'] + '_' + c1['name'] + '.yaml')
+            calibration_file = self.output_path / str('stereo_' + c0['name'] + '_' + c1['name'] + '.yaml')
             Console.info('Looking for a calibration file at ' + str(calibration_file))
             if calibration_file.exists() and not self.fo:
                 Console.warn('The stereo pair ' + c0['name'] + '_' + c1['name'] + ' has already been calibrated. If you want to overwrite the calibration, use the -F flag.')
@@ -258,8 +256,8 @@ class Calibrator():
                     Console.error('Could not find the key glob_pattern for the camera ', c1['name'])
                     Console.quit('glob_pattern expected in calibration.yaml')
                 right_extension = str(c1['camera_calibration']['glob_pattern'])
-                left_calibration_file = self.calibration_path / str('mono_' + left_name + '.yaml')
-                right_calibration_file = self.calibration_path / str('mono_' + right_name + '.yaml')
+                left_calibration_file = self.output_path / str('mono_' + left_name + '.yaml')
+                right_calibration_file = self.output_path / str('mono_' + right_name + '.yaml')
                 if not left_calibration_file.exists() or not right_calibration_file.exists():
                     if not left_calibration_file.exists():
                         Console.warn('Could not find a monocular calibration file ' + str(left_calibration_file) + '...')
@@ -283,7 +281,7 @@ class Calibrator():
         if len(self.calibration_config['cameras']) > 2:
             c0 = self.calibration_config['cameras'][0]
             c1 = self.calibration_config['cameras'][2]
-            calibration_file = self.calibration_path / str('stereo_' + c0['name'] + '_' + c1['name'] + '.yaml')
+            calibration_file = self.output_path / str('stereo_' + c0['name'] + '_' + c1['name'] + '.yaml')
             Console.info('Looking for a calibration file at ' + str(calibration_file))
             if calibration_file.exists() and not self.fo:
                 Console.warn('The stereo pair ' + c0['name'] + '_' + c1['name'] + ' has already been calibrated. If you want to overwrite the calibration, use the -F flag.')
@@ -295,8 +293,8 @@ class Calibrator():
                 right_name = c1['name']
                 right_filepaths = build_filepath(self.filepath, c1['camera_calibration']['path'])
                 right_extension = str(c1['camera_calibration']['glob_pattern'])
-                left_calibration_file = self.calibration_path / str('mono_' + left_name + '.yaml')
-                right_calibration_file = self.calibration_path / str('mono_' + right_name + '.yaml')
+                left_calibration_file = self.output_path / str('mono_' + left_name + '.yaml')
+                right_calibration_file = self.output_path / str('mono_' + right_name + '.yaml')
                 if not left_calibration_file.exists() or not right_calibration_file.exists():
                     if not left_calibration_file.exists():
                         Console.warn('Could not find a monocular calibration file ' + str(left_calibration_file) + '...')
@@ -323,15 +321,15 @@ class Calibrator():
             c1 = self.calibration_config['cameras'][1]
             if len(self.calibration_config['cameras']) > 2:
                 c2 = self.calibration_config['cameras'][2]
-            calibration_file = self.calibration_path / 'laser_calibration_top.yaml'
-            calibration_file_b = self.calibration_path / 'laser_calibration_bottom.yaml'
+            calibration_file = self.output_path / 'laser_calibration_top.yaml'
+            calibration_file_b = self.output_path / 'laser_calibration_bottom.yaml'
             Console.info('Looking for a calibration file at ' + str(calibration_file))
             if calibration_file.exists() and not self.fo:
                 Console.warn('The laser planes from cameras ' + c0['name'] + ' and ' + c1['name'] + ' have already been calibrated. If you want to overwite the calibration, use the -F flag.')
             else:
                 Console.info('The laser planes are not calibrated, running laser calibration...')
                 # Check if the stereo pair has already been calibrated
-                stereo_calibration_file = self.calibration_path / str('stereo_' + c0['name'] + '_' + c1['name'] + '.yaml')
+                stereo_calibration_file = self.output_path / str('stereo_' + c0['name'] + '_' + c1['name'] + '.yaml')
                 if not stereo_calibration_file.exists():
                     Console.warn('Could not find a stereo calibration file ' + str(stereo_calibration_file) + '...')
                     self.stereo()
