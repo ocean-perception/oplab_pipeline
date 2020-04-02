@@ -1,26 +1,26 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2019, University of Southampton
+Copyright (c) 2020, University of Southampton
 All rights reserved.
 """
+# imports 
 
-class Pattern:
-    MONO = 'mono'
-    BGGR = 'bggr'
-    RGGB = 'rggb'
-    GRGB = 'grgb'
-   
-class Extension:
-    TIF = 'tif'
-    JPG = 'jpg'
-    RAW = 'raw'
+from numpy import loadtxt
+import os
 
+# Camera class
 class Camera():
-    def __init__(self, name, pattern, extension, path=None):
-        self.name = name
+    def __init__(self, name, pattern, extension, path, path_imagelist, method, correction_parameters, undistort, outlier_filter, output_format):
+        self.name = name                            
         self.pattern = pattern
         self.extension = extension
         self.path = path
+        self.path_imagelist = path_imagelist
+        self.method = method
+        self.correction_parameters = correction_parameters
+        self.undistort = undistort
+        self.outlier_filter = outlier_filter
+        self.output_format = output_format
 
     def get_name(self):
         return self.name
@@ -34,45 +34,80 @@ class Camera():
     def get_path(self):
         return self.path
 
+    def get_correction_parameters(self):
+        return self.correction_parameters
+
+    def get_imagelist(self):
+        if self.path_imagelist is not None:
+            with self.path_imagelist.open('r') as f:
+                imagelist = f.readlines()
+        else:
+            imagelist = []
+            for files in os.walk(self.path):
+                for filename in files:
+                    imagelist.append(filename)
+        return imagelist
+
+    def get_method(self):
+        return self.method
+
+    def get_undistort_check(self):
+        return self.undistort
+
+    def get_output_format(self):
+        return self.output_format
+
+# Camerasystem Class
 class CameraSystem:
-    def __init__(self, path_raw_folder):
+    def __init__(self, path_raw_folder, mission_parameters, correction_parameters):
         self.path_raw = path_raw_folder
+        self.camera_system = mission_parameters.image_system
+        self.cameras_from_mission = mission_parameters.cameras_mission
+        self.cameras_from_config = correction_parameters.cameras_config
+        self.undistort = correction_parameters.undistort
+        self.output_format = correction_parameters.output_image_format
+        self.outlier_filter = correction_parameters.outlier_filter
         self.cameras = []
 
-    def set_image_paths(self, path_list):
-        if isinstance(self, AcfrSystem):
-            path = path_list[0].get('path')
-            for idx in range(len(self.cameras)):
-                self.cameras[idx].path = self.path_raw / path
-        if isinstance(self, Sx3System):
-            for idx in range(len(self.cameras)):
-                self.cameras[idx].path = self.path_raw / path_list[idx].get('path')
-        if isinstance(self, BiocamSystem):
-            for idx in range(len(self.cameras)):
-                self.cameras[idx].path = self.path_raw / path_list[idx].get('path')
-    def get_cameras(self):
-        return self.cameras
+    # read parameters from mission.yaml and config.yaml and fill up Camera class
+    def read_camera_parameters_from_mission(self):
+        self.pathlist = []
+        self.patternlist = []
+        self.extensionlist = []
 
-class BiocamSystem(CameraSystem):
-    def __init__(self, path_raw_folder):
-        self.path_raw = path_raw_folder
-        self.cameras = []
-        self.cameras.append(Camera('cam61003146', Pattern.BGGR, Extension.TIF))
-        self.cameras.append(Camera('cam61004444', Pattern.MONO, Extension.TIF))
-        self.cameras.append(Camera('cam61004444_laser', Pattern.MONO, Extension.JPG))
-
-class Sx3System(CameraSystem):
-    def __init__(self, path_raw_folder):
-        self.path_raw = path_raw_folder
-        self.cameras = []
-        self.cameras.append(Camera('Cam51707923', Pattern.RGGB, Extension.TIF))
-        self.cameras.append(Camera('Cam51707925', Pattern.RGGB, Extension.TIF))
-        self.cameras.append(Camera('LM165', Pattern.MONO, Extension.TIF))
-
-class AcfrSystem(CameraSystem):
-    def __init__(self, path_raw_folder):
-        self.path_raw = path_raw_folder
-        self.cameras = []
-        self.cameras.append(Camera('LC', Pattern.GRGB, Extension.TIF))
-        self.cameras.append(Camera('RC', Pattern.GRGB, Extension.TIF))  
+        camera_names_mission = []
+        for camera in self.cameras_from_mission:
+            camera_names_mission.append(camera.get('name'))
         
+        for camera in self.cameras_from_config:
+            camera_name = camera.get('camera_name')
+            index = [index for index,camera_name_ in enumerate(camera_names_mission) if camera_name_ == camera_name]
+            relative_path = self.cameras_from_mission[index[0]].get('path')
+            pattern = self.cameras_from_mission[index[0]].get('type')
+            extension = self.cameras_from_mission[index[0]].get('extension')
+
+            self.pathlist.append(self.path_raw / relative_path)
+            self.patternlist.append(pattern)
+            self.extensionlist.append(extension)
+
+    # instantiate camera class using parameters read from missin and config.yaml files
+    def setup_cameras(self):
+        self.read_camera_parameters_from_mission()
+        for index in range(len(self.pathlist)):
+            name = self.cameras_from_config[index].get('camera_name')
+            path = self.pathlist[index]
+            pattern = self.patternlist[index]
+            extension = self.extensionlist[index]
+            imagelist = self.cameras_from_config[index].get('image_file_list')
+            if imagelist == 'None':
+                path_imagelist = None
+            else:
+                path_imagelist = path / imagelist
+            method = self.cameras_from_config[index].get('method')
+            if method == 'colour_correction':
+                correction_parameters = self.cameras_from_config[index].get('colour_correction')
+            else:
+                correction_parameters = self.cameras_from_config[index].get('manual_balance')
+            self.cameras.append(Camera(name, pattern, extension, path, path_imagelist, method, correction_parameters, self.undistort, self.outlier_filter, self.output_format))
+
+        return self.cameras

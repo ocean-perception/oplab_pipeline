@@ -26,7 +26,7 @@ from auv_nav.tools.folder_structure import get_raw_folder
 from auv_nav.tools.folder_structure import get_processed_folder
 from auv_nav.tools.folder_structure import get_config_folder
 #from correct_images.read_mission import read_params
-import parameters_
+from parameters_ import *
 from draft_camera_system import *
 from draft_corrector import *
 
@@ -118,15 +118,32 @@ def call_correct(args):
     path_config = get_config_folder(path)
     
     # resolve paths to mission.yaml, correct_config.yaml
-    # path_mission = path_raw / "mission.yaml"
-    path_correct_config = path_config / "correct_images.yaml"
-
-    #print(path_raw)
-    #print(path_processed)
-    #print('-------------------------------------------------------------')
+    path_mission = path_raw / "mission.yaml"
+    path_correct_config = path_config / "correct_images_yaml.yaml"
 
     # parse parameters from mission and correct_config files
-    # mission_parameters = parameters_.Parameters(path_mission, 'mission')
+    mission_parameters = Parameters(path_mission, 'mission')
+    correct_parameters = Parameters(path_correct_config, 'config')
+
+
+    # instantiate the camerasystem and setup cameras with parameters from mission and config yaml files
+    camerasystem = CameraSystem(path_raw, mission_parameters, correct_parameters)
+    # camerasystem.read_camera_parameters_from_mission()
+    cameras = camerasystem.setup_cameras()
+
+    for camera in cameras:
+        print(camera.get_name())
+        print(camera.get_path())
+        print(camera.get_pattern())
+        print(camera.get_method())
+        print(camera.get_extension())
+        print(camera.get_correction_parameters())
+        print(camera.get_imagelist())
+        print('-----------------------------')
+
+        corrector = Corrector(path_processed, camera)
+
+    '''
     correct_parameters = parameters_.Parameters(path_correct_config)
 
     # get relative path to camera images
@@ -168,7 +185,7 @@ def call_correct(args):
 
     # execute corrector
     # corrector.Execute()
-    
+    '''
 if __name__ == '__main__':
     main()
 

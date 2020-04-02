@@ -1,39 +1,54 @@
 #YAML 1.0
+version: 1
 
-config:
-  # path of the CSV file. mention only the 'dive_start_end_time' name
-  auv_nav_path: 'json_renav_20180809_193000_20180809_235527'
-  format: 'seaxerocks_3'
-  # Camera system to which the target data set belongs---------------- 
-  # Cam51707923 / Cam51707925 / LM165 for format: seaxerocks_3
-  # LC / RC for format: acfr_standard
-  camera1: 'RC'
-  camera2: 'LC'
+cameras: 
+  - camera_name: 'LC' #in line with vehicle.yaml
+    image_file_list: None # Only inidicate this if you want to limit the images used. folder is in the image path
+    method: 'colour_correction' # or 'manual_balance'
 
-  # the index of processed images. If -1 is given, all images in filelist.csv are processed
-  src_img_index: -1  # example: src_img_index: [100,101,102,103] or src_img_index: [99]
+    colour_correction:
+      distance_metric: 'altitude' # ['none', 'altitude', 'depth_map'] assumes constant altitude, flat seafloor, 3d structure respectively. depth_map requires **** to have been run
+      metric_path: 'json_renav_20180811_000114_20180811_184045' # json nav path in case of altitude / depth map path in case of depth map metric
+      altitude_filter: # only use images in the altitude range below to calculate attenuation_modelling parameters
+        max_m: 12
+        min_m: 4
+      outlier_filter: False # if outlier filter is True select smoothing as 'mean_trimmed'
+      smoothing: 'median' # 'mean' / 'median' / 'mean_trimmed' sampling colour intensity values from window_size to develop model
+      window_size: 3 # increase if the attenuation correction parameter looks noisy.
+      curve_fitting_outlier_rejection: True
 
-attenuation_correction:
-  # the images captured at the altitude only in the range from altitude_min to altitude_max are used for calculating parameters.
-  altitude:
-    max: 12
-    min: 4
+      brightness: 30 # % target across dataset
+      contrast: 3 # % target accross dataset  
 
-  sampling_method: 'median' # sampling method from raw data. for local computers, 'median' is preferable because the calculation cost is low.
-  median_filter_kernel_size: 3 # If the attenuation correction parameter looks noisy.
-  
-normalization:
-  target_mean: 30 # target mean and standard deviation for pixel stat
-  target_std: 3
-  
+    manual_balance:
+      static: # Only y=mx+c include this block if you want to balance colours with a fixed set of colour balance parameters
+        subtractors_rgb: [0, 0, 0] # -c values (zero capped)
+        colour_correction_matrix_rgb: [[1, 0, 0], [0, 1, 0], [0, 0, 1]] # diagonal terms corresponding to r gain, g gain, b gain
 
-output:
-  debayer_option: 'vng' # debayer option. 'linear', 'ea' or 'vng'. default = 'linear'
-  bayer_pattern: 'RGGB' # bayer pattern for biocam: BGGR, ae2000: GRBG, tuna sand: RGGB
-  dst_file_format: 'png' # The format of developed images. Currently, only png can be given.
-  
-flags:
-  apply_attenuation_correction: True # If false, the process will develop only pixel stat applied image
-  apply_gamma_correction: True        
-  apply_distortion_correction: False
-  camera_parameter_file_path: None # needed if apply_distortion_correction is True
+  - camera_name: 'RC' #in line with vehicle.yaml
+    image_file_list: None # Only inidicate this if you want to limit the images used
+    method: 'manual_balance' # or 'manual_balance'
+
+    colour_correction:
+      distance_metric: 'altitude' # ['none', 'altitude', 'depth_map'] assumes constant altitude, flat seafloor, 3d structure respectively. depth_map requires **** to have been run
+      metric_path: 'json_renav_20180811_000114_20180811_184045' # json nav path in case of altitude / depth map path in case of depth map metric
+      altitude_filter: # only use images in the altitude range below to calculate attenuation_modelling parameters
+        max_m: 12
+        min_m: 4
+      outlier_filter: False # if outlier filter is True select smoothing as 'mean_trimmed'
+      smoothing: 'median' # 'mean' / 'median' / 'mean_trimmed' sampling colour intensity values from window_size to develop model
+      window_size: 3 # increase if the attenuation correction parameter looks noisy.
+      curve_fitting_outlier_rejection: True
+
+      brightness: 30 # % target across dataset
+      contrast: 3 # % target accross dataset  
+
+    manual_balance:
+      static: # Only y=mx+c include this block if you want to balance colours with a fixed set of colour balance parameters
+        subtractors_rgb: [0, 0, 0] # -c values (zero capped)
+        colour_correction_matrix_rgb: [[1, 0, 0], [0, 1, 0], [0, 0, 1]] # diagonal terms corresponding to r gain, g gain, b gain
+
+output_settings:
+  undistort: True
+  compression_parameter: 'png' # 'tiff'
+

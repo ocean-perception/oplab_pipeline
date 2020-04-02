@@ -14,12 +14,26 @@ from draft_camera_system import *
 
 
 class Corrector:
-	def __init__(self, path_processed=None, correct_params=None):
+	def __init__(self, camera, path_processed=None):
 		self.output_dir_path = None
 		self.bayer_dir_path = None
+		self.correction_parameters_path = None
 
-		if correct_params is not None:
-			self.json_path = correct_params.json_path
+		self.camera = camera
+
+		if path_processed is not None:
+			self.path_processed = path_processed
+		'''
+		self.correct_params = camera.get_correction_parameters()
+		self.correct_method = camera.get_method()
+		self.undistort = camera.get_undistort_check()
+		self.output_image_format = camera.get_output_format()
+		self.camera_name = camera.get_name()
+		self.image_extension = camera.get_extension()
+		self.image_bayer_pattern = camera.get_pattern()
+		self.imagelist = camera.get_imagelist()
+		'''
+			'''
 			self.altitude_max = correct_params.altitude_max
 			self.altitude_min = correct_params.altitude_min
 			self.sampling_method = correct_params.sampling_method
@@ -28,9 +42,97 @@ class Corrector:
 			self.target_mean = correct_params.target_mean
 			self.target_std = correct_params.target_std
 			self.apply_distortion_correction = correct_params.apply_distortion_correction
-			
-		if path_processed is not None:
-			self.path_processed = path_processed
+			'''
+	def load_correction_parameters(self):
+		# load imagelist
+		self.imagelist = self.camera.get_imagelist()
+
+		# check for grey world correction or color balance
+		self.method = self.camera.get_method()
+
+		if self.method == 'colour_correction':
+
+			# read in color correction parameters
+			self.read_color_correction_parameters()
+
+			# read altitudes / depth maps
+			self.read_distance_matrix()
+
+			# create output folders for bayer_np files / attenuation_parameters / corrected images
+			self.create_output_folders()
+
+
+		elif self.method == 'manual_balance':
+			# read in static correction parameters
+			self.read_manual_balance_parameters()
+
+	def calculate_attenuation_parameters(self):
+		# check if outlier filter is true
+		if self.oulier_filter is True:
+			# TODO compute attenuation parameters with 'mean_trimmed' smoothing method
+		else:
+			# TODO compute attenuation parameters with 'mean' / 'median' smoothing method
+
+	def apply_color_corrections(self):
+		pass
+
+	def debayer_images(self, image_list, pattern):
+		if not pattern == 'None':
+			# source images are bayer. Debayer corrected images.
+			# TODO Debayering code
+			# return debayered images
+		else:	
+			# source images are debayered. No need to debayer corrected images.
+			return image_list
+
+	def distortion_correction(self, image_list, undistort):
+		# distortion correction
+		if undistort is True:
+			# perform distortion correction
+			# TODO distortion code
+			# return corrected_image_list
+
+		else:
+			# no distortion correction
+			return image_list
+
+	def gamma_correction(self, image_list):
+		# TODO code for gamma correction
+		# return corrected_image_list
+
+	def write_developed_images(self, image_list, output_format):
+		# check for output format
+		if output_format == 'jpg':
+			# perform gamma correction default
+			self.corrected_image_list = self.gamma_correction(image_list)
+		else:
+			# if png file format, perform no gamma correction default
+			# TODO code for writing corrected images to output folders
+
+	def execute_correction_pipeline(self):
+		# load correction parameters 
+		self.load_correction_parameters()
+
+		# calculate attenuation parameters with / without outlier filtering
+		self.calculate_attenuation_parameters()
+
+		# apply corrections
+		self.corrected_image_list = self.apply_color_corrections()
+
+		# debayer / do not debayer
+		pattern = camera.get_pattern()
+		self.corrected_image_list = self.debayer_images(self.corrected_image_list, pattern)
+
+		# correct / not correct for distortions
+		undistort = camera.get_undistort_check()
+		self.corrected_image_list = self.distortion_correction(self.corrected_image_list, undistort)
+
+		# write corrected images to output folders with / without gamma correction
+		output_format = camera.get_output_format()
+		self.write_developed_images(self.corrected_image_list, output_format)
+
+'''
+# developing the associated functions to support the pipeline defined above
 
 	def read_imagename_altitudes(self, camera):
 		auv_nav_csv = 'auv_ekf_' + camera.get_name() + '.csv'
@@ -42,6 +144,9 @@ class Corrector:
 		altitude_list = auvnav_dataframe[' Altitude [m]']
 		imagename_altitude_dataframe = pd.DataFrame({'Imagenumber':imagelist, 'Altitude':altitude_list})
 		return imagename_altitude_dataframe
+
+	def read_imagename_depthmap(self, camera):
+		pass
 
 	def get_filtered_image_pathlist(self, camera, imagename_altitude_dataframe):
 		imagelist = imagename_altitude_dataframe['Imagenumber']
@@ -95,7 +200,5 @@ class Corrector:
 				tmp_npy = np.zeros([a, b], np.uint16)
 				tmp_npy[:, :] = np.array(tmp_tif, np.uint16)
 				np.save(np_file_list[image_idx], tmp_npy)
-        
-	def calculate_attenuation_parameters(self, camera, imagename_altitude_dataframe):
-		pass
-
+'''        
+	
