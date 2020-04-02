@@ -40,6 +40,7 @@ def findLaserInImage(img, min_green_val, k, min_area, num_columns, start_row=0, 
     if prior is None:
         if num_columns > 0:
             incr = int(len(width_array) / num_columns) - 1
+            incr = max(incr, 1)
             columns = [width_array[i] for i in range(0, len(width_array), incr)]
         else:
             columns = width_array
