@@ -92,14 +92,28 @@ def plane_fitting_ransac(cloud_xyz,
 if __name__ == '__main__':
     n = 100
     max_iterations = 100
-    goal_inliers = n * 0.3
+    goal_inliers = n * 0.8
 
-    # test data
-    xyzs = np.random.random((n, 3)) * 10
-    xyzs[:50, 2:] = xyzs[:50, :1]
+    N_POINTS = 100
+    TARGET_A = -0.6
+    TARGET_B = -0.3
+    TARGET_C = -0.4
+    TARGET_D = -1.5
+    EXTENTS = 10.0
+    NOISE = 0.1
+
+    # create random data
+    xyzs = np.zeros((N_POINTS, 3))
+    xyzs[:, 0] = [np.random.uniform(2*EXTENTS)-EXTENTS for i in range(N_POINTS)]
+    xyzs[:, 1] = [np.random.uniform(2*EXTENTS)-EXTENTS for i in range(N_POINTS)]
+    for i in range(N_POINTS):
+        xyzs[i, 2] = (-TARGET_D - xyzs[i, 0]*TARGET_A - xyzs[i, 1]*TARGET_B)/TARGET_C + np.random.normal(scale=NOISE)
 
     # RANSAC
-    a, b, c, d = plane_fitting_ransac(xyzs, 0.01, 3, goal_inliers, max_iterations, plot=True)
+    m, inliers = plane_fitting_ransac(xyzs, 0.01, 3, goal_inliers, max_iterations, plot=True)
+    scale = TARGET_D/m[3]
+    print(np.array(m)*scale)
+    print('Inliers: ', len(inliers))
 
     #m, b = run_ransac(xyzs, estimate, lambda x, y: is_inlier(x, y, 0.01), 3, goal_inliers, max_iterations)
     #a, b, c, d = m
