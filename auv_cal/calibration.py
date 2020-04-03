@@ -22,11 +22,15 @@ def collect_image_files(image_dirs, file_pattern):
     images = []
     if isinstance(image_dirs, list):
         for d in image_dirs:
-            images.extend(list(d.glob(file_pattern)))
+            if d.is_dir():
+                images.extend(list(d.glob(file_pattern)))
+            else:
+                Console.warn('Directory '"'{}'"' cannot be found'.format(d))
     else:
-        print(image_dirs)
-        print(file_pattern)
-        images = list(image_dirs.glob(file_pattern))
+        if (image_dirs.is_dir()):
+            images = list(image_dirs.glob(file_pattern))
+        else:
+            Console.warn('Directory '"'{}'"' cannot be found'.format(image_dirs))
     images.sort()
     return images
 
