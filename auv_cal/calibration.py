@@ -186,9 +186,11 @@ class Calibrator():
             Console.error('This code expects you to run it inside a dive folder.')
             Console.quit('The folder specified is not a valid dive.')
 
+        self.filepath = self.filepath.parent
+
         # Create the calibration folder at the same level as the dives
-        self.output_path = get_processed_folder(self.filepath.parent) / 'calibration'
-        self.configuration_path = get_config_folder(self.filepath.parent) / 'calibration'
+        self.output_path = get_processed_folder(self.filepath) / 'calibration'
+        self.configuration_path = get_config_folder(self.filepath) / 'calibration'
         if not self.output_path.exists():
             self.output_path.mkdir(parents=True)
         if not self.configuration_path.exists():
