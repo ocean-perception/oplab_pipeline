@@ -33,41 +33,22 @@ classifiers = [
     'Topic :: Software Development']
 
 
-def retrieve_git_info():
-    """Return commit hash of HEAD, or "release", or None if failure.
-    If the git command fails, then return None.
-    If HEAD has tag with prefix "vM" where M is an integer, then
-    return 'release'.
-    Tags with such names are regarded as version or release tags.
-    Otherwise, return the commit hash as str.
-    """
+def git_command(args):
+    prefix = ['git']
+    return subprocess.check_output(prefix + args).decode().strip()
+
+
+def git_pep440_version():
     # Is Git installed?
     try:
         subprocess.call(['git', '--version'],
                         stdout=subprocess.PIPE)
     except OSError:
         return None
-    # Decide whether this is a release
-    p = subprocess.Popen(
-        ['git', 'describe', '--dirty', '--always', '--tags'],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT)
-    p.wait()
-    if p.returncode == 0:
-        tag = p.stdout.read().decode('utf-8')
-        if len(tag) >= 2 and tag.startswith('v'):
-            try:
-                int(tag[1])
-                return 'release'
-            except ValueError:
-                pass
-    # Otherwise, return commit hash
-    p = subprocess.Popen(
-        ['git', 'log', '-1', '--format=%H'],
-        stdout=subprocess.PIPE)
-    p.wait()
-    sha1 = p.stdout.read().decode('utf-8')
-    return sha1
+    version_full = git_command(['describe', '--tags', '--dirty=.dirty'])
+    version_tag = git_command(['describe', '--tags', '--abbrev=0'])
+    version_tail = version_full[len(version_tag):]
+    return version_tag + version_tail.replace('-', '.dev', 1).replace('-', '+', 1)
 
 
 def run_setup():
@@ -83,7 +64,7 @@ def run_setup():
     # to indicate version information
     if os.path.exists('.git'):
         # Provide commit hash or empty file to indicate release
-        sha1 = retrieve_git_info()
+        sha1 = git_pep440_version()
         if sha1 is None:
             sha1 = 'unknown-commit'
         elif sha1 == 'release':
