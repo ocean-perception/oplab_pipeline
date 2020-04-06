@@ -680,6 +680,7 @@ def calculate_correction_parameters(path, force):
                 if camera_format == 'seaxerocks_3':
                     csv_path = 'csv/dead_reckoning/auv_dr_' + camera_serial + '.csv'
                 else:
+                    camera_lr = 'LC'   # Fix for compatibility
                     csv_path = 'csv/dead_reckoning/auv_dr_' + camera_lr + '.csv'
                 # auv_nav_filepath = path_processed / anf
                 auv_nav_filepath = auv_nav_filepath / csv_path
