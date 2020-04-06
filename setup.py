@@ -49,7 +49,7 @@ def retrieve_git_info():
         return None
     # Decide whether this is a release
     p = subprocess.Popen(
-        ['git', 'describe', '--tags', '--candidates=0', 'HEAD'],
+        ['git', 'describe', '--dirty', '--always', '--tags'],
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT)
     p.wait()

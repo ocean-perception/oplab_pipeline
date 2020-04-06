@@ -1,10 +1,7 @@
 """auv_nav package version"""
 import os.path
 
-version_info = (0, 0, 2)
-
-version = '.'.join([str(x) for x in version_info])
-
+version = ""
 
 # Append annotation to version string to indicate development versions.
 #
@@ -13,7 +10,7 @@ version = '.'.join([str(x) for x in version_info])
 # string as defined above.
 path_to_hashfile = os.path.join(os.path.dirname(__file__), "commit_hash.txt")
 if os.path.exists(path_to_hashfile):
-    commit_hash = ""
+    commit_version = ""
     with open(path_to_hashfile, "r") as f:
         for line in f:
             line = line.strip()
@@ -23,10 +20,10 @@ if os.path.exists(path_to_hashfile):
                 continue
 
             # First non-blank line is assumed to be the commit hash
-            commit_hash = line
+            commit_version = line
             break
 
-    if len(commit_hash) > 0:
-        version += ".dev0+" + commit_hash
+    if len(commit_version) > 0:
+        version = commit_version
 else:
     version += ".dev0+unknown.commit"
