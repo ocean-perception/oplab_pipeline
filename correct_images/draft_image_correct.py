@@ -119,7 +119,7 @@ def call_correct(args):
     
     # resolve paths to mission.yaml, correct_config.yaml
     path_mission = path_raw / "mission.yaml"
-    path_correct_config = path_config / "correct_images_yaml.yaml"
+    path_correct_config = path_config / "correct_images.yaml"
 
     # parse parameters from mission and correct_config files
     mission_parameters = Parameters(path_mission, 'mission')
@@ -132,16 +132,20 @@ def call_correct(args):
     cameras = camerasystem.setup_cameras()
 
     for camera in cameras:
-        print(camera.get_name())
-        print(camera.get_path())
-        print(camera.get_pattern())
-        print(camera.get_method())
-        print(camera.get_extension())
-        print(camera.get_correction_parameters())
-        print(camera.get_imagelist())
+        #print(camera.get_name())
+        #print(camera.get_path())
+        #print(camera.get_pattern())
+        #print(camera.get_method())
+        #print(camera.get_extension())
+        #print(camera.get_correction_parameters())
+        #print(camera.get_imagelist())
+        
+        
+        corrector = Corrector(camera, path_processed)
+        corrector.load_correction_parameters()
+        
         print('-----------------------------')
 
-        corrector = Corrector(path_processed, camera)
 
     '''
     correct_parameters = parameters_.Parameters(path_correct_config)

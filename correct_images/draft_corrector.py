@@ -9,6 +9,7 @@ import cv2
 import imageio
 import os
 from auv_nav.tools.folder_structure import get_processed_folder
+from auv_nav.tools.console import Console
 from draft_camera_system import *
 # -----------------------------------------
 
@@ -17,7 +18,7 @@ class Corrector:
 	def __init__(self, camera, path_processed=None):
 		self.output_dir_path = None
 		self.bayer_dir_path = None
-		self.correction_parameters_path = None
+		self.output_parameters_path = None
 
 		self.camera = camera
 
@@ -32,8 +33,7 @@ class Corrector:
 		self.image_extension = camera.get_extension()
 		self.image_bayer_pattern = camera.get_pattern()
 		self.imagelist = camera.get_imagelist()
-		'''
-			'''
+		
 			self.altitude_max = correct_params.altitude_max
 			self.altitude_min = correct_params.altitude_min
 			self.sampling_method = correct_params.sampling_method
@@ -42,7 +42,7 @@ class Corrector:
 			self.target_mean = correct_params.target_mean
 			self.target_std = correct_params.target_std
 			self.apply_distortion_correction = correct_params.apply_distortion_correction
-			'''
+		'''
 	def load_correction_parameters(self):
 		# load imagelist
 		self.imagelist = self.camera.get_imagelist()
@@ -59,16 +59,105 @@ class Corrector:
 			self.read_distance_matrix()
 
 			# create output folders for bayer_np files / attenuation_parameters / corrected images
-			self.create_output_folders()
+			#self.create_output_folders()
+
+			# write bayer numpy files
+			#self.write_bayer_np_files()
 
 
 		elif self.method == 'manual_balance':
+			print('manual_balance')
 			# read in static correction parameters
-			self.read_manual_balance_parameters()
+			#self.read_manual_balance_parameters()
+
+	def read_color_correction_parameters(self):
+
+		camera_correction_parameters = self.camera.get_correction_parameters()
+		self.distance_metric = camera_correction_parameters['distance_metric']
+		self.metric_path = camera_correction_parameters['metric_path']
+		self.altitude_max = camera_correction_parameters['altitude_filter']['max_m']
+		self.altitude_min = camera_correction_parameters['altitude_filter']['min_m']
+		self.outlier_filter = camera_correction_parameters['outlier_filter']
+		self.smoothing = camera_correction_parameters['smoothing']
+		self.window_size = camera_correction_parameters['window_size']
+		self.curve_fitting_outlier_rejection = camera_correction_parameters['curve_fitting_outlier_rejection']
+		self.target_mean = camera_correction_parameters['brightness']
+		self.target_std = camera_correction_parameters['contrast']
+
+	def read_distance_matrix(self):
+		# create distance matrix
+		distance_matrix = np.empty(())
+
+		if self.distance_metric == 'none':
+			self.distance_matrix = distance_matrix
+
+		elif self.distance_metric == 'altitude':
+			self.get_image_altitude_dataframe()
+
+			# read image size
+			image = self.image_altitude_dataframe['Imagenumber'][0]
+			image_absolute_path = self.camera.get_absolute_path() / image
+			print(image_absolute_path)
+			self.image_size = imageio.imread(image_absolute_path)
+			tmp = self.image_size.shape
+			self.a = tmp[0]
+			self.b = tmp[1]
+			if len(tmp) == 3:
+				self.image_channels = tmp[2]
+			else:
+				self.image_channels = 1
+			print('image size: ', self.a, self.b)
+			print('image channels: ', self.image_channels)
+
+			# create a distance matrix
+			self.distance_matrix = np.empty((self.a, self.b))
+		
+			altitude_list = self.image_altitude_dataframe['Altitude']
+			for altitude in altitude_list:
+				tmp_matrix = np.empty((self.a, self.b))
+				for i in range(self.a):
+					for j in range(self.b):
+						tmp_matrix[i, j] = altitude
+				if self.distance_matrix.size == self.a * self.b:
+					self.distance_matrix = tmp_matrix 
+				else:
+					self.distance_matrix = np.concatenate((self.distance_matrix, tmp_matrix), axis=0)
+
+			print(self.distance_matrix)
+
+		elif self.distance_metric == 'depth_map':
+			print('depth_map')
+		else:
+			Console.quit('Chosen distance_metric is not understood...')
+
+	def get_image_altitude_dataframe(self):
+		#>>> a = [1, 2, 9, 3, 8] 
+		#>>> b = [1, 9, 1] 
+		#>>> [a.index(item) for item in b]
+
+		auv_nav_csv = 'auv_ekf_' + self.camera.get_name() + '.csv'
+		path_altitude_csv = self.path_processed / self.metric_path / 'csv'
+		path_altitude_csv = path_altitude_csv / 'ekf'
+		path_altitude_csv = path_altitude_csv / auv_nav_csv
+		auvnav_dataframe = pd.read_csv(path_altitude_csv)
+		selected_dataframe = auvnav_dataframe[auvnav_dataframe['Imagenumber'].isin(self.imagelist)]
+		filtered_dataframe = self.filter_image_altitude_dataframe(selected_dataframe)
+		image_list = filtered_dataframe['Imagenumber']
+		altitude_list = filtered_dataframe[' Altitude [m]']
+		self.image_altitude_dataframe = pd.DataFrame({'Imagenumber':image_list, 'Altitude':altitude_list})
+
+	def filter_image_altitude_dataframe(self, selected_dataframe):
+		selected_dataframe[(selected_dataframe[' Altitude [m]'] >= self.altitude_min) & (selected_dataframe[' Altitude [m]'] < self.altitude_max)]
+		return selected_dataframe
+
+	#def get_bayer_np_filelist(self):
+
+
+	'''
 
 	def calculate_attenuation_parameters(self):
 		# check if outlier filter is true
-		if self.oulier_filter is True:
+		if self.outlier_filter is True:
 			# TODO compute attenuation parameters with 'mean_trimmed' smoothing method
 		else:
 			# TODO compute attenuation parameters with 'mean' / 'median' smoothing method
@@ -130,8 +219,9 @@ class Corrector:
 		# write corrected images to output folders with / without gamma correction
 		output_format = camera.get_output_format()
 		self.write_developed_images(self.corrected_image_list, output_format)
+	
 
-'''
+
 # developing the associated functions to support the pipeline defined above
 
 	def read_imagename_altitudes(self, camera):
@@ -200,5 +290,5 @@ class Corrector:
 				tmp_npy = np.zeros([a, b], np.uint16)
 				tmp_npy[:, :] = np.array(tmp_tif, np.uint16)
 				np.save(np_file_list[image_idx], tmp_npy)
-'''        
+	'''        
 	
