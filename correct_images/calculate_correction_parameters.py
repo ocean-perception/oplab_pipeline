@@ -1154,9 +1154,8 @@ def calculate_correction_parameters(path, force):
                 else:
                     csv_path = 'csv/dead_reckoning/auv_dr_' + camera_lr + '.csv'
                 # auv_nav_filepath = path_processed / anf
-                auv_nav_filepath = auv_nav_filepath / csv_path
-
-                df_all = pd.read_csv(auv_nav_filepath,
+                csv_filepath = get_processed_folder(auv_nav_filepath) / csv_path
+                df_all = pd.read_csv(csv_filepath,
                                      dtype={'Imagenumber': object})
                 raw_file_list = [None] * len(df_all)
                 for i_file in range(len(raw_file_list)):
