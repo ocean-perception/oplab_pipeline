@@ -84,6 +84,10 @@ class Corrector:
 		self.target_mean = camera_correction_parameters['brightness']
 		self.target_std = camera_correction_parameters['contrast']
 
+	def read_manual_balance_parameters(self):
+		camera_correction_parameters = self.camera.get_correction_parameters()
+		
+
 	def read_distance_matrix(self):
 		# create distance matrix
 		distance_matrix = np.empty(())
