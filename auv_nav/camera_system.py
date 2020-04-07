@@ -5,6 +5,7 @@ from auv_nav.tools.folder_structure import get_raw_folder
 from auv_nav.console import Console
 # Workaround to dump OrderedDict into YAML files
 from collections import OrderedDict
+from pathlib import Path
 
 
 class CameraEntry:
@@ -33,6 +34,16 @@ class CameraEntry:
         node['type'] = self.type
         node['path'] = self.path
 
+    def get_image_list(self):
+        curr_dir = Path.cwd()
+        raw_dir = get_raw_folder(curr_dir)
+        img_dir = raw_dir.glob(self.path)
+        img_list = []
+        for i in img_dir:
+            [img_list.append(str(_)) for _ in i.rglob('*.' + self.extension)]
+        img_list.sort()
+        return img_list
+
 
 class CameraSystem:
     def __init__(self, filename=None):
@@ -41,6 +52,10 @@ class CameraSystem:
 
         if filename is None:
             return
+
+        if isinstance(filename, str):
+            filename = Path(filename)
+        
         try:
             with filename.open('r') as stream:
                 data = yaml.safe_load(stream)
