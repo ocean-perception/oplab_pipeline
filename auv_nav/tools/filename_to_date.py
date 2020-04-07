@@ -10,8 +10,6 @@ from auv_nav.tools.folder_structure import get_raw_folder
 def resolve(filename):
     curr_dir = Path.cwd()
     curr_dir = get_raw_folder(curr_dir)
-    print(curr_dir)
-    print(filename)
     resolved_filename = ''
     for x in curr_dir.glob(filename):
         resolved_filename = x
@@ -132,20 +130,3 @@ class FilenameToDate():
         df = df.drop('combined_format', axis=1)
         df[df_index_name] = df[df_index_name].astype(int)
         self.df = df.set_index(df_index_name)
-        print(self.df)
-
-
-if __name__ == '__main__':
-
-    a = filename_to_date('0000245.raw', 'iiiiiii.xxx')
-    print(a)
-    a = filename_to_date('image0000246.tif', 'xxxxxiiiiiii.xxx')
-    print(a)
-    a = filename_to_date('PR_20180811_153729_762_RC16.tif', 'xxxYYYYMMDDxhhmmssxfffxxxxx.xxx')
-    print(a)
-    a = filename_to_date('20190913_101347_962382_20190913_101346_411014_pcoc.tif', 'YYYYMMDDxhhmmssxfffuuuxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxx')
-    print(a)
-
-    f = open('example.yaml')
-    a = yaml.safe_load(f)
-    read_timestamp_file(a['timestamp_file'], a['columns'])
