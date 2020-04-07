@@ -73,8 +73,6 @@ class Corrector:
 			self.load_static_correction_parameters()
 
 		pass
-		
-
 
 	def calculate_distance_based_correction_parameters(self):
 		# TODO:
