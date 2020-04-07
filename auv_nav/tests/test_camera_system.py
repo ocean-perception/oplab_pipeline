@@ -1,6 +1,22 @@
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 from auv_nav.camera_system import CameraSystem
+from auv_nav.tools.filename_to_date import FilenameToDate
+import auv_nav.tools.filename_to_date
+
+
+class TestFilenameToDate(unittest.TestCase):
+    def testAcfrStandard(self):
+        conv = FilenameToDate('xxxYYYYMMDDxhhmmssxfffxxxxx.xxx')
+        d = conv('PR_20180811_153729_762_RC16.tif')
+        self.assertEqual(d, 1534001849.762, 'Filename to date conversion is wrong for AcfrStandard')
+    
+    def testBiocam(self):
+        conv = FilenameToDate(
+            'YYYYMMDDxhhmmssxfffuuuxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxx')
+        d = conv('20190913_101347_962382_20190913_101346_411014_pcoc.tif')
+        self.assertEqual(d, 1568369627.962382, 'Filename to date conversion is wrong for BioCam')
 
 
 class TestCameraSystem(unittest.TestCase):
@@ -45,8 +61,12 @@ class TestCameraSystem(unittest.TestCase):
         self.assertEqual(content.count('s'), 2, 'Second speficication is incorrect for timestamp file data columns')
         self.assertEqual(content.count('f'), 3, 'Millisecond speficication is incorrect for timestamp file data columns')
 
-    def testSeaxerocks3(self):
+    @patch("auv_nav.tools.filename_to_date.resolve")
+    def testSeaxerocks3(self, mock_resolve):
         root = Path(__file__).parents[1]
+
+        mock_resolve.return_value = root / 'tests/FileTimeXviii.csv'
+
         sx3_camera_file = 'default_yaml/ae2000/YK17-23C/camera.yaml'
         cs = CameraSystem(root / sx3_camera_file)
         self.assertEqual(cs.camera_system, 'seaxerocks_3', 'Wrong camera system')
