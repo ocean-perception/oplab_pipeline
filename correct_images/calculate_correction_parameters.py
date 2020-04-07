@@ -18,7 +18,7 @@ from scipy import optimize
 from tqdm import trange
 from pathlib import Path
 
-from auv_nav.tools.console import Console
+from auv_nav.console import Console
 from auv_nav.tools.folder_structure import get_raw_folder
 from auv_nav.tools.folder_structure import get_processed_folder
 from auv_nav.tools.folder_structure import get_config_folder

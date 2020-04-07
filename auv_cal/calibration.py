@@ -1,6 +1,6 @@
 # Encoding: utf-8
 
-from auv_nav.tools.console import Console
+from auv_nav.console import Console
 from auv_cal.camera_models import StereoCamera
 from auv_cal.camera_calibrator import CalibrationException
 from auv_cal.camera_calibrator import MonoCalibrator

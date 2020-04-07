@@ -34,9 +34,9 @@ from auv_nav.plot.plot_process_data import plot_uncertainty
 from auv_nav.plot.plot_process_data import plot_2d_deadreckoning
 from auv_nav.tools.folder_structure import get_config_folder
 from auv_nav.tools.folder_structure import get_processed_folder
-from auv_nav.parsers.vehicle import Vehicle
-from auv_nav.parsers.mission import Mission
-from auv_nav.tools.console import Console
+from auv_nav.vehicle import Vehicle
+from auv_nav.mission import Mission
+from auv_nav.console import Console
 from auv_nav.tools.folder_structure import valid_dive
 
 # Import librarys
@@ -61,7 +61,7 @@ csv files and, if plot is True, save plots
 """
 
 
-def process_data(filepath, force_overwite, start_datetime, finish_datetime):
+def process(filepath, force_overwite, start_datetime, finish_datetime):
     # placeholders
     interpolate_remove_flag = False
 

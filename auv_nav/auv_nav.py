@@ -4,10 +4,10 @@ Copyright (c) 2018, University of Southampton
 All rights reserved.
 """
 
-from auv_nav.parse_data import parse_data
-from auv_nav.process_data import process_data
-from auv_nav.convert_data import convert_data
-from auv_nav.tools.console import Console
+from auv_nav.parse import parse
+from auv_nav.process import process
+from auv_nav.convert import convert
+from auv_nav.console import Console
 
 import sys
 import argparse
@@ -168,15 +168,15 @@ def main(args=None):
 
 
 def call_parse_data(args):
-    parse_data(args.path, args.force)
+    parse(args.path, args.force)
 
 
 def call_process_data(args):
-    process_data(args.path, args.force, args.start_datetime, args.end_datetime)
+    process(args.path, args.force, args.start_datetime, args.end_datetime)
 
 
 def call_convert_data(args):
-    convert_data(args.path, args.format, args.start_datetime, args.end_datetime)
+    convert(args.path, args.format, args.start_datetime, args.end_datetime)
 
 
 if __name__ == "__main__":

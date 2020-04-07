@@ -9,7 +9,7 @@
 from auv_nav.tools.time_conversions import date_time_to_epoch
 from auv_nav.tools.time_conversions import epoch_to_day
 from auv_nav.tools.folder_structure import get_raw_folder
-from auv_nav.tools.console import Console
+from auv_nav.console import Console
 
 
 def parse_seaxerocks_images(mission,

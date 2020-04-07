@@ -9,7 +9,7 @@ from auv_nav.tools.time_conversions import date_time_to_epoch
 from auv_nav.tools.time_conversions import read_timezone
 from auv_nav.tools.latlon_wgs84 import latlon_to_metres
 from auv_nav.tools.latlon_wgs84 import metres_to_latlon
-from auv_nav.tools.console import Console
+from auv_nav.console import Console
 from math import sqrt, atan2, pi, sin, cos
 import json as js
 import numpy as np

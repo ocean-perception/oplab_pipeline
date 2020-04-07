@@ -18,9 +18,9 @@ from auv_nav.sensors import Other, Camera
 from auv_nav.sensors import SyncedOrientationBodyVelocity
 from auv_nav.tools.folder_structure import get_config_folder
 from auv_nav.tools.folder_structure import get_processed_folder
-from auv_nav.parsers.vehicle import Vehicle
-from auv_nav.parsers.mission import Mission
-from auv_nav.tools.console import Console
+from auv_nav.vehicle import Vehicle
+from auv_nav.mission import Mission
+from auv_nav.console import Console
 
 
 # Import librarys
@@ -110,7 +110,7 @@ class AcfrConverter():
             self.f.write(data)
 
 
-def convert_data(filepath, ftype, start_datetime, finish_datetime):
+def convert(filepath, ftype, start_datetime, finish_datetime):
     Console.info('Requested data conversion to {}'.format(ftype))
 
     filepath = Path(filepath).resolve()

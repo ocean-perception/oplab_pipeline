@@ -25,9 +25,9 @@ from auv_nav.plot.plot_parse_data import plot_parse_data
 from auv_nav.tools.time_conversions import epoch_to_day
 from auv_nav.tools.folder_structure import get_config_folder, get_raw_folder
 from auv_nav.tools.folder_structure import get_processed_folder
-from auv_nav.tools.console import Console
-from auv_nav.parsers.vehicle import Vehicle
-from auv_nav.parsers.mission import Mission
+from auv_nav.console import Console
+from auv_nav.vehicle import Vehicle
+from auv_nav.mission import Mission
 
 from auv_nav.tools.interpolate import interpolate
 from auv_nav.tools.interpolate import interpolate_sensor_list
@@ -38,7 +38,7 @@ from auv_nav.tools.time_conversions import epoch_to_datetime
 from auv_nav.sensors import Category
 
 
-def parse_data(filepath, force_overwite):
+def parse(filepath, force_overwite):
     # initiate data and processing flags
     filepath = Path(filepath).resolve()
     filepath = get_raw_folder(filepath)

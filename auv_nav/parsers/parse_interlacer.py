@@ -7,7 +7,7 @@ All rights reserved.
 import json
 from array import array
 from operator import itemgetter
-from auv_nav.tools.console import Console
+from auv_nav.console import Console
 
 
 def sort_values(value, order_index=1):

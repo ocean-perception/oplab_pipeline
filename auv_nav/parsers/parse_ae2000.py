@@ -13,7 +13,7 @@ from auv_nav.tools.body_to_inertial import body_to_inertial
 from auv_nav.tools.time_conversions import date_time_to_epoch
 from auv_nav.tools.time_conversions import read_timezone
 from auv_nav.tools.folder_structure import get_raw_folder
-from auv_nav.tools.console import Console
+from auv_nav.console import Console
 # http://www.json.org/
 data_list = []
 # need to make acfr parsers
