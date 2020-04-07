@@ -4,7 +4,7 @@ cameras:
     type: rggb
     bit_depth: 18
     path: 'image/SeaXerocksData*/Xviii/Cam51707923'
-    extension: tif
+    extension: raw
     filename_to_date: iiiiiii.xxx
     timestamp_file: 'image/SeaXerocksData*/Xviii/FileTime.csv'
     columns: [{'name': 'index', 'content': 'iiiiiii'},
@@ -15,7 +15,7 @@ cameras:
     type: rggb
     bit_depth: 18
     path: 'image/SeaXerocksData*/Xviii/Cam51707925'
-    extension: tif
+    extension: raw
     filename_to_date: iiiiiii.xxx
     timestamp_file: 'image/SeaXerocksData*/Xviii/FileTime.csv'
     columns: [{'name': 'index', 'content': 'iiiiiii'},
