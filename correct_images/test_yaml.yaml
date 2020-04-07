@@ -1,0 +1,4 @@
+#YAML 1.0
+
+path: # path to the mission.yaml file
+camera_system: # acfr_standard / seaxerocks_3 / biocam
