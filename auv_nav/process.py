@@ -62,6 +62,12 @@ csv files and, if plot is True, save plots
 
 
 def process(filepath, force_overwite, start_datetime, finish_datetime):
+    if len(filepath) > 1:
+        Console.error('Process only supports one folder as a target dive.')
+        Console.quit('Wrong number of parameters speficied.')
+    # Filepath is a list. Get the first element by default
+    filepath = filepath[0]
+
     # placeholders
     interpolate_remove_flag = False
 

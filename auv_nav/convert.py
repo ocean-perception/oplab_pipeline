@@ -111,6 +111,12 @@ class AcfrConverter():
 
 
 def convert(filepath, ftype, start_datetime, finish_datetime):
+    if len(filepath) > 1:
+        Console.error('Convert only supports one folder as a target dive.')
+        Console.quit('Wrong number of parameters speficied.')
+    # Filepath is a list. Get the first element by default
+    filepath = filepath[0]
+
     Console.info('Requested data conversion to {}'.format(ftype))
 
     filepath = Path(filepath).resolve()

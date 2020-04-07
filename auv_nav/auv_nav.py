@@ -51,6 +51,7 @@ def main(args=None):
     subparser_parse.add_argument(
         "path",
         default=".",
+        nargs='+',
         help="Folderpath where the (raw) input data is. Needs to be a \
         subfolder of 'raw' and contain the mission.yaml configuration file.",
     )

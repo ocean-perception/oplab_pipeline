@@ -39,6 +39,8 @@ from auv_nav.sensors import Category
 
 
 def parse(filepath, force_overwite):
+    # Filepath is a list. Get the first element by default
+    filepath = filepath[0]
     # initiate data and processing flags
     filepath = Path(filepath).resolve()
     filepath = get_raw_folder(filepath)
