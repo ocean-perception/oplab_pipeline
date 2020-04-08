@@ -127,3 +127,4 @@ class TestCameraSystem(unittest.TestCase):
         self.assertEqual(cs.cameras[2].path, 'image/cam61004444_laser', 'Wrong camera path')
         self.assertEqual(cs.cameras[2].extension, 'jpg', 'Wrong camera extension')
         self.assertEqual(cs.cameras[2].filename_to_date, 'YYYYMMDDxhhmmssxfffuuuxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxx', 'Wrong camera filename_to_date')
+
