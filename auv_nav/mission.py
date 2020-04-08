@@ -71,21 +71,13 @@ class CameraEntry:
         node['path'] = self.path
 
 
-class ImageEntry:
+class TimeZoneEntry:
     def __init__(self):
-        self.format = ''
         self.timezone = 0
         self.timeoffset = 0
-        self.cameras = []
-        self.calibration = None
-        self._empty = True
+        self.timeoffset_s = 0
 
-    def empty(self):
-        return self._empty
-
-    def load(self, node, version=1):
-        self._empty = False
-        self.format = node['format']
+    def load(self, node):
         self.timezone = node['timezone']
         # read in timezone
         if isinstance(self.timezone, str):
@@ -97,10 +89,34 @@ class ImageEntry:
                 try:
                     self.timezone = float(self.timezone)
                 except ValueError:
-                    Console.quit('Error: timezone', self.timezone, 
-                        'in mission.yaml not recognised, please enter value from UTC in hours')
+                    Console.quit('Error: timezone', self.timezone,
+                                 'in mission.yaml not recognised,',
+                                 ' please enter value from UTC in',
+                                 ' hours')
 
         self.timeoffset = node['timeoffset']
+        self.timeoffset_s = -self.timezone*60*60 + self.timeoffset
+    
+    def write(self, node):
+        node['timezone'] = self.timezone
+        node['timeoffset'] = self.timeoffset
+
+
+class ImageEntry(TimeZoneEntry):
+    def __init__(self):
+        super().__init__()
+        self.format = ''
+        self.cameras = []
+        self.calibration = None
+        self._empty = True
+
+    def empty(self):
+        return self._empty
+
+    def load(self, node, version=1):
+        super().load(node)
+        self.format = node['format']
+        self._empty = False
         if version == 1:
             for camera in node['cameras']:
                 self.cameras.append(CameraEntry(camera))
@@ -136,9 +152,8 @@ class ImageEntry:
                 self.cameras[1].path = node['filepath']
 
     def write(self, node):
+        super().write(node)
         node['format'] = self.format
-        node['timezone'] = self.timezone
-        node['timeoffset'] = self.timeoffset
         node['cameras'] = []
         for c in self.cameras:
             cam_dict = OrderedDict()
@@ -150,13 +165,12 @@ class ImageEntry:
             node['calibration'].append(calibration_dict)
 
 
-class DefaultEntry:
+class DefaultEntry(TimeZoneEntry):
     def __init__(self):
+        super().__init__()
         self.format = ''
         self.filepath = ''
         self.filename = ''
-        self.timezone = 0
-        self.timeoffset = 0
         self.label = 0
         self.std_factor = 0.0
         self.std_offset = 0.0
@@ -166,10 +180,9 @@ class DefaultEntry:
         return self._empty
 
     def load(self, node):
+        super().load(node)
         self._empty = False
         self.format = node['format']
-        self.timezone = node['timezone']
-        self.timeoffset = node['timeoffset']
         if 'filepath' in node:
             self.filepath = node['filepath']
         if 'filename' in node:
@@ -186,16 +199,32 @@ class DefaultEntry:
             self.origin = node['origin']
 
     def write(self, node):
+        super().write(node)
         node['format'] = self.format
         node['origin'] = self.origin
-        node['timezone'] = self.timezone
-        node['timeoffset'] = self.timeoffset
         node['filepath'] = self.filepath
         node['filename'] = self.filename
         node['label'] = self.label
         node['id'] = self.label
         node['std_factor'] = self.std_factor
         node['std_offset'] = self.std_offset
+
+    def get_offset_s(self):
+        if isinstance(self.timezone, str):
+            if self.timezone == 'utc' or self.timezone == 'UTC':
+                self.timezone_offset = 0
+            elif self.timezone == 'jst' or self.timezone == 'JST':
+                self.timezone_offset = 9
+        else:
+            try:
+                self.timezone_offset = float(self.timezone)
+            except ValueError:
+                print('Error: timezone', self.timezone,
+                    'in mission.yaml not recognised, ',
+                    'please enter value from UTC in hours')
+                return
+            timeoffset = -self.timezone_offset*60*60 + self.timeoffset
+            return timeoffset
 
 
 class Mission:
