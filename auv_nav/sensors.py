@@ -185,7 +185,7 @@ class BodyVelocity(OutputFormat):
             self.y_velocity_std = sensor_std['offset'] + sensor_std['factor']*self.y_velocity
             self.z_velocity_std = sensor_std['offset'] + sensor_std['factor']*self.z_velocity
         else:
-            Console.error('The STD model you entered for USBL is not supported.')
+            Console.error('The STD model you entered for DVL is not supported.')
             Console.quit('STD model not supported.')
 
     def write_csv_header(self):
