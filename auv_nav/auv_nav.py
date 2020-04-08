@@ -64,6 +64,12 @@ def main(args=None):
         help="Force file \
         overwite",
     )
+    subparser_parse.add_argument(
+        "--merge",
+        dest="merge",
+        action="store_true",
+        help="Merge multiple dives into a single JSON file. Requires more than one dive PATH.",
+    )
     subparser_parse.set_defaults(func=call_parse_data)
 
     #   subparser_visualise = subparsers.add_parser(
@@ -169,7 +175,7 @@ def main(args=None):
 
 
 def call_parse_data(args):
-    parse(args.path, args.force)
+    parse(args.path, args.force, args.merge)
 
 
 def call_process_data(args):
