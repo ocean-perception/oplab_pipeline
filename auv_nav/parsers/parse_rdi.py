@@ -68,11 +68,11 @@ def parse_rdi(mission,
     with logfile.open('r', errors='ignore') as rdi_file:
         for line in rdi_file.readlines():
             parts = line.split(',')
-            if parts[0] == ':SA':
+            if parts[0] == ':SA' and len(parts) == 4:
                 ot.roll = math.radians(float(parts[2]))
                 ot.pitch = math.radians(float(parts[1]))
                 ot.yaw = math.radians(float(parts[3]))
-            elif parts[0] == ':TS':
+            elif parts[0] == ':TS' and len(parts) == 7:
 
                 # Every time a new TimeStamp is received, send the previous
                 # data packet
@@ -108,7 +108,7 @@ def parse_rdi(mission,
                 al.epoch_timestamp = stamp
                 al.altitude_timestamp = stamp
                 al.sound_velocity = float(parts[5])
-            elif parts[0] == ':BI':
+            elif parts[0] == ':BI' and len(parts) == 6:
                 status = parts[5].strip()
                 if status == 'A':
                     bv.x_velocity = float(parts[1]) * 0.001
@@ -117,7 +117,7 @@ def parse_rdi(mission,
                     bv.x_velocity_std = float(parts[4]) * 0.001
                     bv.y_velocity_std = float(parts[4]) * 0.001
                     bv.z_velocity_std = float(parts[4]) * 0.001
-            elif parts[0] == ':BD':
+            elif parts[0] == ':BD' and len(parts) == 6:
                 al.altitude = float(parts[4])
                 al.altitude_std = altitude_std_factor*al.altitude
     #print(data_list)
