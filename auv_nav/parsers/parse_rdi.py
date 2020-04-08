@@ -65,8 +65,10 @@ def parse_rdi(mission,
     
     logfile = get_raw_folder(outpath / '..' / filepath / filename)
     data_list = []
+    altitude_valid = False
     with logfile.open('r', errors='ignore') as rdi_file:
         for line in rdi_file.readlines():
+            # Lines start with TS, BI, BS, BE, BD, SA
             parts = line.split(',')
             if parts[0] == ':SA' and len(parts) == 4:
                 ot.roll = math.radians(float(parts[2]))
@@ -108,16 +110,18 @@ def parse_rdi(mission,
                 al.epoch_timestamp = stamp
                 al.altitude_timestamp = stamp
                 al.sound_velocity = float(parts[5])
+                altitude_valid = False
             elif parts[0] == ':BI' and len(parts) == 6:
                 status = parts[5].strip()
                 if status == 'A':
+                    altitude_valid = True
                     bv.x_velocity = float(parts[1]) * 0.001
                     bv.y_velocity = float(parts[2]) * 0.001
                     bv.z_velocity = float(parts[3]) * 0.001
                     bv.x_velocity_std = float(parts[4]) * 0.001
                     bv.y_velocity_std = float(parts[4]) * 0.001
                     bv.z_velocity_std = float(parts[4]) * 0.001
-            elif parts[0] == ':BD' and len(parts) == 6:
+            elif parts[0] == ':BD' and len(parts) == 6 and altitude_valid:
                 al.altitude = float(parts[4])
                 al.altitude_std = altitude_std_factor*al.altitude
     #print(data_list)
