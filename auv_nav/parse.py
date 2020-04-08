@@ -71,12 +71,12 @@ def merge_json_files(json_file_list):
         # And skip the origin
         for item in data[1:]:
             if 'camera1' in item:
-                item['camera1']['filename'] = dive_prefix + item['camera1']['filename']
-            elif 'camera2' in item:
-                item['camera2']['filename'] = dive_prefix + item['camera2']['filename']
-            elif 'camera3' in item:
-                item['camera3']['filename'] = dive_prefix + item['camera3']['filename']
-            elif item['category'] == 'laser':
+                item['camera1'][0]['filename'] = dive_prefix + item['camera1'][0]['filename']
+            if 'camera2' in item:
+                item['camera2'][0]['filename'] = dive_prefix + item['camera2'][0]['filename']
+            if 'camera3' in item:
+                item['camera3'][0]['filename'] = dive_prefix + item['camera3'][0]['filename']
+            if item['category'] == 'laser':
                 item['filename'] = dive_prefix + item['filename']
             data_list.append(item)
 
@@ -107,7 +107,7 @@ def parse(filepath, force_overwrite, merge):
             d = datetime(yyyy, mm, dd, hh, mm1, ss)
             dates.append(d)
 
-            outpath = get_processed_folder(filepath)
+            outpath = get_processed_folder(p)
             nav_file = outpath / 'nav/nav_standard.json'
             json_files.append(nav_file)
 
@@ -138,13 +138,11 @@ def parse(filepath, force_overwrite, merge):
         Console.info('Interlacing merged data...')
         parse_interlacer(nav_folder, filename)
         Console.info('...done interlacing merged data. Output saved to {}'.format(nav_folder /filename))
-        plot_parse_data(processed_path)
+        plot_parse_data(nav_folder)
         Console.info('Complete merging data')    
 
 
 def parse_single(filepath, force_overwrite):
-    # Filepath is a list. Get the first element by default
-    filepath = filepath[0]
     # initiate data and processing flags
     filepath = Path(filepath).resolve()
     filepath = get_raw_folder(filepath)

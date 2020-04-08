@@ -24,7 +24,8 @@ def change_subfolder(path, prior, new):
     if new_path.is_dir():
         if not new_path.exists():
             dummy_path = Path(*parts[:-1])
-            Console.info('The path {} does not exist. I am creating it for you.'.format(path))
+            Console.info('The path {} does not exist. I am creating ',
+                         'it for you.'.format(path))
             dummy_path.mkdir(exist_ok=True, parents=True)
     elif new_path.is_file():
         # check if parent directories are created
@@ -34,7 +35,7 @@ def change_subfolder(path, prior, new):
 
 
 def get_folder(path, name):
-    path = Path(path)  # .resolve(strict=False)
+    path = Path(path).resolve(strict=False)
     if name in path.parts:
         return path
     elif 'processed' in path.parts:
@@ -44,9 +45,8 @@ def get_folder(path, name):
     elif 'configuration' in path.parts:
         return change_subfolder(path, 'configuration', name)
     else:
-        Console.error("The folder {0} does not belong to \
-               any dataset folder structure.".format(
-                str(path)))
+        Console.error('The folder {0} does not belong to any dataset ',
+                      'folder structure.'.format(str(path)))
 
 
 def get_file_list(directory):
@@ -56,7 +56,7 @@ def get_file_list(directory):
         if x.is_file():
             file_list.append(x)
         elif x.is_dir():
-            file_list.extend(searching_all_files(x))
+            file_list.extend(get_file_list(x))
     return file_list
 
 
