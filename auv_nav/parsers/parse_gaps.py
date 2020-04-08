@@ -16,6 +16,7 @@ from auv_nav.tools.time_conversions import date_time_to_epoch
 from auv_nav.tools.time_conversions import read_timezone
 from auv_nav.tools.folder_structure import get_raw_folder
 from auv_nav.console import Console
+from auv_nav.sensors import Category
 
 
 def parse_gaps(mission,
@@ -330,9 +331,53 @@ def parse_gaps(mission,
 
                     if broken_packet_flag == False:
 
-                        if ftype == 'oplab':
-                            data = {'epoch_timestamp': float(epoch_timestamp), 'class': class_string, 'sensor': sensor_string, 'frame': frame_string, 'category': category, 'data_ship': [{'latitude': float(latitude_ship), 'longitude': float(longitude_ship)}, {'northings': float(northings_ship), 'eastings': float(eastings_ship)}, {'heading': float(heading_ship)}], 'data_target': [{'latitude': float(
-                                latitude), 'latitude_std': float(latitude_std)}, {'longitude': float(longitude), 'longitude_std': float(longitude_std)}, {'northings': float(northings_target), 'northings_std': float(distance_std)}, {'eastings': float(eastings_target), 'eastings_std': float(distance_std)}, {'depth': float(depth), 'depth_std': float(distance_std)}, {'distance_to_ship': float(distance)}]}
+                        if ftype == 'oplab' and category == Category.USBL:
+                            data = {
+                                'epoch_timestamp': float(epoch_timestamp), 
+                                'class': class_string, 
+                                'sensor': sensor_string, 
+                                'frame': frame_string, 
+                                'category': category, 
+                                'data_ship': [{
+                                    'latitude': float(latitude_ship), 
+                                    'longitude': float(longitude_ship)
+                                    }, {
+                                    'northings': float(northings_ship), 
+                                    'eastings': float(eastings_ship)
+                                    }, {
+                                    'heading': float(heading_ship)}], 
+                                'data_target': [{
+                                    'latitude': float(latitude), 
+                                    'latitude_std': float(latitude_std)
+                                    }, {
+                                    'longitude': float(longitude), 
+                                    'longitude_std': float(longitude_std)
+                                    }, {
+                                    'northings': float(northings_target), 
+                                    'northings_std': float(distance_std)
+                                    }, {
+                                    'eastings': float(eastings_target), 
+                                    'eastings_std': float(distance_std)
+                                    }, {
+                                    'depth': float(depth), 
+                                    'depth_std': float(distance_std)
+                                    }, {
+                                    'distance_to_ship': float(distance)}]}
+                            data_list.append(data)
+                        elif ftype == 'oplab' and category == Category.DEPTH:
+                            data = {
+                                    'epoch_timestamp': float(epoch_timestamp),
+                                    'epoch_timestamp_depth': float(epoch_timestamp),
+                                    'class': class_string,
+                                    'sensor': sensor_string,
+                                    'frame': 'inertial',
+                                    'category': Category.DEPTH,
+                                    'data': [
+                                        {
+                                            'depth': float(depth),
+                                            'depth_std': float(distance_std)
+                                        }]
+                                    }
                             data_list.append(data)
 
                         if ftype == 'acfr':
