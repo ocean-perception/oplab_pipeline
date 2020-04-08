@@ -134,6 +134,14 @@ def parse(filepath, force_overwrite, merge):
             json.dump(data_list, fileout, indent=2)
         fileout.close()
 
+        # copy mission.yaml and vehicle.yaml to processed folder for process step
+        mission_processed = get_processed_folder(filepath[0]) / 'mission.yaml'
+        vehicle_processed = get_processed_folder(filepath[0]) / 'vehicle.yaml'
+        mission_merged = processed_path / foldername / 'mission.yaml'
+        vehicle_merged = processed_path / foldername / 'vehicle.yaml'
+        mission_processed.copy(mission_merged)
+        vehicle_processed.copy(vehicle_merged)
+
         # interlace the data based on timestamps
         Console.info('Interlacing merged data...')
         parse_interlacer(nav_folder, filename)
