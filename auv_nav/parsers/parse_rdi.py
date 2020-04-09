@@ -62,7 +62,7 @@ def parse_rdi(mission,
         filename = mission.altitude.filename
         timeoffset_s = mission.altitude.timeoffset_s
         filepath = mission.altitude.filepath
-    
+
     logfile = get_raw_folder(outpath / '..' / filepath / filename)
     data_list = []
     altitude_valid = False
@@ -115,8 +115,12 @@ def parse_rdi(mission,
                 status = parts[5].strip()
                 if status == 'A':
                     altitude_valid = True
-                    bv.x_velocity = float(parts[1]) * 0.001
-                    bv.y_velocity = float(parts[2]) * 0.001
+                    x = float(parts[1]) * 0.001
+                    y = float(parts[2]) * 0.001
+                    bv.x_velocity = (x*math.cos(headingoffset)
+                                     - y*math.sin(headingoffset))
+                    bv.y_velocity = (x*math.sin(headingoffset)
+                                     + y*math.cos(headingoffset))
                     bv.z_velocity = float(parts[3]) * 0.001
                     bv.x_velocity_std = float(parts[4]) * 0.001
                     bv.y_velocity_std = float(parts[4]) * 0.001

@@ -95,7 +95,7 @@ class TimeZoneEntry:
                                  ' hours')
 
         self.timeoffset = node['timeoffset']
-        self.timeoffset_s = -self.timezone*60*60 + self.timeoffset
+        self.timeoffset_s = + self.timezone*60*60 + self.timeoffset
     
     def write(self, node):
         node['timezone'] = self.timezone
