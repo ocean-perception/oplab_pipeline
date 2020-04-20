@@ -23,7 +23,7 @@ def build_plane(pitch, yaw, point):
         b = math.cos(math.radians(pitch)) * math.sin(math.radians(yaw))
         c = math.sin(math.radians(pitch))
         normal = np.array([a, b, c])
-        d = np.dot(normal, point)
+        d = - np.dot(normal, point)
         plane = np.array([a, b, c, d])
         offset = (d - point[1]*b)/a
         return plane, normal, offset
@@ -151,8 +151,8 @@ def triangulate_dlt(p1, p2, P1, P2):
 
 def opencv_to_ned(xyz):
     new_point = np.zeros((3, 1), dtype=np.float32)
-    new_point[0] = -xyz[1]
-    new_point[1] = xyz[0]
+    new_point[0] = xyz[1]
+    new_point[1] = -xyz[0]
     new_point[2] = xyz[2]
     return new_point
 
@@ -172,7 +172,7 @@ def fit_plane(xyz):
     b = normal[1]
     c = normal[2]
     # 3. Get d coefficient to plane for display
-    d = normal[0] * centroid[0] + normal[1] * centroid[1] + normal[2] * centroid[2]
+    d = - (normal[0] * centroid[0] + normal[1] * centroid[1] + normal[2] * centroid[2])
     e3 = normal
 
     expected_laser_plane = np.array([1, 0, 0])
@@ -479,19 +479,20 @@ class LaserCalibrator():
                     i2 += 1
                 if i2 == len(pk2):
                     continue
-                #print(pk2[i2][1] - pk1[i1][1])
                 if pk2[i2][1] - pk1[i1][1] < 1.0:
-                    #if ((pk1[i1][0] - pk2[i2][0] > 70 and pk1[i1][0] - pk2[i2][0] < 200)
-                    #    or (pk2[i2][0] - pk1[i1][0] > 70 and pk2[i2][0] - pk1[i1][0] < 200)):
-                    
+                    # Triangulate using Least Squares
                     p = triangulate_lst(pk1[i1], pk2[i2], self.sc.left.P, self.sc.right.P)
-                    # print(pk2[i2][0] - pk1[i1][0])
-                    # print(pk1[i1], pk2[i2], p)
+
+                    # Remove rectification rotation
+                    p_unrec = self.sc.left.R.T @ p
+
+                    # Check that the point is not behind the camera
                     if p[2] < 0 or p is None:
                         count_inversed += 1
                     else:
+                        # Store it in the cloud
                         count += 1
-                        cloud.append(p)
+                        cloud.append(p_unrec)
                 i += 1
             return cloud, count, count_inversed
 
@@ -545,14 +546,21 @@ class LaserCalibrator():
                 max_iterations=5000,
                 plot=True)
 
+            scale = 1.0/mean_plane[0]
+            mean_plane = np.array(mean_plane)*scale
+            mean_plane = mean_plane.tolist()
+
             inliers_cloud = list(inliers_cloud)
 
             print('RANSAC plane with all points: {}'.format(mean_plane))
+            
+            cloud_sample_size = int(0.5 * len(inliers_cloud))
+            print('Randomly sampling with', cloud_sample_size, 'points...')
 
             planes = []
             for i in range(0, self.num_iterations):
-                cloud_sample_size = int(0.5 * len(inliers_cloud))
-                point_cloud_local = np.array(random.sample(inliers_cloud, cloud_sample_size))
+                point_cloud_local = np.array(random.sample(inliers_cloud,
+                                                           cloud_sample_size))
                 plane = fit_plane(point_cloud_local)
                 planes.append(plane)
                 Console.progress(i, self.num_iterations, prefix='Iterating planes')
@@ -570,8 +578,8 @@ class LaserCalibrator():
 
             print('Total Number of Points:', total_no_points)
             print('Plane Standard deviation:\n', plane_angle_std)
-            print('Plane Mean:\n', plane_angle_mean)
-            print('Plane Median:\n', plane_angle_median)
+            print('Mean angle:\n', plane_angle_mean)
+            print('Median angle:\n', plane_angle_median)
             print('Pitch Standard deviation:\n', pitch_angle_std)
             print('Pitch Mean:\n', pitch_angle_mean)
             print('Yaw Standard deviation:\n', yaw_angle_std)
