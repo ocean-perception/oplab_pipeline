@@ -1032,10 +1032,8 @@ class StereoCalibrator(Calibrator):
                 #cv2.waitKey(3)
 
                 filename = Path('/tmp/stereo_' + self.name + '_remap/stereo_' + str(i) + '_' + self.l.name + '_' + self.r.name + '_remap.png')
-                if not lfilename.parents[0].exists():
-                    lfilename.parents[0].mkdir(parents=True)
-                if not rfilename.parents[0].exists():
-                    rfilename.parents[0].mkdir(parents=True)
+                if not filename.parents[0].exists():
+                    filename.parents[0].mkdir(parents=True)
 
                 cv2.imwrite(str(filename), final_image)
                 if error is not None:
