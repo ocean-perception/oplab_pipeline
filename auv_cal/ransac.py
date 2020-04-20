@@ -1,6 +1,7 @@
 # Encoding: utf-8
 import random
 import numpy as np
+import math
 
 
 def augment(xyzs):
@@ -90,14 +91,13 @@ def plane_fitting_ransac(cloud_xyz,
 
 
 if __name__ == '__main__':
-    n = 100
-    max_iterations = 100
-    goal_inliers = n * 0.8
-
     N_POINTS = 100
-    TARGET_A = -0.6
-    TARGET_B = -0.3
-    TARGET_C = -0.4
+    GOAL_INLIERS = N_POINTS * 0.8
+    MAX_ITERATIONS = 100
+    
+    TARGET_A = 1.0
+    TARGET_B = 0.000001
+    TARGET_C = 0.000001
     TARGET_D = -1.5
     EXTENTS = 10.0
     NOISE = 0.1
@@ -110,10 +110,23 @@ if __name__ == '__main__':
         xyzs[i, 2] = (-TARGET_D - xyzs[i, 0]*TARGET_A - xyzs[i, 1]*TARGET_B)/TARGET_C + np.random.normal(scale=NOISE)
 
     # RANSAC
-    m, inliers = plane_fitting_ransac(xyzs, 0.01, 3, goal_inliers, max_iterations, plot=True)
+    m, inliers = plane_fitting_ransac(xyzs, 0.01, 3, GOAL_INLIERS, MAX_ITERATIONS, plot=True)
     scale = TARGET_D/m[3]
     print(np.array(m)*scale)
     print('Inliers: ', len(inliers))
 
-    #m, b = run_ransac(xyzs, estimate, lambda x, y: is_inlier(x, y, 0.01), 3, goal_inliers, max_iterations)
-    #a, b, c, d = m
+
+    # [a, b, c, d, plane_angle, pitch_angle, yaw_angle] = fit_plane(xyzs)
+    # print(a, b, c, d)
+    # print(plane_angle, pitch_angle, yaw_angle)
+
+    # mean_x = np.mean(xyzs[:, 0])
+    # mean_y = np.mean(xyzs[:, 1])
+    # mean_z = np.mean(xyzs[:, 2])
+    # mean_xyz = np.array([mean_x, mean_y, mean_z])
+
+    # plane, normal, offset = build_plane(pitch_angle, yaw_angle, mean_xyz)
+
+    # print(plane)
+    # print(normal)
+    # print(offset)
