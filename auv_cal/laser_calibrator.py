@@ -331,13 +331,13 @@ class LaserCalibrator():
 
         self.sc = stereo_camera_model
         self.config = config
-        self.k = config['window_size'],
-        self.min_greenness_value = config['min_greenness_value'],
-        self.image_step = config['image_step'],
-        self.image_sample_size = config['image_sample_size'],
-        self.num_columns = config['num_columns'],
-        self.remap = config['remap'],
-        self.continuous_interpolation = config['continuous_interpolation'],
+        self.k = config['window_size']
+        self.min_greenness_value = config['min_greenness_value']
+        self.image_step = config['image_step']
+        self.image_sample_size = config['image_sample_size']
+        self.num_columns = config['num_columns']
+        self.remap = config['remap']
+        self.continuous_interpolation = config['continuous_interpolation']
         self.start_row = config.get('start_row', 0)
         self.end_row = config.get('end_row', -1)
         self.start_row_b = config.get('start_row_b', 0)
