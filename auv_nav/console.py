@@ -16,35 +16,34 @@ class BColors:
 
 
 class Console:
+    def stamp():
+        return datetime.datetime.now().timestamp()
+
     def warn(*args, **kwargs):
-        print(BColors.WARNING + "[WARN]: " + BColors.ENDC + " ".join(map(str, args)), **kwargs)
+        print(BColors.WARNING + "WARN ▸ " + BColors.ENDC + " ".join(map(str, args)), **kwargs)
 
     def error(*args, **kwargs):
-        print(BColors.FAIL + "[ERROR]: " + BColors.ENDC + " ".join(map(str, args)), **kwargs)
+        print(BColors.FAIL + "ERROR ▸ " + BColors.ENDC + " ".join(map(str, args)), **kwargs)
 
     def info(*args, **kwargs):
-        print(BColors.OKBLUE + "[INFO]: " + BColors.ENDC + " ".join(map(str, args)), **kwargs)
+        print(BColors.OKBLUE + "INFO ▸ " + BColors.ENDC + " ".join(map(str, args)), **kwargs)
 
     def quit(*args, **kwargs):
         print('\n')
-        print(BColors.FAIL + "[****]: " + BColors.ENDC + "Exitting auv_nav.")
-        print(BColors.FAIL + "[****]: " + BColors.ENDC + "Reason: " + " ".join(map(str, args)), **kwargs)
+        print(BColors.FAIL + "**** " + BColors.ENDC + "Exitting auv_nav.")
+        print(BColors.FAIL + "**** " + BColors.ENDC + "Reason: " + " ".join(map(str, args)), **kwargs)
         quit()
 
     def banner():
-        print('  @@@@    @@@@      ___________________________ ')
-        print(' @@@@@@  @@@@@@    |                           |')
-        print('  @@@@    @@@@     |    - OCEAN PERCEPTION -   |')
-        print('                   |                           |')
-        print('  @@@@      @      | University of Southampton |')
-        print(' @@@@@@   @@@@     |___________________________|')
-        print('  @@@@   @@@@@@                                 ')
-        print('                                                ')
-        print(' Copyright (C) 2019 University of Southampton   ')
+        print(' ')
+        print(BColors.OKBLUE + '     ● ● ' + BColors.ENDC + ' Ocean Perception')
+        print(BColors.OKBLUE + '     ● ' + BColors.WARNING + '▲ ' + BColors.ENDC + ' University of Southampton')
+        print(' ')
+        print(' Copyright (C) 2020 University of Southampton   ')
         print(' This program comes with ABSOLUTELY NO WARRANTY.')
         print(' This is free software, and you are welcome to  ')
         print(' redistribute it.                               ')
-        print('                                                ')
+        print(' ')
 
     def get_username():
         return getpass.getuser()
