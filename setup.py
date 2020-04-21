@@ -14,6 +14,7 @@ import os
 from setuptools import setup
 from setuptools import find_packages
 import subprocess
+from auv_nav import Console
 
 
 classifiers = [
@@ -35,7 +36,12 @@ classifiers = [
 
 def git_command(args):
     prefix = ['git']
-    return subprocess.check_output(prefix + args).decode().strip()
+    try:
+        output = subprocess.check_output(prefix + args).decode().strip()
+        return output
+    except subprocess.CalledProcessError as e:
+        Console.error('Subprocess error (', e['code'], '):', e['message'])
+        return 'unknown-dirty'
 
 
 def git_pep440_version():
