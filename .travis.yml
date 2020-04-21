@@ -1,6 +1,8 @@
 language: python
 python:
   - "3.6"      # current default Python on Travis CI
+git:
+  depth: false  # To be able to find tags, otherwise it will fail
 # command to install dependencies
 install:
   - pip install codecov pytest pytest-cov

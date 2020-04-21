@@ -36,12 +36,7 @@ classifiers = [
 
 def git_command(args):
     prefix = ['git']
-    try:
-        output = subprocess.check_output(prefix + args).decode().strip()
-        return output
-    except subprocess.CalledProcessError as e:
-        Console.error('Subprocess error (', e['code'], '):', e['message'])
-        return 'unknown-dirty'
+    return subprocess.check_output(prefix + args).decode().strip()
 
 
 def git_pep440_version():
