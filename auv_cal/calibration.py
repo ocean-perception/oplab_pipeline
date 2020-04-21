@@ -133,26 +133,8 @@ def calibrate_laser(left_name, left_filepath, left_extension,
             else:
                 return default_value
 
-        start_row = check_prop('start_row', config, 0)
-        end_row = check_prop('end_row', config, -1)
-        start_row_b = check_prop('start_row_b', config, 0)
-        end_row_b = check_prop('end_row_b', config, -1)
-        two_lasers = check_prop('two_lasers', config, False)
-
         lc = LaserCalibrator(stereo_camera_model=model,
-                             k=config['window_size'],
-                             min_greenness_value=config['min_greenness_value'],
-                             image_step=config['image_step'],
-                             image_sample_size=config['image_sample_size'],
-                             num_iterations=config['num_iterations'],
-                             num_columns=config['num_columns'],
-                             remap=config['remap'],
-                             continuous_interpolation=config['continuous_interpolation'],
-                             start_row=start_row,
-                             end_row=end_row,
-                             start_row_b=start_row_b,
-                             end_row_b=end_row_b,
-                             two_lasers=two_lasers)
+                             config=config)
         lc.cal(left_image_list[skip_first:], right_image_list[skip_first:])
         Console.info('Writting calibration to '"'{}'"''.format(output_file))
         with output_file.open('w') as f:

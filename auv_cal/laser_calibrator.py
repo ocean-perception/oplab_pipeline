@@ -326,35 +326,33 @@ def save_cloud(filename, cloud):
 class LaserCalibrator():
     def __init__(self,
                  stereo_camera_model,
-                 k,
-                 min_greenness_value,
-                 image_step,
-                 image_sample_size,
-                 num_iterations,
-                 num_columns,
-                 remap,
-                 continuous_interpolation,
-                 start_row=0,
-                 end_row=-1,
-                 start_row_b=0,
-                 end_row_b=-1,
-                 two_lasers=False):
+                 config):
         self.data = []
 
         self.sc = stereo_camera_model
-        self.k = k
-        self.min_greenness_value = min_greenness_value
-        self.image_step = image_step
-        self.image_sample_size = image_sample_size
-        self.num_iterations = num_iterations
-        self.num_columns = num_columns
-        self.remap = remap
-        self.continuous_interpolation = continuous_interpolation
-        self.start_row = start_row
-        self.end_row = end_row
-        self.start_row_b = start_row_b
-        self.end_row_b = end_row_b
-        self.two_lasers = two_lasers
+        self.config = config
+        self.k = config['window_size'],
+        self.min_greenness_value = config['min_greenness_value'],
+        self.image_step = config['image_step'],
+        self.image_sample_size = config['image_sample_size'],
+        self.num_columns = config['num_columns'],
+        self.remap = config['remap'],
+        self.continuous_interpolation = config['continuous_interpolation'],
+        self.start_row = config.get('start_row', 0)
+        self.end_row = config.get('end_row', -1)
+        self.start_row_b = config.get('start_row_b', 0)
+        self.end_row_b = config.get('end_row_b', -1)
+        self.two_lasers = config.get('two_lasers', False)
+
+        self.max_point_cloud_size = self.config.get('RANSAC_max_cloud_size', 10000)
+        self.mdt = self.config.get('RANSAC_min_distance_threshold', 0.002)
+        self.ssp = self.config.get('RANSAC_sample_size_percentage', 0.8)
+        self.gip = self.config.get('RANSAC_goal_inliers_percentage', 0.95)
+        self.max_iterations = self.config.get('RANSAC_max_iterations', 5000)
+        self.cssp = self.config.get('GENERATED_cloud_sample_size_percentage', 0.5)
+        self.num_iterations = self.config.get('GENERATED_iterations', 100)
+        self.filter_xy = self.config.get('FILTER_cloud_xy', 30.0)
+        self.filter_z = self.config.get('FILTER_cloud_z', 15.0)
 
         self.min_area = 5
 
@@ -540,10 +538,10 @@ class LaserCalibrator():
 
             mean_plane, inliers_cloud = plane_fitting_ransac(
                 cloud,
-                min_distance_threshold=0.002,
-                sample_size=0.8*total_no_points,
-                goal_inliers=len(cloud)*0.95,
-                max_iterations=5000,
+                min_distance_threshold=self.mdt,
+                sample_size=self.ssp*total_no_points,
+                goal_inliers=len(cloud)*self.gip,
+                max_iterations=self.max_iterations,
                 plot=True)
 
             scale = 1.0/mean_plane[0]
@@ -553,8 +551,8 @@ class LaserCalibrator():
             inliers_cloud = list(inliers_cloud)
 
             print('RANSAC plane with all points: {}'.format(mean_plane))
-            
-            cloud_sample_size = int(0.5 * len(inliers_cloud))
+
+            cloud_sample_size = int(self.cssp * len(inliers_cloud))
             print('Randomly sampling with', cloud_sample_size, 'points...')
 
             planes = []
@@ -630,9 +628,9 @@ class LaserCalibrator():
 
         def filter_cloud(cloud):
             def valid(p):
-                first = (p[0] > -30.0) and (p[0] < 30.0)
-                second = (p[1] > -30.0) and (p[1] < 30.0)
-                third = (p[2] > 0.0) and (p[2] < 15.0)
+                first = (p[0] > -self.filter_xy) and (p[0] < self.filter_xy)
+                second = (p[1] > -self.filter_xy) and (p[1] < self.filter_xy)
+                third = (p[2] > 0.0) and (p[2] < self.filter_z)
                 return first and second and third
             return [p for p in cloud if valid(p)]
 
@@ -642,7 +640,9 @@ class LaserCalibrator():
             save_cloud(processed_folder / '../points_b.ply', point_cloud_ned_b)
 
         print('Fitting a plane...')
-        rs_size = min(len(point_cloud_ned), 10000)
+
+
+        rs_size = min(len(point_cloud_ned), self.max_point_cloud_size)
         point_cloud_rs = random.sample(point_cloud_ned, rs_size)
         rss_before = len(point_cloud_rs)
         point_cloud_rs = filter_cloud(point_cloud_rs)
@@ -653,7 +653,7 @@ class LaserCalibrator():
         self.yaml_msg = fit_and_save(point_cloud_rs)
         if self.two_lasers:
             print('Fitting a plane to second line...')
-            rs_size = min(len(point_cloud_ned_b), 10000)
+            rs_size = min(len(point_cloud_ned_b), self.max_point_cloud_size)
             point_cloud_b_rs = random.sample(point_cloud_ned_b, rs_size)
             rss_before = len(point_cloud_b_rs)
             point_cloud_b_rs = filter_cloud(point_cloud_b_rs)

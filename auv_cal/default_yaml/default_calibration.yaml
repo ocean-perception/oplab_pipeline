@@ -41,5 +41,13 @@ laser_calibration:
   window_size: 5
   image_step: 1
   image_sample_size: 25
-  num_iterations: 100
   num_columns: 1024
+  GENERATED_iterations: 100
+  GENERATED_cloud_sample_size_percentage: 0.5
+  RANSAC_max_cloud_size: 10000
+  RANSAC_min_distance_threshold: 0.002
+  RANSAC_sample_size_percentage: 0.8
+  RANSAC_goal_inliers_percentage: 0.95
+  RANSAC_max_iterations: 5000
+  FILTER_cloud_xy: 30.0
+  FILTER_cloud_z: 15.0
