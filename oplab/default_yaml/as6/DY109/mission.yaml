@@ -1,0 +1,75 @@
+#YAML 1.0
+version: 1
+
+origin:
+  latitude: 22.8778145
+  longitude: 153.38397866666668
+  coordinate_reference_system: wgs84
+  date: 2018/11/19
+
+velocity:
+  format: autosub
+  filepath: nav/alr_log/
+  filename: M144.mat
+  timezone: utc
+  timeoffset: 0.0
+  std_factor: 0.001
+  std_offset: 0.2
+
+orientation:
+  format: autosub
+  filepath: nav/alr_log/
+  filename: M144.mat
+  timezone: utc
+  timeoffset: 0.0
+  std_factor: 0.0
+  std_offset: 0.003
+
+depth:
+  format: autosub
+  filepath: nav/alr_log/
+  filename: M144.mat
+  timezone: utc
+  timeoffset: 0.0
+  std_factor: 0.001
+  std_offset: 0.0
+
+altitude:
+  format: autosub
+  filepath: nav/alr_log/
+  filename: M144.mat
+  timezone: utc
+  timeoffset: 0.0
+  std_factor: 0.001
+  std_offset: 0.3
+
+usbl:
+  format: NOC_nmea
+  filepath: nav/alr_usbl
+  timezone: utc
+  timeoffset: 0.0
+  std_factor: 0.01
+  std_offset: 2.0
+  
+tide:
+  format: NOC_polpred
+  filepath: nav/tide/
+  filename: dy_108_polpred_tide_60m.txt
+  timezone: utc
+  timeoffset: 0.0
+  std_factor: 0.0
+  std_offset: 0.0
+
+image:
+  format: biocam
+  cameras:
+    - name: cam61003146
+      type: bayer_rggb
+      bit_depth: 16
+      path: image
+    - name: cam61004444
+      type: grayscale
+      bit_depth: 16
+      path: image
+  timezone: 0
+  timeoffset: 0.0

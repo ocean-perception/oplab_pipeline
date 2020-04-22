@@ -1,9 +1,8 @@
 import unittest
 from unittest.mock import patch
 from pathlib import Path
-from auv_nav.camera_system import CameraSystem
-from auv_nav.tools.filename_to_date import FilenameToDate
-import auv_nav.tools.filename_to_date
+from oplab import CameraSystem
+from oplab import FilenameToDate
 
 
 class TestFilenameToDate(unittest.TestCase):
@@ -61,7 +60,7 @@ class TestCameraSystem(unittest.TestCase):
         self.assertEqual(content.count('s'), 2, 'Second speficication is incorrect for timestamp file data columns')
         self.assertEqual(content.count('f'), 3, 'Millisecond speficication is incorrect for timestamp file data columns')
 
-    @patch("auv_nav.tools.filename_to_date.resolve")
+    @patch("oplab.filename_to_date.resolve")
     def testSeaxerocks3(self, mock_resolve):
         root = Path(__file__).parents[1]
 
