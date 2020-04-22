@@ -2,6 +2,7 @@
 import random
 import numpy as np
 import math
+from auv_nav import Console
 
 
 def augment(xyzs):

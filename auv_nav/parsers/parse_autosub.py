@@ -2,8 +2,8 @@ import scipy.io as spio
 from auv_nav.sensors import BodyVelocity
 from auv_nav.sensors import Orientation, Depth, Altitude
 from auv_nav.sensors import Category
-from auv_nav.tools.folder_structure import get_raw_folder
-from auv_nav.console import Console
+from oplab import get_raw_folder
+from oplab import Console
 
 
 def loadmat(filename):

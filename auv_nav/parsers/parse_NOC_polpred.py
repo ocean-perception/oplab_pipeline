@@ -4,11 +4,11 @@
 # Date: 11/09/2019
 from auv_nav.sensors import Category
 from auv_nav.sensors import Tide
-from auv_nav.tools.folder_structure import get_raw_folder
-from auv_nav.tools.folder_structure import get_file_list
+from oplab import get_raw_folder
+from oplab import get_file_list
 from auv_nav.tools.time_conversions import date_time_to_epoch
 from auv_nav.tools.time_conversions import read_timezone
-from auv_nav.console import Console
+from oplab import Console
 
 
 def parse_NOC_polpred(mission,

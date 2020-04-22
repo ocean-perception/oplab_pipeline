@@ -24,11 +24,11 @@ from auv_nav.parsers.parse_interlacer import parse_interlacer
 # from lib_sensors.parse_chemical import parse_chemical
 from auv_nav.plot.plot_parse_data import plot_parse_data
 from auv_nav.tools.time_conversions import epoch_to_day
-from auv_nav.tools.folder_structure import get_config_folder, get_raw_folder
-from auv_nav.tools.folder_structure import get_processed_folder
-from auv_nav.console import Console
-from auv_nav.vehicle import Vehicle
-from auv_nav.mission import Mission
+from oplab import get_config_folder, get_raw_folder
+from oplab import get_processed_folder
+from oplab import Console
+from oplab import Vehicle
+from oplab import Mission
 
 from auv_nav.tools.interpolate import interpolate
 from auv_nav.tools.interpolate import interpolate_sensor_list

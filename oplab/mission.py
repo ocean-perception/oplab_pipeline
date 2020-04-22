@@ -1,8 +1,8 @@
 import yaml
 import sys
-from auv_nav.tools.folder_structure import get_config_folder
-from auv_nav.tools.folder_structure import get_raw_folder
-from auv_nav.console import Console
+from oplab import get_config_folder
+from oplab import get_raw_folder
+from oplab.console import Console
 # Workaround to dump OrderedDict into YAML files
 from collections import OrderedDict
 

@@ -1,6 +1,6 @@
 # Encoding: utf-8
 
-from auv_nav.console import Console
+from oplab import Console
 from auv_cal.camera_models import StereoCamera
 from auv_cal.camera_calibrator import CalibrationException
 from auv_cal.camera_calibrator import MonoCalibrator
@@ -8,10 +8,10 @@ from auv_cal.camera_calibrator import ChessboardInfo
 from auv_cal.camera_calibrator import Patterns
 from auv_cal.camera_calibrator import StereoCalibrator
 from auv_cal.laser_calibrator import LaserCalibrator
-from auv_nav.tools.folder_structure import get_raw_folder
-from auv_nav.tools.folder_structure import get_processed_folder
-from auv_nav.tools.folder_structure import get_config_folder
-from auv_nav.tools.folder_structure import valid_dive
+from oplab import get_raw_folder
+from oplab import get_processed_folder
+from oplab import get_config_folder
+from oplab import valid_dive
 from pathlib import Path
 import yaml
 import json

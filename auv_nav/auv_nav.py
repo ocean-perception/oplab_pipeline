@@ -7,7 +7,7 @@ All rights reserved.
 from auv_nav.parse import parse
 from auv_nav.process import process
 from auv_nav.convert import convert
-from auv_nav.console import Console
+from oplab import Console
 
 import sys
 import argparse

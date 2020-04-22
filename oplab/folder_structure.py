@@ -1,4 +1,4 @@
-from auv_nav.console import Console
+from oplab.console import Console
 from pathlib import Path
 
 

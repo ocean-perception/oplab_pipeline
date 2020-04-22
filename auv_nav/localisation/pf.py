@@ -11,7 +11,7 @@ from numpy.random import uniform
 import copy
 from auv_nav.tools.interpolate import interpolate
 from auv_nav.sensors import SyncedOrientationBodyVelocity
-from auv_nav.console import Console
+from oplab import Console
 
 # Particle Filter implementation using classes
 # TODO: multiprocessing or multithreading

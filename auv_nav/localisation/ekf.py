@@ -5,7 +5,7 @@ All rights reserved.
 """
 from auv_nav.tools.interpolate import interpolate_dvl
 from auv_nav.tools.interpolate import interpolate
-from auv_nav.console import Console
+from oplab import Console
 
 import math
 import numpy as np

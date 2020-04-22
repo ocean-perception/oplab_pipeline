@@ -1,6 +1,6 @@
 
 from auv_nav.tools.interpolate import interpolate
-from auv_nav.console import Console
+from oplab import Console
 
 # filter usbl data outliers
 # interpolate to find the appropriate depth to compute seafloor depth for each

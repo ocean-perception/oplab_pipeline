@@ -38,7 +38,7 @@ import numpy.linalg
 from distutils.version import LooseVersion
 from auv_nav.parsers.parse_biocam_images import biocam_timestamp_from_filename
 from auv_nav.parsers.parse_acfr_images import acfr_timestamp_from_filename
-from auv_nav.console import Console
+from oplab import Console
 from pathlib import Path
 import numpy as np
 import json

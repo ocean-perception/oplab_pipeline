@@ -32,12 +32,12 @@ from auv_nav.plot.plot_process_data import plot_deadreckoning_vs_time
 from auv_nav.plot.plot_process_data import plot_pf_uncertainty
 from auv_nav.plot.plot_process_data import plot_uncertainty
 from auv_nav.plot.plot_process_data import plot_2d_deadreckoning
-from auv_nav.tools.folder_structure import get_config_folder
-from auv_nav.tools.folder_structure import get_processed_folder
-from auv_nav.vehicle import Vehicle
-from auv_nav.mission import Mission
-from auv_nav.console import Console
-from auv_nav.tools.folder_structure import valid_dive
+from oplab import get_config_folder
+from oplab import get_processed_folder
+from oplab import valid_dive
+from oplab import Vehicle
+from oplab import Mission
+from oplab import Console
 
 # Import librarys
 import yaml

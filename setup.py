@@ -14,7 +14,7 @@ import os
 from setuptools import setup
 from setuptools import find_packages
 import subprocess
-from auv_nav import Console
+from oplab.console import Console
 
 
 classifiers = [

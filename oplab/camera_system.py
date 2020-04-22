@@ -1,7 +1,7 @@
 import yaml
-from auv_nav.tools.folder_structure import get_raw_folder
-from auv_nav.console import Console
-from auv_nav.tools.filename_to_date import FilenameToDate
+from oplab import get_raw_folder
+from oplab import Console
+from oplab import FilenameToDate
 # Workaround to dump OrderedDict into YAML files
 from pathlib import Path
 

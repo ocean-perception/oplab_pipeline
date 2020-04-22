@@ -1,8 +1,8 @@
 import pynmea2
 from auv_nav.sensors import Category
 from auv_nav.sensors import Usbl
-from auv_nav.tools.folder_structure import get_raw_folder
-from auv_nav.tools.folder_structure import get_file_list
+from oplab import get_raw_folder
+from oplab import get_file_list
 from auv_nav.tools.time_conversions import date_time_to_epoch
 from auv_nav.tools.time_conversions import read_timezone
 

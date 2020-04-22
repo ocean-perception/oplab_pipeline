@@ -5,8 +5,8 @@ from auv_nav.sensors import BodyVelocity
 from auv_nav.sensors import Orientation
 from auv_nav.sensors import Altitude
 from auv_nav.sensors import Category
-from auv_nav.console import Console
-from auv_nav.tools.folder_structure import get_raw_folder
+from oplab import Console
+from oplab import get_raw_folder
 from pathlib import Path
 
 

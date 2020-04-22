@@ -1,10 +1,10 @@
 from pathlib import Path
 import yaml
-from auv_nav.console import Console
+from oplab import Console
 from datetime import datetime
 import calendar
 import pandas as pd
-from auv_nav.tools.folder_structure import get_raw_folder
+from oplab import get_raw_folder
 
 
 def resolve(filename):

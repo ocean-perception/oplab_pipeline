@@ -14,26 +14,28 @@ class BColors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
-
+# Singleton class to wrap the console output
 class Console:
-    def stamp():
-        return datetime.datetime.now().timestamp()
-
+    @staticmethod
     def warn(*args, **kwargs):
         print(BColors.WARNING + "WARN ▸ " + BColors.ENDC + " ".join(map(str, args)), **kwargs)
 
+    @staticmethod
     def error(*args, **kwargs):
         print(BColors.FAIL + "ERROR ▸ " + BColors.ENDC + " ".join(map(str, args)), **kwargs)
 
+    @staticmethod
     def info(*args, **kwargs):
         print(BColors.OKBLUE + "INFO ▸ " + BColors.ENDC + " ".join(map(str, args)), **kwargs)
 
+    @staticmethod
     def quit(*args, **kwargs):
         print('\n')
         print(BColors.FAIL + "**** " + BColors.ENDC + "Exitting auv_nav.")
         print(BColors.FAIL + "**** " + BColors.ENDC + "Reason: " + " ".join(map(str, args)), **kwargs)
         quit()
 
+    @staticmethod
     def banner():
         print(' ')
         print(BColors.OKBLUE + '     ● ● ' + BColors.ENDC + ' Ocean Perception')
@@ -45,18 +47,27 @@ class Console:
         print(' redistribute it.                               ')
         print(' ')
 
+    @staticmethod
     def get_username():
         return getpass.getuser()
 
+    @staticmethod
     def get_hostname():
         return socket.gethostname()
 
+    @staticmethod
     def get_date():
-        return datetime.datetime.now()
+        return str(datetime.datetime.now())
 
+    @staticmethod
+    def get_stamp():
+        return str(datetime.datetime.now().timestamp())
+
+    @staticmethod
     def get_version():
-        return pkg_resources.require("auv_nav")[0].version
+        return str(pkg_resources.require("auv_nav")[0].version)
 
+    @staticmethod
     def progress(iteration, total, prefix='Progress:', suffix='Complete',
                  length=50, decimals=1, fill='█'):
         """

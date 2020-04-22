@@ -1,4 +1,4 @@
-from auv_nav.console import Console
+from oplab import Console
 from pathlib import Path
 import pandas as pd
 import time

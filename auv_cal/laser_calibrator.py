@@ -5,8 +5,8 @@ import numpy as np
 import math
 import random
 from auv_cal.ransac import plane_fitting_ransac
-from auv_nav.console import Console
-from auv_nav.tools.folder_structure import get_processed_folder
+from oplab import Console
+from oplab import get_processed_folder
 from auv_nav.parsers.parse_biocam_images import biocam_timestamp_from_filename
 import joblib
 import yaml
