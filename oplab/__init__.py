@@ -8,3 +8,5 @@ from oplab.console import Console # noqa
 from oplab.folder_structure import valid_dive # noqa
 from oplab.filename_to_date import FilenameToDate # noqa
 from oplab.camera_system import CameraSystem # noqa
+from oplab.camera_models import MonoCamera # noqa
+from oplab.camera_models import StereoCamera # noqa

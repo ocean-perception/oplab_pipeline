@@ -1,7 +1,7 @@
 # Encoding: utf-8
 
 from oplab import Console
-from auv_cal.camera_models import StereoCamera
+from oplab import StereoCamera
 from auv_cal.camera_calibrator import CalibrationException
 from auv_cal.camera_calibrator import MonoCalibrator
 from auv_cal.camera_calibrator import ChessboardInfo
