@@ -9,7 +9,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import imp
+import importlib
 import os
 from setuptools import setup
 from setuptools import find_packages
@@ -77,8 +77,9 @@ def run_setup():
             f.write(commit_hash_header + '\n')
             f.write(sha1 + '\n')
     # Import auv_nav/version.py without importing auv_nav
-    version = imp.load_module('version',
-                              *imp.find_module('version', ['auv_nav']))
+    version_specs = importlib.util.find_spec('auv_nav.version')
+    version = importlib.util.module_from_spec(version_specs)
+    version_specs.loader.exec_module(version)
     auv_nav_version = version.version
     setup(
         name="auv_nav",
