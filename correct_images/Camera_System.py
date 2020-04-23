@@ -31,40 +31,42 @@ class Camera_System:
 			# camera_images_path = from mission.yaml
 			# camera_image_format = from correct_images.yaml
 			# camera_debayer_method = from correct_images.yaml
+			pass
 
 		def find_number_of_images(self):
 			# count the number of images in the path provided
 			# camera_number_of_images = count
+			pass
 
 		def read_image(self, image_number):
 			# function reads a particular image of bit depth and type
 			# to be implemented differently for different camera formats
 			# return image matrix
+			pass
 
 		def read_image_size(self, image_number):
 			# read size of camera image
 			# call read_image first
 			# camera_image_size = size
+			pass
 
 		def read_camera_calibration_parameters(self):
 			# read camera calibration parameters from the path provided
 			# camera_distortion = matrix
 			# camera_intrinsics = matrix
+			pass
 
 class Seaxerocks(Camera_System):
 	def read_image(self, image_number):
 		# define the function to read images of type raw
+		pass
 
 class Tunasand(Camera_System):
 	def read_image(self, image_number):
 		# define the function to read images of type tif
+		pass
 
 class Biocam(Camera_System):
 	def read_image(self):
 		# define the function to read images of type tif
-
-
-
-
-		
-
+		pass

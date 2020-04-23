@@ -93,11 +93,13 @@ class TestGenerateFilelistMethod(unittest.TestCase):
 
     def test_filepath_valid(self):
         test_directory = get_empty_test_directory()
-        open(os.path.join(test_directory, "img1.tif"), 'w')   # Create 2 files so that there are files to test genearte_filelist()
-        open(os.path.join(test_directory, "img2.tif"), 'w')
+        open(os.path.join(test_directory, "img1.tif"), 'w').close()   # Create 2 files so that there are files to test genearte_filelist()
+        open(os.path.join(test_directory, "img2.tif"), 'w').close()
         filelist = generate_filelist(test_directory)
         filelist = open(os.path.join(test_directory, filelist), 'r')
-        self.assertEqual(filelist.readlines(), ["img1.tif\n", "img2.tif"])
+        fl = filelist.readlines()
+        filelist.close()
+        self.assertEqual(fl, ["img1.tif\n", "img2.tif"])
 
 
 class TestGetFilenames(unittest.TestCase):

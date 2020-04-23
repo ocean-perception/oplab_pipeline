@@ -163,23 +163,9 @@ class Calibrator():
     def __init__(self, filepath, force_overwite=False):
         filepath = Path(filepath).resolve()
         self.filepath = get_raw_folder(filepath)
-        
-        if not valid_dive(self.filepath):
-            Console.error('This code expects you to run it inside a dive folder.')
-            Console.quit('The folder specified is not a valid dive.')
-
-        self.filepath = self.filepath.parent
-
-        # Create the calibration folder at the same level as the dives
-        self.output_path = get_processed_folder(self.filepath) / 'calibration'
-        self.configuration_path = get_config_folder(self.filepath) / 'calibration'
-        if not self.output_path.exists():
-            self.output_path.mkdir(parents=True)
-        if not self.configuration_path.exists():
-            self.configuration_path.mkdir(parents=True)
-
         self.fo = force_overwite
 
+        self.configuration_path = get_config_folder(self.filepath.parent) / 'calibration'
         calibration_config_file = self.configuration_path / 'calibration.yaml'
         if calibration_config_file.exists():
             Console.info("Loading existing calibration.yaml at {}".format(calibration_config_file))
@@ -197,6 +183,13 @@ class Calibrator():
 
         with calibration_config_file.open('r') as stream:
             self.calibration_config = yaml.safe_load(stream)
+
+        # Create the calibration folder at the same level as the dives
+        self.output_path = get_processed_folder(self.filepath.parent) / 'calibration'
+        if not self.output_path.exists():
+            self.output_path.mkdir(parents=True)
+        if not self.configuration_path.exists():
+            self.configuration_path.mkdir(parents=True)
 
     def mono(self):
         for c in self.calibration_config['cameras']:

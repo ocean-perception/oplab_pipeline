@@ -65,7 +65,9 @@ class CorrectImages:
         d = DebayerCorrection(self.camera_system, self.config)
         return d
         
-    def write_output(self.debayer_image, self.output_dirs):
+    def write_output(self):
+        # self.debayer_image
+        # self.output_dirs
         pass
 
     def parse(self):

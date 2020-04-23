@@ -6,24 +6,24 @@ cameras:
       # For example, to provide the relative path to a dive in
       #    /data/dives/raw/year/cruise/platform/YYYYMMDD_hhmmss_platform_sensor_calib
       # it is enough to start with  YYYYMMDD_hhmmss_platform_sensor_calib
-      path: calibration_images/SeaXeroxData20171221_calibration_sx3_xenon/SeaXeroxData20171221_200233_cameraCal/Xviii_tiff/Cam51707923
+      path: ../calibration_images/SeaXeroxData20171221_calibration_sx3_xenon/SeaXeroxData20171221_200233_cameraCal/Xviii_tiff/Cam51707923
       glob_pattern: '*.tiff'
     laser_calibration:
-      path: YYYYMMDD_hhmmss_platform_sensor_calib/image/SeaXerocksData20181119_073812_laserCal/Xviii_png/Cam51707923
+      path: ../YYYYMMDD_hhmmss_platform_sensor_calib/image/SeaXerocksData20181119_073812_laserCal/Xviii_png/Cam51707923
       glob_pattern: '*.png'
   - name: Cam51707925
     camera_calibration:
-      path: calibration_images/SeaXeroxData20171221_calibration_sx3_xenon/SeaXeroxData20171221_200233_cameraCal/Xviii_tiff/Cam51707925
+      path: ../calibration_images/SeaXeroxData20171221_calibration_sx3_xenon/SeaXeroxData20171221_200233_cameraCal/Xviii_tiff/Cam51707925
       glob_pattern: '*.tiff'
     laser_calibration:
-      path: YYYYMMDD_hhmmss_platform_sensor_calib/image/SeaXerocksData20181119_073812_laserCal/Xviii_png/Cam51707925
+      path: ../YYYYMMDD_hhmmss_platform_sensor_calib/image/SeaXerocksData20181119_073812_laserCal/Xviii_png/Cam51707925
       glob_pattern: '*.png'
   - name: LM165
     camera_calibration:
-      path: calibration_images/SeaXeroxData20171221_calibration_sx3_xenon/SeaXeroxData20171221_200233_cameraCal/LM165/000
+      path: ../calibration_images/SeaXeroxData20171221_calibration_sx3_xenon/SeaXeroxData20171221_200233_cameraCal/LM165/000
       glob_pattern: '*.tif'
     laser_calibration:
-      path: YYYYMMDD_hhmmss_platform_sensor_calib/image/SeaXerocksData20181119_073812_laserCal/LM165/000
+      path: ../YYYYMMDD_hhmmss_platform_sensor_calib/image/SeaXerocksData20181119_073812_laserCal/LM165/000
       glob_pattern: '*.tif'
 
 camera_calibration:
