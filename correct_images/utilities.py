@@ -25,6 +25,7 @@ def generate_filelist(directory):
 def get_filenames(directory, filelist):
     file = open(os.path.join(directory, filelist), 'r')
     filenames = file.read().rstrip().split("\n")
+    file.close()
     return filenames
 
 
