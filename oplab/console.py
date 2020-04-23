@@ -68,6 +68,14 @@ class Console:
         return str(pkg_resources.require("auv_nav")[0].version)
 
     @staticmethod
+    def write_metadata():
+        msg = ('date: \"' + Console.get_date() + "\" \n"
+               + 'user: \"' + Console.get_username() + "\" \n"
+               + 'host: \"' + Console.get_hostname() + "\" \n"
+               + 'version: \"' + Console.get_version() + "\" \n")
+        return msg
+
+    @staticmethod
     def progress(iteration, total, prefix='Progress:', suffix='Complete',
                  length=50, decimals=1, fill='█'):
         """
