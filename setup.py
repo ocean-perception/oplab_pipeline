@@ -27,7 +27,7 @@ setuptools.setup(
             'auv_nav = auv_nav.auv_nav:main',
             'auv_cal = auv_cal.auv_cal:main',
             'debayer_folder = correct_images.debayer_folder:main',
-            'correct_images = correct_images.correct_images:main'
+            'correct_images = correct_images.draft_image_correct:main'
         ],
     },
     package_data={
