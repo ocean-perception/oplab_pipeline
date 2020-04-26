@@ -1,7 +1,23 @@
 import unittest
+import tempfile
+import shutil
 from pathlib import Path
 from oplab.mission import Mission
+from oplab.mission import CameraEntry
 from oplab.vehicle import Vehicle
+
+def get_empty_test_directory():
+    #test_directory = Path('D:/temp/')
+    test_directory = Path(tempfile.gettempdir())
+    test_directory /= "module_testing_oplab_parsers"
+    # Delete all files in test directory, in case there are any
+    if test_directory.exists() and test_directory.is_dir():
+        for x in test_directory.iterdir():
+            if x.is_file():
+                x.unlink() # delete file
+    else:
+        test_directory.mkdir()
+    return test_directory
 
 
 class TestLoadMissionYK1723C(unittest.TestCase):
@@ -467,3 +483,174 @@ class TestLoadVehicleSSK1701FileFormat0(unittest.TestCase):
         self.assertEqual(self.v.chemical.roll, 0)
         self.assertEqual(self.v.chemical.pitch, 0)
         self.assertEqual(self.v.chemical.yaw, 0)
+
+class TestWriteMissionDY109(unittest.TestCase):
+    def setUp(self):
+        directory = get_empty_test_directory()
+        mission_path = directory / 'mission.yaml'
+        vehicle_path = directory / 'vehicle.yaml'
+        # Loading mission.yaml requires the corresponding vehicle.yaml file to be present, but there is currently no function to write entire vehicle.yaml files, therefore an existing file has to be used
+        vehicle_path_dy109 = Path(__file__).parents[1]
+        vehicle_path_dy109 /= 'default_yaml/as6/DY109/vehicle.yaml'
+        shutil.copy(str(vehicle_path_dy109), str(vehicle_path))
+        self.v1 = Vehicle(vehicle_path_dy109)
+        self.m1 = Mission()
+
+        self.m1.version = 1
+
+        self.m1.origin.latitude = 59.85643
+        self.m1.origin.longitude = -7.15903
+        self.m1.origin.crs = 'wgs84'
+        self.m1.origin.date = '2019/09/21'
+
+        self.m1.velocity.format = 'autosub'
+        self.m1.velocity.filepath = 'nav/'
+        self.m1.velocity.filename = 'M155.mat'
+        self.m1.velocity.label = 0
+        self.m1.velocity.timezone = 0
+        self.m1.velocity.timeoffset = 0.0
+        self.m1.velocity.std_factor = 0.001
+        self.m1.velocity.std_offset = 0.2
+        self.m1.velocity._empty = False
+
+        self.m1.orientation.format = 'autosub'
+        self.m1.orientation.filepath = 'nav/' 
+        self.m1.orientation.filename = 'M155.mat'
+        self.m1.orientation.label = 0
+        self.m1.orientation.timezone = 0
+        self.m1.orientation.timeoffset = 0.0
+        self.m1.orientation.std_factor = 0.0
+        self.m1.orientation.std_offset = 0.003
+        self.m1.orientation._empty = False
+
+        self.m1.depth.format = 'autosub'
+        self.m1.depth.filepath = 'nav/'
+        self.m1.depth.filename = 'M155.mat'
+        self.m1.depth.label = 0
+        self.m1.depth.timezone = 0
+        self.m1.depth.timeoffset = 0.0
+        self.m1.depth.std_factor = 0.001
+        self.m1.depth.std_offset = 0.0
+        self.m1.depth._empty = False
+
+        self.m1.altitude.format = 'autosub'
+        self.m1.altitude.filepath = 'nav/'
+        self.m1.altitude.filename = 'M155.mat'
+        self.m1.altitude.label = 0
+        self.m1.altitude.timezone = 0
+        self.m1.altitude.timeoffset = 0.0
+        self.m1.altitude.std_factor = 0.001
+        self.m1.altitude.std_offset = 0.3
+        self.m1.altitude._empty = False
+
+        self.m1.usbl.format = 'NOC_nmea'
+        self.m1.usbl.filepath = 'nav/usbl/'
+        self.m1.usbl.filename = ''
+        self.m1.usbl.label = 13
+        self.m1.usbl.timezone = 0
+        self.m1.usbl.timeoffset = 0.0
+        self.m1.usbl.std_factor = 0.01
+        self.m1.usbl.std_offset = 2.0
+        self.m1.usbl._empty = False
+
+        self.m1.tide.format = 'NOC_polpred'
+        self.m1.tide.filepath = 'tide/'
+        self.m1.tide.filename = 'dy_108_polpred_tide_10m.txt'
+        self.m1.tide.label = 0
+        self.m1.tide.timezone = 0
+        self.m1.tide.timeoffset = 0.0
+        self.m1.tide.std_factor = 0.0
+        self.m1.tide.std_offset = 0.0
+        self.m1.tide._empty = False
+
+        self.m1.image.format = 'biocam'
+        self.m1.image.cameras.append(CameraEntry()) 
+        self.m1.image.cameras[0].name = 'cam61003146'
+        self.m1.image.cameras[0].origin = 'cam61003146'
+        self.m1.image.cameras[0].type = 'bayer_rggb'
+        self.m1.image.cameras[0].path = 'image'
+        self.m1.image.cameras.append(CameraEntry()) 
+        self.m1.image.cameras[1].name = 'cam61004444'
+        self.m1.image.cameras[1].origin = 'cam61004444'
+        self.m1.image.cameras[1].type = 'grayscale'
+        self.m1.image.cameras[1].path = 'image'
+        self.m1.image.timezone = 0
+        self.m1.image.timeoffset =0.0
+        self.m1.image._empty = False
+
+        self.m1.write(mission_path)
+        self.m2 = Mission(mission_path)
+
+    def test_WriteMission(self):
+        self.assertEqual(self.m1.version, self.m2.version)
+
+        self.assertEqual(self.m1.origin.latitude, self.m2.origin.latitude)
+        self.assertEqual(self.m1.origin.longitude, self.m2.origin.longitude)
+        self.assertEqual(self.m1.origin.crs, self.m2.origin.crs)
+        self.assertEqual(self.m1.origin.date, self.m2.origin.date)
+
+        self.assertEqual(self.m1.velocity.format, self.m2.velocity.format)
+        self.assertEqual(self.m1.velocity.filepath, self.m2.velocity.filepath)
+        self.assertEqual(self.m1.velocity.filename, self.m2.velocity.filename)
+        self.assertEqual(self.m1.velocity.label, self.m2.velocity.label)
+        self.assertEqual(self.m1.velocity.timezone, self.m2.velocity.timezone)
+        self.assertEqual(self.m1.velocity.timeoffset, self.m2.velocity.timeoffset)
+        self.assertEqual(self.m1.velocity.std_factor, self.m2.velocity.std_factor)
+        self.assertEqual(self.m1.velocity.std_offset, self.m2.velocity.std_offset)
+
+        self.assertEqual(self.m1.orientation.format, self.m2.orientation.format)
+        self.assertEqual(self.m1.orientation.filepath, self.m2.orientation.filepath)
+        self.assertEqual(self.m1.orientation.filename, self.m2.orientation.filename)
+        self.assertEqual(self.m1.orientation.label, self.m2.orientation.label)
+        self.assertEqual(self.m1.orientation.timezone, self.m2.orientation.timezone)
+        self.assertEqual(self.m1.orientation.timeoffset, self.m2.orientation.timeoffset)
+        self.assertEqual(self.m1.orientation.std_factor, self.m2.orientation.std_factor)
+        self.assertEqual(self.m1.orientation.std_offset, self.m2.orientation.std_offset)
+
+        self.assertEqual(self.m1.depth.format, self.m2.depth.format)
+        self.assertEqual(self.m1.depth.filepath, self.m2.depth.filepath)
+        self.assertEqual(self.m1.depth.filename, self.m2.depth.filename)
+        self.assertEqual(self.m1.depth.label, self.m2.depth.label)
+        self.assertEqual(self.m1.depth.timezone, self.m2.depth.timezone)
+        self.assertEqual(self.m1.depth.timeoffset, self.m2.depth.timeoffset)
+        self.assertEqual(self.m1.depth.std_factor, self.m2.depth.std_factor)
+        self.assertEqual(self.m1.depth.std_offset, self.m2.depth.std_offset)
+
+        self.assertEqual(self.m1.altitude.format, self.m2.altitude.format)
+        self.assertEqual(self.m1.altitude.filepath, self.m2.altitude.filepath)
+        self.assertEqual(self.m1.altitude.filename, self.m2.altitude.filename)
+        self.assertEqual(self.m1.altitude.label, self.m2.altitude.label)
+        self.assertEqual(self.m1.altitude.timezone, self.m2.altitude.timezone)
+        self.assertEqual(self.m1.altitude.timeoffset, self.m2.altitude.timeoffset)
+        self.assertEqual(self.m1.altitude.std_factor, self.m2.altitude.std_factor)
+        self.assertEqual(self.m1.altitude.std_offset, self.m2.altitude.std_offset)
+
+        self.assertEqual(self.m1.usbl.format, self.m2.usbl.format)
+        self.assertEqual(self.m1.usbl.filepath, self.m2.usbl.filepath)
+        self.assertEqual(self.m1.usbl.filename, self.m2.usbl.filename)
+        self.assertEqual(self.m1.usbl.label, self.m2.usbl.label)
+        self.assertEqual(self.m1.usbl.timezone, self.m2.usbl.timezone)
+        self.assertEqual(self.m1.usbl.timeoffset, self.m2.usbl.timeoffset)
+        self.assertEqual(self.m1.usbl.std_factor, self.m2.usbl.std_factor)
+        self.assertEqual(self.m1.usbl.std_offset, self.m2.usbl.std_offset)
+
+        self.assertEqual(self.m1.tide.format, self.m2.tide.format)
+        self.assertEqual(self.m1.tide.filepath, self.m2.tide.filepath)
+        self.assertEqual(self.m1.tide.filename, self.m2.tide.filename)
+        self.assertEqual(self.m1.tide.label, self.m2.tide.label)
+        self.assertEqual(self.m1.tide.timezone, self.m2.tide.timezone)
+        self.assertEqual(self.m1.tide.timeoffset, self.m2.tide.timeoffset)
+        self.assertEqual(self.m1.tide.std_factor, self.m2.tide.std_factor)
+        self.assertEqual(self.m1.tide.std_offset, self.m2.tide.std_offset)
+
+        self.assertEqual(self.m1.image.format, self.m2.image.format)
+        self.assertEqual(self.m1.image.cameras[0].name, self.m2.image.cameras[0].name)
+        self.assertEqual(self.m1.image.cameras[0].origin, self.m2.image.cameras[0].origin)
+        self.assertEqual(self.m1.image.cameras[0].type, self.m2.image.cameras[0].type)
+        self.assertEqual(self.m1.image.cameras[0].path, self.m2.image.cameras[0].path)
+        self.assertEqual(self.m1.image.cameras[1].name, self.m2.image.cameras[1].name)
+        self.assertEqual(self.m1.image.cameras[1].origin, self.m2.image.cameras[1].origin)
+        self.assertEqual(self.m1.image.cameras[1].type, self.m2.image.cameras[1].type)
+        self.assertEqual(self.m1.image.cameras[1].path, self.m2.image.cameras[1].path)
+        self.assertEqual(self.m1.image.timezone, self.m2.image.timezone)
+        self.assertEqual(self.m1.image.timeoffset, self.m2.image.timeoffset)
