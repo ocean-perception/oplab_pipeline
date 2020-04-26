@@ -40,7 +40,7 @@ depth:
   pitch_deg: 0
   yaw_deg: 0
 
-camera1: #Left Camera
+fore: #Left Camera
   surge_m: 0.262875
   sway_m: 0.
   heave_m: 0.5
@@ -48,7 +48,7 @@ camera1: #Left Camera
   pitch_deg: 0
   yaw_deg: 0
 
-camera2: #Right Camera
+aft: #Right Camera
   surge_m: 0.012875
   sway_m: 0. # uncertain
   heave_m: 0.5 # uncertain
@@ -56,8 +56,7 @@ camera2: #Right Camera
   pitch_deg: 0
   yaw_deg: 0
 
-
-camera3: # Laser Camera (LM165)
+laser: # Laser Camera (LM165)
   surge_m: 0.150375 # 0.147875
   sway_m: 0
   heave_m: 0.514
@@ -65,7 +64,7 @@ camera3: # Laser Camera (LM165)
   pitch_deg: 0
   yaw_deg: 0
 
-payload1:
+chemical:
   surge_m: 0.4
   sway_m: 0
   heave_m: -0.5
