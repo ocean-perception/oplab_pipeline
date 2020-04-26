@@ -201,7 +201,8 @@ class DefaultEntry(TimeZoneEntry):
     def write(self, node):
         super().write(node)
         node['format'] = self.format
-        node['origin'] = self.origin
+        if 'origin' in node:
+            node['origin'] = self.origin
         node['filepath'] = self.filepath
         node['filename'] = self.filename
         node['label'] = self.label
@@ -236,17 +237,29 @@ class Mission:
         self.depth = DefaultEntry()
         self.altitude = DefaultEntry()
         self.usbl = DefaultEntry()
-        self.image = ImageEntry()
         self.tide = DefaultEntry()
+        self.image = ImageEntry()
 
         if filename is None:
             return
+
         try:
             # Check that mission.yaml and vehicle.yaml are consistent
             vehicle_file = filename.parent / 'vehicle.yaml'
             vehicle_stream = vehicle_file.open('r')
             vehicle_data = yaml.safe_load(vehicle_stream)
+        except FileNotFoundError:
+            Console.error('The file vehicle.yaml could not be found at the location:')
+            Console.error(vehicle_file)
+            Console.error('In order to load a mission.yaml file, a corresponding vehicle.yaml files needs to be present in the same folder.')
+            Console.quit('vehicle.yaml not provided')
+        except PermissionError:
+            Console.error('The file vehicle.yaml could not be opened at the location:')
+            Console.error(vehicle_file)
+            Console.error('Please make sure you have the correct access rights.')
+            Console.quit('vehicle.yaml not provided')
 
+        try:
             with filename.open('r') as stream:
                 data = yaml.safe_load(stream)
                 if 'version' in data:
@@ -345,6 +358,9 @@ class Mission:
             if not self.usbl.empty():
                 mission_dict['usbl'] = OrderedDict()
                 self.usbl.write(mission_dict['usbl'])
+            if not self.tide.empty():
+                mission_dict['tide'] = OrderedDict()
+                self.tide.write(mission_dict['tide'])
             if not self.image.empty():
                 mission_dict['image'] = OrderedDict()
                 self.image.write(mission_dict['image'])
