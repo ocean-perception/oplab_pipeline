@@ -86,6 +86,18 @@ class MonoCamera():
             msg += t + "avg_reprojection_error: " + str(error) + "\n"
         return msg
 
+    def return_valid(self, p):
+        px = p[0]
+        py = p[1]
+        v = (px > 0
+             and px < self.image_width
+             and py > 0
+             and py < self.image_height)
+        if v:
+            return p
+        else:
+            return None
+
     def distort_point(self, p):
         fx = self.K[0, 0]
         cx = self.K[0, 2]
@@ -98,7 +110,7 @@ class MonoCamera():
         out_p = []
         out_p = cv2.projectPoints(
             p_unif, ztemp, ztemp, self.K, self.d)[0][0][0]
-        return out_p
+        return self.return_valid(out_p)
 
     def undistort_point(self, p):
         # Undistorts points
@@ -120,20 +132,23 @@ class MonoCamera():
         fy = self.K[1, 1]
         cy = self.K[1, 2]
 
-        return [(px*fx+cx), (py*fy+cy)]
+        p = [(px*fx+cx), (py*fy+cy)]
+        return self.return_valid(p)
 
     def undistort_and_rectify_point(self, p):
-        p_und = self.undistort_point(self, p)
+        p_und = self.undistort_point(p)
+        if p_und is None:
+            return None
         p_unif = np.array([p_und[0], p_und[1], 1],
                           dtype=np.float).reshape(3, 1)
         p_und_rec = self.R @ p_unif
         p_und_rec = p_und_rec[0:2, 0]
-        return p_und_rec
+        return self.return_valid(p_und_rec)
 
     def unrectify_and_distort_point(self, p):
         p_unif = np.array([p[0], p[1], 1], dtype=np.float).reshape(3, 1)
         p_unrec = self.R.T @ p_unif
-        return self.distort_point(self, p_unrec[0:2])
+        return self.distort_point(p_unrec[0:2])
 
 
 class StereoCamera():
@@ -185,23 +200,26 @@ class StereoCamera():
         return msg
 
     def triangulate_point(self, left_uv, right_uv):
-        """Find 3D coordinate using SVD triangulation
-
-        Implements a linear triangulation method to find a 3D
-        point. For example, see Hartley & Zisserman section 12.2
-        (p.312).
-        """
-        A = []
-        A.append(float(left_uv[0])*self.left.P[2, :] - self.left.P[0, :])
-        A.append(float(left_uv[1])*self.left.P[2, :] - self.left.P[1, :])
-        A.append(float(right_uv[0])*self.right.P[2, :] - self.right.P[0, :])
-        A.append(float(right_uv[1])*self.right.P[2, :] - self.right.P[1, :])
-        A = np.array(A)
-        u, s, vt = np.linalg.svd(A)
-        X = vt[-1, 0:3]/vt[-1, 3]  # normalize
+        """ Point pair triangulation from
+        least squares solution. """
+        M = np.zeros((6, 6))
+        M[:3, :4] = self.left.P
+        M[3:, :4] = self.right.P
+        M[:3, 4] = -np.array([left_uv[0], left_uv[1], 1.0])
+        M[3:, 5] = -np.array([right_uv[0], right_uv[1], 1.0])
+        U, S, V = np.linalg.svd(M)
+        X = V[-1, :3] / V[-1, 3]
         return X
 
+    def triangulate_point_undistorted(self, left_uv, right_uv):
+        p1 = self.left.undistort_and_rectify_point(left_uv) 
+        p2 = self.right.undistort_and_rectify_point(right_uv) 
+        return self.triangulate_point(p1, p2)
+
     def project_point(self, point3d):
+        """ Projects a 3D point into the rectified frame
+        point3d a list of three elements [x, y, z]
+        """
         X = np.ones((4, 1), dtype=np.float)
         X[:3, 0] = point3d
         left_uv = self.left.P @ X
@@ -210,4 +228,16 @@ class StereoCamera():
         right_uv = self.right.P @ X
         right_uv /= right_uv[2]
         right_uv = right_uv[0:2, 0]
-        return left_uv, right_uv
+        return (self.left.return_valid(left_uv),
+                self.right.return_valid(right_uv))
+
+    def project_point_undistorted(self, point3d):
+        """ Projects a 3D point into the undistorted frame
+        point3d a list of three elements [x, y, z]
+        """
+        p1, p2 = self.project_point(point3d)
+        if p1 is None:
+            return None, None
+        p1d = self.left.unrectify_and_distort_point(p1)
+        p2d = self.right.unrectify_and_distort_point(p2)
+        return p1d, p2d
