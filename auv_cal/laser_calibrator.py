@@ -11,12 +11,6 @@ from auv_nav.parsers.parse_biocam_images import biocam_timestamp_from_filename
 import joblib
 import yaml
 
-def gaussian_window(length):
-    d = []
-    for i in range(length):
-        d.append(1 + (1 - 2*abs((length-1)/2 - i))/length)
-    return d
-
 
 def build_plane(pitch, yaw, point):
         a = math.cos(math.radians(pitch)) * math.cos(math.radians(yaw))
@@ -29,7 +23,7 @@ def build_plane(pitch, yaw, point):
         return plane, normal, offset
 
 
-def findLaserInImage(img, min_green_val, k, min_area, num_columns, start_row=0, end_row=-1, prior=None, debug=False):
+def findLaserInImage(img, min_green_val, k, num_columns, start_row=0, end_row=-1, prior=None, debug=False):
     height, width = img.shape
     peaks = []
     width_array = np.array(range(50, width-50))
@@ -69,52 +63,6 @@ def findLaserInImage(img, min_green_val, k, min_area, num_columns, start_row=0, 
         if gmax > min_green_val:    # If `true`, there is a point in the current column, which presumably belongs to the laser line
             peaks.append([vgmax, u])
     return np.array(peaks)
-
-
-def detect_laser_px(img, min_green_val, k, min_area, num_columns, start_row=0, end_row=-1, prior=None, debug=False):
-    # k is the +-number of pixels from the maximum G pixel i.e. k=1 means that
-    # maxgreen_1-1,maxgreen_1 and maxgreen_1+1 are considered for interpolation
-    height, width = img.shape
-    peaks = []
-    width_array = np.array(range(50, width-50))
-
-    if end_row == -1:
-        end_row = height
-
-    if prior is None:
-        if num_columns > 0:
-            incr = int(len(width_array) / num_columns) - 1
-            columns = [width_array[i] for i in range(0, len(width_array), incr)]
-        else:
-            columns = width_array
-    else:
-        columns = [i[1] for i in prior]
-
-    window = gaussian_window(k)
-
-    window = gaussian_window(k)
-
-    for i in columns:
-        stripe = img[start_row:end_row, i]
-        max_ind = stripe.argmax()
-        # print('max_ind: ' + str(max_ind))
-        if stripe[max_ind] > min_green_val:
-            result = np.convolve(stripe, window, 'same')
-            max_ind = result.argmax()
-            # print('max_ind (conv): ' + str(max_ind))
-            if result[max_ind] > min_area and end_row - start_row - k > max_ind:
-                weight_sum = 0
-                acc_sum = 0
-                for ci in range(k):
-                    ind = int(ci - (k-1)/2)
-                    acc_sum += result[max_ind - ind]
-                    weight_sum += result[max_ind - ind] * ind
-                cog = weight_sum / acc_sum
-                # print('cog: ' + str(cog))
-                # print('final: ' + str(start_row + max_ind + cog) + ' start_row: ' + str(start_row))
-                # TODO compute center of mass
-                peaks.append([start_row + max_ind + cog, i])
-    return np.array(peaks, dtype=np.float32)
 
 
 def triangulate_lst(x1, x2, P1, P2):
@@ -190,7 +138,7 @@ def fit_plane(xyz):
     return [a, b, c, d, plane_angle, pitch_angle, yaw_angle]
 
 
-def draw_laser(left_image_name, right_image_name, left_maps, right_maps, top_left, top_right, bottom_left, bottom_right):
+def draw_laser(left_image_name, right_image_name, left_maps, right_maps, top_left, top_right, bottom_left, bottom_right, remap):
     lfilename = left_image_name.name
     rfilename = right_image_name.name
     lprocessed_folder = get_processed_folder(left_image_name.parent)
@@ -206,12 +154,26 @@ def draw_laser(left_image_name, right_image_name, left_maps, right_maps, top_lef
     if not lfilename.exists() or not rfilename.exists():
         limg = cv2.imread(str(left_image_name), cv2.IMREAD_ANYDEPTH)
         rimg = cv2.imread(str(right_image_name), cv2.IMREAD_ANYDEPTH)
-        limg_remap = cv2.remap(limg, left_maps[0], left_maps[1], cv2.INTER_LANCZOS4)
-        rimg_remap = cv2.remap(rimg, right_maps[0], right_maps[1], cv2.INTER_LANCZOS4)
-        limg_colour = np.zeros((limg_remap.shape[0], limg_remap.shape[1], 3), dtype=np.uint8)
-        rimg_colour = np.zeros((rimg_remap.shape[0], rimg_remap.shape[1], 3), dtype=np.uint8)
-        limg_colour[:, :, 1] = limg_remap
-        rimg_colour[:, :, 1] = rimg_remap
+
+        channels = 1
+        if limg.ndim == 3:
+            channels = limg.shape[-1]
+
+        if remap:
+            limg_remap = cv2.remap(limg, left_maps[0], left_maps[1], cv2.INTER_LANCZOS4)
+            rimg_remap = cv2.remap(rimg, right_maps[0], right_maps[1], cv2.INTER_LANCZOS4)
+            limg_colour = np.zeros((limg_remap.shape[0], limg_remap.shape[1], 3), dtype=np.uint8)
+            rimg_colour = np.zeros((rimg_remap.shape[0], rimg_remap.shape[1], 3), dtype=np.uint8)
+            limg_colour[:, :, 1] = limg_remap
+            rimg_colour[:, :, 1] = rimg_remap
+        elif channels == 1:
+            limg_colour = np.zeros((limg.shape[0], limg.shape[1], 3), dtype=np.uint8)
+            rimg_colour = np.zeros((rimg.shape[0], rimg.shape[1], 3), dtype=np.uint8)
+            limg_colour[:, :, 1] = limg
+            rimg_colour[:, :, 1] = rimg
+        else:
+            limg_colour = limg
+            rimg_colour = rimg
         for p in top_left:
             cv2.circle(limg_colour, (int(p[1]), int(p[0])), 1, (0, 0, 255), -1)
         for p in top_right:
@@ -222,18 +184,19 @@ def draw_laser(left_image_name, right_image_name, left_maps, right_maps, top_lef
             cv2.circle(rimg_colour, (int(p[1]), int(p[0])), 1, (0, 255, 127), -1)
         cv2.imwrite(str(lfilename), limg_colour)
         cv2.imwrite(str(rfilename), rimg_colour)
-        print('Saved ' + str(lfilename) + ' and ' + str(rfilename))
+        Console.info('Saved ' + str(lfilename) + ' and ' + str(rfilename))
 
 
-def thread_detect(left_image_name, left_maps, right_image_name, right_maps, min_greenness_value, k, min_area, num_columns, start_row, end_row, start_row_b, end_row_b, two_lasers):
-    def write_file(filename, image_name, maps, min_greenness_value, k, min_area, num_columns, start_row, end_row, start_row_b, end_row_b, two_lasers):
+def thread_detect(left_image_name, left_maps, right_image_name, right_maps, min_greenness_value, k, num_columns, start_row, end_row, start_row_b, end_row_b, two_lasers, remap):
+    def write_file(filename, image_name, maps, min_greenness_value, k, num_columns, start_row, end_row, start_row_b, end_row_b, two_lasers, remap):
         p1b = []
         img1 = cv2.imread(str(image_name), cv2.IMREAD_ANYDEPTH)
-        img1 = cv2.remap(img1, maps[0], maps[1], cv2.INTER_LANCZOS4)
-        p1 = findLaserInImage(img1, min_greenness_value, k, min_area, num_columns, start_row=start_row, end_row=end_row)
+        if remap:
+            img1 = cv2.remap(img1, maps[0], maps[1], cv2.INTER_LANCZOS4)
+        p1 = findLaserInImage(img1, min_greenness_value, k, num_columns, start_row=start_row, end_row=end_row)
         write_str = "top: \n- " + "- ".join(["[" + str(p1[i][0]) + ", " + str(p1[i][1]) + ']\n'for i in range(len(p1))])
         if two_lasers:
-            p1b = findLaserInImage(img1, min_greenness_value, k, min_area, num_columns, start_row=start_row_b, end_row=end_row_b, debug=True)
+            p1b = findLaserInImage(img1, min_greenness_value, k, num_columns, start_row=start_row_b, end_row=end_row_b, debug=True)
             write_str += "bottom: \n- " + "- ".join(["[" + str(p1b[i][0]) + ", " + str(p1b[i][1]) + ']\n'for i in range(len(p1b))])
         with filename.open('w') as f:
             f.write(write_str)
@@ -241,7 +204,7 @@ def thread_detect(left_image_name, left_maps, right_image_name, right_maps, min_
         p1b = np.array(p1b, dtype=np.float32)
         return p1, p1b
 
-    def do_image(image_name, maps, min_greenness_value, k, min_area, num_columns, start_row, end_row, start_row_b, end_row_b, two_lasers):
+    def do_image(image_name, maps, min_greenness_value, k, num_columns, start_row, end_row, start_row_b, end_row_b, two_lasers, remap):
         # Load image
         points = []
         points_b = []
@@ -271,9 +234,9 @@ def thread_detect(left_image_name, left_maps, right_image_name, right_maps, min_
                         points_b.append([a1b[i][0], a1b[i][1]])
                     points_b = np.array(points_b, dtype=np.float32)
             else:
-                points, points_b = write_file(filename, image_name, maps, min_greenness_value, k, min_area, num_columns, start_row, end_row, start_row_b, end_row_b, two_lasers)
+                points, points_b = write_file(filename, image_name, maps, min_greenness_value, k, num_columns, start_row, end_row, start_row_b, end_row_b, two_lasers, remap)
         else:
-            points, points_b = write_file(filename, image_name, maps, min_greenness_value, k, min_area, num_columns, start_row, end_row, start_row_b, end_row_b, two_lasers)
+            points, points_b = write_file(filename, image_name, maps, min_greenness_value, k, num_columns, start_row, end_row, start_row_b, end_row_b, two_lasers, remap)
         return points, points_b
     # print('PAIR: ' + left_image_name.stem + ' - ' + right_image_name.stem)
     p1, p1b = do_image(
@@ -281,26 +244,24 @@ def thread_detect(left_image_name, left_maps, right_image_name, right_maps, min_
         left_maps,
         min_greenness_value,
         k,
-        min_area,
         num_columns,
         start_row,
         end_row,
         start_row_b,
         end_row_b,
-        two_lasers)
+        two_lasers, remap)
     p2, p2b = do_image(
         right_image_name,
         right_maps,
         min_greenness_value,
         k,
-        min_area,
         num_columns,
         start_row,
         end_row,
         start_row_b,
         end_row_b,
-        two_lasers)
-    draw_laser(left_image_name, right_image_name, left_maps, right_maps, p1, p2, p1b, p2b)
+        two_lasers, remap)
+    draw_laser(left_image_name, right_image_name, left_maps, right_maps, p1, p2, p1b, p2b, remap)
     return p1, p2, p1b, p2b
 
 
@@ -315,7 +276,7 @@ def save_cloud(filename, cloud):
                   property float z\n\
                   end_header\n'.format(cloud_size)
 
-    print('Saving cloud to ' + str(filename))
+    Console.info('Saving cloud to ' + str(filename))
 
     with filename.open('w') as f:
         f.write(header_msg)
@@ -353,8 +314,6 @@ class LaserCalibrator():
         self.num_iterations = self.config.get('GENERATED_iterations', 100)
         self.filter_xy = self.config.get('FILTER_cloud_xy', 30.0)
         self.filter_z = self.config.get('FILTER_cloud_z', 15.0)
-
-        self.min_area = 5
 
         self.left_maps = cv2.initUndistortRectifyMap(
             self.sc.left.K,
@@ -432,9 +391,9 @@ class LaserCalibrator():
             limages_rs = limages
             rimages_rs = rimages
 
-        print('Processing ', str(len(limages_sync)) , ' images...')
+        Console.info('Processing ', str(len(limages_sync)) , ' synchronised images...')
         result = joblib.Parallel(n_jobs=-1)([
-            joblib.delayed(thread_detect)(i, self.left_maps, j, self.right_maps, self.min_greenness_value, self.k, self.min_area, self.num_columns, self.start_row, self.end_row, self.start_row_b, self.end_row_b, self.two_lasers)
+            joblib.delayed(thread_detect)(i, self.left_maps, j, self.right_maps, self.min_greenness_value, self.k, self.num_columns, self.start_row, self.end_row, self.start_row_b, self.end_row_b, self.two_lasers, self.remap)
             for i, j in zip(limages_rs, rimages_rs)])
 
         count1l = 0
@@ -482,7 +441,10 @@ class LaserCalibrator():
                     p = triangulate_lst(pk1[i1], pk2[i2], self.sc.left.P, self.sc.right.P)
 
                     # Remove rectification rotation
-                    p_unrec = self.sc.left.R.T @ p
+                    if self.remap:
+                        p_unrec = self.sc.left.R.T @ p
+                    else:
+                        p_unrec = p
 
                     # Check that the point is not behind the camera
                     if p[2] < 0 or p is None:
@@ -508,7 +470,7 @@ class LaserCalibrator():
             count_bad += cb
         Console.info("Found {} potential TOP points".format(count_good))
         Console.info("Found {} wrong TOP points".format(count_bad))
-        print('Found ' + str(len(point_cloud)) + ' TOP triangulated points!')
+        Console.info('Found ' + str(len(point_cloud)) + ' TOP triangulated points!')
         if self.two_lasers:
             result = joblib.Parallel(n_jobs=-1)([
                 joblib.delayed(pointcloud_from_peaks)(f1b, f2b)
@@ -521,7 +483,7 @@ class LaserCalibrator():
                 count_bad += cb
             Console.info("Found {} potential BOTTOM points".format(count_good))
             Console.info("Found {} wrong BOTTOM points".format(count_bad))
-            print('Found ' + str(len(point_cloud)) + ' BOTTOM triangulated points!')
+            Console.info('Found ' + str(len(point_cloud)) + ' BOTTOM triangulated points!')
 
         # Change coordinate system
         point_cloud_ned = joblib.Parallel(n_jobs=-1)([
@@ -535,6 +497,8 @@ class LaserCalibrator():
 
         def fit_and_save(cloud):
             total_no_points = len(cloud)
+
+            Console.info('RANSAC Fitting a plane to', total_no_points, 'points...')
 
             mean_plane, inliers_cloud = plane_fitting_ransac(
                 cloud,
@@ -550,10 +514,19 @@ class LaserCalibrator():
 
             inliers_cloud = list(inliers_cloud)
 
-            print('RANSAC plane with all points: {}'.format(mean_plane))
+            Console.info('RANSAC plane with all points: {}'.format(mean_plane))
 
             cloud_sample_size = int(self.cssp * len(inliers_cloud))
-            print('Randomly sampling with', cloud_sample_size, 'points...')
+            Console.info('RANSAC found', len(inliers_cloud), 'inliers')
+
+            if len(inliers_cloud) < 0.5*len(cloud)*self.gip:
+                Console.warn('The number of inliers found are off from what you expected.')
+                Console.warn(' * Expected inliers:', len(cloud)*self.gip)
+                Console.warn(' * Found inliers:', len(inliers_cloud))
+                Console.warn('Check the output cloud to see if the found plane makes sense.')
+                Console.warn('Either relax your RANSAC distance threshold, increase the number of iterations or relax your expectations.')
+
+            Console.info('Randomly sampling with', cloud_sample_size, 'points...')
 
             planes = []
             for i in range(0, self.num_iterations):
@@ -574,19 +547,14 @@ class LaserCalibrator():
             yaw_angle_std = np.std(planes[:, 6])
             yaw_angle_mean = np.mean(planes[:, 6])
 
-            print('Total Number of Points:', total_no_points)
-            print('Plane Standard deviation:\n', plane_angle_std)
-            print('Mean angle:\n', plane_angle_mean)
-            print('Median angle:\n', plane_angle_median)
-            print('Pitch Standard deviation:\n', pitch_angle_std)
-            print('Pitch Mean:\n', pitch_angle_mean)
-            print('Yaw Standard deviation:\n', yaw_angle_std)
-            print('Yaw Mean:\n', yaw_angle_mean)
-
-            # mean_a = np.mean(planes[:, 0])
-            # mean_b = np.mean(planes[:, 1])
-            # mean_c = np.mean(planes[:, 2])
-            # mean_d = np.mean(planes[:, 3])
+            Console.info('Total Number of Points:', total_no_points)
+            Console.info('Plane Standard deviation:\n', plane_angle_std)
+            Console.info('Mean angle:\n', plane_angle_mean)
+            Console.info('Median angle:\n', plane_angle_median)
+            Console.info('Pitch Standard deviation:\n', pitch_angle_std)
+            Console.info('Pitch Mean:\n', pitch_angle_mean)
+            Console.info('Yaw Standard deviation:\n', yaw_angle_std)
+            Console.info('Yaw Mean:\n', yaw_angle_mean)
 
             mean_x = np.mean(cloud[:, 0])
             mean_y = np.mean(cloud[:, 1])
@@ -624,6 +592,11 @@ class LaserCalibrator():
                     yaml_msg += d + msg_type[2] + ': ' + str(offset) + '\n'
                     self.data.append([plane, normal, offset, d])
 
+            yaml_msg += ('date: \"' + Console.get_date() + "\" \n"
+                         + 'user: \"' + Console.get_username() + "\" \n"
+                         + 'host: \"' + Console.get_hostname() + "\" \n"
+                         + 'version: \"' + Console.get_version() + "\" \n")
+
             return yaml_msg
 
         def filter_cloud(cloud):
@@ -634,31 +607,30 @@ class LaserCalibrator():
                 return first and second and third
             return [p for p in cloud if valid(p)]
 
-        print('Saving clouds')
         save_cloud(processed_folder / '../points.ply', point_cloud_ned)
         if self.two_lasers:
             save_cloud(processed_folder / '../points_b.ply', point_cloud_ned_b)
 
-        print('Fitting a plane...')
-
-
-        rs_size = min(len(point_cloud_ned), self.max_point_cloud_size)
-        point_cloud_rs = random.sample(point_cloud_ned, rs_size)
-        rss_before = len(point_cloud_rs)
-        point_cloud_rs = filter_cloud(point_cloud_rs)
+        rss_before = len(point_cloud_ned)
+        point_cloud_rs = filter_cloud(point_cloud_ned)
         rss_after = len(point_cloud_rs)
-        print('Points after filtering: ' + str(rss_after) + '/' + str(rss_before))
+        Console.info('Points after filtering: ' + str(rss_after) + '/' + str(rss_before))
+        rs_size = min(rss_after, self.max_point_cloud_size)
+        point_cloud_rs = random.sample(point_cloud_rs, rs_size)
+        save_cloud(processed_folder / '../points_rs.ply', point_cloud_rs)
         point_cloud_rs = np.array(point_cloud_rs)
         point_cloud_rs = point_cloud_rs.reshape(-1, 3)
         self.yaml_msg = fit_and_save(point_cloud_rs)
+        
         if self.two_lasers:
-            print('Fitting a plane to second line...')
-            rs_size = min(len(point_cloud_ned_b), self.max_point_cloud_size)
-            point_cloud_b_rs = random.sample(point_cloud_ned_b, rs_size)
-            rss_before = len(point_cloud_b_rs)
-            point_cloud_b_rs = filter_cloud(point_cloud_b_rs)
+            Console.info('Fitting a plane to second line...')
+            rss_before = len(point_cloud_ned_b)
+            point_cloud_b_rs = filter_cloud(point_cloud_ned_b)
             rss_after = len(point_cloud_b_rs)
-            print('Points after filtering: ' + str(rss_after) + '/' + str(rss_before))
+            Console.info('Points after filtering: ' + str(rss_after) + '/' + str(rss_before))
+            rs_size = min(rss_after, self.max_point_cloud_size)
+            point_cloud_b_rs = random.sample(point_cloud_b_rs, rs_size)
+            save_cloud(processed_folder / '../points_b_rs.ply', point_cloud_b_rs)
             point_cloud_b_rs = np.array(point_cloud_b_rs)
             point_cloud_b_rs = point_cloud_b_rs.reshape(-1, 3)
             self.yaml_msg_b = fit_and_save(point_cloud_b_rs)
