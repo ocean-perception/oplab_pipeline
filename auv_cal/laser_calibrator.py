@@ -419,8 +419,10 @@ class LaserCalibrator():
         Console.info("Found {} top peaks in camera 1!".format(str(count1l)))
         Console.info("Found {} top peaks in camera 2!".format(str(count2l)))
         if self.two_lasers:
-            Console.info("Found {} bottom peaks in camera 1!".format(str(count1lb)))
-            Console.info("Found {} bottom peaks in camera 2!".format(str(count2lb)))
+            Console.info(
+                "Found {} bottom peaks in camera 1!".format(str(count1lb)))
+            Console.info(
+                "Found {} bottom peaks in camera 2!".format(str(count2lb)))
 
         def pointcloud_from_peaks(pk1, pk2):
             cloud = []
@@ -439,7 +441,7 @@ class LaserCalibrator():
                 if pk2[i2][1] - pk1[i1][1] < 1.0:
                     # Triangulate using Least Squares
                     p = triangulate_lst(pk1[i1], pk2[i2], self.sc.left.P, self.sc.right.P)
-
+                    
                     # Remove rectification rotation
                     if self.remap:
                         p_unrec = self.sc.left.R.T @ p
@@ -512,17 +514,17 @@ class LaserCalibrator():
             mean_plane = np.array(mean_plane)*scale
             mean_plane = mean_plane.tolist()
 
-            inliers_cloud = list(inliers_cloud)
+            inliers_cloud_list = list(inliers_cloud)
 
             Console.info('RANSAC plane with all points: {}'.format(mean_plane))
 
-            cloud_sample_size = int(self.cssp * len(inliers_cloud))
-            Console.info('RANSAC found', len(inliers_cloud), 'inliers')
+            cloud_sample_size = int(self.cssp * len(inliers_cloud_list))
+            Console.info('RANSAC found', len(inliers_cloud_list), 'inliers')
 
-            if len(inliers_cloud) < 0.5*len(cloud)*self.gip:
+            if len(inliers_cloud_list) < 0.5*len(cloud)*self.gip:
                 Console.warn('The number of inliers found are off from what you expected.')
                 Console.warn(' * Expected inliers:', len(cloud)*self.gip)
-                Console.warn(' * Found inliers:', len(inliers_cloud))
+                Console.warn(' * Found inliers:', len(inliers_cloud_list))
                 Console.warn('Check the output cloud to see if the found plane makes sense.')
                 Console.warn('Either relax your RANSAC distance threshold, increase the number of iterations or relax your expectations.')
 
@@ -530,7 +532,7 @@ class LaserCalibrator():
 
             planes = []
             for i in range(0, self.num_iterations):
-                point_cloud_local = np.array(random.sample(inliers_cloud,
+                point_cloud_local = np.array(random.sample(inliers_cloud_list,
                                                            cloud_sample_size))
                 plane = fit_plane(point_cloud_local)
                 planes.append(plane)
@@ -556,9 +558,10 @@ class LaserCalibrator():
             Console.info('Yaw Standard deviation:\n', yaw_angle_std)
             Console.info('Yaw Mean:\n', yaw_angle_mean)
 
-            mean_x = np.mean(cloud[:, 0])
-            mean_y = np.mean(cloud[:, 1])
-            mean_z = np.mean(cloud[:, 2])
+            inliers_cloud = np.array(inliers_cloud)
+            mean_x = np.mean(inliers_cloud[:, 0])
+            mean_y = np.mean(inliers_cloud[:, 1])
+            mean_z = np.mean(inliers_cloud[:, 2])
             mean_xyz = np.array([mean_x, mean_y, mean_z])
 
             yaml_msg = ''
