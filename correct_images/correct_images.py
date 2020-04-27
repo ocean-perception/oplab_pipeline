@@ -7,7 +7,7 @@ from correct_images.calculate_correction_parameters import \
 from correct_images.calculate_correction_parameters import \
     calculate_correction_parameters
 from correct_images.develop_corrected_images import develop_corrected_image
-from auv_nav.console import Console
+from oplab import Console
 import numpy as np
 from colour_demosaicing import demosaicing_CFA_Bayer_bilinear
 import cv2

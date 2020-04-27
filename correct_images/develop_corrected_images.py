@@ -12,10 +12,10 @@ import yaml
 from tqdm import tqdm
 from pathlib import Path
 
-from auv_nav.console import Console
-from auv_nav.tools.folder_structure import get_raw_folder
-from auv_nav.tools.folder_structure import get_processed_folder
-from auv_nav.tools.folder_structure import get_config_folder
+from oplab import Console
+from oplab import get_raw_folder
+from oplab import get_processed_folder
+from oplab import get_config_folder
 from correct_images.calculate_correction_parameters import \
     calc_attenuation_correction_gain, apply_atn_crr_2_img
 from correct_images.read_mission import read_params

@@ -100,8 +100,8 @@ def calculate_correction_parameters(path, force):
     config_ = read_params(path_correct, "correct")
     label_raw_file = "raw file"
     label_altitude = " Altitude [m]"
-    altitude_max = config_.attenuation_correction.altitude_max.get("max")
-    altitude_min = config_.attenuation_correction.altitude_min.get("min")
+    altitude_max = config_.attenuation_correction.altitude_max
+    altitude_min = config_.attenuation_correction.altitude_min
     sampling_method = config_.attenuation_correction.sampling_method
     format_ = config_.config.format
 
@@ -171,7 +171,7 @@ def calculate_correction_parameters(path, force):
             else:
                 csv_path = "csv/dead_reckoning/auv_dr_" + camera_lr + ".csv"
             # auv_nav_filepath = path_processed / anf
-            auv_nav_filepath = auv_nav_filepath / csv_path
+            auv_nav_filepath = get_processed_folder(auv_nav_filepath / csv_path)
 
             df_all = pd.read_csv(auv_nav_filepath, dtype={"Imagenumber": object})
             raw_file_list = [None] * len(df_all)
