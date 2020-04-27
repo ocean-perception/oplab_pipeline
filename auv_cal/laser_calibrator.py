@@ -313,7 +313,8 @@ class LaserCalibrator():
         self.cssp = self.config.get('GENERATED_cloud_sample_size_percentage', 0.5)
         self.num_iterations = self.config.get('GENERATED_iterations', 100)
         self.filter_xy = self.config.get('FILTER_cloud_xy', 30.0)
-        self.filter_z = self.config.get('FILTER_cloud_z', 15.0)
+        self.filter_z_min = self.config.get('FILTER_cloud_z_min', 0.0)
+        self.filter_z_max = self.config.get('FILTER_cloud_z_max', 15.0)
 
         self.left_maps = cv2.initUndistortRectifyMap(
             self.sc.left.K,
@@ -606,7 +607,7 @@ class LaserCalibrator():
             def valid(p):
                 first = (p[0] > -self.filter_xy) and (p[0] < self.filter_xy)
                 second = (p[1] > -self.filter_xy) and (p[1] < self.filter_xy)
-                third = (p[2] > 0.0) and (p[2] < self.filter_z)
+                third = (p[2] > self.filter_z_min) and (p[2] < self.filter_z_max)
                 return first and second and third
             return [p for p in cloud if valid(p)]
 
