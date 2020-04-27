@@ -50,4 +50,5 @@ laser_calibration:
   RANSAC_goal_inliers_percentage: 0.95
   RANSAC_max_iterations: 5000
   FILTER_cloud_xy: 30.0
-  FILTER_cloud_z: 15.0
+  FILTER_cloud_z_min: 4.0
+  FILTER_cloud_z_max: 15.0
