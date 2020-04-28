@@ -1,5 +1,5 @@
-#YAML 1.0
+# YAML 1.0
 
 path_mission_acfr: 'D:\CorrectImagestest\Test_tunasand\raw\2018\fk180731\tuna_sand\20180811_153727_ts_un6k' # path to the mission.yaml file
-path_mission_sx3: 'D:\CorrectImagestest\Test_seaxerocks3\raw\2018\fk180731\tuna_sand\20180811_153727_ts_un6k'
+path_mission_sx3: 'D:\CorrectImagestest\Test_ae2000\raw\2018\fk2018\ae2000\20180802_172527_ae2000f_sx3'
 path_mission_biocam: 'D:\CorrectImagestest\Test_biocam\raw\2018\fk180731\tuna_sand\20180811_153727_ts_un6k'

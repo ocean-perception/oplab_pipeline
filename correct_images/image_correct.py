@@ -28,7 +28,8 @@ from auv_nav.tools.folder_structure import get_config_folder
 from auv_nav.parsers.mission import *
 from auv_nav.camera_system import *
 
-from correct_images.draft_corrector import *
+from correct_images.corrector import *
+from correct_images.parser import *
 
 from numpy.linalg import inv
 import sys
@@ -96,7 +97,6 @@ def call_correct(args):
     # find mission and correct_images yaml files
     if path_mission.exists():
         Console.info('path found to mission.yaml file')
-        mission = Mission(path_mission)
     else:
         Console.quit('mission.yaml file not found in designated path')
     if path_correct_images.exists():
@@ -106,6 +106,10 @@ def call_correct(args):
         default_file_path = root / 'correct_images/default_yaml/correct_images.yaml'
         default_file_path.copy(path_correct_images)
         Console.warn('Default correct_images.yaml copied to config folder')
+
+    # load mission and correct_config parameters
+    mission = Mission(path_mission)
+    correct_config = CorrectConfig(path_correct_images)
 
     # load camera.yaml file path
     camera_yaml_path = path_config_folder / 'camera.yaml'
@@ -133,21 +137,20 @@ def call_correct(args):
     camerasystem = CameraSystem(camera_yaml_path)
 
     for camera in camerasystem.cameras:
-        corrector = Corrector(camera, path)
-        corrector.load_correct_images_yaml_file()
-        corrector.load_generic_parameters()
-        corrector.load_camera_specific_parameters()
+        corrector = Corrector(args.force, camera, correct_config, path)
+
+        corrector.load_generic_config_parameters()
+        corrector.load_camera_specific_config_parameters()
         corrector.get_imagelist()
         corrector.get_image_properties()
-        bayer_numpy_filelist = corrector.generate_bayer_numpy_filelist()
-        corrector.generate_bayer_numpyfiles(bayer_numpy_filelist)
-        distance_matrix_numpy_filelist = corrector.generate_distance_matrix()
+        corrector.create_output_directories()
+        #corrector.generate_bayer_numpyfiles(bayer_numpy_filelist)
+        corrector.generate_distance_matrix()
+        
+        corrector.generate_bayer_numpy_filelist(corrector._imagelist)
 
-        #print(distance_matrix_numpy_filelist)
-
-    # for each camera:
-    # 1. instantiate corrector object
-    # 2. call corrector.process_correction()
+        corrector.generate_correction_parameters()
+        corrector.process_correction()
 
 
 if __name__ == '__main__':

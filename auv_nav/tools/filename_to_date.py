@@ -1,14 +1,17 @@
 from pathlib import Path
 import yaml
-from auv_nav.console import Console
+from auv_nav.tools.console import Console
 from datetime import datetime
 import calendar
 import pandas as pd
 from auv_nav.tools.folder_structure import get_raw_folder
 
 
-def resolve(filename):
-    curr_dir = Path.cwd()
+def resolve(filename, path_to_mission):
+    if path_to_mission is None:
+        curr_dir = Path.cwd()
+    else:
+        curr_dir = path_to_mission
     curr_dir = get_raw_folder(curr_dir)
     print(curr_dir)
     print(filename)
@@ -21,12 +24,12 @@ def resolve(filename):
     return resolved_filename
 
 
-class FilenameToDate():
-    def __init__(self, stamp_format: str, filename=None, columns=None):
+class FilenameToDate:
+    def __init__(self, stamp_format: str, filename=None, columns=None, path_to_mission=None):
         self.stamp_format = stamp_format
         self.df = None
         if filename is not None and columns is not None:
-            self.filename = resolve(filename)
+            self.filename = resolve(filename, path_to_mission)
             self.read_timestamp_file(self.filename, columns)
 
     # Make the object callable  (e.g. operator() )

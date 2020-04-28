@@ -1,15 +1,16 @@
 import yaml
 from auv_nav.tools.folder_structure import get_raw_folder
-from auv_nav.console import Console
+from auv_nav.tools.console import Console
 from auv_nav.tools.filename_to_date import FilenameToDate
 # Workaround to dump OrderedDict into YAML files
 from pathlib import Path
 
 
 class CameraEntry:
-    def __init__(self, node=None):
+    def __init__(self, node=None, path_to_mission=None):
         self._image_list = []
         self._stamp_list = []
+        self.path_to_mission = path_to_mission
         if node is not None:
             self.name = node['name']
             self.type = node['type']
@@ -30,7 +31,8 @@ class CameraEntry:
             self.convert_filename = FilenameToDate(
                 self.filename_to_date,
                 self.timestamp_file,
-                self.columns)
+                self.columns,
+                path_to_mission)
 
     def write(self, node):
         pass
@@ -39,7 +41,10 @@ class CameraEntry:
     def image_list(self):
         if len(self._image_list) > 0:
             return self._image_list
-        curr_dir = Path.cwd()
+        if self.path_to_mission is None:
+            curr_dir = Path.cwd()
+        else:
+            curr_dir = self.path_to_mission
         raw_dir = get_raw_folder(curr_dir)
         img_dir = raw_dir.glob(self.path)
         self._image_list = []
@@ -60,7 +65,7 @@ class CameraEntry:
 
 
 class CameraSystem:
-    def __init__(self, filename=None):
+    def __init__(self, filename=None, path_to_mission=None):
         self.cameras = []
         self.camera_system = None
         if filename is None:
@@ -79,7 +84,7 @@ class CameraSystem:
             Console.error(filename)
             Console.error('Please make sure you have the correct access rights.')
             Console.quit('camera.yaml not provided')
-        self._parse(data)
+        self._parse(data, path_to_mission)
 
     def __str__(self):
         msg = ''
@@ -96,7 +101,7 @@ class CameraSystem:
             msg += 'Empty CameraSystem'
         return msg
 
-    def _parse(self, node):
+    def _parse(self, node, path_to_mission):
         if 'camera_system' not in node:
             Console.error('The camera.yaml file is missing the camera_system entry.')
             Console.quit('Wrong camera.yaml format or content.')
@@ -106,4 +111,4 @@ class CameraSystem:
             Console.error('The camera.yaml file is missing the cameras entry.')
             Console.quit('Wrong camera.yaml format or content.')
         for camera in node['cameras']:
-            self.cameras.append(CameraEntry(camera))
+            self.cameras.append(CameraEntry(camera, path_to_mission))

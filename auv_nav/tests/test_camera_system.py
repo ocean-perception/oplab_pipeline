@@ -26,7 +26,7 @@ class TestCameraSystem(unittest.TestCase):
 
     def testAcfrStandard(self):
         root = Path(__file__).parents[1]
-        acfr_std_camera_file = 'default_yaml/ts1/SSK17-01/camera.yaml'
+        acfr_std_camera_file = '/default_yaml/ts1/SSK17-01/camera.yaml'
         cs = CameraSystem(root / acfr_std_camera_file)
         self.assertEqual(cs.camera_system, 'acfr_standard', 'Wrong camera system')
         self.assertEqual(len(cs.cameras), 2, 'Wrong camera count')
