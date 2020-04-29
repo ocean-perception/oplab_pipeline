@@ -155,22 +155,22 @@ class Corrector:
 			full_metric_path = full_metric_path / 'csv' / 'ekf'
 			metric_file = 'auv_ekf_' + self._camera.name + '.csv'
 			metric_file_path = full_metric_path / metric_file
-			# read list of altitudes
+
 			dataframe = pd.read_csv(metric_file_path)
-			if self._camera.extension == 'raw':
+			if self._camera.extension == 'raw' or self._camera.name == 'LM165':
+				
+				#read list of attitudes with respect to images in imagelist
+
 				imagenames = [Path(imagepath).stem for imagepath in self._imagelist]
 				imagenumbers = []
 				for imagename in imagenames:
+					if self._camera.name == 'LM165':
+						imagename = imagename[5:]
 					imagenumbers.append(int(imagename))
 				selected_dataframe = dataframe.loc[dataframe['Imagenumber'].isin(imagenumbers)]
-			else:
-				imagenames = [Path(imagepath).name for imagepath in self._imagelist]
-				selected_dataframe = dataframe.loc[dataframe['Imagenumber'].isin(imagenames)]
-			selected_distancelist = selected_dataframe[' Altitude [m]']
-			
-			# create a list of paths to selected images from the full imagelist provided by camera system class
-			selected_imagelist = []
-			if self._camera.extension == 'raw':
+
+				# create a list of paths to selected images from the full imaglist provided by camera system class
+				selected_imagelist = []
 				imagenumbers = selected_dataframe['Imagenumber']
 				for image_number in imagenumbers:
 					image_number_string = str(image_number)
@@ -181,10 +181,19 @@ class Corrector:
 						imagename = '0' + imagename
 					selected_imagelist.append(imagename)
 			else:
-				selected_imagelist = selected_dataframe['Imagenumber']	
+				# read list of altitudes
+				imagenames = [Path(imagepath).name for imagepath in self._imagelist]
+				selected_dataframe = dataframe.loc[dataframe['Imagenumber'].isin(imagenames)]
+
+				# create a list of paths to selected images from the full imaglist provided by camera system class
+				selected_imagelist = selected_dataframe['Imagenumber']
+			# create a list of selected altitudes
+			selected_distancelist = selected_dataframe[' Altitude [m]']
 			
+			# create a list of selected image paths
 			selected_image_pathlist = []
-			image_indices = [imagenames.index(item) for item in selected_imagelist]
+			image_indices = [imagenames.index(item) for item in imagenames for subitem in selected_imagelist
+								if subitem in item]
 			for idx in image_indices:
 				selected_image_pathlist.append(self._imagelist[idx])
 
@@ -326,6 +335,8 @@ class Corrector:
 			if not self._camera.type == 'grayscale':
 				# debayer images
 				image_rgb = self.debayer(image, self._camera.type)
+			else:
+				image_rgb = image
 			
 			# apply corrections
 			image_rgb = self.apply_corrections(image_rgb, distance, self.brightness, self.contrast)
@@ -416,6 +427,7 @@ def load_memmap_from_numpyfilelist(numpyfilelist):
 	message = 'loading binary files into memmap...'
 	#image = np.load(str(numpyfilelist[0]))
 	list_shape = [len(numpyfilelist)]
+	print(list_shape)
 	#list_shape = list_shape + list(image.shape)
 	filename_map = 'memmap_' + str(uuid.uuid4()) + '.map'
 	memmap_ = np.memmap(filename=filename_map, mode='w+', shape=tuple(list_shape),

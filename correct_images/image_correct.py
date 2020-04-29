@@ -137,6 +137,8 @@ def call_correct(args):
     camerasystem = CameraSystem(camera_yaml_path)
 
     for camera in camerasystem.cameras:
+        print(camera.name)
+        print('-----------------------------------------------------')
         corrector = Corrector(args.force, camera, correct_config, path)
 
         corrector.load_generic_config_parameters()
@@ -151,6 +153,7 @@ def call_correct(args):
 
         corrector.generate_correction_parameters()
         corrector.process_correction()
+        
 
 
 if __name__ == '__main__':

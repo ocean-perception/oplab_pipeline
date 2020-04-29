@@ -20,6 +20,9 @@ SX3_IMG_WIDTH = 1280
 SX3_IMG_HEIGHT = 1024
 SX3_IMG_CHANNELS = 1
 
+LM165_IMG_WIDTH = 1392
+LM165_IMG_HEIGHT = 1040
+
 BIOCAM_IMG_WIDTH = 2560
 BIOCAM_IMG_HEIGHT = 2160
 BIOCAM_IMG_CHANNELS = 1
@@ -110,8 +113,12 @@ class testCaseCorrector(unittest.TestCase):
 
 			for idx in corrector.filtered_indices:
 				distance_matrix = np.load(corrector.distance_matrix_numpy_filelist[idx])
-				self.assertEqual(distance_matrix.shape[0], SX3_IMG_HEIGHT, 'Dimension mismatch: height')
-				self.assertEqual(distance_matrix.shape[1], SX3_IMG_WIDTH, 'Dimension mismatch: width')
+				if camera.name == 'LM165':
+					self.assertEqual(distance_matrix.shape[0], LM165_IMG_HEIGHT, 'Dimension mismatch: height')
+					self.assertEqual(distance_matrix.shape[1], LM165_IMG_WIDTH, 'Dimension mismatch: width')
+				else:
+					self.assertEqual(distance_matrix.shape[0], SX3_IMG_HEIGHT, 'Dimension mismatch: height')
+					self.assertEqual(distance_matrix.shape[1], SX3_IMG_WIDTH, 'Dimension mismatch: width')
 				out_of_range = (np.abs(distance_matrix) < corrector.altitude_min).any() or (np.abs(distance_matrix) > corrector.altitude_max).any()
 				self.assertEqual(out_of_range, False, 'distance matrix values out of altitude bounds error')
 	'''
