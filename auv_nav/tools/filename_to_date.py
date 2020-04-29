@@ -81,11 +81,19 @@ class FilenameToDate:
             assert len(second) == 2, 'Second in filename should have a length \
                 of 2'
             if msecond:
+                if len(msecond) < 3:
+                    zero_pad_length = 3 - len(msecond)
+                    for i in range(zero_pad_length):
+                        msecond = '0' + msecond
                 assert len(msecond) == 3, 'Milliseconds in filename should \
                     have a length of 3'
             else:
                 msecond = '0'
             if usecond:
+                if len(usecond) < 3:
+                    zero_pad_length = 3 - len(usecond)
+                    for i in range(zero_pad_length):
+                        usecond = '0' + usecond
                 assert len(usecond) == 3, 'Microseconds in filename should \
                     have a length of 3'
             else:
