@@ -57,7 +57,7 @@ def bounding_box(iterable):
 
 
 def plot_plane(a, b, c, d):
-        yy, zz = np.mgrid[-4:4, 0:8]
+        yy, zz = np.mgrid[-5:5, 0:15]
         return (-d - c * zz - b * yy) / a, yy, zz
 
 
