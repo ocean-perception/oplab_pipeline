@@ -569,7 +569,7 @@ class LaserCalibrator():
 
             yaml_msg = (
                 'mean_xyz: ' + str(mean_xyz.tolist()) + '\n'
-                + 'mean_plane: ' + str(list(mean_plane)) + '\n'
+                + 'mean_plane: ' + str(mean_plane) + '\n'
                 + 'plane_angle_std: ' + str(plane_angle_std) + '\n'
                 + 'plane_angle_mean: ' + str(plane_angle_mean) + '\n'
                 + 'plane_angle_median: ' + str(plane_angle_median) + '\n'
@@ -591,8 +591,8 @@ class LaserCalibrator():
                     c = mean_xyz
                     plane, normal, offset = build_plane(a, b, c)
                     d = msg[i] + t[0] + msg[j] + t[1] + msg[1] + t[2]
-                    yaml_msg += d + msg_type[0] + ': ' + str(plane) + '\n'
-                    yaml_msg += d + msg_type[1] + ': ' + str(normal) + '\n'
+                    yaml_msg += d + msg_type[0] + ': ' + str(plane.tolist()) + '\n'
+                    yaml_msg += d + msg_type[1] + ': ' + str(normal.tolist()) + '\n'
                     yaml_msg += d + msg_type[2] + ': ' + str(offset) + '\n'
                     self.data.append([plane, normal, offset, d])
 
