@@ -13,14 +13,87 @@ import yaml
 
 
 def build_plane(pitch, yaw, point):
-        a = math.cos(math.radians(pitch)) * math.cos(math.radians(yaw))
-        b = math.cos(math.radians(pitch)) * math.sin(math.radians(yaw))
-        c = math.sin(math.radians(pitch))
-        normal = np.array([a, b, c])
-        d = - np.dot(normal, point)
-        plane = np.array([a, b, c, d])
-        offset = (d - point[1]*b)/a
-        return plane, normal, offset
+    a = math.cos(math.radians(pitch)) * math.cos(math.radians(yaw))
+    b = math.cos(math.radians(pitch)) * math.sin(math.radians(yaw))
+    c = math.sin(math.radians(pitch))
+    normal = np.array([a, b, c])
+    d = - np.dot(normal, point)
+    plane = np.array([a, b, c, d])
+    offset = (- d - point[1]*b)/a
+    return plane, normal, offset
+
+
+def opencv_to_ned(xyz):
+    new_point = np.zeros((3, 1), dtype=np.float32)
+    new_point[0] = xyz[1]
+    new_point[1] = -xyz[0]
+    new_point[2] = xyz[2]
+    return new_point
+
+
+def get_angle(normal, reference):
+    
+    # Convert to numpy array and normalise
+    normal = np.array(normal)
+    normal = normal / np.linalg.norm(normal)
+    # Convert to numpy array and normalise
+    reference = np.array(reference)
+    reference = reference / np.linalg.norm(reference)
+    # Compute the angle
+    num = np.dot(normal, reference)
+    den = np.linalg.norm(normal)*np.linalg.norm(reference)
+    angle = math.acos(num / den)
+    if len(normal) == 2:
+        # Source: https://stackoverflow.com/questions/14066933/direct-way-of-computing-clockwise-angle-between-2-vectors?noredirect=1&lq=1
+        det = reference[0]*normal[1] - normal[0]*reference[1]
+        print('det:', det)
+        if det < 0:
+            angle = angle * (-1)
+    return math.degrees(angle)
+
+
+def get_angles(normal):
+    plane_angle = get_angle(normal, [1, 0, 0])
+    pitch_angle = get_angle([normal[0], normal[2]], [1, 0])
+    yaw_angle = get_angle([normal[0], normal[1]], [1, 0])
+
+    """
+    yaw = math.radians(yaw_angle)
+    c, s = np.cos(yaw), np.sin(yaw)
+    R1 = np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]])
+    pitch = math.radians(pitch_angle)
+    c, s = np.cos(pitch), np.sin(pitch)
+    R2 = np.array([[c, 0, -s], [0, 1, 0], [s, 0, c]])
+
+    ref = np.array([[1, 0, 0]]).T
+
+    result = R2@R1@ref
+
+    print('Result is: ',result.T)
+    print('Input was: ',normal)
+    """
+
+    return plane_angle, pitch_angle, yaw_angle
+
+
+def fit_plane(xyz):
+    # 1. Calculate centroid of points and make points relative to it
+    centroid = xyz.mean(axis=0)
+    xyzT = np.transpose(xyz)
+    xyzR = xyz - centroid  # points relative to centroid
+    xyzRT = np.transpose(xyzR)
+
+    # 2. Calculate the singular value decomposition of the xyzT matrix
+    #    and get the normal as the last column of u matrix
+    normal = np.linalg.svd(xyzRT)[0][:, -1]
+
+    a = normal[0]
+    b = normal[1]
+    c = normal[2]
+    # 3. Get d coefficient to plane for display
+    d = - (normal[0] * centroid[0] + normal[1] * centroid[1] + normal[2] * centroid[2])
+
+    return a, b, c, d
 
 
 def findLaserInImage(img, min_green_val, k, num_columns, start_row=0, end_row=-1, prior=None, debug=False):
@@ -95,47 +168,6 @@ def triangulate_dlt(p1, p2, P1, P2):
     u, s, vt = np.linalg.svd(A)
     X = vt[-1, 0:3]/vt[-1, 3]  # normalize
     return X
-
-
-def opencv_to_ned(xyz):
-    new_point = np.zeros((3, 1), dtype=np.float32)
-    new_point[0] = xyz[1]
-    new_point[1] = -xyz[0]
-    new_point[2] = xyz[2]
-    return new_point
-
-
-def fit_plane(xyz):
-    # 1. Calculate centroid of points and make points relative to it
-    centroid = xyz.mean(axis=0)
-    xyzT = np.transpose(xyz)
-    xyzR = xyz - centroid  # points relative to centroid
-    xyzRT = np.transpose(xyzR)
-
-    # 2. Calculate the singular value decomposition of the xyzT matrix
-    #    and get the normal as the last column of u matrix
-    normal = np.linalg.svd(xyzRT)[0][:, -1]
-
-    a = normal[0]
-    b = normal[1]
-    c = normal[2]
-    # 3. Get d coefficient to plane for display
-    d = - (normal[0] * centroid[0] + normal[1] * centroid[1] + normal[2] * centroid[2])
-    e3 = normal / np.linalg.norm(normal)
-
-    expected_laser_plane = np.array([1, 0, 0])
-    plane_angle = math.degrees(math.acos(abs(np.dot(
-        e3, expected_laser_plane))/((np.linalg.norm(e3))*(np.linalg.norm(expected_laser_plane)))))
-    expected_pitch_plane = np.array([1, 0])
-    e3_pitch = np.array([e3[0], e3[2]])
-    pitch_angle = math.degrees(math.acos(abs(np.dot(e3_pitch, expected_pitch_plane))/(
-        (np.linalg.norm(e3_pitch))*(np.linalg.norm(expected_pitch_plane)))))
-    expected_yaw_plane = np.array([1, 0])
-    e3_yaw = np.array([e3[0], e3[1]])
-    yaw_angle = math.degrees(math.acos(abs(np.dot(e3_yaw, expected_yaw_plane))/(
-        (np.linalg.norm(e3_yaw))*(np.linalg.norm(expected_yaw_plane)))))
-
-    return [a, b, c, d, plane_angle, pitch_angle, yaw_angle]
 
 
 def draw_laser(left_image_name, right_image_name, left_maps, right_maps, top_left, top_right, bottom_left, bottom_right, remap):
@@ -331,6 +363,154 @@ class LaserCalibrator():
             (self.sc.right.image_width, self.sc.right.image_height),
             cv2.CV_32FC1)
 
+    def valid(self, p):
+        first = (p[0] > -self.filter_xy) and (p[0] < self.filter_xy)
+        second = (p[1] > -self.filter_xy) and (p[1] < self.filter_xy)
+        third = (p[2] > self.filter_z_min) and (p[2] < self.filter_z_max)
+        return first and second and third
+
+    def filter_cloud(self, cloud):
+        return [p for p in cloud if self.valid(p)]
+
+    def pointcloud_from_peaks(self, pk1, pk2):
+        cloud = []
+        count = 0
+        i = 0
+        count_inversed = 0
+        i1 = 0
+        i2 = 0
+        for i1 in range(len(pk1)):
+            while i2 < len(pk2):
+                if pk2[i2][1] >= pk1[i1][1]:
+                    break
+                i2 += 1
+            if i2 == len(pk2):
+                continue
+            if pk2[i2][1] - pk1[i1][1] < 1.0:
+                # Triangulate using Least Squares
+                p = triangulate_lst(pk1[i1], pk2[i2], self.sc.left.P, self.sc.right.P)
+                
+                # Remove rectification rotation
+                if self.remap:
+                    p_unrec = self.sc.left.R.T @ p
+                else:
+                    p_unrec = p
+
+                # Check that the point is not behind the camera
+                if p[2] < 0 or p is None:
+                    count_inversed += 1
+                else:
+                    # Store it in the cloud
+                    count += 1
+                    cloud.append(p_unrec)
+            i += 1
+        return cloud, count, count_inversed
+
+    def fit_and_save(self, cloud):
+        total_no_points = len(cloud)
+
+        Console.info('RANSAC Fitting a plane to', total_no_points, 'points...')
+
+        mean_plane, inliers_cloud = plane_fitting_ransac(
+            cloud,
+            min_distance_threshold=self.mdt,
+            sample_size=self.ssp*total_no_points,
+            goal_inliers=len(cloud)*self.gip,
+            max_iterations=self.max_iterations,
+            plot=True)
+
+        scale = 1.0/mean_plane[0]
+        mean_plane = np.array(mean_plane)*scale
+        mean_plane = mean_plane.tolist()
+
+        inliers_cloud_list = list(inliers_cloud)
+
+        Console.info('RANSAC plane with all points: {}'.format(mean_plane))
+
+        cloud_sample_size = int(self.cssp * len(inliers_cloud_list))
+        Console.info('RANSAC found', len(inliers_cloud_list), 'inliers')
+
+        if len(inliers_cloud_list) < 0.5*len(cloud)*self.gip:
+            Console.warn('The number of inliers found are off from what you expected.')
+            Console.warn(' * Expected inliers:', len(cloud)*self.gip)
+            Console.warn(' * Found inliers:', len(inliers_cloud_list))
+            Console.warn('Check the output cloud to see if the found plane makes sense.')
+            Console.warn('Either relax your RANSAC distance threshold, increase the number of iterations or relax your expectations.')
+
+        Console.info('Randomly sampling with', cloud_sample_size, 'points...')
+
+        planes = []
+        for i in range(0, self.num_iterations):
+            point_cloud_local = np.array(random.sample(inliers_cloud_list,
+                                                       cloud_sample_size))
+            a, b, c, d = fit_plane(point_cloud_local)
+            angle, pitch, yaw = get_angles([a, b, c])
+            planes.append([a, b, c, d, angle, pitch, yaw])
+            Console.progress(i, self.num_iterations, prefix='Iterating planes')
+
+        planes = np.array(planes)
+        planes = planes.reshape(-1, 7)
+
+        plane_angle_std = np.std(planes[:, 4])
+        plane_angle_mean = np.mean(planes[:, 4])
+        plane_angle_median = np.median(planes[:, 4])
+        pitch_angle_std = np.std(planes[:, 5])
+        pitch_angle_mean = np.mean(planes[:, 5])
+        yaw_angle_std = np.std(planes[:, 6])
+        yaw_angle_mean = np.mean(planes[:, 6])
+
+        Console.info('Total Number of Points:', total_no_points)
+        Console.info('Plane Standard deviation:\n', plane_angle_std)
+        Console.info('Mean angle:\n', plane_angle_mean)
+        Console.info('Median angle:\n', plane_angle_median)
+        Console.info('Pitch Standard deviation:\n', pitch_angle_std)
+        Console.info('Pitch Mean:\n', pitch_angle_mean)
+        Console.info('Yaw Standard deviation:\n', yaw_angle_std)
+        Console.info('Yaw Mean:\n', yaw_angle_mean)
+
+        inliers_cloud = np.array(inliers_cloud)
+        mean_x = np.mean(inliers_cloud[:, 0])
+        mean_y = np.mean(inliers_cloud[:, 1])
+        mean_z = np.mean(inliers_cloud[:, 2])
+        mean_xyz = np.array([mean_x, mean_y, mean_z])
+
+        yaml_msg = ''
+
+        yaml_msg = (
+            'mean_xyz_m: ' + str(mean_xyz.tolist()) + '\n'
+            + 'mean_plane: ' + str(mean_plane) + '\n'
+            + 'plane_angle_std_deg: ' + str(plane_angle_std) + '\n'
+            + 'plane_angle_mean_deg: ' + str(plane_angle_mean) + '\n'
+            + 'plane_angle_median_deg: ' + str(plane_angle_median) + '\n'
+            + 'pitch_angle_std_deg: ' + str(pitch_angle_std) + '\n'
+            + 'pitch_angle_mean_deg: ' + str(pitch_angle_mean) + '\n'
+            + 'yaw_angle_std_deg: ' + str(yaw_angle_std) + '\n'
+            + 'yaw_angle_mean_deg: ' + str(yaw_angle_mean) + '\n'
+            + 'num_iterations: ' + str(self.num_iterations) + '\n'
+            + 'total_no_points: ' + str(total_no_points) + '\n')
+
+        msg = ['minus_2sigma', 'mean', 'plus_2sigma']
+        t = ['_pitch_', '_yaw_', '_offset_']
+        msg_type = ['plane', 'normal', 'offset_m']
+
+        for i in range(0, 3):
+            for j in range(0, 3):
+                a = pitch_angle_mean + (1-i)*2*pitch_angle_std
+                b = yaw_angle_mean + (1-j)*2*yaw_angle_std
+                c = mean_xyz
+                plane, normal, offset = build_plane(a, b, c)
+                d = msg[i] + t[0] + msg[j] + t[1] + msg[1] + t[2]
+                yaml_msg += d + msg_type[0] + ': ' + str(plane.tolist()) + '\n'
+                yaml_msg += d + msg_type[1] + ': ' + str(normal.tolist()) + '\n'
+                yaml_msg += d + msg_type[2] + ': ' + str(offset) + '\n'
+                self.data.append([plane, normal, offset, d])
+
+        yaml_msg += ('date: \"' + Console.get_date() + "\" \n"
+                        + 'user: \"' + Console.get_username() + "\" \n"
+                        + 'host: \"' + Console.get_hostname() + "\" \n"
+                        + 'version: \"' + Console.get_version() + "\" \n")
+
+        return yaml_msg
 
     def cal(self, limages, rimages):
         # Synchronise images
@@ -425,45 +605,11 @@ class LaserCalibrator():
             Console.info(
                 "Found {} bottom peaks in camera 2!".format(str(count2lb)))
 
-        def pointcloud_from_peaks(pk1, pk2):
-            cloud = []
-            count = 0
-            i = 0
-            count_inversed = 0
-            i1 = 0
-            i2 = 0
-            for i1 in range(len(pk1)):
-                while i2 < len(pk2):
-                    if pk2[i2][1] >= pk1[i1][1]:
-                        break
-                    i2 += 1
-                if i2 == len(pk2):
-                    continue
-                if pk2[i2][1] - pk1[i1][1] < 1.0:
-                    # Triangulate using Least Squares
-                    p = triangulate_lst(pk1[i1], pk2[i2], self.sc.left.P, self.sc.right.P)
-                    
-                    # Remove rectification rotation
-                    if self.remap:
-                        p_unrec = self.sc.left.R.T @ p
-                    else:
-                        p_unrec = p
-
-                    # Check that the point is not behind the camera
-                    if p[2] < 0 or p is None:
-                        count_inversed += 1
-                    else:
-                        # Store it in the cloud
-                        count += 1
-                        cloud.append(p_unrec)
-                i += 1
-            return cloud, count, count_inversed
-
         point_cloud = []
         point_cloud_b = []
 
         result = joblib.Parallel(n_jobs=-1)([
-            joblib.delayed(pointcloud_from_peaks)(f1, f2)
+            joblib.delayed(self.pointcloud_from_peaks)(f1, f2)
             for f1, f2 in zip(peaks1, peaks2)])
         count_good = 0
         count_bad = 0
@@ -476,7 +622,7 @@ class LaserCalibrator():
         Console.info('Found ' + str(len(point_cloud)) + ' TOP triangulated points!')
         if self.two_lasers:
             result = joblib.Parallel(n_jobs=-1)([
-                joblib.delayed(pointcloud_from_peaks)(f1b, f2b)
+                joblib.delayed(self.pointcloud_from_peaks)(f1b, f2b)
                 for f1b, f2b in zip(peaks1b, peaks2b)])
             count_good = 0
             count_bad = 0
@@ -498,125 +644,12 @@ class LaserCalibrator():
                 joblib.delayed(opencv_to_ned)(i)
                 for i in point_cloud_b])
 
-        def fit_and_save(cloud):
-            total_no_points = len(cloud)
-
-            Console.info('RANSAC Fitting a plane to', total_no_points, 'points...')
-
-            mean_plane, inliers_cloud = plane_fitting_ransac(
-                cloud,
-                min_distance_threshold=self.mdt,
-                sample_size=self.ssp*total_no_points,
-                goal_inliers=len(cloud)*self.gip,
-                max_iterations=self.max_iterations,
-                plot=True)
-
-            scale = 1.0/mean_plane[0]
-            mean_plane = np.array(mean_plane)*scale
-            mean_plane = mean_plane.tolist()
-
-            inliers_cloud_list = list(inliers_cloud)
-
-            Console.info('RANSAC plane with all points: {}'.format(mean_plane))
-
-            cloud_sample_size = int(self.cssp * len(inliers_cloud_list))
-            Console.info('RANSAC found', len(inliers_cloud_list), 'inliers')
-
-            if len(inliers_cloud_list) < 0.5*len(cloud)*self.gip:
-                Console.warn('The number of inliers found are off from what you expected.')
-                Console.warn(' * Expected inliers:', len(cloud)*self.gip)
-                Console.warn(' * Found inliers:', len(inliers_cloud_list))
-                Console.warn('Check the output cloud to see if the found plane makes sense.')
-                Console.warn('Either relax your RANSAC distance threshold, increase the number of iterations or relax your expectations.')
-
-            Console.info('Randomly sampling with', cloud_sample_size, 'points...')
-
-            planes = []
-            for i in range(0, self.num_iterations):
-                point_cloud_local = np.array(random.sample(inliers_cloud_list,
-                                                           cloud_sample_size))
-                plane = fit_plane(point_cloud_local)
-                planes.append(plane)
-                Console.progress(i, self.num_iterations, prefix='Iterating planes')
-
-            planes = np.array(planes)
-            planes = planes.reshape(-1, 7)
-
-            plane_angle_std = np.std(planes[:, 4])
-            plane_angle_mean = np.mean(planes[:, 4])
-            plane_angle_median = np.median(planes[:, 4])
-            pitch_angle_std = np.std(planes[:, 5])
-            pitch_angle_mean = np.mean(planes[:, 5])
-            yaw_angle_std = np.std(planes[:, 6])
-            yaw_angle_mean = np.mean(planes[:, 6])
-
-            Console.info('Total Number of Points:', total_no_points)
-            Console.info('Plane Standard deviation:\n', plane_angle_std)
-            Console.info('Mean angle:\n', plane_angle_mean)
-            Console.info('Median angle:\n', plane_angle_median)
-            Console.info('Pitch Standard deviation:\n', pitch_angle_std)
-            Console.info('Pitch Mean:\n', pitch_angle_mean)
-            Console.info('Yaw Standard deviation:\n', yaw_angle_std)
-            Console.info('Yaw Mean:\n', yaw_angle_mean)
-
-            inliers_cloud = np.array(inliers_cloud)
-            mean_x = np.mean(inliers_cloud[:, 0])
-            mean_y = np.mean(inliers_cloud[:, 1])
-            mean_z = np.mean(inliers_cloud[:, 2])
-            mean_xyz = np.array([mean_x, mean_y, mean_z])
-
-            yaml_msg = ''
-
-            yaml_msg = (
-                'mean_xyz_m: ' + str(mean_xyz.tolist()) + '\n'
-                + 'mean_plane: ' + str(mean_plane) + '\n'
-                + 'plane_angle_std_deg: ' + str(plane_angle_std) + '\n'
-                + 'plane_angle_mean_deg: ' + str(plane_angle_mean) + '\n'
-                + 'plane_angle_median_deg: ' + str(plane_angle_median) + '\n'
-                + 'pitch_angle_std_deg: ' + str(pitch_angle_std) + '\n'
-                + 'pitch_angle_mean_deg: ' + str(pitch_angle_mean) + '\n'
-                + 'yaw_angle_std_deg: ' + str(yaw_angle_std) + '\n'
-                + 'yaw_angle_mean_deg: ' + str(yaw_angle_mean) + '\n'
-                + 'num_iterations: ' + str(self.num_iterations) + '\n'
-                + 'total_no_points: ' + str(total_no_points) + '\n')
-
-            msg = ['minus_2sigma', 'mean', 'plus_2sigma']
-            t = ['_pitch_', '_yaw_', '_offset_']
-            msg_type = ['plane', 'normal', 'offset_m']
-
-            for i in range(0, 3):
-                for j in range(0, 3):
-                    a = pitch_angle_mean + (1-i)*2*pitch_angle_std
-                    b = yaw_angle_mean + (1-j)*2*yaw_angle_std
-                    c = mean_xyz
-                    plane, normal, offset = build_plane(a, b, c)
-                    d = msg[i] + t[0] + msg[j] + t[1] + msg[1] + t[2]
-                    yaml_msg += d + msg_type[0] + ': ' + str(plane.tolist()) + '\n'
-                    yaml_msg += d + msg_type[1] + ': ' + str(normal.tolist()) + '\n'
-                    yaml_msg += d + msg_type[2] + ': ' + str(offset) + '\n'
-                    self.data.append([plane, normal, offset, d])
-
-            yaml_msg += ('date: \"' + Console.get_date() + "\" \n"
-                         + 'user: \"' + Console.get_username() + "\" \n"
-                         + 'host: \"' + Console.get_hostname() + "\" \n"
-                         + 'version: \"' + Console.get_version() + "\" \n")
-
-            return yaml_msg
-
-        def filter_cloud(cloud):
-            def valid(p):
-                first = (p[0] > -self.filter_xy) and (p[0] < self.filter_xy)
-                second = (p[1] > -self.filter_xy) and (p[1] < self.filter_xy)
-                third = (p[2] > self.filter_z_min) and (p[2] < self.filter_z_max)
-                return first and second and third
-            return [p for p in cloud if valid(p)]
-
         save_cloud(processed_folder / '../points.ply', point_cloud_ned)
         if self.two_lasers:
             save_cloud(processed_folder / '../points_b.ply', point_cloud_ned_b)
 
         rss_before = len(point_cloud_ned)
-        point_cloud_rs = filter_cloud(point_cloud_ned)
+        point_cloud_rs = self.filter_cloud(point_cloud_ned)
         rss_after = len(point_cloud_rs)
         Console.info('Points after filtering: ' + str(rss_after) + '/' + str(rss_before))
         rs_size = min(rss_after, self.max_point_cloud_size)
@@ -624,12 +657,12 @@ class LaserCalibrator():
         save_cloud(processed_folder / '../points_rs.ply', point_cloud_rs)
         point_cloud_rs = np.array(point_cloud_rs)
         point_cloud_rs = point_cloud_rs.reshape(-1, 3)
-        self.yaml_msg = fit_and_save(point_cloud_rs)
+        self.yaml_msg = self.fit_and_save(point_cloud_rs)
         
         if self.two_lasers:
             Console.info('Fitting a plane to second line...')
             rss_before = len(point_cloud_ned_b)
-            point_cloud_b_rs = filter_cloud(point_cloud_ned_b)
+            point_cloud_b_rs = self.filter_cloud(point_cloud_ned_b)
             rss_after = len(point_cloud_b_rs)
             Console.info('Points after filtering: ' + str(rss_after) + '/' + str(rss_before))
             rs_size = min(rss_after, self.max_point_cloud_size)
@@ -637,7 +670,7 @@ class LaserCalibrator():
             save_cloud(processed_folder / '../points_b_rs.ply', point_cloud_b_rs)
             point_cloud_b_rs = np.array(point_cloud_b_rs)
             point_cloud_b_rs = point_cloud_b_rs.reshape(-1, 3)
-            self.yaml_msg_b = fit_and_save(point_cloud_b_rs)
+            self.yaml_msg_b = self.fit_and_save(point_cloud_b_rs)
 
     def yaml(self):
         return self.yaml_msg
