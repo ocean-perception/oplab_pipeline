@@ -37,32 +37,41 @@ class TestLaserCalibration(unittest.TestCase):
         self.assertEqual(plane[3], -1.)
         self.assertEqual(offset, 1.)
 
+        # Square root of 2 divided by 2
+        sqrt2_2 = 0.7071067811865476
+
         plane, normal, offset = build_plane(0, 45.0, centroid)
-        self.assertAlmostEqual(plane[0], 0.7071067811865476)
-        self.assertAlmostEqual(plane[1], 0.7071067811865476)
+        self.assertAlmostEqual(plane[0], sqrt2_2)
+        self.assertAlmostEqual(plane[1], sqrt2_2)
         self.assertAlmostEqual(plane[2], 0.)
 
         plane, normal, offset = build_plane(0, -45.0, centroid)
-        self.assertAlmostEqual(plane[0], 0.7071067811865476)
-        self.assertAlmostEqual(plane[1], -0.7071067811865476)
+        self.assertAlmostEqual(plane[0], sqrt2_2)
+        self.assertAlmostEqual(plane[1], -sqrt2_2)
         self.assertAlmostEqual(plane[2], 0.)
 
         plane, normal, offset = build_plane(45.0, 0, centroid)
-        self.assertAlmostEqual(plane[0], 0.7071067811865476)
+        self.assertAlmostEqual(plane[0], sqrt2_2)
         self.assertAlmostEqual(plane[1], 0.)
-        self.assertAlmostEqual(plane[2], 0.7071067811865476)
+        self.assertAlmostEqual(plane[2], sqrt2_2)
 
         plane, normal, offset = build_plane(-45.0, 0, centroid)
-        self.assertAlmostEqual(plane[0], 0.7071067811865476)
+        self.assertAlmostEqual(plane[0], sqrt2_2)
         self.assertAlmostEqual(plane[1], 0.)
-        self.assertAlmostEqual(plane[2], -0.7071067811865476)
+        self.assertAlmostEqual(plane[2], -sqrt2_2)
+
+        centroid = np.array([1.5, 0, 10.0])
+        plane, normal, offset = build_plane(0, 0, centroid)
+        self.assertAlmostEqual(plane[0], 1.)
+        self.assertAlmostEqual(plane[1], 0.)
+        self.assertAlmostEqual(plane[2], 0)
 
     def test_get_angles(self):
         vector = [1, 0, 0]
         plane_angle, pitch_angle, yaw_angle = get_angles(vector)
-        self.assertEqual(plane_angle, 0.0)
         self.assertEqual(pitch_angle, 0.0)
         self.assertEqual(yaw_angle, 0.0)
+        self.assertEqual(plane_angle, 0.0)
 
         vector = [1, 1, 0]
         plane_angle, pitch_angle, yaw_angle = get_angles(vector)
@@ -87,6 +96,17 @@ class TestLaserCalibration(unittest.TestCase):
         self.assertEqual(pitch_angle, -45.0)
         self.assertEqual(yaw_angle, 0.0)
         self.assertEqual(plane_angle, 45.0)
+
+        vector = [1.0, -6.435254644086728e-06, -5.910281809311532e-05]
+        plane_angle, pitch_angle, yaw_angle = get_angles(vector)
+        self.assertLess(pitch_angle, 0.0)
+        self.assertLess(yaw_angle, 0.0)
+
+        vector = [1.0, 6.435254644086728e-06, 5.910281809311532e-05]
+        plane_angle, pitch_angle, yaw_angle = get_angles(vector)
+        self.assertGreater(pitch_angle, 0.0)
+        self.assertGreater(yaw_angle, 0.0)
+        
 
 if __name__ == '__main__':
     unittest.main()
