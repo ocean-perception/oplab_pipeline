@@ -46,7 +46,6 @@ def get_angle(normal, reference):
     if len(normal) == 2:
         # Source: https://stackoverflow.com/questions/14066933/direct-way-of-computing-clockwise-angle-between-2-vectors?noredirect=1&lq=1
         det = reference[0]*normal[1] - normal[0]*reference[1]
-        print('det:', det)
         if det < 0:
             angle = angle * (-1)
     return math.degrees(angle)
@@ -56,22 +55,6 @@ def get_angles(normal):
     plane_angle = get_angle(normal, [1, 0, 0])
     pitch_angle = get_angle([normal[0], normal[2]], [1, 0])
     yaw_angle = get_angle([normal[0], normal[1]], [1, 0])
-
-    """
-    yaw = math.radians(yaw_angle)
-    c, s = np.cos(yaw), np.sin(yaw)
-    R1 = np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]])
-    pitch = math.radians(pitch_angle)
-    c, s = np.cos(pitch), np.sin(pitch)
-    R2 = np.array([[c, 0, -s], [0, 1, 0], [s, 0, c]])
-
-    ref = np.array([[1, 0, 0]]).T
-
-    result = R2@R1@ref
-
-    print('Result is: ',result.T)
-    print('Input was: ',normal)
-    """
 
     return plane_angle, pitch_angle, yaw_angle
 
