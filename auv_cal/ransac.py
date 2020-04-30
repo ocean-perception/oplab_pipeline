@@ -20,20 +20,14 @@ def is_inlier(coeffs, xyz, threshold):
     return np.abs(coeffs.dot(augment([xyz]).T)) < threshold
 
 
-def distance(coeffs, xyz):
-    return np.abs(coeffs.dot(augment([xyz]).T))
-
-
 def run_ransac(data, estimate, is_inlier, sample_size, goal_inliers, max_iterations, stop_at_goal=True, random_seed=None):
     best_ic = 0
-    best_error = 1e100
     best_model = None
     random.seed(random_seed)
     # random.sample cannot deal with "data" being a numpy array
     data = list(data)
     for i in range(max_iterations):
         inliers = []
-        error = 0
         s = random.sample(data, int(sample_size))
         m = estimate(s)
         ic = 0
@@ -41,14 +35,12 @@ def run_ransac(data, estimate, is_inlier, sample_size, goal_inliers, max_iterati
             if is_inlier(m, data[j]):
                 ic += 1
                 inliers.append(data[j])
-                error += distance(m, data[j])
-        error = error / len(inliers)
 
         #print(s)
         #print('estimate:', m,)
         #print('# inliers:', ic)
 
-        if error < best_error:
+        if ic > best_ic:
             best_ic = ic
             best_model = m
             if ic > goal_inliers and stop_at_goal:
