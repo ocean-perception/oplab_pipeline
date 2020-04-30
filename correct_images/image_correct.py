@@ -139,21 +139,24 @@ def call_correct(args):
     for camera in camerasystem.cameras:
         print(camera.name)
         print('-----------------------------------------------------')
-        corrector = Corrector(args.force, camera, correct_config, path)
 
-        corrector.load_generic_config_parameters()
-        corrector.load_camera_specific_config_parameters()
-        corrector.get_imagelist()
-        corrector.get_image_properties()
-        corrector.create_output_directories()
-        #corrector.generate_bayer_numpyfiles(bayer_numpy_filelist)
-        corrector.generate_distance_matrix()
-        
-        corrector.generate_bayer_numpy_filelist(corrector._imagelist)
+        if len(camera.image_list) == 0:
+            Console.quit('No images found for the camera at the path provided...')
+        else:
+            corrector = Corrector(args.force, camera, correct_config, path)
 
-        corrector.generate_correction_parameters()
-        corrector.process_correction()
-        
+            corrector.load_generic_config_parameters()
+            corrector.load_camera_specific_config_parameters()
+            corrector.get_imagelist()
+            corrector.get_image_properties()
+            corrector.create_output_directories()
+            #corrector.generate_bayer_numpyfiles(bayer_numpy_filelist)
+            corrector.generate_distance_matrix()
+
+            corrector.generate_bayer_numpy_filelist(corrector._imagelist)
+
+            corrector.generate_correction_parameters()
+            corrector.process_correction()
 
 
 if __name__ == '__main__':

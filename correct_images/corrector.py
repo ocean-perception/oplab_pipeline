@@ -53,7 +53,7 @@ class Corrector:
 		# create output directory path
 		image_path = Path(self._imagelist[0]).resolve()
 		image_parent_path = image_path.parents[0]
-		output_dir_path = get_processed_folder(image_path)
+		output_dir_path = get_processed_folder(image_parent_path)
 		self.output_dir_path = output_dir_path / 'attenuation_correction'
 		if not self.output_dir_path.exists():
 			self.output_dir_path.mkdir(parents=True)
@@ -135,6 +135,7 @@ class Corrector:
 			else:
 				self.image_channels = 1
 
+
 		# read raw
 		if self._camera.extension == 'raw':
 			self.image_height = 1024
@@ -155,6 +156,10 @@ class Corrector:
 			full_metric_path = full_metric_path / 'csv' / 'ekf'
 			metric_file = 'auv_ekf_' + self._camera.name + '.csv'
 			metric_file_path = full_metric_path / metric_file
+
+			if not metric_file_path.exists():
+				message = 'Path to ' + metric_file + ' does not exist...'
+				Console.quit(message)
 
 			dataframe = pd.read_csv(metric_file_path)
 			if self._camera.extension == 'raw' or self._camera.name == 'LM165':
@@ -184,6 +189,22 @@ class Corrector:
 				# read list of altitudes
 				imagenames = [Path(imagepath).name for imagepath in self._imagelist]
 				selected_dataframe = dataframe.loc[dataframe['Imagenumber'].isin(imagenames)]
+				
+				if len(selected_dataframe) == 0:
+					# should be image paths for biocam, read image paths from image_list instead
+					#print(imagenames)
+					imagepaths_from_dataframe = dataframe['Imagenumber']
+					#print(imagepaths_from_dataframe)
+					imagenames_from_dataframe = [Path(imagepath).name for imagepath in imagepaths_from_dataframe]
+					#print(imagenames_from_dataframe)
+					selected_image_indices = [imagenames_from_dataframe.index(item) for item in imagenames_from_dataframe
+												 if item in imagenames]
+					#print(selected_image_indices)
+					selected_dataframe = dataframe[dataframe.index.isin(selected_image_indices)]
+					selected_dataframe['Imagenumber'] = [imagenames_from_dataframe[i] for i in selected_image_indices]
+					#print(selected_dataframe)
+					print('-------------------------------------------------------')
+
 
 				# create a list of paths to selected images from the full imaglist provided by camera system class
 				selected_imagelist = selected_dataframe['Imagenumber']
@@ -212,7 +233,7 @@ class Corrector:
 		
 		for idx in trange(len(selected_distancelist)):
 			distance_matrix.fill(selected_distancelist[idx])
-			imagename = Path(self._imagelist[idx]).name
+			imagename = Path(self._imagelist[idx]).stem
 			distance_matrix_numpy_file = imagename + '.npy'
 			distance_matrix_numpy_file_path = self.distance_matrix_numpy_folder / distance_matrix_numpy_file
 			self.distance_matrix_numpy_filelist.append(distance_matrix_numpy_file_path)
