@@ -325,6 +325,7 @@ def parse_data(filepath, force_overwite):
             correcting_timestamps = False
         for i in pool_list:
             results = i.get()
+            print(results)
             # If current retrieved data is DEPTH
             # and if TIDE data is available
             if len(results) < 1:
