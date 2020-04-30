@@ -124,11 +124,11 @@ def parse_biocam_images(mission,
     Console.info('... parsing ' + sensor_string + ' images')
 
     # determine file paths
-
-    filepath1 = get_raw_folder(outpath / '..' / filepath / str(camera1_label + '_strobe/*.*'))
-    filepath1b = get_raw_folder(outpath / '..' / filepath / str(camera1_label + '_laser/**/*.*'))
-    filepath2 = get_raw_folder(outpath / '..' / filepath / str(camera2_label + '_strobe/*.*'))
-    filepath2b = get_raw_folder(outpath / '..' / filepath / str(camera2_label + '_laser/**/*.*'))
+    base_path = get_raw_folder(outpath / '..' / filepath)
+    filepath1 = base_path / str(camera1_label + '_strobe/*.*')
+    filepath1b = base_path / str(camera1_label + '_laser/**/*.*')
+    filepath2 = base_path / str(camera2_label + '_strobe/*.*')
+    filepath2b = base_path / str(camera2_label + '_laser/**/*.*')
 
     camera1_list = glob.glob(str(filepath1))
     camera1_list.extend(glob.glob(str(filepath1b), recursive=True))
