@@ -114,14 +114,14 @@ def fit_plane(xyz):
 
     # 2. Calculate the singular value decomposition of the xyzT matrix
     #    and get the normal as the last column of u matrix
-    normal = np.linalg.svd(xyzRT)[0][:,-1]
+    normal = np.linalg.svd(xyzRT)[0][:, -1]
 
     a = normal[0]
     b = normal[1]
     c = normal[2]
     # 3. Get d coefficient to plane for display
     d = - (normal[0] * centroid[0] + normal[1] * centroid[1] + normal[2] * centroid[2])
-    e3 = normal
+    e3 = normal / np.linalg.norm(normal)
 
     expected_laser_plane = np.array([1, 0, 0])
     plane_angle = math.degrees(math.acos(abs(np.dot(
@@ -568,21 +568,21 @@ class LaserCalibrator():
             yaml_msg = ''
 
             yaml_msg = (
-                'mean_xyz: ' + str(mean_xyz.tolist()) + '\n'
+                'mean_xyz_m: ' + str(mean_xyz.tolist()) + '\n'
                 + 'mean_plane: ' + str(mean_plane) + '\n'
-                + 'plane_angle_std: ' + str(plane_angle_std) + '\n'
-                + 'plane_angle_mean: ' + str(plane_angle_mean) + '\n'
-                + 'plane_angle_median: ' + str(plane_angle_median) + '\n'
-                + 'pitch_angle_std: ' + str(pitch_angle_std) + '\n'
-                + 'pitch_angle_mean: ' + str(pitch_angle_mean) + '\n'
-                + 'yaw_angle_std: ' + str(yaw_angle_std) + '\n'
-                + 'yaw_angle_mean: ' + str(yaw_angle_mean) + '\n'
+                + 'plane_angle_std_deg: ' + str(plane_angle_std) + '\n'
+                + 'plane_angle_mean_deg: ' + str(plane_angle_mean) + '\n'
+                + 'plane_angle_median_deg: ' + str(plane_angle_median) + '\n'
+                + 'pitch_angle_std_deg: ' + str(pitch_angle_std) + '\n'
+                + 'pitch_angle_mean_deg: ' + str(pitch_angle_mean) + '\n'
+                + 'yaw_angle_std_deg: ' + str(yaw_angle_std) + '\n'
+                + 'yaw_angle_mean_deg: ' + str(yaw_angle_mean) + '\n'
                 + 'num_iterations: ' + str(self.num_iterations) + '\n'
                 + 'total_no_points: ' + str(total_no_points) + '\n')
 
             msg = ['minus_2sigma', 'mean', 'plus_2sigma']
             t = ['_pitch_', '_yaw_', '_offset_']
-            msg_type = ['plane', 'normal', 'offset']
+            msg_type = ['plane', 'normal', 'offset_m']
 
             for i in range(0, 3):
                 for j in range(0, 3):
