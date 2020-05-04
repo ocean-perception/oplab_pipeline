@@ -66,13 +66,13 @@ class Corrector:
 			self.bayer_numpy_dir_path.mkdir(parents=True)
 		
 		# create path for distance matrix numpy files
-		distance_matrix_numpy_folder_name = 'distance_matrix_' + self._camera.name
+		distance_matrix_numpy_folder_name = 'distance_' + self._camera.name
 		self.distance_matrix_numpy_folder = self.output_dir_path / distance_matrix_numpy_folder_name
 		if not self.distance_matrix_numpy_folder.exists():
 			self.distance_matrix_numpy_folder.mkdir(parents=True)
 
 		# create path for parameters files
-		attenuation_parameters_folder_name = 'attenuation_params_' + self._camera.name
+		attenuation_parameters_folder_name = 'params_' + self._camera.name
 		self.attenuation_parameters_folder = self.output_dir_path / attenuation_parameters_folder_name
 		if not self.attenuation_parameters_folder.exists():
 			self.attenuation_parameters_folder.mkdir(parents=True)
@@ -101,6 +101,10 @@ class Corrector:
 		elif self.correction_method == 'manual_balance':
 			self.subtractors_rgb = self.cameraconfigs[idx[0]].subtractors_rgb
 			self.color_correct_matrix_rgb = self.cameraconfigs[idx[0]].color_correct_matrix_rgb
+		image_properties = self._camera.image_properties
+		self.image_height = image_properties[0]
+		self.image_width = image_properties[1]
+		self.image_channels = image_properties[2]
 
 
 	# load imagelist: output is same as camera.imagelist unless a smaller filelist is specified by the user 
@@ -112,37 +116,11 @@ class Corrector:
 		else:
 			path_file_list = self.path_config / self._camera_image_file_list
 			with path_file_list.open('r') as f:
-				imagenames = f.readlines()
-			new_image_list = [imagepath for imagepath in self._imagelist if Path(imagepath).name in imagenames]
+				self.imageindices_from_filelist = f.readlines()
+			new_image_list = [self._imagelist[idx] for idx in self.imageindices_from_filelist]
+			#new_image_list = [imagepath for imagepath in self._imagelist if Path(imagepath).name in imagenames]
 			self._imagelist = new_image_list
 	
-	
-
-	# store image dimensiions and channels into object
-	def get_image_properties(self):
-		# TODO:
-		# 1. read a single image from the imagelist
-		image_path = self._imagelist[0]
-		
-		# read tiff
-		if self._camera.extension == 'tif':
-			image_matrix = imageio.imread(image_path)
-			image_shape = image_matrix.shape
-			self.image_height = image_shape[0]
-			self.image_width = image_shape[1]
-			if len(image_shape) == 3:
-				self.image_channels = 3
-			else:
-				self.image_channels = 1
-
-
-		# read raw
-		if self._camera.extension == 'raw':
-			self.image_height = 1024
-			self.image_width = 1280
-			self.image_channels = 1
-
-		return self.image_height, self.image_width, self.image_channels
 
 	
 	# save a set of distance matrix numpy files
@@ -236,10 +214,12 @@ class Corrector:
 			imagename = Path(self._imagelist[idx]).stem
 			distance_matrix_numpy_file = imagename + '.npy'
 			distance_matrix_numpy_file_path = self.distance_matrix_numpy_folder / distance_matrix_numpy_file
+
 			self.distance_matrix_numpy_filelist.append(distance_matrix_numpy_file_path)
 			
 			# create the distance matrix numpy file
 			np.save(distance_matrix_numpy_file_path, distance_matrix)
+		
 		Console.info('Distance matrix numpy files written successfully')
 
 		# Filter numpy images for calculating attenuation parameters based on altitude range
@@ -318,7 +298,7 @@ class Corrector:
 
 			for i in range(self.image_channels):
 				# compute the attenuation regression parameters
-				self.attenuation_parameters = np.empty((self.image_height, self.image_width, 3))
+				self.attenuation_parameters = np.empty((self.image_height, self.image_width))
 				self.attenuation_parameters = curve_fitting(mean_image_samples_per_bin,
 											mean_distance_samples_per_bin)
 
@@ -328,8 +308,8 @@ class Corrector:
 			
 		
 		elif self.correction_method == 'manual_balance':
-			static_correction_parameters = np.array((self.image_height, self.image_width, 
-												self.image_channels))
+			static_correction_parameters = np.array((self.image_channels, 
+														self.image_height, self.image_width))
 			# generate static correction values for each pixel each channel
 			# TODO------ 
 			self.image_correction_parameters = static_correction_parameters
@@ -337,8 +317,7 @@ class Corrector:
 
 	# compute gain values for each pixel for a targeted altitide using the attenuation parameters
 	def calculate_attenuation_gains(self, target_altitude):
-		attenuation_gains =  np.empty((self.image_channels, self.image_height,
-													self.image_width))
+		attenuation_gains =  np.empty((self.image_height, self.image_width))
 		# TODO -------
 		return attenuation_gains
 

@@ -44,12 +44,17 @@ class testCaseCorrector(unittest.TestCase):
 		self.path_acfr = params['path_mission_acfr']
 		self.path_sx3 = params['path_mission_sx3']
 		self.path_biocam = params['path_mission_biocam']
+
+		root = Path(__file__).resolve().parents[1]
+		self.path_acfr_full = root / self.path_acfr
+		self.path_sx3_full = root / self.path_sx3
+		self.path_biocam_full = root / self.path_biocam
 		
 
 		# resolve paths to config folders
-		path_config_folder_acfr = get_config_folder(self.path_acfr)
-		path_config_folder_sx3 = get_config_folder(self.path_sx3)
-		path_config_folder_biocam = get_config_folder(self.path_biocam)
+		path_config_folder_acfr = get_config_folder(self.path_acfr_full)
+		path_config_folder_sx3 = get_config_folder(self.path_sx3_full)
+		path_config_folder_biocam = get_config_folder(self.path_biocam_full)
 
 		# load correct config parameters for acfr, sx3 and biocam
 		path_correct_images = path_config_folder_acfr / 'correct_images.yaml'
@@ -70,13 +75,13 @@ class testCaseCorrector(unittest.TestCase):
 
 		self.load_params()
 
-		cs = CameraSystem(self.camera_file_acfr, self.path_acfr)
+		cs = CameraSystem(self.camera_file_acfr, self.path_acfr_full)
 
 		for camera in cs.cameras:
 			if len(camera.image_list) == 0:
 				Console.quit('No images found for the camera at the path provided...')
 			else:
-				corrector = Corrector(True, camera, self.correct_config_acfr, self.path_acfr)
+				corrector = Corrector(True, camera, self.correct_config_acfr, self.path_acfr_full)
 				corrector.load_generic_config_parameters()
 				corrector.load_camera_specific_config_parameters()
 				corrector.get_imagelist()
@@ -99,13 +104,13 @@ class testCaseCorrector(unittest.TestCase):
 
 		self.load_params()
 
-		cs = CameraSystem(self.camera_file_sx3, self.path_sx3)
+		cs = CameraSystem(self.camera_file_sx3, self.path_sx3_full)
 
 		for camera in cs.cameras:
 			if len(camera.image_list) == 0:
 				Console.quit('No images found for the camera at the path provided...')
 			else: 
-				corrector = Corrector(True, camera, self.correct_config_sx3, self.path_sx3)
+				corrector = Corrector(True, camera, self.correct_config_sx3, self.path_sx3_full)
 				corrector.load_generic_config_parameters()
 				corrector.load_camera_specific_config_parameters()
 				corrector.get_imagelist()
@@ -131,13 +136,13 @@ class testCaseCorrector(unittest.TestCase):
 
 		self.load_params()
 
-		cs = CameraSystem(self.camera_file_biocam, self.path_biocam)
+		cs = CameraSystem(self.camera_file_biocam, self.path_biocam_full)
 
 		for camera in cs.cameras:
 			if len(camera.image_list) == 0:
 				Console.quit('No images found for the camera at the path provided...')
 			else:
-				corrector = Corrector(True, camera, self.correct_config_biocam, self.path_biocam)
+				corrector = Corrector(True, camera, self.correct_config_biocam, self.path_biocam_full)
 				corrector.load_generic_config_parameters()
 				corrector.load_camera_specific_config_parameters()
 				corrector.get_imagelist()

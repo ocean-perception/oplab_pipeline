@@ -4,6 +4,7 @@ from auv_nav.tools.console import Console
 from auv_nav.tools.filename_to_date import FilenameToDate
 # Workaround to dump OrderedDict into YAML files
 from pathlib import Path
+import imageio
 
 
 class CameraEntry:
@@ -52,6 +53,29 @@ class CameraEntry:
             [self._image_list.append(str(_)) for _ in i.rglob('*.' + self.extension)]
         self._image_list.sort()
         return self._image_list
+
+    @property
+    def image_properties(self):
+        imagelist = self.image_list
+        image_path = imagelist[0]
+        self._image_properties = []
+        
+        # read tiff
+        if self.extension == 'tif':
+            image_matrix = imageio.imread(image_path)
+            image_shape = image_matrix.shape
+            self._image_properties.append(image_shape[0])
+            self._image_properties.append(image_shape[1])
+            if len(image_shape) == 3:
+                self._image_properties.append(1)
+            else:
+                self._image_properties.append(3)
+
+        # read raw
+        if self.extension == 'raw':
+            self._image_properties = [1024, 1280, 1]
+        return self._image_properties
+    
 
     @property
     def stamp_list(self):
