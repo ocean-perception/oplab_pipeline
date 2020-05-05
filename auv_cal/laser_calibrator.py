@@ -13,10 +13,11 @@ import yaml
 
 
 def build_plane(pitch, yaw, point):
-    a = math.cos(math.radians(pitch)) * math.cos(math.radians(yaw))
-    b = math.cos(math.radians(pitch)) * math.sin(math.radians(yaw))
-    c = math.sin(math.radians(pitch))
+    a = 1.0
+    b = math.tan(math.radians(yaw))
+    c = math.tan(math.radians(pitch))
     normal = np.array([a, b, c])
+    normal = normal / np.linalg.norm(normal)
     d = - np.dot(normal, point)
     plane = np.array([a, b, c, d])
     offset = (- d - point[1]*b)/a
@@ -31,30 +32,39 @@ def opencv_to_ned(xyz):
     return new_point
 
 
-def get_angle(normal, reference):
-    
-    # Convert to numpy array and normalise
+def get_angle(normal, reference=[1, 0, 0]):
     normal = np.array(normal)
-    normal = normal / np.linalg.norm(normal)
-    # Convert to numpy array and normalise
     reference = np.array(reference)
-    reference = reference / np.linalg.norm(reference)
-    # Compute the angle
-    num = np.dot(normal, reference)
-    den = np.linalg.norm(normal)*np.linalg.norm(reference)
-    angle = math.acos(num / den)
-    if len(normal) == 2:
-        # Source: https://stackoverflow.com/questions/14066933/direct-way-of-computing-clockwise-angle-between-2-vectors?noredirect=1&lq=1
-        det = reference[0]*normal[1] - normal[0]*reference[1]
-        if det < 0:
-            angle = angle * (-1)
+    unit_normal = normal / np.linalg.norm(normal)
+   
+    # Ensure normal points towards positive X axis
+    if unit_normal[0] < 0:
+        unit_normal = unit_normal * (-1)
+    unit_reference = reference / np.linalg.norm(reference)
+    cosang = np.dot(unit_normal, unit_reference)
+    sinang = np.linalg.norm(np.cross(unit_normal, unit_reference))
+    angle = np.arctan2(sinang, cosang)
     return math.degrees(angle)
 
 
 def get_angles(normal):
-    plane_angle = get_angle(normal, [1, 0, 0])
-    pitch_angle = get_angle([normal[0], normal[2]], [1, 0])
-    yaw_angle = get_angle([normal[0], normal[1]], [1, 0])
+    # Convert to numpy array and normalise
+    normal = np.array(normal)
+    normal = normal / np.linalg.norm(normal)
+
+    plane_angle = get_angle(normal)
+    pitch_angle = math.degrees(math.atan2(normal[2], normal[0]))
+    yaw_angle = math.degrees(math.atan2(normal[1], normal[0]))
+
+    if pitch_angle > 90:
+        pitch_angle -= 180.0
+    if pitch_angle < -90:
+        pitch_angle += 180.0
+    
+    if yaw_angle > 90:
+        yaw_angle -= 180.0
+    if yaw_angle < -90:
+        yaw_angle += 180.0
 
     return plane_angle, pitch_angle, yaw_angle
 
@@ -62,13 +72,16 @@ def get_angles(normal):
 def fit_plane(xyz):
     # 1. Calculate centroid of points and make points relative to it
     centroid = xyz.mean(axis=0)
-    xyzT = np.transpose(xyz)
     xyzR = xyz - centroid  # points relative to centroid
     xyzRT = np.transpose(xyzR)
 
     # 2. Calculate the singular value decomposition of the xyzT matrix
     #    and get the normal as the last column of u matrix
     normal = np.linalg.svd(xyzRT)[0][:, -1]
+
+    # Ensure normal points towards positive X axis
+    if normal[0] < 0:
+        normal = normal * (-1)
 
     a = normal[0]
     b = normal[1]

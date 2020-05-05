@@ -26,86 +26,88 @@ class TestLaserCalibration(unittest.TestCase):
         self.assertEqual(b[1], -1.)
         self.assertEqual(b[2], 3.)
 
-    def test_build_plane(self):
-        pitch = 0
-        yaw = 0
-        centroid = np.array([1, 0, 0])
+    def assert_plane_normal(self, pitch, yaw, expected_normal, centroid=[0, 0, 0]):
+        centroid = np.array(centroid)
         plane, normal, offset = build_plane(pitch, yaw, centroid)
-        self.assertEqual(plane[0], 1.)
-        self.assertEqual(plane[1], 0.)
-        self.assertEqual(plane[2], 0.)
-        self.assertEqual(plane[3], -1.)
-        self.assertEqual(offset, 1.)
 
+        expected_normal = np.array(expected_normal)
+        expected_normal = expected_normal / np.linalg.norm(expected_normal)
+        if expected_normal[0] < 0:
+            # The function will always return positive X values
+            expected_normal = expected_normal * (-1)
+
+        print(normal, expected_normal)
+
+        self.assertAlmostEqual(normal[0], expected_normal[0])
+        self.assertAlmostEqual(normal[1], expected_normal[1])
+        self.assertAlmostEqual(normal[2], expected_normal[2])
+
+    def test_build_plane(self):
+        centroid = np.array([1, 0, 0])
         # Square root of 2 divided by 2
         sqrt2_2 = 0.7071067811865476
 
-        plane, normal, offset = build_plane(0, 45.0, centroid)
-        self.assertAlmostEqual(plane[0], sqrt2_2)
-        self.assertAlmostEqual(plane[1], sqrt2_2)
-        self.assertAlmostEqual(plane[2], 0.)
-
-        plane, normal, offset = build_plane(0, -45.0, centroid)
-        self.assertAlmostEqual(plane[0], sqrt2_2)
-        self.assertAlmostEqual(plane[1], -sqrt2_2)
-        self.assertAlmostEqual(plane[2], 0.)
-
-        plane, normal, offset = build_plane(45.0, 0, centroid)
-        self.assertAlmostEqual(plane[0], sqrt2_2)
-        self.assertAlmostEqual(plane[1], 0.)
-        self.assertAlmostEqual(plane[2], sqrt2_2)
-
-        plane, normal, offset = build_plane(-45.0, 0, centroid)
-        self.assertAlmostEqual(plane[0], sqrt2_2)
-        self.assertAlmostEqual(plane[1], 0.)
-        self.assertAlmostEqual(plane[2], -sqrt2_2)
-
+        self.assert_plane_normal(0, 0, [1, 0, 0], centroid)
+        self.assert_plane_normal(0, 45.0, [sqrt2_2, sqrt2_2, 0], centroid)
+        self.assert_plane_normal(0, -45.0, [sqrt2_2, -sqrt2_2, 0], centroid)
+        self.assert_plane_normal(45.0, 0, [sqrt2_2, 0, sqrt2_2], centroid)
+        self.assert_plane_normal(-45.0, 0, [sqrt2_2, 0, -sqrt2_2], centroid)
         centroid = np.array([1.5, 0, 10.0])
-        plane, normal, offset = build_plane(0, 0, centroid)
-        self.assertAlmostEqual(plane[0], 1.)
-        self.assertAlmostEqual(plane[1], 0.)
-        self.assertAlmostEqual(plane[2], 0)
+        self.assert_plane_normal(0, 0, [1, 0, 0], centroid)
+
+    def assert_normal(self, vector, expected_pitch, expected_yaw):
+        plane_angle, pitch_angle, yaw_angle = get_angles(vector)
+        self.assertAlmostEqual(pitch_angle, expected_pitch)
+        self.assertAlmostEqual(yaw_angle, expected_yaw)
+        self.assert_plane_normal(pitch_angle, yaw_angle, vector)
 
     def test_get_angles(self):
         vector = [1, 0, 0]
-        plane_angle, pitch_angle, yaw_angle = get_angles(vector)
-        self.assertEqual(pitch_angle, 0.0)
-        self.assertEqual(yaw_angle, 0.0)
-        self.assertEqual(plane_angle, 0.0)
+        self.assert_normal(vector, 0.0, 0.0)
+
+        vector = [-1, 0, 0]
+        self.assert_normal(vector, 0.0, 0.0)
 
         vector = [1, 1, 0]
-        plane_angle, pitch_angle, yaw_angle = get_angles(vector)
-        self.assertEqual(pitch_angle, 0.)
-        self.assertEqual(yaw_angle, 45.0)
-        self.assertEqual(plane_angle, 45.0)
+        self.assert_normal(vector, 0.0, 45.0)
+
+        vector = [-1, -1, 0]
+        self.assert_normal(vector, 0.0, 45.0)
+
 
         vector = [1, -1, 0]
-        plane_angle, pitch_angle, yaw_angle = get_angles(vector)
-        self.assertEqual(pitch_angle, 0.0)
-        self.assertEqual(yaw_angle, -45.0)
-        self.assertEqual(plane_angle, 45.0)
+        self.assert_normal(vector, 0.0, -45.0)
 
         vector = [1, 0, 1]
-        plane_angle, pitch_angle, yaw_angle = get_angles(vector)
-        self.assertEqual(pitch_angle, 45.0)
-        self.assertEqual(yaw_angle, 0.0)
-        self.assertEqual(plane_angle, 45.0)
+        self.assert_normal(vector, 45.0, 0.0)
 
         vector = [1, 0, -1]
-        plane_angle, pitch_angle, yaw_angle = get_angles(vector)
-        self.assertEqual(pitch_angle, -45.0)
-        self.assertEqual(yaw_angle, 0.0)
-        self.assertEqual(plane_angle, 45.0)
+        self.assert_normal(vector, -45.0, 0.0)
 
-        vector = [1.0, -6.435254644086728e-06, -5.910281809311532e-05]
-        plane_angle, pitch_angle, yaw_angle = get_angles(vector)
-        self.assertLess(pitch_angle, 0.0)
-        self.assertLess(yaw_angle, 0.0)
+        angle = 6.34019174590991
+        vector = [0.9, 0, 0.1]
+        self.assert_normal(vector, angle, 0.0)
+        
+        vector = [0.9, 0.1, 0]
+        self.assert_normal(vector, 0.0, angle)
 
-        vector = [1.0, 6.435254644086728e-06, 5.910281809311532e-05]
-        plane_angle, pitch_angle, yaw_angle = get_angles(vector)
-        self.assertGreater(pitch_angle, 0.0)
-        self.assertGreater(yaw_angle, 0.0)
+        vector = [0.9, 0.1, 0.1]
+        self.assert_normal(vector, angle, angle)
+
+        vector = [0.9, 0, -0.1]
+        self.assert_normal(vector, -angle, 0.0)
+
+        vector = [0.9, -0.1, 0]
+        self.assert_normal(vector, 0.0, -angle)
+
+        vector = [0.9, -0.1, 0.1]
+        self.assert_normal(vector, angle, -angle)
+
+        vector = [0.9, 0.1, -0.1]
+        self.assert_normal(vector, -angle, angle)
+
+        vector = [0.9, -0.1, -0.1]
+        self.assert_normal(vector, -angle, -angle)
         
 
 if __name__ == '__main__':
