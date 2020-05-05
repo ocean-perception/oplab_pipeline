@@ -5,6 +5,7 @@ import numpy as np
 import math
 import random
 from auv_cal.ransac import plane_fitting_ransac
+from auv_cal.ransac import fit_plane
 from oplab import Console
 from oplab import get_processed_folder
 from auv_nav.parsers.parse_biocam_images import biocam_timestamp_from_filename
@@ -67,29 +68,6 @@ def get_angles(normal):
         yaw_angle += 180.0
 
     return plane_angle, pitch_angle, yaw_angle
-
-
-def fit_plane(xyz):
-    # 1. Calculate centroid of points and make points relative to it
-    centroid = xyz.mean(axis=0)
-    xyzR = xyz - centroid  # points relative to centroid
-    xyzRT = np.transpose(xyzR)
-
-    # 2. Calculate the singular value decomposition of the xyzT matrix
-    #    and get the normal as the last column of u matrix
-    normal = np.linalg.svd(xyzRT)[0][:, -1]
-
-    # Ensure normal points towards positive X axis
-    if normal[0] < 0:
-        normal = normal * (-1)
-
-    a = normal[0]
-    b = normal[1]
-    c = normal[2]
-    # 3. Get d coefficient to plane for display
-    d = - (normal[0] * centroid[0] + normal[1] * centroid[1] + normal[2] * centroid[2])
-
-    return a, b, c, d
 
 
 def findLaserInImage(img, min_green_val, k, num_columns, start_row=0, end_row=-1, prior=None, debug=False):
@@ -437,23 +415,22 @@ class LaserCalibrator():
 
         planes = []
         for i in range(0, self.num_iterations):
-            point_cloud_local = np.array(random.sample(inliers_cloud_list,
-                                                       cloud_sample_size))
-            a, b, c, d = fit_plane(point_cloud_local)
-            angle, pitch, yaw = get_angles([a, b, c])
-            planes.append([a, b, c, d, angle, pitch, yaw])
+            point_cloud_local = random.sample(inliers_cloud_list, cloud_sample_size)
+            m = fit_plane(point_cloud_local)
+            angle, pitch, yaw = get_angles(m[0:3])
+            planes.append([angle, pitch, yaw])
             Console.progress(i, self.num_iterations, prefix='Iterating planes')
 
         planes = np.array(planes)
-        planes = planes.reshape(-1, 7)
+        planes = planes.reshape(-1, 3)
 
-        plane_angle_std = np.std(planes[:, 4])
-        plane_angle_mean = np.mean(planes[:, 4])
-        plane_angle_median = np.median(planes[:, 4])
-        pitch_angle_std = np.std(planes[:, 5])
-        pitch_angle_mean = np.mean(planes[:, 5])
-        yaw_angle_std = np.std(planes[:, 6])
-        yaw_angle_mean = np.mean(planes[:, 6])
+        plane_angle_std = np.std(planes[:, 0])
+        plane_angle_mean = np.mean(planes[:, 0])
+        plane_angle_median = np.median(planes[:, 0])
+        pitch_angle_std = np.std(planes[:, 1])
+        pitch_angle_mean = np.mean(planes[:, 1])
+        yaw_angle_std = np.std(planes[:, 2])
+        yaw_angle_mean = np.mean(planes[:, 2])
 
         Console.info('Total Number of Points:', total_no_points)
         Console.info('Plane Standard deviation:\n', plane_angle_std)

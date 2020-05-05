@@ -5,7 +5,7 @@ import numpy as np
 from auv_cal.laser_calibrator import build_plane
 from auv_cal.laser_calibrator import opencv_to_ned
 from auv_cal.laser_calibrator import get_angles
-from auv_cal.laser_calibrator import fit_plane
+from auv_cal.ransac import fit_plane
 
 
 class TestLaserCalibration(unittest.TestCase):
@@ -13,18 +13,19 @@ class TestLaserCalibration(unittest.TestCase):
         xyz = np.array([[1, 0, 0],
                         [1, 1, 1],
                         [1, -1, 1]])
-        a, b, c, d = fit_plane(xyz)
-        self.assertEqual(a, 1.0)
-        self.assertEqual(b, 0.0)
-        self.assertEqual(c, 0.0)
-        self.assertEqual(d, -1.0)
+        m = fit_plane(xyz)
+        sqrt2_2 = 0.7071067811865476
+        self.assertAlmostEqual(m[0], sqrt2_2)
+        self.assertAlmostEqual(m[1], 0.0)
+        self.assertAlmostEqual(m[2], 0.0)
+        self.assertAlmostEqual(m[3], -sqrt2_2)
 
     def test_opencv_to_ned(self):
         a = np.array([1, 2, 3])
         b = opencv_to_ned(a)
-        self.assertEqual(b[0], 2.0)
-        self.assertEqual(b[1], -1.)
-        self.assertEqual(b[2], 3.)
+        self.assertAlmostEqual(b[0], 2.0)
+        self.assertAlmostEqual(b[1], -1.)
+        self.assertAlmostEqual(b[2], 3.)
 
     def assert_plane_normal(self, pitch, yaw, expected_normal, centroid=[0, 0, 0]):
         centroid = np.array(centroid)

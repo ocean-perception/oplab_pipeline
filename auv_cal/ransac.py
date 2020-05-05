@@ -11,9 +11,12 @@ def augment(xyzs):
     return axyz
 
 
-def estimate(xyzs):
+def fit_plane(xyzs):
     axyz = augment(xyzs[:3])
-    return np.linalg.svd(axyz)[-1][-1, :]
+    m = np.linalg.svd(axyz)[-1][-1, :]
+    if m[0] < 0:
+        m = m *(-1)
+    return m
 
 
 def is_inlier(coeffs, xyz, threshold):
@@ -29,7 +32,7 @@ def run_ransac(data, estimate, is_inlier, sample_size, goal_inliers, max_iterati
     for i in range(max_iterations):
         inliers = []
         s = random.sample(data, int(sample_size))
-        m = estimate(s)
+        m = fit_plane(s)
         ic = 0
         for j in range(len(data)):
             if is_inlier(m, data[j]):
@@ -57,8 +60,8 @@ def bounding_box(iterable):
 
 
 def plot_plane(a, b, c, d):
-        yy, zz = np.mgrid[-5:5, 0:15]
-        return (-d - c * zz - b * yy) / a, yy, zz
+    yy, zz = np.mgrid[-5:5, 0:15]
+    return (-d - c * zz - b * yy) / a, yy, zz
 
 
 def plane_fitting_ransac(cloud_xyz,
@@ -69,7 +72,7 @@ def plane_fitting_ransac(cloud_xyz,
                          plot=False):
     model, inliers = run_ransac(
         cloud_xyz,
-        estimate,
+        fit_plane,
         lambda x, y: is_inlier(x, y, min_distance_threshold),
         sample_size,
         goal_inliers,
