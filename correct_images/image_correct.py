@@ -148,13 +148,10 @@ def call_correct(args):
             corrector.load_generic_config_parameters()
             corrector.load_camera_specific_config_parameters()
             corrector.get_imagelist()
-            # corrector.get_image_properties()
             corrector.create_output_directories()
-            #corrector.generate_bayer_numpyfiles(bayer_numpy_filelist)
             corrector.generate_distance_matrix()
-
             corrector.generate_bayer_numpy_filelist(corrector._imagelist)
-
+            corrector.generate_bayer_numpyfiles(corrector.bayer_numpy_filelist)
             corrector.generate_correction_parameters()
             corrector.process_correction()
 

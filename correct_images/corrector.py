@@ -18,6 +18,8 @@ import yaml
 import joblib
 import sys
 import uuid
+import datetime
+from scipy import optimize
 # -----------------------------------------
 
 class Corrector:
@@ -88,6 +90,13 @@ class Corrector:
 			Console.quit('Overwrite images with a Force command...')
 		Console.info('Output directories created...')
 
+		# create folder for memmap files
+		memmap_folder_name = 'memmaps_' + self._camera.name
+		self.memmap_folder = self.output_dir_path / memmap_folder_name
+		if not self.memmap_folder.exists():
+			self.memmap_folder.mkdir(parents=True)
+
+
 	
 
 	# store into object correction paramters specific to the current camera 
@@ -105,6 +114,7 @@ class Corrector:
 		self.image_height = image_properties[0]
 		self.image_width = image_properties[1]
 		self.image_channels = image_properties[2]
+		self.camera_name = self._camera.name
 
 
 	# load imagelist: output is same as camera.imagelist unless a smaller filelist is specified by the user 
@@ -125,107 +135,55 @@ class Corrector:
 	
 	# save a set of distance matrix numpy files
 	def generate_distance_matrix(self):
-		
 		# read altitude / depth map depending on distance_metric
 		if self.distance_metric == 'none':
 			return None
-		elif self.distance_metric == 'altitude':
-			full_metric_path = self.path_processed / self.distance_path
-			full_metric_path = full_metric_path / 'csv' / 'ekf'
-			metric_file = 'auv_ekf_' + self._camera.name + '.csv'
-			metric_file_path = full_metric_path / metric_file
-
-			if not metric_file_path.exists():
-				message = 'Path to ' + metric_file + ' does not exist...'
-				Console.quit(message)
-
-			dataframe = pd.read_csv(metric_file_path)
-			if self._camera.extension == 'raw' or self._camera.name == 'LM165':
-				
-				#read list of attitudes with respect to images in imagelist
-
-				imagenames = [Path(imagepath).stem for imagepath in self._imagelist]
-				imagenumbers = []
-				for imagename in imagenames:
-					if self._camera.name == 'LM165':
-						imagename = imagename[5:]
-					imagenumbers.append(int(imagename))
-				selected_dataframe = dataframe.loc[dataframe['Imagenumber'].isin(imagenumbers)]
-
-				# create a list of paths to selected images from the full imaglist provided by camera system class
-				selected_imagelist = []
-				imagenumbers = selected_dataframe['Imagenumber']
-				for image_number in imagenumbers:
-					image_number_string = str(image_number)
-					image_name_length = len(image_number_string)
-					zero_padding_length = 7 - image_name_length
-					imagename = image_number_string
-					for i in range(zero_padding_length):
-						imagename = '0' + imagename
-					selected_imagelist.append(imagename)
-			else:
-				# read list of altitudes
-				imagenames = [Path(imagepath).name for imagepath in self._imagelist]
-				selected_dataframe = dataframe.loc[dataframe['Imagenumber'].isin(imagenames)]
-				
-				if len(selected_dataframe) == 0:
-					# should be image paths for biocam, read image paths from image_list instead
-					#print(imagenames)
-					imagepaths_from_dataframe = dataframe['Imagenumber']
-					#print(imagepaths_from_dataframe)
-					imagenames_from_dataframe = [Path(imagepath).name for imagepath in imagepaths_from_dataframe]
-					#print(imagenames_from_dataframe)
-					selected_image_indices = [imagenames_from_dataframe.index(item) for item in imagenames_from_dataframe
-												 if item in imagenames]
-					#print(selected_image_indices)
-					selected_dataframe = dataframe[dataframe.index.isin(selected_image_indices)]
-					selected_dataframe['Imagenumber'] = [imagenames_from_dataframe[i] for i in selected_image_indices]
-					#print(selected_dataframe)
-					print('-------------------------------------------------------')
-
-
-				# create a list of paths to selected images from the full imaglist provided by camera system class
-				selected_imagelist = selected_dataframe['Imagenumber']
-			# create a list of selected altitudes
-			selected_distancelist = selected_dataframe[' Altitude [m]']
-			
-			# create a list of selected image paths
-			selected_image_pathlist = []
-			image_indices = [imagenames.index(item) for item in imagenames for subitem in selected_imagelist
-								if subitem in item]
-			for idx in image_indices:
-				selected_image_pathlist.append(self._imagelist[idx])
 
 		elif self.distance_metric == 'depth_map':
 			# TODO: get depth map from metric path
 			# TODO: select the depth map for images in self._imagelist
 			print('get path to depth map')
-		
-		# update imagelist with the selected image pat list
-		self._imagelist = selected_image_pathlist
-		Console.info('Distance parameters loaded')
 
-		# Create distance matrix
-		distance_matrix = np.empty((self.image_height, self.image_width))
-		self.distance_matrix_numpy_filelist = []
-		
-		for idx in trange(len(selected_distancelist)):
-			distance_matrix.fill(selected_distancelist[idx])
-			imagename = Path(self._imagelist[idx]).stem
-			distance_matrix_numpy_file = imagename + '.npy'
-			distance_matrix_numpy_file_path = self.distance_matrix_numpy_folder / distance_matrix_numpy_file
+		elif self.distance_metric == 'altitude':
+			full_metric_path = self.path_processed / self.distance_path
+			full_metric_path = full_metric_path / 'csv' / 'ekf'
+			metric_file = 'auv_ekf_' + self.camera_name + '.csv'
+			metric_file_path = full_metric_path / metric_file
 
-			self.distance_matrix_numpy_filelist.append(distance_matrix_numpy_file_path)
+			if not metric_file_path.exists():
+				message = 'Path to ' + metric_file + ' does not exist...'
+				Console.quit(message)
+			dataframe = pd.read_csv(metric_file_path)
+
+			if self._camera_image_file_list == 'none':
+				selected_dataframe = dataframe.iloc[0:len(self._imagelist)] # select all the images as receied from camera.image_list
+			else:
+				# select only the rows based on image indices provided in filelist in correct_config yaml file
+				selected_dataframe = dataframe[dataframe.index.isin(self.imageindices_from_filelist)]
 			
-			# create the distance matrix numpy file
-			np.save(distance_matrix_numpy_file_path, distance_matrix)
-		
-		Console.info('Distance matrix numpy files written successfully')
+			# obtain distances for corresponding images to be corrected
+			distance_list = selected_dataframe[' Altitude [m]']
 
-		# Filter numpy images for calculating attenuation parameters based on altitude range
-		
-		self.filtered_indices = [index for index, distance in enumerate(selected_distancelist) if distance < self.altitude_max and distance > self.altitude_min]
-		Console.info('Images filtered as per altitude range...')
+			# create distance matrix numpy files for each image
+			distance_matrix = np.empty((self.image_height, self.image_width))
+			self.distance_matrix_numpy_filelist = []
+			
+			for idx in trange(len(distance_list)):
+				distance_matrix.fill(distance_list[idx])
+				imagename = Path(self._imagelist[idx]).stem
+				distance_matrix_numpy_file = imagename + '.npy'
+				distance_matrix_numpy_file_path = self.distance_matrix_numpy_folder / distance_matrix_numpy_file
+
+				self.distance_matrix_numpy_filelist.append(distance_matrix_numpy_file_path)
+				
+				# create the distance matrix numpy file
+				np.save(distance_matrix_numpy_file_path, distance_matrix)
+
+			Console.info('Distance matrix numpy files written successfully')
+
+			self.altitude_based_filtered_indices = [index for index, distance in enumerate(distance_list) if distance < self.altitude_max and distance > self.altitude_min]
+			Console.info('Images filtered as per altitude range...')
+
 
 		
 	# create a list of image numpy files to be written to disk
@@ -239,6 +197,7 @@ class Corrector:
 			self.bayer_numpy_filelist.append(bayer_file_path)
 
 	
+	
 	# write the intermediate image numpy files to disk
 	def generate_bayer_numpyfiles(self, bayer_numpy_filelist):
 		# create numpy files as per bayer_numpy_filelist
@@ -246,8 +205,8 @@ class Corrector:
 			# write numpy files for corresponding bayer images
 			for idx in trange(len(self._imagelist)):
 				tmp_tif = imageio.imread(self._imagelist[idx])
-				tmp_npy = np.zeros([self.image_height, self.image_width], np.uint16)
-				tmp_npy[:, :] = np.array(tmp_tif, np.uint16)
+				#tmp_npy = np.zeros([self.image_height, self.image_width, self.image_channels], np.uint16)
+				tmp_npy = np.array(tmp_tif, np.uint16)
 				np.save(bayer_numpy_filelist[idx], tmp_npy)
 		if self._camera.extension == 'raw':
 			# create numpy files as per bayer_numpy_filelist
@@ -265,37 +224,114 @@ class Corrector:
 		Console.info('Image numpy files written successfully')
 
 	
+	
 	# compute correction parameters either for attenuation correction or static correction of images 
 	def generate_correction_parameters(self):
 		
 		# create an empty matrix to store image correction parameters
 		# parameters can be color attenuation correction or
 		# manual balance parameters
-		self.image_correction_parameters = np.empty((self.image_channels, self.image_height,
-													self.image_width))
+		self.image_attenuation_parameters = np.empty((self.image_height,
+													self.image_width, 3, self.image_channels))
+		self.image_correction_parameters = np.empty((self.image_height,
+													self.image_width, self.image_channels))
 		
 		if self.correction_method == 'colour_correction':
 			
 			# create image and distance_matrix memmaps
 			# based on altitude filtering
-			image_memmap = load_memmap_from_numpyfilelist(self.bayer_numpy_filelist)
-			distance_memmap = load_memmap_from_numpyfilelist(self.distance_matrix_numpy_filelist)
+			filtered_image_numpy_filelist = []
+			filtered_distance_numpy_filelist = []
+
+			for idx in self.altitude_based_filtered_indices:
+				filtered_image_numpy_filelist.append(self.bayer_numpy_filelist[idx])
+				filtered_distance_numpy_filelist.append(self.distance_matrix_numpy_filelist[idx])
+
+			# delete existing memmap files
+			memmap_files_path = self.memmap_folder.glob('*.map')
+			for file in memmap_files_path:
+				if file.exists():
+					file.unlink()
+
+			image_memmap_path, image_memmap = load_memmap_from_numpyfilelist(self.memmap_folder, filtered_image_numpy_filelist)
+			distance_memmap_path, distance_memmap = load_memmap_from_numpyfilelist(self.memmap_folder, filtered_distance_numpy_filelist)
+			image_memmap_channels = np.empty((len(self.bayer_numpy_filelist), self.image_height,
+												self.image_width, self.image_channels))
+			if self.image_channels == 1:
+				image_memmap_channels[:,:,:,0] = image_memmap
+			else:
+				image_memmap_channels = image_memmap
 			# --- TODO ----
-			#----------------------------------------
-
+			self.image_mean_channels = np.empty((self.height, self.width, self.image_channels))
+			self.image_std_channels = np.empty((self.height, self.width, self.image_channels))
 			
-			# calculate mean, std for image and distance matrices
-			self.raw_image_mean, self.raw_image_std = mean_std(image_memmap, True)
-			self.distance_mean = mean_std(image_memmap, False)
-			target_altitude = self.distance_mean
+			for i in range(self.image_channels):
 
-			
-			# compute histogram of intensities with respect to altitude range(min, max)
-			mean_image_samples_per_bin = np.array([])
-			mean_distance_samples_per_bin = np.array([])
+				image_memmap_ = image_memmap_channels[:,:,:,i]
+				# calculate mean, std for image and target_altitude
+				raw_image_mean, raw_image_std = mean_std_(image_memmap_)
+				target_altitude = mean_std_(distance_memmap, False)
+				self.image_mean_channels[:,:,i] = raw_image_mean
+				self.image_std_channels[:,:,i] = raw_image_std
+				
+				# compute the mean distance for each image
+				[n, a, b] = distance_memmap.shape
+				distance_vector = distance_memmap.reshape((n, a*b))
+				mean_distance_array = distance_vector.mean(axis=1)
+
+				# compute histogram of distance with respect to altitude range(min, max)
+				bin_band = 0.1
+				hist_bounds = np.arange(self.altitude_min, self.altitude_max, bin_band)
+				idxs = np.digitize(mean_distance_array, hist_bounds)
+
+				bin_images_sample_list = []
+				bin_distances_sample_list = []
+
+				for idx_bin in trange(1, hist_bounds.size):
+					tmp_idxs = np.where(idxs==idx_bin)[0]
+					if len(tmp_idxs) > 0:
+						bin_images = image_memmap_[tmp_idxs]
+						bin_distances = distance_memmap[tmp_idxs]
+						if self.smoothing == 'mean':
+							bin_images_sample = np.mean(bin_images, axis=0)
+							bin_distances_sample = np.mean(bin_distances, axis=0)
+						elif self.smoothing == 'mean_trimmed':
+							bin_images_sample = np.mean(bin_images, axis=0)
+							bin_distances_sample = np.mean(bin_distances, axis=0)
+						elif self.smoothing == 'median':
+							bin_images_sample = np.median(bin_images, axis=0)
+							bin_distances_sample = np.mean(bin_distances, axis=0)
+
+						del bin_images
+						del bin_distances
+
+						bin_images_sample_list.append(bin_images_sample)
+						bin_distances_sample_list.append(bin_distances_sample)
+
+				images_for_attenuation_calculation = np.array(bin_images_sample_list)
+				distances_for_attenuation_calculation = np.array(bin_distances_sample_list)
+				images_for_attenuation_calculation = images_for_attenuation_calculation.reshape(
+														[len(bin_images_sample_list), self.image_height * self.image_width])
+				distances_for_attenuation_calculation = distances_for_attenuation_calculation.reshape(
+														[len(bin_distances_sample_list), self.image_height * self.image_width])
+
+				attenuation_parameters = self.calculate_attenuation_parameters(images_for_attenuation_calculation,
+													distances_for_attenuation_calculation, self.image_height,
+													self.image_width)
+
+				self.image_attenuation_parameters[:, :, :, i] = attenuation_parameters
+
+				correction_gains = self.calculate_attenuation_gains(target_altitude)
+
+				self.image_correction_parameters[:,:,i] = correction_gains
+				
+				print(self.image_correction_parameters[:,:,0,i])
+				print(self.image_correction_parameters[:,:,1,i])
+				print(self.image_correction_parameters[:,:,2,i])
+				
 			# -----TODO:
 			#--------------------------------------------
-
+		'''
 			for i in range(self.image_channels):
 				# compute the attenuation regression parameters
 				self.attenuation_parameters = np.empty((self.image_height, self.image_width))
@@ -304,7 +340,7 @@ class Corrector:
 
 				# calculate the attenuation gain values
 				
-				self.image_correction_parameters[i] = self.calculate_attenuation_gains(target_altitude)
+				self.image_correction_parameters[i] = self.calculate_attenuation_gains(self.target_altitude)
 			
 		
 		elif self.correction_method == 'manual_balance':
@@ -313,7 +349,25 @@ class Corrector:
 			# generate static correction values for each pixel each channel
 			# TODO------ 
 			self.image_correction_parameters = static_correction_parameters
+		'''
+
 	
+	# calculate image attenuation parameters
+	def calculate_attenuation_parameters(self, images, distances, image_height, image_width):
+		Console.info('Start curve fitting...')
+
+
+		results = joblib.Parallel(n_jobs=-2, verbose=3)(
+		    [joblib.delayed(curve_fitting)(
+		        distances[:, i_pixel], images[:, i_pixel])
+		        for i_pixel in range(image_height * image_width)])
+
+		attenuation_parameters = np.array(results)
+		attenuation_parameters = attenuation_parameters.reshape([self.image_height, self.image_width, 3])
+
+		return attenuation_parameters	
+	
+
 
 	# compute gain values for each pixel for a targeted altitide using the attenuation parameters
 	def calculate_attenuation_gains(self, target_altitude):
@@ -321,6 +375,8 @@ class Corrector:
 		# TODO -------
 		return attenuation_gains
 
+
+	
 
 	# execute the corrections of images using the gain values in case of attenuation correction or static color balance
 	def process_correction(self):
@@ -423,36 +479,153 @@ def load_xviii_bayer_from_binary(binary_data, image_height, image_width):
 
 
 # store into memmaps the distance and image numpy files
-def load_memmap_from_numpyfilelist(numpyfilelist):
+def load_memmap_from_numpyfilelist(filepath, numpyfilelist):
 	message = 'loading binary files into memmap...'
-	#image = np.load(str(numpyfilelist[0]))
+	image = np.load(str(numpyfilelist[0]))
 	list_shape = [len(numpyfilelist)]
 	print(list_shape)
-	#list_shape = list_shape + list(image.shape)
+	list_shape = list_shape + list(image.shape)
+	
 	filename_map = 'memmap_' + str(uuid.uuid4()) + '.map'
-	memmap_ = np.memmap(filename=filename_map, mode='w+', shape=tuple(list_shape),
-		dtype=np.float32)
-	#for idx in trange(0, len(numpyfilelist), ascii=True, desc=message):
-	#	memmap_[idx, ...] = np.load(numpyfilelist[idx])
+	memmap_path = filepath / filename_map
 
-	return filename_map, memmap_
+	memmap_ = np.memmap(filename=memmap_path, mode='w+', shape=tuple(list_shape),
+		dtype=np.float32)
+	for idx in trange(0, len(numpyfilelist), ascii=True, desc=message):
+		memmap_[idx, ...] = np.load(numpyfilelist[idx])
+
+	return memmap_path, memmap_
+
 
 
 # calculate the mean and std of an image
-def mean_std(data, calculate_std=True):
-	'''
+
+def mean_std_(data, calculate_std=True):
+	[n, a, b] = data.shape
+
+	data.reshape((n, a*b))
+
+	ret_mean = data.mean(axis=0)
 	if calculate_std:
-		return np.mean(data), np.std(data)
+		ret_std = data.std(axis=0)
+		return ret_mean.reshape((a,b)), ret_std.reshape((a,b))
+
 	else:
-		return np.mean(data)
-	'''
-	return None, None
+		return ret_mean.reshape((a,b))
+
+
+
+def image_mean_std(data, ratio_trimming=0.2, calculate_std=True):
+	[n, a, b] = data.shape
+	ret_mean = np.zeros((a, b), np.float32)
+	ret_std = np.zeros((a, b), np.float32)
+
+	effective_index = [list(range(0, n))]
+
+	message = 'calculating mean and std of images ' + \
+	      datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+	if ratio_trimming <= 0:
+		ret_mean = np.mean(src_imgs, axis=0)
+		ret_std = np.std(src_imgs, axis=0)
+   
+	else:
+		if calculate_std == False:
+			for idx_a in trange(a, ascii=True, desc=message):
+			    results = joblib.Parallel(n_jobs=2, verbose=0)(
+			        [joblib.delayed(calc_mean_and_std_trimmed)(
+			            data[effective_index, idx_a, idx_b][0], ratio_trimming,
+			            calculate_std) for idx_b in
+			            range(b)])
+			    ret_mean[idx_a, :] = np.array(results)[:, 0]
+			return ret_mean
+		
+		else:
+			for idx_a in trange(a, ascii=True, desc=message):
+			    results = joblib.Parallel(n_jobs=2, verbose=0)(
+			        [joblib.delayed(calc_mean_and_std_trimmed)(
+			            data[effective_index, idx_a, idx_b][0], ratio_trimming,
+			            calculate_std) for idx_b in
+			            range(b)])
+			    ret_mean[idx_a, :] = np.array(results)[:, 0]
+			    ret_std[idx_a, :] = np.array(results)[:, 1]
+			return ret_mean, ret_std
+
+
+
+def calc_mean_and_std_trimmed(data, rate_trimming, calc_std=True):
+	if rate_trimming <= 0:
+		mean = np.mean(data)
+		if calc_std:
+			std = np.std(data)
+	else:
+		sorted_values = np.sort(data)
+		idx_left_limit = int(len(data) * rate_trimming / 2.0)
+		idx_right_limit = int(len(data) * (1.0 - rate_trimming / 2.0))
+
+		mean = np.mean(sorted_values[idx_left_limit:idx_right_limit])
+		std = 0
+
+		if calc_std:
+			std = np.std(sorted_values[idx_left_limit:idx_right_limit])
+
+	return np.array([mean, std])
+
+
+def exp_curve(x, a, b, c):
+    return a * np.exp(b * x) + c
+
+
+def residual_exp_curve(params, x, y):
+    residual = exp_curve(x, params[0], params[1], params[2]) - y
+    return residual
 
 
 # compute attenuation correction parameters through regression
-def curve_fitting(imagelist, distancelist):
-	parameters = np.array([])
-	# TODO
-	# -----------------------------
-	return parameters
+def curve_fitting(distancelist, intensitylist):
+	loss = "soft_l1"
+	# loss='linear'
+	method = "trf"
+	# method='lm'
+	bound_lower = [1, -np.inf, 0]
+	bound_upper = [np.inf, 0, np.inf]
+
+	altitudes = np.array(distancelist)
+	intensities = np.array(intensitylist)
+
+	flag_already_calculated = False
+	min_cost = float("inf")
+	c = 0
+
+	idx_0 = int(len(intensities) * 0.3)
+	idx_1 = int(len(intensities) * 0.7)
+
+
+	b = (np.log((intensities[idx_0] - c) / (intensities[idx_1] - c))) / (
+	altitudes[idx_0] - altitudes[idx_1]
+	)
+	a = (intensities[idx_1] - c) / np.exp(b * altitudes[idx_1])
+	if a < 1 or b > 0 or np.isnan(a) or np.isnan(b):
+		a = 1.01
+		b = -0.01
+
+	init_params = np.array([a, b, c])
+	# tmp_params=None
+	try:
+		tmp_params = optimize.least_squares(
+		residual_exp_curve,
+		init_params,
+		loss=loss,
+		method=method,
+		args=(altitudes, intensities),
+		bounds=(bound_lower, bound_upper),
+		)
+		if tmp_params.cost < min_cost:
+			min_cost = tmp_params.cost
+			ret_params = tmp_params.x
+
+	except (ValueError, UnboundLocalError) as e:
+		Console.error("Value Error", a, b, c)
+
+	return ret_params
 

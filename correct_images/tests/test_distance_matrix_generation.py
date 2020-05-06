@@ -11,6 +11,8 @@ from auv_nav.camera_system import *
 from correct_images.corrector import *
 from correct_images.parser import *
 from auv_nav.tools.console import Console
+import glob
+
 
 
 ACFR_IMG_WIDTH = 2464
@@ -85,21 +87,21 @@ class testCaseCorrector(unittest.TestCase):
 				corrector.load_generic_config_parameters()
 				corrector.load_camera_specific_config_parameters()
 				corrector.get_imagelist()
-				corrector.get_image_properties()
 				corrector.create_output_directories()
 				corrector.generate_distance_matrix()
 				self.assertEqual(len(corrector._imagelist), 
 				len(corrector.distance_matrix_numpy_filelist),
 				'Length of distance matrix filelist does not match with imagelist')
 
-				for idx in corrector.filtered_indices:
+				for idx in corrector.altitude_based_filtered_indices:
 					distance_matrix = np.load(corrector.distance_matrix_numpy_filelist[idx])
 					self.assertEqual(distance_matrix.shape[0], ACFR_IMG_HEIGHT, 'Dimension mismatch: height')
 					self.assertEqual(distance_matrix.shape[1], ACFR_IMG_WIDTH, 'Dimension mismatch: width')
 					out_of_range = (np.abs(distance_matrix) < corrector.altitude_min).any() or (np.abs(distance_matrix) > corrector.altitude_max).any()
 					self.assertEqual(out_of_range, False, 'distance matrix values out of altitude bounds error')
 
-		        
+		
+
 	def test_sx3_get_distance_matrix(self):
 
 		self.load_params()
@@ -114,14 +116,13 @@ class testCaseCorrector(unittest.TestCase):
 				corrector.load_generic_config_parameters()
 				corrector.load_camera_specific_config_parameters()
 				corrector.get_imagelist()
-				corrector.get_image_properties()
 				corrector.create_output_directories()
 				corrector.generate_distance_matrix()
 				self.assertEqual(len(corrector._imagelist), 
 				len(corrector.distance_matrix_numpy_filelist),
 				'Length of distance matrix filelist does not match with imagelist')
 
-				for idx in corrector.filtered_indices:
+				for idx in corrector.altitude_based_filtered_indices:
 					distance_matrix = np.load(corrector.distance_matrix_numpy_filelist[idx])
 					if camera.name == 'LM165':
 						self.assertEqual(distance_matrix.shape[0], LM165_IMG_HEIGHT, 'Dimension mismatch: height')
@@ -146,14 +147,13 @@ class testCaseCorrector(unittest.TestCase):
 				corrector.load_generic_config_parameters()
 				corrector.load_camera_specific_config_parameters()
 				corrector.get_imagelist()
-				corrector.get_image_properties()
 				corrector.create_output_directories()
 				corrector.generate_distance_matrix()
 				self.assertEqual(len(corrector._imagelist), 
 				len(corrector.distance_matrix_numpy_filelist),
 				'Length of distance matrix filelist does not match with imagelist')
 
-				for idx in corrector.filtered_indices:
+				for idx in corrector.altitude_based_filtered_indices:
 					distance_matrix = np.load(corrector.distance_matrix_numpy_filelist[idx])
 					self.assertEqual(distance_matrix.shape[0], BIOCAM_IMG_HEIGHT, 'Dimension mismatch: height')
 					self.assertEqual(distance_matrix.shape[1], BIOCAM_IMG_WIDTH, 'Dimension mismatch: width')

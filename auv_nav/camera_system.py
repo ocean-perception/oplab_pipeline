@@ -50,7 +50,13 @@ class CameraEntry:
         img_dir = raw_dir.glob(self.path)
         self._image_list = []
         for i in img_dir:
-            [self._image_list.append(str(_)) for _ in i.rglob('*.' + self.extension)]
+            if self.name == 'LC':
+                [self._image_list.append(str(_)) for _ in i.rglob('*LC*.' + self.extension)]
+            elif self.name == 'RC':
+                [self._image_list.append(str(_)) for _ in i.rglob('*RC*.' + self.extension)]
+            else:
+                [self._image_list.append(str(_)) for _ in i.rglob('*.' + self.extension)]
+     
         self._image_list.sort()
         return self._image_list
 
@@ -67,9 +73,9 @@ class CameraEntry:
             self._image_properties.append(image_shape[0])
             self._image_properties.append(image_shape[1])
             if len(image_shape) == 3:
-                self._image_properties.append(1)
+                self._image_properties.append(image_shape[2])
             else:
-                self._image_properties.append(3)
+                self._image_properties.append(1)
 
         # read raw
         if self.extension == 'raw':
