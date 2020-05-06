@@ -1,4 +1,4 @@
-"""auv_nav package version"""
+"""oplab_pipeline package version"""
 import os.path
 
 version = ""

@@ -31,7 +31,7 @@ class Console:
     @staticmethod
     def quit(*args, **kwargs):
         print('\n')
-        print(BColors.FAIL + "**** " + BColors.ENDC + "Exitting auv_nav.")
+        print(BColors.FAIL + "**** " + BColors.ENDC + "Exitting.")
         print(BColors.FAIL + "**** " + BColors.ENDC + "Reason: " + " ".join(map(str, args)), **kwargs)
         quit()
 
@@ -65,7 +65,7 @@ class Console:
 
     @staticmethod
     def get_version():
-        return str(pkg_resources.require("auv_nav")[0].version)
+        return str(pkg_resources.require("oplab_pipeline")[0].version)
 
     @staticmethod
     def write_metadata():
