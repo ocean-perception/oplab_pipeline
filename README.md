@@ -1,8 +1,8 @@
-[![Build Status](https://travis-ci.com/ocean-perception/oplab_pipeline.svg?token=UkLpgZyKjs3prWpXePir&branch=master)](https://travis-ci.com/ocean-perception/oplab_pipeline) [![Code Coverage](https://codecov.io/gh/ocean-perception/oplab_pipeline/branch/master/graph/badge.svg?token=PJBfl6qhp5)](https://codecov.io/gh/ocean-perception/auv_nav)
+[![Build Status](https://travis-ci.com/ocean-perception/oplab_pipeline.svg?token=UkLpgZyKjs3prWpXePir&branch=master)](https://travis-ci.com/ocean-perception/oplab_pipeline) [![Code Coverage](https://codecov.io/gh/ocean-perception/oplab_pipeline/branch/master/graph/badge.svg?token=PJBfl6qhp5)](https://codecov.io/gh/ocean-perception/oplab_pipeline)
 
-# auv_nav
+# oplab_pipeline
 
-auv_nav is a python toolchain to process AUV dives from raw data into navigation and imaging products. It is divided in four main programs:
+oplab_pipeline is a python toolchain to process AUV dives from raw data into navigation and imaging products. It is divided in four main programs:
 * [auv_nav](../../wiki/auv_nav)
 * [calibrate_images](../../wiki/calibrate_images)
 * [calibrate_laser](../../wiki/calibrate_laser)
