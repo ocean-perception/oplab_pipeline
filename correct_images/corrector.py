@@ -233,8 +233,14 @@ class Corrector:
 		# manual balance parameters
 		self.image_attenuation_parameters = np.empty((self.image_height,
 													self.image_width, 3, self.image_channels))
-		self.image_correction_parameters = np.empty((self.image_height,
-													self.image_width, self.image_channels))
+		self.image_corrected_mean = np.empty((self.image_channels, self.image_height,
+													self.image_width))
+		self.image_corrected_std = np.empty((self.image_channels, self.image_height,
+													self.image_width))
+		self.image_raw_mean = np.empty((self.image_channels, self.image_height,
+													self.image_width))
+		self.image_raw_std = np.empty((self.image_channels, self.image_height,
+													self.image_width))
 		
 		if self.correction_method == 'colour_correction':
 			
@@ -262,17 +268,18 @@ class Corrector:
 			else:
 				image_memmap_channels = image_memmap
 			# --- TODO ----
-			self.image_mean_channels = np.empty((self.height, self.width, self.image_channels))
-			self.image_std_channels = np.empty((self.height, self.width, self.image_channels))
 			
 			for i in range(self.image_channels):
 
 				image_memmap_ = image_memmap_channels[:,:,:,i]
+
 				# calculate mean, std for image and target_altitude
 				raw_image_mean, raw_image_std = mean_std_(image_memmap_)
+				self.image_raw_mean[i] = raw_image_mean
+				self.image_raw_std[i] = raw_image_std
+
+
 				target_altitude = mean_std_(distance_memmap, False)
-				self.image_mean_channels[:,:,i] = raw_image_mean
-				self.image_std_channels[:,:,i] = raw_image_std
 				
 				# compute the mean distance for each image
 				[n, a, b] = distance_memmap.shape
@@ -315,19 +322,31 @@ class Corrector:
 				distances_for_attenuation_calculation = distances_for_attenuation_calculation.reshape(
 														[len(bin_distances_sample_list), self.image_height * self.image_width])
 
+				# calculate attenuation parameters per channel
 				attenuation_parameters = self.calculate_attenuation_parameters(images_for_attenuation_calculation,
 													distances_for_attenuation_calculation, self.image_height,
 													self.image_width)
 
 				self.image_attenuation_parameters[:, :, :, i] = attenuation_parameters
 
-				correction_gains = self.calculate_attenuation_gains(target_altitude)
 
-				self.image_correction_parameters[:,:,i] = correction_gains
+				# compute correction gains
+				Console.info('Computing correction gains...')
+				correction_gains = self.calculate_correction_gains(target_altitude, attenuation_parameters)
+
+				# apply gains to images
+				Console.info('Applying attenuation corrections to images...')
+				image_memmap_ = self.apply_attenuation_corrections(image_memmap_,
+										distance_memmap, attenuation_parameters, correction_gains)
+
+				image_corrected_mean, image_corrected_std = mean_std_(image_memmap_)
+				self.image_corrected_mean[i] = image_corrected_mean
+				self.image_corrected_std[i] = image_corrected_std
+			
+			
+			Console.info('Correction parameters generated for all channels...')
+
 				
-				print(self.image_correction_parameters[:,:,0,i])
-				print(self.image_correction_parameters[:,:,1,i])
-				print(self.image_correction_parameters[:,:,2,i])
 				
 			# -----TODO:
 			#--------------------------------------------
@@ -370,12 +389,37 @@ class Corrector:
 
 
 	# compute gain values for each pixel for a targeted altitide using the attenuation parameters
-	def calculate_attenuation_gains(self, target_altitude):
-		attenuation_gains =  np.empty((self.image_height, self.image_width))
-		# TODO -------
-		return attenuation_gains
+	def calculate_correction_gains(self, target_altitude, attenuation_parameters):
+		attenuation_parameters = attenuation_parameters.squeeze()
+		return (attenuation_parameters[:, :, 0] * np.exp(attenuation_parameters[:, :, 1] * target_altitude)
+			+ attenuation_parameters[:, :, 2])
 
+	
 
+	def apply_attenuation_corrections(self, image_memmap, distance_memmap, attenuation_parameters, gains):
+		for i_img in trange(image_memmap.shape[0]):
+			# memmap data can not be updated in joblib .
+			image_memmap[i_img, ...] = self.apply_atn_crr_2_img(
+			    image_memmap[i_img, ...],
+			    distance_memmap[i_img, ...],
+			    attenuation_parameters,
+			    gains,
+			)
+		return image_memmap
+
+	def apply_atn_crr_2_img(self, img, altitude, atn_crr_params, gain):
+	    atn_crr_params = atn_crr_params.squeeze()
+	    img = (
+	        (
+	            gain
+	            / (
+	                atn_crr_params[:, :, 0] * np.exp(atn_crr_params[:, :, 1] * altitude)
+	                + atn_crr_params[:, :, 2]
+	            )
+	        )
+	        * img
+	    ).astype(np.float32)
+	    return img
 	
 
 	# execute the corrections of images using the gain values in case of attenuation correction or static color balance
@@ -483,7 +527,6 @@ def load_memmap_from_numpyfilelist(filepath, numpyfilelist):
 	message = 'loading binary files into memmap...'
 	image = np.load(str(numpyfilelist[0]))
 	list_shape = [len(numpyfilelist)]
-	print(list_shape)
 	list_shape = list_shape + list(image.shape)
 	
 	filename_map = 'memmap_' + str(uuid.uuid4()) + '.map'
