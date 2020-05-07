@@ -1,165 +1,277 @@
 import unittest
-import yaml
 import os
 from pathlib import Path
-from auv_nav.camera_system import *
-from auv_nav.tools.folder_structure import get_raw_folder
-from auv_nav.tools.folder_structure import get_processed_folder
-from auv_nav.tools.folder_structure import get_config_folder
-from auv_nav.parsers.mission import *
-from auv_nav.camera_system import *
 from correct_images.corrector import *
-from correct_images.parser import *
 from auv_nav.tools.console import Console
-import glob
-
+import pandas as pd
+import tempfile
 
 
 ACFR_IMG_WIDTH = 2464
 ACFR_IMG_HEIGHT = 2056
-ACFR_IMG_CHANNELS = 1
 
 SX3_IMG_WIDTH = 1280 
 SX3_IMG_HEIGHT = 1024
-SX3_IMG_CHANNELS = 1
 
 LM165_IMG_WIDTH = 1392
 LM165_IMG_HEIGHT = 1040
 
 BIOCAM_IMG_WIDTH = 2560
 BIOCAM_IMG_HEIGHT = 2160
-BIOCAM_IMG_CHANNELS = 1
 
-
-# Requirements:
-# -----------------------------------------
-# 1. path to mission.yaml for each dataset to be provided in test.yaml
-# 2. Make sure the JSON path is provided correctly in the correct_config.yaml within configuration
 
 class testCaseCorrector(unittest.TestCase):
-	
-	def load_params(self):
-		file = './test.yaml'
-		file_path = Path(file).resolve()
-		with file_path.open('r') as stream:
-			params = yaml.safe_load(stream)
-		self.path_acfr = params['path_mission_acfr']
-		self.path_sx3 = params['path_mission_sx3']
-		self.path_biocam = params['path_mission_biocam']
 
-		root = Path(__file__).resolve().parents[1]
-		self.path_acfr_full = root / self.path_acfr
-		self.path_sx3_full = root / self.path_sx3
-		self.path_biocam_full = root / self.path_biocam
+	def test_acfr_distance_matrix_generation(self):
+		# create a dummy imagelist
+		path_temp = tempfile.mkdtemp()
+		message = 'Temporary folder created at ' + path_temp
+		Console.info(message)
+		path_dummy_folder = Path(path_temp).resolve() / 'dummy_folder'
+		if not path_dummy_folder.exists():
+			path_dummy_folder.mkdir()
+		imagelist = []
+		for i in range(10):
+			imagename = 'image_' + str(i) + '.tif'
+			imagepath = path_dummy_folder / imagename
+			imagelist.append(imagepath)
+		imagenumbers = []
+		distances = []
+		min_altitude = 2
+		max_altitude = 6
+		for i in range(15):
+			imagenumbers.append('image_'+str(i))
+			distance = np.random.uniform(low=min_altitude-1, high=max_altitude+2)
+			distances.append(distance)
+		dataframe = pd.DataFrame({'Imagenumber':imagenumbers, ' Altitude [m]':distances})
+		distance_path = 'json_'
+		distance_full_path = path_dummy_folder / distance_path
+		distance_csv_path = distance_full_path / 'csv/ekf'
+		if not distance_csv_path.exists():
+			distance_csv_path.mkdir(parents=True)
+		path_to_camera1_csv = distance_csv_path / 'auv_ekf_LC.csv'
+		path_to_camera2_csv = distance_csv_path / 'auv_ekf_RC.csv'
+
+		# create the csvs
+		dataframe.to_csv(path_to_camera1_csv)
+		dataframe.to_csv(path_to_camera2_csv)
+
+		# create the folder where distance numpy files will be generated
+		distance_folder = path_dummy_folder / 'distance'
+		if not distance_folder.exists():
+			distance_folder.mkdir(parents=True)
+
+		# create Corrector object
+		corrector = Corrector(True)
+
+		# set Corrector:: attributes
+		corrector.distance_metric = 'altitude'
+		corrector.path_processed = path_dummy_folder
+		corrector.distance_path = distance_path
+		corrector._camera_image_file_list = 'none'
+		corrector.image_height = ACFR_IMG_HEIGHT
+		corrector.image_width = ACFR_IMG_WIDTH
+		corrector._imagelist = imagelist
+		corrector.distance_matrix_numpy_folder = distance_folder
+		corrector.altitude_min = min_altitude
+		corrector.altitude_max = max_altitude
 		
 
-		# resolve paths to config folders
-		path_config_folder_acfr = get_config_folder(self.path_acfr_full)
-		path_config_folder_sx3 = get_config_folder(self.path_sx3_full)
-		path_config_folder_biocam = get_config_folder(self.path_biocam_full)
+		# set cameras list
+		cameras = []
+		cameras.append('RC')
+		cameras.append('LC')
 
-		# load correct config parameters for acfr, sx3 and biocam
-		path_correct_images = path_config_folder_acfr / 'correct_images.yaml'
-		self.correct_config_acfr = CorrectConfig(path_correct_images)
-		self.camera_file_acfr = path_config_folder_acfr / 'camera.yaml'
+		for camera in cameras:
+			# set camera name
+			corrector.camera_name = camera
 
-		path_correct_images = path_config_folder_sx3 / 'correct_images.yaml'
-		self.correct_config_sx3 = CorrectConfig(path_correct_images)
-		self.camera_file_sx3 = path_config_folder_sx3 / 'camera.yaml'
-
-		path_correct_images = path_config_folder_biocam / 'correct_images.yaml'
-		self.correct_config_biocam = CorrectConfig(path_correct_images)
-		self.camera_file_biocam = path_config_folder_biocam / 'camera.yaml'
-
-
-	# Feature being tested: Corrector::get_distance_matrix()
-	def test_acfr_get_distance_matrix(self):
-
-		self.load_params()
-
-		cs = CameraSystem(self.camera_file_acfr, self.path_acfr_full)
-
-		for camera in cs.cameras:
-			if len(camera.image_list) == 0:
-				Console.quit('No images found for the camera at the path provided...')
-			else:
-				corrector = Corrector(True, camera, self.correct_config_acfr, self.path_acfr_full)
-				corrector.load_generic_config_parameters()
-				corrector.load_camera_specific_config_parameters()
-				corrector.get_imagelist()
-				corrector.create_output_directories()
-				corrector.generate_distance_matrix()
-				self.assertEqual(len(corrector._imagelist), 
-				len(corrector.distance_matrix_numpy_filelist),
-				'Length of distance matrix filelist does not match with imagelist')
-
-				for idx in corrector.altitude_based_filtered_indices:
-					distance_matrix = np.load(corrector.distance_matrix_numpy_filelist[idx])
-					self.assertEqual(distance_matrix.shape[0], ACFR_IMG_HEIGHT, 'Dimension mismatch: height')
-					self.assertEqual(distance_matrix.shape[1], ACFR_IMG_WIDTH, 'Dimension mismatch: width')
-					out_of_range = (np.abs(distance_matrix) < corrector.altitude_min).any() or (np.abs(distance_matrix) > corrector.altitude_max).any()
-					self.assertEqual(out_of_range, False, 'distance matrix values out of altitude bounds error')
-
+			# test feature for chosen camera
+			corrector.generate_distance_matrix()
+			self.assertEqual(len(corrector._imagelist), 
+					len(corrector.distance_matrix_numpy_filelist),
+					'Length of distance matrix filelist does not match with imagelist')
+			for idx in corrector.altitude_based_filtered_indices:
+				distance_matrix = np.load(corrector.distance_matrix_numpy_filelist[idx])
+				self.assertEqual(distance_matrix.shape[0], ACFR_IMG_HEIGHT, 'Dimension mismatch: height')
+				self.assertEqual(distance_matrix.shape[1], ACFR_IMG_WIDTH, 'Dimension mismatch: width')
+				out_of_range = (np.abs(distance_matrix) < corrector.altitude_min).any() or (np.abs(distance_matrix) > corrector.altitude_max).any()
+				self.assertEqual(out_of_range, False, 'distance matrix values out of altitude bounds error')
+		Console.info('Test done for ACFR images...')
+		# path_dummy_folder.unlink()
 		
 
-	def test_sx3_get_distance_matrix(self):
+	def test_sx3_distance_matrix_generation(self):
+		# create a dummy imagelist
+		path_temp = tempfile.mkdtemp()
+		message = 'Temporary folder created at ' + path_temp
+		Console.info(message)
+		path_dummy_folder = Path(path_temp).resolve() / 'dummy_folder'
+		if not path_dummy_folder.exists():
+			path_dummy_folder.mkdir()
+		imagelist = []
+		for i in range(10):
+			imagename = 'image_' + str(i) + '.raw'
+			imagepath = path_dummy_folder / imagename
+			imagelist.append(imagepath)
+		imagenumbers = []
+		distances = []
+		min_altitude = 2
+		max_altitude = 6
+		for i in range(15):
+			imagenumbers.append('image_'+str(i))
+			distance = np.random.uniform(low=min_altitude-1, high=max_altitude+2)
+			distances.append(distance)
+		dataframe = pd.DataFrame({'Imagenumber':imagenumbers, ' Altitude [m]':distances})
+		distance_path = 'json_'
+		distance_full_path = path_dummy_folder / distance_path
+		distance_csv_path = distance_full_path / 'csv/ekf'
+		if not distance_csv_path.exists():
+			distance_csv_path.mkdir(parents=True)
+		path_to_camera1_csv = distance_csv_path / 'auv_ekf_Cam51707923.csv'
+		path_to_camera2_csv = distance_csv_path / 'auv_ekf_Cam51707925.csv'
+		path_to_camera3_csv = distance_csv_path / 'auv_ekf_LM165.csv'
 
-		self.load_params()
+		# create the csvs
+		dataframe.to_csv(path_to_camera1_csv)
+		dataframe.to_csv(path_to_camera2_csv)
+		dataframe.to_csv(path_to_camera3_csv)
 
-		cs = CameraSystem(self.camera_file_sx3, self.path_sx3_full)
 
-		for camera in cs.cameras:
-			if len(camera.image_list) == 0:
-				Console.quit('No images found for the camera at the path provided...')
-			else: 
-				corrector = Corrector(True, camera, self.correct_config_sx3, self.path_sx3_full)
-				corrector.load_generic_config_parameters()
-				corrector.load_camera_specific_config_parameters()
-				corrector.get_imagelist()
-				corrector.create_output_directories()
-				corrector.generate_distance_matrix()
-				self.assertEqual(len(corrector._imagelist), 
-				len(corrector.distance_matrix_numpy_filelist),
-				'Length of distance matrix filelist does not match with imagelist')
+		# create the folder where distance numpy files will be generated
+		distance_folder = path_dummy_folder / 'distance'
+		if not distance_folder.exists():
+			distance_folder.mkdir(parents=True)
 
-				for idx in corrector.altitude_based_filtered_indices:
-					distance_matrix = np.load(corrector.distance_matrix_numpy_filelist[idx])
-					if camera.name == 'LM165':
-						self.assertEqual(distance_matrix.shape[0], LM165_IMG_HEIGHT, 'Dimension mismatch: height')
-						self.assertEqual(distance_matrix.shape[1], LM165_IMG_WIDTH, 'Dimension mismatch: width')
-					else:
-						self.assertEqual(distance_matrix.shape[0], SX3_IMG_HEIGHT, 'Dimension mismatch: height')
-						self.assertEqual(distance_matrix.shape[1], SX3_IMG_WIDTH, 'Dimension mismatch: width')
-					out_of_range = (np.abs(distance_matrix) < corrector.altitude_min).any() or (np.abs(distance_matrix) > corrector.altitude_max).any()
-					self.assertEqual(out_of_range, False, 'distance matrix values out of altitude bounds error')
-	
-	def test_biocam_get_distance_matrix(self):
+		# create Corrector object
+		corrector = Corrector(True)
 
-		self.load_params()
+		# set Corrector:: attributes
+		corrector.distance_metric = 'altitude'
+		corrector.path_processed = path_dummy_folder
+		corrector.distance_path = distance_path
+		corrector._camera_image_file_list = 'none'
+		corrector._imagelist = imagelist
+		corrector.distance_matrix_numpy_folder = distance_folder
+		corrector.altitude_min = min_altitude
+		corrector.altitude_max = max_altitude
+		
 
-		cs = CameraSystem(self.camera_file_biocam, self.path_biocam_full)
+		# set cameras list
+		cameras = []
+		cameras.append('Cam51707923')
+		cameras.append('Cam51707925')
+		cameras.append('LM165')
 
-		for camera in cs.cameras:
-			if len(camera.image_list) == 0:
-				Console.quit('No images found for the camera at the path provided...')
-			else:
-				corrector = Corrector(True, camera, self.correct_config_biocam, self.path_biocam_full)
-				corrector.load_generic_config_parameters()
-				corrector.load_camera_specific_config_parameters()
-				corrector.get_imagelist()
-				corrector.create_output_directories()
-				corrector.generate_distance_matrix()
-				self.assertEqual(len(corrector._imagelist), 
-				len(corrector.distance_matrix_numpy_filelist),
-				'Length of distance matrix filelist does not match with imagelist')
+		for camera in cameras:
+			# set camera name
+			corrector.camera_name = camera
+			if camera == 'Cam51707923' or camera == 'Cam51707925':
+				corrector.image_height = SX3_IMG_HEIGHT
+				corrector.image_width = SX3_IMG_WIDTH
+			elif camera == 'LM165':
+				corrector.image_height = LM165_IMG_HEIGHT
+				corrector.image_width = LM165_IMG_WIDTH
 
-				for idx in corrector.altitude_based_filtered_indices:
-					distance_matrix = np.load(corrector.distance_matrix_numpy_filelist[idx])
-					self.assertEqual(distance_matrix.shape[0], BIOCAM_IMG_HEIGHT, 'Dimension mismatch: height')
-					self.assertEqual(distance_matrix.shape[1], BIOCAM_IMG_WIDTH, 'Dimension mismatch: width')
-					out_of_range = (np.abs(distance_matrix) < corrector.altitude_min).any() or (np.abs(distance_matrix) > corrector.altitude_max).any()
-					self.assertEqual(out_of_range, False, 'distance matrix values out of altitude bounds error')
-	
+			# test feature for chosen camera
+			corrector.generate_distance_matrix()
+			
+			self.assertEqual(len(corrector._imagelist), 
+					len(corrector.distance_matrix_numpy_filelist),
+					'Length of distance matrix filelist does not match with imagelist')
+			for idx in corrector.altitude_based_filtered_indices:
+				distance_matrix = np.load(corrector.distance_matrix_numpy_filelist[idx])
+				if camera == 'Cam51707923' or camera == 'Cam51707925':
+					self.assertEqual(distance_matrix.shape[0], SX3_IMG_HEIGHT, 'Dimension mismatch: height')
+					self.assertEqual(distance_matrix.shape[1], SX3_IMG_WIDTH, 'Dimension mismatch: width')
+				elif camera == 'LM165':
+					self.assertEqual(distance_matrix.shape[0], LM165_IMG_HEIGHT, 'Dimension mismatch: height')
+					self.assertEqual(distance_matrix.shape[1], LM165_IMG_WIDTH, 'Dimension mismatch: width')
+				out_of_range = (np.abs(distance_matrix) < corrector.altitude_min).any() or (np.abs(distance_matrix) > corrector.altitude_max).any()
+				self.assertEqual(out_of_range, False, 'distance matrix values out of altitude bounds error')
+		Console.info('Test done for SX3 images...')
+		# path_dummy_folder.unlink()
+
+	def test_biocam_distance_matrix_generation(self):
+		# create a dummy imagelist
+		path_temp = tempfile.mkdtemp()
+		message = 'Temporary folder created at ' + path_temp
+		Console.info(message)
+		path_dummy_folder = Path(path_temp).resolve() / 'dummy_folder'
+		if not path_dummy_folder.exists():
+			path_dummy_folder.mkdir()
+		imagelist = []
+		for i in range(10):
+			imagename = 'image_biocam' + str(i) + '.tif'
+			imagepath = path_dummy_folder / imagename
+			imagelist.append(imagepath)
+		imagenumbers = []
+		distances = []
+		min_altitude = 2
+		max_altitude = 6
+		for i in range(15):
+			imagenumbers.append('image_biocam'+str(i))
+			distance = np.random.uniform(low=min_altitude-1, high=max_altitude+2)
+			distances.append(distance)
+		dataframe = pd.DataFrame({'Imagenumber':imagenumbers, ' Altitude [m]':distances})
+		distance_path = 'json_'
+		distance_full_path = path_dummy_folder / distance_path
+		distance_csv_path = distance_full_path / 'csv/ekf'
+		if not distance_csv_path.exists():
+			distance_csv_path.mkdir(parents=True)
+		path_to_camera1_csv = distance_csv_path / 'auv_ekf_cam61003146.csv'
+		path_to_camera2_csv = distance_csv_path / 'auv_ekf_cam61004444.csv'
+
+		# create the csvs
+		dataframe.to_csv(path_to_camera1_csv)
+		dataframe.to_csv(path_to_camera2_csv)
+
+
+		# create the folder where distance numpy files will be generated
+		distance_folder = path_dummy_folder / 'distance'
+		if not distance_folder.exists():
+			distance_folder.mkdir(parents=True)
+
+		# create Corrector object
+		corrector = Corrector(True)
+
+		# set Corrector:: attributes
+		corrector.distance_metric = 'altitude'
+		corrector.path_processed = path_dummy_folder
+		corrector.distance_path = distance_path
+		corrector._camera_image_file_list = 'none'
+		corrector._imagelist = imagelist
+		corrector.distance_matrix_numpy_folder = distance_folder
+		corrector.altitude_min = min_altitude
+		corrector.altitude_max = max_altitude
+		corrector.image_height = BIOCAM_IMG_HEIGHT
+		corrector.image_width = BIOCAM_IMG_WIDTH
+		
+
+		# set cameras list
+		cameras = []
+		cameras.append('cam61003146')
+		cameras.append('cam61004444')
+
+		for camera in cameras:
+			# set camera name
+			corrector.camera_name = camera
+
+			# test feature for chosen camera
+			corrector.generate_distance_matrix()
+			
+			self.assertEqual(len(corrector._imagelist), 
+					len(corrector.distance_matrix_numpy_filelist),
+					'Length of distance matrix filelist does not match with imagelist')
+			for idx in corrector.altitude_based_filtered_indices:
+				distance_matrix = np.load(corrector.distance_matrix_numpy_filelist[idx])
+				self.assertEqual(distance_matrix.shape[0], BIOCAM_IMG_HEIGHT, 'Dimension mismatch: height')
+				self.assertEqual(distance_matrix.shape[1], BIOCAM_IMG_WIDTH, 'Dimension mismatch: width')
+				out_of_range = (np.abs(distance_matrix) < corrector.altitude_min).any() or (np.abs(distance_matrix) > corrector.altitude_max).any()
+				self.assertEqual(out_of_range, False, 'distance matrix values out of altitude bounds error')
+		Console.info('Test done for biocam images...')
+		
+
     		
 if __name__ == '__main__':
     unittest.main()
