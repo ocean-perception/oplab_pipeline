@@ -47,6 +47,11 @@ class testCaseCorrector(unittest.TestCase):
 		if not path_distance_numpy.exists():
 			path_distance_numpy.mkdir(parents=True)
 
+		
+		path_attenuation_parameters = path_dummy_folder / 'params'
+		if not path_attenuation_parameters.exists():
+			path_attenuation_parameters.mkdir()
+
 		# create image and distance numpy files
 		image1_npy = path_image_numpy / 'image_1.npy'
 		image2_npy = path_image_numpy / 'image_2.npy'
@@ -88,6 +93,8 @@ class testCaseCorrector(unittest.TestCase):
 
 		corrector.bayer_numpy_filelist = image_numpy_list
 		corrector.distance_matrix_numpy_filelist = distance_numpy_list
+		corrector.attenuation_parameters_folder = path_attenuation_parameters
+
 
 		corrector.altitude_min = 0.5
 		corrector.altitude_max = 3.5
@@ -95,7 +102,7 @@ class testCaseCorrector(unittest.TestCase):
 		corrector.smoothing = 'mean'
 
 		# invoke the feature to be tested
-		corrector.generate_correction_parameters()
+		corrector.generate_attenuation_correction_parameters()
 
 		image_mean_red = corrector.image_raw_mean[0]
 		image_mean_green = corrector.image_raw_mean[1]
@@ -109,15 +116,15 @@ class testCaseCorrector(unittest.TestCase):
 		image_corrected_std_blue = corrector.image_corrected_std[2]
 
 
-		parameters_red_a = corrector.image_attenuation_parameters[:,:,0,0]
-		parameters_red_b = corrector.image_attenuation_parameters[:,:,1,0]
-		parameters_red_c = corrector.image_attenuation_parameters[:,:,2,0]
-		parameters_green_a = corrector.image_attenuation_parameters[:,:,0,1]
-		parameters_green_b = corrector.image_attenuation_parameters[:,:,1,1]
-		parameters_green_c = corrector.image_attenuation_parameters[:,:,2,1]
-		parameters_blue_a = corrector.image_attenuation_parameters[:,:,0,2]
-		parameters_blue_b = corrector.image_attenuation_parameters[:,:,1,2]
-		parameters_blue_c = corrector.image_attenuation_parameters[:,:,2,2]
+		parameters_red_a = corrector.image_attenuation_parameters[0,:,:,0]
+		parameters_red_b = corrector.image_attenuation_parameters[0,:,:,1]
+		parameters_red_c = corrector.image_attenuation_parameters[0,:,:,2]
+		parameters_green_a = corrector.image_attenuation_parameters[1,:,:,0]
+		parameters_green_b = corrector.image_attenuation_parameters[1,:,:,1]
+		parameters_green_c = corrector.image_attenuation_parameters[1,:,:,2]
+		parameters_blue_a = corrector.image_attenuation_parameters[2,:,:,0]
+		parameters_blue_b = corrector.image_attenuation_parameters[2,:,:,1]
+		parameters_blue_c = corrector.image_attenuation_parameters[2,:,:,2]
 
 		image_mean_red_int = image_mean_red.astype(int)
 		image_mean_green_int = image_mean_green.astype(int)
@@ -198,6 +205,10 @@ class testCaseCorrector(unittest.TestCase):
 		if not path_distance_numpy.exists():
 			path_distance_numpy.mkdir(parents=True)
 
+		path_attenuation_parameters = path_dummy_folder / 'params'
+		if not path_attenuation_parameters.exists():
+			path_attenuation_parameters.mkdir()
+
 		# create image and distance numpy files
 		image1_npy = path_image_numpy / 'image_1.npy'
 		image2_npy = path_image_numpy / 'image_2.npy'
@@ -239,6 +250,7 @@ class testCaseCorrector(unittest.TestCase):
 
 		corrector.bayer_numpy_filelist = image_numpy_list
 		corrector.distance_matrix_numpy_filelist = distance_numpy_list
+		corrector.attenuation_parameters_folder = path_attenuation_parameters
 
 		corrector.altitude_min = 0.5
 		corrector.altitude_max = 3.5
@@ -246,7 +258,7 @@ class testCaseCorrector(unittest.TestCase):
 		corrector.smoothing = 'mean'
 
 		# invoke the feature to be tested
-		corrector.generate_correction_parameters()
+		corrector.generate_attenuation_correction_parameters()
 
 		image_mean = corrector.image_raw_mean[0]
 		image_std = corrector.image_raw_std[0]
@@ -254,9 +266,9 @@ class testCaseCorrector(unittest.TestCase):
 		image_corrected_mean = corrector.image_corrected_mean[0]
 		image_corrected_std = corrector.image_corrected_std[0]
 
-		parameters_a = corrector.image_attenuation_parameters[:,:,0,0]
-		parameters_b = corrector.image_attenuation_parameters[:,:,1,0]
-		parameters_c = corrector.image_attenuation_parameters[:,:,2,0]
+		parameters_a = corrector.image_attenuation_parameters[0,:,:,0]
+		parameters_b = corrector.image_attenuation_parameters[0,:,:,1]
+		parameters_c = corrector.image_attenuation_parameters[0,:,:,2]
 
 		image_mean_int = image_mean.astype(int)
 		image_std_int = image_std.astype(int)
