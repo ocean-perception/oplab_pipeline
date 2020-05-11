@@ -5,6 +5,9 @@ from oplab.console import Console  # noqa
 
 
 class MonoCamera():
+    """Monocular camera using OpenCV functions and parameters. 
+    Reads and writes calibration.yaml files
+    """
     def __init__(self, filename=None):
         self.K = np.zeros((3, 3))
         self.d = np.zeros((5, 1))
@@ -152,6 +155,9 @@ class MonoCamera():
 
 
 class StereoCamera():
+    """Stereo camera model using OpenCV functions and parameters.
+    Reads and writes calibration yaml files
+    """
     def __init__(self, filename=None, left=None, right=None):
         self.left = MonoCamera(left)
         self.right = MonoCamera(right)

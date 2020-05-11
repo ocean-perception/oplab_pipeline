@@ -1,4 +1,8 @@
-"""oplab_pipeline package version"""
+"""oplab_pipeline package version script
+
+The script writes a "commit_hash.txt" file with the last git tag available.
+The number is used to put version numbers for the python package.
+"""
 import os.path
 
 version = ""

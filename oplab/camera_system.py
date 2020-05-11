@@ -7,6 +7,14 @@ from pathlib import Path
 
 
 class CameraEntry:
+    """
+    Camera class to read filenames and timestamps.
+
+    Parameters
+    ---------
+    node
+        A YAML dictionary that contains the camera information.
+    """
     def __init__(self, node=None):
         self._image_list = []
         self._stamp_list = []
@@ -37,6 +45,12 @@ class CameraEntry:
 
     @property
     def image_list(self):
+        """
+        Method to retrieve the list of images taken with the camera.
+
+        Returns:
+            list: a list of image paths
+        """
         if len(self._image_list) > 0:
             return self._image_list
         curr_dir = Path.cwd()
@@ -50,6 +64,12 @@ class CameraEntry:
 
     @property
     def stamp_list(self):
+        """
+        Method to retrieve the list of images taken with the camera.
+
+        Returns:
+            list: a list of timestamps
+        """
         if len(self._stamp_list) > 0:
             return self._stamp_list
         self._stamp_list = []
@@ -60,7 +80,15 @@ class CameraEntry:
 
 
 class CameraSystem:
+    """Class to describe a camera system, for example, SeaXerocks3 or BioCam.
+    Parses camera.yaml files that define camera systems mounted on ROVs or AUVs
+    """
     def __init__(self, filename=None):
+        """Constructor of camera system. If a filename is provided, the file will be parsed and its contents loaded into the class.
+
+        Keyword Arguments:
+            filename {string} -- Path to the camera.yaml file describing the camera system (default: {None})
+        """        
         self.cameras = []
         self.camera_system = None
         if filename is None:

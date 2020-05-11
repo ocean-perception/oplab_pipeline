@@ -134,7 +134,7 @@ e.g.
 
 ## Example of Required YAML Configuration Files ##
 
-These files need to be in the root raw folder. Further examples can be found in [default_yaml](default_yaml)
+These files need to be in the root raw folder. Further examples can be found in default_yaml folder.
 
 1. mission.yaml:
 This file describes the mission's details and parameters of each sensor (e.g. where is the filepath of the data, its timezone format, etc).

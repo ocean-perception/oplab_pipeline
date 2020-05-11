@@ -63,6 +63,8 @@ class SensorOffset:
 
 
 class Vehicle:
+    """Vehicle class that parses and writes vehicle.yaml
+    """
     def __init__(self, filename=None):
         self.origin = SensorOffset()
         self.ins = SensorOffset()
