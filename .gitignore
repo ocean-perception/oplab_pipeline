@@ -2,4 +2,5 @@
 build/
 dist/
 *.egg-info/
-auv_nav/commit_hash.txt
+oplab/commit_hash.txt
+.venv/
