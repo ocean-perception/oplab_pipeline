@@ -9,7 +9,7 @@ git:
   depth: false  # To be able to find tags, otherwise it will fail
 # command to install dependencies
 install:
-  - pip install codecov pytest pytest-cov sphinx
+  - pip install codecov pytest pytest-cov sphinx sphinx_rtd_theme
   - pip install -r requirements.txt
   - pip install -e .
 # command to run tests
