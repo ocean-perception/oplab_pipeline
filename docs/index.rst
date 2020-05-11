@@ -12,11 +12,11 @@ Documentation for the code
    :maxdepth: 2
    :caption: Contents:
 
-   pages/how_to_install.md
-   pages/dataset_structure
-   pages/example
-   pages/auv_nav
-   pages/correct_images
+   how_to_install.md
+   dataset_structure
+   example
+   auv_nav
+   correct_images
 
 Indices and tables
 ==================
