@@ -103,7 +103,7 @@ class Console:
         return str(pkg_resources.require("oplab_pipeline")[0].version)
 
     @staticmethod
-    def write_metadata():
+    def write_metadata():    
         """Writes all metadata to a string. Useful to write on processed files or configurations.
 
         Returns:
@@ -118,18 +118,16 @@ class Console:
     @staticmethod
     def progress(iteration, total, prefix='Progress:', suffix='Complete',
                  length=50, decimals=1, fill='█'):
-        """Call in a loop to create terminal progress bar
+        """Call in a loop to create a progress bar in the terminal
 
-        Arguments:
-            iteration {int} -- current iteration
-            total {int} -- total iterations
-
-        Keyword Arguments:
-            prefix {str} -- prefix string (default: {'Progress:'})
-            suffix {str} -- suffix string (default: {'Complete'})
-            length {int} -- character length of bar (default: {50})
-            decimals {int} -- positive number of decimals in percent complete (default: {1})
-            fill {str} -- bar fill character (default: {'█'})
+        Args:
+            iteration (int): Current iteration
+            total (int): Total number of interations
+            prefix (str, optional): Prefix string. Defaults to 'Progress:'.
+            suffix (str, optional): Suffix string. Defaults to 'Complete'.
+            length (int, optional): Character length of the progress bar. Defaults to 50.
+            decimals (int, optional): Positive number of decimals in percent complete. Defaults to 1.
+            fill (str, optional): Bar fill character. Defaults to '█'.
         """        
         percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
         filledLength = int(length * iteration // total)
