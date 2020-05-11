@@ -32,7 +32,12 @@ def collect_image_files(image_dirs, file_pattern):
         else:
             Console.warn('Directory '"'{}'"' cannot be found'.format(image_dirs))
     images.sort()
-    return images
+
+    resolved_images = []
+    for i in images:
+        p = Path(i).resolve()
+        resolved_images.append(p)
+    return resolved_images
 
 
 def check_pattern(config):
@@ -316,9 +321,11 @@ class Calibrator():
                     self.stereo()
                 left_name = c0['name']
                 left_filepath = self.filepath / str(c0['laser_calibration']['path'])
+                left_filepath = left_filepath.resolve()
                 left_extension = str(c0['laser_calibration']['glob_pattern'])
                 right_name = c1['name']
                 right_filepath = self.filepath / str(c1['laser_calibration']['path'])
+                right_filepath = right_filepath.resolve()
                 right_extension = str(c1['laser_calibration']['glob_pattern'])
                 if not 'skip_first' in self.calibration_config:
                     self.calibration_config['skip_first'] = 0
