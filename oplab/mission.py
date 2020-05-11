@@ -229,6 +229,8 @@ class DefaultEntry(TimeZoneEntry):
 
 
 class Mission:
+    """Mission class that parses and writes mission.yaml
+    """
     def __init__(self, filename=None):
         self.version = 0
         self.origin = OriginEntry()
