@@ -120,15 +120,23 @@ class Console:
                  length=50, decimals=1, fill='█'):
         """Call in a loop to create a progress bar in the terminal
 
-        Args:
-            iteration (int): Current iteration
-            total (int): Total number of interations
-            prefix (str, optional): Prefix string. Defaults to 'Progress:'.
-            suffix (str, optional): Suffix string. Defaults to 'Complete'.
-            length (int, optional): Character length of the progress bar. Defaults to 50.
-            decimals (int, optional): Positive number of decimals in percent complete. Defaults to 1.
-            fill (str, optional): Bar fill character. Defaults to '█'.
-        """        
+        Parameters
+        ----------
+        iteration : int
+            Current iteration
+        total : int
+            Total number of iterations
+        prefix : str, optional
+            Prefix string, by default 'Progress:'
+        suffix : str, optional
+            Suffix string, by default 'Complete'
+        length : int, optional
+            Character lenght of the progress bar in the console, by default 50
+        decimals : int, optional
+            Number of decimal places of the percentage, by default 1
+        fill : str, optional
+            Bar fill character, by default '█'
+        """              
         percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
         filledLength = int(length * iteration // total)
         bar = fill * filledLength + '-' * (length - filledLength)
