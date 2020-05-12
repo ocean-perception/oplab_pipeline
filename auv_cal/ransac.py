@@ -48,8 +48,9 @@ def run_ransac(data, estimate, is_inlier, sample_size, goal_inliers, max_iterati
             best_model = m
             if ic > goal_inliers and stop_at_goal:
                 break
-    Console.info('RANSAC took', i+1, ' iterations. Best model:', best_model, 'explains:', best_ic)
-    return best_model, inliers
+    # estimate final model using all inliers
+    m = fit_plane(inliers)
+    return best_model, inliers, i
 
 
 def bounding_box(iterable):
@@ -70,7 +71,7 @@ def plane_fitting_ransac(cloud_xyz,
                          goal_inliers,
                          max_iterations,
                          plot=False):
-    model, inliers = run_ransac(
+    model, inliers, iterations = run_ransac(
         cloud_xyz,
         fit_plane,
         lambda x, y: is_inlier(x, y, min_distance_threshold),
@@ -91,6 +92,7 @@ def plane_fitting_ransac(cloud_xyz,
         ax.set_ylabel('$Y$')
         ax.set_zlabel('$Z$')
         plt.show()
+        Console.info('RANSAC took', iterations+1, ' iterations. Best model:', model, 'explains:', len(inliers))
     return (a, b, c, d), inliers
 
 

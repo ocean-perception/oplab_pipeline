@@ -389,7 +389,7 @@ class LaserCalibrator():
             cloud,
             min_distance_threshold=self.mdt,
             sample_size=self.ssp*total_no_points,
-            goal_inliers=len(cloud)*self.gip,
+            goal_inliers=total_no_points*self.gip,
             max_iterations=self.max_iterations,
             plot=True)
 
@@ -416,7 +416,14 @@ class LaserCalibrator():
         planes = []
         for i in range(0, self.num_iterations):
             point_cloud_local = random.sample(inliers_cloud_list, cloud_sample_size)
-            m = fit_plane(point_cloud_local)
+            total_no_points = len(point_cloud_local)
+            m, _ = plane_fitting_ransac(
+                point_cloud_local,
+                min_distance_threshold=self.mdt,
+                sample_size=self.ssp*total_no_points,
+                goal_inliers=total_no_points*self.gip,
+                max_iterations=self.max_iterations,
+                plot=False)
             angle, pitch, yaw = get_angles(m[0:3])
             planes.append([angle, pitch, yaw])
             Console.progress(i, self.num_iterations, prefix='Iterating planes')
