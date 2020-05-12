@@ -67,7 +67,7 @@ class HyBisPos:
     def __init__(self, roll, pitch, heading,
                  depth, altitude, lon, lat,
                  date=0, timestr=0, stamp=0):
-        if date is not 0:
+        if date != 0:
             self.epoch_timestamp = self.convert(date, timestr)
         else:
             self.epoch_timestamp = stamp

@@ -176,11 +176,11 @@ class BodyVelocity(OutputFormat):
         self.y_velocity_std = json['data'][1]['y_velocity_std']
         self.z_velocity_std = json['data'][2]['z_velocity_std']
 
-        if sensor_std['model'] is 'json':
+        if sensor_std['model'] == 'json':
             self.x_velocity_std = json['data'][0]['x_velocity_std']
             self.y_velocity_std = json['data'][1]['y_velocity_std']
             self.z_velocity_std = json['data'][2]['z_velocity_std']
-        elif sensor_std['model'] is 'linear':
+        elif sensor_std['model'] == 'linear':
             self.x_velocity_std = sensor_std['offset'] + sensor_std['factor']*self.x_velocity
             self.y_velocity_std = sensor_std['offset'] + sensor_std['factor']*self.y_velocity
             self.z_velocity_std = sensor_std['offset'] + sensor_std['factor']*self.z_velocity
@@ -397,11 +397,11 @@ class Orientation(OutputFormat):
         self.pitch = json['data'][2]['pitch']
         self.yaw = json['data'][0]['heading']
 
-        if sensor_std['model'] is 'json':
+        if sensor_std['model'] == 'json':
             self.roll_std = json['data'][1]['roll_std']
             self.pitch_std = json['data'][2]['pitch_std']
             self.yaw_std = json['data'][0]['heading_std']
-        elif sensor_std['model'] is 'linear':
+        elif sensor_std['model'] == 'linear':
             self.roll_std = sensor_std['offset'] + sensor_std['factor']*self.roll
             self.pitch_std = sensor_std['offset'] + sensor_std['factor']*self.pitch
             self.yaw_std = sensor_std['offset'] + sensor_std['factor']*self.yaw
@@ -506,9 +506,9 @@ class Depth(OutputFormat):
         self.epoch_timestamp = json['epoch_timestamp']
         self.depth_timestamp = json['epoch_timestamp_depth']
         self.depth = json['data'][0]['depth']
-        if sensor_std['model'] is 'json':
+        if sensor_std['model'] == 'json':
             self.depth_std = json['data'][0]['depth_std']
-        elif sensor_std['model'] is 'linear':
+        elif sensor_std['model'] == 'linear':
             self.depth_std = sensor_std['offset'] + sensor_std['factor']*self.depth
         else:
             Console.error('The STD model you entered for USBL is not supported.')
@@ -714,12 +714,12 @@ class Usbl(OutputFormat):
         self.depth_std = json['data_target'][4]['depth_std']
         self.distance_to_ship = json['data_target'][5]['distance_to_ship']
 
-        if sensor_std['model'] is 'json':
+        if sensor_std['model'] == 'json':
             self.latitude_std = json['data_target'][0]['latitude_std']
             self.longitude_std = json['data_target'][1]['longitude_std']
             self.northings_std = json['data_target'][2]['northings_std']
             self.eastings_std = json['data_target'][3]['eastings_std']
-        elif sensor_std['model'] is 'linear':
+        elif sensor_std['model'] == 'linear':
             self.northings_std = sensor_std['offset'] + sensor_std['factor']*self.distance_to_ship
             self.eastings_std = sensor_std['offset'] + sensor_std['factor']*self.distance_to_ship
             self.latitude_std = self.eastings_std / 111.111e3
@@ -931,9 +931,9 @@ class Tide(OutputFormat):
 #        self.tide_timestamp = json['epoch_timestamp_tide']
         self.height = json['data'][0]['tide']
 
-        if sensor_std['model'] is 'json':
+        if sensor_std['model'] == 'json':
             self.height_std = json['data'][0]['tide_std']
-        elif sensor_std['model'] is 'linear':
+        elif sensor_std['model'] == 'linear':
             self.height_std = sensor_std['offset'] + sensor_std['factor']*self.height
         else:
             Console.error('The STD model you entered for TIDE is not supported.')
