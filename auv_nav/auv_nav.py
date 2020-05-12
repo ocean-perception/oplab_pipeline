@@ -128,14 +128,14 @@ def main(args=None):
     subparser_convert = subparsers.add_parser(
         "convert",
         help="Converts data from oplab nav_standard.json into your \
-        specified output format. Type auv_nav convert -h for help on this \
+        specified output format, or from ACFR to oplab. \
+        Type auv_nav convert -h for help on this \
         target.",
     )
     subparser_convert.add_argument(
         "path",
         default=".",
-        help="Path to folder where the data is. The folder \
-        has to be generated using auv_nav parse.",
+        help="Source of the conversion. This can be a dive folder or a file.",
     )
     subparser_convert.add_argument(
         "-f",
