@@ -115,6 +115,7 @@ class Corrector:
 		self.image_width = image_properties[1]
 		self.image_channels = image_properties[2]
 		self.camera_name = self._camera.name
+		self._type = self._camera.type
 
 
 	# load imagelist: output is same as camera.imagelist unless a smaller filelist is specified by the user 
@@ -425,24 +426,24 @@ class Corrector:
 			image = np.load(self.bayer_numpy_filelist[idx])
 			distance = np.load(self.distance_matrix_numpy_filelist[idx])
 
-			
-			if self.method == 'colour_correction':
+			# apply corrections
+			Console.info('Correcting images to targetted mean and std...')
+			if self.correction_method == 'colour_correction':
 				image = self.apply_distance_based_corrections(image, distance, 
 					self.brightness, self.contrast)
 			elif self.correction_method == 'manual_balance':
 				image = self.apply_manual_balance(image, self.colour_correction_matrix_rgb, self.subtractors_rgb) 
 
+			# save corrected image back to numpy list for testing purposes
 			np.save(self.bayer_numpy_filelist[idx], image)
-
+			
 			# debayer images of source images are bayer ones
-			if not self._camera.type == 'grayscale':
+			if not self._type == 'grayscale':
 				# debayer images
-				image_rgb = self.debayer(image, self._camera.type)
+				image_rgb = self.debayer(image, self._type)
 			else:
 				image_rgb = image
 			
-			# apply corrections
-			image_rgb = self.apply_corrections(image_rgb, distance, self.brightness, self.contrast)
 
 			# apply distortion corrections
 			image_rgb = self.distortion_correct(image_rgb)
@@ -452,50 +453,52 @@ class Corrector:
 			
 			# write to output files
 			self.write_output_image(image_rgb, self.output_format)
+		Console.info('Processing of images is completed...')	
 		
-		# calculate the mean and std of the corrected images
-		correctedimage_memmap_path, correctedimage_memmap = load_memmap_from_numpyfilelist(self.memmap_folder, 
-										self.bayer_numpy_filelist)
-		
-		for i in range(self.image_channels):
-			self.targeted_mean = np.empty((self.image_channels, self.image_height,
-				self.image_width))
-			self.targeted_std = np.empty((self.image_channels, self.image_height,
-				self.image_width))
-			if self.image_channels == 1:
-				targeted_image_mean, targeted_image_std = mean_std_(correctedimage_memmap)
-			else:
-				targeted_image_mean, targeted_image_std = mean_std_(correctedimage_memmap[:,:,:,i])
-			self.targeted_mean[i] = targeted_image_mean
-			self.targeted_std[i] = targeted_image_std
-
-
-
 
 
 	# apply corrections on each image using the correction paramters for targeted brightness and contrast
 	def apply_distance_based_corrections(self, image, distance, brightness, contrast):
 		# TODO :
-		image_shape = image.shape
-		if len(image_shape) > 2:
-			for i in range(self.image_channels):
+		for i in range(self.image_channels):
+			if self.image_channels == 3:
 				intensities = image[:,:,i]
-				intensities = apply_atn_crr_2_img(intensities, distance,
-					self.attenuation_parameters[i], self.correction_gains[i])
-				intensities = self.pixel_stat(intensities, 
-					self.image_corrected_mean[i], self.image_corrected_std[i],
-					brightness, contrast)
+			else:
+				intensities = image[:,:]
+			intensities = self.apply_atn_crr_2_img(intensities, distance,
+				self.image_attenuation_parameters[i], self.correction_gains[i])
+			intensities = self.pixel_stat(intensities, 
+				self.image_corrected_mean[i], self.image_corrected_std[i],
+				brightness, contrast)
+			if self.image_channels == 3:
 				image[:,:,i] = intensities
+			else:
+				image[:,:] = intensities
+		
 		return image
 
+	
+
 	def pixel_stat(self, img, img_mean, img_std, target_mean, target_std, dst_bit=8):
-		target_mean_in_bitdeph = target_mean / 100.0 * (2.0 ** dst_bit - 1.0)
-		target_std_in_bitdeph = target_std / 100.0 * (2.0 ** dst_bit - 1.0)
-		image = (((img - img_mean) / img_std) * target_std_in_bitdeph) + target_mean_in_bitdeph
+		image = (((img - img_mean) / img_std) * target_std) + target_mean
 		image = np.clip(image, 0, 2 ** dst_bit - 1)
 		return image
 	
+	
+
 	def apply_manual_balance(self, image):
+		if self.image_channels == 3:
+			# corrections for RGB images
+			image = image.reshape((self.image_height*self.image_width, 3))
+			for i in range(self.image_height * self.image_width):
+				intensity_vector = image[i,:]
+				gain_matrix = self.colour_correction_matrix_rgb
+				intensity_vector = gain_matrix.dot(intensity_vector)
+				intensity_vector = intensity_vector - self.subtractors_rgb
+		else:
+			# for B/W images, default values are the ones for red channel
+			image = image * self.colour_correction_matrix_rgb[0,0] - self.subtractors_rgb[0,0]
+
 		return image
 
 
