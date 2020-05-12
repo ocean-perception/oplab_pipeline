@@ -221,17 +221,8 @@ def camera_csv(camera_list, camera_name, csv_filepath, csv_flag):
             # Loop for each line in csv
             for i in range(len(camera_list)):
                 try:
-                    imagenumber = camera_list[i].filename[-11:-4]
-                    if imagenumber.isdigit():
-                        image_filename = imagenumber
-                    elif len(camera_list[i].filename.split('/')) > 1:
-                        p = Path(camera_list[i].filename)
-                        p = p.relative_to(p.parents[2])
-                        image_filename = str(p)
-                    else:
-                        image_filename = camera_list[i].filename
                     str_to_write = (
-                        str(image_filename) + ','
+                        str(camera_list[i].filename) + ','
                         + str(camera_list[i].northings) + ','
                         + str(camera_list[i].eastings) + ','
                         + str(camera_list[i].depth) + ','
