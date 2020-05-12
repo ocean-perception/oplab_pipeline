@@ -138,7 +138,9 @@ def main(args=None):
         help="Dive folder to convert from.",
     )
     subparser_convert.add_argument(
-        "-i,--input",
+        "-i",
+        "--input",
+        dest="input",
         help="Input pose file (e.g. stereo_pose_est.data) to import camera positions from.",
     )
     subparser_convert.add_argument(
