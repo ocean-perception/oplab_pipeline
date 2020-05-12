@@ -12,6 +12,7 @@ from auv_nav.tools.body_to_inertial import body_to_inertial
 from auv_nav.tools.csv_tools import write_csv, write_raw_sensor_csv
 from auv_nav.tools.csv_tools import camera_csv
 from auv_nav.tools.csv_tools import other_data_csv
+from auv_nav.parsers.parse_acfr_stereo_pose import AcfrStereoPoseFile
 from auv_nav.sensors import BodyVelocity, InertialVelocity
 from auv_nav.sensors import Altitude, Depth, Usbl, Orientation
 from auv_nav.sensors import Other, Camera
@@ -111,15 +112,28 @@ class AcfrConverter():
 
 
 def convert(filepath, ftype, start_datetime, finish_datetime):
-    if len(filepath) > 1:
-        Console.error('Convert only supports one folder as a target dive.')
-        Console.quit('Wrong number of parameters speficied.')
-    # Filepath is a list. Get the first element by default
-    filepath = filepath[0]
-
     Console.info('Requested data conversion to {}'.format(ftype))
 
     filepath = Path(filepath).resolve()
+    
+    if filepath.suffix == '.data':
+        # Process stereo_pose_est.data
+        Console.info('Processing ACFR stereo pose estimation file...')
+        s = AcfrStereoPoseFile(filepath)
+        camera1_list, camera2_list = s.convert()
+        file1 = Path('auv_acfr_fore.csv')
+        file2 = Path('auv_acfr_aft.csv')
+        fileout1 = file1.open('w')
+        fileout2 = file2.open('w')
+        fileout1.write(camera1_list[0].write_csv_header())
+        fileout2.write(camera1_list[0].write_csv_header())
+        for c1, c2 in zip(camera1_list, camera2_list):
+            fileout1.write(c1.to_csv())
+            fileout2.write(c2.to_csv())
+        Console.info('Done! Two files converted:')
+        Console.info(file1, file2)
+        return
+
     mission_file = filepath / 'mission.yaml'
     vehicle_file = filepath / 'vehicle.yaml'
     mission_file = get_processed_folder(mission_file)

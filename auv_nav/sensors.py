@@ -867,12 +867,47 @@ class Camera():
         return data
 
     def write_csv_header(self):
-        return ('epoch_timestamp,'
-                + 'filename\n')
+        return 'Imagenumber,Northing [m],Easting [m],Depth [m],'\
+               'Roll [deg],Pitch [deg],Heading [deg],Altitude '\
+               '[m],Timestamp,Latitude [deg],Longitude [deg]'\
+               ',x_velocity,y_velocity,z_velocity\n'
+
+    def write_csv_header_cov(self):
+        str_to_write_cov = ''
+        cov = ['x', 'y', 'z',
+               'roll', 'pitch', 'yaw',
+               'vx', 'vy', 'vz',
+               'vroll', 'vpitch', 'vyaw']
+        for a in cov:
+            for b in cov:
+                str_to_write_cov += ', cov_'+a+'_'+b
+        str_to_write_cov += '\n'
+        return str_to_write_cov
 
     def to_csv(self):
-        return (str(self.epoch_timestamp) + ','
-                + str(self.filename) + '\n')
+        return (str(self.filename) + ','
+                + str(self.northings) + ','
+                + str(self.eastings) + ','
+                + str(self.depth) + ','
+                + str(self.roll) + ','
+                + str(self.pitch) + ','
+                + str(self.yaw) + ','
+                + str(self.altitude) + ','
+                + str(self.epoch_timestamp) + ','
+                + str(self.latitude) + ','
+                + str(self.longitude) + ','
+                + str(self.x_velocity) + ','
+                + str(self.y_velocity) + ','
+                + str(self.z_velocity) + '\n')
+
+    def to_csv_cov(self):
+        if self.covariance is not None:
+            cov = self.covariance.flatten().tolist()
+            cov = [item for sublist in cov for item in sublist]
+            str_to_write_cov = str(self.filename)
+            for c in cov:
+                str_to_write_cov += ', {:.6f}'.format(c)
+            str_to_write_cov += '\n'
 
 
 class Tide(OutputFormat):
