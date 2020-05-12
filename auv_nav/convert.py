@@ -140,7 +140,7 @@ def convert(filepath, input_file, ftype, start_datetime, finish_datetime):
         Console.info(file1, file2)
         interpolate_laser = True
 
-    if not valid_dive():
+    if not valid_dive(filepath):
         return
 
     mission_file = filepath / 'mission.yaml'
@@ -203,7 +203,9 @@ def convert(filepath, input_file, ftype, start_datetime, finish_datetime):
             epoch_timestamp = parsed_json_data[i]['epoch_timestamp']
             if epoch_timestamp >= epoch_start_time and epoch_timestamp <= epoch_finish_time:
                 if 'laser' in parsed_json_data[i]['category']:
-                    c3_interp = interpolate_camera(epoch_timestamp, camera1_list, parsed_json_data[i]['filename'])
+                    filename = parsed_json_data[i]['camera3'][0]['filename']
+                    c3_interp = interpolate_camera(
+                            epoch_timestamp, camera1_list, filename)
                     fileout3.write(c3_interp.to_csv())
         Console.info('Done! Laser file available at', str(file3))
         return
