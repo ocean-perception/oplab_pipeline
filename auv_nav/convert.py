@@ -12,6 +12,7 @@ from auv_nav.tools.body_to_inertial import body_to_inertial
 from auv_nav.tools.csv_tools import write_csv, write_raw_sensor_csv
 from auv_nav.tools.csv_tools import camera_csv
 from auv_nav.tools.csv_tools import other_data_csv
+from auv_nav.tools.interpolate import interpolate_camera
 from auv_nav.parsers.parse_acfr_stereo_pose import AcfrStereoPoseFile
 from auv_nav.sensors import BodyVelocity, InertialVelocity
 from auv_nav.sensors import Altitude, Depth, Usbl, Orientation
@@ -19,6 +20,7 @@ from auv_nav.sensors import Other, Camera
 from auv_nav.sensors import SyncedOrientationBodyVelocity
 from oplab import get_config_folder
 from oplab import get_processed_folder
+from oplab import valid_dive
 from oplab import Vehicle
 from oplab import Mission
 from oplab import Console
@@ -111,15 +113,19 @@ class AcfrConverter():
             self.f.write(data)
 
 
-def convert(filepath, ftype, start_datetime, finish_datetime):
+def convert(filepath, input_file, ftype, start_datetime, finish_datetime):
     Console.info('Requested data conversion to {}'.format(ftype))
 
     filepath = Path(filepath).resolve()
+    input_file = Path(input_file).resolve()
     
-    if filepath.suffix == '.data':
+    camera1_list = []
+    camera2_list = []
+    interpolate_laser = False
+    if input_file.suffix == '.data':
         # Process stereo_pose_est.data
         Console.info('Processing ACFR stereo pose estimation file...')
-        s = AcfrStereoPoseFile(filepath)
+        s = AcfrStereoPoseFile(input_file)
         camera1_list, camera2_list = s.convert()
         file1 = Path('auv_acfr_fore.csv')
         file2 = Path('auv_acfr_aft.csv')
@@ -132,6 +138,9 @@ def convert(filepath, ftype, start_datetime, finish_datetime):
             fileout2.write(c2.to_csv())
         Console.info('Done! Two files converted:')
         Console.info(file1, file2)
+        interpolate_laser = True
+
+    if not valid_dive():
         return
 
     mission_file = filepath / 'mission.yaml'
@@ -184,6 +193,21 @@ def convert(filepath, ftype, start_datetime, finish_datetime):
         }
     }
 
+    if interpolate_laser:
+        Console.info('Interpolating laser to ACFR stereo pose data...')
+        file3 = Path('auv_acfr_laser.csv')
+        fileout3 = file3.open('w')
+        fileout3.write(camera1_list[0].write_csv_header())
+        for i in range(len(parsed_json_data)):
+            Console.progress(i, len(parsed_json_data))
+            epoch_timestamp = parsed_json_data[i]['epoch_timestamp']
+            if epoch_timestamp >= epoch_start_time and epoch_timestamp <= epoch_finish_time:
+                if 'laser' in parsed_json_data[i]['category']:
+                    c3_interp = interpolate_camera(epoch_timestamp, camera1_list, parsed_json_data[i]['filename'])
+                    fileout3.write(c3_interp.to_csv())
+        Console.info('Done! Laser file available at', str(file3))
+        return
+    
     # read in data from json file
     # i here is the number of the data packet
     for i in range(len(parsed_json_data)):

@@ -113,17 +113,7 @@ class AcfrStereoPoseFile:
         return self._entries[index]
 
     def convert(self):
-        """ Convert the parsed ACFR stereo file to Camera for auv_nav
-            Note: The Euler angles correspond to the orientation of the stereo-rig, and
-            do not correspond to the roll, pitch and heading of the vehicle. The stereo-
-            frame is defined such that the positive Z-axis is along the principal ray of
-            the camera (in the direction the camera is pointed), and the X and Y axes are
-            aligned with the image axes. The positive X axis is pointing towards the
-            right of the image, while the positive Y axis points to the bottom of the
-            image. The Euler angles specify the sequence of rotations in XYZ order, that 
-            align the navigation frame axes (North, East, Down) with the stereo frame.
-        """
-
+        """Converts the parsed ACFR stereo file to a Camera list for auv_nav"""
         camera1_list = []
         camera2_list = []
         for entry in self._entries:
@@ -135,6 +125,18 @@ class AcfrStereoPoseFile:
             c1.depth = entry.z_depth
             c1.latitude = entry.latitude
             c1.longitude = entry.longitude
+            """
+            Note: The Euler angles correspond to the orientation of the stereo-
+            rig, and do not correspond to the roll, pitch and heading of the 
+            vehicle. The stereo-frame is defined such that the positive Z-axis
+            is along the principal ray of the camera (in the direction the 
+            camera is pointed), and the X and Y axes are aligned with the image
+            axes. The positive X axis is pointing towards the right of the image,
+            while the positive Y axis points to the bottom of the image. The
+            Euler angles specify the sequence of rotations in XYZ order, that 
+            align the navigation frame axes (North, East, Down) with the stereo
+            frame.
+            """
             c1.roll = - entry.y_euler_angle
             c1.pitch = entry.x_euler_angle
             c1.yaw = entry.z_euler_angle

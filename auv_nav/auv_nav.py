@@ -135,7 +135,11 @@ def main(args=None):
     subparser_convert.add_argument(
         "path",
         default=".",
-        help="Source of the conversion. This can be a dive folder or a file.",
+        help="Dive folder to convert from.",
+    )
+    subparser_convert.add_argument(
+        "-i,--input",
+        help="Input pose file (e.g. stereo_pose_est.data) to import camera positions from.",
     )
     subparser_convert.add_argument(
         "-f",
@@ -183,7 +187,7 @@ def call_process_data(args):
 
 
 def call_convert_data(args):
-    convert(args.path, args.format, args.start_datetime, args.end_datetime)
+    convert(args.path, args.input, args.format, args.start_datetime, args.end_datetime)
 
 
 if __name__ == "__main__":
