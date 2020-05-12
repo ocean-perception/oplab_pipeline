@@ -19,9 +19,10 @@ User's Guide
 
    how_to_install.md
    dataset_structure
-   example
+   file_format_definitions
    auv_nav
    correct_images
+   example
 
 API Reference
 -------------
