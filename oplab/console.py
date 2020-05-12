@@ -126,15 +126,15 @@ class Console:
             Current iteration
         total : int
             Total number of iterations
-        prefix : str, optional
+        prefix : str
             Prefix string, by default 'Progress:'
-        suffix : str, optional
+        suffix : str
             Suffix string, by default 'Complete'
-        length : int, optional
+        length : int
             Character lenght of the progress bar in the console, by default 50
-        decimals : int, optional
+        decimals : int
             Number of decimal places of the percentage, by default 1
-        fill : str, optional
+        fill : str
             Bar fill character, by default '█'
         """              
         percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
