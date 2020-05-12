@@ -1,6 +1,7 @@
 import unittest
-import tempfile
+import tempfile 
 import os
+import math
 from pathlib import Path
 from auv_nav.parsers.parse_phins import PhinsTimestamp
 from auv_nav.parsers.parse_acfr_stereo_pose import AcfrStereoPoseFile
@@ -119,9 +120,9 @@ class TestAcfrStereoPose(unittest.TestCase):
         self.assertAlmostEqual(s._entries[0].x_north, 48.1042130295795403)
         self.assertAlmostEqual(s._entries[0].y_east, -83.5766631892393974)
         self.assertAlmostEqual(s._entries[0].z_depth, 962.3138844564567762)
-        self.assertAlmostEqual(s._entries[0].x_euler_angle, -0.0116629178991342)
-        self.assertAlmostEqual(s._entries[0].y_euler_angle, 0.0592197626619286)
-        self.assertAlmostEqual(s._entries[0].z_euler_angle, -0.0286128901495461)
+        self.assertAlmostEqual(s._entries[0].x_euler_angle, math.degrees(-0.0116629178991342))
+        self.assertAlmostEqual(s._entries[0].y_euler_angle, math.degrees(0.0592197626619286))
+        self.assertAlmostEqual(s._entries[0].z_euler_angle, math.degrees(-0.0286128901495461))
         self.assertEqual(s._entries[0].left_image_name, 'PCO_190916090506950374_FC.png')
         self.assertEqual(s._entries[0].right_image_name, 'PCO_190916090506948457_AC.png')
         self.assertAlmostEqual(s._entries[0].altitude, 4.3129998664855957)
