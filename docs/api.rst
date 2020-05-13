@@ -18,6 +18,9 @@ auv_cal
 .. automodule:: auv_cal
    :members:
 
+.. autoclass:: CircularCone
+   :members:
+
 correct_images
 --------------
 
