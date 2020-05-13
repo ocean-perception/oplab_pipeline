@@ -34,21 +34,27 @@ camera_calibration:
   invert: True
 
 laser_calibration:
-  min_greenness_value: 15
-  ransac_iterations: 100
-  remap: true
-  continuous_interpolation: true
-  window_size: 5
-  image_step: 1
-  image_sample_size: 25
-  num_columns: 1024
-  GENERATED_iterations: 100
-  GENERATED_cloud_sample_size_percentage: 0.5
-  RANSAC_max_cloud_size: 10000
-  RANSAC_min_distance_threshold: 0.002
-  RANSAC_sample_size_percentage: 0.8
-  RANSAC_goal_inliers_percentage: 0.95
-  RANSAC_max_iterations: 5000
-  FILTER_cloud_xy: 30.0
-  FILTER_cloud_z_min: 4.0
-  FILTER_cloud_z_max: 15.0
+  detection:
+    window_size: 5
+    min_greenness_value: 15
+    num_columns: 1024
+    remap: true
+    start_row: 0
+    end_row: -1
+    start_row_b: 0
+    end_row_b: -1
+    two_lasers: false
+  filter:
+    cloud_xy: 30.0
+    cloud_z_min: 4.0
+    cloud_z_max: 15.0
+  ransac:
+    max_cloud_size: 10000
+    min_distance_threshold: 0.002
+    sample_size_percentage: 0.8
+    goal_inliers_percentage: 0.999
+    max_iterations: 5000
+  uncertainty_generation:
+    cloud_sample_size_percentage: 0.8
+    iterations: 50
+  

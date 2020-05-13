@@ -298,29 +298,34 @@ class LaserCalibrator():
 
         self.sc = stereo_camera_model
         self.config = config
-        self.k = config['window_size']
-        self.min_greenness_value = config['min_greenness_value']
-        self.image_step = config['image_step']
-        self.image_sample_size = config['image_sample_size']
-        self.num_columns = config['num_columns']
-        self.remap = config['remap']
-        self.continuous_interpolation = config['continuous_interpolation']
-        self.start_row = config.get('start_row', 0)
-        self.end_row = config.get('end_row', -1)
-        self.start_row_b = config.get('start_row_b', 0)
-        self.end_row_b = config.get('end_row_b', -1)
-        self.two_lasers = config.get('two_lasers', False)
 
-        self.max_point_cloud_size = self.config.get('RANSAC_max_cloud_size', 10000)
-        self.mdt = self.config.get('RANSAC_min_distance_threshold', 0.002)
-        self.ssp = self.config.get('RANSAC_sample_size_percentage', 0.8)
-        self.gip = self.config.get('RANSAC_goal_inliers_percentage', 0.95)
-        self.max_iterations = self.config.get('RANSAC_max_iterations', 5000)
-        self.cssp = self.config.get('GENERATED_cloud_sample_size_percentage', 0.5)
-        self.num_iterations = self.config.get('GENERATED_iterations', 100)
-        self.filter_xy = self.config.get('FILTER_cloud_xy', 30.0)
-        self.filter_z_min = self.config.get('FILTER_cloud_z_min', 0.0)
-        self.filter_z_max = self.config.get('FILTER_cloud_z_max', 15.0)
+        detection = config.get('detection', {})
+        filtering = config.get('filter')
+        ransac = config.get('ransac', {})
+        uncertainty_generation = config.get('uncertainty_generation', {})
+
+        self.k = detection.get('window_size', 5)
+        self.min_greenness_value = detection.get('min_greenness_value', 15)
+        self.num_columns = detection.get('num_columns', 1024)
+        self.remap = detection.get('remap', True)
+        self.start_row = detection.get('start_row', 0)
+        self.end_row = detection.get('end_row', -1)
+        self.start_row_b = detection.get('start_row_b', 0)
+        self.end_row_b = detection.get('end_row_b', -1)
+        self.two_lasers = detection.get('two_lasers', False)
+
+        self.filter_xy = filtering.get('cloud_xy', 30.0)
+        self.filter_z_min = filtering.get('cloud_z_min', 0.0)
+        self.filter_z_max = filtering.get('cloud_z_max', 15.0)
+
+        self.max_point_cloud_size = ransac.get('max_cloud_size', 10000)
+        self.mdt = ransac.get('min_distance_threshold', 0.002)
+        self.ssp = ransac.get('sample_size_percentage', 0.8)
+        self.gip = ransac.get('goal_inliers_percentage', 0.999)
+        self.max_iterations = ransac.get('max_iterations', 5000)
+
+        self.cssp = uncertainty_generation.get('cloud_sample_size_percentage', 0.8)  # change to RATIO
+        self.num_iterations = uncertainty_generation.get('iterations', 100)       
 
         self.left_maps = cv2.initUndistortRectifyMap(
             self.sc.left.K,
