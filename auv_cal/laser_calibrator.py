@@ -300,7 +300,7 @@ class LaserCalibrator():
         self.config = config
 
         detection = config.get('detection', {})
-        filtering = config.get('filter')
+        filtering = config.get('filter', {})
         ransac = config.get('ransac', {})
         uncertainty_generation = config.get('uncertainty_generation', {})
 
