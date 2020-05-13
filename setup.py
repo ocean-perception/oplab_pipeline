@@ -122,7 +122,9 @@ def run_setup():
             'prettytable>=0.7.2',
             'pynmea2>=1.15.0',
             'pytz>=2018.9',
+            'recommonmark>=0.6.0',
             'scipy>=1.2.1',
+            'sphinx_rtd_theme>=0.4.3',
             'tqdm>=4.32.2'
         ]
     )
