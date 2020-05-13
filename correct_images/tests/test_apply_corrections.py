@@ -13,7 +13,7 @@ class testCaseCorrector(unittest.TestCase):
 	def test_calculate_parameters_RGB(self):
 
 		path_root = Path(__file__).resolve().parents[1]
-		test_yaml_path = path_root / 'test.yaml'
+		test_yaml_path = path_root / 'tests' / 'test.yaml'
 		with test_yaml_path.open('r') as stream:
 			params = yaml.safe_load(stream)
 
@@ -102,7 +102,8 @@ class testCaseCorrector(unittest.TestCase):
 
 		corrector.smoothing = 'mean'
 
-		corrector._type = 'gray_scale'
+		corrector.undistort = False
+		corrector._type = 'grayscale'
 		corrector.output_format = 'png'
 
 
@@ -150,7 +151,7 @@ class testCaseCorrector(unittest.TestCase):
 	def test_calculate_parameters_Black_White(self):
 
 		path_root = Path(__file__).resolve().parents[1]
-		test_yaml_path = path_root / 'test.yaml'
+		test_yaml_path = path_root / 'tests' / 'test.yaml'
 		with test_yaml_path.open('r') as stream:
 			params = yaml.safe_load(stream)
 
@@ -240,7 +241,8 @@ class testCaseCorrector(unittest.TestCase):
 
 		corrector.smoothing = 'mean'
 
-		corrector._type = 'gray_scale'
+		corrector.undistort = False
+		corrector._type = 'grayscale'
 		corrector.output_format = 'png'
 
 		# invoke the feature to be tested

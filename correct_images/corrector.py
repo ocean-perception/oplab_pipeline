@@ -20,6 +20,7 @@ import sys
 import uuid
 import datetime
 from scipy import optimize
+from colour_demosaicing import demosaicing_CFA_Bayer_bilinear
 # -----------------------------------------
 
 class Corrector:
@@ -242,7 +243,6 @@ class Corrector:
 													self.image_width))
 		self.image_raw_std = np.empty((self.image_channels, self.image_height,
 													self.image_width))
-		self.target_altitude = np.empty((self.image_height, self.image_width))
 
 		self.correction_gains = np.empty((self.image_channels, self.image_height,
 									self.image_width))
@@ -446,7 +446,8 @@ class Corrector:
 			
 
 			# apply distortion corrections
-			image_rgb = self.distortion_correct(image_rgb)
+			if self.undistort:
+				image_rgb = self.distortion_correct(image_rgb)
 
 			# apply gamma corrections to rgb images
 			image_rgb = self.gamma_correct(image_rgb)
@@ -506,8 +507,8 @@ class Corrector:
 	# on the bayer pattern for the camera
 	def debayer(self, image, pattern):
 		# TODO :
-		# ---------------------
-		return image
+		corrected_rgb_img = demosaicing_CFA_Bayer_bilinear(image, pattern)
+		return corrected_rgb_img
 
 	
 
@@ -520,9 +521,19 @@ class Corrector:
 
 	
 	# gamma corrections for image
-	def gamma_correct(self, image):
+	def gamma_correct(self, image, bitdepth=8):
 		# TODO:
-		# -----------------------------
+		image = np.divide(image, ((2 ** bitdepth - 1)))
+
+		if all(i < 0.0031308 for i in image.flatten()):
+			image = 12.92 * image
+		else:
+			image = 1.055 * np.power(image, (1 / 1.5)) - 0.055
+
+		image = np.multiply(np.array(image), np.array(2 ** bitdepth - 1))
+
+		image = np.clip(image, 0, 2 ** bitdepth - 1)
+
 		return image
 
 	
