@@ -453,7 +453,9 @@ class Corrector:
 			image_rgb = self.gamma_correct(image_rgb)
 			
 			# write to output files
-			self.write_output_image(image_rgb, self.output_format)
+			image_filename = Path(self.bayer_numpy_filelist[idx]).stem
+			self.write_output_image(image_rgb, image_filename, 
+				self.output_images_folder, self.output_format)
 		Console.info('Processing of images is completed...')	
 		
 
@@ -539,10 +541,10 @@ class Corrector:
 	
 	# save processed image in an output file with
 	# given output format
-	def write_output_image(self, image, format):
-		# TODO:
-		# ----------------------------------
-		pass
+	def write_output_image(self, image, filename, dest_path, format_):
+		file = filename + format_
+		file_path = Path(dest_path) / file
+		imageio.imwrite(file_path, image)
 
 	# NON-MEMBER FUNCTIONS:
 	# ------------------------------------------------------------------------------
