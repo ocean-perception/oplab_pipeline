@@ -1,11 +1,20 @@
 import numpy as np
 import math
+from sklearn.neighbors import KDTree
 
 
 def to_homogeneous(xyzs):
     axyz = np.ones((len(xyzs), 4))
     axyz[:, :3] = xyzs
     return axyz
+
+def angle_between(u, v, n=None):
+    """Get angle between vectors u,v with sign based on plane with unit normal n
+    """
+    if n is None:
+        return np.arctan2(np.linalg.norm(np.cross(u,v)), np.dot(u,v))
+    else:
+        return np.arctan2(np.dot(n,np.cross(u,v)), np.dot(u,v))
 
 
 def minimum_curvature_direction(xyzs):
@@ -14,6 +23,40 @@ def minimum_curvature_direction(xyzs):
     result = vh[0, :]
     result = result[:3] / np.linalg.norm(result)
     return result
+
+def generate_circle_by_angles(t, C, r, theta, phi):
+        # Orthonormal vectors n, u, <n,u>=0
+        n = np.array([np.cos(phi)*np.sin(theta), np.sin(phi)*np.sin(theta), np.cos(theta)])
+        u = np.array([-np.sin(phi), np.cos(phi), 0])
+        
+        # P(t) = r*cos(t)*u + r*sin(t)*(n x u) + C
+        P_circle = r*np.cos(t)[:,np.newaxis]*u + r*np.sin(t)[:,np.newaxis]*np.cross(n,u) + C
+        return P_circle
+
+def rodrigues_rot(P, n0, n1):
+    """RODRIGUES ROTATION
+     - Rotate given points based on a starting and ending vector
+     - Axis k and angle of rotation theta given by vectors n0,n1
+       P_rot = P*cos(theta) + (k x P)*sin(theta) + k*<k,P>*(1-cos(theta))
+    """
+    
+    # If P is only 1d array (coords of single point), fix it to be matrix
+    if P.ndim == 1:
+        P = P[np.newaxis,:]
+    
+    # Get vector of rotation k and angle theta
+    n0 = n0/np.linalg.norm(n0)
+    n1 = n1/np.linalg.norm(n1)
+    k = np.cross(n0,n1)
+    k = k/np.linalg.norm(k)
+    theta = np.arccos(np.dot(n0,n1))
+    
+    # Compute rotated points
+    P_rot = np.zeros((len(P),3))
+    for i in range(len(P)):
+        P_rot[i] = P[i]*np.cos(theta) + np.cross(k,P[i])*np.sin(theta) + k*np.dot(k,P[i])*(1-np.cos(theta))
+
+    return P_rot
 
 def rotation_matrix(axis, theta):
     """
@@ -84,6 +127,68 @@ class Paraboloid:
     def image(self, * v) :
         return (self._order(* v) * self.coef).sum()
 
+class Circle:
+    centre = np.array([0, 0, 0])
+    radius = 1.0
+
+    def __init__(self):
+        pass
+
+    def fit_circle_2d(self, x, y, w=[]):
+        """FIT CIRCLE 2D
+         - Find center [xc, yc] and radius r of circle fitting to set of 2D points
+         - Optionally specify weights for points
+        
+         - Implicit circle function:
+           (x-xc)^2 + (y-yc)^2 = r^2
+           (2*xc)*x + (2*yc)*y + (r^2-xc^2-yc^2) = x^2+y^2
+           c[0]*x + c[1]*y + c[2] = x^2+y^2
+        
+         - Solution by method of least squares:
+           A*c = b, c' = argmin(||A*c - b||^2)
+           A = [x y 1], b = [x^2+y^2]
+        """
+        A = np.array([x, y, np.ones(len(x))]).T
+        b = x**2 + y**2
+        
+        # Modify A,b for weighted least squares
+        if len(w) == len(x):
+            W = np.diag(w)
+            A = np.dot(W,A)
+            b = np.dot(W,b)
+        
+        # Solve by method of least squares
+        c = np.linalg.lstsq(A,b,rcond=None)[0]
+        
+        # Get circle parameters from solution c
+        xc = c[0]/2
+        yc = c[1]/2
+        r = np.sqrt(c[2] + xc**2 + yc**2)
+        return xc, yc, r
+
+    def fit(self, P):
+        # (1) Fitting plane by SVD for the mean-centered data
+        # Eq. of plane is <p,n> + d = 0, where p is a point on plane and n is normal vector
+        P_mean = P.mean(axis=0)
+        P_centered = P - P_mean
+        U,s,V = np.linalg.svd(P_centered)
+
+        # Normal vector of fitting plane is given by 3rd column in V
+        # Note linalg.svd returns V^T, so we need to select 3rd row from V^T
+        normal = V[2,:]
+        d = -np.dot(P_mean, normal)  # d = -<p,n>
+
+        # (2) Project points to coords X-Y in 2D plane
+        P_xy = rodrigues_rot(P_centered, normal, [0,0,1])
+
+        # (3) Fit circle in new 2D coords
+        xc, yc, r = self.fit_circle_2d(P_xy[:,0], P_xy[:,1])
+
+        # (4) Transform circle center back to 3D coords
+        C = rodrigues_rot(np.array([xc,yc,0]), [0,0,1], normal) + P_mean
+        C = C.flatten()
+
+        return C, r
 
 class CircularCone:
     """Class to model a circular cone and fit points to it using geometric principles.
@@ -92,6 +197,8 @@ class CircularCone:
         self.apex = None
         self.axis = None
         self.half_angle = None
+        self.seed_size = 15
+        self.seed_radius = 0.4
 
     def distanceTo(self, point):
         """Compute distance from point to modelled cone
@@ -127,24 +234,31 @@ class CircularCone:
         signed_distance = abc[2]
         return np.abs(signed_distance)
 
-
+    """
     def fit(self, points):
-        """Fit a cone to a set or points [Ruiz2013]_
+        #Fit a cone to a set of points
 
-        .. [Ruiz2013] Ruiz O.; Arroyave, S.; Acosta, D.: Fitting of Analytic Surfaces to Noisy Point Clouds. In: American Journal of Computational Mathematics, Vol. 3 No. 1A, 2013, pp. 18-26. doi: 10.4236/ajcm.2013.31A004.
+        # Get a plane fitted
+        plane = fit_plane(points)
 
-        1) Find minimum curvature direction K_min of a set of seed points Ln
-        2) Fit paraboloid:  :math:`p(x, y) =  ax^2 + by^2 + cxy + dx + ey + f`.
-        3) Calculate eigenvector of its Hessian matrix 
-        
-        .. math:: 
-            H(p) = \\begin{bmatrix} 2e & d \\\\ d & 2f \\end{bmatrix}
-        
-        4) Find approximated apex by averaging cross points of all
-           lines defined by its seed point and its K_{min}
-        5) Find centre of gravity of circunference passing through the
-           points at the same lambda from the vectors found.
-        6) Estimate the opening angle with angle from these vectors
-           to the newly found axis.
-        """
+        # Get the centroid
+        mean_x = np.mean(points[:, 0])
+        mean_y = np.mean(points[:, 1])
+        mean_z = np.mean(points[:, 2])
+        mean_xyz = np.array([mean_x, mean_y, mean_z])
 
+        # Get the stats of the cloud
+        min_z
+        max_z
+        std_z = 
+
+        # Slice in Z and fit circles
+        circles = []
+        for z in z_slices:
+            points_slice = slice_points(points, z)
+            circle = fit_circle(points_slice)
+            circles.append(circle)
+
+        # Find apex, angle and axis from circles
+        apex, angle, axis = fit_cone(circles)
+    """
