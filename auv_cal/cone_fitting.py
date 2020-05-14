@@ -1,5 +1,5 @@
 import numpy as np
-import numpy.matlib as mat
+import math
 
 
 def to_homogeneous(xyzs):
@@ -14,6 +14,45 @@ def minimum_curvature_direction(xyzs):
     result = vh[0, :]
     result = result[:3] / np.linalg.norm(result)
     return result
+
+def rotation_matrix(axis, theta):
+    """
+    Returns the rotation matrix associated with counterclockwise rotation about
+    the given axis by theta radians.
+    """
+    axis = np.asarray(axis)
+    axis = axis / math.sqrt(np.dot(axis, axis))
+    a = math.cos(theta / 2.0)
+    b, c, d = -axis * math.sin(theta / 2.0)
+    aa, bb, cc, dd = a * a, b * b, c * c, d * d
+    bc, ad, ac, ab, bd, cd = b * c, a * d, a * c, a * b, b * d, c * d
+    return np.array([[aa + bb - cc - dd, 2 * (bc + ad), 2 * (bd - ac)],
+                     [2 * (bc - ad), aa + cc - bb - dd, 2 * (cd + ab)],
+                     [2 * (bd + ac), 2 * (cd - ab), aa + dd - bb - cc]])
+
+def create_rotation_matrix(v1, v2, v3):
+    """Returns the rotation matrix associated with the vector basis provided
+
+    Parameters
+    ----------
+    v1 : np.array
+        Three-dimensional vector
+    v2 : np.array
+        Three-dimensional vector
+    v3 : np.array
+        Three-dimensional vector
+
+    Returns
+    -------
+    np.array
+        3x3 Rotation matrix
+    """
+    v1 = v1 / np.linalg.norm(v1)
+    v2 = v2 / np.linalg.norm(v2)
+    v3 = v3 / np.linalg.norm(v3)
+    return np.array([[v1[0], v2[0], v3[0]],
+                     [v1[1], v2[1], v3[1]],
+                     [v1[2], v2[2], v3[2]]])
 
 
 class Paraboloid:
@@ -32,13 +71,14 @@ class Paraboloid:
         return np.array([x**2, x*y, y**2, x, y, 1])
 
     def fit(self, * points_list):
-        A = mat.zeros((6, 6))
-        Y = mat.zeros((6, 1))
+        A = np.zeros((6, 6))
+        Y = np.zeros((6, 1))
         for x, y, z in points_list:
             Q = np.asmatrix(self._order(x, y)).T
             A += Q * Q.T
             Y += z * Q
-        self.coef = np.array(np.ravel(A.I * Y))
+        Ainv = np.linalg.inv(A)
+        self.coef = np.array(np.ravel(Ainv @ Y))
         return self.coef
 
     def image(self, * v) :
@@ -51,9 +91,9 @@ class CircularCone:
     def __init__(self):
         self.apex = None
         self.axis = None
-        self.angle = None
+        self.half_angle = None
 
-    def pointConeDistance(self, point):
+    def distanceTo(self, point):
         """Compute distance from point to modelled cone
         The distance from a point :math:`p_i` to a cone with apex :math:`Ap` and 
         basis :math:`[\\vec{u}, \\vec{n}_1, \\vec{n}_2]`, where :math:`\\vec{u}` is
@@ -63,19 +103,28 @@ class CircularCone:
             (p_i - Ap) = \\begin{bmatrix} \\vec{u}, \\vec{n}_1, \\vec{n}_2 \\end{bmatrix} 
             \\begin{bmatrix} \\alpha \\\\ \\beta \\\\ \\gamma \\end{bmatrix}
 
-        being :math:`\\beta` the signed distance between the point and the cone.
+        being :math:`\\gamma` the signed distance between the point and the cone.
         """
         w = point - self.apex
-        v = self.axis
+        if np.linalg.norm(w) == 0:
+            # The point is in the apex
+            return 0
+        w = w / np.linalg.norm(w)
 
+        v = self.axis / np.linalg.norm(self.axis)
         wxv = np.cross(w, v)
+        if np.linalg.norm(wxv) == 0:
+            # The point lies in the axis
+            d = np.linalg.norm(point-self.apex)
+            return d*math.cos(self.half_angle)
         n1 = wxv / np.linalg.norm(wxv)
-        u = rotate(v, n1, self.angle)
+        R = rotation_matrix(n1, - self.half_angle)
+        u = np.dot(R, v)
         uxn1 = np.cross(u, n1)
         n2 = uxn1 / np.linalg.norm(uxn1)
-        basis = create_rot_mat(u, n1, n2)
-        abc = np.linalg.inv(basis) @ (point - self.apex)
-        signed_distance = abc[1]
+        basis = create_rotation_matrix(u, n1, n2)
+        abc = basis.T @ w
+        signed_distance = abc[2]
         return np.abs(signed_distance)
 
 

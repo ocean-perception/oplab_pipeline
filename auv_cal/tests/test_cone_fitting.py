@@ -3,6 +3,8 @@ import os
 import math
 import numpy as np
 from auv_cal.cone_fitting import Paraboloid
+from auv_cal.cone_fitting import CircularCone
+from auv_cal.cone_fitting import rotation_matrix
 
 
 class TestConeFitting(unittest.TestCase):
@@ -18,3 +20,35 @@ class TestConeFitting(unittest.TestCase):
         print("estimation =", q.coef)	
         for i, j in zip(q.coef, p.coef):
             self.assertAlmostEqual(i, j)
+
+    def test_rotation_matrix(self):
+        v = [3, 5, 0]
+        axis = [4, 4, 1]
+        theta = 1.2 
+
+        res = np.dot(rotation_matrix(axis, theta), v)
+        self.assertAlmostEqual(res[0], 2.74911638)
+        self.assertAlmostEqual(res[1], 4.77180932)
+        self.assertAlmostEqual(res[2], 1.91629719)
+
+    def test_point_cone_distance(self):
+        c = CircularCone()
+        c.apex = np.array([0, 0, 0])
+        c.axis = np.array([1, 0, 0])
+        c.half_angle = math.radians(45.0)
+
+        point = np.array([0, 0, 0])
+        d = c.distanceTo(point)
+        self.assertAlmostEqual(d, 0)
+
+        point = np.array([0, 1, 0])
+        d = c.distanceTo(point)
+        self.assertAlmostEqual(d, math.sqrt(2.)/2.)
+
+        c.axis = np.array([0, 0, 1])
+        d = c.distanceTo(point)
+        self.assertAlmostEqual(d, math.sqrt(2.)/2.)
+
+        c.axis = np.array([0, 1, 0])
+        d = c.distanceTo(point)
+        self.assertAlmostEqual(d, math.sqrt(2.)/2.)
