@@ -49,7 +49,7 @@ def run_ransac(data, estimate, is_inlier, sample_size, goal_inliers, max_iterati
             if ic > goal_inliers and stop_at_goal:
                 break
     # estimate final model using all inliers
-    m = fit_plane(inliers)
+    best_model = fit_plane(inliers)
     return best_model, inliers, i
 
 
