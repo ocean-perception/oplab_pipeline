@@ -1,11 +1,10 @@
 cameras:
   - name: Cam51707923
     camera_calibration:
-      # Use DIVE paths relative to the PLATFORM folder
-      # e.g. raw/year/cruise/platform/DIVE
+      # Use DIVE paths relative to the dive folder
       # For example, to provide the relative path to a dive in
       #    /data/dives/raw/year/cruise/platform/YYYYMMDD_hhmmss_platform_sensor_calib
-      # it is enough to start with  YYYYMMDD_hhmmss_platform_sensor_calib
+      # it is enough to start with  ../YYYYMMDD_hhmmss_platform_sensor_calib
       path: ../calibration_images/SeaXeroxData20171221_calibration_sx3_xenon/SeaXeroxData20171221_200233_cameraCal/Xviii_tiff/Cam51707923
       glob_pattern: '*.tiff'
     laser_calibration:

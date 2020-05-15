@@ -61,8 +61,7 @@ def calibrate_mono(name, filepaths, extension, config, output_file, overwrite):
     image_list = collect_image_files(filepaths, extension)
     Console.info('Found ' + str(len(image_list)) + ' images.')
     if len(image_list) < 8:
-        Console.error('Too few images. Try to get more.')
-        return
+        Console.quit('Too few images. Try to get more.')
 
     mc = MonoCalibrator(boards=[ChessboardInfo(config["rows"],
                                                config["cols"],
@@ -99,8 +98,7 @@ def calibrate_stereo(left_name, left_filepaths, left_extension, left_calib,
     right_image_list = collect_image_files(right_filepaths, right_extension)
     Console.info('Found ' + str(len(right_image_list)) + ' right images.')
     if len(left_image_list) < 8 or len(right_image_list) < 8:
-        Console.error('Too few images. Try to get more.')
-        return
+        Console.quit('Too few images. Try to get more.')
     try:
         with left_calib.with_suffix('.json').open('r') as f:
             left_json = json.load(f)
