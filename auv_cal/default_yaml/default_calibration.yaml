@@ -50,10 +50,10 @@ laser_calibration:
   ransac:
     max_cloud_size: 10000
     min_distance_threshold: 0.002
-    sample_size_percentage: 0.8
-    goal_inliers_percentage: 0.999
+    sample_size_ratio: 0.8
+    goal_inliers_ratio: 0.999
     max_iterations: 5000
   uncertainty_generation:
-    cloud_sample_size_percentage: 0.8
+    cloud_sample_size_ratio: 0.8
     iterations: 50
   

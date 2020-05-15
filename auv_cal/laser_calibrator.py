@@ -320,11 +320,11 @@ class LaserCalibrator():
 
         self.max_point_cloud_size = ransac.get('max_cloud_size', 10000)
         self.mdt = ransac.get('min_distance_threshold', 0.002)
-        self.ssp = ransac.get('sample_size_percentage', 0.8)
-        self.gip = ransac.get('goal_inliers_percentage', 0.999)
+        self.ssp = ransac.get('sample_size_ratio', 0.8)
+        self.gip = ransac.get('goal_inliers_ratio', 0.999)
         self.max_iterations = ransac.get('max_iterations', 5000)
 
-        self.cssp = uncertainty_generation.get('cloud_sample_size_percentage', 0.8)  # change to RATIO
+        self.cssp = uncertainty_generation.get('cloud_sample_size_ratio', 0.8)  # change to RATIO
         self.num_iterations = uncertainty_generation.get('iterations', 100)       
 
         self.left_maps = cv2.initUndistortRectifyMap(
