@@ -12,7 +12,7 @@ colour_correction :
     min_m : 4
   smoothing : 'median' # 'mean' / 'median' / 'mean_trimmed' sampling colour intensity values from window_size to develop model
   window_size : 3 # increase if the attenuation correction parameter looks noisy.
-  curve_fitting_outlier_rejection : True
+  curve_fitting_outlier_rejection : False
 
 cameras : 
   - camera_name : 'cam61003146' #in line with vehicle.yaml
@@ -37,5 +37,5 @@ cameras :
 
 
 output_settings :
-  undistort : True
+  undistort : False
   compression_parameter : 'png' # 'tiff'

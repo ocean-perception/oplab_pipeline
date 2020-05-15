@@ -14,6 +14,7 @@ from auv_nav.tools.folder_structure import get_config_folder
 from auv_nav.tools.console import Console
 from auv_nav.camera_system import *
 from correct_images.parser import *
+from correct_images.camera_models import *
 import yaml
 import joblib
 import sys
@@ -517,8 +518,13 @@ class Corrector:
 	# correct image for distortions using
 	# camera calibration parameters
 	def distortion_correct(self, image):
-		# TODO:
-		# ----------------------
+		camera_params_folder = Path(self.path_processed).parents[0] / 'calibration'
+		camera_params_filename = 'mono' + self.camera_name + '.yaml'
+		camera_params_file_path = camera_params_folder / camera_params_filename
+		monocam = MonoCamera(camera_params_file_path)
+		map_x, map_y = monocam.rectification_maps
+		image = np.clip(image, 0, 2 ** dst_bit - 1)
+    	image = cv2.remap(image, map_x, map_y, cv2.INTER_LINEAR)
 		return image
 
 	
