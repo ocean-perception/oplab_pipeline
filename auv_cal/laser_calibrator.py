@@ -6,6 +6,7 @@ import math
 import random
 from auv_cal.ransac import plane_fitting_ransac
 from auv_cal.ransac import fit_plane
+from auv_cal.plot_points_and_planes import plot_pointcloud_and_planes
 from oplab import Console
 from oplab import get_processed_folder
 from auv_nav.parsers.parse_biocam_images import biocam_timestamp_from_filename
@@ -398,6 +399,9 @@ class LaserCalibrator():
             max_iterations=self.max_iterations,
             plot=True)
 
+        plot_pointcloud_and_planes(np.array(cloud), [np.array(mean_plane)]) #, 'entire_pointcloud_and_best_model.html') # ToDo: write to calibration folder
+        plot_pointcloud_and_planes(np.array(inliers_cloud), [np.array(mean_plane)]) #, 'inlier_pointcloud_and_best_model.html')
+
         scale = 1.0/mean_plane[0]
         mean_plane = np.array(mean_plane)*scale
         mean_plane = mean_plane.tolist()
@@ -489,6 +493,12 @@ class LaserCalibrator():
                 yaml_msg += d + msg_type[1] + ': ' + str(normal.tolist()) + '\n'
                 yaml_msg += d + msg_type[2] + ': ' + str(offset) + '\n'
                 self.data.append([plane, normal, offset, d])
+
+        uncertainty_planes = [item[0] for item in self.data]
+        plot_pointcloud_and_planes(inliers_cloud, uncertainty_planes) #, 'pointcloud_and_uncertainty_planes.html')
+        # np.save('inliers_cloud.npy', inliers_cloud)    # uncomment to save for debugging
+        # for i, plane in enumerate(uncertainty_planes):
+        #     np.save('plane' + str(i) + '.npy', plane)
 
         yaml_msg += ('date: \"' + Console.get_date() + "\" \n"
                         + 'user: \"' + Console.get_username() + "\" \n"
