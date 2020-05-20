@@ -30,9 +30,9 @@ setuptools.setup(
             'correct_images = correct_images.image_correct:main'],
     },
     package_data={
-        'auv_nav': ['default_yaml/*.yaml'],
+        'auv_nav': ['default_yaml/*/*/*.yaml'],
         'auv_cal': ['default_yaml/*.yaml'],
-        'correct_images': ['default_yaml/*.yaml']},
+        'correct_images': ['default_yaml/*/*.yaml']},
     install_requires=[
         'prettytable>=0.7.2',
         'PyYAML>=3.12',

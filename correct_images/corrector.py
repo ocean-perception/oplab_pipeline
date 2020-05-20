@@ -36,6 +36,17 @@ class Corrector:
 		self.force = force
 
 
+	# setup the corrector instance
+	def setup(self):
+		self.load_generic_config_parameters()
+		self.load_camera_specific_config_parameters()
+		self.get_imagelist()
+		self.create_output_directories()
+		self.generate_distance_matrix()
+		self.generate_bayer_numpy_filelist(self._imagelist)
+		self.generate_bayer_numpyfiles(self.bayer_numpy_filelist)
+
+
 	# store into object correction parameters relevant to both all cameras in the system
 	def load_generic_config_parameters(self):
 		self.correction_method = self._correct_config.method
@@ -139,9 +150,15 @@ class Corrector:
 	
 	# save a set of distance matrix numpy files
 	def generate_distance_matrix(self):
+		
+		# create empty distance matrix and list to store paths to the distance numpy files
+		distance_matrix = np.empty((self.image_height, self.image_width))
+		self.distance_matrix_numpy_filelist = []
+		self.altitude_based_filtered_indices = []
+
 		# read altitude / depth map depending on distance_metric
 		if self.distance_metric == 'none':
-			return None
+			Console.info('Null distance matrix created')
 
 		elif self.distance_metric == 'depth_map':
 			# TODO: get depth map from metric path
@@ -149,6 +166,13 @@ class Corrector:
 			print('get path to depth map')
 
 		elif self.distance_metric == 'altitude':
+			# check if the distance_path is valid
+			if self.distance_path == 'json_renav_*':
+				Console.info('Picking first JSON folder as the default path to auv_nav csv files...')
+				dir_ = self.path_processed
+				json_list = list(dir_.glob('json_*'))
+				self.distance_path = json_list[0]
+
 			full_metric_path = self.path_processed / self.distance_path
 			full_metric_path = full_metric_path / 'csv' / 'ekf'
 			metric_file = 'auv_ekf_' + self.camera_name + '.csv'
@@ -168,9 +192,6 @@ class Corrector:
 			# obtain distances for corresponding images to be corrected
 			distance_list = selected_dataframe[' Altitude [m]']
 
-			# create distance matrix numpy files for each image
-			distance_matrix = np.empty((self.image_height, self.image_width))
-			self.distance_matrix_numpy_filelist = []
 			
 			for idx in trange(len(distance_list)):
 				distance_matrix.fill(distance_list[idx])
@@ -221,145 +242,170 @@ class Corrector:
 				binary_data = np.fromfile(str(self._imagelist[idx]), dtype=raw_image_for_size.dtype)
 				image_raw = load_xviii_bayer_from_binary(binary_data, self.image_height, self.image_width)
 				np.save(bayer_numpy_filelist[idx], image_raw)
-		Console.info('Image numpy files written successfully')
+		Console.info('Image numpy files written successfully...')
 
 	
 	
 	# compute correction parameters either for attenuation correction or static correction of images 
 	def generate_attenuation_correction_parameters(self):
+		# create empty matrices to store image correction parameters
+		self.image_raw_mean = np.empty((self.image_channels, self.image_height,
+												self.image_width))
+		self.image_raw_std = np.empty((self.image_channels, self.image_height,
+												self.image_width))
 		
-		# create an empty matrix to store image correction parameters
 		self.image_attenuation_parameters = np.empty((self.image_channels, self.image_height,
 													self.image_width, 3))
 		self.image_corrected_mean = np.empty((self.image_channels, self.image_height,
 													self.image_width))
 		self.image_corrected_std = np.empty((self.image_channels, self.image_height,
 													self.image_width))
-		self.image_raw_mean = np.empty((self.image_channels, self.image_height,
-													self.image_width))
-		self.image_raw_std = np.empty((self.image_channels, self.image_height,
-													self.image_width))
 
 		self.correction_gains = np.empty((self.image_channels, self.image_height,
 									self.image_width))
-		
-		# create image and distance_matrix memmaps
-		# based on altitude filtering
-		filtered_image_numpy_filelist = []
-		filtered_distance_numpy_filelist = []
-
-		for idx in self.altitude_based_filtered_indices:
-			filtered_image_numpy_filelist.append(self.bayer_numpy_filelist[idx])
-			filtered_distance_numpy_filelist.append(self.distance_matrix_numpy_filelist[idx])
-
-		# delete existing memmap files
-		memmap_files_path = self.memmap_folder.glob('*.map')
-		for file in memmap_files_path:
-			if file.exists():
-				file.unlink()
-
-		image_memmap_path, image_memmap = load_memmap_from_numpyfilelist(self.memmap_folder, filtered_image_numpy_filelist)
-		distance_memmap_path, distance_memmap = load_memmap_from_numpyfilelist(self.memmap_folder, filtered_distance_numpy_filelist)
 		image_memmap_channels = np.empty((len(self.bayer_numpy_filelist), self.image_height,
 											self.image_width, self.image_channels))
-		if self.image_channels == 1:
-			image_memmap_channels[:,:,:,0] = image_memmap
-		else:
-			image_memmap_channels = image_memmap
-		# --- TODO ----
+
 		
-		for i in range(self.image_channels):
+		# compute correction parameters if distance matrix is generated		
+		if len(self.distance_matrix_numpy_filelist) > 0:
+			# create image and distance_matrix memmaps
+			# based on altitude filtering
+			filtered_image_numpy_filelist = []
+			filtered_distance_numpy_filelist = []
 
-			image_memmap_ = image_memmap_channels[:,:,:,i]
+			for idx in self.altitude_based_filtered_indices:
+				filtered_image_numpy_filelist.append(self.bayer_numpy_filelist[idx])
+				filtered_distance_numpy_filelist.append(self.distance_matrix_numpy_filelist[idx])
 
-			# calculate mean, std for image and target_altitude
-			raw_image_mean, raw_image_std = mean_std_(image_memmap_)
-			self.image_raw_mean[i] = raw_image_mean
-			self.image_raw_std[i] = raw_image_std
+			# delete existing memmap files
+			memmap_files_path = self.memmap_folder.glob('*.map')
+			for file in memmap_files_path:
+				if file.exists():
+					file.unlink()
 
+			image_memmap_path, image_memmap = load_memmap_from_numpyfilelist(self.memmap_folder, filtered_image_numpy_filelist)
+			distance_memmap_path, distance_memmap = load_memmap_from_numpyfilelist(self.memmap_folder, filtered_distance_numpy_filelist)
 
-			target_altitude = mean_std_(distance_memmap, False)
+			if self.image_channels == 1:
+				image_memmap_channels[:,:,:,0] = image_memmap
+			else:
+				image_memmap_channels = image_memmap
+			# --- TODO ----
 			
-			# compute the mean distance for each image
-			[n, a, b] = distance_memmap.shape
-			distance_vector = distance_memmap.reshape((n, a*b))
-			mean_distance_array = distance_vector.mean(axis=1)
+			for i in range(self.image_channels):
 
-			# compute histogram of distance with respect to altitude range(min, max)
-			bin_band = 0.1
-			hist_bounds = np.arange(self.altitude_min, self.altitude_max, bin_band)
-			idxs = np.digitize(mean_distance_array, hist_bounds)
+				image_memmap_ = image_memmap_channels[:,:,:,i]
 
-			bin_images_sample_list = []
-			bin_distances_sample_list = []
-
-			for idx_bin in trange(1, hist_bounds.size):
-				tmp_idxs = np.where(idxs==idx_bin)[0]
-				if len(tmp_idxs) > 0:
-					bin_images = image_memmap_[tmp_idxs]
-					bin_distances = distance_memmap[tmp_idxs]
-					if self.smoothing == 'mean':
-						bin_images_sample = np.mean(bin_images, axis=0)
-						bin_distances_sample = np.mean(bin_distances, axis=0)
-					elif self.smoothing == 'mean_trimmed':
-						bin_images_sample = np.mean(bin_images, axis=0)
-						bin_distances_sample = np.mean(bin_distances, axis=0)
-					elif self.smoothing == 'median':
-						bin_images_sample = np.median(bin_images, axis=0)
-						bin_distances_sample = np.mean(bin_distances, axis=0)
-
-					del bin_images
-					del bin_distances
-
-					bin_images_sample_list.append(bin_images_sample)
-					bin_distances_sample_list.append(bin_distances_sample)
-
-			images_for_attenuation_calculation = np.array(bin_images_sample_list)
-			distances_for_attenuation_calculation = np.array(bin_distances_sample_list)
-			images_for_attenuation_calculation = images_for_attenuation_calculation.reshape(
-													[len(bin_images_sample_list), self.image_height * self.image_width])
-			distances_for_attenuation_calculation = distances_for_attenuation_calculation.reshape(
-													[len(bin_distances_sample_list), self.image_height * self.image_width])
-
-			# calculate attenuation parameters per channel
-			attenuation_parameters = self.calculate_attenuation_parameters(images_for_attenuation_calculation,
-												distances_for_attenuation_calculation, self.image_height,
-												self.image_width)
-
-			self.image_attenuation_parameters[i] = attenuation_parameters
+				# calculate mean, std for image and target_altitude
+				raw_image_mean, raw_image_std = mean_std_(image_memmap_)
+				self.image_raw_mean[i] = raw_image_mean
+				self.image_raw_std[i] = raw_image_std
 
 
-			# compute correction gains
-			Console.info('Computing correction gains...')
-			correction_gains = self.calculate_correction_gains(target_altitude, attenuation_parameters)
-			self.correction_gains[i] = correction_gains
-			# apply gains to images
-			Console.info('Applying attenuation corrections to images...')
-			image_memmap_ = self.apply_attenuation_corrections(image_memmap_,
-									distance_memmap, attenuation_parameters, correction_gains)
+				target_altitude = mean_std_(distance_memmap, False)
+				
+				# compute the mean distance for each image
+				[n, a, b] = distance_memmap.shape
+				distance_vector = distance_memmap.reshape((n, a*b))
+				mean_distance_array = distance_vector.mean(axis=1)
 
-			image_corrected_mean, image_corrected_std = mean_std_(image_memmap_)
-			self.image_corrected_mean[i] = image_corrected_mean
-			self.image_corrected_std[i] = image_corrected_std
+				# compute histogram of distance with respect to altitude range(min, max)
+				bin_band = 0.1
+				hist_bounds = np.arange(self.altitude_min, self.altitude_max, bin_band)
+				idxs = np.digitize(mean_distance_array, hist_bounds)
+
+				bin_images_sample_list = []
+				bin_distances_sample_list = []
+
+				for idx_bin in trange(1, hist_bounds.size):
+					tmp_idxs = np.where(idxs==idx_bin)[0]
+					if len(tmp_idxs) > 0:
+						bin_images = image_memmap_[tmp_idxs]
+						bin_distances = distance_memmap[tmp_idxs]
+						if self.smoothing == 'mean':
+							bin_images_sample = np.mean(bin_images, axis=0)
+							bin_distances_sample = np.mean(bin_distances, axis=0)
+						elif self.smoothing == 'mean_trimmed':
+							bin_images_sample = np.mean(bin_images, axis=0)
+							bin_distances_sample = np.mean(bin_distances, axis=0)
+						elif self.smoothing == 'median':
+							bin_images_sample = np.median(bin_images, axis=0)
+							bin_distances_sample = np.mean(bin_distances, axis=0)
+
+						del bin_images
+						del bin_distances
+
+						bin_images_sample_list.append(bin_images_sample)
+						bin_distances_sample_list.append(bin_distances_sample)
+
+				images_for_attenuation_calculation = np.array(bin_images_sample_list)
+				distances_for_attenuation_calculation = np.array(bin_distances_sample_list)
+				images_for_attenuation_calculation = images_for_attenuation_calculation.reshape(
+														[len(bin_images_sample_list), self.image_height * self.image_width])
+				distances_for_attenuation_calculation = distances_for_attenuation_calculation.reshape(
+														[len(bin_distances_sample_list), self.image_height * self.image_width])
+
+				# calculate attenuation parameters per channel
+				attenuation_parameters = self.calculate_attenuation_parameters(images_for_attenuation_calculation,
+													distances_for_attenuation_calculation, self.image_height,
+													self.image_width)
+
+				self.image_attenuation_parameters[i] = attenuation_parameters
+
+
+				# compute correction gains
+				Console.info('Computing correction gains...')
+				correction_gains = self.calculate_correction_gains(target_altitude, attenuation_parameters)
+				self.correction_gains[i] = correction_gains
+				# apply gains to images
+				Console.info('Applying attenuation corrections to images...')
+				image_memmap_ = self.apply_attenuation_corrections(image_memmap_,
+										distance_memmap, attenuation_parameters, correction_gains)
+
+				image_corrected_mean, image_corrected_std = mean_std_(image_memmap_)
+				self.image_corrected_mean[i] = image_corrected_mean
+				self.image_corrected_std[i] = image_corrected_std
+			
+			
+			Console.info('Correction parameters generated for all channels...')
+
+			attenuation_parameters_file = self.attenuation_parameters_folder / 'attenuation_parameters.npy'
+			image_corrected_mean_file = self.attenuation_parameters_folder / 'image_corrected_mean.npy'
+			image_corrected_std_file = self.attenuation_parameters_folder / 'image_corrected_std.npy'
+
+			np.save(attenuation_parameters_file, self.image_attenuation_parameters)
+			np.save(image_corrected_mean_file, self.image_corrected_mean)
+			np.save(image_corrected_std_file, self.image_corrected_std)
+
 		
-		
-		Console.info('Correction parameters generated for all channels...')
+		# compute only the raw image mean and std if distance matrix is null
+		if len(self.distance_matrix_numpy_filelist) == 0:
+			image_memmap_path, image_memmap = load_memmap_from_numpyfilelist(self.memmap_folder, self.bayer_numpy_filelist)
 
-		attenuation_parameters_file = self.attenuation_parameters_folder / 'attenuation_parameters.npy'
+			if self.image_channels == 1:
+				image_memmap_channels[:,:,:,0] = image_memmap
+			else:
+				image_memmap_channels = image_memmap
+			# --- TODO ----
+
+			for i in range(self.image_channels):
+				image_memmap_ = image_memmap_channels[:,:,:,i]
+
+				# calculate mean, std for image and target_altitude
+				raw_image_mean, raw_image_std = mean_std_(image_memmap_)
+				self.image_raw_mean[i] = raw_image_mean
+				self.image_raw_std[i] = raw_image_std
 		image_raw_mean_file = self.attenuation_parameters_folder / 'image_raw_mean.npy'
 		image_raw_std_file = self.attenuation_parameters_folder / 'image_raw_std.npy'
-		image_corrected_mean_file = self.attenuation_parameters_folder / 'image_corrected_mean.npy'
-		image_corrected_std_file = self.attenuation_parameters_folder / 'image_corrected_std.npy'
 
-		np.save(attenuation_parameters_file, self.image_attenuation_parameters)
 		np.save(image_raw_mean_file, self.image_raw_mean)
 		np.save(image_raw_std_file, self.image_raw_std)
-		np.save(image_corrected_mean_file, self.image_corrected_mean)
-		np.save(image_corrected_std_file, self.image_corrected_std)
 
 		Console.info('Correction parameters saved...')			
-				
 			
+		
+
 
 	
 	# calculate image attenuation parameters
@@ -436,8 +482,10 @@ class Corrector:
 		for idx in trange(0, len(self.bayer_numpy_filelist)):
 			# load numpy image and distance files
 			image = np.load(self.bayer_numpy_filelist[idx])
-			distance = np.load(self.distance_matrix_numpy_filelist[idx])
-
+			if len(self.distance_matrix_numpy_filelist) > 0:
+				distance = np.load(self.distance_matrix_numpy_filelist[idx])
+			else:
+				distance = None
 			
 
 			# apply corrections
@@ -456,7 +504,7 @@ class Corrector:
 			# debayer images of source images are bayer ones
 			if not self._type == 'grayscale':
 				# debayer images
-				image_rgb, _, _ = self.debayer(image, self._type)
+				image_rgb = self.debayer(image, self._type)
 			else:
 				image_rgb = image
 			
@@ -489,11 +537,16 @@ class Corrector:
 				intensities = image[:,:,i]
 			else:
 				intensities = image[:,:]
-			intensities = self.apply_atn_crr_2_img(intensities, distance,
-				self.image_attenuation_parameters[i], self.correction_gains[i])
-			intensities = self.pixel_stat(intensities, 
-				self.image_corrected_mean[i], self.image_corrected_std[i],
-				brightness, contrast)
+			if not distance is None:
+				intensities = self.apply_atn_crr_2_img(intensities, distance,
+							self.image_attenuation_parameters[i], self.correction_gains[i])
+				intensities = self.pixel_stat(intensities, 
+					self.image_corrected_mean[i], self.image_corrected_std[i],
+					brightness, contrast)
+			else:
+				intensities = self.pixel_stat(intensities, 
+					self.image_raw_mean[i], self.image_raw_std[i],
+					brightness, contrast)
 			if self.image_channels == 3:
 				image[:,:,i] = intensities
 			else:
@@ -536,7 +589,7 @@ class Corrector:
 		# unpadding the debayered image
 		s = corrected_rgb_img.shape
 		unpadded_corrected_rgb_img = corrected_rgb_img[1:s[0]-1,1:s[1]-1,:]
-		return unpadded_corrected_rgb_img, padded_image, corrected_rgb_img
+		return unpadded_corrected_rgb_img
 
 	
 

@@ -25,7 +25,7 @@ class testCaseCorrector(unittest.TestCase):
 		# test debayer for each bayer pattern choices:
 		for i in range(len(bayer_pattern_choices)):
 			bayer_pattern = bayer_pattern_choices[i].get('choice')
-			image_rgb, image_padded, image_rgb_padded = corrector.debayer(image_bayer, bayer_pattern)
+			image_rgb = corrector.debayer(image_bayer, bayer_pattern)
 			
 			if bayer_pattern == 'rggb':
 				self.assertEqual(image_rgb[1,1,0], 120, 'Red channel value is incorrect')

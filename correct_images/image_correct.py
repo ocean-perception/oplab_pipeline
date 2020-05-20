@@ -148,47 +148,57 @@ def call_correct(args):
     path_raw_folder = get_raw_folder(path)
     path_config_folder = get_config_folder(path)
 
-    # resolve path to mission.yaml and correct_images.yaml
+    # resolve path to mission.yaml
     path_mission = path_raw_folder / 'mission.yaml'
-    path_correct_images = path_config_folder / 'correct_images.yaml'
 
     # find mission and correct_images yaml files
     if path_mission.exists():
         Console.info('path found to mission.yaml file')
     else:
         Console.quit('mission.yaml file not found in designated path')
+
+    # load mission parameters
+    mission = Mission(path_mission)
+
+    # find out default yaml paths
+    root = Path(__file__).resolve().parents[1]
+    print('Root:', root)
+    print('----------------------')
+    acfr_std_camera_file = 'auv_nav/default_yaml/ts1/SSK17-01/camera.yaml'
+    sx3_camera_file = 'auv_nav/default_yaml/ae2000/YK17-23C/camera.yaml'
+    biocam_camera_file = 'auv_nav/default_yaml/as6/DY109/camera.yaml'
+
+    acfr_std_correct_config_file = 'correct_images/default_yaml/acfr/correct_images.yaml'
+    sx3_std_correct_config_file = 'correct_images/default_yaml/sx3/correct_images.yaml'
+    biocam_std_correct_config_file = 'correct_images/default_yaml/biocam/correct_images.yaml'
+
+    if mission.image.format == 'acfr_standard':
+        default_file_path_camera = root / acfr_std_camera_file
+        default_file_path_correct_config = root / acfr_std_correct_config_file
+    elif mission.image.format == 'seaxerocks_3':
+        default_file_path_camera = root / sx3_camera_file
+        default_file_path_correct_config = root / sx3_std_correct_config_file
+    elif mission.image.format == 'biocam':
+        default_file_path_camera = root / biocam_camera_file
+        default_file_path_correct_config = root / biocam_std_correct_config_file
+
+    # check for correct_config yaml path
+    path_correct_images = path_config_folder / 'correct_images.yaml'
     if path_correct_images.exists():
         Console.info('path found to correct_images.yaml file')
     else:
-        root = Path(__file__).resolve().parents[1]
-        default_file_path = root / 'correct_images/default_yaml/correct_images.yaml'
-        default_file_path.copy(path_correct_images)
+        default_file_path_correct_config.copy(path_correct_images)
         Console.warn('Default correct_images.yaml copied to config folder')
 
-    # load mission and correct_config parameters
-    mission = Mission(path_mission)
+    # load parameters from correct_config.yaml
     correct_config = CorrectConfig(path_correct_images)
 
-    # load camera.yaml file path
+    # check for camera yaml path
     camera_yaml_path = path_config_folder / 'camera.yaml'
-    print(camera_yaml_path)
     if camera_yaml_path.exists():
         Console.info('path found to camera.yaml file')
     else:
-        root = Path(__file__).resolve().parents[1]
-        acfr_std_camera_file = 'auv_nav/default_yaml/ts1/SSK17-01/camera.yaml'
-        sx3_camera_file = 'auv_nav/default_yaml/ae2000/YK17-23C/camera.yaml'
-        biocam_camera_file = 'auv_nav/default_yaml/as6/DY109/camera.yaml'
-
-        if mission.image.format == 'acfr_standard':
-            default_file_path = root / acfr_std_camera_file
-        elif mission.image.format == 'seaxerocks_3':
-            default_file_path = root / sx3_camera_file
-        elif mission.image.format == 'biocam':
-            default_file_path = root / biocam_camera_file
-        print(default_file_path)
-        
-        default_file_path.copy(camera_yaml_path)
+        default_file_path_camera.copy(camera_yaml_path)
         Console.warn('default camera.yaml file copied to config folder')
 
     # instantiate the camerasystem and setup cameras from mission and config files / auv_nav
@@ -202,13 +212,7 @@ def call_correct(args):
             Console.quit('No images found for the camera at the path provided...')
         else:
             corrector = Corrector(args.force, camera, correct_config, path)
-            corrector.load_generic_config_parameters()
-            corrector.load_camera_specific_config_parameters()
-            corrector.get_imagelist()
-            corrector.create_output_directories()
-            corrector.generate_distance_matrix()
-            corrector.generate_bayer_numpy_filelist(corrector._imagelist)
-            corrector.generate_bayer_numpyfiles(corrector.bayer_numpy_filelist)
+            corrector.setup()
             corrector.generate_attenuation_correction_parameters()
             corrector.process_correction()
 
