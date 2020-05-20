@@ -58,6 +58,8 @@ def main(args=None):
         '-i', '--image', default=None, help="Single raw image to test.")
     subparser_debayer.add_argument(
         '-o', '--output', default='.', help="Output folder.")
+    subparser_debayer.add_argument(
+        '-o_format', '--output_format', default='png', help="Output image format.")
     subparser_debayer.set_defaults(func=call_debayer)
 
 
@@ -82,7 +84,63 @@ def main(args=None):
         args.func(args)
 
 def call_debayer(args):
-   pass
+    '''
+    def debayer_image(image_path, filetype, pattern, output_dir):
+    Console.info('Debayering image {}'.format(image_path.name))
+    if filetype is 'raw':
+    xviii_binary_data = np.fromfile(str(image_path), dtype=np.uint8)
+    img = load_xviii_bayer_from_binary(xviii_binary_data)
+    img = img / 128
+    else:
+    img = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
+    img_rgb = np.array(demosaicing_CFA_Bayer_bilinear(img, pattern))
+    image_name = str(image_path.stem) + '.png'
+    output_image_path = Path(output_dir) / image_name
+    cv2.imwrite(str(output_image_path), img_rgb)
+    '''
+    output_dir = Path(args.output)
+    filetype = args.filetype
+    pattern = args.pattern
+    output_format = args.output_format
+    image_list = []
+    corrector = Corrector(True)
+    
+    if not output_dir.exists():
+        Console.info('Creating output dir {}'.format(output_dir))
+        output_dir.mkdir(parents=True)
+    else:
+        Console.info('Using output dir {}'.format(output_dir))
+    if not args.image:
+        image_dir = Path(args.path)
+        Console.info(
+            'Debayering folder {} to {}'.format(image_dir, output_dir))
+        image_list = list(image_dir.glob('*.' + args.filetype))
+
+    else:
+        single_image = Path(args.image)
+        image_list.append(single_image)
+    Console.info('Found ' + str(len(image_list)) + ' image(s)...')
+    for image_path in image_list:
+        Console.info('Debayering image {}'.format(image_path.name))
+        if filetype is 'raw':
+            xviii_binary_data = np.fromfile(str(image_path), dtype=np.uint8)
+            img = load_xviii_bayer_from_binary(xviii_binary_data)
+            img = img / 128
+        else:
+            img = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
+        img_rgb = corrector.debayer(img, pattern)
+        image_name = str(image_path.stem)
+        corrector.write_output_image(img_rgb, image_name, output_dir, output_format)
+        '''
+        joblib.Parallel(n_jobs=-2)([
+            joblib.delayed(debayer_image)(
+                image_path,
+                args.filetype,
+                args.pattern,
+                output_dir)
+            for image_path in image_list])
+        '''
+
 def call_correct(args):
     path = Path(args.path).resolve()
     
@@ -137,14 +195,13 @@ def call_correct(args):
     camerasystem = CameraSystem(camera_yaml_path)
 
     for camera in camerasystem.cameras:
-        print(camera.name)
+        Console.info('Processing for camera: ', camera.name)
         print('-----------------------------------------------------')
 
         if len(camera.image_list) == 0:
             Console.quit('No images found for the camera at the path provided...')
         else:
             corrector = Corrector(args.force, camera, correct_config, path)
-
             corrector.load_generic_config_parameters()
             corrector.load_camera_specific_config_parameters()
             corrector.get_imagelist()
@@ -152,7 +209,7 @@ def call_correct(args):
             corrector.generate_distance_matrix()
             corrector.generate_bayer_numpy_filelist(corrector._imagelist)
             corrector.generate_bayer_numpyfiles(corrector.bayer_numpy_filelist)
-            corrector.generate_correction_parameters()
+            corrector.generate_attenuation_correction_parameters()
             corrector.process_correction()
 
 

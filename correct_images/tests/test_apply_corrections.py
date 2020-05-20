@@ -105,6 +105,7 @@ class testCaseCorrector(unittest.TestCase):
 		corrector.undistort = False
 		corrector._type = 'grayscale'
 		corrector.output_format = 'png'
+		corrector.output_images_folder = path_dummy_folder
 
 
 		# invoke the feature to be tested
@@ -244,6 +245,7 @@ class testCaseCorrector(unittest.TestCase):
 		corrector.undistort = False
 		corrector._type = 'grayscale'
 		corrector.output_format = 'png'
+		corrector.output_images_folder = path_dummy_folder
 
 		# invoke the feature to be tested
 		corrector.generate_attenuation_correction_parameters()

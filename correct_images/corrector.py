@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 from tqdm import trange
+from tqdm import tqdm
 import cv2
 import imageio
 import os
@@ -214,15 +215,11 @@ class Corrector:
 		if self._camera.extension == 'raw':
 			# create numpy files as per bayer_numpy_filelist
 			raw_image_for_size = np.fromfile(str(self._imagelist[0]), dtype=np.uint8)
-			binary_data = np.zeros((len(self._imagelist), raw_image_for_size.shape[0]), dtype=raw_image_for_size.dtype)
+			# binary_data = np.zeros((len(self._imagelist), raw_image_for_size.shape[0]), dtype=raw_image_for_size.dtype)
 			
 			for idx in trange(len(self._imagelist)):
-				binary_data[idx, :] = np.fromfile(str(self._imagelist[idx]), dtype=raw_image_for_size.dtype)
-			image_raw = joblib.Parallel(n_jobs=10)(joblib.delayed
-				(load_xviii_bayer_from_binary)(binary_data[idx, :], self.image_height, self.image_width)
-				for idx in trange(len(self._imagelist)))
-			
-			for idx in trange(len(self._imagelist)):
+				binary_data = np.fromfile(str(self._imagelist[idx]), dtype=raw_image_for_size.dtype)
+				image_raw = load_xviii_bayer_from_binary(binary_data, self.image_height, self.image_width)
 				np.save(bayer_numpy_filelist[idx], image_raw)
 		Console.info('Image numpy files written successfully')
 
@@ -232,8 +229,6 @@ class Corrector:
 	def generate_attenuation_correction_parameters(self):
 		
 		# create an empty matrix to store image correction parameters
-		# parameters can be color attenuation correction or
-		# manual balance parameters
 		self.image_attenuation_parameters = np.empty((self.image_channels, self.image_height,
 													self.image_width, 3))
 		self.image_corrected_mean = np.empty((self.image_channels, self.image_height,
@@ -371,12 +366,13 @@ class Corrector:
 	def calculate_attenuation_parameters(self, images, distances, image_height, image_width):
 		Console.info('Start curve fitting...')
 
-
+		
 		results = joblib.Parallel(n_jobs=-2, verbose=3)(
 		    [joblib.delayed(curve_fitting)(
 		        distances[:, i_pixel], images[:, i_pixel])
-		        for i_pixel in range(image_height * image_width)])
-
+		        for i_pixel in trange(image_height * image_width)])
+		
+		
 		attenuation_parameters = np.array(results)
 		attenuation_parameters = attenuation_parameters.reshape([self.image_height, self.image_width, 3])
 
@@ -422,13 +418,30 @@ class Corrector:
 
 	# execute the corrections of images using the gain values in case of attenuation correction or static color balance
 	def process_correction(self):
+		# check for calibration file if distortion correction needed
+		if self.undistort:
+			camera_params_folder = Path(self.path_processed).parents[0] / 'calibration'
+			camera_params_filename = 'mono' + self.camera_name + '.yaml'
+			camera_params_file_path = camera_params_folder / camera_params_filename
+
+			if not camera_params_file_path.exists():
+				Console.info('Calibration file not found...')
+				self.undistort = False
+			else:
+				Console.info('Calibration file found...')
+				self.camera_params_file_path = camera_params_file_path
+		
+
+		Console.info('Processing images for color , distortion, gamma corrections...')
 		for idx in trange(0, len(self.bayer_numpy_filelist)):
 			# load numpy image and distance files
 			image = np.load(self.bayer_numpy_filelist[idx])
 			distance = np.load(self.distance_matrix_numpy_filelist[idx])
 
+			
+
 			# apply corrections
-			Console.info('Correcting images to targetted mean and std...')
+			#Console.info('Correcting images to targetted mean and std...')
 			if self.correction_method == 'colour_correction':
 				image = self.apply_distance_based_corrections(image, distance, 
 					self.brightness, self.contrast)
@@ -438,23 +451,30 @@ class Corrector:
 			# save corrected image back to numpy list for testing purposes
 			np.save(self.bayer_numpy_filelist[idx], image)
 			
+			
+
 			# debayer images of source images are bayer ones
 			if not self._type == 'grayscale':
 				# debayer images
-				image_rgb = self.debayer(image, self._type)
+				image_rgb, _, _ = self.debayer(image, self._type)
 			else:
 				image_rgb = image
 			
 
+			
 			# apply distortion corrections
 			if self.undistort:
 				image_rgb = self.distortion_correct(image_rgb)
 
+			
 			# apply gamma corrections to rgb images
 			image_rgb = self.gamma_correct(image_rgb)
 			
+			
+
 			# write to output files
 			image_filename = Path(self.bayer_numpy_filelist[idx]).stem
+			image_rgb = image_rgb.astype(np.uint8)
 			self.write_output_image(image_rgb, image_filename, 
 				self.output_images_folder, self.output_format)
 		Console.info('Processing of images is completed...')	
@@ -510,21 +530,22 @@ class Corrector:
 	# on the bayer pattern for the camera
 	def debayer(self, image, pattern):
 		# TODO :
-		corrected_rgb_img = demosaicing_CFA_Bayer_bilinear(image, pattern)
-		return corrected_rgb_img
+		padded_image = np.pad(image, ((1,1),(1,1)), 'edge')
+		corrected_rgb_img = demosaicing_CFA_Bayer_bilinear(padded_image, pattern)
+		
+		# unpadding the debayered image
+		s = corrected_rgb_img.shape
+		unpadded_corrected_rgb_img = corrected_rgb_img[1:s[0]-1,1:s[1]-1,:]
+		return unpadded_corrected_rgb_img, padded_image, corrected_rgb_img
 
 	
 
-	# correct image for distortions using
-	# camera calibration parameters
+	# correct image for distortions using camera calibration parameters
 	def distortion_correct(self, image):
-		camera_params_folder = Path(self.path_processed).parents[0] / 'calibration'
-		camera_params_filename = 'mono' + self.camera_name + '.yaml'
-		camera_params_file_path = camera_params_folder / camera_params_filename
 		monocam = MonoCamera(camera_params_file_path)
 		map_x, map_y = monocam.rectification_maps
 		image = np.clip(image, 0, 2 ** dst_bit - 1)
-    	image = cv2.remap(image, map_x, map_y, cv2.INTER_LINEAR)
+		image = cv2.remap(image, map_x, map_y, cv2.INTER_LINEAR)
 		return image
 
 	
@@ -548,7 +569,7 @@ class Corrector:
 	# save processed image in an output file with
 	# given output format
 	def write_output_image(self, image, filename, dest_path, format_):
-		file = filename + format_
+		file = filename + '.' + format_
 		file_path = Path(dest_path) / file
 		imageio.imwrite(file_path, image)
 
@@ -678,7 +699,7 @@ def calc_mean_and_std_trimmed(data, rate_trimming, calc_std=True):
 
 
 def exp_curve(x, a, b, c):
-    return a * np.exp(b * x) + c
+	return a * np.exp(b * x) + c
 
 
 def residual_exp_curve(params, x, y):
