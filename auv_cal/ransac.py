@@ -2,7 +2,7 @@
 import random
 import numpy as np
 import math
-from auv_nav import Console
+from oplab import Console
 
 
 def augment(xyzs):
@@ -61,7 +61,7 @@ def bounding_box(iterable):
 
 
 def plot_plane(a, b, c, d):
-    yy, zz = np.mgrid[-5:5, 0:15]
+    yy, zz = np.mgrid[-6:7, 4:15]
     return (-d - c * zz - b * yy) / a, yy, zz
 
 
@@ -87,12 +87,12 @@ def plane_fitting_ransac(cloud_xyz,
         #min_x, max_x, min_y, max_y = bounding_box(cloud_xyz[:, 0:2])
         xx, yy, zz = plot_plane(a, b, c, d)  # , min_x, max_x, min_y, max_y)
         ax.plot_surface(xx, yy, zz, color=(0, 1, 0, 0.5))
-        ax.scatter3D(cloud_xyz.T[0], cloud_xyz.T[1], cloud_xyz.T[2])
+        ax.scatter3D(cloud_xyz.T[0], cloud_xyz.T[1], cloud_xyz.T[2], s=1)
         ax.set_xlabel('$X$')
         ax.set_ylabel('$Y$')
         ax.set_zlabel('$Z$')
         plt.show()
-        Console.info('RANSAC took', iterations+1, ' iterations. Best model:', model, 'explains:', len(inliers))
+    Console.info('RANSAC took', iterations+1, ' iterations. Best model:', model, 'explains:', len(inliers))
     return (a, b, c, d), inliers
 
 
