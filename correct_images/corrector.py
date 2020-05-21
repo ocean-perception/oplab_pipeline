@@ -482,7 +482,7 @@ class Corrector:
 	
 
 	# execute the corrections of images using the gain values in case of attenuation correction or static color balance
-	def process_correction(self):
+	def process_correction(self, test_phase=False):
 		# check for calibration file if distortion correction needed
 		if self.undistort:
 			camera_params_folder = Path(self.path_processed).parents[0] / 'calibration'
@@ -499,12 +499,12 @@ class Corrector:
 
 		Console.info('Processing images for color , distortion, gamma corrections...')
 		
-		joblib.Parallel(n_jobs=-2, verbose=3)(joblib.delayed(self.process_image)(idx) 
+		joblib.Parallel(n_jobs=-2, verbose=3)(joblib.delayed(self.process_image)(idx, test_phase) 
 						for idx in trange(0, len(self.bayer_numpy_filelist)))
 			
 		Console.info('Processing of images is completed...')
 	
-	def process_image(self, idx):
+	def process_image(self, idx, test_phase):
 		# load numpy image and distance files
 		image = np.load(self.bayer_numpy_filelist[idx])
 		if len(self.distance_matrix_numpy_filelist) > 0:
@@ -522,7 +522,8 @@ class Corrector:
 			image = self.apply_manual_balance(image, self.colour_correction_matrix_rgb, self.subtractors_rgb) 
 
 		# save corrected image back to numpy list for testing purposes
-		np.save(self.bayer_numpy_filelist[idx], image)
+		if test_phase:
+			np.save(self.bayer_numpy_filelist[idx], image)
 		
 		
 

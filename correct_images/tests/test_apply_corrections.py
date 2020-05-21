@@ -110,7 +110,7 @@ class testCaseCorrector(unittest.TestCase):
 
 		# invoke the feature to be tested
 		corrector.generate_attenuation_correction_parameters()
-		corrector.process_correction()
+		corrector.process_correction(True) # set True to denote test phase for process_correction
 		# calculate the mean and std of the corrected images
 		correctedimage_memmap_path, correctedimage_memmap = load_memmap_from_numpyfilelist(corrector.memmap_folder, 
 										corrector.bayer_numpy_filelist)
@@ -249,7 +249,7 @@ class testCaseCorrector(unittest.TestCase):
 
 		# invoke the feature to be tested
 		corrector.generate_attenuation_correction_parameters()
-		corrector.process_correction()
+		corrector.process_correction(True)
 
 
 		# calculate the mean and std of the corrected images

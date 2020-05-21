@@ -165,7 +165,8 @@ def call_parse(args):
         print('-----------------------------------------------------')
 
         if len(camera.image_list) == 0:
-            Console.quit('No images found for the camera at the path provided...')
+            Console.info('No images found for the camera at the path provided...')
+            continue
         else:
             corrector = Corrector(args.force, camera, correct_config, path)
             corrector.setup()
@@ -181,7 +182,8 @@ def call_process(args):
         print('-----------------------------------------------------')
 
         if len(camera.image_list) == 0:
-            Console.quit('No images found for the camera at the path provided...')
+            Console.info('No images found for the camera at the path provided...')
+            continue
         else:
             corrector = Corrector(args.force, camera, correct_config, path)
             corrector.load_generic_config_parameters()
@@ -253,7 +255,8 @@ def call_correct(args):
         print('-----------------------------------------------------')
 
         if len(camera.image_list) == 0:
-            Console.quit('No images found for the camera at the path provided...')
+            Console.info('No images found for the camera at the path provided...')
+            continue
         else:
             corrector = Corrector(args.force, camera, correct_config, path)
             corrector.setup()
