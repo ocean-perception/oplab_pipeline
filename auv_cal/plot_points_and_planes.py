@@ -60,11 +60,13 @@ def plot_pointcloud_and_planes(pointcloud, planes, plot_path=None):
                                                    
     """
     fig = go.Figure()
-    fig.add_trace(go.Scatter3d(x=pointcloud.T[0], y=pointcloud.T[1], z=pointcloud.T[2],
-                                mode='markers',
-                                marker=dict(size=1),
-                                showlegend=True,
-                                name='pointcloud'))
+
+    for i, pc in enumerate(pointcloud):
+        fig.add_trace(go.Scatter3d(x=pc.T[0], y=pc.T[1], z=pc.T[2],
+                                    mode='markers',
+                                    marker=dict(size=1),
+                                    showlegend=True,
+                                    name='pointcloud'+str(i)))
     cmin = 0
     cmax = len(planes)-1
     colorscale = 'rainbow'
