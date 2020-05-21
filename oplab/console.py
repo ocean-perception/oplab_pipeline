@@ -40,7 +40,7 @@ class Console:
     def quit(*args, **kwargs):
         """Print a FAIL message and stop execution"""
         print('\n')
-        print(BColors.FAIL + "**** " + BColors.ENDC + "Exitting.")
+        print(BColors.FAIL + "**** " + BColors.ENDC + "Exiting.")
         print(BColors.FAIL + "**** " + BColors.ENDC + "Reason: " + " ".join(map(str, args)), **kwargs)
         quit()
 
