@@ -92,17 +92,26 @@ class Corrector:
 		self.attenuation_parameters_folder = self.output_dir_path / attenuation_parameters_folder_name
 		if not self.attenuation_parameters_folder.exists():
 			self.attenuation_parameters_folder.mkdir(parents=True)
-		elif self.force == False:
-			Console.quit('Overwrite parameters with a Force command...')
+		else:
+			dir_= self.attenuation_parameters_folder
+			file_list = list(dir_.glob('*.npy'))
+			if len(file_list) > 0:
+				if self.force == False:
+					Console.quit('Overwrite parameters with a Force command...')
+			
 
 		# create path for output images
 		output_images_folder_name = 'developed_' + self._camera.name
 		self.output_images_folder = self.output_dir_path / output_images_folder_name
 		if not self.output_images_folder.exists():
 			self.output_images_folder.mkdir(parents=True)
-		elif self.force == False:
-			Console.quit('Overwrite images with a Force command...')
-		Console.info('Output directories created...')
+		else:
+			dir_= self.output_images_folder
+			file_list = list(dir_.glob('*.*'))
+			if len(file_list) > 0:
+				if self.force == False:
+					Console.quit('Overwrite images with a Force command...')
+		Console.info('Output directories created / existing...')
 
 		# create folder for memmap files
 		memmap_folder_name = 'memmaps_' + self._camera.name
@@ -236,12 +245,20 @@ class Corrector:
 		if self._camera.extension == 'raw':
 			# create numpy files as per bayer_numpy_filelist
 			raw_image_for_size = np.fromfile(str(self._imagelist[0]), dtype=np.uint8)
-			# binary_data = np.zeros((len(self._imagelist), raw_image_for_size.shape[0]), dtype=raw_image_for_size.dtype)
-			
+			binary_data = np.zeros((len(self._imagelist), raw_image_for_size.shape[0]), dtype=raw_image_for_size.dtype)
+			for idx in range(len(self._imagelist)):
+				binary_data[idx] = np.fromfile(str(self._imagelist[idx]), dtype=raw_image_for_size.dtype)
+			Console.info('Writing RAW images to numpy...')
+			image_raw = joblib.Parallel(n_jobs=-2, verbose=3)(
+                [
+                    joblib.delayed(load_xviii_bayer_from_binary)
+                        (binary_data[idx, :], self.image_height, self.image_width)
+                    for idx in trange(len(self._imagelist))
+                ]
+            )
 			for idx in trange(len(self._imagelist)):
-				binary_data = np.fromfile(str(self._imagelist[idx]), dtype=raw_image_for_size.dtype)
-				image_raw = load_xviii_bayer_from_binary(binary_data, self.image_height, self.image_width)
-				np.save(bayer_numpy_filelist[idx], image_raw)
+				np.save(bayer_numpy_filelist[idx], image_raw[idx])
+				
 		Console.info('Image numpy files written successfully...')
 
 	
@@ -371,10 +388,12 @@ class Corrector:
 			Console.info('Correction parameters generated for all channels...')
 
 			attenuation_parameters_file = self.attenuation_parameters_folder / 'attenuation_parameters.npy'
+			correction_gains_file = self.attenuation_parameters_folder / 'correction_gains.npy'
 			image_corrected_mean_file = self.attenuation_parameters_folder / 'image_corrected_mean.npy'
 			image_corrected_std_file = self.attenuation_parameters_folder / 'image_corrected_std.npy'
 
 			np.save(attenuation_parameters_file, self.image_attenuation_parameters)
+			np.save(correction_gains_file, self.correction_gains)
 			np.save(image_corrected_mean_file, self.image_corrected_mean)
 			np.save(image_corrected_std_file, self.image_corrected_std)
 
@@ -479,54 +498,58 @@ class Corrector:
 		
 
 		Console.info('Processing images for color , distortion, gamma corrections...')
-		for idx in trange(0, len(self.bayer_numpy_filelist)):
-			# load numpy image and distance files
-			image = np.load(self.bayer_numpy_filelist[idx])
-			if len(self.distance_matrix_numpy_filelist) > 0:
-				distance = np.load(self.distance_matrix_numpy_filelist[idx])
-			else:
-				distance = None
-			
-
-			# apply corrections
-			#Console.info('Correcting images to targetted mean and std...')
-			if self.correction_method == 'colour_correction':
-				image = self.apply_distance_based_corrections(image, distance, 
-					self.brightness, self.contrast)
-			elif self.correction_method == 'manual_balance':
-				image = self.apply_manual_balance(image, self.colour_correction_matrix_rgb, self.subtractors_rgb) 
-
-			# save corrected image back to numpy list for testing purposes
-			np.save(self.bayer_numpy_filelist[idx], image)
-			
-			
-
-			# debayer images of source images are bayer ones
-			if not self._type == 'grayscale':
-				# debayer images
-				image_rgb = self.debayer(image, self._type)
-			else:
-				image_rgb = image
-			
-
-			
-			# apply distortion corrections
-			if self.undistort:
-				image_rgb = self.distortion_correct(image_rgb)
-
-			
-			# apply gamma corrections to rgb images
-			image_rgb = self.gamma_correct(image_rgb)
-			
-			
-
-			# write to output files
-			image_filename = Path(self.bayer_numpy_filelist[idx]).stem
-			image_rgb = image_rgb.astype(np.uint8)
-			self.write_output_image(image_rgb, image_filename, 
-				self.output_images_folder, self.output_format)
-		Console.info('Processing of images is completed...')	
 		
+		joblib.Parallel(n_jobs=-2, verbose=3)(joblib.delayed(self.process_image)(idx) 
+						for idx in trange(0, len(self.bayer_numpy_filelist)))
+			
+		Console.info('Processing of images is completed...')
+	
+	def process_image(self, idx):
+		# load numpy image and distance files
+		image = np.load(self.bayer_numpy_filelist[idx])
+		if len(self.distance_matrix_numpy_filelist) > 0:
+			distance = np.load(self.distance_matrix_numpy_filelist[idx])
+		else:
+			distance = None
+		
+
+		# apply corrections
+		#Console.info('Correcting images to targetted mean and std...')
+		if self.correction_method == 'colour_correction':
+			image = self.apply_distance_based_corrections(image, distance, 
+				self.brightness, self.contrast)
+		elif self.correction_method == 'manual_balance':
+			image = self.apply_manual_balance(image, self.colour_correction_matrix_rgb, self.subtractors_rgb) 
+
+		# save corrected image back to numpy list for testing purposes
+		np.save(self.bayer_numpy_filelist[idx], image)
+		
+		
+
+		# debayer images of source images are bayer ones
+		if not self._type == 'grayscale':
+			# debayer images
+			image_rgb = self.debayer(image, self._type)
+		else:
+			image_rgb = image
+		
+
+		
+		# apply distortion corrections
+		if self.undistort:
+			image_rgb = self.distortion_correct(image_rgb)
+
+		
+		# apply gamma corrections to rgb images
+		image_rgb = self.gamma_correct(image_rgb)
+		
+		
+
+		# write to output files
+		image_filename = Path(self.bayer_numpy_filelist[idx]).stem
+		image_rgb = image_rgb.astype(np.uint8)
+		self.write_output_image(image_rgb, image_filename, 
+			self.output_images_folder, self.output_format)	
 
 
 	# apply corrections on each image using the correction paramters for targeted brightness and contrast

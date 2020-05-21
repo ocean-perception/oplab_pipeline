@@ -44,6 +44,7 @@ def main(args=None):
 
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
+
     # subparser debayer
     subparser_debayer = subparsers.add_parser(
         'debayer', help='Debayer without correction')
@@ -74,6 +75,30 @@ def main(args=None):
     subparser_correct.set_defaults(
         func=call_correct)
 
+    # subparser parse
+    subparser_parse = subparsers.add_parser(
+        'parse', help='Compute the correction parameters')
+    subparser_parse.add_argument(
+        'path', help="Path to raw directory till dive.")
+    subparser_parse.add_argument(
+        '-F', '--Force', dest='force', action='store_true',
+        help="Force overwrite if correction parameters already exist.")
+    subparser_parse.set_defaults(
+        func=call_parse)
+
+
+    # subparser process
+    subparser_process = subparsers.add_parser(
+        'process', help='Compute the correction parameters')
+    subparser_process.add_argument(
+        'path', help="Path to raw directory till dive.")
+    subparser_process.add_argument(
+        '-F', '--Force', dest='force', action='store_true',
+        help="Force overwrite if correction parameters already exist.")
+    subparser_process.set_defaults(
+        func=call_process)
+
+
 
     if len(sys.argv) == 1 and args is None:
         # Show help if no args provided
@@ -84,20 +109,20 @@ def main(args=None):
         args.func(args)
 
 def call_debayer(args):
-    '''
-    def debayer_image(image_path, filetype, pattern, output_dir):
-    Console.info('Debayering image {}'.format(image_path.name))
-    if filetype is 'raw':
-    xviii_binary_data = np.fromfile(str(image_path), dtype=np.uint8)
-    img = load_xviii_bayer_from_binary(xviii_binary_data)
-    img = img / 128
-    else:
-    img = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
-    img_rgb = np.array(demosaicing_CFA_Bayer_bilinear(img, pattern))
-    image_name = str(image_path.stem) + '.png'
-    output_image_path = Path(output_dir) / image_name
-    cv2.imwrite(str(output_image_path), img_rgb)
-    '''
+    def debayer_image(image_path, filetype, pattern, output_dir, output_format, corrector):
+        Console.info('Debayering image {}'.format(image_path.name))
+        if filetype is 'raw':
+            xviii_binary_data = np.fromfile(str(image_path), dtype=np.uint8)
+            img = load_xviii_bayer_from_binary(xviii_binary_data, 1024, 1280)
+            img = img / 128
+        else:
+            img = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
+        img_rgb = corrector.debayer(img, pattern)
+        img_rgb = img_rgb.astype(np.uint8)
+        image_name = str(image_path.stem) + output_format
+        output_image_path = Path(output_dir) / image_name
+        corrector.write_output_image(img_rgb, image_name, output_dir, output_format)
+    
     output_dir = Path(args.output)
     filetype = args.filetype
     pattern = args.pattern
@@ -120,28 +145,122 @@ def call_debayer(args):
         single_image = Path(args.image)
         image_list.append(single_image)
     Console.info('Found ' + str(len(image_list)) + ' image(s)...')
-    for image_path in image_list:
-        Console.info('Debayering image {}'.format(image_path.name))
-        if filetype is 'raw':
-            xviii_binary_data = np.fromfile(str(image_path), dtype=np.uint8)
-            img = load_xviii_bayer_from_binary(xviii_binary_data)
-            img = img / 128
+    joblib.Parallel(n_jobs=-2, verbose=3)([
+        joblib.delayed(debayer_image)(
+            image_path,
+            filetype,
+            pattern,
+            output_dir,
+            output_format,
+            corrector)
+        for image_path in image_list])
+
+
+def call_parse(args):
+    correct_config, camerasystem = setup(args)
+    path = Path(args.path).resolve()
+
+    for camera in camerasystem.cameras:
+        Console.info('Parsing for camera: ', camera.name)
+        print('-----------------------------------------------------')
+
+        if len(camera.image_list) == 0:
+            Console.quit('No images found for the camera at the path provided...')
         else:
-            img = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
-        img_rgb = corrector.debayer(img, pattern)
-        image_name = str(image_path.stem)
-        corrector.write_output_image(img_rgb, image_name, output_dir, output_format)
-        '''
-        joblib.Parallel(n_jobs=-2)([
-            joblib.delayed(debayer_image)(
-                image_path,
-                args.filetype,
-                args.pattern,
-                output_dir)
-            for image_path in image_list])
-        '''
+            corrector = Corrector(args.force, camera, correct_config, path)
+            corrector.setup()
+            corrector.generate_attenuation_correction_parameters()
+    Console.info('Parse completed for all cameras. Please run process to develop corrected images...')
+
+def call_process(args):
+    correct_config, camerasystem = setup(args)
+    path = Path(args.path).resolve()
+
+    for camera in camerasystem.cameras:
+        Console.info('Processing for camera: ', camera.name)
+        print('-----------------------------------------------------')
+
+        if len(camera.image_list) == 0:
+            Console.quit('No images found for the camera at the path provided...')
+        else:
+            corrector = Corrector(args.force, camera, correct_config, path)
+            corrector.load_generic_config_parameters()
+            corrector.load_camera_specific_config_parameters()
+            corrector.get_imagelist()
+
+            # check if necessary folders exist in respective folders
+            image_path = Path(corrector._imagelist[0]).resolve()
+            image_parent_path = image_path.parents[0]
+            output_dir_path = get_processed_folder(image_parent_path)
+            output_dir_path = output_dir_path / 'attenuation_correction'
+            folder_name = 'params_' + camera.name
+            params_path = output_dir_path / folder_name
+
+            if not params_path.exists():
+                Console.quit('Parameters do not exist. Please run parse first...')
+            else:
+                filepath_attenuation_params = Path(params_path) / 'attenuation_parameters.npy'
+                filepath_correction_gains = Path(params_path) / 'correction_gains.npy'
+                filepath_corrected_mean = Path(params_path) / 'image_corrected_mean.npy'
+                filepath_corrected_std = Path(params_path) / 'image_corrected_std.npy'
+                filepath_raw_mean = Path(params_path) / 'image_raw_mean.npy'
+                filepath_raw_std = Path(params_path) / 'image_raw_std.npy'
+
+                # read in image numpy files
+                folder_name = 'bayer_' + camera.name
+                dir_ = Path(output_dir_path) / folder_name
+                corrector.bayer_numpy_filelist = list(dir_.glob('*.npy'))
+
+                
+                # read in distance matrix numpy files
+                folder_name = 'distance_' + camera.name
+                dir_ = Path(params_path) / folder_name
+                corrector.distance_matrix_numpy_filelist = list(dir_.glob('*.npy'))
+
+
+                # read parameters from disk
+                corrector.image_attenuation_parameters = np.load(filepath_attenuation_params)
+                corrector.correction_gains = np.load(filepath_correction_gains)
+                corrector.image_corrected_mean = np.load(filepath_corrected_mean)
+                corrector.image_corrected_std = np.load(filepath_corrected_std)
+                corrector.image_raw_mean = np.load(filepath_raw_mean)
+                corrector.image_raw_std = np.load(filepath_raw_std)
+
+                # check if images exist already
+                folder_name = 'developed_' + camera.name
+                output_path = Path(output_dir_path) / folder_name
+                filelist = list(output_path.glob('*.*'))
+                if len(filelist) > 0:
+                    if not args.force:
+                        Console.quit('Overwrite images with process -F ...')
+
+                # invoke process function
+                corrector.output_images_folder = output_path
+                corrector.process_correction()
+            
+            
+            
+
+
+    Console.info('Process completed for all cameras...')
 
 def call_correct(args):
+    correct_config, camerasystem = setup(args)
+    path = Path(args.path).resolve()
+
+    for camera in camerasystem.cameras:
+        Console.info('Processing for camera: ', camera.name)
+        print('-----------------------------------------------------')
+
+        if len(camera.image_list) == 0:
+            Console.quit('No images found for the camera at the path provided...')
+        else:
+            corrector = Corrector(args.force, camera, correct_config, path)
+            corrector.setup()
+            corrector.generate_attenuation_correction_parameters()
+            corrector.process_correction()
+
+def setup(args):
     path = Path(args.path).resolve()
     
     # resolve paths to raw, processed and config folders
@@ -204,17 +323,7 @@ def call_correct(args):
     # instantiate the camerasystem and setup cameras from mission and config files / auv_nav
     camerasystem = CameraSystem(camera_yaml_path)
 
-    for camera in camerasystem.cameras:
-        Console.info('Processing for camera: ', camera.name)
-        print('-----------------------------------------------------')
-
-        if len(camera.image_list) == 0:
-            Console.quit('No images found for the camera at the path provided...')
-        else:
-            corrector = Corrector(args.force, camera, correct_config, path)
-            corrector.setup()
-            corrector.generate_attenuation_correction_parameters()
-            corrector.process_correction()
+    return correct_config, camerasystem
 
 
 if __name__ == '__main__':
