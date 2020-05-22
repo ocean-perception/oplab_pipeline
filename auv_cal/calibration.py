@@ -78,7 +78,7 @@ def calibrate_mono(name, filepaths, extension, config, output_file, overwrite):
         else:
             mc.cal_from_json(image_list_file, image_list)
         mc.report()
-        Console.info('Writting calibration to '"'{}'"''.format(output_file))
+        Console.info('Writing calibration to '"'{}'"''.format(output_file))
         with output_file.open('w') as f:
             f.write(mc.yaml())
     except CalibrationException:
@@ -114,7 +114,7 @@ def calibrate_stereo(left_name, left_filepaths, left_extension, left_calib,
         # sc.cal(left_image_list, right_image_list)
         sc.cal_from_json(left_json=left_json, right_json=right_json,)
         sc.report()
-        Console.info('Writting calibration to '"'{}'"''.format(output_file))
+        Console.info('Writing calibration to '"'{}'"''.format(output_file))
         with output_file.open('w') as f:
             f.write(sc.yaml())
     except CalibrationException:
@@ -146,13 +146,13 @@ def calibrate_laser(left_name, left_filepath, left_extension,
         lc = LaserCalibrator(stereo_camera_model=model,
                              config=config)
         lc.cal(left_image_list[skip_first:], right_image_list[skip_first:])
-        Console.info('Writting calibration to '"'{}'"''.format(output_file))
+        Console.info('Writing calibration to '"'{}'"''.format(output_file))
         with output_file.open('w') as f:
             f.write(lc.yaml())
         if not 'two_lasers' in config:
             return
         if config['two_lasers']:
-            Console.info('Writting calibration to '"'{}'"''.format(output_file_b))
+            Console.info('Writing calibration to '"'{}'"''.format(output_file_b))
             with output_file_b.open('w') as f:
                 f.write(lc.yaml_b())
     except CalibrationException:
@@ -330,12 +330,15 @@ class Calibrator():
                 right_name = c1['name']
                 right_filepath = get_processed_folder(self.filepath) / str(c1['laser_calibration']['path'])
                 right_extension = str(c1['laser_calibration']['glob_pattern'])
-                if not left_filepath.exists() or not right_filepath.exists():
+                if not left_filepath.exists():
                     left_filepath = get_raw_folder(left_filepath)
+                    if not left_filepath.exists():
+                        Console.quit('Could not find stereo image folders (' + str(c0['laser_calibration']['path']) + ') neither in processed nor in raw folder.')
+                if not right_filepath.exists():
                     right_filepath = get_raw_folder(right_filepath)
-                    if not left_filepath.exists() or not right_filepath.exists():
-                        Console.quit('Could not find stereo image folders (' + str(c0['laser_calibration']['path']) + ' and/or ' + str(c1['laser_calibration']['path']) + ') neither in processed nor in raw folder.')
-                right_filepath = right_filepath.resolve()
+                    if not right_filepath.exists():
+                        Console.quit('Could not find stereo image folders (' + str(c1['laser_calibration']['path']) + ') neither in processed nor in raw folder.')
+                left_filepath = left_filepath.resolve()
                 right_filepath = right_filepath.resolve()
                 Console.info('Reading stereo images of laser line from ' + str(left_filepath) + ' and ' + str(right_filepath))
                 if not 'skip_first' in self.calibration_config:

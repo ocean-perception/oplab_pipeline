@@ -1,6 +1,7 @@
 *.pyc
 build/
 dist/
+docs/
 *.egg-info/
 oplab/commit_hash.txt
 .venv/

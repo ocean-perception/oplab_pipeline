@@ -5,11 +5,13 @@ import numpy as np
 import math
 import random
 from auv_cal.plane_fitting import Plane
+from auv_cal.plot_points_and_planes import plot_pointcloud_and_planes
 from oplab import Console
 from oplab import get_processed_folder
 from auv_nav.parsers.parse_biocam_images import biocam_timestamp_from_filename
 import joblib
 import yaml
+import time
 
 
 def build_plane(pitch, yaw, point):
@@ -389,7 +391,11 @@ class LaserCalibrator():
         Console.info('Fitting a plane to', total_no_points, 'points...')
         p = Plane([1, 0, 0, 1.5])
         mean_plane, inliers_cloud = p.fit(cloud, self.mdt)
-        p.plot(cloud=cloud)
+        #p.plot(cloud=cloud)
+
+        filename = time.strftime("pointclouds_and_best_model_%Y%m%d_%H%M%S.html")
+        plot_pointcloud_and_planes([np.array(cloud), np.array(inliers_cloud)], [np.array(mean_plane)], filename) #'pointclouds_and_best_model.html')
+
 
         scale = 1.0/mean_plane[0]
         mean_plane = np.array(mean_plane)*scale
@@ -477,6 +483,13 @@ class LaserCalibrator():
                 yaml_msg += d + msg_type[1] + ': ' + str(normal.tolist()) + '\n'
                 yaml_msg += d + msg_type[2] + ': ' + str(offset) + '\n'
                 self.data.append([plane, normal, offset, d])
+
+        uncertainty_planes = [item[0] for item in self.data]
+        filename = time.strftime("pointclouds_and_uncertainty_%Y%m%d_%H%M%S.html")
+        plot_pointcloud_and_planes([np.array(cloud), inliers_cloud], uncertainty_planes, filename)# 'pointclouds_and_uncertainty_planes.html')
+        # np.save('inliers_cloud.npy', inliers_cloud)    # uncomment to save for debugging
+        # for i, plane in enumerate(uncertainty_planes):
+        #     np.save('plane' + str(i) + '.npy', plane)
 
         yaml_msg += ('date: \"' + Console.get_date() + "\" \n"
                         + 'user: \"' + Console.get_username() + "\" \n"
