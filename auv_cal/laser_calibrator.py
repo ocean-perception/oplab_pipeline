@@ -423,6 +423,7 @@ class LaserCalibrator():
             total_no_points = len(point_cloud_local)
             p = Plane([1, 0, 0, 1.5])
             m = p.fit_non_robust(point_cloud_local)
+            # m, _ = p.fit(cloud, self.mdt, verbose=False, output_inliers=False)
             angle, pitch, yaw = get_angles(m[0:3])
             planes.append([angle, pitch, yaw])
             Console.progress(i, self.num_iterations, prefix='Iterating planes')

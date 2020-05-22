@@ -50,7 +50,6 @@ class Plane:
                 args=([points]), 
                 ftol=None, 
                 xtol=1e-9, 
-                f_scale=min_distance_inliers,
                 loss='soft_l1', 
                 verbose=verb_level, 
                 max_nfev=5000)
