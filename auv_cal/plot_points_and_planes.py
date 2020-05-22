@@ -80,7 +80,7 @@ def plot_pointcloud_and_planes(pointcloud, planes, plot_path=None):
     for i, pc in enumerate(pointcloud):
         indices = np.random.choice(pc.shape[0], 10000, replace=False)
         pc_rs = pc[indices]
-        fig.add_trace(go.Scatter3d(x=pc.T[0], y=pc.T[1], z=pc.T[2],
+        fig.add_trace(go.Scatter3d(x=pc_rs.T[0], y=pc_rs.T[1], z=pc_rs.T[2],
                                     mode='markers',
                                     marker=dict(size=1),
                                     showlegend=True,
