@@ -7,6 +7,22 @@ All rights reserved.
 import numpy as np
 import plotly.graph_objects as go
 from datetime import datetime
+from plyfile import PlyData
+from pathlib import Path
+import argparse
+
+
+def read_ply(filename):
+    filename = Path(filename)
+    f = filename.open('rb')
+    plydata = PlyData.read(f)
+    # Read vertices
+    nVerts = plydata["vertex"].count
+    verts = np.zeros((nVerts, 3))
+    verts[:, 0] = np.array(plydata["vertex"].data["x"])
+    verts[:, 1] = np.array(plydata["vertex"].data["y"])
+    verts[:, 2] = np.array(plydata["vertex"].data["z"])
+    return verts
 
 
 def plane_to_rectuangular_grid(plane, ymin, ymax, zmin, zmax):
@@ -88,3 +104,21 @@ def plot_pointcloud_and_planes(pointcloud, planes, plot_path=None):
         fig.show()
     else:
         fig.write_html(plot_path, auto_open=True)
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        'ply_file', help="Path to a PLY file containing a point cloud")
+    parser.add_argument(
+        "-p",
+        "--plane",
+        dest="plane",
+        type=str,
+        help="Plane coefficients separated by spaces")
+
+    args = parser.parse_args()
+
+    cloud = read_ply(args.ply_file)
+    coeffs = args.plane.split(' ')
+    coeffs = np.array([float(x) for x in coeffs])
+    plot_pointcloud_and_planes([cloud], [coeffs])
