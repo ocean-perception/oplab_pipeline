@@ -324,7 +324,7 @@ class LaserCalibrator():
         self.ssp = ransac.get('sample_size_ratio', 0.8)
         self.gip = ransac.get('goal_inliers_ratio', 0.999)
         self.max_iterations = ransac.get('max_iterations', 5000)
-        self.cssr = uncertainty_generation.get('cloud_sample_size_ratio', 0.8)
+        self.css = uncertainty_generation.get('cloud_sample_size', 1000)
         self.num_iterations = uncertainty_generation.get('iterations', 100)       
 
         self.left_maps = cv2.initUndistortRectifyMap(
@@ -412,9 +412,9 @@ class LaserCalibrator():
             Console.warn('Check the output cloud to see if the found plane makes sense.')
             Console.warn('Try to increase your distance threshold.')
 
-        cloud_sample_size = int(self.cssr * len(inliers_cloud_list))
-        if cloud_sample_size > 5000:
-            cloud_sample_size = 5000
+        cloud_sample_size = int(self.css)
+        if cloud_sample_size > len(inliers_cloud_list):
+            cloud_sample_size = len(inliers_cloud_list)
         Console.info('Randomly sampling with', cloud_sample_size, 'points...')
 
         planes = []
