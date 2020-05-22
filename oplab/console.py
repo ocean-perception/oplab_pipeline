@@ -94,13 +94,20 @@ class Console:
         return str(datetime.datetime.now().timestamp())
 
     @staticmethod
-    def get_version():
-        """Returns current oplab_pipeline version number
+    def get_version(pkg_name='oplab_pipeline'):
+        """Returns pkg_name version number
 
-        Returns:
-            str -- version number (e.g. "0.1.2")
-        """
-        return str(pkg_resources.require("oplab_pipeline")[0].version)
+        Parameters
+        ----------
+        pkg_name : str
+            Name of the python package, by default 'oplab_pipeline'
+
+        Returns
+        -------
+        str
+            version number (e.g. "0.1.2")
+        """                
+        return str(pkg_resources.require(pkg_name)[0].version)
 
     @staticmethod
     def write_metadata():    
