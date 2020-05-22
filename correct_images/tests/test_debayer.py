@@ -4,7 +4,6 @@ import os
 import numpy as np
 from pathlib import Path
 from correct_images.corrector import *
-from auv_nav.tools.console import Console
 import pandas as pd
 import tempfile
 
@@ -26,15 +25,17 @@ class testCaseCorrector(unittest.TestCase):
 		for i in range(len(bayer_pattern_choices)):
 			bayer_pattern = bayer_pattern_choices[i].get('choice')
 			image_rgb = corrector.debayer(image_bayer, bayer_pattern)
-			
-			if bayer_pattern == 'rggb':
+
+
+			#TODO check the values
+			if bayer_pattern == 'grbg':
 				self.assertEqual(image_rgb[1,1,0], 120, 'Red channel value is incorrect')
-				self.assertEqual(image_rgb[1,1,1], 180, 'Green channel value is incorrect')
+				self.assertEqual(image_rgb[1,1,1], 120, 'Green channel value is incorrect')
 				self.assertEqual(image_rgb[1,1,2], 240, 'Blue channel value is incorrect')
 
-			elif bayer_pattern == 'grbg':
+			elif bayer_pattern == 'rggb':
 				self.assertEqual(image_rgb[1,1,0], 240, 'Red channel value is incorrect')
-				self.assertEqual(image_rgb[1,1,1], 120, 'Green channel value is incorrect')
+				self.assertEqual(image_rgb[1,1,1], 180, 'Green channel value is incorrect')
 				self.assertEqual(image_rgb[1,1,2], 120, 'Blue channel value is incorrect')
 
 
