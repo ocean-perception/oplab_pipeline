@@ -321,11 +321,10 @@ class LaserCalibrator():
 
         self.max_point_cloud_size = ransac.get('max_cloud_size', 10000)
         self.mdt = ransac.get('min_distance_threshold', 0.002)
-        self.ssp = ransac.get('sample_size_percentage', 0.8)
-        self.gip = ransac.get('goal_inliers_percentage', 0.999)
+        self.ssp = ransac.get('sample_size_ratio', 0.8)
+        self.gip = ransac.get('goal_inliers_ratio', 0.999)
         self.max_iterations = ransac.get('max_iterations', 5000)
-
-        self.cssp = uncertainty_generation.get('cloud_sample_size_percentage', 0.8)  # change to RATIO
+        self.cssr = uncertainty_generation.get('cloud_sample_size_ratio', 0.8)
         self.num_iterations = uncertainty_generation.get('iterations', 100)       
 
         self.left_maps = cv2.initUndistortRectifyMap(
@@ -410,8 +409,6 @@ class LaserCalibrator():
         inliers_cloud_list = list(inliers_cloud)
 
         Console.info('RANSAC plane with all points: {}'.format(mean_plane))
-
-        cloud_sample_size = int(self.cssp * len(inliers_cloud_list))
         Console.info('RANSAC found', len(inliers_cloud_list), 'inliers')
 
         if len(inliers_cloud_list) < 0.5*len(cloud)*self.gip:
@@ -421,6 +418,9 @@ class LaserCalibrator():
             Console.warn('Check the output cloud to see if the found plane makes sense.')
             Console.warn('Either relax your RANSAC distance threshold, increase the number of iterations or relax your expectations.')
 
+        cloud_sample_size = int(self.cssr * len(inliers_cloud_list))
+        if cloud_sample_size > 10000:
+            cloud_sample_size = 10000
         Console.info('Randomly sampling with', cloud_sample_size, 'points...')
 
         planes = []
