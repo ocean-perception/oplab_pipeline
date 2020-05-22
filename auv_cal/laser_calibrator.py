@@ -413,8 +413,8 @@ class LaserCalibrator():
             Console.warn('Try to increase your distance threshold.')
 
         cloud_sample_size = int(self.cssr * len(inliers_cloud_list))
-        if cloud_sample_size > 10000:
-            cloud_sample_size = 10000
+        if cloud_sample_size > 5000:
+            cloud_sample_size = 5000
         Console.info('Randomly sampling with', cloud_sample_size, 'points...')
 
         planes = []
