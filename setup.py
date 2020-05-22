@@ -119,7 +119,7 @@ def run_setup():
             'pandas>=0.23.4',
             'pillow>=5.1.0',
             'plotly>=3.6.1',
-            'plyfile>=0.7.2'
+            'plyfile>=0.7.2',
             'prettytable>=0.7.2',
             'pynmea2>=1.15.0',
             'pytz>=2018.9',
