@@ -428,7 +428,7 @@ class LaserCalibrator():
             point_cloud_local = random.sample(inliers_cloud_list, cloud_sample_size)
             total_no_points = len(point_cloud_local)
             p = Plane([1, 0, 0, 1.5])
-            m, _ = p.fit(cloud, self.mdt, verbose=False)
+            m = p.fit_non_robust(cloud)
             """
             m, _ = plane_fitting_ransac(
                 point_cloud_local,
