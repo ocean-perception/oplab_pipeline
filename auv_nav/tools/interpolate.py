@@ -7,7 +7,7 @@ All rights reserved.
 from auv_nav.sensors import SyncedOrientationBodyVelocity, Usbl
 from auv_nav.tools.latlon_wgs84 import metres_to_latlon
 from auv_nav.tools.body_to_inertial import body_to_inertial
-
+from auv_nav.sensors import Camera
 import numpy as np
 
 
@@ -87,6 +87,79 @@ def interpolate_dvl(query_timestamp, data_1, data_2):
                                     data_1.yaw,
                                     data_2.yaw)
     return (temp_data)
+
+
+def interpolate_camera(query_timestamp, camera_list, filename):
+    """Interpolates a camera to the query timestamp given a camera list
+    to interpolate from, and assign the filename provided to that 
+    timestamp
+
+    Parameters
+    ----------
+    query_timestamp : float
+        Query timestap
+    camera_list : list(Camera)
+        Populated camera list. Will be used to find matching timestamps 
+        to interpolate from
+    filename : str
+        Camera filename to assign to the queried timestamp
+
+    Returns
+    -------
+    Camera
+        Interpolated camera to the queried timestamp and with the 
+        filename provided
+    """    
+ 
+    i = 0
+    for i in range(len(camera_list)):
+        if query_timestamp <= camera_list[i].epoch_timestamp:
+            break
+    c1 = camera_list[i]
+    c2 = camera_list[i]
+    if i > 1:
+        c1 = camera_list[i-1]
+
+    c = Camera()
+    c.filename = filename
+    c.epoch_timestamp = query_timestamp
+    c.northings = interpolate(
+        query_timestamp, c1.epoch_timestamp, c2.epoch_timestamp, 
+        c1.northings, c2.northings)
+    c.eastings = interpolate(
+        query_timestamp, c1.epoch_timestamp, c2.epoch_timestamp, 
+        c1.eastings, c2.eastings)
+    c.depth = interpolate(
+        query_timestamp, c1.epoch_timestamp, c2.epoch_timestamp, 
+        c1.depth, c2.depth)
+    c.latitude = interpolate(
+        query_timestamp, c1.epoch_timestamp, c2.epoch_timestamp, 
+        c1.latitude, c2.latitude)
+    c.longitude = interpolate(
+        query_timestamp, c1.epoch_timestamp, c2.epoch_timestamp, 
+        c1.longitude, c2.longitude)
+    c.roll = interpolate(
+        query_timestamp, c1.epoch_timestamp, c2.epoch_timestamp, 
+        c1.roll, c2.roll)
+    c.pitch = interpolate(
+        query_timestamp, c1.epoch_timestamp, c2.epoch_timestamp, 
+        c1.pitch, c2.pitch)
+    c.yaw = interpolate(
+        query_timestamp, c1.epoch_timestamp, c2.epoch_timestamp, 
+        c1.yaw, c2.yaw)
+    c.x_velocity = interpolate(
+        query_timestamp, c1.epoch_timestamp, c2.epoch_timestamp, 
+        c1.x_velocity, c2.x_velocity)
+    c.y_velocity = interpolate(
+        query_timestamp, c1.epoch_timestamp, c2.epoch_timestamp, 
+        c1.y_velocity, c2.y_velocity)
+    c.z_velocity = interpolate(
+        query_timestamp, c1.epoch_timestamp, c2.epoch_timestamp, 
+        c1.z_velocity, c2.z_velocity)
+    c.altitude = interpolate(
+        query_timestamp, c1.epoch_timestamp, c2.epoch_timestamp, 
+        c1.altitude, c2.altitude)
+    return c
 
 
 def interpolate_usbl(query_timestamp, data_1, data_2):

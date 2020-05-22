@@ -9,7 +9,7 @@ from auv_nav.tools.time_conversions import date_time_to_epoch
 from auv_nav.tools.time_conversions import read_timezone
 from auv_nav.tools.latlon_wgs84 import latlon_to_metres
 from auv_nav.tools.latlon_wgs84 import metres_to_latlon
-from auv_nav.tools.console import Console
+from oplab import Console
 from math import sqrt, atan2, pi, sin, cos
 import json as js
 import numpy as np
@@ -176,16 +176,16 @@ class BodyVelocity(OutputFormat):
         self.y_velocity_std = json['data'][1]['y_velocity_std']
         self.z_velocity_std = json['data'][2]['z_velocity_std']
 
-        if sensor_std['model'] is 'json':
+        if sensor_std['model'] == 'json':
             self.x_velocity_std = json['data'][0]['x_velocity_std']
             self.y_velocity_std = json['data'][1]['y_velocity_std']
             self.z_velocity_std = json['data'][2]['z_velocity_std']
-        elif sensor_std['model'] is 'linear':
+        elif sensor_std['model'] == 'linear':
             self.x_velocity_std = sensor_std['offset'] + sensor_std['factor']*self.x_velocity
             self.y_velocity_std = sensor_std['offset'] + sensor_std['factor']*self.y_velocity
             self.z_velocity_std = sensor_std['offset'] + sensor_std['factor']*self.z_velocity
         else:
-            Console.error('The STD model you entered for USBL is not supported.')
+            Console.error('The STD model you entered for DVL is not supported.')
             Console.quit('STD model not supported.')
 
     def write_csv_header(self):
@@ -397,11 +397,11 @@ class Orientation(OutputFormat):
         self.pitch = json['data'][2]['pitch']
         self.yaw = json['data'][0]['heading']
 
-        if sensor_std['model'] is 'json':
+        if sensor_std['model'] == 'json':
             self.roll_std = json['data'][1]['roll_std']
             self.pitch_std = json['data'][2]['pitch_std']
             self.yaw_std = json['data'][0]['heading_std']
-        elif sensor_std['model'] is 'linear':
+        elif sensor_std['model'] == 'linear':
             self.roll_std = sensor_std['offset'] + sensor_std['factor']*self.roll
             self.pitch_std = sensor_std['offset'] + sensor_std['factor']*self.pitch
             self.yaw_std = sensor_std['offset'] + sensor_std['factor']*self.yaw
@@ -506,9 +506,9 @@ class Depth(OutputFormat):
         self.epoch_timestamp = json['epoch_timestamp']
         self.depth_timestamp = json['epoch_timestamp_depth']
         self.depth = json['data'][0]['depth']
-        if sensor_std['model'] is 'json':
+        if sensor_std['model'] == 'json':
             self.depth_std = json['data'][0]['depth_std']
-        elif sensor_std['model'] is 'linear':
+        elif sensor_std['model'] == 'linear':
             self.depth_std = sensor_std['offset'] + sensor_std['factor']*self.depth
         else:
             Console.error('The STD model you entered for USBL is not supported.')
@@ -714,12 +714,12 @@ class Usbl(OutputFormat):
         self.depth_std = json['data_target'][4]['depth_std']
         self.distance_to_ship = json['data_target'][5]['distance_to_ship']
 
-        if sensor_std['model'] is 'json':
+        if sensor_std['model'] == 'json':
             self.latitude_std = json['data_target'][0]['latitude_std']
             self.longitude_std = json['data_target'][1]['longitude_std']
             self.northings_std = json['data_target'][2]['northings_std']
             self.eastings_std = json['data_target'][3]['eastings_std']
-        elif sensor_std['model'] is 'linear':
+        elif sensor_std['model'] == 'linear':
             self.northings_std = sensor_std['offset'] + sensor_std['factor']*self.distance_to_ship
             self.eastings_std = sensor_std['offset'] + sensor_std['factor']*self.distance_to_ship
             self.latitude_std = self.eastings_std / 111.111e3
@@ -867,12 +867,47 @@ class Camera():
         return data
 
     def write_csv_header(self):
-        return ('epoch_timestamp,'
-                + 'filename\n')
+        return 'Imagenumber,Northing [m],Easting [m],Depth [m],'\
+               'Roll [deg],Pitch [deg],Heading [deg],Altitude '\
+               '[m],Timestamp,Latitude [deg],Longitude [deg]'\
+               ',x_velocity,y_velocity,z_velocity\n'
+
+    def write_csv_header_cov(self):
+        str_to_write_cov = ''
+        cov = ['x', 'y', 'z',
+               'roll', 'pitch', 'yaw',
+               'vx', 'vy', 'vz',
+               'vroll', 'vpitch', 'vyaw']
+        for a in cov:
+            for b in cov:
+                str_to_write_cov += ', cov_'+a+'_'+b
+        str_to_write_cov += '\n'
+        return str_to_write_cov
 
     def to_csv(self):
-        return (str(self.epoch_timestamp) + ','
-                + str(self.filename) + '\n')
+        return (str(self.filename) + ','
+                + str(self.northings) + ','
+                + str(self.eastings) + ','
+                + str(self.depth) + ','
+                + str(self.roll) + ','
+                + str(self.pitch) + ','
+                + str(self.yaw) + ','
+                + str(self.altitude) + ','
+                + str(self.epoch_timestamp) + ','
+                + str(self.latitude) + ','
+                + str(self.longitude) + ','
+                + str(self.x_velocity) + ','
+                + str(self.y_velocity) + ','
+                + str(self.z_velocity) + '\n')
+
+    def to_csv_cov(self):
+        if self.covariance is not None:
+            cov = self.covariance.flatten().tolist()
+            cov = [item for sublist in cov for item in sublist]
+            str_to_write_cov = str(self.filename)
+            for c in cov:
+                str_to_write_cov += ', {:.6f}'.format(c)
+            str_to_write_cov += '\n'
 
 
 class Tide(OutputFormat):
@@ -896,9 +931,9 @@ class Tide(OutputFormat):
 #        self.tide_timestamp = json['epoch_timestamp_tide']
         self.height = json['data'][0]['tide']
 
-        if sensor_std['model'] is 'json':
+        if sensor_std['model'] == 'json':
             self.height_std = json['data'][0]['tide_std']
-        elif sensor_std['model'] is 'linear':
+        elif sensor_std['model'] == 'linear':
             self.height_std = sensor_std['offset'] + sensor_std['factor']*self.height
         else:
             Console.error('The STD model you entered for TIDE is not supported.')

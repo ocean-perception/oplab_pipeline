@@ -1,0 +1,9 @@
+altitude:
+  min: 5
+  max: 15
+  step: 0.5
+
+camera_calibration_file: stereo_Cam51707923_Cam51707925.yaml
+laser_plane: [0., 1.0, 0., -1.5]
+
+output_folder: virtual_images

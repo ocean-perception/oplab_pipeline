@@ -9,8 +9,8 @@ from auv_nav.sensors import Orientation, Depth, Altitude
 from auv_nav.sensors import Category, PhinsHeaders
 from auv_nav.tools.time_conversions import date_time_to_epoch
 from auv_nav.tools.time_conversions import read_timezone
-from auv_nav.tools.folder_structure import get_raw_folder
-from auv_nav.tools.console import Console
+from oplab import get_raw_folder
+from oplab import Console
 
 
 class PhinsTimestamp():

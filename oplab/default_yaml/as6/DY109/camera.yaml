@@ -1,0 +1,20 @@
+camera_system: biocam
+cameras:
+  - name: cam61003146
+    type: rggb
+    bit_depth: 16
+    path: 'image/cam61003146_strobed'
+    extension: tif
+    filename_to_date: YYYYMMDDxhhmmssxfffuuuxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxx
+  - name: cam61004444
+    type: grayscale
+    bit_depth: 16
+    path: 'image/cam61004444_strobed'
+    extension: tif
+    filename_to_date: 'YYYYMMDDxhhmmssxfffuuuxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxx'
+  - name: cam61004444_laser
+    type: grayscale
+    bit_depth: 16
+    path: 'image/cam61004444_laser'
+    extension: jpg
+    filename_to_date: 'YYYYMMDDxhhmmssxfffuuuxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxx'

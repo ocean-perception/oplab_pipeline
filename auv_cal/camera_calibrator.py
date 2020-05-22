@@ -38,7 +38,7 @@ import numpy.linalg
 from distutils.version import LooseVersion
 from auv_nav.parsers.parse_biocam_images import biocam_timestamp_from_filename
 from auv_nav.parsers.parse_acfr_images import acfr_timestamp_from_filename
-from auv_nav.tools.console import Console
+from oplab import Console
 from pathlib import Path
 import numpy as np
 import json
@@ -456,7 +456,10 @@ class Calibrator(object):
                       + "  cols: 4\n"
                       + "  dt: d\n"
                       + "  data: [" + ", ".join(["%8f" % i for i in p.reshape(1, 12)[0]]) + "]\n"
-                      + 'date: \"' + str(datetime.datetime.now()) + "\" \n"
+                      + 'date: \"' + Console.get_date() + "\" \n"
+                      + 'user: \"' + Console.get_username() + "\" \n"
+                      + 'host: \"' + Console.get_hostname() + "\" \n"
+                      + 'version: \"' + Console.get_version() + "\" \n"
                       + "number_of_images: " + str(num_images) + "\n"
                       + "avg_reprojection_error: " + str(error) + "\n"
                       + "")
@@ -1032,10 +1035,8 @@ class StereoCalibrator(Calibrator):
                 #cv2.waitKey(3)
 
                 filename = Path('/tmp/stereo_' + self.name + '_remap/stereo_' + str(i) + '_' + self.l.name + '_' + self.r.name + '_remap.png')
-                if not lfilename.parents[0].exists():
-                    lfilename.parents[0].mkdir(parents=True)
-                if not rfilename.parents[0].exists():
-                    rfilename.parents[0].mkdir(parents=True)
+                if not filename.parents[0].exists():
+                    filename.parents[0].mkdir(parents=True)
 
                 cv2.imwrite(str(filename), final_image)
                 if error is not None:
@@ -1099,75 +1100,88 @@ class StereoCalibrator(Calibrator):
         error = self.avg_reprojection_error
 
         calmessage = ("%YAML:1.0\n"
-                      + "left:\n"
-                      + "  image_width: " + str(self.l.size[0]) + "\n"
-                      + "  image_height: " + str(self.l.size[1]) + "\n"
-                      + "  camera_name: " + self.l.name + "\n"
-                      + "  camera_matrix: !!opencv-matrix\n"
-                      + "    rows: 3\n"
-                      + "    cols: 3\n"
-                      + "    dt: d\n"
-                      + "    data: [" + ", ".join(["%8f" % i for i in k1.reshape(1, 9)[0]]) + "]\n"
-                      + "  distortion_model: " +
+                      "left:\n"
+                      "  image_width: " + str(self.l.size[0]) + "\n"
+                      "  image_height: " + str(self.l.size[1]) + "\n"
+                      "  camera_name: " + self.l.name + "\n"
+                      "  camera_matrix: !!opencv-matrix\n"
+                      "    rows: 3\n"
+                      "    cols: 3\n"
+                      "    dt: d\n"
+                      "    data: [" + ", ".join(["%8f" % i for i in k1.reshape(1, 9)[0]]) + "]\n"
+                      "  distortion_model: " +
                       ("rational_polynomial" if d1.size > 5 else "plumb_bob") + "\n"
-                      + "  distortion_coefficients: !!opencv-matrix\n"
-                      + "    rows: 1\n"
-                      + "    cols: 5\n"
-                      + "    dt: d\n"
-                      + "    data: [" + ", ".join(["%8f" % d1[0, i]
-                                                  for i in range(d1.shape[1])]) + "]\n"
-                      + "  rectification_matrix: !!opencv-matrix\n"
-                      + "    rows: 3\n"
-                      + "    cols: 3\n"
-                      + "    dt: d\n"
-                      + "    data: [" + ", ".join(["%8f" % i for i in r1.reshape(1, 9)[0]]) + "]\n"
-                      + "  projection_matrix: !!opencv-matrix\n"
-                      + "    rows: 3\n"
-                      + "    cols: 4\n"
-                      + "    dt: d\n"
-                      + "    data: [" + ", ".join(["%8f" % i for i in p1.reshape(1, 12)[0]]) + "]\n"
-                      + "right:\n"
-                      + "  image_width: " + str(self.r.size[0]) + "\n"
-                      + "  image_height: " + str(self.r.size[1]) + "\n"
-                      + "  camera_name: " + self.r.name + "\n"
-                      + "  camera_matrix: !!opencv-matrix\n"
-                      + "    rows: 3\n"
-                      + "    cols: 3\n"
-                      + "    dt: d\n"
-                      + "    data: [" + ", ".join(["%8f" % i for i in k2.reshape(1, 9)[0]]) + "]\n"
-                      + "  distortion_model: " +
+                      "  distortion_coefficients: !!opencv-matrix\n"
+                      "    rows: 1\n"
+                      "    cols: 5\n"
+                      "    dt: d\n"
+                      "    data: [" + ", ".join(["%8f" % d1[0, i]
+                                                for i in range(d1.shape[1])]) + "]\n"
+                      "  rectification_matrix: !!opencv-matrix\n"
+                      "    rows: 3\n"
+                      "    cols: 3\n"
+                      "    dt: d\n"
+                      "    data: [" + ", ".join(["%8f" % i for i in r1.reshape(1, 9)[0]]) + "]\n"
+                      "  projection_matrix: !!opencv-matrix\n"
+                      "    rows: 3\n"
+                      "    cols: 4\n"
+                      "    dt: d\n"
+                      "    data: [" + ", ".join(["%8f" % i for i in p1.reshape(1, 12)[0]]) + "]\n"
+                      "right:\n"
+                      "  image_width: " + str(self.r.size[0]) + "\n"
+                      "  image_height: " + str(self.r.size[1]) + "\n"
+                      "  camera_name: " + self.r.name + "\n"
+                      "  camera_matrix: !!opencv-matrix\n"
+                      "    rows: 3\n"
+                      "    cols: 3\n"
+                      "    dt: d\n"
+                      "    data: [" + ", ".join(["%8f" % i for i in k2.reshape(1, 9)[0]]) + "]\n"
+                      "  distortion_model: " +
                       ("rational_polynomial" if d2.size > 5 else "plumb_bob") + "\n"
-                      + "  distortion_coefficients: !!opencv-matrix\n"
-                      + "    rows: 1\n"
-                      + "    cols: 5\n"
-                      + "    dt: d\n"
-                      + "    data: [" + ", ".join(["%8f" % d2[0, i]
-                                                  for i in range(d2.shape[1])]) + "]\n"
-                      + "  rectification_matrix: !!opencv-matrix\n"
-                      + "    rows: 3\n"
-                      + "    cols: 3\n"
-                      + "    dt: d\n"
-                      + "    data: [" + ", ".join(["%8f" % i for i in r2.reshape(1, 9)[0]]) + "]\n"
-                      + "  projection_matrix: !!opencv-matrix\n"
-                      + "    rows: 3\n"
-                      + "    cols: 4\n"
-                      + "    dt: d\n"
-                      + "    data: [" + ", ".join(["%8f" % i for i in p2.reshape(1, 12)[0]]) + "]\n"
-                      + "extrinsics:\n"
-                      + "  rotation_matrix: !!opencv-matrix\n"
-                      + "    rows: 3\n"
-                      + "    cols: 3\n"
-                      + "    dt: d\n"
-                      + "    data: [" + ", ".join(["%8f" % i for i in self.R.reshape(1, 9)[0]]) + "]\n"
-                      + "  translation_vector: !!opencv-matrix\n"
-                      + "    rows: 3\n"
-                      + "    cols: 1\n"
-                      + "    dt: d\n"
-                      + "    data: [" + ", ".join(["%8f" % i for i in self.T.reshape(1, 3)[0]]) + "]\n"
-                      + 'date: \"' + str(datetime.datetime.now()) + "\" \n"
-                      + "number_of_images: " + str(num_images) + "\n"
-                      + "avg_reprojection_error: " + str(error) + "\n"
-                      + "")
+                      "  distortion_coefficients: !!opencv-matrix\n"
+                      "    rows: 1\n"
+                      "    cols: 5\n"
+                      "    dt: d\n"
+                      "    data: [" + ", ".join(["%8f" % d2[0, i]
+                                                for i in range(d2.shape[1])]) + "]\n"
+                      "  rectification_matrix: !!opencv-matrix\n"
+                      "    rows: 3\n"
+                      "    cols: 3\n"
+                      "    dt: d\n"
+                      "    data: [" + ", ".join(["%8f" % i for i in r2.reshape(1, 9)[0]]) + "]\n"
+                      "  projection_matrix: !!opencv-matrix\n"
+                      "    rows: 3\n"
+                      "    cols: 4\n"
+                      "    dt: d\n"
+                      "    data: [" + ", ".join(["%8f" % i for i in p2.reshape(1, 12)[0]]) + "]\n"
+                      "extrinsics:\n"
+                      "  rotation_matrix: !!opencv-matrix\n"
+                      "    rows: 3\n"
+                      "    cols: 3\n"
+                      "    dt: d\n"
+                      "    data: [" + ", ".join(["%8f" % i for i in self.R.reshape(1, 9)[0]]) + "]\n"
+                      "  translation_vector: !!opencv-matrix\n"
+                      "    rows: 3\n"
+                      "    cols: 1\n"
+                      "    dt: d\n"
+                      "    data: [" + ", ".join(["%8f" % i for i in self.T.reshape(1, 3)[0]]) + "]\n"
+                      "  fundamental_matrix: !!opencv-matrix\n"
+                      "    rows: 3\n"
+                      "    cols: 3\n"
+                      "    dt: d\n"
+                      "    data: [" + ", ".join(["%8f" % i for i in self.F.reshape(1, 9)[0]]) + "]\n" # troublemaker
+                      "  essential_matrix: !!opencv-matrix\n"
+                      "    rows: 3\n"
+                      "    cols: 3\n"
+                      "    dt: d\n"
+                      "    data: [" + ", ".join(["%8f" % i for i in self.E.reshape(1, 9)[0]]) + "]\n"
+                      'date: \"' + Console.get_date() + "\" \n"
+                      'user: \"' + Console.get_username() + "\" \n"
+                      'host: \"' + Console.get_hostname() + "\" \n"
+                      'version: \"' + Console.get_version() + "\" \n"
+                      "number_of_images: " + str(num_images) + "\n"
+                      "avg_reprojection_error: " + str(error) + "\n"
+                      "")
         return calmessage
 
     # TODO Get rid of "from_images" versions of these, instead have function to get undistorted corners

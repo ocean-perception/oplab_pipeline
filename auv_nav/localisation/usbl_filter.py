@@ -1,6 +1,6 @@
 
 from auv_nav.tools.interpolate import interpolate
-from auv_nav.tools.console import Console
+from oplab import Console
 
 # filter usbl data outliers
 # interpolate to find the appropriate depth to compute seafloor depth for each
@@ -109,7 +109,7 @@ def usbl_filter(usbl_list, depth_list, sigma_factor, max_auv_speed):
                            sigma_factor,
                            max_auv_speed):
             n += 1
-            if n is 0:
+            if n == 0:
                 n += 1
             if n > continuity_condition:
                 usbl_temp_list.append(usbl_list[i])

@@ -4,10 +4,10 @@ Copyright (c) 2018, University of Southampton
 All rights reserved.
 """
 
-from auv_nav.parse_data import parse_data
-from auv_nav.process_data import process_data
-from auv_nav.convert_data import convert_data
-from auv_nav.tools.console import Console
+from auv_nav.parse import parse
+from auv_nav.process import process
+from auv_nav.convert import convert
+from oplab import Console
 
 import sys
 import argparse
@@ -51,6 +51,7 @@ def main(args=None):
     subparser_parse.add_argument(
         "path",
         default=".",
+        nargs='+',
         help="Folderpath where the (raw) input data is. Needs to be a \
         subfolder of 'raw' and contain the mission.yaml configuration file.",
     )
@@ -62,6 +63,12 @@ def main(args=None):
         action="store_true",
         help="Force file \
         overwite",
+    )
+    subparser_parse.add_argument(
+        "--merge",
+        dest="merge",
+        action="store_true",
+        help="Merge multiple dives into a single JSON file. Requires more than one dive PATH.",
     )
     subparser_parse.set_defaults(func=call_parse_data)
 
@@ -121,14 +128,20 @@ def main(args=None):
     subparser_convert = subparsers.add_parser(
         "convert",
         help="Converts data from oplab nav_standard.json into your \
-        specified output format. Type auv_nav convert -h for help on this \
+        specified output format, or from ACFR to oplab. \
+        Type auv_nav convert -h for help on this \
         target.",
     )
     subparser_convert.add_argument(
         "path",
         default=".",
-        help="Path to folder where the data is. The folder \
-        has to be generated using auv_nav parse.",
+        help="Dive folder to convert from.",
+    )
+    subparser_convert.add_argument(
+        "-i",
+        "--input",
+        dest="input",
+        help="Input pose file (e.g. stereo_pose_est.data) to import camera positions from.",
     )
     subparser_convert.add_argument(
         "-f",
@@ -168,15 +181,15 @@ def main(args=None):
 
 
 def call_parse_data(args):
-    parse_data(args.path, args.force)
+    parse(args.path, args.force, args.merge)
 
 
 def call_process_data(args):
-    process_data(args.path, args.force, args.start_datetime, args.end_datetime)
+    process(args.path, args.force, args.start_datetime, args.end_datetime)
 
 
 def call_convert_data(args):
-    convert_data(args.path, args.format, args.start_datetime, args.end_datetime)
+    convert(args.path, args.input, args.format, args.start_datetime, args.end_datetime)
 
 
 if __name__ == "__main__":

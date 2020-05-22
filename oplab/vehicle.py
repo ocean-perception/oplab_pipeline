@@ -1,7 +1,7 @@
 import yaml
-from auv_nav.tools.folder_structure import get_config_folder
-from auv_nav.tools.folder_structure import get_raw_folder
-from auv_nav.tools.console import Console
+from oplab import get_config_folder
+from oplab import get_raw_folder
+from oplab.console import Console
 # Workaround to dump OrderedDict into YAML files
 from collections import OrderedDict
 
@@ -63,6 +63,8 @@ class SensorOffset:
 
 
 class Vehicle:
+    """Vehicle class that parses and writes vehicle.yaml
+    """
     def __init__(self, filename=None):
         self.origin = SensorOffset()
         self.ins = SensorOffset()
@@ -82,7 +84,7 @@ class Vehicle:
         mission_file = filename.parent / 'mission.yaml'
         old_format = False
 
-        from auv_nav.parsers.mission import Mission
+        from oplab import Mission
         mission = Mission(mission_file)
         mission_stream = mission_file.open('r')
         mission_data = yaml.safe_load(mission_stream)
