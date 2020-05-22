@@ -4,8 +4,6 @@ import cv2
 import numpy as np
 import math
 import random
-# from auv_cal.ransac import plane_fitting_ransac
-#from auv_cal.ransac import fit_plane
 from auv_cal.plane_fitting import Plane
 from oplab import Console
 from oplab import get_processed_folder
@@ -388,16 +386,7 @@ class LaserCalibrator():
     def fit_and_save(self, cloud):
         total_no_points = len(cloud)
 
-        Console.info('RANSAC Fitting a plane to', total_no_points, 'points...')
-
-        """ mean_plane, inliers_cloud = plane_fitting_ransac(
-            cloud,
-            min_distance_threshold=self.mdt,
-            sample_size=self.ssp*total_no_points,
-            goal_inliers=total_no_points*self.gip,
-            max_iterations=self.max_iterations,
-            plot=True) """
-        
+        Console.info('Fitting a plane to', total_no_points, 'points...')
         p = Plane([1, 0, 0, 1.5])
         mean_plane, inliers_cloud = p.fit(cloud, self.mdt)
         p.plot(cloud=cloud)
@@ -408,15 +397,14 @@ class LaserCalibrator():
 
         inliers_cloud_list = list(inliers_cloud)
 
-        Console.info('RANSAC plane with all points: {}'.format(mean_plane))
-        Console.info('RANSAC found', len(inliers_cloud_list), 'inliers')
+        Console.info('Least squares found', len(inliers_cloud_list), 'inliers')
 
         if len(inliers_cloud_list) < 0.5*len(cloud)*self.gip:
             Console.warn('The number of inliers found are off from what you expected.')
             Console.warn(' * Expected inliers:', len(cloud)*self.gip)
             Console.warn(' * Found inliers:', len(inliers_cloud_list))
             Console.warn('Check the output cloud to see if the found plane makes sense.')
-            Console.warn('Either relax your RANSAC distance threshold, increase the number of iterations or relax your expectations.')
+            Console.warn('Try to increase your distance threshold.')
 
         cloud_sample_size = int(self.cssr * len(inliers_cloud_list))
         if cloud_sample_size > 10000:
@@ -429,15 +417,6 @@ class LaserCalibrator():
             total_no_points = len(point_cloud_local)
             p = Plane([1, 0, 0, 1.5])
             m = p.fit_non_robust(point_cloud_local)
-            """
-            m, _ = plane_fitting_ransac(
-                point_cloud_local,
-                min_distance_threshold=self.mdt,
-                sample_size=self.ssp*total_no_points,
-                goal_inliers=total_no_points*self.gip,
-                max_iterations=self.max_iterations,
-                plot=False)
-            """
             angle, pitch, yaw = get_angles(m[0:3])
             planes.append([angle, pitch, yaw])
             Console.progress(i, self.num_iterations, prefix='Iterating planes')
@@ -653,7 +632,7 @@ class LaserCalibrator():
         point_cloud_rs = point_cloud_rs.reshape(-1, 3)
         point_cloud_filt = np.array(point_cloud_filt)
         point_cloud_filt = point_cloud_filt.reshape(-1, 3)
-        self.yaml_msg = self.fit_and_save(point_cloud_rs)
+        # self.yaml_msg = self.fit_and_save(point_cloud_rs)
         self.yaml_msg = self.fit_and_save(point_cloud_filt)
         
         if self.two_lasers:
@@ -669,7 +648,7 @@ class LaserCalibrator():
             point_cloud_b_rs = point_cloud_b_rs.reshape(-1, 3)
             point_cloud_b_filt = np.array(point_cloud_b_filt)
             point_cloud_b_filt = point_cloud_b_filt.reshape(-1, 3)
-            self.yaml_msg_b = self.fit_and_save(point_cloud_b_rs)
+            # self.yaml_msg_b = self.fit_and_save(point_cloud_b_rs)
             self.yaml_msg_b = self.fit_and_save(point_cloud_b_filt)
 
     def yaml(self):
