@@ -182,9 +182,9 @@ class CircularCone:
         ax.set_ylabel('y [m]')
         ax.set_zlabel('z [m]')
         ax.invert_zaxis()
-        if cloud:
+        if cloud is not None:
             ax.scatter(cloud[:,0], cloud[:,1], cloud[:,2], c='red')
-        if points:
+        if points is not None:
             ax.scatter(points[:,0], points[:,1], points[:,2], c='green')
         plt.show()
 

@@ -4,8 +4,9 @@ import cv2
 import numpy as np
 import math
 import random
-from auv_cal.ransac import plane_fitting_ransac
-from auv_cal.ransac import fit_plane
+# from auv_cal.ransac import plane_fitting_ransac
+#from auv_cal.ransac import fit_plane
+from auv_cal.plane_fitting import Plane
 from oplab import Console
 from oplab import get_processed_folder
 from auv_nav.parsers.parse_biocam_images import biocam_timestamp_from_filename
@@ -390,13 +391,18 @@ class LaserCalibrator():
 
         Console.info('RANSAC Fitting a plane to', total_no_points, 'points...')
 
-        mean_plane, inliers_cloud = plane_fitting_ransac(
+        """ mean_plane, inliers_cloud = plane_fitting_ransac(
             cloud,
             min_distance_threshold=self.mdt,
             sample_size=self.ssp*total_no_points,
             goal_inliers=total_no_points*self.gip,
             max_iterations=self.max_iterations,
-            plot=True)
+            plot=True) """
+        
+        p = Plane([1, 0, 0, 1.5])
+        mean_plane = p.fit(cloud)
+        p.plot(cloud=cloud)
+        inliers_cloud = cloud
 
         scale = 1.0/mean_plane[0]
         mean_plane = np.array(mean_plane)*scale
@@ -422,6 +428,9 @@ class LaserCalibrator():
         for i in range(0, self.num_iterations):
             point_cloud_local = random.sample(inliers_cloud_list, cloud_sample_size)
             total_no_points = len(point_cloud_local)
+            p = Plane([1, 0, 0, 1.5])
+            m = p.fit(cloud)
+            """
             m, _ = plane_fitting_ransac(
                 point_cloud_local,
                 min_distance_threshold=self.mdt,
@@ -429,6 +438,7 @@ class LaserCalibrator():
                 goal_inliers=total_no_points*self.gip,
                 max_iterations=self.max_iterations,
                 plot=False)
+            """
             angle, pitch, yaw = get_angles(m[0:3])
             planes.append([angle, pitch, yaw])
             Console.progress(i, self.num_iterations, prefix='Iterating planes')
