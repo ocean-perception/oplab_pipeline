@@ -8,8 +8,10 @@ from auv_cal.camera_calibrator import ChessboardInfo
 from auv_cal.camera_calibrator import Patterns
 from auv_cal.camera_calibrator import StereoCalibrator
 from auv_cal.laser_calibrator import LaserCalibrator
+from oplab import check_dirs_exist
 from oplab import get_raw_folder
 from oplab import get_processed_folder
+from oplab import get_raw_folders
 from oplab import get_config_folder
 from oplab import valid_dive
 from pathlib import Path
@@ -53,12 +55,13 @@ def check_pattern(config):
 
 
 def calibrate_mono(name, filepaths, extension, config, output_file, overwrite):
+    if not check_dirs_exist(filepaths):
+        filepaths = get_raw_folders(filepaths)
     Console.info('Looking for {} calibration images in {}'.format(extension, str(filepaths)))
     image_list = collect_image_files(filepaths, extension)
     Console.info('Found ' + str(len(image_list)) + ' images.')
     if len(image_list) < 8:
-        Console.error('Too few images. Try to get more.')
-        return
+        Console.quit('Too few images. Try to get more.')
 
     mc = MonoCalibrator(boards=[ChessboardInfo(config["rows"],
                                                config["cols"],
@@ -85,6 +88,9 @@ def calibrate_mono(name, filepaths, extension, config, output_file, overwrite):
 def calibrate_stereo(left_name, left_filepaths, left_extension, left_calib,
                      right_name, right_filepaths, right_extension, right_calib,
                      config, output_file):
+    if not check_dirs_exist(left_filepaths) or not check_dirs_exist(right_filepaths):
+        left_filepaths = get_raw_folders(left_filepaths)
+        right_filepaths = get_raw_folders(right_filepaths)
     Console.info('Looking for calibration images in {}'.format(str(left_filepaths)))
     left_image_list = collect_image_files(left_filepaths, left_extension)
     Console.info('Found ' + str(len(left_image_list)) + ' left images.')
@@ -92,8 +98,7 @@ def calibrate_stereo(left_name, left_filepaths, left_extension, left_calib,
     right_image_list = collect_image_files(right_filepaths, right_extension)
     Console.info('Found ' + str(len(right_image_list)) + ' right images.')
     if len(left_image_list) < 8 or len(right_image_list) < 8:
-        Console.error('Too few images. Try to get more.')
-        return
+        Console.quit('Too few images. Try to get more.')
     try:
         with left_calib.with_suffix('.json').open('r') as f:
             left_json = json.load(f)
@@ -206,7 +211,7 @@ class Calibrator():
                 Console.warn('The camera ' + c['name'] + ' has already been calibrated. If you want to overwrite the JSON, use the -F flag.')
             else:
                 Console.info('The camera is not calibrated, running mono calibration...')
-            filepaths = build_filepath(self.filepath, c['camera_calibration']['path'])
+            filepaths = build_filepath(get_processed_folder(self.filepath), c['camera_calibration']['path'])
 
             if not 'glob_pattern' in c['camera_calibration']:
                 Console.error('Could not find the key glob_pattern for the camera ', c['name'])
@@ -230,8 +235,8 @@ class Calibrator():
             else:
                 Console.info('The stereo camera is not calibrated, running stereo calibration...')
 
-                left_filepaths = build_filepath(self.filepath, c0['camera_calibration']['path'])
-                right_filepaths = build_filepath(self.filepath, c1['camera_calibration']['path'])
+                left_filepaths = build_filepath(get_processed_folder(self.filepath), c0['camera_calibration']['path'])
+                right_filepaths = build_filepath(get_processed_folder(self.filepath), c1['camera_calibration']['path'])
                 left_name = c0['name']
                 if not 'glob_pattern' in c0['camera_calibration']:
                     Console.error('Could not find the key glob_pattern for the camera ', c0['name'])
@@ -320,13 +325,19 @@ class Calibrator():
                     Console.warn('Could not find a stereo calibration file ' + str(stereo_calibration_file) + '...')
                     self.stereo()
                 left_name = c0['name']
-                left_filepath = self.filepath / str(c0['laser_calibration']['path'])
-                left_filepath = left_filepath.resolve()
+                left_filepath = get_processed_folder(self.filepath) / str(c0['laser_calibration']['path'])
                 left_extension = str(c0['laser_calibration']['glob_pattern'])
                 right_name = c1['name']
-                right_filepath = self.filepath / str(c1['laser_calibration']['path'])
-                right_filepath = right_filepath.resolve()
+                right_filepath = get_processed_folder(self.filepath) / str(c1['laser_calibration']['path'])
                 right_extension = str(c1['laser_calibration']['glob_pattern'])
+                if not left_filepath.exists() or not right_filepath.exists():
+                    left_filepath = get_raw_folder(left_filepath)
+                    right_filepath = get_raw_folder(right_filepath)
+                    if not left_filepath.exists() or not right_filepath.exists():
+                        Console.quit('Could not find stereo image folders (' + str(c0['laser_calibration']['path']) + ' and/or ' + str(c1['laser_calibration']['path']) + ') neither in processed nor in raw folder.')
+                right_filepath = right_filepath.resolve()
+                right_filepath = right_filepath.resolve()
+                Console.info('Reading stereo images of laser line from ' + str(left_filepath) + ' and ' + str(right_filepath))
                 if not 'skip_first' in self.calibration_config:
                     self.calibration_config['skip_first'] = 0
                 calibrate_laser(left_name,

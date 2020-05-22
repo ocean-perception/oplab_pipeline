@@ -72,6 +72,37 @@ def get_processed_folder(path):
     return get_folder(path, "processed")
 
 
+def check_dirs_exist(dirs):
+    if isinstance(dirs, list):
+        for d in dirs:
+            if not d.is_dir():
+                return False
+    else:
+        if not dirs.is_dir():
+            return False
+    return True
+
+
+def get_raw_folders(dirs):
+    if isinstance(dirs, list):
+        dir_list = []
+        for d in dirs:
+            dir_list.append(get_raw_folder(d))
+        return dir_list
+    else:
+        return get_raw_folder(dirs)
+
+
+def get_processed_folders(dirs):
+    if isinstance(dirs, list):
+        dir_list = []
+        for d in dirs:
+            dir_list.append(get_processed_folder(d))
+        return dir_list
+    else:
+        return get_processed_folder(dirs)
+
+
 def _copy(self, target):
     import shutil
     assert self.is_file()
