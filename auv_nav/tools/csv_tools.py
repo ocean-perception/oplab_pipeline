@@ -192,29 +192,24 @@ def camera_csv(camera_list, camera_name, csv_filepath, csv_flag):
 
         Console.info("Writing outputs to {}.csv ...".format(camera_name))
         file = csv_file / '{}.csv'.format(camera_name)
-        covariance_file = csv_file / '{}_cov.csv'.format(camera_name)
-
         str_to_write = 'Imagenumber, Northing [m], Easting [m], Depth [m], ' \
                        'Roll [deg], Pitch [deg], Heading [deg], Altitude '\
                        '[m], Timestamp, Latitude [deg], Longitude [deg]'\
-                       ', x_velocity, y_velocity, z_velocity\n'
-        str_to_write_cov = 'Imagenumber'
+                       ', x_velocity, y_velocity, z_velocity'
         cov = ['x', 'y', 'z',
                'roll', 'pitch', 'yaw',
                'vx', 'vy', 'vz',
                'vroll', 'vpitch', 'vyaw']
         for a in cov:
             for b in cov:
-                str_to_write_cov += ', cov_'+a+'_'+b
-        str_to_write_cov += '\n'
+                str_to_write += ', cov_'+a+'_'+b
+        str_to_write += '\n'
 
         if len(camera_list) > 0:
             fileout = file.open('w')
-            fileout_cov = covariance_file.open('w')
 
             # write headers
             fileout.write(str_to_write)
-            fileout_cov.write(str_to_write_cov)
 
             # Loop for each line in csv
             for i in range(len(camera_list)):
@@ -233,14 +228,13 @@ def camera_csv(camera_list, camera_name, csv_filepath, csv_flag):
                         + str(camera_list[i].longitude) + ','
                         + str(camera_list[i].x_velocity) + ','
                         + str(camera_list[i].y_velocity) + ','
-                        + str(camera_list[i].z_velocity)) + '\n'
-                    fileout.write(str_to_write)
+                        + str(camera_list[i].z_velocity))
                     if camera_list[i].covariance is not None:
                         for k in range(camera_list[i].covariance.shape[0]):
                             c = camera_list[i].covariance[k, k]
                             str_to_write += ',' + str(c)
-                        str_to_write_cov += '\n'
-                        fileout_cov.write(str_to_write_cov)
+                    str_to_write += '\n'
+                    fileout.write(str_to_write)
                 except IndexError:
                     Console.quit('There is something wrong with camera filenames and indexing. Check camera_csv function.')
         else:

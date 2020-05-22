@@ -194,7 +194,7 @@ def draw_laser(left_image_name, right_image_name, left_maps, right_maps, top_lef
         Console.info('Saved ' + str(lfilename) + ' and ' + str(rfilename))
 
 
-def thread_detect(left_image_name, left_maps, right_image_name, right_maps, min_greenness_value, k, num_columns, start_row, end_row, start_row_b, end_row_b, two_lasers, remap):
+def thread_detect(left_image_name, left_maps, right_image_name, right_maps, min_greenness_value, k, num_columns, start_row, end_row, start_row_b, end_row_b, two_lasers, remap, overwrite):
     def write_file(filename, image_name, maps, min_greenness_value, k, num_columns, start_row, end_row, start_row_b, end_row_b, two_lasers, remap):
         p1b = []
         img1 = cv2.imread(str(image_name), cv2.IMREAD_ANYDEPTH)
@@ -211,7 +211,7 @@ def thread_detect(left_image_name, left_maps, right_image_name, right_maps, min_
         p1b = np.array(p1b, dtype=np.float32)
         return p1, p1b
 
-    def do_image(image_name, maps, min_greenness_value, k, num_columns, start_row, end_row, start_row_b, end_row_b, two_lasers, remap):
+    def do_image(image_name, maps, min_greenness_value, k, num_columns, start_row, end_row, start_row_b, end_row_b, two_lasers, remap, overwrite):
         # Load image
         points = []
         points_b = []
@@ -222,7 +222,9 @@ def thread_detect(left_image_name, left_maps, right_image_name, right_maps, min_
             output_path.mkdir(parents=True, exist_ok=True)
         fstem = str(image_name.stem) + '.txt'
         filename = output_path / fstem
-        if filename.exists():
+        if overwrite or not filename.exists():
+            points, points_b = write_file(filename, image_name, maps, min_greenness_value, k, num_columns, start_row, end_row, start_row_b, end_row_b, two_lasers, remap)
+        else:
             # print('Opening ' + filename.name)
             with filename.open('r') as f:
                 r = yaml.safe_load(f)
@@ -242,8 +244,6 @@ def thread_detect(left_image_name, left_maps, right_image_name, right_maps, min_
                     points_b = np.array(points_b, dtype=np.float32)
             else:
                 points, points_b = write_file(filename, image_name, maps, min_greenness_value, k, num_columns, start_row, end_row, start_row_b, end_row_b, two_lasers, remap)
-        else:
-            points, points_b = write_file(filename, image_name, maps, min_greenness_value, k, num_columns, start_row, end_row, start_row_b, end_row_b, two_lasers, remap)
         return points, points_b
     # print('PAIR: ' + left_image_name.stem + ' - ' + right_image_name.stem)
     p1, p1b = do_image(
@@ -256,7 +256,7 @@ def thread_detect(left_image_name, left_maps, right_image_name, right_maps, min_
         end_row,
         start_row_b,
         end_row_b,
-        two_lasers, remap)
+        two_lasers, remap, overwrite)
     p2, p2b = do_image(
         right_image_name,
         right_maps,
@@ -267,7 +267,7 @@ def thread_detect(left_image_name, left_maps, right_image_name, right_maps, min_
         end_row,
         start_row_b,
         end_row_b,
-        two_lasers, remap)
+        two_lasers, remap, overwrite)
     draw_laser(left_image_name, right_image_name, left_maps, right_maps, p1, p2, p1b, p2b, remap)
     return p1, p2, p1b, p2b
 
@@ -294,11 +294,13 @@ def save_cloud(filename, cloud):
 class LaserCalibrator():
     def __init__(self,
                  stereo_camera_model,
-                 config):
+                 config,
+                 overwrite=False):
         self.data = []
 
         self.sc = stereo_camera_model
         self.config = config
+        self.overwrite = overwrite
 
         detection = config.get('detection', {})
         filtering = config.get('filter', {})
@@ -561,7 +563,7 @@ class LaserCalibrator():
 
         Console.info('Processing ', str(len(limages_sync)) , ' synchronised images...')
         result = joblib.Parallel(n_jobs=-1)([
-            joblib.delayed(thread_detect)(i, self.left_maps, j, self.right_maps, self.min_greenness_value, self.k, self.num_columns, self.start_row, self.end_row, self.start_row_b, self.end_row_b, self.two_lasers, self.remap)
+            joblib.delayed(thread_detect)(i, self.left_maps, j, self.right_maps, self.min_greenness_value, self.k, self.num_columns, self.start_row, self.end_row, self.start_row_b, self.end_row_b, self.two_lasers, self.remap, self.overwrite)
             for i, j in zip(limages_rs, rimages_rs)])
 
         count1l = 0
