@@ -35,11 +35,15 @@ class Plane:
             residuals[i] = self.distance(p)
         return residuals
 
-    def fit(self, points):
+    def fit(self, points, verbose=True):
         # Coeffs: apex(x, y, z), axis(x, y, z) and theta
         coefficients = np.array([1, 0, 0, -1.5], dtype=float)
         bounds = ([-1.0, -1.0, -1.0, -np.inf], [1.0, 1.0, 1.0, np.inf])
-        ret = least_squares(self.residuals, coefficients, bounds=bounds, args=([points]), ftol=1e-8, xtol=1e-8, loss='huber', verbose=2, max_nfev=5000)
+        if verbose:
+            verb_level = 2
+        else:
+            verb_level = 0
+        ret = least_squares(self.residuals, coefficients, bounds=bounds, args=([points]), ftol=1e-8, xtol=1e-8, loss='huber', verbose=verb_level, max_nfev=5000)
         self.from_coeffs(ret.x)
         print('Fitted plane with:')
         print('\t Coefficients:', self.coeffs)
