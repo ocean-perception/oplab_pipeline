@@ -25,8 +25,7 @@ def write_csv(csv_filepath, data_list, csv_filename, csv_flag):
                        'vx', 'vy', 'vz',
                        'vroll', 'vpitch', 'vyaw']
                 for a in cov:
-                    for b in cov:
-                        str_to_write += ', cov_'+a+'_'+b
+                    str_to_write += ', cov_'+a
             str_to_write += '\n'
             with file.open('w') as fileout:
                 fileout.write(str_to_write)
@@ -45,9 +44,8 @@ def write_csv(csv_filepath, data_list, csv_filename, csv_flag):
                             + str(data_list[i].longitude))
 
                         if data_list[i].covariance is not None:
-                            cov = data_list[i].covariance.flatten().tolist()
-                            cov = [item for sublist in cov for item in sublist]
-                            for c in cov:
+                            for k in range(data_list[i].covariance.shape[0]):
+                                c = data_list[i].covariance[k, k]
                                 str_to_write += ',' + str(c)
                         str_to_write += '\n'
                         fileout.write(str_to_write)
@@ -238,11 +236,9 @@ def camera_csv(camera_list, camera_name, csv_filepath, csv_flag):
                         + str(camera_list[i].z_velocity)) + '\n'
                     fileout.write(str_to_write)
                     if camera_list[i].covariance is not None:
-                        cov = camera_list[i].covariance.flatten().tolist()
-                        cov = [item for sublist in cov for item in sublist]
-                        str_to_write_cov = str(image_filename)
-                        for c in cov:
-                            str_to_write_cov += ', {:.6f}'.format(c)
+                        for k in range(camera_list[i].covariance.shape[0]):
+                            c = camera_list[i].covariance[k, k]
+                            str_to_write += ',' + str(c)
                         str_to_write_cov += '\n'
                         fileout_cov.write(str_to_write_cov)
                 except IndexError:
