@@ -35,7 +35,7 @@ class Plane:
             residuals[i] = self.distance(p)
         return residuals
 
-    def fit(self, points, verbose=True):
+    def fit(self, points, min_distance_inliers, verbose=True):
         # Coeffs: apex(x, y, z), axis(x, y, z) and theta
         coefficients = np.array([1, 0, 0, -1.5], dtype=float)
         bounds = ([-1.0, -1.0, -1.0, -np.inf], [1.0, 1.0, 1.0, np.inf])
@@ -43,11 +43,30 @@ class Plane:
             verb_level = 2
         else:
             verb_level = 0
-        ret = least_squares(self.residuals, coefficients, bounds=bounds, args=([points]), ftol=1e-8, xtol=1e-8, loss='huber', verbose=verb_level, max_nfev=5000)
+        ret = least_squares(
+                self.residuals, 
+                coefficients, 
+                bounds=bounds, 
+                args=([points]), 
+                ftol=None, 
+                xtol=1e-9, 
+                f_scale=min_distance_inliers,
+                loss='soft_l1', 
+                verbose=verb_level, 
+                max_nfev=5000)
         self.from_coeffs(ret.x)
-        print('Fitted plane with:')
-        print('\t Coefficients:', self.coeffs)
-        return self.coeffs
+
+        inliers = []
+        for p in points:
+            #p = np.array(p)
+            if  self.distance(p) < min_distance_inliers:
+                inliers.append(p)
+
+        if verbose:
+            print('Fitted plane with:')
+            print('\t Coefficients:', self.coeffs)
+            print('\t With', len(inliers), 'inliers')
+        return self.coeffs, inliers
 
     def ray_intersection(self, ray_point, ray_vec):
         ray_vec /= norm(ray_vec)
