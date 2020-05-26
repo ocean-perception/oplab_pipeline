@@ -105,8 +105,7 @@ def main(args=None):
 
     if len(sys.argv) == 1 and args is None:
         # Show help if no args provided
-        # parser.print_help(sys.stderr)
-        print('No arguments')
+        parser.print_help(sys.stderr)
     else:
         args = parser.parse_args()
         args.func(args)
