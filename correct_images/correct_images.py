@@ -39,8 +39,11 @@ import sys
 # Main function
 def main(args=None):
     
-    #Console.banner()
-    #Console.info('Running correct_images version ' + str(Console.get_version()))
+    # enable VT100 Escape Sequence for WINDOWS 10 for Console outputs
+    # https://stackoverflow.com/questions/16755142/how-to-make-win32-console-recognize-ansi-vt100-escape-sequences
+    os.system("")
+    Console.banner()
+    Console.info("Running correct_images version " + str(Console.get_version()))
 
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
