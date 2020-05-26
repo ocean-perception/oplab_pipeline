@@ -148,11 +148,14 @@ class Corrector:
 		if self._camera_image_file_list == 'none':
 			self._imagelist = self._camera.image_list
 		else:
-			path_file_list = self.path_config / self._camera_image_file_list
+			path_file_list = Path(self.path_config) / self._camera_image_file_list
 			with path_file_list.open('r') as f:
-				self.imageindices_from_filelist = f.readlines()
-			new_image_list = [self._imagelist[idx] for idx in self.imageindices_from_filelist]
-			#new_image_list = [imagepath for imagepath in self._imagelist if Path(imagepath).name in imagenames]
+				imageindices_from_filelist = f.readlines()
+			self.imageindices_from_filelist = []
+			for idx in imageindices_from_filelist:
+				self.imageindices_from_filelist.append(int(idx))
+
+			new_image_list = [self._camera.image_list[idx] for idx in self.imageindices_from_filelist]
 			self._imagelist = new_image_list
 	
 
@@ -191,15 +194,12 @@ class Corrector:
 				message = 'Path to ' + metric_file + ' does not exist...'
 				Console.quit(message)
 			dataframe = pd.read_csv(metric_file_path)
-
+			distance_list = dataframe[' Altitude [m]']
 			if self._camera_image_file_list == 'none':
-				selected_dataframe = dataframe.iloc[0:len(self._imagelist)] # select all the images as receied from camera.image_list
+				new_distance_list = [distance_list[idx] for idx in range(0,len(self._imagelist))]
 			else:
-				# select only the rows based on image indices provided in filelist in correct_config yaml file
-				selected_dataframe = dataframe[dataframe.index.isin(self.imageindices_from_filelist)]
-			
-			# obtain distances for corresponding images to be corrected
-			distance_list = selected_dataframe[' Altitude [m]']
+				new_distance_list = [distance_list[idx] for idx in self.imageindices_from_filelist]
+			distance_list = new_distance_list
 
 			
 			for idx in trange(len(distance_list)):
@@ -207,7 +207,6 @@ class Corrector:
 				imagename = Path(self._imagelist[idx]).stem
 				distance_matrix_numpy_file = imagename + '.npy'
 				distance_matrix_numpy_file_path = self.distance_matrix_numpy_folder / distance_matrix_numpy_file
-
 				self.distance_matrix_numpy_filelist.append(distance_matrix_numpy_file_path)
 				
 				# create the distance matrix numpy file
@@ -216,8 +215,9 @@ class Corrector:
 			Console.info('Distance matrix numpy files written successfully')
 
 			self.altitude_based_filtered_indices = [index for index, distance in enumerate(distance_list) if distance < self.altitude_max and distance > self.altitude_min]
-			Console.info('Images filtered as per altitude range...')
-
+			Console.info(len(self.altitude_based_filtered_indices), 'Images filtered as per altitude range...')
+			if len(self.altitude_based_filtered_indices) < 10:
+				Console.quit('Insufficient number of images to compute attenuation parameters...')
 
 		
 	# create a list of image numpy files to be written to disk
