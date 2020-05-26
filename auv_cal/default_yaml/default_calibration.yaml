@@ -1,6 +1,10 @@
 cameras:
   - name: Cam51707923
     camera_calibration:
+      # Use DIVE paths relative to the dive folder
+      # For example, to provide the relative path to a dive in
+      #    /data/dives/raw/year/cruise/platform/YYYYMMDD_hhmmss_platform_sensor_calib
+      # it is enough to start with  ../YYYYMMDD_hhmmss_platform_sensor_calib
       path: ../calibration_images/SeaXeroxData20171221_calibration_sx3_xenon/SeaXeroxData20171221_200233_cameraCal/Xviii_tiff/Cam51707923
       glob_pattern: '*.tiff'
     laser_calibration:
@@ -29,12 +33,27 @@ camera_calibration:
   invert: True
 
 laser_calibration:
-  min_greenness_value: 15
-  ransac_iterations: 100
-  remap: true
-  continuous_interpolation: true
-  window_size: 5
-  image_step: 1
-  image_sample_size: 25
-  num_iterations: 100
-  num_columns: 1024
+  detection:
+    window_size: 5
+    min_greenness_value: 15
+    num_columns: 1024
+    remap: true
+    start_row: 0
+    end_row: -1
+    start_row_b: 0
+    end_row_b: -1
+    two_lasers: false
+  filter:
+    cloud_xy: 30.0
+    cloud_z_min: 4.0
+    cloud_z_max: 15.0
+  ransac:
+    max_cloud_size: 10000
+    min_distance_threshold: 0.002
+    sample_size_ratio: 0.8
+    goal_inliers_ratio: 0.999
+    max_iterations: 5000
+  uncertainty_generation:
+    cloud_sample_size_ratio: 0.8
+    iterations: 50
+  

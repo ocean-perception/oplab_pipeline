@@ -2,7 +2,7 @@ import unittest
 import os
 from pathlib import Path
 from correct_images.corrector import Corrector
-from auv_nav.tools.console import Console
+from oplab import Console
 import pandas as pd
 import numpy as np
 import tempfile

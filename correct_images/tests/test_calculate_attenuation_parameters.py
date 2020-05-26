@@ -4,7 +4,7 @@ import os
 import numpy as np
 from pathlib import Path
 from correct_images.corrector import *
-from auv_nav.tools.console import Console
+from oplab import Console
 import pandas as pd
 import tempfile
 

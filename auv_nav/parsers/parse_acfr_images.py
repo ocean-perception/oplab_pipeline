@@ -10,8 +10,8 @@ import os
 
 # sys.path.append("..")
 from auv_nav.tools.time_conversions import date_time_to_epoch
-from auv_nav.tools.folder_structure import get_raw_folder
-from auv_nav.tools.console import Console
+from oplab import get_raw_folder
+from oplab import Console
 
 epoch_timestamp_camera1 = []
 epoch_timestamp_camera2 = []

@@ -1,20 +1,15 @@
 from pathlib import Path
 import yaml
-from auv_nav.tools.console import Console
+from oplab import Console
 from datetime import datetime
 import calendar
 import pandas as pd
-from auv_nav.tools.folder_structure import get_raw_folder
+from oplab import get_raw_folder
 
 
-def resolve(filename, path_to_mission):
-    if path_to_mission is None:
-        curr_dir = Path.cwd()
-    else:
-        curr_dir = path_to_mission
+def resolve(filename):
+    curr_dir = Path.cwd()
     curr_dir = get_raw_folder(curr_dir)
-    print(curr_dir)
-    print(filename)
     resolved_filename = ''
     for x in curr_dir.glob(filename):
         resolved_filename = x
@@ -24,12 +19,12 @@ def resolve(filename, path_to_mission):
     return resolved_filename
 
 
-class FilenameToDate:
-    def __init__(self, stamp_format: str, filename=None, columns=None, path_to_mission=None):
+class FilenameToDate():
+    def __init__(self, stamp_format: str, filename=None, columns=None):
         self.stamp_format = stamp_format
         self.df = None
         if filename is not None and columns is not None:
-            self.filename = resolve(filename, path_to_mission)
+            self.filename = resolve(filename)
             self.read_timestamp_file(self.filename, columns)
 
     # Make the object callable  (e.g. operator() )
@@ -81,19 +76,11 @@ class FilenameToDate:
             assert len(second) == 2, 'Second in filename should have a length \
                 of 2'
             if msecond:
-                if len(msecond) < 3:
-                    zero_pad_length = 3 - len(msecond)
-                    for i in range(zero_pad_length):
-                        msecond = '0' + msecond
                 assert len(msecond) == 3, 'Milliseconds in filename should \
                     have a length of 3'
             else:
                 msecond = '0'
             if usecond:
-                if len(usecond) < 3:
-                    zero_pad_length = 3 - len(usecond)
-                    for i in range(zero_pad_length):
-                        usecond = '0' + usecond
                 assert len(usecond) == 3, 'Microseconds in filename should \
                     have a length of 3'
             else:
@@ -143,20 +130,3 @@ class FilenameToDate:
         df = df.drop('combined_format', axis=1)
         df[df_index_name] = df[df_index_name].astype(int)
         self.df = df.set_index(df_index_name)
-        print(self.df)
-
-
-if __name__ == '__main__':
-
-    a = filename_to_date('0000245.raw', 'iiiiiii.xxx')
-    print(a)
-    a = filename_to_date('image0000246.tif', 'xxxxxiiiiiii.xxx')
-    print(a)
-    a = filename_to_date('PR_20180811_153729_762_RC16.tif', 'xxxYYYYMMDDxhhmmssxfffxxxxx.xxx')
-    print(a)
-    a = filename_to_date('20190913_101347_962382_20190913_101346_411014_pcoc.tif', 'YYYYMMDDxhhmmssxfffuuuxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxx')
-    print(a)
-
-    f = open('example.yaml')
-    a = yaml.safe_load(f)
-    read_timestamp_file(a['timestamp_file'], a['columns'])

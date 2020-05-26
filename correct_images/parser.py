@@ -1,5 +1,5 @@
 import yaml
-from auv_nav.tools.console import Console
+from oplab import Console
 
 class ColourCorrection:
     def __init__(self, node):

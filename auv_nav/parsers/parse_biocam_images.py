@@ -15,8 +15,8 @@ import numpy as np
 
 # sys.path.append("..")
 from auv_nav.tools.time_conversions import date_time_to_epoch
-from auv_nav.tools.folder_structure import get_raw_folder
-from auv_nav.tools.console import Console
+from oplab import get_raw_folder
+from oplab import Console
 
 stamp_pc1 = []
 stamp_pc2 = []
@@ -129,7 +129,6 @@ def parse_biocam_images(mission,
     filepath1b = base_path / str(camera1_label + '_laser/**/*.*')
     filepath2 = base_path / str(camera2_label + '_strobe/*.*')
     filepath2b = base_path / str(camera2_label + '_laser/**/*.*')
-
 
     camera1_list = glob.glob(str(filepath1))
     camera1_list.extend(glob.glob(str(filepath1b), recursive=True))

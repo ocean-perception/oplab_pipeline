@@ -1,6 +1,8 @@
 # Encoding: utf-8
 import random
 import numpy as np
+import math
+from oplab import Console
 
 
 def augment(xyzs):
@@ -9,9 +11,12 @@ def augment(xyzs):
     return axyz
 
 
-def estimate(xyzs):
+def fit_plane(xyzs):
     axyz = augment(xyzs[:3])
-    return np.linalg.svd(axyz)[-1][-1, :]
+    m = np.linalg.svd(axyz)[-1][-1, :]
+    if m[0] < 0:
+        m = m *(-1)
+    return m
 
 
 def is_inlier(coeffs, xyz, threshold):
@@ -27,7 +32,7 @@ def run_ransac(data, estimate, is_inlier, sample_size, goal_inliers, max_iterati
     for i in range(max_iterations):
         inliers = []
         s = random.sample(data, int(sample_size))
-        m = estimate(s)
+        m = fit_plane(s)
         ic = 0
         for j in range(len(data)):
             if is_inlier(m, data[j]):
@@ -43,8 +48,9 @@ def run_ransac(data, estimate, is_inlier, sample_size, goal_inliers, max_iterati
             best_model = m
             if ic > goal_inliers and stop_at_goal:
                 break
-    #print('took iterations:', i+1, 'best model:', best_model, 'explains:', best_ic)
-    return best_model, inliers
+    # estimate final model using all inliers
+    best_model = fit_plane(inliers)
+    return best_model, inliers, i
 
 
 def bounding_box(iterable):
@@ -55,8 +61,8 @@ def bounding_box(iterable):
 
 
 def plot_plane(a, b, c, d):
-        yy, zz = np.mgrid[-4:4, 0:8]
-        return (-d - c * zz - b * yy) / a, yy, zz
+    yy, zz = np.mgrid[-6:7, 4:15]
+    return (-d - c * zz - b * yy) / a, yy, zz
 
 
 def plane_fitting_ransac(cloud_xyz,
@@ -65,9 +71,9 @@ def plane_fitting_ransac(cloud_xyz,
                          goal_inliers,
                          max_iterations,
                          plot=False):
-    model, inliers = run_ransac(
+    model, inliers, iterations = run_ransac(
         cloud_xyz,
-        estimate,
+        fit_plane,
         lambda x, y: is_inlier(x, y, min_distance_threshold),
         sample_size,
         goal_inliers,
@@ -81,25 +87,52 @@ def plane_fitting_ransac(cloud_xyz,
         #min_x, max_x, min_y, max_y = bounding_box(cloud_xyz[:, 0:2])
         xx, yy, zz = plot_plane(a, b, c, d)  # , min_x, max_x, min_y, max_y)
         ax.plot_surface(xx, yy, zz, color=(0, 1, 0, 0.5))
-        ax.scatter3D(cloud_xyz.T[0], cloud_xyz.T[1], cloud_xyz.T[2])
+        ax.scatter3D(cloud_xyz.T[0], cloud_xyz.T[1], cloud_xyz.T[2], s=1)
         ax.set_xlabel('$X$')
         ax.set_ylabel('$Y$')
         ax.set_zlabel('$Z$')
         plt.show()
+    Console.info('RANSAC took', iterations+1, ' iterations. Best model:', model, 'explains:', len(inliers))
     return (a, b, c, d), inliers
 
 
 if __name__ == '__main__':
-    n = 100
-    max_iterations = 100
-    goal_inliers = n * 0.3
+    N_POINTS = 100
+    GOAL_INLIERS = N_POINTS * 0.8
+    MAX_ITERATIONS = 100
+    
+    TARGET_A = 1.0
+    TARGET_B = 0.000001
+    TARGET_C = 0.000001
+    TARGET_D = -1.5
+    EXTENTS = 10.0
+    NOISE = 0.1
 
-    # test data
-    xyzs = np.random.random((n, 3)) * 10
-    xyzs[:50, 2:] = xyzs[:50, :1]
+    # create random data
+    xyzs = np.zeros((N_POINTS, 3))
+    xyzs[:, 0] = [np.random.uniform(2*EXTENTS)-EXTENTS for i in range(N_POINTS)]
+    xyzs[:, 1] = [np.random.uniform(2*EXTENTS)-EXTENTS for i in range(N_POINTS)]
+    for i in range(N_POINTS):
+        xyzs[i, 2] = (-TARGET_D - xyzs[i, 0]*TARGET_A - xyzs[i, 1]*TARGET_B)/TARGET_C + np.random.normal(scale=NOISE)
 
     # RANSAC
-    a, b, c, d = plane_fitting_ransac(xyzs, 0.01, 3, goal_inliers, max_iterations, plot=True)
+    m, inliers = plane_fitting_ransac(xyzs, 0.01, 3, GOAL_INLIERS, MAX_ITERATIONS, plot=True)
+    scale = TARGET_D/m[3]
+    print(np.array(m)*scale)
+    print('Inliers: ', len(inliers))
 
-    #m, b = run_ransac(xyzs, estimate, lambda x, y: is_inlier(x, y, 0.01), 3, goal_inliers, max_iterations)
-    #a, b, c, d = m
+
+    # [a, b, c, d, plane_angle, pitch_angle, yaw_angle] = fit_plane(xyzs)
+    # print(a, b, c, d)
+    # print(plane_angle, pitch_angle, yaw_angle)
+
+    # mean_x = np.mean(xyzs[:, 0])
+    # mean_y = np.mean(xyzs[:, 1])
+    # mean_z = np.mean(xyzs[:, 2])
+    # mean_xyz = np.array([mean_x, mean_y, mean_z])
+
+    # plane, normal, offset = build_plane(pitch_angle, yaw_angle, mean_xyz)
+
+    # print(plane)
+    # print(normal)
+    # print(offset)

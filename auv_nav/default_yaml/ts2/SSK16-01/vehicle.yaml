@@ -25,12 +25,12 @@ depth:
   y_offset: 0
   z_offset: 0
 
-camera1: #Left Camera
+LC: #Left Camera
   x_offset: -0.05
   y_offset: -0.3
   z_offset: 0.18
 
-camera2: #Right Camera
+RC: #Right Camera
   x_offset: -0.05 # uncertain
   y_offset: -0.1 # uncertain
   z_offset: 0.18 # uncertain

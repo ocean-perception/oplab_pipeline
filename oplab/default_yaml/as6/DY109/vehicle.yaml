@@ -1,0 +1,92 @@
+#YAML 1.0
+
+# Autosub 6000 cruise DY108/109
+# Distance with reference to origin/DVL of robot
+
+origin: # DVL as centre
+  surge_m: 0
+  sway_m: 0
+  heave_m: 0
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 0
+
+dvl: # PHINS DVL (INS integrated)
+  surge_m: 0
+  sway_m: 0
+  heave_m: 0
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 0
+
+ins: 
+  surge_m: 0
+  sway_m: 0
+  heave_m: 0
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 0
+
+usbl:
+  surge_m: 2.557
+  sway_m: -0.120
+  heave_m: -0.694
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 0
+
+depth:
+  surge_m: -0.112
+  sway_m: 0.230
+  heave_m: -0.331
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 0
+
+cam61003146: # Fore (RGB) Camera
+  surge_m: 1.484
+  sway_m: 0
+  heave_m: 0.327
+  roll_deg: 0
+  pitch_deg: -90
+  yaw_deg: 0
+
+cam61004444: # Aft (monochrome) Camera
+  surge_m: 1.104
+  sway_m: 0
+  heave_m: 0.327
+  roll_deg: 0
+  pitch_deg: -90
+  yaw_deg: 0
+
+fore_laser: # Fore Laser
+  surge_m: 2.791
+  sway_m: 0
+  heave_m: 0.238
+  roll_deg: 0
+  pitch_deg: -90
+  yaw_deg: 0
+
+aft_laser: # Aft Laser
+  surge_m: -0.403
+  sway_m: 0
+  heave_m: 0.016
+  roll_deg: 0
+  pitch_deg: -90
+  yaw_deg: 0
+
+fore_strobe: # Fore strobe
+  surge_m: 2.559
+  sway_m: 0
+  heave_m: 0.27
+  roll_deg: 0
+  pitch_deg: -90
+  yaw_deg: 0
+
+aft_strobe: # Aft strobe
+  surge_m: -0.263
+  sway_m: 0
+  heave_m: 0.036
+  roll_deg: 0
+  pitch_deg: -90
+  yaw_deg: 0

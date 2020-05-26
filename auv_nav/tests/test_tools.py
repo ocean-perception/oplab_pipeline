@@ -3,7 +3,7 @@ import os
 import math
 from auv_nav.tools.interpolate import interpolate
 from auv_nav.tools.body_to_inertial import body_to_inertial
-from auv_nav.tools.console import Console
+from oplab import Console
 from auv_nav.tools.displayable_path import DisplayablePath
 from auv_nav.tools.latlon_wgs84 import latlon_to_metres
 from auv_nav.tools.latlon_wgs84 import metres_to_latlon

@@ -109,7 +109,7 @@ def data2trace(i, j, t, plotlytable_info_list):
     return x_values, y_values, text_list, title
 
 
-def plot_parse_data(filepath, ftype):
+def plot_parse_data(filepath, ftype='oplab'):
     '''
     Goes through each data element in json file and first check for different
     types category, and then different types of frame (body or inertial).

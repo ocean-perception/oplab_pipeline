@@ -9,20 +9,19 @@ from tqdm import tqdm
 import cv2
 import imageio
 import os
-from auv_nav.tools.folder_structure import get_raw_folder
-from auv_nav.tools.folder_structure import get_processed_folder
-from auv_nav.tools.folder_structure import get_config_folder
-from auv_nav.tools.console import Console
-from auv_nav.camera_system import *
+from oplab import get_raw_folder
+from oplab import get_processed_folder
+from oplab import get_config_folder
+from oplab import Console
+from oplab import CameraSystem
 from correct_images.parser import *
-from correct_images.camera_models import *
+from oplab.camera_models import *
 import yaml
 import joblib
 import sys
 import uuid
 import datetime
 from scipy import optimize
-from colour_demosaicing import demosaicing_CFA_Bayer_bilinear
 # -----------------------------------------
 
 class Corrector:
@@ -606,15 +605,15 @@ class Corrector:
 	# convert bayer image to RGB based 
 	# on the bayer pattern for the camera
 	def debayer(self, image, pattern):
-		# TODO :
-		padded_image = np.pad(image, ((1,1),(1,1)), 'edge')
-		corrected_rgb_img = demosaicing_CFA_Bayer_bilinear(padded_image, pattern)
-		
-		# unpadding the debayered image
-		s = corrected_rgb_img.shape
-		unpadded_corrected_rgb_img = corrected_rgb_img[1:s[0]-1,1:s[1]-1,:]
-		return unpadded_corrected_rgb_img
-
+		image16 = image.astype(np.uint16)                          
+		corrected_rgb_img = None
+		if pattern == 'rggb':
+			corrected_rgb_img = cv2.cvtColor(image16, cv2.COLOR_BAYER_RG2BGR)		
+		elif pattern == 'grbg':
+			corrected_rgb_img = cv2.cvtColor(image16, cv2.COLOR_BAYER_GR2BGR)		
+		else:
+			Console.quit('Bayer pattern not supported')
+		return corrected_rgb_img
 	
 
 	# correct image for distortions using camera calibration parameters

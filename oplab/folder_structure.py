@@ -1,4 +1,4 @@
-from auv_nav.tools.console import Console
+from oplab.console import Console
 from pathlib import Path
 
 
@@ -24,7 +24,8 @@ def change_subfolder(path, prior, new):
     if new_path.is_dir():
         if not new_path.exists():
             dummy_path = Path(*parts[:-1])
-            Console.info('The path {} does not exist. I am creating it for you.'.format(path))
+            Console.info('The path {} does not exist. I am creating ',
+                         'it for you.'.format(path))
             dummy_path.mkdir(exist_ok=True, parents=True)
     elif new_path.is_file():
         # check if parent directories are created
@@ -34,7 +35,7 @@ def change_subfolder(path, prior, new):
 
 
 def get_folder(path, name):
-    path = Path(path)  # .resolve(strict=False)
+    path = Path(path).resolve(strict=False)
     if name in path.parts:
         return path
     elif 'processed' in path.parts:
@@ -44,9 +45,8 @@ def get_folder(path, name):
     elif 'configuration' in path.parts:
         return change_subfolder(path, 'configuration', name)
     else:
-        Console.error("The folder {0} does not belong to \
-               any dataset folder structure.".format(
-                str(path)))
+        Console.error('The folder', str(path), 'does not belong to any dataset',
+                      'folder structure.')
 
 
 def get_file_list(directory):
@@ -56,7 +56,7 @@ def get_file_list(directory):
         if x.is_file():
             file_list.append(x)
         elif x.is_dir():
-            file_list.extend(searching_all_files(x))
+            file_list.extend(get_file_list(x))
     return file_list
 
 
@@ -70,6 +70,37 @@ def get_raw_folder(path):
 
 def get_processed_folder(path):
     return get_folder(path, "processed")
+
+
+def check_dirs_exist(dirs):
+    if isinstance(dirs, list):
+        for d in dirs:
+            if not d.is_dir():
+                return False
+    else:
+        if not dirs.is_dir():
+            return False
+    return True
+
+
+def get_raw_folders(dirs):
+    if isinstance(dirs, list):
+        dir_list = []
+        for d in dirs:
+            dir_list.append(get_raw_folder(d))
+        return dir_list
+    else:
+        return get_raw_folder(dirs)
+
+
+def get_processed_folders(dirs):
+    if isinstance(dirs, list):
+        dir_list = []
+        for d in dirs:
+            dir_list.append(get_processed_folder(d))
+        return dir_list
+    else:
+        return get_processed_folder(dirs)
 
 
 def _copy(self, target):

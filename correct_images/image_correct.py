@@ -21,12 +21,12 @@ from scipy import optimize
 from tqdm import trange
 from pathlib import Path
 
-from auv_nav.tools.console import Console
-from auv_nav.tools.folder_structure import get_raw_folder
-from auv_nav.tools.folder_structure import get_processed_folder
-from auv_nav.tools.folder_structure import get_config_folder
-from auv_nav.parsers.mission import *
-from auv_nav.camera_system import *
+from oplab import Console
+from oplab import get_raw_folder
+from oplab import get_processed_folder
+from oplab import get_config_folder
+from oplab import Mission
+from oplab import CameraSystem, MonoCamera, StereoCamera
 
 from correct_images.corrector import *
 from correct_images.parser import *

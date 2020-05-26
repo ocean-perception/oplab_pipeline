@@ -1,9 +1,8 @@
 import unittest
 from unittest.mock import patch
 from pathlib import Path
-from auv_nav.camera_system import CameraSystem
-from auv_nav.tools.filename_to_date import FilenameToDate
-import auv_nav.tools.filename_to_date
+from oplab import CameraSystem
+from oplab import FilenameToDate
 
 
 class TestFilenameToDate(unittest.TestCase):
@@ -26,7 +25,7 @@ class TestCameraSystem(unittest.TestCase):
 
     def testAcfrStandard(self):
         root = Path(__file__).parents[1]
-        acfr_std_camera_file = '/default_yaml/ts1/SSK17-01/camera.yaml'
+        acfr_std_camera_file = 'default_yaml/ts1/SSK17-01/camera.yaml'
         cs = CameraSystem(root / acfr_std_camera_file)
         self.assertEqual(cs.camera_system, 'acfr_standard', 'Wrong camera system')
         self.assertEqual(len(cs.cameras), 2, 'Wrong camera count')
@@ -61,7 +60,7 @@ class TestCameraSystem(unittest.TestCase):
         self.assertEqual(content.count('s'), 2, 'Second speficication is incorrect for timestamp file data columns')
         self.assertEqual(content.count('f'), 3, 'Millisecond speficication is incorrect for timestamp file data columns')
 
-    @patch("auv_nav.tools.filename_to_date.resolve")
+    @patch("oplab.filename_to_date.resolve")
     def testSeaxerocks3(self, mock_resolve):
         root = Path(__file__).parents[1]
 
@@ -127,3 +126,4 @@ class TestCameraSystem(unittest.TestCase):
         self.assertEqual(cs.cameras[2].path, 'image/cam61004444_laser', 'Wrong camera path')
         self.assertEqual(cs.cameras[2].extension, 'jpg', 'Wrong camera extension')
         self.assertEqual(cs.cameras[2].filename_to_date, 'YYYYMMDDxhhmmssxfffuuuxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxx', 'Wrong camera filename_to_date')
+
