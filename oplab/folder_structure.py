@@ -1,5 +1,6 @@
-from oplab.console import Console
 from pathlib import Path
+import shutil
+from oplab.console import Console
 
 
 def check_exists(p):
@@ -104,8 +105,6 @@ def get_processed_folders(dirs):
 
 
 def _copy(self, target):
-    import shutil
-    assert self.is_file()
     if not target.parent.exists():
         target.parent.mkdir(exist_ok=True, parents=True)
     shutil.copy(str(self), str(target))  # str() only there for Python < (3, 6)

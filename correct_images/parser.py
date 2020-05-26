@@ -39,9 +39,7 @@ class OutputSettings:
 		self.compression_parameter = node['compression_parameter']
 
 class CorrectConfig:
-
     def __init__(self, filename=None):
-
         if filename is None:
             return
         with filename.open('r') as stream:
