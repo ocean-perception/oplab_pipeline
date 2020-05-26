@@ -45,6 +45,11 @@ class CorrectConfig:
         with filename.open('r') as stream:
             data = yaml.safe_load(stream)
 
+        if 'version' not in data:
+            Console.error('It seems you are using an old correct_images.yaml. You will have to delete it and run this software again.')
+            Console.error('Delete the file with:')
+            Console.error('    rm ', filename)
+            Console.quit('Wrong correct_images.yaml format')
         self.version = data['version']
         self.method = data['method']
         node = data['colour_correction']
