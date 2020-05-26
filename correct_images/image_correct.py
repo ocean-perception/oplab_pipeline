@@ -173,6 +173,8 @@ def call_parse(args):
             corrector.generate_attenuation_correction_parameters()
     Console.info('Parse completed for all cameras. Please run process to develop corrected images...')
 
+
+
 def call_process(args):
     correct_config, camerasystem = setup(args)
     path = Path(args.path).resolve()
@@ -239,12 +241,10 @@ def call_process(args):
                 # invoke process function
                 corrector.output_images_folder = output_path
                 corrector.process_correction()
-            
-            
-            
-
 
     Console.info('Process completed for all cameras...')
+
+
 
 def call_correct(args):
     correct_config, camerasystem = setup(args)
