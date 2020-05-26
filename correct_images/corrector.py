@@ -96,7 +96,7 @@ class Corrector:
 			file_list = list(dir_.glob('*.npy'))
 			if len(file_list) > 0:
 				if self.force == False:
-					Console.quit('Overwrite parameters with a Force command...')
+					Console.quit('Processed files exist. If you want to overwrite them, run correct_images with the force overwrite flag (-F)')
 			
 
 		# create path for output images
