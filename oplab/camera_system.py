@@ -1,9 +1,9 @@
 import yaml
+from pathlib import Path
+import imageio
 from oplab import get_raw_folder
 from oplab import Console
 from oplab import FilenameToDate
-# Workaround to dump OrderedDict into YAML files
-from pathlib import Path
 
 
 class CameraEntry:
@@ -55,10 +55,22 @@ class CameraEntry:
             return self._image_list
         curr_dir = Path.cwd()
         raw_dir = get_raw_folder(curr_dir)
-        img_dir = raw_dir.glob(self.path)
-        self._image_list = []
-        for i in img_dir:
-            [self._image_list.append(str(_)) for _ in i.rglob('*.' + self.extension)]
+
+        split_glob = str(self.path).split('*')
+        img_dir = ''
+        print(split_glob)
+        if len(split_glob) == 2:
+            pre_glob = split_glob[0] + '*'
+            glob_vec = raw_dir.glob(pre_glob)    
+            img_dirs = [k for k in glob_vec]
+            print(img_dirs)
+            img_dir = Path(str(img_dirs[0]) + '/' + str(split_glob[1]))
+        elif len(split_glob) == 1:
+            img_dir = self.path
+        else:
+            Console.error('Multiple globbing is not supported.')
+        print(img_dir)
+        [self._image_list.append(str(_)) for _ in img_dir.rglob('*.' + self.extension)]
         self._image_list.sort()
         return self._image_list
 
@@ -77,6 +89,29 @@ class CameraEntry:
             n = Path(p).name
             self._stamp_list.append(self.convert_filename(n))
         return self._stamp_list
+
+    @property
+    def image_properties(self):
+        imagelist = self.image_list
+        image_path = imagelist[0]
+        self._image_properties = []
+        
+        # read tiff
+        if self.extension == 'tif':
+            image_matrix = imageio.imread(image_path)
+            image_shape = image_matrix.shape
+            self._image_properties.append(image_shape[0])
+            self._image_properties.append(image_shape[1])
+            if len(image_shape) == 3:
+                self._image_properties.append(image_shape[2])
+            else:
+                self._image_properties.append(1)
+
+        # read raw
+        if self.extension == 'raw':
+            #TODO: provide a raw reader and get these properties from the file.
+            self._image_properties = [1024, 1280, 1]
+        return self._image_properties
 
 
 class CameraSystem:
