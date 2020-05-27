@@ -613,10 +613,14 @@ class Corrector:
     def debayer(self, image, pattern):
         image16 = image.astype(np.uint16)                          
         corrected_rgb_img = None
-        if pattern == 'rggb':
+        if pattern == 'rggb' or pattern == 'RGGB':
             corrected_rgb_img = cv2.cvtColor(image16, cv2.COLOR_BAYER_RG2BGR)       
-        elif pattern == 'grbg':
+        elif pattern == 'grbg' or pattern == 'GRBG':
             corrected_rgb_img = cv2.cvtColor(image16, cv2.COLOR_BAYER_GR2BGR)       
+        elif pattern == 'bggr' or pattern == 'BGGR':
+            corrected_rgb_img = cv2.cvtColor(image16, cv2.COLOR_BAYER_BG2BGR)    
+        elif pattern == 'gbrg' or pattern == 'GBRG':
+            corrected_rgb_img = cv2.cvtColor(image16, cv2.CV_BayerGB2BGR)          
         else:
             Console.quit('Bayer pattern not supported')
         return corrected_rgb_img
@@ -685,7 +689,7 @@ def load_xviii_bayer_from_binary(binary_data, image_height, image_width):
             )
             count += 12
 
-    bayer_img = bayer_img / 128
+    bayer_img = bayer_img / 1024
     return bayer_img
 
 

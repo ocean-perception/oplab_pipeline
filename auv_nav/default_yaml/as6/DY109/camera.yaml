@@ -1,7 +1,7 @@
 camera_system: biocam
 cameras:
   - name: cam61003146
-    type: rggb
+    type: bggr
     bit_depth: 16
     path: 'image/cam61003146_strobe'
     extension: tif
