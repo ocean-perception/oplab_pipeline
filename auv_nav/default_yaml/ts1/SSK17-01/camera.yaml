@@ -3,12 +3,12 @@ cameras:
   - name: LC
     type: grgb
     bit_depth: 12
-    path: 'image/i*/'
+    path: 'image/i*/*LC*'
     extension: tif
     filename_to_date: 'xxxYYYYMMDDxhhmmssxfffxxxxx.xxx'
   - name: RC
     type: grgb
     bit_depth: 12
-    path: 'image/i*/'
+    path: 'image/i*/*RC*'
     extension: tif
     filename_to_date: 'xxxYYYYMMDDxhhmmssxfffxxxxx.xxx'
