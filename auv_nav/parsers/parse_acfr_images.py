@@ -116,25 +116,36 @@ def parse_acfr_images(mission,
         values = []
         for j in range(len(camera2_filename)):
             # print(epoch_timestamp_camera2[j])
-            values.append(
-                abs(float(epoch_timestamp_camera1[i])-float(epoch_timestamp_camera2[j])))
-
-        (sync_difference, sync_pair) = min((v, k)
-                                           for k, v in enumerate(values))
-
-        if sync_difference < tolerance:
-            if ftype == 'oplab':
-                data = {'epoch_timestamp': float(epoch_timestamp_camera1[i]), 'class': class_string, 'sensor': sensor_string, 'frame': frame_string, 'category': category, 'camera1': [{'epoch_timestamp': float(
-                    epoch_timestamp_camera1[i]), 'filename': str(camera1_filename[i])}], 'camera2':  [{'epoch_timestamp': float(epoch_timestamp_camera2[sync_pair]), 'filename': str(camera2_filename[sync_pair])}]}
-                data_list.append(data)
-            if ftype == 'acfr':
-                data = 'VIS: ' + str(float(epoch_timestamp_camera1[i])) + ' [' + str(float(
-                    epoch_timestamp_camera1[i])) + '] ' + str(camera1_filename[i]) + ' exp: 0\n'
-                # fileout.write(data)
-                data_list += data
-                data = 'VIS: ' + str(float(epoch_timestamp_camera2[sync_pair])) + ' [' + str(float(
-                    epoch_timestamp_camera2[sync_pair])) + '] ' + str(camera2_filename[sync_pair]) + ' exp: 0\n'
-                # fileout.write(data)
-                data_list += data
+            values.append(abs(float(epoch_timestamp_camera1[i])
+                              -float(epoch_timestamp_camera2[j])))
+        (sync_difference, sync_pair) = min((v, k) for k, v in enumerate(values))
+        if sync_difference > tolerance:
+            # Skip the pair
+            continue
+        if ftype == 'oplab':
+            data = {
+                'epoch_timestamp': float(epoch_timestamp_camera1[i]),
+                'class': class_string,
+                'sensor': sensor_string,
+                'frame': frame_string,
+                'category': category,
+                'camera1': [{
+                    'epoch_timestamp': float(epoch_timestamp_camera1[i]),
+                    'filename': str(camera1_filename[i])}],
+                'camera2':  [{
+                    'epoch_timestamp': float(epoch_timestamp_camera2[sync_pair]),
+                    'filename': str(camera2_filename[sync_pair])}]}
+            data_list.append(data)
+        if ftype == 'acfr':
+            data = 'VIS: ' + str(float(epoch_timestamp_camera1[i])) \
+                   + ' [' + str(float(epoch_timestamp_camera1[i])) + '] ' \
+                   + str(camera1_filename[i]) + ' exp: 0\n'
+            # fileout.write(data)
+            data_list += data
+            data = 'VIS: ' + str(float(epoch_timestamp_camera2[sync_pair])) \
+                   + ' [' + str(float(epoch_timestamp_camera2[sync_pair])) \
+                   + '] ' + str(camera2_filename[sync_pair]) + ' exp: 0\n'
+            # fileout.write(data)
+            data_list += data
 
     return data_list
