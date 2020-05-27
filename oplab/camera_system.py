@@ -58,18 +58,15 @@ class CameraEntry:
 
         split_glob = str(self.path).split('*')
         img_dir = ''
-        print(split_glob)
         if len(split_glob) == 2:
             pre_glob = split_glob[0] + '*'
             glob_vec = raw_dir.glob(pre_glob)    
             img_dirs = [k for k in glob_vec]
-            print(img_dirs)
             img_dir = Path(str(img_dirs[0]) + '/' + str(split_glob[1]))
         elif len(split_glob) == 1:
             img_dir = self.path
         else:
             Console.error('Multiple globbing is not supported.')
-        print(img_dir)
         [self._image_list.append(str(_)) for _ in img_dir.rglob('*.' + self.extension)]
         self._image_list.sort()
         return self._image_list
