@@ -1,7 +1,7 @@
 camera_system: seaxerocks_3
 cameras:
   - name: Cam51707923
-    type: rggb
+    type: grgb
     bit_depth: 18
     path: 'image/SeaXerocksData*/Xviii/Cam51707923'
     extension: raw
@@ -12,7 +12,7 @@ cameras:
               {'name': 'time', 'content': 'hhmmss'},
               {'name': 'ms', 'content': 'fff'}]
   - name: Cam51707925
-    type: rggb
+    type: grgb
     bit_depth: 18
     path: 'image/SeaXerocksData*/Xviii/Cam51707925'
     extension: raw
