@@ -22,6 +22,7 @@ import sys
 import uuid
 import datetime
 from scipy import optimize
+import tempfile
 # -----------------------------------------
 
 
@@ -113,9 +114,10 @@ class Corrector:
                     Console.quit('Overwrite images with a Force command...')
         Console.info('Output directories created / existing...')
 
-        # create folder for memmap files
+        # create temporary folder for memmap files
         memmap_folder_name = 'memmaps_' + self._camera.name
-        self.memmap_folder = self.output_dir_path / memmap_folder_name
+        path_temp = tempfile.mkdtemp()
+        self.memmap_folder = Path(path_temp) / memmap_folder_name
         if not self.memmap_folder.exists():
             self.memmap_folder.mkdir(parents=True)
 
@@ -282,10 +284,6 @@ class Corrector:
         self.correction_gains = np.empty((self.image_channels, self.image_height,
                                     self.image_width))
         
-        #image_memmap_channels = np.empty((len(self.bayer_numpy_filelist), self.image_height,
-        #                                   self.image_width, self.image_channels))
-
-        
         # compute correction parameters if distance matrix is generated     
         if len(self.distance_matrix_numpy_filelist) > 0:
             # create image and distance_matrix memmaps
@@ -305,13 +303,6 @@ class Corrector:
 
             image_memmap_path, image_memmap = load_memmap_from_numpyfilelist(self.memmap_folder, filtered_image_numpy_filelist)
             distance_memmap_path, distance_memmap = load_memmap_from_numpyfilelist(self.memmap_folder, filtered_distance_numpy_filelist)
-            '''
-            if self.image_channels == 1:
-                image_memmap_channels[:,:,:,0] = image_memmap
-            else:
-                image_memmap_channels = image_memmap
-            '''
-            # --- TODO ----
             
             for i in range(self.image_channels):
 
@@ -376,15 +367,17 @@ class Corrector:
                 self.image_attenuation_parameters[i] = attenuation_parameters
 
 
-                # compute correction gains
+                # compute correction gains per channel
                 Console.info('Computing correction gains...')
                 correction_gains = self.calculate_correction_gains(target_altitude, attenuation_parameters)
                 self.correction_gains[i] = correction_gains
+                
                 # apply gains to images
                 Console.info('Applying attenuation corrections to images...')
                 image_memmap_per_channel = self.apply_attenuation_corrections(image_memmap_per_channel,
                                         distance_memmap, attenuation_parameters, correction_gains)
 
+                # calculate corrected mean and std per channel
                 image_corrected_mean, image_corrected_std = mean_std_(image_memmap_per_channel)
                 self.image_corrected_mean[i] = image_corrected_mean
                 self.image_corrected_std[i] = image_corrected_std
@@ -397,6 +390,7 @@ class Corrector:
             image_corrected_mean_file = self.attenuation_parameters_folder / 'image_corrected_mean.npy'
             image_corrected_std_file = self.attenuation_parameters_folder / 'image_corrected_std.npy'
 
+            # save parameters for process
             np.save(attenuation_parameters_file, self.image_attenuation_parameters)
             np.save(correction_gains_file, self.correction_gains)
             np.save(image_corrected_mean_file, self.image_corrected_mean)
@@ -406,10 +400,6 @@ class Corrector:
         # compute only the raw image mean and std if distance matrix is null
         if len(self.distance_matrix_numpy_filelist) == 0:
             image_memmap_path, image_memmap = load_memmap_from_numpyfilelist(self.memmap_folder, self.bayer_numpy_filelist)
-
-            
-            # --- TODO ----
-
             for i in range(self.image_channels):
                 if self.image_channels == 1:
                     image_memmap_per_channel = image_memmap
@@ -426,26 +416,23 @@ class Corrector:
         np.save(image_raw_mean_file, self.image_raw_mean)
         np.save(image_raw_std_file, self.image_raw_std)
 
-        Console.info('Correction parameters saved...')          
-            
+        Console.info('Correction parameters saved...')
         
+
 
 
     
     # calculate image attenuation parameters
     def calculate_attenuation_parameters(self, images, distances, image_height, image_width):
         Console.info('Start curve fitting...')
-
         
         results = joblib.Parallel(n_jobs=-2, verbose=3)(
             [joblib.delayed(curve_fitting)(
                 distances[:, i_pixel], images[:, i_pixel])
                 for i_pixel in trange(image_height * image_width)])
         
-        
         attenuation_parameters = np.array(results)
         attenuation_parameters = attenuation_parameters.reshape([self.image_height, self.image_width, 3])
-
         return attenuation_parameters   
     
 
@@ -639,16 +626,12 @@ class Corrector:
     def gamma_correct(self, image, bitdepth=8):
         # TODO:
         image = np.divide(image, ((2 ** bitdepth - 1)))
-
         if all(i < 0.0031308 for i in image.flatten()):
             image = 12.92 * image
         else:
             image = 1.055 * np.power(image, (1 / 1.5)) - 0.055
-
         image = np.multiply(np.array(image), np.array(2 ** bitdepth - 1))
-
         image = np.clip(image, 0, 2 ** bitdepth - 1)
-
         return image
 
     
@@ -840,4 +823,14 @@ def curve_fitting(distancelist, intensitylist):
         Console.error("Value Error", a, b, c)
 
     return ret_params
+
+
+
+def remove_directory(folder):
+    for p in folder.iterdir():
+        if p.is_dir():
+            remove_directory(p)
+        else:
+            p.unlink()
+    folder.rmdir()
 
