@@ -279,8 +279,9 @@ class Corrector:
 
 		self.correction_gains = np.empty((self.image_channels, self.image_height,
 									self.image_width))
-		image_memmap_channels = np.empty((len(self.bayer_numpy_filelist), self.image_height,
-											self.image_width, self.image_channels))
+		
+		#image_memmap_channels = np.empty((len(self.bayer_numpy_filelist), self.image_height,
+		#									self.image_width, self.image_channels))
 
 		
 		# compute correction parameters if distance matrix is generated		
@@ -302,17 +303,20 @@ class Corrector:
 
 			image_memmap_path, image_memmap = load_memmap_from_numpyfilelist(self.memmap_folder, filtered_image_numpy_filelist)
 			distance_memmap_path, distance_memmap = load_memmap_from_numpyfilelist(self.memmap_folder, filtered_distance_numpy_filelist)
-
+			'''
 			if self.image_channels == 1:
 				image_memmap_channels[:,:,:,0] = image_memmap
 			else:
 				image_memmap_channels = image_memmap
+			'''
 			# --- TODO ----
 			
 			for i in range(self.image_channels):
 
-				image_memmap_ = image_memmap_channels[:,:,:,i]
-
+				if self.image_channels == 1:
+					image_memmap_ = image_memmap
+				else:
+					image_memmap_ = image_memmap[:,:,:,0]
 				# calculate mean, std for image and target_altitude
 				raw_image_mean, raw_image_std = mean_std_(image_memmap_)
 				self.image_raw_mean[i] = raw_image_mean
