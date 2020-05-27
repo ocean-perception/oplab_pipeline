@@ -113,10 +113,9 @@ def main(args=None):
 def call_debayer(args):
     def debayer_image(image_path, filetype, pattern, output_dir, output_format, corrector):
         Console.info('Debayering image {}'.format(image_path.name))
-        if filetype is 'raw':
+        if filetype == 'raw':
             xviii_binary_data = np.fromfile(str(image_path), dtype=np.uint8)
             img = load_xviii_bayer_from_binary(xviii_binary_data, 1024, 1280)
-            img = img / 128
         else:
             img = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
         img_rgb = corrector.debayer(img, pattern)
@@ -132,6 +131,7 @@ def call_debayer(args):
     image_list = []
     corrector = Corrector(True)
     
+
     if not output_dir.exists():
         Console.info('Creating output dir {}'.format(output_dir))
         output_dir.mkdir(parents=True)
@@ -147,6 +147,7 @@ def call_debayer(args):
         single_image = Path(args.image)
         image_list.append(single_image)
     Console.info('Found ' + str(len(image_list)) + ' image(s)...')
+
     joblib.Parallel(n_jobs=-2, verbose=3)([
         joblib.delayed(debayer_image)(
             image_path,
@@ -156,7 +157,7 @@ def call_debayer(args):
             output_format,
             corrector)
         for image_path in image_list])
-
+    
 
 def call_parse(args):
     correct_config, camerasystem = setup(args)
@@ -305,6 +306,9 @@ def setup(args):
     elif mission.image.format == 'biocam':
         default_file_path_camera = root / biocam_camera_file
         default_file_path_correct_config = root / biocam_std_correct_config_file
+    # check in the raw folder for a cemra.yaml file
+    # if exists, check imageing system name
+    # else quit with a message
 
     # check for correct_config yaml path
     path_correct_images = path_config_folder / 'correct_images.yaml'
