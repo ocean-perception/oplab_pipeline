@@ -216,7 +216,7 @@ class Corrector:
 
             self.altitude_based_filtered_indices = [index for index, distance in enumerate(distance_list) if distance < self.altitude_max and distance > self.altitude_min]
             Console.info(len(self.altitude_based_filtered_indices), 'Images filtered as per altitude range...')
-            if len(self.altitude_based_filtered_indices) < 5:
+            if len(self.altitude_based_filtered_indices) < 3:
                 Console.quit('Insufficient number of images to compute attenuation parameters...')
 
 
