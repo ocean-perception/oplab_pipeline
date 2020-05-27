@@ -70,14 +70,16 @@ class CircularCone:
     def distance(self, point):
         """Compute distance from point to modelled cone
         The distance from a point :math:`p_i` to a cone with apex :math:`Ap` and 
-        basis :math:`[\\vec{u}, \\vec{n}_1, \\vec{n}_2]`, where :math:`\\vec{u}` is
-        the cone asis is defined by:
+        basis :math:`[\\vec{u}, \\vec{n}_1, \\vec{n}_2]`, where :math:`\\vec{u}`
+        is the cone asis is defined by:
 
         .. math:: 
-            (p_i - Ap) = \\begin{bmatrix} \\vec{u}, \\vec{n}_1, \\vec{n}_2 \\end{bmatrix} 
-            \\begin{bmatrix} \\alpha \\\\ \\beta \\\\ \\gamma \\end{bmatrix}
+            (p_i - Ap) = \\begin{bmatrix} \\vec{u}, \\vec{n}_1, \\vec{n}_2
+            \\end{bmatrix} \\begin{bmatrix} \\alpha \\\\ \\beta \\\\ \\gamma
+            \\end{bmatrix}
 
-        being :math:`\\gamma` the signed distance between the point and the cone.
+        being :math:`\\gamma` the signed distance between the point and the
+        cone.
         """
         w = point - self.apex
         if norm(w) == 0:
@@ -110,14 +112,23 @@ class CircularCone:
     def fit(self, points, verbose=True):
         # Coeffs: apex(x, y, z), axis(x, y, z) and theta
         coefficients = np.array([0, 0, 0, 0, 0, 1, np.pi/2], dtype=float)
-        bounds = ([-2.0, -0.2, -0.5, -1.0, -1.0, -1.0, 0.0], [2.0, 0.2, 0.5, 1.0, 1.0, 1.0, np.pi/2.])
+        bounds = ([-2.0, -0.2, -0.5, -1.0, -1.0, -1.0, 0.0],
+                  [2.0, 0.2, 0.5, 1.0, 1.0, 1.0, np.pi/2.])
 
         if verbose:
             verb_level = 2
         else:
             verb_level = 0
 
-        ret = least_squares(self.residuals, coefficients, bounds=bounds, args=([points]), ftol=1e-3, xtol=1e-3, loss='huber', verbose=verb_level, max_nfev=5000)
+        ret = least_squares(self.residuals,
+                            coefficients,
+                            bounds=bounds,
+                            args=([points]),
+                            ftol=None,
+                            xtol=1e-9,
+                            loss='soft_l1',
+                            verbose=verb_level,
+                            max_nfev=5000)
         self.from_coeffs(ret.x)
         print('Fitted cone with:')
         print('\t Apex:', self.apex)
@@ -195,7 +206,27 @@ class CircularCone:
         plt.show()
 
     def image_triangulation(self, cam_origin, image_width, image_height, fx, fy, cx, cy):
-        """Debug function to draw an entire image intersection with the fitted cone"""
+        """Debug function to draw an entire image intersection with the fitted
+        cone
+
+        Parameters
+        ----------
+        cam_origin : np.array
+            Camera origin
+        image_width : int
+            Width of the image in pixels
+        image_height : int
+            Heignt of the image in pixels
+        fx : float
+        fy : float
+        cx : float
+        cy : float
+
+        Returns
+        -------
+        np.array
+            Triangulated pixels rays to the surface
+        """
         points = []
         for i in range(0, image_width, 20):
             for j in range(0, image_height, 10):

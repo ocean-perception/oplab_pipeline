@@ -21,7 +21,9 @@ class Plane:
         self.normal /= norm_normal
         self.coeffs /= norm_normal
         self.point = np.array([0.0, 1., 10.], dtype=np.float64)
-        self.point[0] = -(self.point[1]*self.coeffs[1] + self.point[2]*self.coeffs[2] + self.coeffs[3]) / self.coeffs[0]
+        self.point[0] = -((self.point[1]*self.coeffs[1]
+                          + self.point[2]*self.coeffs[2]
+                          + self.coeffs[3]) / self.coeffs[0])
 
     def distance(self, point):
         """Compute distance from point to plane"""
@@ -35,7 +37,8 @@ class Plane:
             residuals[i] = self.distance(p)
         return residuals
 
-    def fit(self, points, min_distance_inliers, verbose=True, output_inliers=True):
+    def fit(self, points, min_distance_inliers,
+            verbose=True, output_inliers=True):
         # Coeffs: apex(x, y, z), axis(x, y, z) and theta
         coefficients = np.array([1, 0, 0, -1.5], dtype=np.float64)
         bounds = ([-1.0, -1.0, -1.0, -np.inf], [1.0, 1.0, 1.0, np.inf])
@@ -43,16 +46,15 @@ class Plane:
             verb_level = 2
         else:
             verb_level = 0
-        ret = least_squares(
-                self.residuals, 
-                coefficients, 
-                bounds=bounds, 
-                args=([points]), 
-                ftol=None, 
-                xtol=1e-9, 
-                loss='soft_l1', 
-                verbose=verb_level, 
-                max_nfev=5000)
+        ret = least_squares(self.residuals,
+                            coefficients,
+                            bounds=bounds,
+                            args=([points]),
+                            ftol=None,
+                            xtol=1e-9,
+                            loss='soft_l1',
+                            verbose=verb_level,
+                            max_nfev=5000)
         self.from_coeffs(ret.x)
 
         inliers = None
@@ -91,11 +93,10 @@ class Plane:
         ax = fig.add_subplot(1, 1, 1, projection='3d')
         
         yy, zz = np.mgrid[-5:5, 0:15]
-        xx = (-self.coeffs[3] - self.coeffs[2] * zz - self.coeffs[1] * yy) / self.coeffs[0]
+        xx = ((-self.coeffs[3] - self.coeffs[2] * zz - self.coeffs[1] * yy)
+              / self.coeffs[0])
 
         ax.plot_wireframe(xx, yy, zz)
-        # ax.plot_surface(xx, yy, zz, color=(0, 1, 0, 0.5))
-        
         ax.set_xlabel('x [m]')
         ax.set_ylabel('y [m]')
         ax.set_zlabel('z [m]')
@@ -106,8 +107,29 @@ class Plane:
             ax.scatter(points[:,0], points[:,1], points[:,2], c='green')
         plt.show()
 
-    def image_triangulation(self, cam_origin, image_width, image_height, fx, fy, cx, cy):
-        """Debug function to draw an entire image intersection with the fitted cone"""
+    def image_triangulation(self, cam_origin, image_width, image_height,
+                            fx, fy, cx, cy):
+        """Debug function to draw an entire image intersection with the fitted
+        cone
+
+        Parameters
+        ----------
+        cam_origin : np.array
+            Camera origin
+        image_width : int
+            Width of the image in pixels
+        image_height : int
+            Heignt of the image in pixels
+        fx : float
+        fy : float
+        cx : float
+        cy : float
+
+        Returns
+        -------
+        np.array
+            Triangulated pixels rays to the surface
+        """
         points = []
         for i in range(0, image_width, 20):
             for j in range(0, image_height, 10):
