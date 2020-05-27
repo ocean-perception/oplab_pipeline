@@ -99,7 +99,7 @@ def run_setup():
         package_data={
             'auv_nav': ['default_yaml/*.yaml'],
             'auv_cal': ['default_yaml/*.yaml'],
-            'correct_images': ['default_yaml/*.yaml'],
+            'correct_images': ['default_yaml/*/*.yaml'],
             'oplab_pipeline_version': ['commit_hash.txt']},
         install_requires=[
             'prettytable>=0.7.2',
