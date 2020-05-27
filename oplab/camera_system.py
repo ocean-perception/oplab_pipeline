@@ -71,7 +71,7 @@ class CameraEntry:
             glob_vec = raw_dir.glob(pre_glob)
             img_dirs = [k for k in glob_vec]
             img_dir = Path(str(img_dirs[0]))
-            Console.info('Looking for images with the pattern *', img_dir, '*')
+            Console.info('Looking for images with the pattern *', split_glob[2], '*')
             for i in img_dir.glob('*' + split_glob[2] + '*.' + self.extension):
                 self._image_list.append(str(i))
         elif len(split_glob) == 1:
