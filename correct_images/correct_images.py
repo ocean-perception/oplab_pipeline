@@ -306,13 +306,13 @@ def setup(args):
     biocam_std_correct_config_file = 'correct_images/default_yaml/biocam/correct_images.yaml'
 
     if mission.image.format == 'acfr_standard':
-        default_file_path_camera = root / acfr_std_camera_file
+        camera_yaml_path = root / acfr_std_camera_file
         default_file_path_correct_config = root / acfr_std_correct_config_file
     elif mission.image.format == 'seaxerocks_3':
-        default_file_path_camera = root / sx3_camera_file
+        camera_yaml_path = root / sx3_camera_file
         default_file_path_correct_config = root / sx3_std_correct_config_file
     elif mission.image.format == 'biocam':
-        default_file_path_camera = root / biocam_camera_file
+        camera_yaml_path = root / biocam_camera_file
         default_file_path_correct_config = root / biocam_std_correct_config_file
     else:
         Console.warn('Image system not recognised. Looking for camera.yaml in raw folder...')
@@ -321,6 +321,12 @@ def setup(args):
             Console.quit('camera.yaml file for new Image system not found within raw folder...')
         else:
             Console.info('camera.yaml found for new imaging system...')            
+
+    # instantiate the camerasystem and setup cameras from mission and config files / auv_nav
+    camerasystem = CameraSystem(camera_yaml_path)
+    if camerasystem.camera_system != mission.image.format:
+        Console.quit('image system not found in camera.yaml file...')
+
 
     # check for correct_config yaml path
     path_correct_images = path_config_folder / 'correct_images.yaml'
@@ -332,19 +338,6 @@ def setup(args):
 
     # load parameters from correct_config.yaml
     correct_config = CorrectConfig(path_correct_images)
-
-    # check for camera yaml path
-    camera_yaml_path = path_config_folder / 'camera.yaml'
-    if camera_yaml_path.exists():
-        Console.info('path found to camera.yaml file')
-    else:
-        default_file_path_camera.copy(camera_yaml_path)
-        Console.warn('default camera.yaml file copied to config folder')
-
-    # instantiate the camerasystem and setup cameras from mission and config files / auv_nav
-    camerasystem = CameraSystem(camera_yaml_path)
-    if camerasystem.camera_system != mission.image.format:
-        Console.quit('image system not found in camera.yaml file...')
 
     return correct_config, camerasystem
 
