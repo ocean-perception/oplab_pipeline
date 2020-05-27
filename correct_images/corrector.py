@@ -614,7 +614,7 @@ class Corrector:
     
 
     # correct image for distortions using camera calibration parameters
-    def distortion_correct(self, image):
+    def distortion_correct(self, image, dst_bit=8):
         monocam = MonoCamera(camera_params_file_path)
         map_x, map_y = monocam.rectification_maps
         image = np.clip(image, 0, 2 ** dst_bit - 1)
