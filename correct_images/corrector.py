@@ -617,6 +617,10 @@ class Corrector:
             corrected_rgb_img = cv2.cvtColor(image16, cv2.COLOR_BAYER_RG2BGR)       
         elif pattern == 'grbg' or pattern == 'GRBG':
             corrected_rgb_img = cv2.cvtColor(image16, cv2.COLOR_BAYER_GR2BGR)       
+        elif pattern == 'bggr' or pattern == 'BGGR':
+            corrected_rgb_img = cv2.cvtColor(image16, cv2.COLOR_BAYER_BG2BGR)    
+        elif pattern == 'gbrg' or pattern == 'GBRG':
+            corrected_rgb_img = cv2.cvtColor(image16, cv2.CV_BayerGB2BGR)          
         else:
             Console.quit('Bayer pattern not supported')
         return corrected_rgb_img
