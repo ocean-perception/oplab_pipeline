@@ -343,7 +343,7 @@ class Corrector:
                 for idx_bin in trange(1, hist_bounds.size):
                     tmp_idxs = np.where(idxs==idx_bin)[0]
                     if len(tmp_idxs) > 0:
-                        bin_images = image_memmap_[tmp_idxs]
+                        bin_images = image_memmap_per_channel[tmp_idxs]
                         bin_distances = distance_memmap[tmp_idxs]
                         if self.smoothing == 'mean':
                             bin_images_sample = np.mean(bin_images, axis=0)
@@ -382,10 +382,10 @@ class Corrector:
                 self.correction_gains[i] = correction_gains
                 # apply gains to images
                 Console.info('Applying attenuation corrections to images...')
-                image_memmap_ = self.apply_attenuation_corrections(image_memmap_,
+                image_memmap_per_channel = self.apply_attenuation_corrections(image_memmap_per_channel,
                                         distance_memmap, attenuation_parameters, correction_gains)
 
-                image_corrected_mean, image_corrected_std = mean_std_(image_memmap_)
+                image_corrected_mean, image_corrected_std = mean_std_(image_memmap_per_channel)
                 self.image_corrected_mean[i] = image_corrected_mean
                 self.image_corrected_std[i] = image_corrected_std
             
@@ -407,17 +407,17 @@ class Corrector:
         if len(self.distance_matrix_numpy_filelist) == 0:
             image_memmap_path, image_memmap = load_memmap_from_numpyfilelist(self.memmap_folder, self.bayer_numpy_filelist)
 
-            if self.image_channels == 1:
-                image_memmap_channels[:,:,:,0] = image_memmap
-            else:
-                image_memmap_channels = image_memmap
+            
             # --- TODO ----
 
             for i in range(self.image_channels):
-                image_memmap_ = image_memmap_channels[:,:,:,i]
+                if self.image_channels == 1:
+                    image_memmap_per_channel = image_memmap
+                else:
+                    image_memmap_per_channel = image_memmap[:,:,:,i]
 
                 # calculate mean, std for image and target_altitude
-                raw_image_mean, raw_image_std = mean_std_(image_memmap_)
+                raw_image_mean, raw_image_std = mean_std_(image_memmap_per_channel)
                 self.image_raw_mean[i] = raw_image_mean
                 self.image_raw_std[i] = raw_image_std
         image_raw_mean_file = self.attenuation_parameters_folder / 'image_raw_mean.npy'
@@ -701,7 +701,7 @@ def load_memmap_from_numpyfilelist(filepath, numpyfilelist):
     list_shape = list_shape + list(image.shape)
 
     filename_map = 'memmap_' + str(uuid.uuid4()) + '.map'
-    memmap_path = filepath / filename_map
+    memmap_path = Path(filepath) / filename_map
 
     memmap_ = np.memmap(filename=memmap_path, mode='w+', shape=tuple(list_shape),
                         dtype=np.float32)

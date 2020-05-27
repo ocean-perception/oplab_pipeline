@@ -65,14 +65,14 @@ class CameraEntry:
             img_dir = Path(str(img_dirs[0]) + '/' + str(split_glob[1]))
             for i in img_dir.rglob('*.' + self.extension):
                 self._image_list.append(str(i))
-        elif len(split_glob) == 3:  # path/i*/*LC*
+        elif len(split_glob) == 4:  # path/i*/*LC*
             # split = ['path/i', '/', 'LC]
             pre_glob = split_glob[0] + '*'
-            glob_vec = raw_dir.glob(pre_glob)    
+            glob_vec = raw_dir.glob(pre_glob)
             img_dirs = [k for k in glob_vec]
             img_dir = Path(str(img_dirs[0]))
-            Console.info('Looking for images with the pattern *', img_dirs[2], '*')
-            for i in img_dir.glob('*' + img_dirs[2] + '*.' + self.extension):
+            Console.info('Looking for images with the pattern *', img_dir, '*')
+            for i in img_dir.glob('*' + split_glob[2] + '*.' + self.extension):
                 self._image_list.append(str(i))
         elif len(split_glob) == 1:
             img_dir = self.path
