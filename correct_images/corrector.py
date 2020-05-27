@@ -40,12 +40,16 @@ class Corrector:
         # setup the corrector instance
     def setup(self):
         self.load_generic_config_parameters()
-        self.load_camera_specific_config_parameters()
-        self.get_imagelist()
-        self.create_output_directories()
-        self.generate_distance_matrix()
-        self.generate_bayer_numpy_filelist(self._imagelist)
-        self.generate_bayer_numpyfiles(self.bayer_numpy_filelist)
+        ret = self.load_camera_specific_config_parameters()
+        if ret < 0:
+            return -1
+        else:
+            self.get_imagelist()
+            self.create_output_directories()
+            self.generate_distance_matrix()
+            self.generate_bayer_numpy_filelist(self._imagelist)
+            self.generate_bayer_numpyfiles(self.bayer_numpy_filelist)
+            return 0
 
 
         # store into object correction parameters relevant to both all cameras in the system
@@ -127,20 +131,23 @@ class Corrector:
         # store into object correction paramters specific to the current camera
     def load_camera_specific_config_parameters(self):
         idx = [i for i, cameraconfig in enumerate(self.cameraconfigs) if cameraconfig.camera_name == self._camera.name]
-
-        self._camera_image_file_list = self.cameraconfigs[idx[0]].imagefilelist
-        if self.correction_method == 'colour_correction':
-            self.brightness = self.cameraconfigs[idx[0]].brightness
-            self.contrast = self.cameraconfigs[idx[0]].contrast
-        elif self.correction_method == 'manual_balance':
-            self.subtractors_rgb = self.cameraconfigs[idx[0]].subtractors_rgb
-            self.color_correct_matrix_rgb = self.cameraconfigs[idx[0]].color_correct_matrix_rgb
-        image_properties = self._camera.image_properties
-        self.image_height = image_properties[0]
-        self.image_width = image_properties[1]
-        self.image_channels = image_properties[2]
-        self.camera_name = self._camera.name
-        self._type = self._camera.type
+        if len(idx) > 0:
+            self._camera_image_file_list = self.cameraconfigs[idx[0]].imagefilelist
+            if self.correction_method == 'colour_correction':
+                self.brightness = self.cameraconfigs[idx[0]].brightness
+                self.contrast = self.cameraconfigs[idx[0]].contrast
+            elif self.correction_method == 'manual_balance':
+                self.subtractors_rgb = self.cameraconfigs[idx[0]].subtractors_rgb
+                self.color_correct_matrix_rgb = self.cameraconfigs[idx[0]].color_correct_matrix_rgb
+            image_properties = self._camera.image_properties
+            self.image_height = image_properties[0]
+            self.image_width = image_properties[1]
+            self.image_channels = image_properties[2]
+            self.camera_name = self._camera.name
+            self._type = self._camera.type
+            return 0
+        else:
+            return -1
 
 
         # load imagelist: output is same as camera.imagelist unless a smaller filelist is specified by the user

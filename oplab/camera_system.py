@@ -57,6 +57,7 @@ class CameraEntry:
         raw_dir = get_raw_folder(curr_dir)
 
         split_glob = str(self.path).split('*')
+        print(len(split_glob))
         img_dir = ''
         if len(split_glob) == 2:
             pre_glob = split_glob[0] + '*'
@@ -75,7 +76,7 @@ class CameraEntry:
             for i in img_dir.glob('*' + split_glob[2] + '*.' + self.extension):
                 self._image_list.append(str(i))
         elif len(split_glob) == 1:
-            img_dir = self.path
+            img_dir = raw_dir / self.path
             for i in img_dir.rglob('*.' + self.extension):
                 self._image_list.append(str(i))
         else:

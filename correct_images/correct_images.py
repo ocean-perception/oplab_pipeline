@@ -172,8 +172,12 @@ def call_parse(args):
             continue
         else:
             corrector = Corrector(args.force, camera, correct_config, path)
-            corrector.setup()
-            corrector.generate_attenuation_correction_parameters()
+            ret = corrector.setup()
+            if ret < 0:
+                Console.warn('Camera not included in correct_images.yaml...')
+                continue
+            else:
+                corrector.generate_attenuation_correction_parameters()
     Console.info('Parse completed for all cameras. Please run process to develop corrected images...')
 
 
@@ -192,8 +196,12 @@ def call_process(args):
         else:
             corrector = Corrector(args.force, camera, correct_config, path)
             corrector.load_generic_config_parameters()
-            corrector.load_camera_specific_config_parameters()
-            corrector.get_imagelist()
+            ret = corrector.load_camera_specific_config_parameters()
+            if ret < 0:
+                Console.warn('Camera not included in correct_images.yaml...')
+                continue
+            else:
+                corrector.get_imagelist()
 
             # check if necessary folders exist in respective folders
             image_path = Path(corrector._imagelist[0]).resolve()
