@@ -314,9 +314,13 @@ def setup(args):
     elif mission.image.format == 'biocam':
         default_file_path_camera = root / biocam_camera_file
         default_file_path_correct_config = root / biocam_std_correct_config_file
-    # check in the raw folder for a cemra.yaml file
-    # if exists, check imageing system name
-    # else quit with a message
+    else:
+        Console.warn('Image system not recognised. Looking for camera.yaml in raw folder...')
+        camera_yaml_path = path_raw_folder / 'camera.yaml'
+        if not camera_yaml_path.exists():
+            Console.quit('camera.yaml file for new Image system not found within raw folder...')
+        else:
+            Console.info('camera.yaml found for new imaging system...')            
 
     # check for correct_config yaml path
     path_correct_images = path_config_folder / 'correct_images.yaml'
@@ -339,6 +343,8 @@ def setup(args):
 
     # instantiate the camerasystem and setup cameras from mission and config files / auv_nav
     camerasystem = CameraSystem(camera_yaml_path)
+    if camerasystem.camera_system != mission.image.format:
+        Console.quit('image system not found in camera.yaml file...')
 
     return correct_config, camerasystem
 
