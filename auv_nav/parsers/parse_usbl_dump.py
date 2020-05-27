@@ -18,7 +18,7 @@ from oplab import get_raw_folder
 from oplab import Console
 
 
-def parse_usbl_dump(mission, vehicle, category, ftype, outpath, fileoutname):
+def parse_usbl_dump(mission, vehicle, category, ftype, outpath):
     # parser meta data
     class_string = 'measurement'
     sensor_string = 'jamstec_usbl'

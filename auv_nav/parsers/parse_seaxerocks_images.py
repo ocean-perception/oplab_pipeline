@@ -16,8 +16,7 @@ def parse_seaxerocks_images(mission,
                             vehicle,
                             category,
                             ftype,
-                            outpath,
-                            fileoutname):
+                            outpath):
     data_list = []
     if ftype == 'acfr':
         data_list = ''

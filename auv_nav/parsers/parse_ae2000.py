@@ -23,8 +23,7 @@ def parse_ae2000(mission,
                  vehicle,
                  category,
                  ftype,
-                 outpath,
-                 fileoutname):
+                 outpath):
     # parser meta data
     class_string = 'measurement'
     sensor_string = 'ae20000'
@@ -96,7 +95,6 @@ def parse_ae2000(mission,
                     # print('OUT:',x_velocity, y_velocity, z_velocity)
                     # y_velocity=-1*y_velocity
                     # z_velocity=-1*z_velocity
-
                     x_velocity_std = abs(x_velocity) * \
                         mission.velocity.std_factor+mission.velocity.std_offset
                     y_velocity_std = abs(y_velocity) * \

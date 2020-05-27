@@ -48,7 +48,7 @@ class PhinsTimestamp():
         return epoch_timestamp
 
 class PhinsParser():
-    def __init__(self, mission, vehicle, category, ftype, outpath, filename):
+    def __init__(self, mission, vehicle, category, ftype, outpath):
         # parser meta data
         self.class_string = 'measurement'
         self.sensor_string = 'phins'

@@ -46,8 +46,7 @@ def parse_autosub(mission,
                   vehicle,
                   category,
                   ftype,
-                  outpath,
-                  fileoutname):
+                  outpath):
     # parser meta data
     class_string = 'measurement'
     sensor_string = 'autosub'

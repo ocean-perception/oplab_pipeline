@@ -89,8 +89,7 @@ def parse_biocam_images(mission,
                         vehicle,
                         category,
                         ftype,
-                        outpath,
-                        fileoutname):
+                        outpath):
     # parser meta data
     class_string = 'measurement'
     frame_string = 'body'

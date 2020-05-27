@@ -14,8 +14,7 @@ def parse_rdi(mission,
               vehicle,
               category,
               ftype,
-              outpath,
-              fileoutname):
+              outpath):
 
     # parser meta data
     sensor_string = 'rdi'

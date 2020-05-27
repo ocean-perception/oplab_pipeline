@@ -23,8 +23,7 @@ def parse_gaps(mission,
                vehicle,
                category,
                ftype,
-               outpath,
-               fileoutname):
+               outpath):
 
     # parser meta data
     class_string = 'measurement'
