@@ -10,6 +10,7 @@ from auv_nav.tools.time_conversions import date_time_to_epoch
 from auv_nav.tools.time_conversions import epoch_to_day
 from oplab import get_raw_folder
 from oplab import Console
+from pathlib import Path
 
 
 def parse_seaxerocks_images(mission,
@@ -90,7 +91,7 @@ def parse_seaxerocks_images(mission,
     # convert to seconds from utc
     # timeoffset = -timezone_offset*60*60 + timeoffset
 
-    Console.info('... parsing ' + sensor_string + 'images')
+    Console.info('  Parsing ' + sensor_string + ' images...')
 
     cam1_path = get_raw_folder(outpath / '..' / camera1_filepath / '..')
     cam1_filetime = cam1_path / 'FileTime.csv'
@@ -228,10 +229,16 @@ def parse_seaxerocks_images(mission,
     # try use pandas for all parsers, should be faster
     camera3_list = ["{}".format(i) for i in laser_index]
 
+    # The LM165 images are saved either as jpg or as tif, and are split into
+    # subfolders either at every 1000 or every 10000 images. Find out which 
+    # convention is used in current dataset by looking at the files.
+    if len(camera3_list) > 0:
+        s, extension = determine_extension_and_images_per_folder(cam3_path,
+            camera3_list, camera3_label)
+
     for i in range(len(camera3_list)):
-        # let out format (e.g. '.jpg' or '.tif')
-        camera3_filename.append(
-            '{}/image{}.xxx'.format(camera3_list[i][1:4], camera3_list[i]))
+        camera3_filename.append('{}/image{}.{}'.format(camera3_list[i][s:s+3],\
+            camera3_list[i], extension))
         camera3_index.append(camera3_list[i])
 
     j = 0
@@ -262,4 +269,68 @@ def parse_seaxerocks_images(mission,
                 'filename': str(camera3_filename[i])}
             data_list.append(data)
 
+    Console.info('  ...done parsing ' + sensor_string + ' images.')
+
     return data_list
+
+
+
+def determine_extension_and_images_per_folder(folder_path, image_list, label):
+    """Determine filename extension and number of images per subfolder
+
+    The number of images per subfolder dertermines how the subfolders are
+    named. The subfolder name is 3 letters long and either starts from the 
+    first (index = 0) or the second (index = 1) digit of the image number.
+
+    :param folder_path: Path where images are stored
+    :type  folder_path: pathlib.Path
+    :param image_list:  list of image 7-digit zeropadded image numbers
+    :type  image_list:  list of str
+    :param label:       Camera label
+    :type  label:       str
+
+    :returns:
+        -index_start_of_folder_name (`int`) - Index where subfolder name starts
+        -extension (`str`) - Filename extension of images ("jpg" or "tif")
+    """
+    Console.info('    Determine filename extension and images per subfolder '
+            'of camera {}...'.format(label))
+
+    if build_image_path(folder_path, image_list[-1], 0, 'jpg').is_file():
+        index_start_of_folder_name = 0
+        extension = 'jpg'
+        Console.info('    ...Filename extension: "{}", 10000 images ' \
+            'per subfolder.'.format(extension))
+    elif build_image_path(folder_path, image_list[-1], 1, 'jpg').is_file():
+        index_start_of_folder_name = 1
+        extension = 'jpg'
+        Console.info('    ...Filename extension: "{}", 1000 images ' \
+            'per subfolder.'.format(extension))
+    elif build_image_path(folder_path, image_list[-1], 0, 'tif').is_file():
+        index_start_of_folder_name = 0
+        extension = 'tif'
+        Console.info('    ...Filename extension: "{}", 10000 images ' \
+            'per subfolder.'.format(extension))
+    elif build_image_path(folder_path, image_list[-1], 1, 'tif').is_file():
+        index_start_of_folder_name = 1
+        extension = 'tif'
+        Console.info('    ...Filename extension: "{}", 1000 images ' \
+            'per subfolder.'.format(extension))
+    else:
+        index_start_of_folder_name = 0
+        extension = 'jpg'
+        Console.warn('    ...Did not find images from camera {} in {}. ' \
+            'Default to using extension "{}" and 10000 images per '\
+            'subfolder.'.format(label, folder_path, extension))
+
+    return index_start_of_folder_name, extension
+
+def build_image_path(folder_path, image_number, s, extension):
+    """Build path of image file
+
+    Build the path to an image file given the parent folder, an image nuber,
+    the index of where the subfolder name is taken from in the image number,
+    and the filename extension of the image
+    """
+    return folder_path / '{}/image{}.{}'.format(image_number[s:s+3],\
+        image_number, extension)
