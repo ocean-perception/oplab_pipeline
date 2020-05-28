@@ -233,8 +233,8 @@ def interpolate_sensor_list(sensor_list,
     end_time = _centre_list[-1].epoch_timestamp
     if (sensor_list[0].epoch_timestamp > end_time
        or sensor_list[-1].epoch_timestamp < start_time):
-        print('{} timestamps does not overlap with dead reckoning data, \
-               check timestamp_history.pdf via -v option.'.format(sensor_name))
+        print('{} timestamps does not overlap with dead reckoning data, ' \
+            'check timestamp_history.pdf via -v option.'.format(sensor_name))
     else:
         sensor_overlap_flag = 0
         for i in range(len(sensor_list)):
@@ -368,7 +368,7 @@ def interpolate_sensor_list(sensor_list,
                     _centre_list[j].covariance)
 
         if sensor_overlap_flag == 1:
-            print('{} data more than dead reckoning data. Only processed \
-                  overlapping data and ignored the rest.'.format(sensor_name))
-        print('Complete interpolation and coordinate transfomations \
-               for {}'.format(sensor_name))
+            print('{} data more than dead reckoning data. Only processed ' \
+                  'overlapping data and ignored the rest.'.format(sensor_name))
+        print('Complete interpolation and coordinate transfomations ' \
+            'for {}'.format(sensor_name))

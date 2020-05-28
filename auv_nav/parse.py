@@ -504,6 +504,7 @@ def parse_single(filepath, force_overwrite):
     with nav_file.open('w') as fileout:
         json.dump(data_list_temp, fileout, indent=2)
     fileout.close()
+    Console.info('...done writing to output file.')
 
     del data_list_temp
     del data_list

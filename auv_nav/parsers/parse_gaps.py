@@ -25,6 +25,9 @@ def parse_gaps(mission,
                ftype,
                outpath):
 
+
+    Console.info('  Parsing GAPS data...')
+
     # parser meta data
     class_string = 'measurement'
     sensor_string = 'gaps'
@@ -57,7 +60,7 @@ def parse_gaps(mission,
     filepath = get_raw_folder(path)
     all_list = os.listdir(str(filepath))
     gaps_list = [line for line in all_list if '.dat' in line]
-    Console.info(str(len(gaps_list)) + ' GAPS file(s) found')
+    Console.info('  ' + str(len(gaps_list)) + ' GAPS file(s) found')
 
     # extract data from files
     data_list = []
@@ -391,5 +394,8 @@ def parse_gaps(mission,
 
                     # reset flag
                     flag_got_time = 0
+
+
+    Console.info('  ...done parsing GAPS data.')
 
     return data_list

@@ -46,7 +46,7 @@ def parse_ae2000(mission,
     # timeoffset = -timezone_offset*60*60 + timeoffset
 
     # parse phins data
-    Console.info('... parsing ae2000 logs')
+    Console.info('  Parsing ae2000 logs for ' + category + '...')
     data_list = []
     if ftype == 'acfr':
         data_list = ''
@@ -258,6 +258,6 @@ def parse_ae2000(mission,
                     continue
         # else:
         # 	print('no bottom lock')
-    Console.info('  ...done parsing ae2000 logs.')
+    Console.info('  ...done parsing ae2000 logs for ' + category + '.')
 
     return data_list
