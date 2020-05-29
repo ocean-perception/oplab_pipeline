@@ -7,11 +7,10 @@ import pandas as pd
 from oplab import get_raw_folder
 
 
-def resolve(filename):
-    curr_dir = Path.cwd()
-    curr_dir = get_raw_folder(curr_dir)
+def resolve(filename, folder):
+    workdir = get_raw_folder(folder)
     resolved_filename = ''
-    for x in curr_dir.glob(filename):
+    for x in workdir.glob(filename):
         resolved_filename = x
     if resolved_filename == '':
         Console.error('The file: ', filename, ' could not be found.')
@@ -20,11 +19,19 @@ def resolve(filename):
 
 
 class FilenameToDate():
-    def __init__(self, stamp_format: str, filename=None, columns=None):
+    def __init__(self,
+                 stamp_format: str,
+                 filename=None,
+                 columns=None,
+                 path=None):
         self.stamp_format = stamp_format
         self.df = None
+        if path is not None:
+            self.path = Path(path)
+        else:
+            self.path = Path.cwd()
         if filename is not None and columns is not None:
-            self.filename = resolve(filename)
+            self.filename = resolve(filename, self.path)
             self.read_timestamp_file(self.filename, columns)
 
     # Make the object callable  (e.g. operator() )
