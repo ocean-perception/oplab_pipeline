@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Copyright (c) 2020, University of Southampton
+All rights reserved.
+Licensed under the BSD 3-Clause License. 
+See LICENSE.md file in the project root for full license information.  
+"""
 import numpy as np
 from numpy.linalg import norm
 from scipy.optimize import least_squares
@@ -69,7 +76,7 @@ class CircularCone:
 
     def distance(self, point):
         """Compute distance from point to modelled cone
-        
+
         The distance from a point :math:`p_i` to a cone with apex :math:`Ap` and 
         basis :math:`[\\vec{u}, \\vec{n}_1, \\vec{n}_2]`, where :math:`\\vec{u}`
         is the cone asis is defined by:

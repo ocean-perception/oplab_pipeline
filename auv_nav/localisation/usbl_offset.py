@@ -1,4 +1,10 @@
-# dead_reckoning
+# -*- coding: utf-8 -*-
+"""
+Copyright (c) 2020, University of Southampton
+All rights reserved.
+Licensed under the BSD 3-Clause License. 
+See LICENSE.md file in the project root for full license information.  
+"""
 
 # Scripts to shift deadreackoning data to a single USBL position. This should
 # be improved to match on average as minimum, but really needs to be turned

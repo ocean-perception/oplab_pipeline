@@ -1,4 +1,10 @@
-# parse_acfr_images
+# -*- coding: utf-8 -*-
+"""
+Copyright (c) 2020, University of Southampton
+All rights reserved.
+Licensed under the BSD 3-Clause License. 
+See LICENSE.md file in the project root for full license information.  
+"""
 
 # Scripts to parse acfr image acquisition data
 
