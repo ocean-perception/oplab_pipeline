@@ -66,8 +66,8 @@ class Config:
     """
 
 
-	def __init__(self, camera_name, imagefilelist, 
-		brightness, contrast, subtractors_rgb, color_correct_matrix_rgb):
+    def __init__(self, camera_name, imagefilelist, 
+        brightness, contrast, subtractors_rgb, color_correct_matrix_rgb):
 
         """ __init__ is the constructor function
 
@@ -87,12 +87,12 @@ class Config:
             parameters for manual balance of images
         """
 
-		self.camera_name = camera_name
-		self.imagefilelist = imagefilelist
-		self.brightness = brightness
-		self.contrast = contrast
-		self.subtractors_rgb = subtractors_rgb
-		self.color_correct_matrix_rgb = color_correct_matrix_rgb
+        self.camera_name = camera_name
+        self.imagefilelist = imagefilelist
+        self.brightness = brightness
+        self.contrast = contrast
+        self.subtractors_rgb = subtractors_rgb
+        self.color_correct_matrix_rgb = color_correct_matrix_rgb
 
 class CameraConfigs:
 
@@ -125,7 +125,7 @@ class CameraConfigs:
             node[i]['manual_balance']['colour_correction_matrix_rgb']))
 
 class OutputSettings:
-	
+    
     """ class OutputSettings creates an object for output_settings parameters from the correct_images.yaml file
     
     Attributes
@@ -146,8 +146,8 @@ class OutputSettings:
             dictionary object for an entry in correct_images.yaml file
         """
 
-		self.undistort_flag = node['undistort']
-		self.compression_parameter = node['compression_parameter']
+        self.undistort_flag = node['undistort']
+        self.compression_parameter = node['compression_parameter']
 
 class CorrectConfig:
     
