@@ -42,7 +42,6 @@ from correct_images.parser import *
 
 from numpy.linalg import inv
 import sys
-# -----------------------------------------
 
 
 # Main function
@@ -120,6 +119,14 @@ def main(args=None):
         args.func(args)
 
 def call_debayer(args):
+    """ performs debayer of input bayer images without going through correction pipeline
+
+    Parameters
+    -----------
+    args : parse_args object
+        user provided arguments for path of bayer images, filetype, and optional 
+        arguments like bayer pattern, output directory, output format
+    """
     def debayer_image(image_path, filetype, pattern, output_dir, output_format, corrector):
         Console.info('Debayering image {}'.format(image_path.name))
         if filetype == 'raw':
@@ -169,6 +176,14 @@ def call_debayer(args):
     
 
 def call_parse(args):
+    """ performs parsing configuration yaml files and generate image correction parameters
+
+    Parameters
+    -----------
+    args : parse_args object
+        user provided arguments for path of source images
+    """
+
     correct_config, camerasystem = setup(args)
     path = Path(args.path).resolve()
 
@@ -192,6 +207,15 @@ def call_parse(args):
 
 
 def call_process(args):
+    """ performs processing on source images using correction parameters generated in parse
+    and outputs corrected images
+
+    Parameters
+    -----------
+    args : parse_args object
+        user provided arguments for path of source images
+    """
+
     correct_config, camerasystem = setup(args)
     path = Path(args.path).resolve()
 
@@ -273,6 +297,14 @@ def call_process(args):
 
 
 def call_correct(args):
+    """ performs parse and process in one go. can be used for small datasets 
+
+    Parameters
+    -----------
+    args : parse_args object
+        user provided arguments for path of source images
+    """
+
     correct_config, camerasystem = setup(args)
     path = Path(args.path).resolve()
 
@@ -291,6 +323,14 @@ def call_correct(args):
 
 
 def setup(args):
+    """ generates correct_config and camerasystem objects from input config yaml files
+    
+    Parameters
+    -----------
+    args : parse_args object
+        user provided arguments for path of source images
+    """
+
     path = Path(args.path).resolve()
     
     # resolve paths to raw, processed and config folders
