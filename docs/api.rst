@@ -1,8 +1,6 @@
 API
 ===
 
-.. module:: flask
-
 This part of the documentation covers all the interfaces of oplab_pipeline.
 
 auv_nav
