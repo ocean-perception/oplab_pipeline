@@ -106,10 +106,28 @@ class FilenameToDate():
             return stamp
 
     def read_timestamp_file(self, filename, columns):
-        df = pd.read_csv(filename, dtype=str)
+        filename = Path(filename)
+        filestream = filename.open('r')
+        lines = filestream.readlines()
+        header = lines[0]
+        first_row = lines[1]
+
+        headers = header.split(',')
+        
+        hn = len(headers)
+        ln = len(first_row.split(','))
+
+        if ln > hn:
+            for i in range(ln - hn):
+                headers.append('unknown' + str(i))
+            df = pd.read_csv(filename, dtype=str, header=None, names=headers, skiprows=[0])
+        else:
+            df = pd.read_csv(filename, dtype=str)
+            
         df['combined'] = ''
         df['combined_format'] = ''
         df['epoch_timestamp'] = ''
+
         df_index_name = None
         for c in columns:
             name = c['name']
@@ -125,7 +143,6 @@ class FilenameToDate():
                 else:
                     Console.error("There should only be one Index column")
                     Console.quit("Invalid timestamp format")
-
         last_idx = int(df['index'].tail(1))
         Console.info('Found', last_idx, 'timestamp records in', filename)
 
