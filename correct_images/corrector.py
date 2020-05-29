@@ -98,8 +98,8 @@ class Corrector:
         if not self.attenuation_parameters_folder.exists():
             self.attenuation_parameters_folder.mkdir(parents=True)
         else:
-            dir_= self.attenuation_parameters_folder
-            file_list = list(dir_.glob('*.npy'))
+            dir_temp= self.attenuation_parameters_folder
+            file_list = list(dir_temp.glob('*.npy'))
             if len(file_list) > 0:
                 if self.force == False:
                     Console.quit('Processed files exist. If you want to overwrite them, run correct_images with the force overwrite flag (-F)')
@@ -111,8 +111,8 @@ class Corrector:
         if not self.output_images_folder.exists():
             self.output_images_folder.mkdir(parents=True)
         else:
-            dir_= self.output_images_folder
-            file_list = list(dir_.glob('*.*'))
+            dir_temp= self.output_images_folder
+            file_list = list(dir_temp.glob('*.*'))
             if len(file_list) > 0:
                 if self.force == False:
                     Console.quit('Overwrite images with a Force command...')
@@ -234,8 +234,8 @@ class Corrector:
         # generate numpy filelist from imagelst
         self.bayer_numpy_filelist = []
         for imagepath in image_pathlist:
-            imagepath_ = Path(imagepath)
-            bayer_file_stem = imagepath_.stem
+            imagepath_temp = Path(imagepath)
+            bayer_file_stem = imagepath_temp.stem
             bayer_file_path = self.bayer_numpy_dir_path / str(bayer_file_stem + ".npy")
             self.bayer_numpy_filelist.append(bayer_file_path)
 
@@ -248,7 +248,6 @@ class Corrector:
             # write numpy files for corresponding bayer images
             for idx in trange(len(self._imagelist)):
                 tmp_tif = imageio.imread(self._imagelist[idx])
-                #tmp_npy = np.zeros([self.image_height, self.image_width, self.image_channels], np.uint16)
                 tmp_npy = np.array(tmp_tif, np.uint16)
                 np.save(bayer_numpy_filelist[idx], tmp_npy)
         if self._camera.extension == 'raw':
@@ -318,12 +317,12 @@ class Corrector:
                 else:
                     image_memmap_per_channel = image_memmap[:,:,:,i]
                 # calculate mean, std for image and target_altitude
-                raw_image_mean, raw_image_std = mean_std_(image_memmap_per_channel)
+                raw_image_mean, raw_image_std = mean_std(image_memmap_per_channel)
                 self.image_raw_mean[i] = raw_image_mean
                 self.image_raw_std[i] = raw_image_std
 
 
-                target_altitude = mean_std_(distance_memmap, False)
+                target_altitude = mean_std(distance_memmap, False)
                 
                 # compute the mean distance for each image
                 [n, a, b] = distance_memmap.shape
@@ -347,7 +346,7 @@ class Corrector:
                             bin_images_sample = np.mean(bin_images, axis=0)
                             bin_distances_sample = np.mean(bin_distances, axis=0)
                         elif self.smoothing == 'mean_trimmed':
-                            bin_images_sample = np.mean(bin_images, axis=0)
+                            bin_images_sample = image_mean_std_trimmed(bin_images)
                             bin_distances_sample = np.mean(bin_distances, axis=0)
                         elif self.smoothing == 'median':
                             bin_images_sample = np.median(bin_images, axis=0)
@@ -385,7 +384,7 @@ class Corrector:
                                         distance_memmap, attenuation_parameters, correction_gains)
 
                 # calculate corrected mean and std per channel
-                image_corrected_mean, image_corrected_std = mean_std_(image_memmap_per_channel)
+                image_corrected_mean, image_corrected_std = mean_std(image_memmap_per_channel)
                 self.image_corrected_mean[i] = image_corrected_mean
                 self.image_corrected_std[i] = image_corrected_std
             
@@ -414,7 +413,7 @@ class Corrector:
                     image_memmap_per_channel = image_memmap[:,:,:,i]
 
                 # calculate mean, std for image and target_altitude
-                raw_image_mean, raw_image_std = mean_std_(image_memmap_per_channel)
+                raw_image_mean, raw_image_std = mean_std(image_memmap_per_channel)
                 self.image_raw_mean[i] = raw_image_mean
                 self.image_raw_std[i] = raw_image_std
         image_raw_mean_file = self.attenuation_parameters_folder / 'image_raw_mean.npy'
@@ -693,18 +692,19 @@ def load_memmap_from_numpyfilelist(filepath, numpyfilelist):
     filename_map = 'memmap_' + str(uuid.uuid4()) + '.map'
     memmap_path = Path(filepath) / filename_map
 
-    memmap_ = np.memmap(filename=memmap_path, mode='w+', shape=tuple(list_shape),
+    memmap_handle = np.memmap(filename=memmap_path, mode='w+', shape=tuple(list_shape),
                         dtype=np.float32)
+    Console.info('Loading memmaps from numpy files...')
     for idx in trange(0, len(numpyfilelist), ascii=True, desc=message):
-        memmap_[idx, ...] = np.load(numpyfilelist[idx])
+        memmap_handle[idx, ...] = np.load(numpyfilelist[idx])
 
-    return memmap_path, memmap_
+    return memmap_path, memmap_handle
 
 
 
 # calculate the mean and std of an image
 
-def mean_std_(data, calculate_std=True):
+def mean_std(data, calculate_std=True):
     [n, a, b] = data.shape
 
     data.reshape((n, a*b))
@@ -719,7 +719,7 @@ def mean_std_(data, calculate_std=True):
 
 
 
-def image_mean_std(data, ratio_trimming=0.2, calculate_std=True):
+def image_mean_std_trimmed(data, ratio_trimming=0.2, calculate_std=True):
     [n, a, b] = data.shape
     ret_mean = np.zeros((a, b), np.float32)
     ret_std = np.zeros((a, b), np.float32)
@@ -730,8 +730,8 @@ def image_mean_std(data, ratio_trimming=0.2, calculate_std=True):
               datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     if ratio_trimming <= 0:
-        ret_mean = np.mean(src_imgs, axis=0)
-        ret_std = np.std(src_imgs, axis=0)
+        ret_mean = np.mean(data, axis=0)
+        ret_std = np.std(data, axis=0)
 
     else:
         if calculate_std == False:
@@ -755,6 +755,7 @@ def image_mean_std(data, ratio_trimming=0.2, calculate_std=True):
 
 
 
+
 def calc_mean_and_std_trimmed(data, rate_trimming, calc_std=True):
     if rate_trimming <= 0:
         mean = np.mean(data)
@@ -772,6 +773,7 @@ def calc_mean_and_std_trimmed(data, rate_trimming, calc_std=True):
             std = np.std(sorted_values[idx_left_limit:idx_right_limit])
 
     return np.array([mean, std])
+
 
 
 def exp_curve(x, a, b, c):
