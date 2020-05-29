@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+"""
+Copyright (c) 2020, University of Southampton
+All rights reserved.
+Licensed under the BSD 3-Clause License. 
+See LICENSE.md file in the project root for full license information.  
+"""
+
 from oplab import Console
 from pathlib import Path
 import pandas as pd
@@ -15,17 +23,16 @@ def write_csv(csv_filepath, data_list, csv_filename, csv_flag):
         Console.info("Writing outputs to {}.csv ...".format(csv_filename))
         file = csv_file / '{}.csv'.format(csv_filename)
         str_to_write = ''
-        str_to_write += 'Timestamp, Northing [m], Easting [m], Depth [m], ' \
-                        'Roll [deg], Pitch [deg], Heading [deg], Altitude ' \
-                        '[m], Latitude [deg], Longitude [deg]'
+        str_to_write += 'timestamp,northing [m],easting [m],depth [m],' \
+                        'roll [deg],pitch [deg],heading [deg],altitude ' \
+                        '[m],latitude [deg],longitude [deg]'
+        cov = ',vehicle_cov_x,vehicle_cov_y,vehicle_cov_z,vehicle_cov_roll'\
+              ',vehicle_cov_pitch,vehicle_cov_yaw,vehicle_cov_vx,'\
+              'vehicle_cov_vy,vehicle_cov_vz,vehicle_cov_vroll,'\
+              'vehicle_cov_vpitch,vehicle_cov_vyaw'
         if len(data_list) > 0:
             if data_list[0].covariance is not None:
-                cov = ['x', 'y', 'z',
-                       'roll', 'pitch', 'yaw',
-                       'vx', 'vy', 'vz',
-                       'vroll', 'vpitch', 'vyaw']
-                for a in cov:
-                    str_to_write += ', cov_'+a
+                str_to_write += cov
             str_to_write += '\n'
             with file.open('w') as fileout:
                 fileout.write(str_to_write)
@@ -192,18 +199,14 @@ def camera_csv(camera_list, camera_name, csv_filepath, csv_flag):
 
         Console.info("Writing outputs to {}.csv ...".format(camera_name))
         file = csv_file / '{}.csv'.format(camera_name)
-        str_to_write = 'Imagenumber, Northing [m], Easting [m], Depth [m], ' \
-                       'Roll [deg], Pitch [deg], Heading [deg], Altitude '\
-                       '[m], Timestamp, Latitude [deg], Longitude [deg]'\
-                       ', x_velocity, y_velocity, z_velocity'
-        cov = ['x', 'y', 'z',
-               'roll', 'pitch', 'yaw',
-               'vx', 'vy', 'vz',
-               'vroll', 'vpitch', 'vyaw']
-        for a in cov:
-            for b in cov:
-                str_to_write += ', cov_'+a+'_'+b
-        str_to_write += '\n'
+        str_to_write = 'relative_path,northing [m],easting [m],depth [m],' \
+                       'roll [deg],pitch [deg],heading [deg],altitude '\
+                       '[m],timestamp [s],latitude [deg],longitude [deg]'\
+                       ',x_velocity [m/s],y_velocity [m/s],z_velocity [m/s]'\
+                       ',vehicle_cov_x,vehicle_cov_y,vehicle_cov_z,'\
+                       'vehicle_cov_roll,vehicle_cov_pitch,vehicle_cov_yaw,'\
+                       'vehicle_cov_vx,vehicle_cov_vy,vehicle_cov_vz,'\
+                       'vehicle_cov_vroll,vehicle_cov_vpitch,vehicle_cov_vyaw\n'
 
         if len(camera_list) > 0:
             fileout = file.open('w')

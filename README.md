@@ -2,13 +2,13 @@
 
 # oplab_pipeline
 
-oplab_pipeline is a python toolchain to process AUV dives from raw data into navigation and imaging products. It is divided in four main programs:
-* [auv_nav](../../wiki/auv_nav)
-* [calibrate_images](../../wiki/calibrate_images)
-* [calibrate_laser](../../wiki/calibrate_laser)
-* [correct_images](../../wiki/correct_images)
 
-for more information on how the folder structure must be, please see [the wiki](../../wiki).
+## License
+Copyright (c) 2020, University of Southampton. All rights reserved.
+Licensed under the BSD 3-Clause License. 
+See LICENSE.md file in the project root for full license information.  
 
-## Running the code ##
-See our Wiki page [How to install](../../wiki/How-to-install).
+## Developers
+Please document the function using [Numpy Docstrings](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_numpy.html).
+
+If you are using VSCode, there is a useful extension that helps named [Python Docstring Generator](https://marketplace.visualstudio.com/items?itemName=njpwerner.autodocstring). Once installed, make sure you select Numpy documentation in the settings.

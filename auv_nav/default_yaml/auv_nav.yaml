@@ -1,3 +1,28 @@
+# Sensor standard deviation override values
+# If you want to override the sensor uncertainty values, 
+# provide the offset and factor of the required sensor and change the model to:
+#   Linear model:
+#       model: 'linear'
+#       covariance = measurement*factor + offset
+# If the model is 'sensor', the values from the JSON file are used (default)
+std:
+  usbl:
+    offset: 2.
+    factor: 0.01
+    model: sensor
+  dvl:
+    offset: 0.002
+    factor: 0.001
+    model: sensor
+  depth:
+    offset: 0.01
+    factor: 0.
+    model: sensor
+  orientation:
+    offset: 0.003
+    factor: 0.
+    model: sensor
+
 usbl_filter:
   activate: True
   max_auv_speed: 2
@@ -40,23 +65,6 @@ ekf:
                                 0,    0,    0,    0,    0,    0,    0,    0,    0,    1e-9,  0,     0,
                                 0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     1e-9,  0,
                                 0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     1e-9]
-
-  # Sensor standard deviation for EKF. If both are set to zero, the stored
-  # covariance from the sensor message is used instead.
-  # If the factor is zero and oly the offset is used, a fixed covariance is set
-  std:
-    usbl:
-      offset: 2.
-      factor: 0.01
-    dvl:
-      offset: 0.002
-      factor: 0.001
-    depth:
-      offset: 0.01
-      factor: 0.
-    orientation:
-      offset: 0.003
-      factor: 0.
 
 particle_filter:
   activate: False

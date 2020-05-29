@@ -1,4 +1,11 @@
-# parse_NOC_polpred
+# -*- coding: utf-8 -*-
+"""
+Copyright (c) 2020, University of Southampton
+All rights reserved.
+Licensed under the BSD 3-Clause License. 
+See LICENSE.md file in the project root for full license information.  
+"""
+
 # Script to parse NOC tide data generated with POLPRED Continental Shelf Extended Model (CSX)
 # Author: Jose Cappelletto
 # Date: 11/09/2019
@@ -15,8 +22,7 @@ def parse_NOC_polpred(mission,
                       vehicle,
                       category,
                       ftype,
-                      outpath,
-                      fileoutname):
+                      outpath):
     # parser meta data
     class_string = 'measurement'
     sensor_string = 'autosub'

@@ -1,25 +1,16 @@
+# -*- coding: utf-8 -*-
+"""
+Copyright (c) 2020, University of Southampton
+All rights reserved.
+Licensed under the BSD 3-Clause License. 
+See LICENSE.md file in the project root for full license information.  
+"""
+
 import yaml
 import sys
 from oplab import get_config_folder
 from oplab import get_raw_folder
 from oplab.console import Console
-# Workaround to dump OrderedDict into YAML files
-from collections import OrderedDict
-
-
-def represent_ordereddict(dumper, data):
-    value = []
-
-    for item_key, item_value in data.items():
-        node_key = dumper.represent_data(item_key)
-        node_value = dumper.represent_data(item_value)
-
-        value.append((node_key, node_value))
-
-    return yaml.nodes.MappingNode(u'tag:yaml.org,2002:map', value)
-
-
-yaml.add_representer(OrderedDict, represent_ordereddict)
 
 
 def error_and_exit():
@@ -245,6 +236,8 @@ class Mission:
         if filename is None:
             return
 
+        self.filename = filename
+
         try:
             # Check that mission.yaml and vehicle.yaml are consistent
             vehicle_file = filename.parent / 'vehicle.yaml'
@@ -329,41 +322,14 @@ class Mission:
             Console.error('Please make sure you have the correct access rights.')
             Console.quit('mission.yaml not provided')
 
-    def write_metadata(self, node):
-        node['username'] = Console.get_username()
-        node['date'] = Console.get_date()
-        node['hostname'] = Console.get_hostname()
-        node['version'] = Console.get_version()
-
     def write(self, filename):
         if not filename.parent.exists():
             filename.parent.mkdir(parents=True)
-        with filename.open('w') as f:
-            mission_dict = OrderedDict()
-            mission_dict['version'] = 1
-            mission_dict['metadata'] = OrderedDict()
-            mission_dict['origin'] = OrderedDict()
-            self.write_metadata(mission_dict['metadata'])
-            self.origin.write(mission_dict['origin'])
-            if not self.velocity.empty():
-                mission_dict['velocity'] = OrderedDict()
-                self.velocity.write(mission_dict['velocity'])
-            if not self.orientation.empty():
-                mission_dict['orientation'] = OrderedDict()
-                self.orientation.write(mission_dict['orientation'])
-            if not self.depth.empty():
-                mission_dict['depth'] = OrderedDict()
-                self.depth.write(mission_dict['depth'])
-            if not self.altitude.empty():
-                mission_dict['altitude'] = OrderedDict()
-                self.altitude.write(mission_dict['altitude'])
-            if not self.usbl.empty():
-                mission_dict['usbl'] = OrderedDict()
-                self.usbl.write(mission_dict['usbl'])
-            if not self.tide.empty():
-                mission_dict['tide'] = OrderedDict()
-                self.tide.write(mission_dict['tide'])
-            if not self.image.empty():
-                mission_dict['image'] = OrderedDict()
-                self.image.write(mission_dict['image'])
-            yaml.dump(mission_dict, f, allow_unicode=True, default_flow_style=False)
+        self.filename.copy(filename)
+        with filename.open('a') as f:
+            f.write('\n\nmetadata:\n')
+            f.write('    username: ' + str(Console.get_username()) + '\n')
+            f.write('    date: ' + str(Console.get_date()) + '\n')
+            f.write('    hostname: ' + str(Console.get_hostname()) + '\n')
+            f.write('    firmware: ' + str(Console.get_version()) + '\n')
+

@@ -1,4 +1,10 @@
-# parse_gaps
+# -*- coding: utf-8 -*-
+"""
+Copyright (c) 2020, University of Southampton
+All rights reserved.
+Licensed under the BSD 3-Clause License. 
+See LICENSE.md file in the project root for full license information.  
+"""
 
 # Scripts to parse ixsea blue gaps data. Interpolates ship gps reading for valid underwater position measurements to determine accurate range and so measurement uncertainty
 
@@ -23,8 +29,10 @@ def parse_gaps(mission,
                vehicle,
                category,
                ftype,
-               outpath,
-               fileoutname):
+               outpath):
+
+
+    Console.info('  Parsing GAPS data...')
 
     # parser meta data
     class_string = 'measurement'
@@ -58,7 +66,7 @@ def parse_gaps(mission,
     filepath = get_raw_folder(path)
     all_list = os.listdir(str(filepath))
     gaps_list = [line for line in all_list if '.dat' in line]
-    Console.info(str(len(gaps_list)) + ' GAPS file(s) found')
+    Console.info('  ' + str(len(gaps_list)) + ' GAPS file(s) found')
 
     # extract data from files
     data_list = []
@@ -392,5 +400,8 @@ def parse_gaps(mission,
 
                     # reset flag
                     flag_got_time = 0
+
+
+    Console.info('  ...done parsing GAPS data.')
 
     return data_list

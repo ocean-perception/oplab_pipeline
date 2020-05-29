@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2018, University of Southampton
+Copyright (c) 2020, University of Southampton
 All rights reserved.
+Licensed under the BSD 3-Clause License. 
+See LICENSE.md file in the project root for full license information.  
 """
 
 from auv_nav.sensors import BodyVelocity, InertialVelocity
@@ -48,7 +50,7 @@ class PhinsTimestamp():
         return epoch_timestamp
 
 class PhinsParser():
-    def __init__(self, mission, vehicle, category, ftype, outpath, filename):
+    def __init__(self, mission, vehicle, category, ftype, outpath):
         # parser meta data
         self.class_string = 'measurement'
         self.sensor_string = 'phins'

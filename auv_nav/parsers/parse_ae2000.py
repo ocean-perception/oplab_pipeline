@@ -1,4 +1,10 @@
-# parse_ae2000
+# -*- coding: utf-8 -*-
+"""
+Copyright (c) 2020, University of Southampton
+All rights reserved.
+Licensed under the BSD 3-Clause License. 
+See LICENSE.md file in the project root for full license information.  
+"""
 
 # Scripts to parse ae2000 logs
 
@@ -23,8 +29,7 @@ def parse_ae2000(mission,
                  vehicle,
                  category,
                  ftype,
-                 outpath,
-                 fileoutname):
+                 outpath):
     # parser meta data
     class_string = 'measurement'
     sensor_string = 'ae20000'
@@ -47,7 +52,7 @@ def parse_ae2000(mission,
     # timeoffset = -timezone_offset*60*60 + timeoffset
 
     # parse phins data
-    Console.info('... parsing ae2000 logs')
+    Console.info('  Parsing ae2000 logs for ' + category + '...')
     data_list = []
     if ftype == 'acfr':
         data_list = ''
@@ -96,7 +101,6 @@ def parse_ae2000(mission,
                     # print('OUT:',x_velocity, y_velocity, z_velocity)
                     # y_velocity=-1*y_velocity
                     # z_velocity=-1*z_velocity
-
                     x_velocity_std = abs(x_velocity) * \
                         mission.velocity.std_factor+mission.velocity.std_offset
                     y_velocity_std = abs(y_velocity) * \
@@ -260,6 +264,6 @@ def parse_ae2000(mission,
                     continue
         # else:
         # 	print('no bottom lock')
-    Console.info('  ...done parsing ae2000 logs.')
+    Console.info('  ...done parsing ae2000 logs for ' + category + '.')
 
     return data_list

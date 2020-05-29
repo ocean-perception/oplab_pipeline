@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2018, University of Southampton
+Copyright (c) 2020, University of Southampton
 All rights reserved.
+Licensed under the BSD 3-Clause License. 
+See LICENSE.md file in the project root for full license information.  
 """
 
 from auv_nav.tools.body_to_inertial import body_to_inertial
@@ -172,11 +174,8 @@ class BodyVelocity(OutputFormat):
         self.x_velocity = json['data'][0]['x_velocity']
         self.y_velocity = json['data'][1]['y_velocity']
         self.z_velocity = json['data'][2]['z_velocity']
-        self.x_velocity_std = json['data'][0]['x_velocity_std']
-        self.y_velocity_std = json['data'][1]['y_velocity_std']
-        self.z_velocity_std = json['data'][2]['z_velocity_std']
 
-        if sensor_std['model'] == 'json':
+        if sensor_std['model'] == 'sensor':
             self.x_velocity_std = json['data'][0]['x_velocity_std']
             self.y_velocity_std = json['data'][1]['y_velocity_std']
             self.z_velocity_std = json['data'][2]['z_velocity_std']
@@ -397,7 +396,7 @@ class Orientation(OutputFormat):
         self.pitch = json['data'][2]['pitch']
         self.yaw = json['data'][0]['heading']
 
-        if sensor_std['model'] == 'json':
+        if sensor_std['model'] == 'sensor':
             self.roll_std = json['data'][1]['roll_std']
             self.pitch_std = json['data'][2]['pitch_std']
             self.yaw_std = json['data'][0]['heading_std']
@@ -506,7 +505,7 @@ class Depth(OutputFormat):
         self.epoch_timestamp = json['epoch_timestamp']
         self.depth_timestamp = json['epoch_timestamp_depth']
         self.depth = json['data'][0]['depth']
-        if sensor_std['model'] == 'json':
+        if sensor_std['model'] == 'sensor':
             self.depth_std = json['data'][0]['depth_std']
         elif sensor_std['model'] == 'linear':
             self.depth_std = sensor_std['offset'] + sensor_std['factor']*self.depth
@@ -714,7 +713,7 @@ class Usbl(OutputFormat):
         self.depth_std = json['data_target'][4]['depth_std']
         self.distance_to_ship = json['data_target'][5]['distance_to_ship']
 
-        if sensor_std['model'] == 'json':
+        if sensor_std['model'] == 'sensor':
             self.latitude_std = json['data_target'][0]['latitude_std']
             self.longitude_std = json['data_target'][1]['longitude_std']
             self.northings_std = json['data_target'][2]['northings_std']
@@ -931,7 +930,7 @@ class Tide(OutputFormat):
 #        self.tide_timestamp = json['epoch_timestamp_tide']
         self.height = json['data'][0]['tide']
 
-        if sensor_std['model'] == 'json':
+        if sensor_std['model'] == 'sensor':
             self.height_std = json['data'][0]['tide_std']
         elif sensor_std['model'] == 'linear':
             self.height_std = sensor_std['offset'] + sensor_std['factor']*self.height

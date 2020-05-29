@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2018, University of Southampton
+Copyright (c) 2020, University of Southampton
 All rights reserved.
+Licensed under the BSD 3-Clause License. 
+See LICENSE.md file in the project root for full license information.  
 """
 
 import sys
@@ -304,7 +306,7 @@ def plot_parse_data(filepath, ftype='oplab'):
                 title='Category-Frame',
             ),
             dragmode='pan',
-            margin=go.Margin(l=150)
+            margin=go.layout.Margin(l=150)
         )
         config = {'scrollZoom': True}
         fig = go.Figure(data=list(reversed(trace_list)), layout=layout)
@@ -313,8 +315,8 @@ def plot_parse_data(filepath, ftype='oplab'):
                 filename=str(filepath / 'timestamp_history.html'),
                 auto_open=False)
 
-        start_end_text = 'Start time is: %s (%s), %s (%s), %d (epoch)\nFinish time is: \
-                          %s (%s), %s (%s), %d (epoch)\n' % (
+        start_end_text = 'Start time is: %s (%s), %s (%s), %d (epoch)\nFinish time is: '\
+                          '%s (%s), %s (%s), %d (epoch)\n' % (
                           time.strftime('%Y-%m-%d %H:%M:%S',
                                         epoch_to_localtime(start_time)),
                           get_localtimezone(),

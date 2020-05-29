@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2019, University of Southampton
+Copyright (c) 2020, University of Southampton
 All rights reserved.
+Licensed under the BSD 3-Clause License. 
+See LICENSE.md file in the project root for full license information.  
 """
+
 import multiprocessing
 import json
 from pathlib import Path
@@ -273,17 +276,17 @@ def parse_single(filepath, force_overwrite):
             pool_list.append(
                 pool.apply_async(parse_acfr_images,
                                     [mission, vehicle, 'images',
-                                    ftype, outpath, filename]))
+                                    ftype, outpath]))
         elif mission.image.format == "seaxerocks_3":
             pool_list.append(
                 pool.apply_async(parse_seaxerocks_images,
                                     [mission, vehicle, 'images',
-                                    ftype, outpath, filename]))
+                                    ftype, outpath]))
         elif mission.image.format == "biocam":
             pool_list.append(
                 pool.apply_async(parse_biocam_images,
                                     [mission, vehicle, 'images',
-                                    ftype, outpath, filename]))
+                                    ftype, outpath]))
         else:
             Console.quit('Mission image format {} not supported.'
                             .format(mission.image.format))
@@ -293,19 +296,19 @@ def parse_single(filepath, force_overwrite):
                 pool.apply_async(
                     parse_gaps,
                     [mission, vehicle, 'usbl',
-                        ftype, outpath, filename]))
+                        ftype, outpath]))
         elif mission.usbl.format == "usbl_dump":
             pool_list.append(
                 pool.apply_async(
                     parse_usbl_dump,
                     [mission, vehicle, 'usbl',
-                        ftype, outpath, filename]))
+                        ftype, outpath]))
         elif mission.usbl.format == "NOC_nmea":
             pool_list.append(
                 pool.apply_async(
                     parse_NOC_nmea,
                     [mission, vehicle, 'usbl',
-                        ftype, outpath, filename]))
+                        ftype, outpath]))
         else:
             Console.quit('Mission usbl format {} not supported.'
                             .format(mission.usbl.format))
@@ -316,25 +319,25 @@ def parse_single(filepath, force_overwrite):
                 pool.apply_async(
                     parse_phins,
                     [mission, vehicle, 'velocity',
-                        ftype, outpath, filename]))
+                        ftype, outpath]))
         elif mission.velocity.format == "ae2000":
             pool_list.append(
                 pool.apply_async(
                     parse_ae2000,
                     [mission, vehicle, 'velocity',
-                        ftype, outpath, filename]))
+                        ftype, outpath]))
         elif mission.velocity.format == "autosub":
             pool_list.append(
                 pool.apply_async(
                     parse_autosub,
                     [mission, vehicle, 'velocity',
-                        ftype, outpath, filename]))
+                        ftype, outpath]))
         elif mission.velocity.format == 'rdi':
             pool_list.append(
                 pool.apply_async(
                     parse_rdi,
                     [mission, vehicle, 'velocity',
-                        ftype, outpath, filename]))
+                        ftype, outpath]))
         else:
             Console.quit('Mission velocity format {} not supported.'
                             .format(mission.velocity.format))
@@ -345,25 +348,25 @@ def parse_single(filepath, force_overwrite):
                 pool.apply_async(
                     parse_phins,
                     [mission, vehicle, 'orientation',
-                        ftype, outpath, filename]))
+                        ftype, outpath]))
         elif mission.orientation.format == "ae2000":
             pool_list.append(
                 pool.apply_async(
                     parse_ae2000,
                     [mission, vehicle, 'orientation',
-                        ftype, outpath, filename]))
+                        ftype, outpath]))
         elif mission.orientation.format == "autosub":
             pool_list.append(
                 pool.apply_async(
                     parse_autosub,
                     [mission, vehicle, 'orientation',
-                        ftype, outpath, filename]))
+                        ftype, outpath]))
         elif mission.orientation.format == 'rdi':
             pool_list.append(
                 pool.apply_async(
                     parse_rdi,
                     [mission, vehicle, 'orientation',
-                        ftype, outpath, filename]))
+                        ftype, outpath]))
         else:
             Console.quit('Mission orientation format {} not supported.'
                             .format(mission.orientation.format))
@@ -374,25 +377,25 @@ def parse_single(filepath, force_overwrite):
                 pool.apply_async(
                     parse_phins,
                     [mission, vehicle, 'depth',
-                        ftype, outpath, filename]))
+                        ftype, outpath]))
         elif mission.depth.format == "ae2000":
             pool_list.append(
                 pool.apply_async(
                     parse_ae2000,
                     [mission, vehicle, 'depth',
-                        ftype, outpath, filename]))
+                        ftype, outpath]))
         elif mission.depth.format == "autosub":
             pool_list.append(
                 pool.apply_async(
                     parse_autosub,
                     [mission, vehicle, 'depth',
-                        ftype, outpath, filename]))
+                        ftype, outpath]))
         elif mission.depth.format == "gaps":
             pool_list.append(
                 pool.apply_async(
                     parse_gaps,
                     [mission, vehicle, 'depth',
-                        ftype, outpath, filename]))
+                        ftype, outpath]))
         else:
             Console.quit('Mission depth format {} not supported.'
                             .format(mission.depth.format))
@@ -403,25 +406,25 @@ def parse_single(filepath, force_overwrite):
                 pool.apply_async(
                     parse_phins,
                     [mission, vehicle, 'altitude',
-                        ftype, outpath, filename]))
+                        ftype, outpath]))
         elif mission.altitude.format == "ae2000":
             pool_list.append(
                 pool.apply_async(
                     parse_ae2000,
                     [mission, vehicle, 'altitude',
-                        ftype, outpath, filename]))
+                        ftype, outpath]))
         elif mission.altitude.format == "autosub":
             pool_list.append(
                 pool.apply_async(
                     parse_autosub,
                     [mission, vehicle, 'altitude',
-                        ftype, outpath, filename]))
+                        ftype, outpath]))
         elif mission.altitude.format == 'rdi':
             pool_list.append(
                 pool.apply_async(
                     parse_rdi,
                     [mission, vehicle, 'altitude',
-                        ftype, outpath, filename]))
+                        ftype, outpath]))
         else:
             Console.quit('Mission altitude format {} not supported.'
                             .format(mission.altitude.format))
@@ -429,7 +432,7 @@ def parse_single(filepath, force_overwrite):
     if not mission.tide.empty():
         if mission.tide.format == "NOC_polpred":
             tide_list = parse_NOC_polpred(mission, vehicle, 'tide',
-                        ftype, outpath, filename)
+                        ftype, outpath)
         else:
             Console.quit('Mission tide format {} not supported.'
                             .format(mission.tide.format))
@@ -504,6 +507,7 @@ def parse_single(filepath, force_overwrite):
     with nav_file.open('w') as fileout:
         json.dump(data_list_temp, fileout, indent=2)
     fileout.close()
+    Console.info('...done writing to output file.')
 
     del data_list_temp
     del data_list

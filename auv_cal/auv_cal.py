@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2018, University of Southampton
+Copyright (c) 2020, University of Southampton
 All rights reserved.
+Licensed under the BSD 3-Clause License. 
+See LICENSE.md file in the project root for full license information.  
 """
 from auv_cal.calibration import Calibrator
 from oplab import Console
@@ -38,7 +40,7 @@ def main(args=None):
     subparser_mono.add_argument(
         '-F', dest='force', action='store_true', help="Force output file overwite")
     subparser_mono.add_argument(
-        '-FF', dest='force2', action='store_true', help="Forces all files to be overwritten (outputs and intermediate)")
+        '-FF', dest='force2', action='store_true', help="Regenerates and overwrittes all files, including intermediate results")
     subparser_mono.set_defaults(func=call_calibrate_mono)
 
     subparser_stereo = subparsers.add_parser(
@@ -48,7 +50,7 @@ def main(args=None):
     subparser_stereo.add_argument(
         '-F', '--Force', dest='force', action='store_true', help="Force output file overwite")
     subparser_stereo.add_argument(
-        '-FF', dest='force2', action='store_true', help="Forces all files to be overwritten (outputs and intermediate)")
+        '-FF', dest='force2', action='store_true', help="Regenerates and overwrittes all files, including intermediate results")
     subparser_stereo.set_defaults(func=call_calibrate_stereo)
 
     subparser_laser = subparsers.add_parser(
@@ -58,7 +60,7 @@ def main(args=None):
     subparser_laser.add_argument(
         '-F', '--Force', dest='force', action='store_true', help="Force output file overwite")
     subparser_laser.add_argument(
-        '-FF', dest='force2', action='store_true', help="Forces all files to be overwritten (outputs and intermediate)")
+        '-FF', dest='force2', action='store_true', help="Regenerates and overwrittes all files, including intermediate results")
     subparser_laser.set_defaults(func=call_calibrate_laser)
 
     if len(sys.argv) == 1 and args is None:
