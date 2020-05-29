@@ -154,12 +154,6 @@ class Vehicle:
             Console.error('Please make sure you have the correct access rights.')
             Console.quit('vehicle.yaml not provided')
 
-    def write_metadata(self, node):
-        node['username'] = Console.get_username()
-        node['date'] = Console.get_date()
-        node['hostname'] = Console.get_hostname()
-        node['firmware'] = Console.get_version()
-
     def write(self, filename):
         if not filename.parent.exists():
             filename.parent.mkdir(parents=True)
