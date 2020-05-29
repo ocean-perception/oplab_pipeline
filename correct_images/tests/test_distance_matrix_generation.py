@@ -1,3 +1,11 @@
+ # -*- coding: utf-8 -*-
+"""
+Copyright (c) 2020, University of Southampton
+All rights reserved.
+Licensed under the BSD 3-Clause License. 
+See LICENSE.md file in the project root for full license information.  
+"""
+
 import unittest
 import os
 from pathlib import Path
@@ -31,7 +39,7 @@ class TestCaseCorrector(unittest.TestCase):
 		if not path_dummy_folder.exists():
 			path_dummy_folder.mkdir()
 		imagelist = []
-		for i in range(10):
+		for i in range(15):
 			imagename = 'image_' + str(i) + '.tif'
 			imagepath = path_dummy_folder / imagename
 			imagelist.append(imagepath)
@@ -68,7 +76,7 @@ class TestCaseCorrector(unittest.TestCase):
 		self.image_height = ACFR_IMG_HEIGHT
 		self.image_width = ACFR_IMG_WIDTH
 		self._imagelist = imagelist
-		
+		self._camera_image_file_list = 'none'
 		# set cameras list
 		self.cameras = ['RC', 'LC']
 		self.compare_shape = [ACFR_IMG_HEIGHT, ACFR_IMG_WIDTH]
@@ -83,7 +91,7 @@ class TestCaseCorrector(unittest.TestCase):
 		if not path_dummy_folder.exists():
 			path_dummy_folder.mkdir()
 		imagelist = []
-		for i in range(10):
+		for i in range(15):
 			imagename = 'image_' + str(i) + '.tif'
 			imagepath = path_dummy_folder / imagename
 			imagelist.append(imagepath)
@@ -145,7 +153,7 @@ class TestCaseCorrector(unittest.TestCase):
 		if not path_dummy_folder.exists():
 			path_dummy_folder.mkdir()
 		imagelist = []
-		for i in range(10):
+		for i in range(15):
 			imagename = 'image_' + str(i) + '.tif'
 			imagepath = path_dummy_folder / imagename
 			imagelist.append(imagepath)
