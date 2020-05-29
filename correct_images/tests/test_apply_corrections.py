@@ -124,7 +124,7 @@ class testCaseCorrector(unittest.TestCase):
 		targeted_std = np.empty((corrector.image_channels, corrector.image_height,
 				corrector.image_width))
 		for i in range(corrector.image_channels):
-			targeted_image_mean, targeted_image_std = mean_std_(correctedimage_memmap[:,:,:,i])
+			targeted_image_mean, targeted_image_std = mean_std(correctedimage_memmap[:,:,:,i])
 			targeted_mean[i] = np.around(targeted_image_mean)
 			targeted_std[i] = np.around(targeted_image_std)
 
@@ -260,7 +260,7 @@ class testCaseCorrector(unittest.TestCase):
 		# brightness and contrast
 		# test success: R, G channels should have same mean, std as target brightness, contrast 
 		# 				B channel should have mean as target brightness but std should be 0
-		targeted_mean, targeted_std = mean_std_(correctedimage_memmap)
+		targeted_mean, targeted_std = mean_std(correctedimage_memmap)
 		targeted_mean = np.around(targeted_mean)
 		targeted_std = np.around(targeted_std)
 
