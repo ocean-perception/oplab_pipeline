@@ -26,15 +26,15 @@ def build_matrix(v1, v2, v3):
 
     Parameters
     ----------
-    v1 : np.array
+    v1 : np.ndarray
         Three-dimensional vector
-    v2 : np.array
+    v2 : np.ndarray
         Three-dimensional vector
-    v3 : np.array
+    v3 : np.ndarray
         Three-dimensional vector
 
     Returns
-    np.array
+    np.ndarray
         3x3 Rotation matrix
     -------
     """
@@ -69,6 +69,7 @@ class CircularCone:
 
     def distance(self, point):
         """Compute distance from point to modelled cone
+        
         The distance from a point :math:`p_i` to a cone with apex :math:`Ap` and 
         basis :math:`[\\vec{u}, \\vec{n}_1, \\vec{n}_2]`, where :math:`\\vec{u}`
         is the cone asis is defined by:
@@ -211,7 +212,7 @@ class CircularCone:
 
         Parameters
         ----------
-        cam_origin : np.array
+        cam_origin : np.ndarray
             Camera origin
         image_width : int
             Width of the image in pixels
@@ -224,7 +225,7 @@ class CircularCone:
 
         Returns
         -------
-        np.array
+        np.ndarray
             Triangulated pixels rays to the surface
         """
         points = []
