@@ -46,8 +46,8 @@ def get_folder(path, name):
     elif 'configuration' in path.parts:
         return change_subfolder(path, 'configuration', name)
     else:
-        Console.error('The folder', str(path), 'does not belong to any dataset',
-                      'folder structure.')
+        Console.quit('The folder', str(path), 'does not belong to any dataset',
+                     'folder structure.')
 
 
 def get_file_list(directory):

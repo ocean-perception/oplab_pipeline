@@ -14,10 +14,16 @@ class CameraEntry:
     ---------
     node
         A YAML dictionary that contains the camera information.
+    raw_folder
+        Path to the current dive
     """
-    def __init__(self, node=None):
+    def __init__(self, node=None, raw_folder=None):
         self._image_list = []
         self._stamp_list = []
+        self.raw_folder = Path.cwd()
+        if raw_folder is not None:
+            self.raw_folder = Path(raw_folder)
+
         if node is not None:
             self.name = node['name']
             self.type = node['type']
@@ -38,7 +44,8 @@ class CameraEntry:
             self.convert_filename = FilenameToDate(
                 self.filename_to_date,
                 self.timestamp_file,
-                self.columns)
+                self.columns,
+                self.raw_folder)
 
     def write(self, node):
         pass
@@ -53,8 +60,7 @@ class CameraEntry:
         """
         if len(self._image_list) > 0:
             return self._image_list
-        curr_dir = Path.cwd()
-        raw_dir = get_raw_folder(curr_dir)
+        raw_dir = get_raw_folder(self.raw_folder)
 
         split_glob = str(self.path).split('*')
         print(len(split_glob))
@@ -129,7 +135,7 @@ class CameraSystem:
     """Class to describe a camera system, for example, SeaXerocks3 or BioCam.
     Parses camera.yaml files that define camera systems mounted on ROVs or AUVs
     """
-    def __init__(self, filename=None):
+    def __init__(self, filename=None, raw_folder=None):
         """Constructor of camera system. If a filename is provided, the file will be parsed and its contents loaded into the class.
 
         Keyword Arguments:
@@ -137,10 +143,14 @@ class CameraSystem:
         """        
         self.cameras = []
         self.camera_system = None
-        if filename is None:
+        if filename is None and raw_folder is None:
             return
         if isinstance(filename, str):
             filename = Path(filename)
+        if raw_folder is not None:
+            self.raw_folder = Path(raw_folder)
+        else:
+            self.raw_folder = Path.cwd()
         data = ''
         try:
             with filename.open('r') as stream:
@@ -180,4 +190,4 @@ class CameraSystem:
             Console.error('The camera.yaml file is missing the cameras entry.')
             Console.quit('Wrong camera.yaml format or content.')
         for camera in node['cameras']:
-            self.cameras.append(CameraEntry(camera))
+            self.cameras.append(CameraEntry(camera, self.raw_folder))
