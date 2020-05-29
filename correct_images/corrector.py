@@ -182,6 +182,25 @@ class Corrector:
             Console.info('Null distance matrix created')
 
         elif self.distance_metric == 'depth_map':
+            path_depth = self.path_processed / self.distance_path
+            if not path_depth.exists():
+                Console.quit('Depth maps not found...')
+            else:
+                Console.info('Path to depth maps found...')
+                depth_map_list = list(path_depth.glob('*.npy'))
+                self.distance_matrix_numpy_filelist = [Path(item) for item in depth_map_list for image_path in self._imagelist if Path(item).stem in Path(image_path).stem]
+                Console.info('Filtering depth maps...')
+                for idx in trange((len(self.distance_matrix_numpy_filelist))):
+                    depth_array = np.load(self.distance_matrix_numpy_filelist[idx])
+                    min_depth = depth_array.min()
+                    max_depth = depth_array.max()
+                    print(min_depth, max_depth)
+                    if min_depth > self.altitude_max or max_depth < self.altitude_min:
+                        continue
+                    else:
+                        self.altitude_based_filtered_indices.append(idx)
+                if len(self.altitude_based_filtered_indices) < 3:
+                    Console.quit('Insufficient number of images to compute attenuation parameters...')
             # TODO: get depth map from metric path
             # TODO: select the depth map for images in self._imagelist
             print('get path to depth map')
