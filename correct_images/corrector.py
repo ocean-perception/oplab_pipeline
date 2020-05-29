@@ -158,15 +158,10 @@ class Corrector:
             self._imagelist = self._camera.image_list
         else:
             path_file_list = Path(self.path_config) / self._camera_image_file_list
-            with path_file_list.open('r') as f:
-                imageindices_from_filelist = f.readlines()
-            self.imageindices_from_filelist = []
-            for idx in imageindices_from_filelist:
-                self.imageindices_from_filelist.append(int(idx))
-
-            new_image_list = [self._camera.image_list[idx] for idx in self.imageindices_from_filelist]
-            self._imagelist = new_image_list
-
+            dataframe = pd.read_csv(path_file_list)
+            user_imagepath_list = dataframe['relative_path']
+            user_imagenames_list = [Path(image).name for image in user_imagepath_list]
+            self._imagelist = [item for item in self._camera.image_list for image in user_imagenames_list if Path(item).name == image]
 
 
         # save a set of distance matrix numpy files
@@ -194,41 +189,39 @@ class Corrector:
                     depth_array = np.load(self.distance_matrix_numpy_filelist[idx])
                     min_depth = depth_array.min()
                     max_depth = depth_array.max()
-                    print(min_depth, max_depth)
                     if min_depth > self.altitude_max or max_depth < self.altitude_min:
                         continue
                     else:
                         self.altitude_based_filtered_indices.append(idx)
                 if len(self.altitude_based_filtered_indices) < 3:
                     Console.quit('Insufficient number of images to compute attenuation parameters...')
-            # TODO: get depth map from metric path
-            # TODO: select the depth map for images in self._imagelist
-            print('get path to depth map')
 
         elif self.distance_metric == 'altitude':
-            # check if the distance_path is valid
-            if self.distance_path == 'json_renav_*':
-                Console.info('Picking first JSON folder as the default path to auv_nav csv files...')
-                dir_ = self.path_processed
-                json_list = list(dir_.glob('json_*'))
-                self.distance_path = json_list[0]
-
-            full_metric_path = self.path_processed / self.distance_path
-            full_metric_path = full_metric_path / 'csv' / 'ekf'
-            metric_file = 'auv_ekf_' + self.camera_name + '.csv'
-            metric_file_path = full_metric_path / metric_file
-
-            if not metric_file_path.exists():
-                message = 'Path to ' + metric_file + ' does not exist...'
-                Console.quit(message)
-            dataframe = pd.read_csv(metric_file_path)
-            distance_list = dataframe[' Altitude [m]']
+            # check if user provides a filelist
             if self._camera_image_file_list == 'none':
-                new_distance_list = [distance_list[idx] for idx in range(0,len(self._imagelist))]
-            else:
-                new_distance_list = [distance_list[idx] for idx in self.imageindices_from_filelist]
-            distance_list = new_distance_list
+                # check for distance metric path for the full image list in directory
+                if self.distance_path == 'json_renav_*':
+                    Console.info('Picking first JSON folder as the default path to auv_nav csv files...')
+                    dir_ = self.path_processed
+                    json_list = list(dir_.glob('json_*'))
+                    self.distance_path = json_list[0]
 
+                full_metric_path = self.path_processed / self.distance_path
+                full_metric_path = full_metric_path / 'csv' / 'ekf'
+                metric_file = 'auv_ekf_' + self.camera_name + '.csv'
+                metric_file_path = full_metric_path / metric_file
+
+                if not metric_file_path.exists():
+                    message = 'Path to ' + metric_file + ' does not exist...'
+                    Console.quit(message)
+                else:
+                    distance_csv_path = metric_file_path
+            else:
+                distance_csv_path = Path(self.path_config) / self._camera_image_file_list               
+            
+            # read dataframe for corresponding distance csv path
+            dataframe = pd.read_csv(distance_csv_path)
+            distance_list = dataframe['altitude [m]']
 
             for idx in trange(len(distance_list)):
                 distance_matrix.fill(distance_list[idx])

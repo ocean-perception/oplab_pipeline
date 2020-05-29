@@ -43,7 +43,7 @@ class TestCaseCorrector(unittest.TestCase):
 			imagenumbers.append('image_'+str(i))
 			distance = np.random.uniform(low=min_altitude-1, high=max_altitude+2)
 			distances.append(distance)
-		dataframe = pd.DataFrame({'Imagenumber':imagenumbers, ' Altitude [m]':distances})
+		dataframe = pd.DataFrame({'relative_path':imagenumbers, 'altitude [m]':distances})
 		distance_path = 'json_'
 		distance_full_path = path_dummy_folder / distance_path
 		distance_csv_path = distance_full_path / 'csv/ekf'
@@ -95,7 +95,7 @@ class TestCaseCorrector(unittest.TestCase):
 			imagenumbers.append('image_'+str(i))
 			distance = np.random.uniform(low=min_altitude-1, high=max_altitude+2)
 			distances.append(distance)
-		dataframe = pd.DataFrame({'Imagenumber':imagenumbers, ' Altitude [m]':distances})
+		dataframe = pd.DataFrame({'relative_path':imagenumbers, 'altitude [m]':distances})
 		distance_path = 'json_'
 		distance_full_path = path_dummy_folder / distance_path
 		distance_csv_path = distance_full_path / 'csv/ekf'
@@ -157,7 +157,7 @@ class TestCaseCorrector(unittest.TestCase):
 			imagenumbers.append('image_'+str(i))
 			distance = np.random.uniform(low=min_altitude-1, high=max_altitude+2)
 			distances.append(distance)
-		dataframe = pd.DataFrame({'Imagenumber':imagenumbers, ' Altitude [m]':distances})
+		dataframe = pd.DataFrame({'relative_path':imagenumbers, 'altitude [m]':distances})
 		distance_path = 'json_'
 		distance_full_path = path_dummy_folder / distance_path
 		distance_csv_path = distance_full_path / 'csv/ekf'

@@ -164,7 +164,7 @@ def call_parse(args):
     path = Path(args.path).resolve()
 
     for camera in camerasystem.cameras:
-        Console.info('Parsing for camera: ', camera.name)
+        Console.info('Parsing for camera', camera.name)
         print('-----------------------------------------------------')
 
         if len(camera.image_list) == 0:
@@ -187,7 +187,7 @@ def call_process(args):
     path = Path(args.path).resolve()
 
     for camera in camerasystem.cameras:
-        Console.info('Processing for camera: ', camera.name)
+        Console.info('Processing for camera', camera.name)
         print('-----------------------------------------------------')
 
         if len(camera.image_list) == 0:
@@ -234,12 +234,18 @@ def call_process(args):
 
 
                 # read parameters from disk
-                corrector.image_attenuation_parameters = np.load(filepath_attenuation_params)
-                corrector.correction_gains = np.load(filepath_correction_gains)
-                corrector.image_corrected_mean = np.load(filepath_corrected_mean)
-                corrector.image_corrected_std = np.load(filepath_corrected_std)
-                corrector.image_raw_mean = np.load(filepath_raw_mean)
-                corrector.image_raw_std = np.load(filepath_raw_std)
+                if filepath_attenuation_params.exists():
+                    corrector.image_attenuation_parameters = np.load(filepath_attenuation_params)
+                if filepath_correction_gains.exists():
+                    corrector.correction_gains = np.load(filepath_correction_gains)
+                if filepath_corrected_mean.exists():
+                    corrector.image_corrected_mean = np.load(filepath_corrected_mean)
+                if filepath_corrected_std.exists():
+                    corrector.image_corrected_std = np.load(filepath_corrected_std)
+                if filepath_raw_mean.exists():
+                    corrector.image_raw_mean = np.load(filepath_raw_mean)
+                if filepath_raw_std.exists():
+                    corrector.image_raw_std = np.load(filepath_raw_std)
 
                 # check if images exist already
                 folder_name = 'developed_' + camera.name
@@ -272,6 +278,8 @@ def call_correct(args):
             corrector.setup()
             corrector.generate_attenuation_correction_parameters()
             corrector.process_correction()
+
+
 
 def setup(args):
     path = Path(args.path).resolve()
