@@ -192,14 +192,19 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
                     'offset': std_offset_orientation
                 },
             }
+            # Default to use JSON uncertainties
             if 'model' not in sensors_std['usbl']:
-                sensors_std['usbl']['model'] = 'json'
+                Console.warn('No uncertainty model specified for USBL, defaulting to JSON.')
+                sensors_std['usbl']['model'] = 'sensor'
             if 'model' not in sensors_std['dvl']:
-                sensors_std['dvl']['model'] = 'json'
+                Console.warn('No uncertainty model specified for DVL, defaulting to JSON.')
+                sensors_std['dvl']['model'] = 'sensor'
             if 'model' not in sensors_std['depth']:
-                sensors_std['depth']['model'] = 'json'
+                Console.warn('No uncertainty model specified for Depth, defaulting to JSON.')
+                sensors_std['depth']['model'] = 'sensor'
             if 'model' not in sensors_std['orientation']:
-                sensors_std['orientation']['model'] = 'json'
+                Console.warn('No uncertainty model specified for Orientation, defaulting to JSON.')
+                sensors_std['orientation']['model'] = 'sensor'
         if 'ekf' in load_localisation:
             ekf_activate = load_localisation['ekf']['activate']
             ekf_process_noise_covariance = load_localisation['ekf']['process_noise_covariance']
