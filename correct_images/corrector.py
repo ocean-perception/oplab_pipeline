@@ -917,7 +917,7 @@ class Corrector:
     
     # save processed image in an output file with
     # given output format
-    def write_output_image(self, image, filename, dest_path, format_):
+    def write_output_image(self, image, filename, dest_path, dest_format):
         """ writes into output images
         Parameters
         -----------
@@ -927,12 +927,12 @@ class Corrector:
             name of output image file
         dest_path : Path
             path to the output folder
-        format_ : string
+        dest_format : string
             output image format
 
         """
 
-        file = filename + '.' + format_
+        file = filename + '.' + dest_format
         file_path = Path(dest_path) / file
         imageio.imwrite(file_path, image)
 
