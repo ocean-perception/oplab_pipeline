@@ -9,7 +9,6 @@ auv_nav
 .. automodule:: auv_nav
    :members:
 
-
 auv_cal
 -------
 
@@ -19,10 +18,31 @@ auv_cal
 .. autoclass:: CircularCone
    :members:
 
+.. autoclass:: Plane
+   :members:
+
 correct_images
 --------------
 
 .. automodule:: correct_images
+   :members:
+
+.. autoclass:: Corrector
+   :members:
+
+.. autoclass:: ColourCorrection
+   :members:
+
+.. autoclass:: Config
+   :members:
+
+.. autoclass:: CameraConfigs
+   :members:
+
+.. autoclass:: OutputSettings
+   :members:
+
+.. autoclass:: CorrectConfig
    :members:
 
 Useful Functions and Classes
@@ -33,14 +53,11 @@ Useful Functions and Classes
 .. autoclass:: Console
    :members:
 
-
 .. autoclass:: Mission
    :members:
 
-
 .. autoclass:: Vehicle
    :members:
-
 
 .. autoclass:: CameraSystem
    :members:

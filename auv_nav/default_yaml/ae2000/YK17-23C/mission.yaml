@@ -57,15 +57,15 @@ usbl:
 image:
   format: seaxerocks_3
   cameras:
-    - name: fore
+    - name: Cam51707923
       type: bayer_rggb
       bit_depth: 12
       path: image/SeaXerocksData20181119_073812_laserCal/Xviii/Cam51707923
-    - name: aft
+    - name: Cam51707925
       type: bayer_rggb
       bit_depth: 12
       path: image/SeaXerocksData20181119_073812_laserCal/Xviii/Cam51707925
-    - name: laser
+    - name: LM165
       type: grayscale
       bit_depth: 12
       path: image/SeaXerocksData20181119_073812_laserCal/LM165

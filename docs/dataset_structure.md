@@ -22,15 +22,6 @@ Mission.yaml: This file describes the mission's details and parameters of each s
 vehicle.yaml This file describes the location of the sensors relative to the defined position (origin) of the vehicle.
 These two files are normally provided by the sensor or the platform. At the worst-case scenario, they can be tailored to fit any particular setup.
 
-
-## Software:
-
-[[auv_nav]]
-
-[[auv_cal]]
-
-[[colour_correct]]
-
 ## Testing dataset
 
 How to access the google bucket:

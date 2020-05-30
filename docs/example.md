@@ -152,8 +152,8 @@ An example dataset can be downloaded from the following link with the expected f
 Download, extract and specify the folder location and run as
 ```
 OPLAB format:
-auv_nav parse -f oplab ~/raw/2017/cruise/dive
-auv_nav process -f oplab -s 20170816032345 -e 20170816034030  ~/processed/2017/cruise/dive
+auv_nav parse ~/raw/2017/cruise/dive
+auv_nav process -s 20170816032345 -e 20170816034030  ~/processed/2017/cruise/dive
 Convert to ACFR
 auv_nav convert -f acfr ~/raw/2017/cruise/dive
 ```
