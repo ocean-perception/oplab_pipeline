@@ -22,15 +22,14 @@ from oplab import get_processed_folder
 from oplab import get_config_folder
 from oplab import Console
 from oplab import CameraSystem
-from correct_images.parser import *
-from oplab.camera_models import *
+from correct_images.parser import CorrectConfig
+from oplab.camera_models import MonoCamera
 import yaml
 import joblib
 import sys
 import uuid
 import datetime
 from scipy import optimize
-import tempfile
 # -----------------------------------------
 
 

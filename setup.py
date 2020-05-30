@@ -52,7 +52,7 @@ def run_setup():
     # load long description from README.md
     readme_file = 'README.md'
     if os.path.exists(readme_file):
-        long_description = open(readme_file).read()
+        long_description = open(readme_file, encoding='utf-8', errors='ignore').read()
     else:
         print('Could not find readme file to extract long_description.')
         long_description = ''
