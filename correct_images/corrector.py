@@ -41,9 +41,9 @@ class Corrector:
         ----------
         force : bool
             to indicate an overwrite for existing parameters or images
-        camera : CameraEntry object
+        camera : CameraEntry
             camera object for which the processing is expected
-        correct_config : CorrectConfig object
+        correct_config : CorrectConfig
             correct config object storing all the correction configuration parameters
         path : Path
             path to the dive folder where image directory is present
@@ -64,7 +64,11 @@ class Corrector:
     def setup(self):
         """ setup the corrector object by loading required
         configuration parameters and creating output directories
-
+        
+        Returns
+        -------
+        int
+            Returns 0 if successful, -1 otherwise.
         """
 
         self.load_generic_config_parameters()
@@ -166,7 +170,7 @@ class Corrector:
         Returns
         -------
         int
-
+            Returns 0 if successful, -1 otherwise
         """
 
         idx = [i for i, cameraconfig in enumerate(self.cameraconfigs) if cameraconfig.camera_name == self._camera.name]
@@ -513,9 +517,9 @@ class Corrector:
         """ compute attenuation parameters for all images
         Parameters
         -----------
-        images : numpy memmap
+        images : numpy.ndarray
             image memmap reshaped as a vector
-        distances : numpy memmap
+        distances : numpy.ndarray
             distance memmap reshaped as a vector
         image_height : int
             height of an image
@@ -525,10 +529,8 @@ class Corrector:
         
         Returns
         -------
-        numpy array
-            {
-                attenuation_parameters : numpy array
-            }
+        numpy.ndarray
+            attenuation_parameters
         """
 
         Console.info('Start curve fitting...')
@@ -549,15 +551,16 @@ class Corrector:
         """ compute correction gains for an image
         Parameters
         -----------
-        target_altitude : numpy array
+        target_altitude : numpy.ndarray
             target distance for which the images will be corrected
-        attenuation_parameters : numpy array
+        attenuation_parameters : numpy.ndarray
             attenuation coefficients
 
         
         Returns
         -------
-        numpy array
+        numpy.ndarray
+            The correction gains
         """
 
         attenuation_parameters = attenuation_parameters.squeeze()
@@ -570,22 +573,20 @@ class Corrector:
         """ apply attenuation corrections to an image memmap
         Parameters
         -----------
-        image_memmap : numpy memmap
+        image_memmap : numpy.ndarray
             input image memmap
-        distance_memmap : numpy memmap
+        distance_memmap : numpy.ndarray
             input distance memmap
-        attenuation_parameters : numpy array
+        attenuation_parameters : numpy.ndarray
             attenuation coefficients
-        gains : numpy array
+        gains : numpy.ndarray
             gain values for the image
 
         
         Returns
         -------
-        numpy array
-            {
-                img : numpy array
-            }
+        numpy.ndarray
+            Resulting images after applying attenuation correction
         """
 
         for i_img in trange(image_memmap.shape[0]):
@@ -600,24 +601,22 @@ class Corrector:
 
     def apply_atn_crr_2_img(self, img, altitude, atn_crr_params, gain):
         """ apply attenuation coefficents to an input image
+
         Parameters
         -----------
-        img : numpy array
+        img : numpy.ndarray
             input image
         altitude : 
             distance matrix corresponding to the image
-        atn_crr_params : numpy array
+        atn_crr_params : numpy.ndarray
             attenuation coefficients
-        gain : numpy array
+        gain : numpy.ndarray
             gain value for the image
-
         
         Returns
         -------
-        numpy array
-            {
-                img : numpy array
-            }
+        numpy.ndarray
+            Corrected image
         """
 
         atn_crr_params = atn_crr_params.squeeze()
@@ -735,9 +734,9 @@ class Corrector:
         """ apply attenuation corrections to images
         Parameters
         -----------
-        image : numpy array
+        image : numpy.ndarray
             image data to be debayered
-        distance : numpy array
+        distance : numpy.ndarray
             distance values
         brightness : int
             target mean for output image
@@ -747,10 +746,8 @@ class Corrector:
 
         Returns
         -------
-        numpy array
-            {
-                image : numpy array
-            }
+        numpy.ndarray
+            Corrected image
         """
         for i in range(self.image_channels):
             if self.image_channels == 3:
@@ -780,7 +777,7 @@ class Corrector:
         """ generates target stats for images
         Parameters
         -----------
-        img : numpy array
+        img : numpy.ndarray
             image data to be corrected for target stats
         img_mean : int
             current mean
@@ -796,10 +793,8 @@ class Corrector:
 
         Returns
         -------
-        numpy array
-            {
-                image : numpy array
-            }
+        numpy.ndarray
+            Corrected image
         """
 
         image = (((img - img_mean) / img_std) * target_std) + target_mean
@@ -812,16 +807,14 @@ class Corrector:
         """ performs manual balance of input image
         Parameters
         -----------
-        image : numpy array
+        image : numpy.ndarray
             image data to be debayered
 
 
         Returns
         -------
-        numpy array
-            {
-                image : numpy array
-            }
+        numpy.ndarray
+            Corrected image
         """
 
         if self.image_channels == 3:
@@ -845,7 +838,7 @@ class Corrector:
         """ performs debayering of input image
         Parameters
         -----------
-        image : numpy array
+        image : numpy.ndarray
             image data to be debayered
         pattern : string
             bayer pattern
@@ -853,10 +846,8 @@ class Corrector:
 
         Returns
         -------
-        numpy array
-            {
-                corrected_rgb_img : numpy array
-            }
+        numpy.ndarray
+            Debayered image
         """
 
         image16 = image.astype(np.uint16)                          
@@ -879,7 +870,7 @@ class Corrector:
         """ performs distortion correction for images
         Parameters
         -----------
-        image : numpy array
+        image : numpy.ndarray
             image data to be corrected for distortion
         dst_bit : int
             target bitdepth for output image
@@ -887,10 +878,8 @@ class Corrector:
 
         Returns
         -------
-        numpy array
-            {
-                image : numpy array
-            }
+        numpy.ndarray
+            Image
         """
 
         monocam = MonoCamera(camera_params_file_path)
@@ -905,7 +894,7 @@ class Corrector:
         """ performs gamma correction for images
         Parameters
         -----------
-        image : numpy array
+        image : numpy.ndarray
             image data to be corrected for gamma
         bitdepth : int
             target bitdepth for output image
@@ -913,10 +902,8 @@ class Corrector:
 
         Returns
         -------
-        numpy array
-            {
-                image : numpy array
-            }
+        numpy.ndarray
+            Image
         """
         image = np.divide(image, ((2 ** bitdepth - 1)))
         if all(i < 0.0031308 for i in image.flatten()):
@@ -934,7 +921,7 @@ class Corrector:
         """ writes into output images
         Parameters
         -----------
-        image : numpy array
+        image : numpy.ndarray
             image data to be written
         filename : string
             name of output image file
@@ -958,7 +945,7 @@ def load_xviii_bayer_from_binary(binary_data, image_height, image_width):
     """ reads XVIII binary images into bayer array
     Parameters
     -----------
-    binary_data : numpy array
+    binary_data : numpy.ndarray
         binary image data from XVIII
     image_height : int
         image height
@@ -967,10 +954,8 @@ def load_xviii_bayer_from_binary(binary_data, image_height, image_width):
 
     Returns
     --------
-    numpy array
-        {
-            bayer_img : numpy array
-        }
+    numpy.ndarray
+        Bayer image
     """
 
     img_h = image_height
@@ -1012,10 +997,8 @@ def load_memmap_from_numpyfilelist(filepath, numpyfilelist):
 
     Returns
     --------
-    Path, numpy object
-        {
-            memmap_path : Path
-            memmap_handle : numpy memmap object
+    Path, numpy.ndarray
+        memmap_path and memmap_handle
         }
     """
 
@@ -1042,18 +1025,15 @@ def mean_std(data, calculate_std=True):
     """ computes mean and std for image intensities and distance values
     Parameters
     -----------
-    data : numpy array
+    data : numpy.ndarray
         data series 
     calculate_std : bool
         denotes to compute std along with mean
 
     Returns
     --------
-    numpy array
-        {
-            ret_mean : numpy array
-            ret_std : numpy array
-        }
+    numpy.ndarray
+        mean and std of input image
     """
 
     [n, a, b] = data.shape
@@ -1074,7 +1054,7 @@ def image_mean_std_trimmed(data, ratio_trimming=0.2, calculate_std=True):
     """ computes trimmed mean and std for image intensities using parallel computing
     Parameters
     -----------
-    data : numpy array
+    data : numpy.ndarray
         image intensities 
     ratio_trimming : float
         trim ratio
@@ -1083,11 +1063,8 @@ def image_mean_std_trimmed(data, ratio_trimming=0.2, calculate_std=True):
 
     Returns
     --------
-    numpy array
-        {
-            ret_mean : numpy array
-            ret_std : numpy array
-        }
+    numpy.ndarray
+        Trimmed mean and std
     """
 
     [n, a, b] = data.shape
@@ -1131,7 +1108,7 @@ def calc_mean_and_std_trimmed(data, rate_trimming, calc_std=True):
 
     Parameters
     -----------
-    data : numpy array
+    data : numpy.ndarray
         image intensities 
     rate_trimming : float
         trim ratio
@@ -1140,7 +1117,7 @@ def calc_mean_and_std_trimmed(data, rate_trimming, calc_std=True):
 
     Returns
     --------
-    numpy array
+    numpy.ndarray
 
     """
 
@@ -1191,19 +1168,17 @@ def residual_exp_curve(params, x, y):
 
     Parameters
     -----------
-    params : numpy array
+    params : numpy.ndarray
         array of init params
-    x : numpy array
+    x : numpy.ndarray
         array of distance values
-    y : numpy array
+    y : numpy.ndarray
         array of intensity values
 
     Returns
     --------
-    numpy array
-        {
-            residual : numpy array
-        } 
+    numpy.ndarray
+        residual
     """
 
     residual = exp_curve(x, params[0], params[1], params[2]) - y
@@ -1223,10 +1198,8 @@ def curve_fitting(distancelist, intensitylist):
 
     Returns
     --------
-    numpy array
-        {
-            ret_params : numpy array
-        } 
+    numpy.ndarray
+        parameters
     """
 
 
