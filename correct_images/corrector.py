@@ -103,8 +103,7 @@ class Corrector:
         # create directories for storing intermediate image and distance_matrix numpy files,
         # correction parameters and corrected output images
     def create_output_directories(self):
-        """ creates output directories
-
+        """Handles the creation of output directories
         """
 
         # create output directory path
@@ -140,6 +139,11 @@ class Corrector:
                 if self.force == False:
                     Console.quit('Processed files exist. If you want to overwrite them, run correct_images with the force overwrite flag (-F)')
 
+        # create path for memmap files
+        memmap_folder_name = 'memmaps_' + self._camera.name
+        self.memmap_folder = self.output_dir_path / memmap_folder_name
+        if not self.memmap_folder.exists():
+            self.memmap_folder.mkdir(parents=True)
 
         # create path for output images
         output_images_folder_name = 'developed_' + self._camera.name
@@ -152,19 +156,10 @@ class Corrector:
             if len(file_list) > 0:
                 if self.force == False:
                     Console.quit('Overwrite images with a Force command...')
-        Console.info('Output directories created / existing...')
-
-        # create temporary folder for memmap files
-        memmap_folder_name = 'memmaps_' + self._camera.name
-        path_temp = tempfile.mkdtemp()
-        self.memmap_folder = Path(path_temp) / memmap_folder_name
-        if not self.memmap_folder.exists():
-            self.memmap_folder.mkdir(parents=True)
+        Console.info('Output directories created or existing...')
 
 
-
-
-        # store into object correction paramters specific to the current camera
+    # store into object correction paramters specific to the current camera
     def load_camera_specific_config_parameters(self):
         """ loads camera specific configuration parameters
 
