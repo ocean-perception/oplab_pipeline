@@ -12,7 +12,7 @@ oplab_pipeline is a python toolchain to process AUV dives from raw data into nav
 Please review the latest changes in the [CHANGELOG.md](CHANGELOG.md). 
 
 ## Documentation
-The documentation is hosted in [read the docs](oplab-pipeline.readthedocs.io).
+The documentation is hosted in [read the docs](https://oplab-pipeline.readthedocs.io).
 
 ## Citation
 If you use this software, please cite the following article:
