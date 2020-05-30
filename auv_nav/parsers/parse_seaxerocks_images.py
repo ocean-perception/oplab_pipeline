@@ -187,12 +187,12 @@ def parse_seaxerocks_images(mission,
                 'camera1': [{
                     'epoch_timestamp': float(epoch_timestamp_camera1[i]),
                     'serial': camera1_serial,
-                    'filename': str(camera1_label+'/'+camera1_filename[i])
+                    'filename': str(camera1_filepath+'/'+camera1_filename[i])
                     }],
                 'camera2':  [{
                     'epoch_timestamp': float(epoch_timestamp_camera2[i]),
                     'serial': camera2_serial,
-                    'filename': str(camera2_label+'/'+camera2_filename[i])
+                    'filename': str(camera2_filepath+'/'+camera2_filename[i])
                     }]}
             data_list.append(data)
 
@@ -272,7 +272,7 @@ def parse_seaxerocks_images(mission,
                 'frame': frame_string,
                 'category': category_laser,
                 'serial': camera3_serial,
-                'filename': str(camera3_filename[i])}
+                'filename': camera3_filepath + '/' + str(camera3_filename[i])}
             data_list.append(data)
 
     Console.info('  ...done parsing ' + sensor_string + ' images.')

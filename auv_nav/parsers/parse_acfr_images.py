@@ -136,10 +136,10 @@ def parse_acfr_images(mission,
                 'category': category,
                 'camera1': [{
                     'epoch_timestamp': float(epoch_timestamp_camera1[i]),
-                    'filename': str(camera1_filename[i])}],
+                    'filename': str(filepath + '/' + camera1_filename[i])}],
                 'camera2':  [{
                     'epoch_timestamp': float(epoch_timestamp_camera2[sync_pair]),
-                    'filename': str(camera2_filename[sync_pair])}]}
+                    'filename': str(filepath + '/' + camera2_filename[sync_pair])}]}
             data_list.append(data)
         if ftype == 'acfr':
             data = 'VIS: ' + str(float(epoch_timestamp_camera1[i])) \

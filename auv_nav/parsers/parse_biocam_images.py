@@ -91,6 +91,15 @@ def biocam_timestamp_from_filename(filename, timezone_offset, timeoffset):
     return epoch_timestamp, cam_epoch_timestamp
 
 
+def pathlist_relativeto(input_pathlist, base_path):
+    out_list = []
+    for x in input_pathlist:
+        p = Path(x)
+        pr = p.relative_to(base_path)
+        out_list.append(str(pr))
+    return out_list
+
+
 def parse_biocam_images(mission,
                         vehicle,
                         category,
@@ -147,6 +156,12 @@ def parse_biocam_images(mission,
     camera3_filename = [
         line for line in camera2_list if '.jpg' in line]
 
+    dive_folder =  get_raw_folder(outpath / '..' )
+    camera1_relfilename = pathlist_relativeto(camera1_filename, dive_folder)
+    camera2_relfilename = pathlist_relativeto(camera2_filename, dive_folder)
+    camera3_relfilename = pathlist_relativeto(camera3_filename, dive_folder)
+
+
     Console.info('Found ' + str(len(camera2_filename) + len(camera1_filename) + len(camera3_filename)) + ' BioCam images!')
 
     data_list = []
@@ -189,24 +204,24 @@ def parse_biocam_images(mission,
                         # Duplicate for timestamp prediction purposes
                         'epoch_timestamp_cpu': float(stamp_pc1[i]),
                         'epoch_timestamp_cam': float(stamp_cam1[i]),
-                        'filename': str(camera1_filename[i])
+                        'filename': str(camera1_relfilename[i])
                     }],
                     'camera2':  [{
                         'epoch_timestamp': float(stamp_pc2[sync_pair]),
                         # Duplicate for timestamp prediction purposes
                         'epoch_timestamp_cpu': float(stamp_pc2[sync_pair]),
                         'epoch_timestamp_cam': float(stamp_cam2[sync_pair]),
-                        'filename': str(camera2_filename[sync_pair])
+                        'filename': str(camera2_relfilename[sync_pair])
                     }]
                 }
                 data_list.append(data)
             if ftype == 'acfr':
                 data = 'VIS: ' + str(float(stamp_pc1[i])) + ' [' + str(float(
-                    stamp_pc1[i])) + '] ' + str(camera1_filename[i]) + ' exp: 0\n'
+                    stamp_pc1[i])) + '] ' + str(camera1_relfilename[i]) + ' exp: 0\n'
                 # fileout.write(data)
                 data_list += data
                 data = 'VIS: ' + str(float(stamp_pc2[sync_pair])) + ' [' + str(float(
-                    stamp_pc2[sync_pair])) + '] ' + str(camera2_filename[sync_pair]) + ' exp: 0\n'
+                    stamp_pc2[sync_pair])) + '] ' + str(camera2_relfilename[sync_pair]) + ' exp: 0\n'
                 # fileout.write(data)
                 data_list += data
     for i in range(len(camera3_filename)):
@@ -225,7 +240,7 @@ def parse_biocam_images(mission,
                 # Duplicate for timestamp prediction purposes
                 'epoch_timestamp_cpu': float(t3),
                 'epoch_timestamp_cam': float(tc3),
-                'filename': str(camera3_filename[i])
+                'filename': str(camera3_relfilename[i])
             }]
         }
         data_list.append(data)
