@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/ocean-perception/oplab_pipeline.svg?token=UkLpgZyKjs3prWpXePir&branch=master)](https://travis-ci.com/ocean-perception/oplab_pipeline) [![Code Coverage](https://codecov.io/gh/ocean-perception/oplab_pipeline/branch/master/graph/badge.svg?token=PJBfl6qhp5)](https://codecov.io/gh/ocean-perception/oplab_pipeline)[![Documentation Status](https://readthedocs.org/projects/oplab-pipeline/badge/?version=latest)](https://oplab-pipeline.readthedocs.io/en/latest/?badge=latest)
+[![Build Status](https://travis-ci.com/ocean-perception/oplab_pipeline.svg?token=UkLpgZyKjs3prWpXePir&branch=master)](https://travis-ci.com/ocean-perception/oplab_pipeline) [![Code Coverage](https://codecov.io/gh/ocean-perception/oplab_pipeline/branch/master/graph/badge.svg?token=PJBfl6qhp5)](https://codecov.io/gh/ocean-perception/oplab_pipeline) [![Documentation Status](https://readthedocs.org/projects/oplab-pipeline/badge/?version=latest)](https://oplab-pipeline.readthedocs.io/en/latest/?badge=latest)
 
 
 # oplab_pipeline
