@@ -32,6 +32,9 @@ auv_cal
 
 .. autoclass:: Plane
    :members:
+   
+.. automodule:: auv_cal.plot_points_and_planes
+   :members:
 
 correct_images
 --------------
