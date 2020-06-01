@@ -146,13 +146,13 @@ def parse_acfr_images(mission, vehicle, category, ftype, outpath):
                 "camera1": [
                     {
                         "epoch_timestamp": float(epoch_timestamp_camera1[i]),
-                        "filename": str(filepath + "/" + camera1_filename[i]),
+                        "filename": str(filepath) + "/" + str(camera1_filename[i]),
                     }
                 ],
                 "camera2": [
                     {
                         "epoch_timestamp": float(epoch_timestamp_camera2[sync_pair]),
-                        "filename": str(filepath + "/" + camera2_filename[sync_pair]),
+                        "filename": str(filepath) + "/" + str(camera2_filename[sync_pair]),
                     }
                 ],
             }
