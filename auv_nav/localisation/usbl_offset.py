@@ -16,12 +16,14 @@ See LICENSE.md file in the project root for full license information.
 from auv_nav.tools.interpolate import interpolate
 
 
-def usbl_offset(time_dead_reckoning,
-                northings_dead_reckoning,
-                eastings_dead_reckoning,
-                time_usbl,
-                northings_usbl,
-                eastings_usbl):
+def usbl_offset(
+    time_dead_reckoning,
+    northings_dead_reckoning,
+    eastings_dead_reckoning,
+    time_usbl,
+    northings_usbl,
+    eastings_usbl,
+):
     # ===============Average Offset============================================
     start_dead_reckoning = 0
     start_usbl = 0
@@ -34,75 +36,97 @@ def usbl_offset(time_dead_reckoning,
 
     # Find suitable start points
     if time_usbl[0] < time_dead_reckoning[0]:
-        print('usbl starts before dead_reckoning')
+        print("usbl starts before dead_reckoning")
         while exit_flag is False:
             if start_usbl + 1 >= len(time_usbl):
                 break
-            if time_dead_reckoning[start_dead_reckoning] - time_usbl[start_usbl+1] > 0:
-                start_usbl = start_usbl+1
+            if (
+                time_dead_reckoning[start_dead_reckoning] - time_usbl[start_usbl + 1]
+                > 0
+            ):
+                start_usbl = start_usbl + 1
             else:
-                if (time_dead_reckoning[start_dead_reckoning]
-                    - time_usbl[start_usbl] < threshold
-                   and time_usbl[start_usbl+1] - time_usbl[start_usbl]
-                   < threshold):
+                if (
+                    time_dead_reckoning[start_dead_reckoning] - time_usbl[start_usbl]
+                    < threshold
+                    and time_usbl[start_usbl + 1] - time_usbl[start_usbl] < threshold
+                ):
                     start_usbl += 1
                     exit_flag = True
                 else:
-                    start_dead_reckoning = start_dead_reckoning+1
+                    start_dead_reckoning = start_dead_reckoning + 1
     else:
         # print('usbl starts after dead_reckoning')
         while exit_flag is False:
-            if time_dead_reckoning[start_dead_reckoning]-time_usbl[start_usbl] < 0:
-                start_dead_reckoning = start_dead_reckoning+1
+            if time_dead_reckoning[start_dead_reckoning] - time_usbl[start_usbl] < 0:
+                start_dead_reckoning = start_dead_reckoning + 1
 
             else:
-                if (time_dead_reckoning[start_dead_reckoning]
-                    - time_usbl[start_usbl] < threshold
-                   and time_usbl[start_usbl+1] - time_usbl[start_usbl]
-                   < threshold):
+                if (
+                    time_dead_reckoning[start_dead_reckoning] - time_usbl[start_usbl]
+                    < threshold
+                    and time_usbl[start_usbl + 1] - time_usbl[start_usbl] < threshold
+                ):
                     start_usbl += 1
                     exit_flag = True
                 else:  # if the jump is too big, ignore and try another fix
-                    start_usbl = start_usbl+1
+                    start_usbl = start_usbl + 1
 
     northings_dead_reckoning_interpolated = []
     eastings_dead_reckoning_interpolated = []
 
     for j_usbl in range(start_usbl, len(time_usbl)):
-        if start_dead_reckoning+1 >= len(time_dead_reckoning):
+        if start_dead_reckoning + 1 >= len(time_dead_reckoning):
             break
         try:
-            while (time_dead_reckoning[start_dead_reckoning + 1]
-                   < time_usbl[j_usbl]):
+            while time_dead_reckoning[start_dead_reckoning + 1] < time_usbl[j_usbl]:
                 start_dead_reckoning += 1
         except IndexError:
             break
         northings_dead_reckoning_interpolated.append(
-            interpolate(time_usbl[j_usbl],
-                        time_dead_reckoning[start_dead_reckoning],
-                        time_dead_reckoning[start_dead_reckoning+1],
-                        northings_dead_reckoning[start_dead_reckoning],
-                        northings_dead_reckoning[start_dead_reckoning+1]))
+            interpolate(
+                time_usbl[j_usbl],
+                time_dead_reckoning[start_dead_reckoning],
+                time_dead_reckoning[start_dead_reckoning + 1],
+                northings_dead_reckoning[start_dead_reckoning],
+                northings_dead_reckoning[start_dead_reckoning + 1],
+            )
+        )
         eastings_dead_reckoning_interpolated.append(
-            interpolate(time_usbl[j_usbl],
-                        time_dead_reckoning[start_dead_reckoning],
-                        time_dead_reckoning[start_dead_reckoning+1],
-                        eastings_dead_reckoning[start_dead_reckoning],
-                        eastings_dead_reckoning[start_dead_reckoning+1]))
+            interpolate(
+                time_usbl[j_usbl],
+                time_dead_reckoning[start_dead_reckoning],
+                time_dead_reckoning[start_dead_reckoning + 1],
+                eastings_dead_reckoning[start_dead_reckoning],
+                eastings_dead_reckoning[start_dead_reckoning + 1],
+            )
+        )
 
-    northings_offset = (
-        sum(northings_usbl[start_usbl:start_usbl
-            + len(northings_dead_reckoning_interpolated)])
-        / len(northings_usbl[start_usbl:(start_usbl
-              + len(northings_dead_reckoning_interpolated))])
-        - sum(northings_dead_reckoning_interpolated)
-        / len(northings_dead_reckoning_interpolated))
-    eastings_offset = (
-        sum(eastings_usbl[start_usbl:(start_usbl
-            + len(eastings_dead_reckoning_interpolated))])
-        / len(eastings_usbl[start_usbl:start_usbl
-              + len(eastings_dead_reckoning_interpolated)])
-        - sum(eastings_dead_reckoning_interpolated)
-        / len(eastings_dead_reckoning_interpolated))
+    northings_offset = sum(
+        northings_usbl[
+            start_usbl : start_usbl + len(northings_dead_reckoning_interpolated)
+        ]
+    ) / len(
+        northings_usbl[
+            start_usbl : (start_usbl + len(northings_dead_reckoning_interpolated))
+        ]
+    ) - sum(
+        northings_dead_reckoning_interpolated
+    ) / len(
+        northings_dead_reckoning_interpolated
+    )
+    eastings_offset = sum(
+        eastings_usbl[
+            start_usbl : (start_usbl + len(eastings_dead_reckoning_interpolated))
+        ]
+    ) / len(
+        eastings_usbl[
+            start_usbl : start_usbl + len(eastings_dead_reckoning_interpolated)
+        ]
+    ) - sum(
+        eastings_dead_reckoning_interpolated
+    ) / len(
+        eastings_dead_reckoning_interpolated
+    )
 
     return northings_offset, eastings_offset

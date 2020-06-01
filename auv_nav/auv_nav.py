@@ -53,7 +53,7 @@ def main(args=None):
     subparser_parse.add_argument(
         "path",
         default=".",
-        nargs='+',
+        nargs="+",
         help="Folderpath where the (raw) input data is. Needs to be a \
         subfolder of 'raw' and contain the mission.yaml configuration file.",
     )
@@ -135,9 +135,7 @@ def main(args=None):
         target.",
     )
     subparser_convert.add_argument(
-        "path",
-        default=".",
-        help="Dive folder to convert from.",
+        "path", default=".", help="Dive folder to convert from.",
     )
     subparser_convert.add_argument(
         "-i",

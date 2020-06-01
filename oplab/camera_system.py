@@ -25,6 +25,7 @@ class CameraEntry:
     raw_folder
         Path to the current dive
     """
+
     def __init__(self, node=None, raw_folder=None):
         self._image_list = []
         self._stamp_list = []
@@ -33,27 +34,34 @@ class CameraEntry:
             self.raw_folder = Path(raw_folder)
 
         if node is not None:
-            self.name = node['name']
-            self.type = node['type']
-            self.bit_depth = node['bit_depth']
-            self.path = node['path']
-            self.extension = node['extension']
-            self.timestamp_file = node.get('timestamp_file', None)
-            self.columns = node.get('columns', None)
-            self.filename_to_date = node.get('filename_to_date', None)
+            self.name = node["name"]
+            self.type = node["type"]
+            self.bit_depth = node["bit_depth"]
+            self.path = node["path"]
+            self.extension = node["extension"]
+            self.timestamp_file = node.get("timestamp_file", None)
+            self.columns = node.get("columns", None)
+            self.filename_to_date = node.get("filename_to_date", None)
             if self.timestamp_file is None and self.filename_to_date is None:
-                Console.error('The camera ', self.name, ' is missing its timestamp format')
-                Console.error('You can provide it by means of filename:')
-                Console.error('e.g. PR_20180811_153729_762_RC16.tif -> xxxYYYYMMDDxhhmmssxfffxxxxx.xxx')
-                Console.error('or using a separate timestamp file:')
-                Console.error('e.g. FileTime.csv, where separate columns z define the date.')
-                Console.error('Find examples in default_yaml folder.')
-                Console.quit('Missing timestamp format for a camera.')
+                Console.error(
+                    "The camera ", self.name, " is missing its timestamp format"
+                )
+                Console.error("You can provide it by means of filename:")
+                Console.error(
+                    "e.g. PR_20180811_153729_762_RC16.tif -> xxxYYYYMMDDxhhmmssxfffxxxxx.xxx"
+                )
+                Console.error("or using a separate timestamp file:")
+                Console.error(
+                    "e.g. FileTime.csv, where separate columns z define the date."
+                )
+                Console.error("Find examples in default_yaml folder.")
+                Console.quit("Missing timestamp format for a camera.")
             self.convert_filename = FilenameToDate(
                 self.filename_to_date,
                 self.timestamp_file,
                 self.columns,
-                self.raw_folder)
+                self.raw_folder,
+            )
 
     def write(self, node):
         pass
@@ -70,32 +78,32 @@ class CameraEntry:
             return self._image_list
         raw_dir = get_raw_folder(self.raw_folder)
 
-        split_glob = str(self.path).split('*')
+        split_glob = str(self.path).split("*")
         print(len(split_glob))
-        img_dir = ''
+        img_dir = ""
         if len(split_glob) == 2:
-            pre_glob = split_glob[0] + '*'
-            glob_vec = raw_dir.glob(pre_glob)    
+            pre_glob = split_glob[0] + "*"
+            glob_vec = raw_dir.glob(pre_glob)
             img_dirs = [k for k in glob_vec]
-            img_dir = Path(str(img_dirs[0]) + '/' + str(split_glob[1]))
-            for i in img_dir.rglob('*.' + self.extension):
+            img_dir = Path(str(img_dirs[0]) + "/" + str(split_glob[1]))
+            for i in img_dir.rglob("*." + self.extension):
                 self._image_list.append(str(i))
         elif len(split_glob) == 4:  # path/i*/*LC*
             # split = ['path/i', '/', 'LC]
-            pre_glob = split_glob[0] + '*'
+            pre_glob = split_glob[0] + "*"
             glob_vec = raw_dir.glob(pre_glob)
             img_dirs = [k for k in glob_vec]
             img_dir = Path(str(img_dirs[0]))
-            Console.info('Looking for images with the pattern *', split_glob[2], '*')
-            for i in img_dir.glob('*' + split_glob[2] + '*.' + self.extension):
+            Console.info("Looking for images with the pattern *", split_glob[2], "*")
+            for i in img_dir.glob("*" + split_glob[2] + "*." + self.extension):
                 self._image_list.append(str(i))
         elif len(split_glob) == 1:
             img_dir = raw_dir / self.path
-            for i in img_dir.rglob('*.' + self.extension):
+            for i in img_dir.rglob("*." + self.extension):
                 self._image_list.append(str(i))
         else:
-            Console.quit('Multiple globbing is not supported.')
-        
+            Console.quit("Multiple globbing is not supported.")
+
         self._image_list.sort()
         return self._image_list
 
@@ -120,9 +128,9 @@ class CameraEntry:
         imagelist = self.image_list
         image_path = imagelist[0]
         self._image_properties = []
-        
+
         # read tiff
-        if self.extension == 'tif':
+        if self.extension == "tif":
             image_matrix = imageio.imread(image_path)
             image_shape = image_matrix.shape
             self._image_properties.append(image_shape[0])
@@ -133,8 +141,8 @@ class CameraEntry:
                 self._image_properties.append(1)
 
         # read raw
-        if self.extension == 'raw':
-            #TODO: provide a raw reader and get these properties from the file.
+        if self.extension == "raw":
+            # TODO: provide a raw reader and get these properties from the file.
             self._image_properties = [1024, 1280, 1]
         return self._image_properties
 
@@ -143,12 +151,13 @@ class CameraSystem:
     """Class to describe a camera system, for example, SeaXerocks3 or BioCam.
     Parses camera.yaml files that define camera systems mounted on ROVs or AUVs
     """
+
     def __init__(self, filename=None, raw_folder=None):
         """Constructor of camera system. If a filename is provided, the file will be parsed and its contents loaded into the class.
 
         Keyword Arguments:
             filename {string} -- Path to the camera.yaml file describing the camera system (default: {None})
-        """        
+        """
         self.cameras = []
         self.camera_system = None
         if filename is None and raw_folder is None:
@@ -159,43 +168,43 @@ class CameraSystem:
             self.raw_folder = Path(raw_folder)
         else:
             self.raw_folder = Path.cwd()
-        data = ''
+        data = ""
         try:
-            with filename.open('r') as stream:
+            with filename.open("r") as stream:
                 data = yaml.safe_load(stream)
         except FileNotFoundError:
-            Console.error('The file camera.yaml could not be found at ', filename)
-            Console.quit('camera.yaml not provided')
+            Console.error("The file camera.yaml could not be found at ", filename)
+            Console.quit("camera.yaml not provided")
         except PermissionError:
-            Console.error('The file camera.yaml could not be opened at ', filename)
+            Console.error("The file camera.yaml could not be opened at ", filename)
             Console.error(filename)
-            Console.error('Please make sure you have the correct access rights.')
-            Console.quit('camera.yaml not provided')
+            Console.error("Please make sure you have the correct access rights.")
+            Console.quit("camera.yaml not provided")
         self._parse(data)
 
     def __str__(self):
-        msg = ''
+        msg = ""
         if self.camera_system is not None:
-            msg += 'CameraSystem: ' + str(self.camera_system)
+            msg += "CameraSystem: " + str(self.camera_system)
             if len(self.cameras) > 0:
-                msg += ' with cameras ['
+                msg += " with cameras ["
                 for c in self.cameras:
-                    msg += str(c.name) + ' '
-                msg += ']'
+                    msg += str(c.name) + " "
+                msg += "]"
             else:
-                msg += ' is empty'
-        else: 
-            msg += 'Empty CameraSystem'
+                msg += " is empty"
+        else:
+            msg += "Empty CameraSystem"
         return msg
 
     def _parse(self, node):
-        if 'camera_system' not in node:
-            Console.error('The camera.yaml file is missing the camera_system entry.')
-            Console.quit('Wrong camera.yaml format or content.')
-        self.camera_system = node['camera_system']
+        if "camera_system" not in node:
+            Console.error("The camera.yaml file is missing the camera_system entry.")
+            Console.quit("Wrong camera.yaml format or content.")
+        self.camera_system = node["camera_system"]
 
-        if 'cameras' not in node:
-            Console.error('The camera.yaml file is missing the cameras entry.')
-            Console.quit('Wrong camera.yaml format or content.')
-        for camera in node['cameras']:
+        if "cameras" not in node:
+            Console.error("The camera.yaml file is missing the cameras entry.")
+            Console.quit("Wrong camera.yaml format or content.")
+        for camera in node["cameras"]:
             self.cameras.append(CameraEntry(camera, self.raw_folder))

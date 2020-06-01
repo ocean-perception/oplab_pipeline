@@ -13,8 +13,9 @@ import time
 
 
 def date_time_to_epoch(yyyy, mm, dd, hh, mm1, ss, timezone_offset_to_utc=0):
-    utc_date_time = (datetime(yyyy, mm, dd, hh, mm1, ss)
-                     - timedelta(hours=timezone_offset_to_utc))
+    utc_date_time = datetime(yyyy, mm, dd, hh, mm1, ss) - timedelta(
+        hours=timezone_offset_to_utc
+    )
     epochtime = calendar.timegm(utc_date_time.timetuple())
     return epochtime
 
@@ -35,8 +36,7 @@ def get_localtimezone():
 
 
 def epoch_to_day(epoch):
-    return time.strftime('%Y/%m/%d',
-                         time.localtime(epoch))
+    return time.strftime("%Y/%m/%d", time.localtime(epoch))
 
 
 def string_to_epoch(datetime):
@@ -52,29 +52,32 @@ def string_to_epoch(datetime):
 
 
 def epoch_from_json(json):
-    epoch_timestamp = json['epoch_timestamp']
-    #start_datetime = time.strftime(
+    epoch_timestamp = json["epoch_timestamp"]
+    # start_datetime = time.strftime(
     #    '%Y%m%d%H%M%S', time.localtime(epoch_timestamp))
-    #return string_to_epoch(start_datetime)
+    # return string_to_epoch(start_datetime)
     return epoch_timestamp
 
 
 def epoch_to_datetime(epoch_timestamp):
-    return time.strftime('%Y%m%d%H%M%S',
-                         time.gmtime(epoch_timestamp))
+    return time.strftime("%Y%m%d%H%M%S", time.gmtime(epoch_timestamp))
 
 
 def read_timezone(timezone):
     if isinstance(timezone, str):
-        if timezone == 'utc' or timezone == 'UTC':
-            timezone_offset = 0.
-        elif timezone == 'jst' or timezone == 'JST':
-            timezone_offset = 9.
+        if timezone == "utc" or timezone == "UTC":
+            timezone_offset = 0.0
+        elif timezone == "jst" or timezone == "JST":
+            timezone_offset = 9.0
     else:
         try:
             timezone_offset = float(timezone)
         except ValueError:
-            print('Error: timezone', timezone, 'in mission.yaml not \
-                  recognised, please enter value from UTC in hours')
+            print(
+                "Error: timezone",
+                timezone,
+                "in mission.yaml not \
+                  recognised, please enter value from UTC in hours",
+            )
             return
     return timezone_offset

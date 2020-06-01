@@ -15,21 +15,21 @@ from oplab import Console
 
 
 def loadmat(filename):
-    '''
+    """
     this function should be called instead of direct spio.loadmat
     as it cures the problem of not properly recovering python dictionaries
     from mat files. It calls the function check keys to cure all entries
     which are still mat-objects
-    '''
+    """
     data = spio.loadmat(filename, struct_as_record=False, squeeze_me=True)
     return _check_keys(data)
 
 
 def _check_keys(dict):
-    '''
+    """
     checks if entries in dictionary are mat-objects. If yes
     todict is called to change them to nested dictionaries
-    '''
+    """
     for key in dict:
         if isinstance(dict[key], spio.matlab.mio5_params.mat_struct):
             dict[key] = _todict(dict[key])
@@ -37,9 +37,9 @@ def _check_keys(dict):
 
 
 def _todict(matobj):
-    '''
+    """
     A recursive function which constructs from matobjects nested dictionaries
-    '''
+    """
     dict = {}
     for strg in matobj._fieldnames:
         elem = matobj.__dict__[strg]
@@ -50,14 +50,10 @@ def _todict(matobj):
     return dict
 
 
-def parse_autosub(mission,
-                  vehicle,
-                  category,
-                  ftype,
-                  outpath):
+def parse_autosub(mission, vehicle, category, ftype, outpath):
     # parser meta data
-    class_string = 'measurement'
-    sensor_string = 'autosub'
+    class_string = "measurement"
+    sensor_string = "autosub"
     category = category
     output_format = ftype
     filename = mission.velocity.filename
@@ -71,9 +67,9 @@ def parse_autosub(mission,
     altitude_std_factor = mission.altitude.std_factor
     headingoffset = vehicle.dvl.yaw
 
-    body_velocity = BodyVelocity(velocity_std_factor,
-                                 velocity_std_offset,
-                                 headingoffset)
+    body_velocity = BodyVelocity(
+        velocity_std_factor, velocity_std_offset, headingoffset
+    )
     orientation = Orientation(headingoffset, orientation_std_offset)
     depth = Depth(depth_std_factor)
     altitude = Altitude(altitude_std_factor)
@@ -83,36 +79,36 @@ def parse_autosub(mission,
     depth.sensor_string = sensor_string
     altitude.sensor_string = sensor_string
 
-    path = get_raw_folder(outpath / '..' / filepath / filename)
+    path = get_raw_folder(outpath / ".." / filepath / filename)
 
     alr_log = loadmat(str(path))
-    alr_acdp = alr_log['missionData']['ADCPbin00']
-    alr_ins = alr_log['missionData']['INSAttitude']
-    alr_dep_ctl = alr_log['missionData']['DepCtlNode']
-    alr_acdp_log1 = alr_log['missionData']['ADCPLog_1']
+    alr_acdp = alr_log["missionData"]["ADCPbin00"]
+    alr_ins = alr_log["missionData"]["INSAttitude"]
+    alr_dep_ctl = alr_log["missionData"]["DepCtlNode"]
+    alr_acdp_log1 = alr_log["missionData"]["ADCPLog_1"]
 
     data_list = []
     if category == Category.VELOCITY:
-        Console.info('... parsing autosub velocity')
-        for i in range(len(alr_acdp['eTime'])):
+        Console.info("... parsing autosub velocity")
+        for i in range(len(alr_acdp["eTime"])):
             body_velocity.from_autosub(alr_acdp, i)
             data = body_velocity.export(output_format)
             data_list.append(data)
     if category == Category.ORIENTATION:
-        Console.info('... parsing autosub orientation')
-        for i in range(len(alr_ins['eTime'])):
+        Console.info("... parsing autosub orientation")
+        for i in range(len(alr_ins["eTime"])):
             orientation.from_autosub(alr_ins, i)
             data = orientation.export(output_format)
             data_list.append(data)
     if category == Category.DEPTH:
-        Console.info('... parsing autosub depth')
-        for i in range(len(alr_dep_ctl['eTime'])):
+        Console.info("... parsing autosub depth")
+        for i in range(len(alr_dep_ctl["eTime"])):
             depth.from_autosub(alr_dep_ctl, i)
             data = depth.export(output_format)
             data_list.append(data)
     if category == Category.ALTITUDE:
-        Console.info('... parsing autosub altitude')
-        for i in range(len(alr_acdp_log1['eTime'])):
+        Console.info("... parsing autosub altitude")
+        for i in range(len(alr_acdp_log1["eTime"])):
             altitude.from_autosub(alr_acdp_log1, i)
             data = altitude.export(output_format)
             data_list.append(data)

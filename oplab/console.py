@@ -16,14 +16,15 @@ import pkg_resources
 
 
 class BColors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
+    HEADER = "\033[95m"
+    OKBLUE = "\033[94m"
+    OKGREEN = "\033[92m"
+    WARNING = "\033[93m"
+    FAIL = "\033[91m"
+    ENDC = "\033[0m"
+    BOLD = "\033[1m"
+    UNDERLINE = "\033[4m"
+
 
 # Singleton class to wrap the console output
 class Console:
@@ -31,39 +32,62 @@ class Console:
 
     @staticmethod
     def warn(*args, **kwargs):
-        """Print a warning message"""        
-        print(BColors.WARNING + "WARN ▸ " + BColors.ENDC + " ".join(map(str, args)), **kwargs)
+        """Print a warning message"""
+        print(
+            BColors.WARNING + "WARN ▸ " + BColors.ENDC + " ".join(map(str, args)),
+            **kwargs
+        )
 
     @staticmethod
     def error(*args, **kwargs):
         """Print and error message"""
-        print(BColors.FAIL + "ERROR ▸ " + BColors.ENDC + " ".join(map(str, args)), **kwargs)
+        print(
+            BColors.FAIL + "ERROR ▸ " + BColors.ENDC + " ".join(map(str, args)),
+            **kwargs
+        )
 
     @staticmethod
     def info(*args, **kwargs):
         """Print and information message"""
-        print(BColors.OKBLUE + "INFO ▸ " + BColors.ENDC + " ".join(map(str, args)), **kwargs)
+        print(
+            BColors.OKBLUE + "INFO ▸ " + BColors.ENDC + " ".join(map(str, args)),
+            **kwargs
+        )
 
     @staticmethod
     def quit(*args, **kwargs):
         """Print a FAIL message and stop execution"""
-        print('\n')
+        print("\n")
         print(BColors.FAIL + "**** " + BColors.ENDC + "Exiting.")
-        print(BColors.FAIL + "**** " + BColors.ENDC + "Reason: " + " ".join(map(str, args)), **kwargs)
+        print(
+            BColors.FAIL
+            + "**** "
+            + BColors.ENDC
+            + "Reason: "
+            + " ".join(map(str, args)),
+            **kwargs
+        )
         quit()
 
     @staticmethod
     def banner():
         """Displays Ocean Perception banner and copyright"""
-        print(' ')
-        print(BColors.OKBLUE + '     ● ● ' + BColors.ENDC + ' Ocean Perception')
-        print(BColors.OKBLUE + '     ● ' + BColors.WARNING + '▲ ' + BColors.ENDC + ' University of Southampton')
-        print(' ')
-        print(' Copyright (C) 2020 University of Southampton   ')
-        print(' This program comes with ABSOLUTELY NO WARRANTY.')
-        print(' This is free software, and you are welcome to  ')
-        print(' redistribute it.                               ')
-        print(' ')
+        print(" ")
+        print(BColors.OKBLUE + "     ● ● " + BColors.ENDC + " Ocean Perception")
+        print(
+            BColors.OKBLUE
+            + "     ● "
+            + BColors.WARNING
+            + "▲ "
+            + BColors.ENDC
+            + " University of Southampton"
+        )
+        print(" ")
+        print(" Copyright (C) 2020 University of Southampton   ")
+        print(" This program comes with ABSOLUTELY NO WARRANTY.")
+        print(" This is free software, and you are welcome to  ")
+        print(" redistribute it.                               ")
+        print(" ")
 
     @staticmethod
     def get_username():
@@ -71,7 +95,7 @@ class Console:
 
         Returns:
             str -- Username
-        """        
+        """
         return getpass.getuser()
 
     @staticmethod
@@ -80,7 +104,7 @@ class Console:
 
         Returns:
             str -- Hostname
-        """        
+        """
         return socket.gethostname()
 
     @staticmethod
@@ -102,7 +126,7 @@ class Console:
         return str(datetime.datetime.now().timestamp())
 
     @staticmethod
-    def get_version(pkg_name='oplab_pipeline'):
+    def get_version(pkg_name="oplab_pipeline"):
         """Returns pkg_name version number
 
         Parameters
@@ -114,25 +138,42 @@ class Console:
         -------
         str
             version number (e.g. "0.1.2")
-        """                
+        """
         return str(pkg_resources.require(pkg_name)[0].version)
 
     @staticmethod
-    def write_metadata():    
+    def write_metadata():
         """Writes all metadata to a string. Useful to write on processed files or configurations.
 
         Returns:
             str -- String containing computer metadata (username, host, date and software version)
         """
-        msg = ('date: \"' + Console.get_date() + "\" \n"
-               + 'user: \"' + Console.get_username() + "\" \n"
-               + 'host: \"' + Console.get_hostname() + "\" \n"
-               + 'version: \"' + Console.get_version() + "\" \n")
+        msg = (
+            'date: "'
+            + Console.get_date()
+            + '" \n'
+            + 'user: "'
+            + Console.get_username()
+            + '" \n'
+            + 'host: "'
+            + Console.get_hostname()
+            + '" \n'
+            + 'version: "'
+            + Console.get_version()
+            + '" \n'
+        )
         return msg
 
     @staticmethod
-    def progress(iteration, total, prefix='Progress:', suffix='Complete',
-                 length=50, decimals=1, fill='█'):
+    def progress(
+        iteration,
+        total,
+        prefix="Progress:",
+        suffix="Complete",
+        length=50,
+        decimals=1,
+        fill="█",
+    ):
         """Call in a loop to create a progress bar in the terminal
 
         Parameters
@@ -151,11 +192,13 @@ class Console:
             Number of decimal places of the percentage, by default 1
         fill : str
             Bar fill character, by default '█'
-        """              
-        percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+        """
+        percent = ("{0:." + str(decimals) + "f}").format(
+            100 * (iteration / float(total))
+        )
         filledLength = int(length * iteration // total)
-        bar = fill * filledLength + '-' * (length - filledLength)
-        print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end='\r')
+        bar = fill * filledLength + "-" * (length - filledLength)
+        print("\r%s |%s| %s%% %s" % (prefix, bar, percent, suffix), end="\r")
         # Print New Line on Complete
         if iteration >= total - 1:
             print()

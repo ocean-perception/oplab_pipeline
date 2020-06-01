@@ -19,7 +19,7 @@ def parse_template(mission, vehicle, category, output_format, outpath):
 
     data_list = []
     if category == Category.ORIENTATION:
-        Console.info('... parsing orientation')
+        Console.info("... parsing orientation")
         for i in your_data:
             # Provide a parser in the sensors.py class
             orientation.from_your_data(i)

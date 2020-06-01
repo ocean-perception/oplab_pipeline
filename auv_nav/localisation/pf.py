@@ -27,7 +27,7 @@ def gaussian_pdf(mu, sigma, x):
     return math.exp(num) / den
 
 
-class Index():
+class Index:
     X = 0
     Y = 1
     Z = 2
@@ -74,9 +74,8 @@ class Particle:
         return self.weight < other.weight
 
 
-class UsblObservationModel():
-    def __init__(self,
-                 usbl_noise_sigma_factor):
+class UsblObservationModel:
+    def __init__(self, usbl_noise_sigma_factor):
         # The measurement
         self.x = None
         self.y = None
@@ -89,9 +88,9 @@ class UsblObservationModel():
         self.y = value.eastings
         self.z = value.depth
         # TODO: Could we use a 3D Gaussian instead of a 1D?
-        sigma = math.sqrt(value.northings_std**2
-                          + value.eastings_std**2
-                          + value.depth_std**2)
+        sigma = math.sqrt(
+            value.northings_std ** 2 + value.eastings_std ** 2 + value.depth_std ** 2
+        )
         self.std = self.usbl_noise_sigma_factor * sigma
 
     def measure(self, p):
@@ -105,9 +104,11 @@ class UsblObservationModel():
         """
         weight = 1.0
         if self.x is not None:
-            dist = math.sqrt((self.x - p.state[Index.X, 0]) ** 2
-                             + (self.y - p.state[Index.Y, 0]) ** 2
-                             + (self.z - p.state[Index.Z, 0]) ** 2)
+            dist = math.sqrt(
+                (self.x - p.state[Index.X, 0]) ** 2
+                + (self.y - p.state[Index.Y, 0]) ** 2
+                + (self.z - p.state[Index.Z, 0]) ** 2
+            )
             p.trajectory_error.append(dist)
             weight = gaussian_pdf(0, self.std, dist)
         return weight
@@ -121,9 +122,7 @@ class DeadReckoningMovementModel:
     changes over time.
     """
 
-    def __init__(self, sensors_std,
-                 dvl_noise_sigma_factor,
-                 imu_noise_sigma_factor):
+    def __init__(self, sensors_std, dvl_noise_sigma_factor, imu_noise_sigma_factor):
         self.sensors_std = sensors_std
         self.dvl_noise_sigma_factor = dvl_noise_sigma_factor
         self.imu_noise_sigma_factor = imu_noise_sigma_factor
@@ -131,9 +130,9 @@ class DeadReckoningMovementModel:
 
     def set_movement(self, value):
         self.movement[Index.Z, 0] = value.depth
-        self.movement[Index.ROLL, 0] = value.roll*math.pi/180.
-        self.movement[Index.PITCH, 0] = value.pitch*math.pi/180.
-        self.movement[Index.YAW, 0] = value.yaw*math.pi/180.
+        self.movement[Index.ROLL, 0] = value.roll * math.pi / 180.0
+        self.movement[Index.PITCH, 0] = value.pitch * math.pi / 180.0
+        self.movement[Index.YAW, 0] = value.yaw * math.pi / 180.0
         self.movement[Index.VX, 0] = value.x_velocity
         self.movement[Index.VY, 0] = value.y_velocity
         self.movement[Index.VZ, 0] = value.z_velocity
@@ -148,35 +147,42 @@ class DeadReckoningMovementModel:
         @param state Reference to the state that has to be manipulated.
         @param dt time that has passed since the last filter update in seconds.
         """
-        depth_std_factor = self.sensors_std['depth']['factor']
-        depth_std_offset = self.sensors_std['depth']['offset']
-        velocity_std_factor = self.sensors_std['dvl']['factor']
-        velocity_std_offset = self.sensors_std['dvl']['offset']
-        imu_noise_std_offset = self.sensors_std['orientation']['offset']
-        imu_noise_std_factor = self.sensors_std['orientation']['factor']
+        depth_std_factor = self.sensors_std["depth"]["factor"]
+        depth_std_offset = self.sensors_std["depth"]["offset"]
+        velocity_std_factor = self.sensors_std["dvl"]["factor"]
+        velocity_std_offset = self.sensors_std["dvl"]["offset"]
+        imu_noise_std_offset = self.sensors_std["orientation"]["offset"]
+        imu_noise_std_factor = self.sensors_std["orientation"]["factor"]
 
         k_dvl = self.dvl_noise_sigma_factor
         k_imu = self.imu_noise_sigma_factor
 
         def linear_noise(idx, factor, offset, gain=1.0):
-            return (self.movement[idx, 0] + randn() * (self.movement[idx, 0]
-                    * factor + offset) * gain)
+            return (
+                self.movement[idx, 0]
+                + randn() * (self.movement[idx, 0] * factor + offset) * gain
+            )
 
         # Propagate all states except for X and Y
-        p.state[Index.Z, 0] = linear_noise(
-            Index.Z, depth_std_factor, depth_std_offset)
+        p.state[Index.Z, 0] = linear_noise(Index.Z, depth_std_factor, depth_std_offset)
         p.state[Index.ROLL, 0] = linear_noise(
-            Index.ROLL, imu_noise_std_factor, imu_noise_std_offset, k_imu)
+            Index.ROLL, imu_noise_std_factor, imu_noise_std_offset, k_imu
+        )
         p.state[Index.PITCH, 0] = linear_noise(
-            Index.PITCH, imu_noise_std_factor, imu_noise_std_offset, k_imu)
+            Index.PITCH, imu_noise_std_factor, imu_noise_std_offset, k_imu
+        )
         p.state[Index.YAW, 0] = linear_noise(
-            Index.YAW, imu_noise_std_factor, imu_noise_std_offset, k_imu)
+            Index.YAW, imu_noise_std_factor, imu_noise_std_offset, k_imu
+        )
         p.state[Index.VX, 0] = linear_noise(
-            Index.VX, velocity_std_factor, velocity_std_offset, k_dvl)
+            Index.VX, velocity_std_factor, velocity_std_offset, k_dvl
+        )
         p.state[Index.VY, 0] = linear_noise(
-            Index.VY, velocity_std_factor, velocity_std_offset, k_dvl)
+            Index.VY, velocity_std_factor, velocity_std_offset, k_dvl
+        )
         p.state[Index.VZ, 0] = linear_noise(
-            Index.VZ, velocity_std_factor, velocity_std_offset, k_dvl)
+            Index.VZ, velocity_std_factor, velocity_std_offset, k_dvl
+        )
 
         cr = math.cos(p.state[Index.ROLL, 0])
         sr = math.sin(p.state[Index.ROLL, 0])
@@ -204,10 +210,9 @@ class DeadReckoningMovementModel:
 
 
 class ParticleFilter:
-    def __init__(self, num_particles,
-                 movement_model,
-                 observation_model,
-                 expected_iterations=0):
+    def __init__(
+        self, num_particles, movement_model, observation_model, expected_iterations=0
+    ):
         self.particles = []
         self.particles_history = []
         self.iteration = 0
@@ -221,8 +226,7 @@ class ParticleFilter:
         self.particles_history.append(self.particles)
 
     def __str__(self):
-        a = "Particle Filter with " + \
-            str(len(self.particles)) + " particles.\n"
+        a = "Particle Filter with " + str(len(self.particles)) + " particles.\n"
         for i, p in enumerate(self.particles):
             a += " Particle " + str(i) + "\n"
             a += (
@@ -297,8 +301,7 @@ class ParticleFilter:
                 # target sum reached
                 cumulative_weight += self.particles[source_index].weight
             # copy particle (via assignment operator)
-            new_particles[dest_index] = copy.deepcopy(
-                self.particles[source_index])
+            new_particles[dest_index] = copy.deepcopy(self.particles[source_index])
         # Update the particle list
         self.particles = new_particles
 
@@ -316,9 +319,9 @@ def ParticleToSyncedOrientationBodyVelocity(p):
         m.northings = x[Index.X, 0]
         m.eastings = x[Index.Y, 0]
         m.depth = x[Index.Z, 0]
-        m.roll = x[Index.ROLL, 0]*180.0/math.pi
-        m.pitch = x[Index.PITCH, 0]*180.0/math.pi
-        m.yaw = x[Index.YAW, 0]*180.0/math.pi
+        m.roll = x[Index.ROLL, 0] * 180.0 / math.pi
+        m.pitch = x[Index.PITCH, 0] * 180.0 / math.pi
+        m.yaw = x[Index.YAW, 0] * 180.0 / math.pi
         m.x_velocity = x[Index.VX, 0]
         m.y_velocity = x[Index.VY, 0]
         m.z_velocity = x[Index.VZ, 0]
@@ -335,21 +338,29 @@ def get_prior(dr_list, usbl_list):
     dr_northings = []
     for i in range(len(usbl_list)):
         usbl_t = usbl_list[i].epoch_timestamp
-        dr_t = dr_list[dr_index+1].epoch_timestamp
-        while (dr_index < len(dr_list) - 2 and usbl_t > dr_t):
+        dr_t = dr_list[dr_index + 1].epoch_timestamp
+        while dr_index < len(dr_list) - 2 and usbl_t > dr_t:
             usbl_t = usbl_list[i].epoch_timestamp
-            dr_t = dr_list[dr_index+1].epoch_timestamp
+            dr_t = dr_list[dr_index + 1].epoch_timestamp
             dr_index += 1
-        dr_eastings.append(interpolate(usbl_list[i].epoch_timestamp,
-                                       dr_list[dr_index].epoch_timestamp,
-                                       dr_list[dr_index + 1].epoch_timestamp,
-                                       dr_list[dr_index].eastings,
-                                       dr_list[dr_index + 1].eastings))
-        dr_northings.append(interpolate(usbl_list[i].epoch_timestamp,
-                                        dr_list[dr_index].epoch_timestamp,
-                                        dr_list[dr_index + 1].epoch_timestamp,
-                                        dr_list[dr_index].northings,
-                                        dr_list[dr_index + 1].northings))
+        dr_eastings.append(
+            interpolate(
+                usbl_list[i].epoch_timestamp,
+                dr_list[dr_index].epoch_timestamp,
+                dr_list[dr_index + 1].epoch_timestamp,
+                dr_list[dr_index].eastings,
+                dr_list[dr_index + 1].eastings,
+            )
+        )
+        dr_northings.append(
+            interpolate(
+                usbl_list[i].epoch_timestamp,
+                dr_list[dr_index].epoch_timestamp,
+                dr_list[dr_index + 1].epoch_timestamp,
+                dr_list[dr_index].northings,
+                dr_list[dr_index + 1].northings,
+            )
+        )
     usbl_eastings = [i.eastings for i in usbl_list]
     usbl_northings = [i.northings for i in usbl_list]
     eastings_error = [y - x for x, y in zip(dr_eastings, usbl_eastings)]
@@ -380,19 +391,27 @@ def get_prior(dr_list, usbl_list):
     y = dr_list[dr_index].eastings + eastings_mean
     z = dr_list[dr_index].depth
     alt = dr_list[dr_index].altitude
-    roll = dr_list[dr_index].roll*math.pi/180.
-    pitch = dr_list[dr_index].pitch*math.pi/180.
-    heading = dr_list[dr_index].yaw*math.pi/180.
+    roll = dr_list[dr_index].roll * math.pi / 180.0
+    pitch = dr_list[dr_index].pitch * math.pi / 180.0
+    heading = dr_list[dr_index].yaw * math.pi / 180.0
     vx = dr_list[dr_index].x_velocity
     vy = dr_list[dr_index].y_velocity
     vz = dr_list[dr_index].z_velocity
     prior = Particle()
-    prior.state = np.array([[x - northings_mean],
-                            [y - eastings_mean],
-                            [z],
-                            [roll], [pitch], [heading],
-                            [vx], [vy], [vz],
-                            [alt]])
+    prior.state = np.array(
+        [
+            [x - northings_mean],
+            [y - eastings_mean],
+            [z],
+            [roll],
+            [pitch],
+            [heading],
+            [vx],
+            [vy],
+            [vz],
+            [alt],
+        ]
+    )
     prior.time = dr_list[0].epoch_timestamp
     return prior, dr_index, usbl_index
 
@@ -431,31 +450,34 @@ def run_particle_filter(
     Console.info("\t* Number of particles: {}".format(num_particles))
     Console.info(
         "\t* DVL noise std: f(x)={}x+{} m/s".format(
-            sensors_std['dvl']['factor'],
-            sensors_std['dvl']['offset']))
+            sensors_std["dvl"]["factor"], sensors_std["dvl"]["offset"]
+        )
+    )
     Console.info(
         "\t* IMU noise std: f(x)={}x+{} deg".format(
-            sensors_std['orientation']['factor'],
-            sensors_std['orientation']['offset']))
+            sensors_std["orientation"]["factor"], sensors_std["orientation"]["offset"]
+        )
+    )
     Console.info(
         "\t* Depth noise std: f(x)={}x+{} meters".format(
-            sensors_std['depth']['factor'],
-            sensors_std['depth']['offset']))
+            sensors_std["depth"]["factor"], sensors_std["depth"]["offset"]
+        )
+    )
     Console.info(
         "\t* USBL noise std: f(x)={}x+{} meters".format(
-            sensors_std['usbl']['factor'],
-            sensors_std['usbl']['offset']))
+            sensors_std["usbl"]["factor"], sensors_std["usbl"]["offset"]
+        )
+    )
     Console.info("Running {} iterations...".format(len(dr_list)))
 
     prior, dr_idx, usbl_idx = get_prior(dr_list, usbl_list)
 
     om = UsblObservationModel(usbl_noise_sigma_factor)
-    mm = DeadReckoningMovementModel(sensors_std,
-                                    dvl_noise_sigma_factor,
-                                    imu_noise_sigma_factor)
+    mm = DeadReckoningMovementModel(
+        sensors_std, dvl_noise_sigma_factor, imu_noise_sigma_factor
+    )
 
-    pf = ParticleFilter(num_particles, mm, om,
-                        expected_iterations=len(dr_list))
+    pf = ParticleFilter(num_particles, mm, om, expected_iterations=len(dr_list))
     pf.set_prior(prior)
 
     last_t = dr_list[dr_idx].epoch_timestamp
@@ -512,9 +534,11 @@ def run_particle_filter(
 
     print("Resampled {} times.".format(len(resampled_usbl_list)))
 
-    return [pf_list,
-            resampled_usbl_list,
-            particles_list,
-            northings_std,
-            eastings_std,
-            yaw_std]
+    return [
+        pf_list,
+        resampled_usbl_list,
+        particles_list,
+        northings_std,
+        eastings_std,
+        yaw_std,
+    ]

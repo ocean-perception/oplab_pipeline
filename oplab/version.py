@@ -26,7 +26,7 @@ if os.path.exists(path_to_hashfile):
     with open(path_to_hashfile, "r") as f:
         for line in f:
             line = line.strip()
-            if len(line) == 0 or line[0] == '#':
+            if len(line) == 0 or line[0] == "#":
                 # Ignore blank lines and comments, the latter being
                 # any line that begins with #.
                 continue

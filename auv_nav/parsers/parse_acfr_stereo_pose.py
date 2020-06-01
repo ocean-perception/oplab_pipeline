@@ -14,6 +14,7 @@ import math
 
 class AcfrStereoPose:
     """ACFR Stereo pose class"""
+
     def __init__(self, line=None):
         self.id = None
         self.stamp = None
@@ -25,7 +26,7 @@ class AcfrStereoPose:
         self.x_euler_angle = None
         self.y_euler_angle = None
         self.z_euler_angle = None
-        self.left_image_name =  None
+        self.left_image_name = None
         self.right_image_name = None
         self.altitude = None
         self.bounding_image_radius = None
@@ -60,7 +61,7 @@ class AcfrStereoPose:
         """
         parts = line.split()
         if len(parts) != 15:
-            Console.error('The line passed to ACFR stereo pose parser is malformed.')
+            Console.error("The line passed to ACFR stereo pose parser is malformed.")
         self.id = int(parts[0])
         self.stamp = float(parts[1])
         self.latitude = float(parts[2])
@@ -71,7 +72,7 @@ class AcfrStereoPose:
         self.x_euler_angle = math.degrees(float(parts[7]))
         self.y_euler_angle = math.degrees(float(parts[8]))
         self.z_euler_angle = math.degrees(float(parts[9]))
-        self.left_image_name =  str(parts[10])
+        self.left_image_name = str(parts[10])
         self.right_image_name = str(parts[11])
         self.altitude = float(parts[12])
         self.bounding_image_radius = float(parts[13])
@@ -82,18 +83,41 @@ class AcfrStereoPose:
         return "AcfrStereoPose with " + msg
 
     def __str__(self):
-        msg = ['id: ', self.id, ', stamp: ', self.stamp, ', latitude: ', self.latitude, 
-               'longitude: ', self.longitude, ', x_north: ', self.x_north, ', y_east: ', 
-               self.y_east, ', z_depth: ', self.z_depth, ', x_euler_angle: ', self.x_euler_angle, 
-               'y_euler_angle: ', self.y_euler_angle, ', z_euler_angle: ', self.z_euler_angle, 
-               'left_image_name: ', self.left_image_name, ', right_image_name: ', 
-               self.right_image_name, ', altitude: ', self.altitude]
-        return ''.join(str(e) for e in msg)
+        msg = [
+            "id: ",
+            self.id,
+            ", stamp: ",
+            self.stamp,
+            ", latitude: ",
+            self.latitude,
+            "longitude: ",
+            self.longitude,
+            ", x_north: ",
+            self.x_north,
+            ", y_east: ",
+            self.y_east,
+            ", z_depth: ",
+            self.z_depth,
+            ", x_euler_angle: ",
+            self.x_euler_angle,
+            "y_euler_angle: ",
+            self.y_euler_angle,
+            ", z_euler_angle: ",
+            self.z_euler_angle,
+            "left_image_name: ",
+            self.left_image_name,
+            ", right_image_name: ",
+            self.right_image_name,
+            ", altitude: ",
+            self.altitude,
+        ]
+        return "".join(str(e) for e in msg)
 
 
 class AcfrStereoPoseFile:
     """Parse an ACFR stereo pose file
     """
+
     def __init__(self, filename=None):
         self._entries = []
         self.origin_latitude = None
@@ -101,10 +125,10 @@ class AcfrStereoPoseFile:
 
         if filename is not None:
             self.parse(filename)
-    
+
     def parse(self, filename):
         f = Path(filename)
-        stream = f.open('r')
+        stream = f.open("r")
 
         for i, line in enumerate(stream):
             # Read origins
@@ -116,7 +140,7 @@ class AcfrStereoPoseFile:
                 self.origin_longitude = float(line.split()[1])
             if i > 56:
                 self._entries.append(AcfrStereoPose(line))
-    
+
     def __call__(self, index):
         return self._entries[index]
 
@@ -145,7 +169,7 @@ class AcfrStereoPoseFile:
             align the navigation frame axes (North, East, Down) with the stereo
             frame.
             """
-            c1.roll = - entry.y_euler_angle
+            c1.roll = -entry.y_euler_angle
             c1.pitch = entry.x_euler_angle
             c1.yaw = entry.z_euler_angle
             c1.x_velocity = 0
@@ -171,5 +195,5 @@ class AcfrStereoPoseFile:
 
             camera1_list.append(c1)
             camera2_list.append(c2)
-        
+
         return camera1_list, camera2_list

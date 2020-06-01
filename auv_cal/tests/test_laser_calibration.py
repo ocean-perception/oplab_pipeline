@@ -18,9 +18,7 @@ from auv_cal.ransac import fit_plane
 
 class TestLaserCalibration(unittest.TestCase):
     def test_fit_plane(self):
-        xyz = np.array([[1, 0, 0],
-                        [1, 1, 1],
-                        [1, -1, 1]])
+        xyz = np.array([[1, 0, 0], [1, 1, 1], [1, -1, 1]])
         m = fit_plane(xyz)
         sqrt2_2 = 0.7071067811865476
         self.assertAlmostEqual(m[0], sqrt2_2)
@@ -32,8 +30,8 @@ class TestLaserCalibration(unittest.TestCase):
         a = np.array([1, 2, 3])
         b = opencv_to_ned(a)
         self.assertAlmostEqual(b[0], 2.0)
-        self.assertAlmostEqual(b[1], -1.)
-        self.assertAlmostEqual(b[2], 3.)
+        self.assertAlmostEqual(b[1], -1.0)
+        self.assertAlmostEqual(b[2], 3.0)
 
     def assert_plane_normal(self, pitch, yaw, expected_normal, centroid=[0, 0, 0]):
         centroid = np.array(centroid)
@@ -83,7 +81,6 @@ class TestLaserCalibration(unittest.TestCase):
         vector = [-1, -1, 0]
         self.assert_normal(vector, 0.0, 45.0)
 
-
         vector = [1, -1, 0]
         self.assert_normal(vector, 0.0, -45.0)
 
@@ -96,7 +93,7 @@ class TestLaserCalibration(unittest.TestCase):
         angle = 6.34019174590991
         vector = [0.9, 0, 0.1]
         self.assert_normal(vector, angle, 0.0)
-        
+
         vector = [0.9, 0.1, 0]
         self.assert_normal(vector, 0.0, angle)
 
@@ -117,12 +114,7 @@ class TestLaserCalibration(unittest.TestCase):
 
         vector = [0.9, -0.1, -0.1]
         self.assert_normal(vector, -angle, -angle)
-        
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()
-
-
-
-
-

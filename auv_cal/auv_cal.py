@@ -26,41 +26,72 @@ def main(args=None):
     e.g. main(["parse", "-h"]). This will populate the args parameter.
     """
 
-    os.system('')  # enable VT100 Escape Sequence for WINDOWS 10 for Console outputs  https://stackoverflow.com/questions/16755142/how-to-make-win32-console-recognize-ansi-vt100-escape-sequences
+    os.system(
+        ""
+    )  # enable VT100 Escape Sequence for WINDOWS 10 for Console outputs  https://stackoverflow.com/questions/16755142/how-to-make-win32-console-recognize-ansi-vt100-escape-sequences
     Console.banner()
-    Console.info('Running auv_cal version ' + str(Console.get_version()))
+    Console.info("Running auv_cal version " + str(Console.get_version()))
 
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
 
     subparser_mono = subparsers.add_parser(
-        'mono', help="Monocular camera calibration using OpenCV.")
+        "mono", help="Monocular camera calibration using OpenCV."
+    )
     subparser_mono.add_argument(
-        'path', default=".", help="Folder containing the mission.yaml")
+        "path", default=".", help="Folder containing the mission.yaml"
+    )
     subparser_mono.add_argument(
-        '-F', dest='force', action='store_true', help="Force output file overwite")
+        "-F", dest="force", action="store_true", help="Force output file overwite"
+    )
     subparser_mono.add_argument(
-        '-FF', dest='force2', action='store_true', help="Regenerates and overwrittes all files, including intermediate results")
+        "-FF",
+        dest="force2",
+        action="store_true",
+        help="Regenerates and overwrittes all files, including intermediate results",
+    )
     subparser_mono.set_defaults(func=call_calibrate_mono)
 
     subparser_stereo = subparsers.add_parser(
-        'stereo', help="Stereo camera calibration using OpenCV.")
+        "stereo", help="Stereo camera calibration using OpenCV."
+    )
     subparser_stereo.add_argument(
-        'path', default=".", help="Folder containing the mission.yaml")
+        "path", default=".", help="Folder containing the mission.yaml"
+    )
     subparser_stereo.add_argument(
-        '-F', '--Force', dest='force', action='store_true', help="Force output file overwite")
+        "-F",
+        "--Force",
+        dest="force",
+        action="store_true",
+        help="Force output file overwite",
+    )
     subparser_stereo.add_argument(
-        '-FF', dest='force2', action='store_true', help="Regenerates and overwrittes all files, including intermediate results")
+        "-FF",
+        dest="force2",
+        action="store_true",
+        help="Regenerates and overwrittes all files, including intermediate results",
+    )
     subparser_stereo.set_defaults(func=call_calibrate_stereo)
 
     subparser_laser = subparsers.add_parser(
-        'laser', help="Laser to camera extrinsic calibration.")
+        "laser", help="Laser to camera extrinsic calibration."
+    )
     subparser_laser.add_argument(
-        'path', default=".", help="Folder containing the images.")
+        "path", default=".", help="Folder containing the images."
+    )
     subparser_laser.add_argument(
-        '-F', '--Force', dest='force', action='store_true', help="Force output file overwite")
+        "-F",
+        "--Force",
+        dest="force",
+        action="store_true",
+        help="Force output file overwite",
+    )
     subparser_laser.add_argument(
-        '-FF', dest='force2', action='store_true', help="Regenerates and overwrittes all files, including intermediate results")
+        "-FF",
+        dest="force2",
+        action="store_true",
+        help="Regenerates and overwrittes all files, including intermediate results",
+    )
     subparser_laser.set_defaults(func=call_calibrate_laser)
 
     if len(sys.argv) == 1 and args is None:
@@ -87,5 +118,5 @@ def call_calibrate_laser(args):
     c.laser()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

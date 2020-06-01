@@ -17,8 +17,9 @@ import calendar
 
 
 def date_time_to_epoch(yyyy, mm, dd, hh, mm1, ss, timezone_offset_to_utc=0):
-    utc_date_time = (datetime(yyyy, mm, dd, hh, mm1, ss)
-                     - timedelta(hours=timezone_offset_to_utc))
+    utc_date_time = datetime(yyyy, mm, dd, hh, mm1, ss) - timedelta(
+        hours=timezone_offset_to_utc
+    )
     epochtime = calendar.timegm(utc_date_time.timetuple())
     return epochtime
 
@@ -27,41 +28,40 @@ def interpolate(x_query, x_lower, x_upper, y_lower, y_upper):
     if x_upper == x_lower:
         y_query = y_lower
     else:
-        y_query = (y_upper-y_lower)/(x_upper-x_lower)*(x_query-x_lower)+y_lower
+        y_query = (y_upper - y_lower) / (x_upper - x_lower) * (
+            x_query - x_lower
+        ) + y_lower
     return y_query
 
 
-def latlon_to_metres(latitude, longitude,
-                     latitude_reference, longitude_reference):
+def latlon_to_metres(latitude, longitude, latitude_reference, longitude_reference):
 
     # average radius of earth, m
     R = 6378137.0
 
-    latitude = latitude*math.pi/180.0
-    latitude_reference = latitude_reference*math.pi/180.0
+    latitude = latitude * math.pi / 180.0
+    latitude_reference = latitude_reference * math.pi / 180.0
 
-    longitude = longitude*math.pi/180.0
-    longitude_reference = longitude_reference*math.pi/180.0
+    longitude = longitude * math.pi / 180.0
+    longitude_reference = longitude_reference * math.pi / 180.0
 
-    a = (
-        math.sin((latitude-latitude_reference)/2)
-        * math.sin((latitude-latitude_reference)/2)
-        + math.cos(latitude_reference)
-        * math.cos(latitude)
-        * math.sin((longitude-longitude_reference)/2)
-        * math.sin((longitude-longitude_reference)/2))
-    c = 2*math.atan2(math.sqrt(a), math.sqrt(1-a))
+    a = math.sin((latitude - latitude_reference) / 2) * math.sin(
+        (latitude - latitude_reference) / 2
+    ) + math.cos(latitude_reference) * math.cos(latitude) * math.sin(
+        (longitude - longitude_reference) / 2
+    ) * math.sin(
+        (longitude - longitude_reference) / 2
+    )
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
-    distance = R*c
+    distance = R * c
 
-    y = math.sin(longitude-longitude_reference) * math.cos(latitude)
-    x = (math.cos(latitude_reference)
-         * math.sin(latitude)
-         - math.sin(latitude_reference)
-         * math.cos(latitude)
-         * math.cos(longitude-longitude_reference))
+    y = math.sin(longitude - longitude_reference) * math.cos(latitude)
+    x = math.cos(latitude_reference) * math.sin(latitude) - math.sin(
+        latitude_reference
+    ) * math.cos(latitude) * math.cos(longitude - longitude_reference)
 
-    bearing = math.atan2(y, x)*180/math.pi
+    bearing = math.atan2(y, x) * 180 / math.pi
 
     while bearing > 360:
         bearing = bearing - 360
@@ -72,9 +72,19 @@ def latlon_to_metres(latitude, longitude,
 
 
 class HyBisPos:
-    def __init__(self, roll, pitch, heading,
-                 depth, altitude, lon, lat,
-                 date=0, timestr=0, stamp=0):
+    def __init__(
+        self,
+        roll,
+        pitch,
+        heading,
+        depth,
+        altitude,
+        lon,
+        lat,
+        date=0,
+        timestr=0,
+        stamp=0,
+    ):
         if date != 0:
             self.epoch_timestamp = self.convert(date, timestr)
         else:
@@ -92,11 +102,11 @@ class HyBisPos:
         final = 0
         if len(latlon) == 11:
             final = 1
-        deg = float(latlon[0:3-final])
-        minutes = float(latlon[3-final:11-final])
-        zone = latlon[11-final]
-        decdeg = deg + minutes/60.0
-        if zone == 'W' or zone == 'S':
+        deg = float(latlon[0 : 3 - final])
+        minutes = float(latlon[3 - final : 11 - final])
+        zone = latlon[11 - final]
+        decdeg = deg + minutes / 60.0
+        if zone == "W" or zone == "S":
             return -decdeg
         else:
             return decdeg
@@ -112,54 +122,61 @@ class HyBisPos:
             hour = 0
             mins = 0
             secs = 0
-        epoch_time = date_time_to_epoch(
-            yyyy, mm, dd, hour, mins, secs, 0)
+        epoch_time = date_time_to_epoch(yyyy, mm, dd, hour, mins, secs, 0)
         return epoch_time
 
 
-def parse_hybis(navigation_file,
-                image_path,
-                output_file,
-                reference_lat=0,
-                reference_lon=0):
+def parse_hybis(
+    navigation_file, image_path, output_file, reference_lat=0, reference_lon=0
+):
     # extract data from files
     df = pd.read_csv(navigation_file, skipinitialspace=True)
-    date = list(df['Date '])
-    timestr = list(df['Time'])
-    roll = list(df['Roll'])
-    pitch = list(df['Pitch'])
-    heading = list(df['Heading'])
-    depth = list(df['Pressure'])
-    altitude = list(df['Altitude'])
-    lon = list(df['Hybis Long'])
-    lat = list(df['Hybis Lat'])
+    date = list(df["Date "])
+    timestr = list(df["Time"])
+    roll = list(df["Roll"])
+    pitch = list(df["Pitch"])
+    heading = list(df["Heading"])
+    depth = list(df["Pressure"])
+    altitude = list(df["Altitude"])
+    lon = list(df["Hybis Long"])
+    lat = list(df["Hybis Lat"])
 
-    print('Found ' + str(len(df)) + ' navigation records!')
+    print("Found " + str(len(df)) + " navigation records!")
 
     hybis_vec = []
     for i in range(len(df)):
         if len(lon[i]) < 11:
             continue
-        p = HyBisPos(roll[i], pitch[i], heading[i],
-                     depth[i], altitude[i], lon[i], lat[i],
-                     date[i], timestr[i])
+        p = HyBisPos(
+            roll[i],
+            pitch[i],
+            heading[i],
+            depth[i],
+            altitude[i],
+            lon[i],
+            lat[i],
+            date[i],
+            timestr[i],
+        )
         hybis_vec.append(p)
 
     for i in range(len(hybis_vec) - 1):
         if hybis_vec[i].altitude == 0:
             hybis_vec[i].altitude = interpolate(
                 hybis_vec[i].epoch_timestamp,
-                hybis_vec[i-1].epoch_timestamp,
-                hybis_vec[i+1].epoch_timestamp,
-                hybis_vec[i-1].altitude,
-                hybis_vec[i+1].altitude)
+                hybis_vec[i - 1].epoch_timestamp,
+                hybis_vec[i + 1].epoch_timestamp,
+                hybis_vec[i - 1].altitude,
+                hybis_vec[i + 1].altitude,
+            )
         if hybis_vec[i].depth == 0:
             hybis_vec[i].depth = interpolate(
                 hybis_vec[i].epoch_timestamp,
-                hybis_vec[i-1].epoch_timestamp,
-                hybis_vec[i+1].epoch_timestamp,
-                hybis_vec[i-1].depth,
-                hybis_vec[i+1].depth)
+                hybis_vec[i - 1].epoch_timestamp,
+                hybis_vec[i + 1].epoch_timestamp,
+                hybis_vec[i - 1].depth,
+                hybis_vec[i + 1].depth,
+            )
 
     if reference_lon == 0 or reference_lat == 0:
         i = 0
@@ -171,113 +188,180 @@ def parse_hybis(navigation_file,
         latitude_ref = reference_lat
         longitude_ref = reference_lon
 
-    data = ['Imagenumber, ', 'Northing [m], ', 'Easting [m], ', 'Depth [m], ',
-            'Roll [deg], ', 'Pitch [deg], ', 'Heading [deg], ', 'Altitude [m], ',
-            'Timestamp, ', 'Latitude [deg], ', 'Longitude [deg],', 'Filename\n']
+    data = [
+        "Imagenumber, ",
+        "Northing [m], ",
+        "Easting [m], ",
+        "Depth [m], ",
+        "Roll [deg], ",
+        "Pitch [deg], ",
+        "Heading [deg], ",
+        "Altitude [m], ",
+        "Timestamp, ",
+        "Latitude [deg], ",
+        "Longitude [deg],",
+        "Filename\n",
+    ]
 
     image_list = sorted(os.listdir(str(image_path)))
-    print('Found ' + str(len(image_list)) + ' images!')
-    print('Interpolating...')
+    print("Found " + str(len(image_list)) + " images!")
+    print("Interpolating...")
     for k, filename in enumerate(image_list):
         modification_time = os.stat(image_path + filename).st_mtime
 
         i = 0
-        while i < len(hybis_vec) - 2 and hybis_vec[i].epoch_timestamp < modification_time:
+        while (
+            i < len(hybis_vec) - 2 and hybis_vec[i].epoch_timestamp < modification_time
+        ):
             i += 1
 
         latitude = interpolate(
             modification_time,
             hybis_vec[i].epoch_timestamp,
-            hybis_vec[i+1].epoch_timestamp,
+            hybis_vec[i + 1].epoch_timestamp,
             hybis_vec[i].latitude,
-            hybis_vec[i+1].latitude)
+            hybis_vec[i + 1].latitude,
+        )
         longitude = interpolate(
             modification_time,
             hybis_vec[i].epoch_timestamp,
-            hybis_vec[i+1].epoch_timestamp,
+            hybis_vec[i + 1].epoch_timestamp,
             hybis_vec[i].longitude,
-            hybis_vec[i+1].longitude)
+            hybis_vec[i + 1].longitude,
+        )
         depth = interpolate(
             modification_time,
             hybis_vec[i].epoch_timestamp,
-            hybis_vec[i+1].epoch_timestamp,
+            hybis_vec[i + 1].epoch_timestamp,
             hybis_vec[i].depth,
-            hybis_vec[i+1].depth)
+            hybis_vec[i + 1].depth,
+        )
         roll = interpolate(
             modification_time,
             hybis_vec[i].epoch_timestamp,
-            hybis_vec[i+1].epoch_timestamp,
+            hybis_vec[i + 1].epoch_timestamp,
             hybis_vec[i].roll,
-            hybis_vec[i+1].roll)
+            hybis_vec[i + 1].roll,
+        )
         pitch = interpolate(
             modification_time,
             hybis_vec[i].epoch_timestamp,
-            hybis_vec[i+1].epoch_timestamp,
+            hybis_vec[i + 1].epoch_timestamp,
             hybis_vec[i].pitch,
-            hybis_vec[i+1].pitch)
+            hybis_vec[i + 1].pitch,
+        )
         heading = interpolate(
             modification_time,
             hybis_vec[i].epoch_timestamp,
-            hybis_vec[i+1].epoch_timestamp,
+            hybis_vec[i + 1].epoch_timestamp,
             hybis_vec[i].heading,
-            hybis_vec[i+1].heading)
+            hybis_vec[i + 1].heading,
+        )
         altitude = interpolate(
             modification_time,
             hybis_vec[i].epoch_timestamp,
-            hybis_vec[i+1].epoch_timestamp,
+            hybis_vec[i + 1].epoch_timestamp,
             hybis_vec[i].altitude,
-            hybis_vec[i+1].altitude)
+            hybis_vec[i + 1].altitude,
+        )
 
         lateral_distance, bearing = latlon_to_metres(
-                            latitude, longitude, latitude_ref, longitude_ref)
-        eastings = math.sin(bearing*math.pi/180.0)*lateral_distance
-        northings = math.cos(bearing*math.pi/180.0)*lateral_distance
+            latitude, longitude, latitude_ref, longitude_ref
+        )
+        eastings = math.sin(bearing * math.pi / 180.0) * lateral_distance
+        northings = math.cos(bearing * math.pi / 180.0) * lateral_distance
 
-        msg = (str(k) + ', ' + str(northings) + ', ' + str(eastings)
-               + ', ' + str(depth) + ', ' + str(roll) + ', ' + str(pitch)
-               + ', ' + str(heading) + ', ' + str(altitude) + ', '
-               + str(modification_time) + ', ' + str(latitude) + ', ' + str(longitude)
-               + ', ' + str(filename) + '\n')
+        msg = (
+            str(k)
+            + ", "
+            + str(northings)
+            + ", "
+            + str(eastings)
+            + ", "
+            + str(depth)
+            + ", "
+            + str(roll)
+            + ", "
+            + str(pitch)
+            + ", "
+            + str(heading)
+            + ", "
+            + str(altitude)
+            + ", "
+            + str(modification_time)
+            + ", "
+            + str(latitude)
+            + ", "
+            + str(longitude)
+            + ", "
+            + str(filename)
+            + "\n"
+        )
         data.append(msg)
-    print('Writing output to ' + output_file)
+    print("Writing output to " + output_file)
     output_file = Path(output_file)
-    with output_file.open('w', encoding="utf-8") as fileout:
+    with output_file.open("w", encoding="utf-8") as fileout:
         for line in data:
             fileout.write(str(line))
-    print('DONE!')
+    print("DONE!")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        'navigation_file', help="Input navigation file (Hybis Dive_51.txt)")
+        "navigation_file", help="Input navigation file (Hybis Dive_51.txt)"
+    )
     parser.add_argument(
-        'image_path', help="Path to the folder containing Scorpio images")
+        "image_path", help="Path to the folder containing Scorpio images"
+    )
     parser.add_argument(
-        '-o', '--output', dest='output_file', default='hybis_dr_scorpion.csv', help="Name of the output CSV file")
+        "-o",
+        "--output",
+        dest="output_file",
+        default="hybis_dr_scorpion.csv",
+        help="Name of the output CSV file",
+    )
     parser.add_argument(
-        '--ref-lat', dest='reference_lat', default=0, help="Reference latitude. If none is provided, the first USBL fix will be used.")
+        "--ref-lat",
+        dest="reference_lat",
+        default=0,
+        help="Reference latitude. If none is provided, the first USBL fix will be used.",
+    )
     parser.add_argument(
-        '--ref-lon', dest='reference_lon', default=0, help="Reference longitude. If none is provided, the first USBL fix will be used.")
+        "--ref-lon",
+        dest="reference_lon",
+        default=0,
+        help="Reference longitude. If none is provided, the first USBL fix will be used.",
+    )
 
     if len(sys.argv) == 1:
-        print('Parser for HyBis ROV dives with Scorpio camera')
-        print('Pass the location of the navigation file. Example: "/media/drive/Dive\ 51/Hybis\ Dive_51.txt.txt"')
-        print('and the path to the scorpio images. Example: "/media/drive/Dive\ 51/scorpio/"')
-        print('Example call:')
-        print('')
-        print('python3 hybis_parser.py /media/drive/Dive\ 51/Hybis\ Dive_51.txt.txt /media/drive/Dive\ 51/scorpio/')
-        print('')
-        print('By default, the first USBL fix will be used to convert navigation to meters. You can speficy one if you wish.')
-        print('write python3 hybis_parser.py --help for more information.')
-        print('')
+        print("Parser for HyBis ROV dives with Scorpio camera")
+        print(
+            'Pass the location of the navigation file. Example: "/media/drive/Dive\ 51/Hybis\ Dive_51.txt.txt"'
+        )
+        print(
+            'and the path to the scorpio images. Example: "/media/drive/Dive\ 51/scorpio/"'
+        )
+        print("Example call:")
+        print("")
+        print(
+            "python3 hybis_parser.py /media/drive/Dive\ 51/Hybis\ Dive_51.txt.txt /media/drive/Dive\ 51/scorpio/"
+        )
+        print("")
+        print(
+            "By default, the first USBL fix will be used to convert navigation to meters. You can speficy one if you wish."
+        )
+        print("write python3 hybis_parser.py --help for more information.")
+        print("")
         # Show help if no args provided
         #   parser.print_help(sys.stderr)
         sys.exit(1)
 
     args = parser.parse_args()
-    parse_hybis(args.navigation_file,
-                args.image_path,
-                args.output_file,
-                args.reference_lat,
-                args.reference_lon)
+    parse_hybis(
+        args.navigation_file,
+        args.image_path,
+        args.output_file,
+        args.reference_lat,
+        args.reference_lon,
+    )

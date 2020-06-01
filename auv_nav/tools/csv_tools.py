@@ -21,45 +21,59 @@ def write_csv(csv_filepath, data_list, csv_filename, csv_flag):
             csv_file.mkdir(parents=True, exist_ok=True)
 
         Console.info("Writing outputs to {}.csv ...".format(csv_filename))
-        file = csv_file / '{}.csv'.format(csv_filename)
-        str_to_write = ''
-        str_to_write += 'timestamp,northing [m],easting [m],depth [m],' \
-                        'roll [deg],pitch [deg],heading [deg],altitude ' \
-                        '[m],latitude [deg],longitude [deg]'
-        cov = ',vehicle_cov_x,vehicle_cov_y,vehicle_cov_z,vehicle_cov_roll'\
-              ',vehicle_cov_pitch,vehicle_cov_yaw,vehicle_cov_vx,'\
-              'vehicle_cov_vy,vehicle_cov_vz,vehicle_cov_vroll,'\
-              'vehicle_cov_vpitch,vehicle_cov_vyaw'
+        file = csv_file / "{}.csv".format(csv_filename)
+        str_to_write = ""
+        str_to_write += (
+            "timestamp,northing [m],easting [m],depth [m],"
+            "roll [deg],pitch [deg],heading [deg],altitude "
+            "[m],latitude [deg],longitude [deg]"
+        )
+        cov = (
+            ",vehicle_cov_x,vehicle_cov_y,vehicle_cov_z,vehicle_cov_roll"
+            ",vehicle_cov_pitch,vehicle_cov_yaw,vehicle_cov_vx,"
+            "vehicle_cov_vy,vehicle_cov_vz,vehicle_cov_vroll,"
+            "vehicle_cov_vpitch,vehicle_cov_vyaw"
+        )
         if len(data_list) > 0:
             if data_list[0].covariance is not None:
                 str_to_write += cov
-            str_to_write += '\n'
-            with file.open('w') as fileout:
+            str_to_write += "\n"
+            with file.open("w") as fileout:
                 fileout.write(str_to_write)
                 for i in range(len(data_list)):
                     try:
                         str_to_write = (
-                            str(data_list[i].epoch_timestamp)+','
-                            + str(data_list[i].northings)+','
-                            + str(data_list[i].eastings)+','
-                            + str(data_list[i].depth)+','
-                            + str(data_list[i].roll)+','
-                            + str(data_list[i].pitch)+','
-                            + str(data_list[i].yaw)+','
-                            + str(data_list[i].altitude)+','
-                            + str(data_list[i].latitude)+','
-                            + str(data_list[i].longitude))
+                            str(data_list[i].epoch_timestamp)
+                            + ","
+                            + str(data_list[i].northings)
+                            + ","
+                            + str(data_list[i].eastings)
+                            + ","
+                            + str(data_list[i].depth)
+                            + ","
+                            + str(data_list[i].roll)
+                            + ","
+                            + str(data_list[i].pitch)
+                            + ","
+                            + str(data_list[i].yaw)
+                            + ","
+                            + str(data_list[i].altitude)
+                            + ","
+                            + str(data_list[i].latitude)
+                            + ","
+                            + str(data_list[i].longitude)
+                        )
 
                         if data_list[i].covariance is not None:
                             for k in range(data_list[i].covariance.shape[0]):
                                 c = data_list[i].covariance[k, k]
-                                str_to_write += ',' + str(c)
-                        str_to_write += '\n'
+                                str_to_write += "," + str(c)
+                        str_to_write += "\n"
                         fileout.write(str_to_write)
                     except IndexError:
                         break
         else:
-            Console.warn('Empty data list {}'.format(str(csv_filename)))
+            Console.warn("Empty data list {}".format(str(csv_filename)))
 
 
 def write_sidescan_csv(csv_filepath, data_list, csv_filename, csv_flag):
@@ -75,31 +89,44 @@ def write_sidescan_csv(csv_filepath, data_list, csv_filename, csv_flag):
             csv_file.mkdir(parents=True, exist_ok=True)
 
         Console.info("Writing SSS outputs to {}.txt ...".format(csv_filename))
-        file = csv_file / '{}.txt'.format(csv_filename)
-        str_to_write = ''
-        str_to_write += '#Mission Date Time NorthDeg EastDeg HeadingDeg RollDeg PitchDeg Altitude Depth Speed'
+        file = csv_file / "{}.txt".format(csv_filename)
+        str_to_write = ""
+        str_to_write += "#Mission Date Time NorthDeg EastDeg HeadingDeg RollDeg PitchDeg Altitude Depth Speed"
         if len(data_list) > 0:
-            str_to_write += '\n'
+            str_to_write += "\n"
             for i in range(len(data_list)):
                 try:
-                    datetime_str = time.strftime('%Y%m%d %H%M%S', time.gmtime(data_list[i].epoch_timestamp))
+                    datetime_str = time.strftime(
+                        "%Y%m%d %H%M%S", time.gmtime(data_list[i].epoch_timestamp)
+                    )
 
                     str_to_write += (
-                        'M150 ' + datetime_str + ' '
-                        + "{:.6f}".format(data_list[i].latitude) + ' '
-                        + "{:.6f}".format(data_list[i].longitude) + ' '
-                        + "{:.3f}".format(data_list[i].yaw) + ' '
-                        + "{:.3f}".format(data_list[i].roll) + ' '
-                        + "{:.3f}".format(data_list[i].pitch) + ' '
-                        + "{:.3f}".format(data_list[i].altitude) + ' '
-                        + "{:.3f}".format(data_list[i].depth) + ' '
-                        + "{:.3f}".format(data_list[i].x_velocity) + '\n')
+                        "M150 "
+                        + datetime_str
+                        + " "
+                        + "{:.6f}".format(data_list[i].latitude)
+                        + " "
+                        + "{:.6f}".format(data_list[i].longitude)
+                        + " "
+                        + "{:.3f}".format(data_list[i].yaw)
+                        + " "
+                        + "{:.3f}".format(data_list[i].roll)
+                        + " "
+                        + "{:.3f}".format(data_list[i].pitch)
+                        + " "
+                        + "{:.3f}".format(data_list[i].altitude)
+                        + " "
+                        + "{:.3f}".format(data_list[i].depth)
+                        + " "
+                        + "{:.3f}".format(data_list[i].x_velocity)
+                        + "\n"
+                    )
                 except IndexError:
                     break
-            with file.open('w') as fileout:
+            with file.open("w") as fileout:
                 fileout.write(str_to_write)
         else:
-            Console.warn('Empty data list {}'.format(str(csv_filename)))
+            Console.warn("Empty data list {}".format(str(csv_filename)))
 
 
 def spp_csv(camera_list, camera_name, csv_filepath, csv_flag):
@@ -109,8 +136,8 @@ def spp_csv(camera_list, camera_name, csv_filepath, csv_flag):
             csv_file.mkdir(parents=True, exist_ok=True)
 
         Console.info("Writing outputs to {}.txt ...".format(camera_name))
-        file = csv_file / '{}.txt'.format(camera_name)
-        str_to_write = ''
+        file = csv_file / "{}.txt".format(camera_name)
+        str_to_write = ""
         if len(camera_list) > 0:
             # With unwritted header: ['image_num_from', 'image_num_to',
             #                         'x', 'y', 'z', 'yaw', 'pitch', 'roll',
@@ -134,23 +161,33 @@ def spp_csv(camera_list, camera_name, csv_filepath, csv_flag):
                         image_filename = int(imagenumber) - offset
                     else:
                         image_filename = camera_list[i].filename
-                        Console.warn('image_filename for csv output has been'
-                                     + ' set = camera_list[i].filename. If'
-                                     + ' a failure has occurred, may be'
-                                     + ' because this is not a number and'
-                                     + ' cannot be turned into an "int", as'
-                                     + ' needed for SLAM++ txt file output.')
-                    str_to_write += (
-                        'EDGE3' + ' '
-                        + str(int(image_filename)) + ' '
-                        + str(int(image_filename) + 1) + ' '
-                        + str(np.sum(camera_list[i].northings)) + ' '
-                        + str(np.sum(camera_list[i].eastings)) + ' '
-                        + str(np.sum(camera_list[i].depth)) + ' '
-                        + str(np.sum(camera_list[i].yaw)) + ' '
-                        + str(np.sum(camera_list[i].pitch)) + ' '
-                        + str(np.sum(camera_list[i].roll))
+                        Console.warn(
+                            "image_filename for csv output has been"
+                            + " set = camera_list[i].filename. If"
+                            + " a failure has occurred, may be"
+                            + " because this is not a number and"
+                            + ' cannot be turned into an "int", as'
+                            + " needed for SLAM++ txt file output."
                         )
+                    str_to_write += (
+                        "EDGE3"
+                        + " "
+                        + str(int(image_filename))
+                        + " "
+                        + str(int(image_filename) + 1)
+                        + " "
+                        + str(np.sum(camera_list[i].northings))
+                        + " "
+                        + str(np.sum(camera_list[i].eastings))
+                        + " "
+                        + str(np.sum(camera_list[i].depth))
+                        + " "
+                        + str(np.sum(camera_list[i].yaw))
+                        + " "
+                        + str(np.sum(camera_list[i].pitch))
+                        + " "
+                        + str(np.sum(camera_list[i].roll))
+                    )
                     if camera_list[i].information is not None:
                         inf = camera_list[i].information.flatten().tolist()
                         inf = [item for sublist in inf for item in sublist]
@@ -159,17 +196,17 @@ def spp_csv(camera_list, camera_name, csv_filepath, csv_flag):
                         # elements in the information matrix can be
                         # deleted, as these have an unwanted primary variable.
                         inf = inf[:-72]
-                        
+
                         for i in range(6):
                             # The rotationnal elements need to be switched
                             # around to be in SLAM++ (reverse) order.
-                            j = inf[12*i + 3]
-                            inf[12*i + 3] = inf[12*i + 5]
-                            inf[12*i + 5] = j
+                            j = inf[12 * i + 3]
+                            inf[12 * i + 3] = inf[12 * i + 5]
+                            inf[12 * i + 5] = j
                         j = inf[36:48]
                         inf[36:48] = inf[60:72]
                         inf[60:72] = j
-                        
+
                         for i in range(6):
                             # Of the remaining 6x12 elements, half have unwanted
                             # secondary variables (the latter half of each
@@ -179,14 +216,14 @@ def spp_csv(camera_list, camera_name, csv_filepath, csv_flag):
                             inf += inf[i:6]
                             inf = inf[12:]
                         for c in inf:
-                            str_to_write += ' ' + str(c)
-                    str_to_write += '\n'
+                            str_to_write += " " + str(c)
+                    str_to_write += "\n"
                 except IndexError:
                     break
-            with file.open('w') as fileout:
+            with file.open("w") as fileout:
                 fileout.write(str_to_write)
         else:
-            Console.warn('Empty data list {}'.format(str(camera_name)))
+            Console.warn("Empty data list {}".format(str(camera_name)))
 
 
 # First column of csv file - image file naming step probably not very robust
@@ -198,18 +235,20 @@ def camera_csv(camera_list, camera_name, csv_filepath, csv_flag):
             csv_file.mkdir(parents=True, exist_ok=True)
 
         Console.info("Writing outputs to {}.csv ...".format(camera_name))
-        file = csv_file / '{}.csv'.format(camera_name)
-        str_to_write = 'relative_path,northing [m],easting [m],depth [m],' \
-                       'roll [deg],pitch [deg],heading [deg],altitude '\
-                       '[m],timestamp [s],latitude [deg],longitude [deg]'\
-                       ',x_velocity [m/s],y_velocity [m/s],z_velocity [m/s]'\
-                       ',vehicle_cov_x,vehicle_cov_y,vehicle_cov_z,'\
-                       'vehicle_cov_roll,vehicle_cov_pitch,vehicle_cov_yaw,'\
-                       'vehicle_cov_vx,vehicle_cov_vy,vehicle_cov_vz,'\
-                       'vehicle_cov_vroll,vehicle_cov_vpitch,vehicle_cov_vyaw\n'
+        file = csv_file / "{}.csv".format(camera_name)
+        str_to_write = (
+            "relative_path,northing [m],easting [m],depth [m],"
+            "roll [deg],pitch [deg],heading [deg],altitude "
+            "[m],timestamp [s],latitude [deg],longitude [deg]"
+            ",x_velocity [m/s],y_velocity [m/s],z_velocity [m/s]"
+            ",vehicle_cov_x,vehicle_cov_y,vehicle_cov_z,"
+            "vehicle_cov_roll,vehicle_cov_pitch,vehicle_cov_yaw,"
+            "vehicle_cov_vx,vehicle_cov_vy,vehicle_cov_vz,"
+            "vehicle_cov_vroll,vehicle_cov_vpitch,vehicle_cov_vyaw\n"
+        )
 
         if len(camera_list) > 0:
-            fileout = file.open('w')
+            fileout = file.open("w")
 
             # write headers
             fileout.write(str_to_write)
@@ -218,30 +257,47 @@ def camera_csv(camera_list, camera_name, csv_filepath, csv_flag):
             for i in range(len(camera_list)):
                 try:
                     str_to_write = (
-                        str(camera_list[i].filename) + ','
-                        + str(camera_list[i].northings) + ','
-                        + str(camera_list[i].eastings) + ','
-                        + str(camera_list[i].depth) + ','
-                        + str(camera_list[i].roll) + ','
-                        + str(camera_list[i].pitch) + ','
-                        + str(camera_list[i].yaw) + ','
-                        + str(camera_list[i].altitude) + ','
-                        + str(camera_list[i].epoch_timestamp) + ','
-                        + str(camera_list[i].latitude) + ','
-                        + str(camera_list[i].longitude) + ','
-                        + str(camera_list[i].x_velocity) + ','
-                        + str(camera_list[i].y_velocity) + ','
-                        + str(camera_list[i].z_velocity))
+                        str(camera_list[i].filename)
+                        + ","
+                        + str(camera_list[i].northings)
+                        + ","
+                        + str(camera_list[i].eastings)
+                        + ","
+                        + str(camera_list[i].depth)
+                        + ","
+                        + str(camera_list[i].roll)
+                        + ","
+                        + str(camera_list[i].pitch)
+                        + ","
+                        + str(camera_list[i].yaw)
+                        + ","
+                        + str(camera_list[i].altitude)
+                        + ","
+                        + str(camera_list[i].epoch_timestamp)
+                        + ","
+                        + str(camera_list[i].latitude)
+                        + ","
+                        + str(camera_list[i].longitude)
+                        + ","
+                        + str(camera_list[i].x_velocity)
+                        + ","
+                        + str(camera_list[i].y_velocity)
+                        + ","
+                        + str(camera_list[i].z_velocity)
+                    )
                     if camera_list[i].covariance is not None:
                         for k in range(camera_list[i].covariance.shape[0]):
                             c = camera_list[i].covariance[k, k]
-                            str_to_write += ',' + str(c)
-                    str_to_write += '\n'
+                            str_to_write += "," + str(c)
+                    str_to_write += "\n"
                     fileout.write(str_to_write)
                 except IndexError:
-                    Console.quit('There is something wrong with camera filenames and indexing. Check camera_csv function.')
+                    Console.quit(
+                        "There is something wrong with camera filenames and indexing. Check camera_csv function."
+                    )
         else:
-            Console.warn('Empty data list {}'.format(str(camera_name)))
+            Console.warn("Empty data list {}".format(str(camera_name)))
+
 
 # if this works make all follow this format!
 def other_data_csv(data_list, data_name, csv_filepath, csv_flag):
@@ -254,16 +310,26 @@ def other_data_csv(data_list, data_name, csv_filepath, csv_flag):
         # csv_header =
         csv_row_data_list = []
         for i in data_list:
-            csv_row_data = {'epochtimestamp': i.epoch_timestamp, 'Northing [m]': i.northings, 'Easting [m]': i.eastings, 'Depth [m]': i.depth, 'Roll [deg]': i.roll,
-                            'Pitch [deg]': i.pitch, 'Heading [deg]': i.yaw, 'Altitude [m]': i.altitude, 'Latitude [deg]': i.latitude, 'Longitude [deg]': i.longitude}
+            csv_row_data = {
+                "epochtimestamp": i.epoch_timestamp,
+                "Northing [m]": i.northings,
+                "Easting [m]": i.eastings,
+                "Depth [m]": i.depth,
+                "Roll [deg]": i.roll,
+                "Pitch [deg]": i.pitch,
+                "Heading [deg]": i.yaw,
+                "Altitude [m]": i.altitude,
+                "Latitude [deg]": i.latitude,
+                "Longitude [deg]": i.longitude,
+            }
             for j in i.data:
                 csv_row_data.update(
-                    {'{} [{}]'.format(j['label'], j['units']): j['value']})
+                    {"{} [{}]".format(j["label"], j["units"]): j["value"]}
+                )
             csv_row_data_list.append(csv_row_data)
         df = pd.DataFrame(csv_row_data_list)
         # , na_rep='-') https://www.youtube.com/watch?v=hmYdzvmcTD8
-        df.to_csv(csv_file / '{}.csv'.format(data_name),
-                  header=True, index=False)
+        df.to_csv(csv_file / "{}.csv".format(data_name), header=True, index=False)
 
 
 def write_raw_sensor_csv(csv_filepath, data_list, csv_filename, mutex=None):
@@ -278,13 +344,13 @@ def write_raw_sensor_csv(csv_filepath, data_list, csv_filename, mutex=None):
                 mutex.release()
 
         Console.info("Writing raw sensor to {}.csv ...".format(csv_filename))
-        file = csv_file / '{}.csv'.format(csv_filename)
-        str_to_write = ''
+        file = csv_file / "{}.csv".format(csv_filename)
+        str_to_write = ""
         str_to_write += data_list[0].write_csv_header()
 
         for d in data_list:
             str_to_write += d.to_csv()
-        with file.open('w') as fileout:
+        with file.open("w") as fileout:
             fileout.write(str_to_write)
     else:
-        Console.warn('Empty data list {}'.format(str(csv_filename)))
+        Console.warn("Empty data list {}".format(str(csv_filename)))

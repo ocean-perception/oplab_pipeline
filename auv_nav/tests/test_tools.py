@@ -43,7 +43,7 @@ class TestTools(unittest.TestCase):
         Console.get_hostname()
         Console.get_date()
         Console.get_version()
-        for i in range(1,10):
+        for i in range(1, 10):
             Console.progress(i, 10)
 
     def test_DisplayablePath(self):
@@ -53,7 +53,7 @@ class TestTools(unittest.TestCase):
     def test_latlon_wgs84(self):
         lat_p = 50.936501
         lon_p = -1.404266
-        
+
         lat_ref = 50.936870
         lon_ref = -1.396295
 
@@ -61,19 +61,13 @@ class TestTools(unittest.TestCase):
         self.assertAlmostEqual(x, 560.68, places=1)
         self.assertAlmostEqual(theta, 265.801, places=2)
 
-        easting = -x*math.sin(theta)
-        northing = x*math.cos(theta)
+        easting = -x * math.sin(theta)
+        northing = x * math.cos(theta)
         lat, lon = metres_to_latlon(lat_ref, lon_ref, easting, northing)
 
         self.assertAlmostEqual(lat, lat_p, places=2)
         self.assertAlmostEqual(lon, lon_p, places=2)
 
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
-
-
-
-
-

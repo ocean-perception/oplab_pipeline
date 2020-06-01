@@ -32,12 +32,12 @@ def collect_image_files(image_dirs, file_pattern):
             if d.is_dir():
                 images.extend(list(d.glob(file_pattern)))
             else:
-                Console.warn('Directory '"'{}'"' cannot be found'.format(d))
+                Console.warn("Directory " "'{}'" " cannot be found".format(d))
     else:
-        if (image_dirs.is_dir()):
+        if image_dirs.is_dir():
             images = list(image_dirs.glob(file_pattern))
         else:
-            Console.warn('Directory '"'{}'"' cannot be found'.format(image_dirs))
+            Console.warn("Directory " "'{}'" " cannot be found".format(image_dirs))
     images.sort()
 
     resolved_images = []
@@ -48,96 +48,124 @@ def collect_image_files(image_dirs, file_pattern):
 
 
 def check_pattern(config):
-    if config["pattern"] == 'Circles' or config["pattern"] == 'circles':
+    if config["pattern"] == "Circles" or config["pattern"] == "circles":
         pattern = Patterns.Circles
-    elif config["pattern"] == 'ACircles' or config["pattern"] == 'acircles':
+    elif config["pattern"] == "ACircles" or config["pattern"] == "acircles":
         pattern = Patterns.ACircles
-    elif config["pattern"] == 'Chessboard' or config["pattern"] == 'chessboard':
+    elif config["pattern"] == "Chessboard" or config["pattern"] == "chessboard":
         pattern = Patterns.Chessboard
     else:
-        Console.quit('The available patterns are: Circles, Chessboard or ACircles. Please check you did not misspell the pattern type.')
+        Console.quit(
+            "The available patterns are: Circles, Chessboard or ACircles. Please check you did not misspell the pattern type."
+        )
     return pattern
 
 
 def calibrate_mono(name, filepaths, extension, config, output_file, fo, foa):
     if not check_dirs_exist(filepaths):
         filepaths = get_raw_folders(filepaths)
-    Console.info('Looking for {} calibration images in {}'.format(extension, str(filepaths)))
+    Console.info(
+        "Looking for {} calibration images in {}".format(extension, str(filepaths))
+    )
     image_list = collect_image_files(filepaths, extension)
-    Console.info('Found ' + str(len(image_list)) + ' images.')
+    Console.info("Found " + str(len(image_list)) + " images.")
     if len(image_list) < 8:
-        Console.quit('Too few images. Try to get more.')
+        Console.quit("Too few images. Try to get more.")
 
-    mc = MonoCalibrator(boards=[ChessboardInfo(config["rows"],
-                                               config["cols"],
-                                               config["size"])],
-                        pattern=check_pattern(config),
-                        invert=config["invert"],
-                        name=name)
+    mc = MonoCalibrator(
+        boards=[ChessboardInfo(config["rows"], config["cols"], config["size"])],
+        pattern=check_pattern(config),
+        invert=config["invert"],
+        name=name,
+    )
     try:
-        image_list_file = output_file.with_suffix('.json')
+        image_list_file = output_file.with_suffix(".json")
         if foa or not image_list_file.exists():
             mc.cal(image_list)
-            with image_list_file.open('w') as f:
+            with image_list_file.open("w") as f:
                 json.dump(mc.json, f)
         else:
             mc.cal_from_json(image_list_file, image_list)
         mc.report()
-        Console.info('Writing calibration to '"'{}'"''.format(output_file))
-        with output_file.open('w') as f:
+        Console.info("Writing calibration to " "'{}'" "".format(output_file))
+        with output_file.open("w") as f:
             f.write(mc.yaml())
     except CalibrationException:
-        Console.error('The calibration pattern was not found in the images.')
+        Console.error("The calibration pattern was not found in the images.")
 
 
-def calibrate_stereo(left_name, left_filepaths, left_extension, left_calib,
-                     right_name, right_filepaths, right_extension, right_calib,
-                     config, output_file, fo, foa):
+def calibrate_stereo(
+    left_name,
+    left_filepaths,
+    left_extension,
+    left_calib,
+    right_name,
+    right_filepaths,
+    right_extension,
+    right_calib,
+    config,
+    output_file,
+    fo,
+    foa,
+):
     if not check_dirs_exist(left_filepaths) or not check_dirs_exist(right_filepaths):
         left_filepaths = get_raw_folders(left_filepaths)
         right_filepaths = get_raw_folders(right_filepaths)
-    Console.info('Looking for calibration images in {}'.format(str(left_filepaths)))
+    Console.info("Looking for calibration images in {}".format(str(left_filepaths)))
     left_image_list = collect_image_files(left_filepaths, left_extension)
-    Console.info('Found ' + str(len(left_image_list)) + ' left images.')
-    Console.info('Looking for calibration images in {}'.format(str(right_filepaths)))
+    Console.info("Found " + str(len(left_image_list)) + " left images.")
+    Console.info("Looking for calibration images in {}".format(str(right_filepaths)))
     right_image_list = collect_image_files(right_filepaths, right_extension)
-    Console.info('Found ' + str(len(right_image_list)) + ' right images.')
+    Console.info("Found " + str(len(right_image_list)) + " right images.")
     if len(left_image_list) < 8 or len(right_image_list) < 8:
-        Console.quit('Too few images. Try to get more.')
+        Console.quit("Too few images. Try to get more.")
     try:
-        with left_calib.with_suffix('.json').open('r') as f:
+        with left_calib.with_suffix(".json").open("r") as f:
             left_json = json.load(f)
-        with right_calib.with_suffix('.json').open('r') as f:
+        with right_calib.with_suffix(".json").open("r") as f:
             right_json = json.load(f)
         model = StereoCamera(left=left_calib, right=right_calib)
-        sc = StereoCalibrator(stereo_camera_model=model,
-                              boards=[ChessboardInfo(config["rows"],
-                                                     config["cols"],
-                                                     config["size"])],
-                              pattern=check_pattern(config),
-                              invert=config["invert"])
+        sc = StereoCalibrator(
+            stereo_camera_model=model,
+            boards=[ChessboardInfo(config["rows"], config["cols"], config["size"])],
+            pattern=check_pattern(config),
+            invert=config["invert"],
+        )
         # sc.cal(left_image_list, right_image_list)
-        sc.cal_from_json(left_json=left_json, right_json=right_json,)
+        sc.cal_from_json(
+            left_json=left_json, right_json=right_json,
+        )
         sc.report()
-        Console.info('Writing calibration to '"'{}'"''.format(output_file))
-        with output_file.open('w') as f:
+        Console.info("Writing calibration to " "'{}'" "".format(output_file))
+        with output_file.open("w") as f:
             f.write(sc.yaml())
     except CalibrationException:
-        Console.error('The calibration pattern was not found in the images.')
+        Console.error("The calibration pattern was not found in the images.")
 
 
-def calibrate_laser(left_name, left_filepath, left_extension,
-                    right_name, right_filepath, right_extension,
-                    stereo_calibration_file,
-                    config, output_file, output_file_b, skip_first=0, fo=False, foa=False):
-    Console.info('Looking for calibration images in {}'.format(left_filepath))
+def calibrate_laser(
+    left_name,
+    left_filepath,
+    left_extension,
+    right_name,
+    right_filepath,
+    right_extension,
+    stereo_calibration_file,
+    config,
+    output_file,
+    output_file_b,
+    skip_first=0,
+    fo=False,
+    foa=False,
+):
+    Console.info("Looking for calibration images in {}".format(left_filepath))
     left_image_list = collect_image_files(left_filepath, left_extension)
-    Console.info('Found ' + str(len(left_image_list)) + ' left images.')
-    Console.info('Looking for calibration images in {}'.format(right_filepath))
+    Console.info("Found " + str(len(left_image_list)) + " left images.")
+    Console.info("Looking for calibration images in {}".format(right_filepath))
     right_image_list = collect_image_files(right_filepath, right_extension)
-    Console.info('Found ' + str(len(right_image_list)) + ' right images.')
+    Console.info("Found " + str(len(right_image_list)) + " right images.")
     if len(left_image_list) < 8 or len(right_image_list) < 8:
-        Console.error('Too few images. Try to get more.')
+        Console.error("Too few images. Try to get more.")
         return
     try:
         model = StereoCamera(stereo_calibration_file)
@@ -148,21 +176,19 @@ def calibrate_laser(left_name, left_filepath, left_extension,
             else:
                 return default_value
 
-        lc = LaserCalibrator(stereo_camera_model=model,
-                             config=config,
-                             overwrite=foa)
+        lc = LaserCalibrator(stereo_camera_model=model, config=config, overwrite=foa)
         lc.cal(left_image_list[skip_first:], right_image_list[skip_first:])
-        Console.info('Writing calibration to '"'{}'"''.format(output_file))
-        with output_file.open('w') as f:
+        Console.info("Writing calibration to " "'{}'" "".format(output_file))
+        with output_file.open("w") as f:
             f.write(lc.yaml())
-        if not 'two_lasers' in config:
+        if not "two_lasers" in config:
             return
-        if config['two_lasers']:
-            Console.info('Writing calibration to '"'{}'"''.format(output_file_b))
-            with output_file_b.open('w') as f:
+        if config["two_lasers"]:
+            Console.info("Writing calibration to " "'{}'" "".format(output_file_b))
+            with output_file_b.open("w") as f:
                 f.write(lc.yaml_b())
     except CalibrationException:
-        Console.error('The calibration pattern was not found in the images.')
+        Console.error("The calibration pattern was not found in the images.")
 
 
 def build_filepath(base, paths):
@@ -175,7 +201,7 @@ def build_filepath(base, paths):
     return filepaths
 
 
-class Calibrator():
+class Calibrator:
     def __init__(self, filepath, force_overwite=False, overwrite_all=False):
         filepath = Path(filepath).resolve()
         self.filepath = get_raw_folder(filepath)
@@ -185,188 +211,318 @@ class Calibrator():
         if self.foa:
             self.fo = True
 
-        self.configuration_path = get_config_folder(self.filepath.parent) / 'calibration'
-        calibration_config_file = self.configuration_path / 'calibration.yaml'
+        self.configuration_path = (
+            get_config_folder(self.filepath.parent) / "calibration"
+        )
+        calibration_config_file = self.configuration_path / "calibration.yaml"
         if calibration_config_file.exists():
-            Console.info("Loading existing calibration.yaml at {}".format(calibration_config_file))
+            Console.info(
+                "Loading existing calibration.yaml at {}".format(
+                    calibration_config_file
+                )
+            )
         else:
             root = Path(__file__).parents[1]
-            default_file = root / 'auv_cal/default_yaml' / 'default_calibration.yaml'
-            Console.warn("Cannot find {}, generating default from {}".format(
-                calibration_config_file, default_file))
+            default_file = root / "auv_cal/default_yaml" / "default_calibration.yaml"
+            Console.warn(
+                "Cannot find {}, generating default from {}".format(
+                    calibration_config_file, default_file
+                )
+            )
             # save localisation yaml to processed directory
             default_file.copy(calibration_config_file)
 
-            Console.warn('Edit the file at: \n\t' + str(calibration_config_file))
-            Console.warn('Try to use relative paths to the calibration datasets')
-            Console.quit('Modify the file calibration.yaml and run this code again.')
+            Console.warn("Edit the file at: \n\t" + str(calibration_config_file))
+            Console.warn("Try to use relative paths to the calibration datasets")
+            Console.quit("Modify the file calibration.yaml and run this code again.")
 
-        with calibration_config_file.open('r') as stream:
+        with calibration_config_file.open("r") as stream:
             self.calibration_config = yaml.safe_load(stream)
 
         # Create the calibration folder at the same level as the dives
-        self.output_path = get_processed_folder(self.filepath.parent) / 'calibration'
+        self.output_path = get_processed_folder(self.filepath.parent) / "calibration"
         if not self.output_path.exists():
             self.output_path.mkdir(parents=True)
         if not self.configuration_path.exists():
             self.configuration_path.mkdir(parents=True)
 
     def mono(self):
-        for c in self.calibration_config['cameras']:
-            cam_name = c['name']
+        for c in self.calibration_config["cameras"]:
+            cam_name = c["name"]
             # Find if the calibration file exists
-            calibration_file = self.output_path / str('mono_' + cam_name + '.yaml')
-            Console.info('Looking for a calibration file at ' + str(calibration_file))
+            calibration_file = self.output_path / str("mono_" + cam_name + ".yaml")
+            Console.info("Looking for a calibration file at " + str(calibration_file))
             if calibration_file.exists() and not self.fo:
-                Console.quit('The camera ' + c['name'] + ' has already been calibrated. If you want to overwrite the JSON, use the -F flag.')
-            Console.info('The camera is not calibrated, running mono calibration...')
-            filepaths = build_filepath(get_processed_folder(self.filepath), c['camera_calibration']['path'])
+                Console.quit(
+                    "The camera "
+                    + c["name"]
+                    + " has already been calibrated. If you want to overwrite the JSON, use the -F flag."
+                )
+            Console.info("The camera is not calibrated, running mono calibration...")
+            filepaths = build_filepath(
+                get_processed_folder(self.filepath), c["camera_calibration"]["path"]
+            )
 
-            if not 'glob_pattern' in c['camera_calibration']:
-                Console.error('Could not find the key glob_pattern for the camera ', c['name'])
-                Console.quit('glob_pattern expected in calibration.yaml')
+            if not "glob_pattern" in c["camera_calibration"]:
+                Console.error(
+                    "Could not find the key glob_pattern for the camera ", c["name"]
+                )
+                Console.quit("glob_pattern expected in calibration.yaml")
 
-            calibrate_mono(cam_name,
-                        filepaths,
-                        str(c['camera_calibration']['glob_pattern']),
-                        self.calibration_config['camera_calibration'],
-                        calibration_file,
-                        self.fo,
-                        self.foa)
+            calibrate_mono(
+                cam_name,
+                filepaths,
+                str(c["camera_calibration"]["glob_pattern"]),
+                self.calibration_config["camera_calibration"],
+                calibration_file,
+                self.fo,
+                self.foa,
+            )
 
     def stereo(self):
-        if len(self.calibration_config['cameras']) > 1:
-            c0 = self.calibration_config['cameras'][0]
-            c1 = self.calibration_config['cameras'][1]
-            calibration_file = self.output_path / str('stereo_' + c0['name'] + '_' + c1['name'] + '.yaml')
-            Console.info('Looking for a calibration file at ' + str(calibration_file))
+        if len(self.calibration_config["cameras"]) > 1:
+            c0 = self.calibration_config["cameras"][0]
+            c1 = self.calibration_config["cameras"][1]
+            calibration_file = self.output_path / str(
+                "stereo_" + c0["name"] + "_" + c1["name"] + ".yaml"
+            )
+            Console.info("Looking for a calibration file at " + str(calibration_file))
             if calibration_file.exists() and not self.fo:
-                Console.quit('The stereo pair ' + c0['name'] + '_' + c1['name'] + ' has already been calibrated. If you want to overwrite the calibration, use the -F flag.')
-            Console.info('The stereo camera is not calibrated, running stereo calibration...')
+                Console.quit(
+                    "The stereo pair "
+                    + c0["name"]
+                    + "_"
+                    + c1["name"]
+                    + " has already been calibrated. If you want to overwrite the calibration, use the -F flag."
+                )
+            Console.info(
+                "The stereo camera is not calibrated, running stereo calibration..."
+            )
 
-            left_filepaths = build_filepath(get_processed_folder(self.filepath), c0['camera_calibration']['path'])
-            right_filepaths = build_filepath(get_processed_folder(self.filepath), c1['camera_calibration']['path'])
-            left_name = c0['name']
-            if not 'glob_pattern' in c0['camera_calibration']:
-                Console.error('Could not find the key glob_pattern for the camera ', c0['name'])
-                Console.quit('glob_pattern expected in calibration.yaml')
-            left_extension = str(c0['camera_calibration']['glob_pattern'])
-            right_name = c1['name']
-            if not 'glob_pattern' in c1['camera_calibration']:
-                Console.error('Could not find the key glob_pattern for the camera ', c1['name'])
-                Console.quit('glob_pattern expected in calibration.yaml')
-            right_extension = str(c1['camera_calibration']['glob_pattern'])
-            left_calibration_file = self.output_path / str('mono_' + left_name + '.yaml')
-            right_calibration_file = self.output_path / str('mono_' + right_name + '.yaml')
-            if not left_calibration_file.exists() or not right_calibration_file.exists():
+            left_filepaths = build_filepath(
+                get_processed_folder(self.filepath), c0["camera_calibration"]["path"]
+            )
+            right_filepaths = build_filepath(
+                get_processed_folder(self.filepath), c1["camera_calibration"]["path"]
+            )
+            left_name = c0["name"]
+            if not "glob_pattern" in c0["camera_calibration"]:
+                Console.error(
+                    "Could not find the key glob_pattern for the camera ", c0["name"]
+                )
+                Console.quit("glob_pattern expected in calibration.yaml")
+            left_extension = str(c0["camera_calibration"]["glob_pattern"])
+            right_name = c1["name"]
+            if not "glob_pattern" in c1["camera_calibration"]:
+                Console.error(
+                    "Could not find the key glob_pattern for the camera ", c1["name"]
+                )
+                Console.quit("glob_pattern expected in calibration.yaml")
+            right_extension = str(c1["camera_calibration"]["glob_pattern"])
+            left_calibration_file = self.output_path / str(
+                "mono_" + left_name + ".yaml"
+            )
+            right_calibration_file = self.output_path / str(
+                "mono_" + right_name + ".yaml"
+            )
+            if (
+                not left_calibration_file.exists()
+                or not right_calibration_file.exists()
+            ):
                 if not left_calibration_file.exists():
-                    Console.warn('Could not find a monocular calibration file ' + str(left_calibration_file) + '...')
+                    Console.warn(
+                        "Could not find a monocular calibration file "
+                        + str(left_calibration_file)
+                        + "..."
+                    )
                 if not right_calibration_file.exists():
-                    Console.warn('Could not find a monocular calibration file ' + str(right_calibration_file) + '...')
+                    Console.warn(
+                        "Could not find a monocular calibration file "
+                        + str(right_calibration_file)
+                        + "..."
+                    )
                 self.mono()
             if left_calibration_file.exists() and right_calibration_file.exists():
-                Console.info('Loading previous monocular calibrations at \
-                                \n\t * {}\n\t * {}'.format(str(left_calibration_file), str(right_calibration_file)))
-            calibrate_stereo(left_name,
-                                left_filepaths,
-                                left_extension,
-                                left_calibration_file,
-                                right_name,
-                                right_filepaths,
-                                right_extension,
-                                right_calibration_file,
-                                self.calibration_config['camera_calibration'],
-                                calibration_file,
-                                self.fo,
-                                self.foa)
+                Console.info(
+                    "Loading previous monocular calibrations at \
+                                \n\t * {}\n\t * {}".format(
+                        str(left_calibration_file), str(right_calibration_file)
+                    )
+                )
+            calibrate_stereo(
+                left_name,
+                left_filepaths,
+                left_extension,
+                left_calibration_file,
+                right_name,
+                right_filepaths,
+                right_extension,
+                right_calibration_file,
+                self.calibration_config["camera_calibration"],
+                calibration_file,
+                self.fo,
+                self.foa,
+            )
         # Check for a second stereo pair
-        if len(self.calibration_config['cameras']) > 2:
-            c0 = self.calibration_config['cameras'][0]
-            c1 = self.calibration_config['cameras'][2]
-            calibration_file = self.output_path / str('stereo_' + c0['name'] + '_' + c1['name'] + '.yaml')
-            Console.info('Looking for a calibration file at ' + str(calibration_file))
+        if len(self.calibration_config["cameras"]) > 2:
+            c0 = self.calibration_config["cameras"][0]
+            c1 = self.calibration_config["cameras"][2]
+            calibration_file = self.output_path / str(
+                "stereo_" + c0["name"] + "_" + c1["name"] + ".yaml"
+            )
+            Console.info("Looking for a calibration file at " + str(calibration_file))
             if calibration_file.exists() and not self.fo:
-                Console.quit('The stereo pair ' + c0['name'] + '_' + c1['name'] + ' has already been calibrated. If you want to overwrite the calibration, use the -F flag.')
-            Console.info('The stereo camera is not calibrated, running stereo calibration...')
-            left_name = c0['name']
-            left_filepaths = build_filepath(self.filepath, c0['camera_calibration']['path'])
-            left_extension = str(c0['camera_calibration']['glob_pattern'])
-            right_name = c1['name']
-            right_filepaths = build_filepath(self.filepath, c1['camera_calibration']['path'])
-            right_extension = str(c1['camera_calibration']['glob_pattern'])
-            left_calibration_file = self.output_path / str('mono_' + left_name + '.yaml')
-            right_calibration_file = self.output_path / str('mono_' + right_name + '.yaml')
-            if not left_calibration_file.exists() or not right_calibration_file.exists():
+                Console.quit(
+                    "The stereo pair "
+                    + c0["name"]
+                    + "_"
+                    + c1["name"]
+                    + " has already been calibrated. If you want to overwrite the calibration, use the -F flag."
+                )
+            Console.info(
+                "The stereo camera is not calibrated, running stereo calibration..."
+            )
+            left_name = c0["name"]
+            left_filepaths = build_filepath(
+                self.filepath, c0["camera_calibration"]["path"]
+            )
+            left_extension = str(c0["camera_calibration"]["glob_pattern"])
+            right_name = c1["name"]
+            right_filepaths = build_filepath(
+                self.filepath, c1["camera_calibration"]["path"]
+            )
+            right_extension = str(c1["camera_calibration"]["glob_pattern"])
+            left_calibration_file = self.output_path / str(
+                "mono_" + left_name + ".yaml"
+            )
+            right_calibration_file = self.output_path / str(
+                "mono_" + right_name + ".yaml"
+            )
+            if (
+                not left_calibration_file.exists()
+                or not right_calibration_file.exists()
+            ):
                 if not left_calibration_file.exists():
-                    Console.warn('Could not find a monocular calibration file ' + str(left_calibration_file) + '...')
+                    Console.warn(
+                        "Could not find a monocular calibration file "
+                        + str(left_calibration_file)
+                        + "..."
+                    )
                 if not right_calibration_file.exists():
-                    Console.warn('Could not find a monocular calibration file ' + str(right_calibration_file) + '...')
+                    Console.warn(
+                        "Could not find a monocular calibration file "
+                        + str(right_calibration_file)
+                        + "..."
+                    )
                 self.mono()
             if left_calibration_file.exists() and right_calibration_file.exists():
-                Console.info('Loading previous monocular calibrations at \
-                                \n\t * {}\n\t * {}'.format(str(left_calibration_file), str(right_calibration_file)))
-            calibrate_stereo(left_name,
-                                left_filepaths,
-                                left_extension,
-                                left_calibration_file,
-                                right_name,
-                                right_filepaths,
-                                right_extension,
-                                right_calibration_file,
-                                self.calibration_config['camera_calibration'],
-                                calibration_file,
-                                self.fo,
-                                self.foa)
+                Console.info(
+                    "Loading previous monocular calibrations at \
+                                \n\t * {}\n\t * {}".format(
+                        str(left_calibration_file), str(right_calibration_file)
+                    )
+                )
+            calibrate_stereo(
+                left_name,
+                left_filepaths,
+                left_extension,
+                left_calibration_file,
+                right_name,
+                right_filepaths,
+                right_extension,
+                right_calibration_file,
+                self.calibration_config["camera_calibration"],
+                calibration_file,
+                self.fo,
+                self.foa,
+            )
 
     def laser(self):
-        if not 'laser_calibration' in self.calibration_config['cameras'][0]:
-            Console.quit('There is no field "laser_calibration" for the first camera in the calibration.yaml')
-        if not 'laser_calibration' in self.calibration_config['cameras'][1]:
-            Console.quit('There is no field "laser_calibration" for the second camera in the calibration.yaml')
-        c0 = self.calibration_config['cameras'][0]
-        c1 = self.calibration_config['cameras'][1]
-        if len(self.calibration_config['cameras']) > 2:
-            c2 = self.calibration_config['cameras'][2]
-        calibration_file = self.output_path / 'laser_calibration_top.yaml'
-        calibration_file_b = self.output_path / 'laser_calibration_bottom.yaml'
-        Console.info('Looking for a calibration file at ' + str(calibration_file))
+        if not "laser_calibration" in self.calibration_config["cameras"][0]:
+            Console.quit(
+                'There is no field "laser_calibration" for the first camera in the calibration.yaml'
+            )
+        if not "laser_calibration" in self.calibration_config["cameras"][1]:
+            Console.quit(
+                'There is no field "laser_calibration" for the second camera in the calibration.yaml'
+            )
+        c0 = self.calibration_config["cameras"][0]
+        c1 = self.calibration_config["cameras"][1]
+        if len(self.calibration_config["cameras"]) > 2:
+            c2 = self.calibration_config["cameras"][2]
+        calibration_file = self.output_path / "laser_calibration_top.yaml"
+        calibration_file_b = self.output_path / "laser_calibration_bottom.yaml"
+        Console.info("Looking for a calibration file at " + str(calibration_file))
         if calibration_file.exists() and not self.fo:
-            Console.quit('The laser planes from cameras ' + c0['name'] + ' and ' + c1['name'] + ' have already been calibrated. If you want to overwite the calibration, use the -F flag.')
-        Console.info('The laser planes are not calibrated, running laser calibration...')
+            Console.quit(
+                "The laser planes from cameras "
+                + c0["name"]
+                + " and "
+                + c1["name"]
+                + " have already been calibrated. If you want to overwite the calibration, use the -F flag."
+            )
+        Console.info(
+            "The laser planes are not calibrated, running laser calibration..."
+        )
         # Check if the stereo pair has already been calibrated
-        stereo_calibration_file = self.output_path / str('stereo_' + c0['name'] + '_' + c1['name'] + '.yaml')
+        stereo_calibration_file = self.output_path / str(
+            "stereo_" + c0["name"] + "_" + c1["name"] + ".yaml"
+        )
         if not stereo_calibration_file.exists():
-            Console.warn('Could not find a stereo calibration file ' + str(stereo_calibration_file) + '...')
+            Console.warn(
+                "Could not find a stereo calibration file "
+                + str(stereo_calibration_file)
+                + "..."
+            )
             self.stereo()
-        left_name = c0['name']
-        left_filepath = get_processed_folder(self.filepath) / str(c0['laser_calibration']['path'])
-        left_extension = str(c0['laser_calibration']['glob_pattern'])
-        right_name = c1['name']
-        right_filepath = get_processed_folder(self.filepath) / str(c1['laser_calibration']['path'])
-        right_extension = str(c1['laser_calibration']['glob_pattern'])
+        left_name = c0["name"]
+        left_filepath = get_processed_folder(self.filepath) / str(
+            c0["laser_calibration"]["path"]
+        )
+        left_extension = str(c0["laser_calibration"]["glob_pattern"])
+        right_name = c1["name"]
+        right_filepath = get_processed_folder(self.filepath) / str(
+            c1["laser_calibration"]["path"]
+        )
+        right_extension = str(c1["laser_calibration"]["glob_pattern"])
         if not left_filepath.exists():
             left_filepath = get_raw_folder(left_filepath)
             if not left_filepath.exists():
-                Console.quit('Could not find stereo image folders (' + str(c0['laser_calibration']['path']) + ') neither in processed nor in raw folder.')
+                Console.quit(
+                    "Could not find stereo image folders ("
+                    + str(c0["laser_calibration"]["path"])
+                    + ") neither in processed nor in raw folder."
+                )
         if not right_filepath.exists():
             right_filepath = get_raw_folder(right_filepath)
             if not right_filepath.exists():
-                Console.quit('Could not find stereo image folders (' + str(c1['laser_calibration']['path']) + ') neither in processed nor in raw folder.')
+                Console.quit(
+                    "Could not find stereo image folders ("
+                    + str(c1["laser_calibration"]["path"])
+                    + ") neither in processed nor in raw folder."
+                )
         left_filepath = left_filepath.resolve()
         right_filepath = right_filepath.resolve()
-        Console.info('Reading stereo images of laser line from ' + str(left_filepath) + ' and ' + str(right_filepath))
-        if not 'skip_first' in self.calibration_config:
-            self.calibration_config['skip_first'] = 0
-        calibrate_laser(left_name,
-                        left_filepath,
-                        left_extension,
-                        right_name,
-                        right_filepath,
-                        right_extension,
-                        stereo_calibration_file,
-                        self.calibration_config['laser_calibration'],
-                        calibration_file,
-                        calibration_file_b,
-                        self.calibration_config['skip_first'],
-                        self.fo,
-                        self.foa)
+        Console.info(
+            "Reading stereo images of laser line from "
+            + str(left_filepath)
+            + " and "
+            + str(right_filepath)
+        )
+        if not "skip_first" in self.calibration_config:
+            self.calibration_config["skip_first"] = 0
+        calibrate_laser(
+            left_name,
+            left_filepath,
+            left_extension,
+            right_name,
+            right_filepath,
+            right_extension,
+            stereo_calibration_file,
+            self.calibration_config["laser_calibration"],
+            calibration_file,
+            calibration_file_b,
+            self.calibration_config["skip_first"],
+            self.fo,
+            self.foa,
+        )

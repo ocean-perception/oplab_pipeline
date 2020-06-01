@@ -26,7 +26,7 @@ def valid_dive(p):
 
 
 def change_subfolder(path, prior, new):
-    #path = path.resolve(strict=False)
+    # path = path.resolve(strict=False)
     index = path.parts.index(prior)
     parts = list(path.parts)
     parts[index] = new
@@ -34,8 +34,9 @@ def change_subfolder(path, prior, new):
     if new_path.is_dir():
         if not new_path.exists():
             dummy_path = Path(*parts[:-1])
-            Console.info('The path {} does not exist. I am creating ',
-                         'it for you.'.format(path))
+            Console.info(
+                "The path {} does not exist. I am creating ", "it for you.".format(path)
+            )
             dummy_path.mkdir(exist_ok=True, parents=True)
     elif new_path.is_file():
         # check if parent directories are created
@@ -48,15 +49,19 @@ def get_folder(path, name):
     path = Path(path).resolve(strict=False)
     if name in path.parts:
         return path
-    elif 'processed' in path.parts:
-        return change_subfolder(path, 'processed', name)
-    elif 'raw' in path.parts:
-        return change_subfolder(path, 'raw', name)
-    elif 'configuration' in path.parts:
-        return change_subfolder(path, 'configuration', name)
+    elif "processed" in path.parts:
+        return change_subfolder(path, "processed", name)
+    elif "raw" in path.parts:
+        return change_subfolder(path, "raw", name)
+    elif "configuration" in path.parts:
+        return change_subfolder(path, "configuration", name)
     else:
-        Console.quit('The folder', str(path), 'does not belong to any dataset',
-                     'folder structure.')
+        Console.quit(
+            "The folder",
+            str(path),
+            "does not belong to any dataset",
+            "folder structure.",
+        )
 
 
 def get_file_list(directory):

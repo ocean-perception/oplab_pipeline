@@ -5,7 +5,6 @@ facts and functionalities of graphs.
 
 
 class Graph(object):
-
     def __init__(self, graph_dict=None):
         """ initializes a graph object
             If no dictionary or None is given, an empty dictionary will be used
@@ -81,9 +80,7 @@ class Graph(object):
             return None
         for vertex in graph[start_vertex]:
             if vertex not in path:
-                extended_path = self.find_path(vertex,
-                                               end_vertex,
-                                               path)
+                extended_path = self.find_path(vertex, end_vertex, path)
                 if extended_path:
                     return extended_path
         return None
@@ -131,22 +128,23 @@ class Graph(object):
 
 if __name__ == "__main__":
 
-    g = {"origin": ["cameras", "dvl", "imu", "depth", "altitude"],
-         "cameras": ["LM165", "Xviii3", "Xviii5"],
-         "dvl": [],
-         "imu": [],
-         "depth": [],
-         "altitude": [],
-         "LM165": [],
-         "Xviii3": [],
-         "Xviii5": []
-         }
+    g = {
+        "origin": ["cameras", "dvl", "imu", "depth", "altitude"],
+        "cameras": ["LM165", "Xviii3", "Xviii5"],
+        "dvl": [],
+        "imu": [],
+        "depth": [],
+        "altitude": [],
+        "LM165": [],
+        "Xviii3": [],
+        "Xviii5": [],
+    }
 
     graph = Graph(g)
 
     graph.add_vertex("chemical")
     graph.add_vertex("chemical")
-    graph.add_edge(('origin', 'chemical'))
+    graph.add_edge(("origin", "chemical"))
 
     print(graph)
 
@@ -164,6 +162,5 @@ if __name__ == "__main__":
     print(graph)
 
     print("Add edge ('origin','chemical'): ")
-    graph.add_edge(('origin', 'chemical'))
+    graph.add_edge(("origin", "chemical"))
     print(graph)
-

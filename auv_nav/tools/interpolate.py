@@ -18,7 +18,9 @@ def interpolate(x_query, x_lower, x_upper, y_lower, y_upper):
     if x_upper == x_lower:
         y_query = y_lower
     else:
-        y_query = (y_upper-y_lower)/(x_upper-x_lower)*(x_query-x_lower)+y_lower
+        y_query = (y_upper - y_lower) / (x_upper - x_lower) * (
+            x_query - x_lower
+        ) + y_lower
     return y_query
 
 
@@ -26,55 +28,71 @@ def interpolate_altitude(query_timestamp, data):
     i = 1
     while i < len(data) and data[i].epoch_timestamp < query_timestamp:
         i += 1
-    return interpolate(query_timestamp,
-                       data[i-1].epoch_timestamp,
-                       data[i].epoch_timestamp,
-                       data[i-1].altitude,
-                       data[i].altitude)
+    return interpolate(
+        query_timestamp,
+        data[i - 1].epoch_timestamp,
+        data[i].epoch_timestamp,
+        data[i - 1].altitude,
+        data[i].altitude,
+    )
 
 
 def interpolate_dvl(query_timestamp, data_1, data_2):
     temp_data = SyncedOrientationBodyVelocity()
     temp_data.epoch_timestamp = query_timestamp
-    temp_data.x_velocity = interpolate(query_timestamp,
-                                       data_1.epoch_timestamp,
-                                       data_2.epoch_timestamp,
-                                       data_1.x_velocity,
-                                       data_2.x_velocity)
-    temp_data.y_velocity = interpolate(query_timestamp,
-                                       data_1.epoch_timestamp,
-                                       data_2.epoch_timestamp,
-                                       data_1.y_velocity,
-                                       data_2.y_velocity)
-    temp_data.z_velocity = interpolate(query_timestamp,
-                                       data_1.epoch_timestamp,
-                                       data_2.epoch_timestamp,
-                                       data_1.z_velocity,
-                                       data_2.z_velocity)
-    temp_data.roll = interpolate(query_timestamp,
-                                 data_1.epoch_timestamp,
-                                 data_2.epoch_timestamp,
-                                 data_1.roll,
-                                 data_2.roll)
-    temp_data.pitch = interpolate(query_timestamp,
-                                  data_1.epoch_timestamp,
-                                  data_2.epoch_timestamp,
-                                  data_1.pitch,
-                                  data_2.pitch)
-    if abs(data_2.yaw-data_1.yaw) > 180:
+    temp_data.x_velocity = interpolate(
+        query_timestamp,
+        data_1.epoch_timestamp,
+        data_2.epoch_timestamp,
+        data_1.x_velocity,
+        data_2.x_velocity,
+    )
+    temp_data.y_velocity = interpolate(
+        query_timestamp,
+        data_1.epoch_timestamp,
+        data_2.epoch_timestamp,
+        data_1.y_velocity,
+        data_2.y_velocity,
+    )
+    temp_data.z_velocity = interpolate(
+        query_timestamp,
+        data_1.epoch_timestamp,
+        data_2.epoch_timestamp,
+        data_1.z_velocity,
+        data_2.z_velocity,
+    )
+    temp_data.roll = interpolate(
+        query_timestamp,
+        data_1.epoch_timestamp,
+        data_2.epoch_timestamp,
+        data_1.roll,
+        data_2.roll,
+    )
+    temp_data.pitch = interpolate(
+        query_timestamp,
+        data_1.epoch_timestamp,
+        data_2.epoch_timestamp,
+        data_1.pitch,
+        data_2.pitch,
+    )
+    if abs(data_2.yaw - data_1.yaw) > 180:
         if data_2.yaw > data_1.yaw:
-            temp_data.yaw = interpolate(query_timestamp,
-                                        data_1.epoch_timestamp,
-                                        data_2.epoch_timestamp,
-                                        data_1.yaw,
-                                        data_2.yaw-360)
+            temp_data.yaw = interpolate(
+                query_timestamp,
+                data_1.epoch_timestamp,
+                data_2.epoch_timestamp,
+                data_1.yaw,
+                data_2.yaw - 360,
+            )
 
         else:
-            temp_data.yaw = interpolate(query_timestamp,
-                                        data_1.epoch_timestamp,
-                                        data_2.epoch_timestamp,
-                                        data_1.yaw-360,
-                                        data_2.yaw)
+            temp_data.yaw = interpolate(
+                query_timestamp,
+                data_1.epoch_timestamp,
+                data_2.epoch_timestamp,
+                data_1.yaw - 360,
+                data_2.yaw,
+            )
 
         if temp_data.yaw < 0:
             temp_data.yaw += 360
@@ -83,12 +101,14 @@ def interpolate_dvl(query_timestamp, data_1, data_2):
             temp_data.yaw -= 360
 
     else:
-        temp_data.yaw = interpolate(query_timestamp,
-                                    data_1.epoch_timestamp,
-                                    data_2.epoch_timestamp,
-                                    data_1.yaw,
-                                    data_2.yaw)
-    return (temp_data)
+        temp_data.yaw = interpolate(
+            query_timestamp,
+            data_1.epoch_timestamp,
+            data_2.epoch_timestamp,
+            data_1.yaw,
+            data_2.yaw,
+        )
+    return temp_data
 
 
 def interpolate_camera(query_timestamp, camera_list, filename):
@@ -111,8 +131,8 @@ def interpolate_camera(query_timestamp, camera_list, filename):
     Camera
         Interpolated camera to the queried timestamp and with the 
         filename provided
-    """    
- 
+    """
+
     i = 0
     for i in range(len(camera_list)):
         if query_timestamp <= camera_list[i].epoch_timestamp:
@@ -120,79 +140,121 @@ def interpolate_camera(query_timestamp, camera_list, filename):
     c1 = camera_list[i]
     c2 = camera_list[i]
     if i > 1:
-        c1 = camera_list[i-1]
+        c1 = camera_list[i - 1]
 
     c = Camera()
     c.filename = filename
     c.epoch_timestamp = query_timestamp
     c.northings = interpolate(
-        query_timestamp, c1.epoch_timestamp, c2.epoch_timestamp, 
-        c1.northings, c2.northings)
+        query_timestamp,
+        c1.epoch_timestamp,
+        c2.epoch_timestamp,
+        c1.northings,
+        c2.northings,
+    )
     c.eastings = interpolate(
-        query_timestamp, c1.epoch_timestamp, c2.epoch_timestamp, 
-        c1.eastings, c2.eastings)
+        query_timestamp,
+        c1.epoch_timestamp,
+        c2.epoch_timestamp,
+        c1.eastings,
+        c2.eastings,
+    )
     c.depth = interpolate(
-        query_timestamp, c1.epoch_timestamp, c2.epoch_timestamp, 
-        c1.depth, c2.depth)
+        query_timestamp, c1.epoch_timestamp, c2.epoch_timestamp, c1.depth, c2.depth
+    )
     c.latitude = interpolate(
-        query_timestamp, c1.epoch_timestamp, c2.epoch_timestamp, 
-        c1.latitude, c2.latitude)
+        query_timestamp,
+        c1.epoch_timestamp,
+        c2.epoch_timestamp,
+        c1.latitude,
+        c2.latitude,
+    )
     c.longitude = interpolate(
-        query_timestamp, c1.epoch_timestamp, c2.epoch_timestamp, 
-        c1.longitude, c2.longitude)
+        query_timestamp,
+        c1.epoch_timestamp,
+        c2.epoch_timestamp,
+        c1.longitude,
+        c2.longitude,
+    )
     c.roll = interpolate(
-        query_timestamp, c1.epoch_timestamp, c2.epoch_timestamp, 
-        c1.roll, c2.roll)
+        query_timestamp, c1.epoch_timestamp, c2.epoch_timestamp, c1.roll, c2.roll
+    )
     c.pitch = interpolate(
-        query_timestamp, c1.epoch_timestamp, c2.epoch_timestamp, 
-        c1.pitch, c2.pitch)
+        query_timestamp, c1.epoch_timestamp, c2.epoch_timestamp, c1.pitch, c2.pitch
+    )
     c.yaw = interpolate(
-        query_timestamp, c1.epoch_timestamp, c2.epoch_timestamp, 
-        c1.yaw, c2.yaw)
+        query_timestamp, c1.epoch_timestamp, c2.epoch_timestamp, c1.yaw, c2.yaw
+    )
     c.x_velocity = interpolate(
-        query_timestamp, c1.epoch_timestamp, c2.epoch_timestamp, 
-        c1.x_velocity, c2.x_velocity)
+        query_timestamp,
+        c1.epoch_timestamp,
+        c2.epoch_timestamp,
+        c1.x_velocity,
+        c2.x_velocity,
+    )
     c.y_velocity = interpolate(
-        query_timestamp, c1.epoch_timestamp, c2.epoch_timestamp, 
-        c1.y_velocity, c2.y_velocity)
+        query_timestamp,
+        c1.epoch_timestamp,
+        c2.epoch_timestamp,
+        c1.y_velocity,
+        c2.y_velocity,
+    )
     c.z_velocity = interpolate(
-        query_timestamp, c1.epoch_timestamp, c2.epoch_timestamp, 
-        c1.z_velocity, c2.z_velocity)
+        query_timestamp,
+        c1.epoch_timestamp,
+        c2.epoch_timestamp,
+        c1.z_velocity,
+        c2.z_velocity,
+    )
     c.altitude = interpolate(
-        query_timestamp, c1.epoch_timestamp, c2.epoch_timestamp, 
-        c1.altitude, c2.altitude)
+        query_timestamp,
+        c1.epoch_timestamp,
+        c2.epoch_timestamp,
+        c1.altitude,
+        c2.altitude,
+    )
     return c
 
 
 def interpolate_usbl(query_timestamp, data_1, data_2):
     temp_data = Usbl()
     temp_data.epoch_timestamp = query_timestamp
-    temp_data.northings = interpolate(query_timestamp,
-                                      data_1.epoch_timestamp,
-                                      data_2.epoch_timestamp,
-                                      data_1.northings,
-                                      data_2.northings)
-    temp_data.eastings = interpolate(query_timestamp,
-                                     data_1.epoch_timestamp,
-                                     data_2.epoch_timestamp,
-                                     data_1.eastings,
-                                     data_2.eastings)
-    temp_data.northings_std = interpolate(query_timestamp,
-                                          data_1.epoch_timestamp,
-                                          data_2.epoch_timestamp,
-                                          data_1.northings_std,
-                                          data_2.northings_std)
-    temp_data.eastings_std = interpolate(query_timestamp,
-                                         data_1.epoch_timestamp,
-                                         data_2.epoch_timestamp,
-                                         data_1.eastings_std,
-                                         data_2.eastings_std)
-    temp_data.depth = interpolate(query_timestamp,
-                                  data_1.epoch_timestamp,
-                                  data_2.epoch_timestamp,
-                                  data_1.depth,
-                                  data_2.depth)
-    return (temp_data)
+    temp_data.northings = interpolate(
+        query_timestamp,
+        data_1.epoch_timestamp,
+        data_2.epoch_timestamp,
+        data_1.northings,
+        data_2.northings,
+    )
+    temp_data.eastings = interpolate(
+        query_timestamp,
+        data_1.epoch_timestamp,
+        data_2.epoch_timestamp,
+        data_1.eastings,
+        data_2.eastings,
+    )
+    temp_data.northings_std = interpolate(
+        query_timestamp,
+        data_1.epoch_timestamp,
+        data_2.epoch_timestamp,
+        data_1.northings_std,
+        data_2.northings_std,
+    )
+    temp_data.eastings_std = interpolate(
+        query_timestamp,
+        data_1.epoch_timestamp,
+        data_2.epoch_timestamp,
+        data_1.eastings_std,
+        data_2.eastings_std,
+    )
+    temp_data.depth = interpolate(
+        query_timestamp,
+        data_1.epoch_timestamp,
+        data_2.epoch_timestamp,
+        data_1.depth,
+        data_2.depth,
+    )
+    return temp_data
 
 
 def eigen_sorted(a):
@@ -201,7 +263,7 @@ def eigen_sorted(a):
     eigenvalues = eigenvalues[idx]
     eigenvectors = eigenvectors[:, idx]
     n = eigenvalues.size
-    eigenvalues = np.eye(n, n)*eigenvalues
+    eigenvalues = np.eye(n, n) * eigenvalues
     return eigenvalues, eigenvectors
 
 
@@ -209,34 +271,40 @@ def interpolate_covariance(t, t0, t1, cov0, cov1):
     eigval0, eigvec0 = eigen_sorted(cov0)
     eigval1, eigvec1 = eigen_sorted(cov1)
 
-    x = (t-t0)/(t1-t0)
-    eigval = ((1-x)*np.sqrt(eigval0)+x*np.sqrt(eigval1))**2
+    x = (t - t0) / (t1 - t0)
+    eigval = ((1 - x) * np.sqrt(eigval0) + x * np.sqrt(eigval1)) ** 2
 
-    c0 = eigvec0*eigval0*eigvec0.T
-    c1 = eigvec1*eigval1*eigvec1.T
-    r = c1*c0.T
-    eigvec = r*eigval0
-    cov = eigvec*eigval*eigvec.T
+    c0 = eigvec0 * eigval0 * eigvec0.T
+    c1 = eigvec1 * eigval1 * eigvec1.T
+    r = c1 * c0.T
+    eigvec = r * eigval0
+    cov = eigvec * eigval * eigvec.T
 
     return cov
 
 
-def interpolate_sensor_list(sensor_list,
-                            sensor_name,
-                            sensor_offsets,
-                            origin_offsets,
-                            latlon_reference,
-                            _centre_list):
+def interpolate_sensor_list(
+    sensor_list,
+    sensor_name,
+    sensor_offsets,
+    origin_offsets,
+    latlon_reference,
+    _centre_list,
+):
     j = 0
     [origin_x_offset, origin_y_offset, origin_z_offset] = origin_offsets
     [latitude_reference, longitude_reference] = latlon_reference
     # Check if camera activates before dvl and orientation sensors.
     start_time = _centre_list[0].epoch_timestamp
     end_time = _centre_list[-1].epoch_timestamp
-    if (sensor_list[0].epoch_timestamp > end_time
-       or sensor_list[-1].epoch_timestamp < start_time):
-        print('{} timestamps does not overlap with dead reckoning data, ' \
-            'check timestamp_history.pdf via -v option.'.format(sensor_name))
+    if (
+        sensor_list[0].epoch_timestamp > end_time
+        or sensor_list[-1].epoch_timestamp < start_time
+    ):
+        print(
+            "{} timestamps does not overlap with dead reckoning data, "
+            "check timestamp_history.pdf via -v option.".format(sensor_name)
+        )
     else:
         sensor_overlap_flag = 0
         for i in range(len(sensor_list)):
@@ -247,42 +315,50 @@ def interpolate_sensor_list(sensor_list,
                 del sensor_list[:i]
                 break
         for i in range(len(sensor_list)):
-            if j >= len(_centre_list)-1:
+            if j >= len(_centre_list) - 1:
                 del sensor_list[i:]
                 sensor_overlap_flag = 1
                 break
             while _centre_list[j].epoch_timestamp < sensor_list[i].epoch_timestamp:
-                if j+1 > len(_centre_list)-1 or _centre_list[j+1].epoch_timestamp > sensor_list[-1].epoch_timestamp:
+                if (
+                    j + 1 > len(_centre_list) - 1
+                    or _centre_list[j + 1].epoch_timestamp
+                    > sensor_list[-1].epoch_timestamp
+                ):
                     break
                 j += 1
             # if j>=1: ?
             sensor_list[i].roll = interpolate(
                 sensor_list[i].epoch_timestamp,
-                _centre_list[j-1].epoch_timestamp,
+                _centre_list[j - 1].epoch_timestamp,
                 _centre_list[j].epoch_timestamp,
-                _centre_list[j-1].roll,
-                _centre_list[j].roll)
+                _centre_list[j - 1].roll,
+                _centre_list[j].roll,
+            )
             sensor_list[i].pitch = interpolate(
                 sensor_list[i].epoch_timestamp,
-                _centre_list[j-1].epoch_timestamp,
+                _centre_list[j - 1].epoch_timestamp,
                 _centre_list[j].epoch_timestamp,
-                _centre_list[j-1].pitch,
-                _centre_list[j].pitch)
-            if abs(_centre_list[j].yaw-_centre_list[j-1].yaw) > 180:
-                if _centre_list[j].yaw>_centre_list[j-1].yaw:
+                _centre_list[j - 1].pitch,
+                _centre_list[j].pitch,
+            )
+            if abs(_centre_list[j].yaw - _centre_list[j - 1].yaw) > 180:
+                if _centre_list[j].yaw > _centre_list[j - 1].yaw:
                     sensor_list[i].yaw = interpolate(
                         sensor_list[i].epoch_timestamp,
-                        _centre_list[j-1].epoch_timestamp,
+                        _centre_list[j - 1].epoch_timestamp,
                         _centre_list[j].epoch_timestamp,
-                        _centre_list[j-1].yaw,
-                        _centre_list[j].yaw-360)
+                        _centre_list[j - 1].yaw,
+                        _centre_list[j].yaw - 360,
+                    )
                 else:
                     sensor_list[i].yaw = interpolate(
                         sensor_list[i].epoch_timestamp,
-                        _centre_list[j-1].epoch_timestamp,
+                        _centre_list[j - 1].epoch_timestamp,
                         _centre_list[j].epoch_timestamp,
-                        _centre_list[j-1].yaw-360,
-                        _centre_list[j].yaw)
+                        _centre_list[j - 1].yaw - 360,
+                        _centre_list[j].yaw,
+                    )
                 if sensor_list[i].yaw < 0:
                     sensor_list[i].yaw += 360
                 elif sensor_list[i].yaw > 360:
@@ -290,37 +366,42 @@ def interpolate_sensor_list(sensor_list,
             else:
                 sensor_list[i].yaw = interpolate(
                     sensor_list[i].epoch_timestamp,
-                    _centre_list[j-1].epoch_timestamp,
+                    _centre_list[j - 1].epoch_timestamp,
                     _centre_list[j].epoch_timestamp,
-                    _centre_list[j-1].yaw,
-                    _centre_list[j].yaw)
+                    _centre_list[j - 1].yaw,
+                    _centre_list[j].yaw,
+                )
             sensor_list[i].x_velocity = interpolate(
                 sensor_list[i].epoch_timestamp,
-                _centre_list[j-1].epoch_timestamp,
+                _centre_list[j - 1].epoch_timestamp,
                 _centre_list[j].epoch_timestamp,
-                _centre_list[j-1].x_velocity,
-                _centre_list[j].x_velocity)
+                _centre_list[j - 1].x_velocity,
+                _centre_list[j].x_velocity,
+            )
             sensor_list[i].y_velocity = interpolate(
                 sensor_list[i].epoch_timestamp,
-                _centre_list[j-1].epoch_timestamp,
+                _centre_list[j - 1].epoch_timestamp,
                 _centre_list[j].epoch_timestamp,
-                _centre_list[j-1].y_velocity,
-                _centre_list[j].y_velocity)
+                _centre_list[j - 1].y_velocity,
+                _centre_list[j].y_velocity,
+            )
             sensor_list[i].z_velocity = interpolate(
                 sensor_list[i].epoch_timestamp,
-                _centre_list[j-1].epoch_timestamp,
+                _centre_list[j - 1].epoch_timestamp,
                 _centre_list[j].epoch_timestamp,
-                _centre_list[j-1].z_velocity,
-                _centre_list[j].z_velocity)
+                _centre_list[j - 1].z_velocity,
+                _centre_list[j].z_velocity,
+            )
             # while n<len(time_altitude)-1 and time_altitude[n+1]<time_camera1[i]:
             #     n += 1
             # camera1_altitude.append(interpolate(time_camera1[i],time_altitude[n],time_altitude[n+1],altitude[n],altitude[n+1]))
             sensor_list[i].altitude = interpolate(
                 sensor_list[i].epoch_timestamp,
-                _centre_list[j-1].epoch_timestamp,
+                _centre_list[j - 1].epoch_timestamp,
                 _centre_list[j].epoch_timestamp,
-                _centre_list[j-1].altitude,
-                _centre_list[j].altitude)
+                _centre_list[j - 1].altitude,
+                _centre_list[j].altitude,
+            )
 
             [x_offset, y_offset, z_offset] = body_to_inertial(
                 sensor_list[i].roll,
@@ -328,49 +409,71 @@ def interpolate_sensor_list(sensor_list,
                 sensor_list[i].yaw,
                 origin_x_offset - sensor_offsets[0],
                 origin_y_offset - sensor_offsets[1],
-                origin_z_offset - sensor_offsets[2])
+                origin_z_offset - sensor_offsets[2],
+            )
 
-            sensor_list[i].northings = interpolate(
-                sensor_list[i].epoch_timestamp,
-                _centre_list[j-1].epoch_timestamp,
-                _centre_list[j].epoch_timestamp,
-                _centre_list[j-1].northings,
-                _centre_list[j].northings)-x_offset
-            sensor_list[i].eastings = interpolate(
-                sensor_list[i].epoch_timestamp,
-                _centre_list[j-1].epoch_timestamp,
-                _centre_list[j].epoch_timestamp,
-                _centre_list[j-1].eastings,
-                _centre_list[j].eastings)-y_offset
-            sensor_list[i].altitude = interpolate(
-                sensor_list[i].epoch_timestamp,
-                _centre_list[j-1].epoch_timestamp,
-                _centre_list[j].epoch_timestamp,
-                _centre_list[j-1].altitude,
-                _centre_list[j].altitude) -z_offset
-            sensor_list[i].depth = interpolate(
-                sensor_list[i].epoch_timestamp,
-                _centre_list[j-1].epoch_timestamp,
-                _centre_list[j].epoch_timestamp,
-                _centre_list[j-1].depth,
-                _centre_list[j].depth) -z_offset
-            [sensor_list[i].latitude,
-             sensor_list[i].longitude] = metres_to_latlon(
+            sensor_list[i].northings = (
+                interpolate(
+                    sensor_list[i].epoch_timestamp,
+                    _centre_list[j - 1].epoch_timestamp,
+                    _centre_list[j].epoch_timestamp,
+                    _centre_list[j - 1].northings,
+                    _centre_list[j].northings,
+                )
+                - x_offset
+            )
+            sensor_list[i].eastings = (
+                interpolate(
+                    sensor_list[i].epoch_timestamp,
+                    _centre_list[j - 1].epoch_timestamp,
+                    _centre_list[j].epoch_timestamp,
+                    _centre_list[j - 1].eastings,
+                    _centre_list[j].eastings,
+                )
+                - y_offset
+            )
+            sensor_list[i].altitude = (
+                interpolate(
+                    sensor_list[i].epoch_timestamp,
+                    _centre_list[j - 1].epoch_timestamp,
+                    _centre_list[j].epoch_timestamp,
+                    _centre_list[j - 1].altitude,
+                    _centre_list[j].altitude,
+                )
+                - z_offset
+            )
+            sensor_list[i].depth = (
+                interpolate(
+                    sensor_list[i].epoch_timestamp,
+                    _centre_list[j - 1].epoch_timestamp,
+                    _centre_list[j].epoch_timestamp,
+                    _centre_list[j - 1].depth,
+                    _centre_list[j].depth,
+                )
+                - z_offset
+            )
+            [sensor_list[i].latitude, sensor_list[i].longitude] = metres_to_latlon(
                 latitude_reference,
                 longitude_reference,
                 sensor_list[i].eastings,
-                sensor_list[i].northings)
+                sensor_list[i].northings,
+            )
 
             if _centre_list[j].covariance is not None:
                 sensor_list[i].covariance = interpolate_covariance(
                     sensor_list[i].epoch_timestamp,
-                    _centre_list[j-1].epoch_timestamp,
+                    _centre_list[j - 1].epoch_timestamp,
                     _centre_list[j].epoch_timestamp,
-                    _centre_list[j-1].covariance,
-                    _centre_list[j].covariance)
+                    _centre_list[j - 1].covariance,
+                    _centre_list[j].covariance,
+                )
 
         if sensor_overlap_flag == 1:
-            print('{} data more than dead reckoning data. Only processed ' \
-                  'overlapping data and ignored the rest.'.format(sensor_name))
-        print('Complete interpolation and coordinate transfomations ' \
-            'for {}'.format(sensor_name))
+            print(
+                "{} data more than dead reckoning data. Only processed "
+                "overlapping data and ignored the rest.".format(sensor_name)
+            )
+        print(
+            "Complete interpolation and coordinate transfomations "
+            "for {}".format(sensor_name)
+        )
