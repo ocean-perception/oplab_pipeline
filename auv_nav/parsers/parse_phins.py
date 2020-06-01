@@ -221,6 +221,6 @@ class PhinsParser:
         return data
 
 
-def parse_phins(mission, vehicle, category, ftype, outpath, fileoutname):
-    p = PhinsParser(mission, vehicle, category, ftype, outpath, fileoutname)
+def parse_phins(mission, vehicle, category, ftype, outpath):
+    p = PhinsParser(mission, vehicle, category, ftype, outpath)
     return p.parse()
