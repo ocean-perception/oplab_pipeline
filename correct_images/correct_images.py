@@ -37,7 +37,7 @@ from oplab import get_config_folder
 from oplab import Mission
 from oplab import CameraSystem, MonoCamera, StereoCamera
 
-from correct_images.corrector import Corrector
+from correct_images.corrector import Corrector, load_xviii_bayer_from_binary
 from correct_images.parser import CorrectConfig
 
 from numpy.linalg import inv
