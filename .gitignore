@@ -5,3 +5,6 @@ docs/_build/
 *.egg-info/
 oplab/commit_hash.txt
 .venv/
+.idea/
+.vscode/
+*.code-workspace
