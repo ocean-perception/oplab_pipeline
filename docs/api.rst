@@ -15,6 +15,18 @@ auv_cal
 .. automodule:: auv_cal
    :members:
 
+.. autoclass:: Calibrator
+   :members:
+
+.. autoclass:: MonoCalibrator
+   :members:
+
+.. autoclass:: StereoCalibrator
+   :members:
+
+.. autoclass:: LaserCalibrator
+   :members:
+
 .. autoclass:: CircularCone
    :members:
 

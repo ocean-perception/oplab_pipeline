@@ -12,16 +12,17 @@ oplab_pipeline is a python toolchain to process AUV dives from raw data into nav
 Please review the latest changes in the [CHANGELOG.md](CHANGELOG.md). 
 
 ## Documentation
-The documentation is hosted in [read the docs](oplab-pipeline.readthedocs.io).
+The documentation is hosted in [read the docs](https://oplab-pipeline.readthedocs.io).
 
 ## Citation
 If you use this software, please cite the following article:
 
-Yamada, T, Prügel‐Bennett, A, Thornton, B. Learning features from georeferenced seafloor imagery with location guided autoencoders. J Field Robotics. 2020; 1– 16. https://doi.org/10.1002/rob.21961
+> Yamada, T, Prügel‐Bennett, A, Thornton, B. Learning features from georeferenced seafloor imagery with location guided autoencoders. J Field Robotics. 2020; 1– 16. https://doi.org/10.1002/rob.21961
 
 
 ## License
 Copyright (c) 2020, University of Southampton. All rights reserved.
+
 Licensed under the BSD 3-Clause License. 
 See LICENSE.md file in the project root for full license information.  
 
