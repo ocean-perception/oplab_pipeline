@@ -28,39 +28,77 @@ def read_ply(filename):
 def plane_to_rectuangular_grid(plane, ymin, ymax, zmin, zmax):
     """Calculate the x,y,z values of the corners of a rectangular plane
 
-    zmin_ _________
-         |         |
-         |  plane  |
-    zmax_|_________|
-         |         |
-         ymin      ymax
+    Drawing::
 
-    Returns:
-        x, y and z of the 4 corners of the plane as matrices for plotting
+        .zmin__ _________
+        .      |         |
+        .      |  plane  |
+        .zmax__|_________|
+        .      |         |
+        .      ymin      ymax
+
+    Parameters
+    ----------
+    plane : :obj:`list` of :obj:`double`
+        Parameters of the plane parametrisation ax+by+cz+d = 0.
+    ymin : double
+        y-coordinate of top corners
+    ymax : double
+        y-coordinate of bottom corners
+    zmin : double
+        z-coordinate of top corners
+    zmax : double
+        z-coordinate of bottom corners
+
+    Returns
+    -------
+    np.ndarray
+        x, y and z of the 4 corners of the plane as matrices for plotting    
     """
+
     a, b, c, d = plane.tolist()
     yy = np.array([[ymin, ymin], [ymax, ymax]])
     zz = np.array([[zmin, zmax], [zmin, zmax]])
     return (-d - c * zz - b * yy) / a, yy, zz
 
 
-def plane_to_isosceles_trapezoid_grid(plane, ydistmin, ydistmax, zmin, zmax):
+def plane_to_isosceles_trapezoid_grid(plane, ydistmin, ydistmax, zmin1, zmax1):
     """Calculate the x,y,z values of the corners of a plane in the shape of the sheet laser
+    
+    Drawing::
 
-              y=0 ydistmin  
-    zmin__   __|__|
-            /     \
-           / plane \
-    zmax_ /_________\
-                    |
-                    ydistmax
+        .           y=0 ydistmin  
+        .zmin___   __|__|
+        .         /     \\
+        .        / plane \\
+        .zmax__ /_________\\
+        .                 |
+        .                 ydistmax
 
-    Returns:
+
+
+    Parameters
+    ----------
+    plane : :obj:`list` of :obj:`double`
+        Parameters of the plane parametrisation ax+by+cz+d = 0.
+    ydistmin : double
+        Absolute values of y-coordinates of top corners
+    ydistmax : double
+        Absolute values y-coordinates of bottom corners
+    zmin1 : double
+        z-coordinate of top corners
+    zmax1 : double
+        z-coordinate of bottom corners
+
+    Returns
+    -------
+    np.ndarray
         x, y and z of the 4 corners of the plane as matrices for plotting
     """
+
     a, b, c, d = plane.tolist()
     yy = np.array([[-ydistmin, -ydistmax], [ydistmin, ydistmax]])
-    zz = np.array([[zmin, zmax], [zmin, zmax]])
+    zz = np.array([[zmin1, zmax1], [zmin1, zmax1]])
     return (-d - c * zz - b * yy) / a, yy, zz
 
 
@@ -73,8 +111,8 @@ def plot_pointcloud_and_planes(pointcloud, planes, plot_path=None):
     :type  planes:     List of numpy arrays (vectors with 4 elements)
     :param plot_path:  (optional) Filename for storing plot as html. If None, plot is not saved.
     :type  plot_path:  String or None
-                                                   
     """
+
     fig = go.Figure()
 
     for i, pc in enumerate(pointcloud):
