@@ -21,7 +21,7 @@ For parse the code looks for a configuration file `correct_images.yaml` inside t
 
 Currently, parse function iterates over all the camera systems mentioned in the `mission.yaml` file.
 
-parse function automatically checks for altitude values from the auv_nav CSV file. If at least 10 of the altitudes are not found between the range of altitude (`maximum and minimum altitude`) provided in `correct_image.yaml` file parse exits with an information message.
+parse function automatically checks for altitude values from the auv_nav CSV file. If at least 3 of the altitudes are not found between the range of altitude (`maximum and minimum altitude`) provided in `correct_image.yaml` file parse exits with an information message.
 
 
 `correct_images process` usage:
@@ -133,3 +133,4 @@ output_settings :
   undistort : False
   compression_parameter : 'png' # 'tiff'
 ```
+Note: image_file_list option is for user to provide a partial list of images for each camera to be processed. The code supports csv files of the same format as that of auv_ekf_cameraname.csv in the json_renav* folders.

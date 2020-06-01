@@ -37,8 +37,8 @@ from oplab import get_config_folder
 from oplab import Mission
 from oplab import CameraSystem, MonoCamera, StereoCamera
 
-from correct_images.corrector import *
-from correct_images.parser import *
+from correct_images.corrector import Corrector
+from correct_images.parser import CorrectConfig
 
 from numpy.linalg import inv
 import sys
@@ -189,7 +189,6 @@ def call_parse(args):
 
     for camera in camerasystem.cameras:
         Console.info('Parsing for camera', camera.name)
-        print('-----------------------------------------------------')
 
         if len(camera.image_list) == 0:
             Console.info('No images found for the camera at the path provided...')
@@ -202,8 +201,15 @@ def call_parse(args):
                 continue
             else:
                 corrector.generate_attenuation_correction_parameters()
-    Console.info('Parse completed for all cameras. Please run process to develop corrected images...')
+        Console.info('Removing memmaps...')
+        memmap_files_path = corrector.memmap_folder.glob('*.map')
+        for file in memmap_files_path:
+            if file.exists():
+                file.unlink()
+        print('-----------------------------------------------------')
 
+    Console.info('Parse completed for all cameras. Please run process to develop corrected images...')
+    # remove memmaps
 
 
 def call_process(args):
