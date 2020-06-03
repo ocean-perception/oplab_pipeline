@@ -129,12 +129,12 @@ def main(args=None):
 
 
 def call_debayer(args):
-    """ performs debayer of input bayer images without going through correction pipeline
+    """Perform debayer of input bayer images without going through correction pipeline
 
     Parameters
     -----------
     args : parse_args object
-        user provided arguments for path of bayer images, filetype, and optional 
+        User provided arguments for path of bayer images, filetype, and optional 
         arguments like bayer pattern, output directory, output format
     """
 
@@ -185,12 +185,12 @@ def call_debayer(args):
 
 
 def call_parse(args):
-    """ performs parsing configuration yaml files and generate image correction parameters
+    """Perform parsing of configuration yaml files and generate image correction parameters
 
     Parameters
     -----------
     args : parse_args object
-        user provided arguments for path of source images
+        User provided arguments for path of source images
     """
 
     correct_config, camerasystem = setup(args)
@@ -224,13 +224,13 @@ def call_parse(args):
 
 
 def call_process(args):
-    """ performs processing on source images using correction parameters generated in parse
+    """Perform processing on source images using correction parameters generated in parse
     and outputs corrected images
 
     Parameters
     -----------
     args : parse_args object
-        user provided arguments for path of source images
+        User provided arguments for path of source images
     """
 
     correct_config, camerasystem = setup(args)
@@ -315,12 +315,12 @@ def call_process(args):
 
 
 def call_correct(args):
-    """ performs parse and process in one go. can be used for small datasets 
+    """Perform parse and process in one go. Can be used for small datasets 
 
     Parameters
     -----------
     args : parse_args object
-        user provided arguments for path of source images
+        User provided arguments for path of source images
     """
 
     correct_config, camerasystem = setup(args)
@@ -340,12 +340,12 @@ def call_correct(args):
 
 
 def setup(args):
-    """ generates correct_config and camerasystem objects from input config yaml files
+    """Generate correct_config and camerasystem objects from input config yaml files
     
     Parameters
     -----------
     args : parse_args object
-        user provided arguments for path of source images
+        User provided arguments for path of source images
     """
 
     path = Path(args.path).resolve()
