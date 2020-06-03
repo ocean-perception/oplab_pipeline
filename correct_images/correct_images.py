@@ -149,8 +149,7 @@ def call_debayer(args):
             img = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
         img_rgb = corrector.debayer(img, pattern)
         img_rgb = img_rgb.astype(np.uint8)
-        image_name = str(image_path.stem) + output_format
-        output_image_path = Path(output_dir) / image_name
+        image_name = str(image_path.stem)
         corrector.write_output_image(img_rgb, image_name, output_dir, output_format)
 
     output_dir = Path(args.output)
