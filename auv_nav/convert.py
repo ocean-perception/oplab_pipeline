@@ -152,7 +152,6 @@ def convert(filepath, input_file, ftype, start_datetime, finish_datetime):
             Console.info("Done! Two files converted:")
             Console.info(file1, file2)
             interpolate_laser = True
-            return
 
     if not valid_dive(filepath):
         return
@@ -212,7 +211,7 @@ def convert(filepath, input_file, ftype, start_datetime, finish_datetime):
                 and epoch_timestamp <= epoch_finish_time
             ):
                 if "laser" in parsed_json_data[i]["category"]:
-                    filename = parsed_json_data[i]["camera3"][0]["filename"]
+                    filename = parsed_json_data[i]["filename"]
                     c3_interp = interpolate_camera(
                         epoch_timestamp, camera1_list, filename
                     )
