@@ -127,28 +127,31 @@ def convert(filepath, input_file, ftype, start_datetime, finish_datetime):
     Console.info("Requested data conversion to {}".format(ftype))
 
     filepath = Path(filepath).resolve()
-    input_file = Path(input_file).resolve()
+    
 
     camera1_list = []
     camera2_list = []
     interpolate_laser = False
-    if input_file.suffix == ".data":
-        # Process stereo_pose_est.data
-        Console.info("Processing ACFR stereo pose estimation file...")
-        s = AcfrStereoPoseFile(input_file)
-        camera1_list, camera2_list = s.convert()
-        file1 = Path("auv_acfr_fore.csv")
-        file2 = Path("auv_acfr_aft.csv")
-        fileout1 = file1.open("w")
-        fileout2 = file2.open("w")
-        fileout1.write(camera1_list[0].write_csv_header())
-        fileout2.write(camera1_list[0].write_csv_header())
-        for c1, c2 in zip(camera1_list, camera2_list):
-            fileout1.write(c1.to_csv())
-            fileout2.write(c2.to_csv())
-        Console.info("Done! Two files converted:")
-        Console.info(file1, file2)
-        interpolate_laser = True
+
+    if input_file is not None:
+        input_file = Path(input_file).resolve()
+        if input_file.suffix == ".data":
+            # Process stereo_pose_est.data
+            Console.info("Processing ACFR stereo pose estimation file...")
+            s = AcfrStereoPoseFile(input_file)
+            camera1_list, camera2_list = s.convert()
+            file1 = Path("auv_acfr_fore.csv")
+            file2 = Path("auv_acfr_aft.csv")
+            fileout1 = file1.open("w")
+            fileout2 = file2.open("w")
+            fileout1.write(camera1_list[0].write_csv_header())
+            fileout2.write(camera1_list[0].write_csv_header())
+            for c1, c2 in zip(camera1_list, camera2_list):
+                fileout1.write(c1.to_csv())
+                fileout2.write(c2.to_csv())
+            Console.info("Done! Two files converted:")
+            Console.info(file1, file2)
+            interpolate_laser = True
 
     if not valid_dive(filepath):
         return
@@ -208,7 +211,7 @@ def convert(filepath, input_file, ftype, start_datetime, finish_datetime):
                 and epoch_timestamp <= epoch_finish_time
             ):
                 if "laser" in parsed_json_data[i]["category"]:
-                    filename = parsed_json_data[i]["camera3"][0]["filename"]
+                    filename = parsed_json_data[i]["filename"]
                     c3_interp = interpolate_camera(
                         epoch_timestamp, camera1_list, filename
                     )
