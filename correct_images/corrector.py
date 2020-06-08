@@ -206,13 +206,39 @@ class Corrector:
 
     def get_imagelist(self):
         """Generate list of source images"""
+        
+        if self.distance_path == "json_renav_*":
+            Console.info(
+                "Picking first JSON folder as the default path to auv_nav csv files..."
+            )
+            dir_ = self.path_processed
+            json_list = list(dir_.glob("json_*"))
+            self.distance_path = json_list[0]
+
+        full_metric_path = self.path_processed / self.distance_path
+        full_metric_path = full_metric_path / "csv" / "ekf"
+        metric_file = "auv_ekf_" + self.camera_name + ".csv"
+        self.altitude_path = full_metric_path / metric_file
+
+
         # get imagelist for given camera object
         if self._camera_image_file_list == "none":
             self._imagelist = self._camera.image_list
         # get imagelist from user provided filelist
         else:
             path_file_list = Path(self.path_config) / self._camera_image_file_list
-            dataframe = pd.read_csv(path_file_list)
+            trimmed_csv_file = 'trimmed_csv_' + self._camera.name + '.csv'
+            self.trimmed_csv_path = Path(self.path_config) / trimmed_csv_file
+
+            if not self.altitude_path.exists():
+                message = "Path to " + metric_file + " does not exist..."
+                Console.quit(message)
+            else:
+                # create trimmed csv based on user's provided list of images
+                trim_csv_files(path_file_list, self.altitude_path, self.trimmed_csv_path)
+
+            # read trimmed csv filepath
+            dataframe = pd.read_csv(self.trimmed_csv_path)
             user_imagepath_list = dataframe["relative_path"]
             user_imagenames_list = [Path(image).name for image in user_imagepath_list]
             self._imagelist = [
@@ -266,28 +292,10 @@ class Corrector:
         elif self.distance_metric == "altitude":
             # check if user provides a filelist
             if self._camera_image_file_list == "none":
-                # check for distance metric path for the full image list in directory
-                if self.distance_path == "json_renav_*":
-                    Console.info(
-                        "Picking first JSON folder as the default path to auv_nav csv files..."
-                    )
-                    dir_ = self.path_processed
-                    json_list = list(dir_.glob("json_*"))
-                    self.distance_path = json_list[0]
-
-                full_metric_path = self.path_processed / self.distance_path
-                full_metric_path = full_metric_path / "csv" / "ekf"
-                metric_file = "auv_ekf_" + self.camera_name + ".csv"
-                metric_file_path = full_metric_path / metric_file
-
-                if not metric_file_path.exists():
-                    message = "Path to " + metric_file + " does not exist..."
-                    Console.quit(message)
-                else:
-                    distance_csv_path = metric_file_path
+                distance_csv_path = self.altitude_path
             else:
                 distance_csv_path = (
-                    Path(self.path_config) / self._camera_image_file_list
+                    Path(self.path_config) / self.trimmed_csv_path
                 )
 
             # read dataframe for corresponding distance csv path
@@ -1332,7 +1340,9 @@ def curve_fitting(distancelist, intensitylist):
             ret_params = tmp_params.x
 
     except (ValueError, UnboundLocalError) as e:
-        Console.error("Value Error", a, b, c)
+        Console.error("Value Error due to Overflow", a, b, c)
+        ret_params = init_params
+        Console.warn('Parameters calculated are unoptimised because of Value Error...')
 
     return ret_params
 
@@ -1352,3 +1362,46 @@ def remove_directory(folder):
         else:
             p.unlink()
     folder.rmdir()
+
+
+
+# functions used to create a trimmed auv_ekf_<camera_name>.csv file based on user's selection of images
+def trim_csv_files(filelist, original_csv_path, trimmed_csv_path):
+    """Trim csv files based on the list of images provided by user
+
+    Parameters
+    -----------
+    filelist : user provided list of imagenames which need to be processed
+    original_csv_path : path to the auv_ekf_<camera_name.csv>
+    trimmed_csv_path : path to trimmed csv which needs to be created    
+    """
+
+    imagename_list=get_imagename_list(filelist)
+    dataframe = pd.read_csv(original_csv_path)
+    image_path_list = dataframe['relative_path']
+    trimmed_path_list = [path 
+                            for path in image_path_list
+                            for item in imagename_list 
+                            if Path(path).name == item ]
+    trimmed_dataframe = dataframe.loc[dataframe['relative_path'].isin(trimmed_path_list) ]
+    trimmed_dataframe.to_csv (trimmed_csv_path, index = False, header=True)
+
+
+
+def get_imagename_list(imagename_list_filepath):
+    """ get list of imagenames from the filelist provided by user
+
+    Parameters
+    -----------
+    imagename_list_filepath : Path to the filelist provided in correct_images.yaml
+    """
+
+    with open(imagename_list_filepath, 'r') as imagename_list_file:
+        imagename_list = imagename_list_file.read().splitlines()
+    return imagename_list
+
+
+
+
+
+    
