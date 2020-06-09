@@ -366,49 +366,49 @@ def setup(args):
     # load mission parameters
     mission = Mission(path_mission)
 
-    # find out default yaml paths
-    root = Path(__file__).resolve().parents[1]
+    # resolve path to camera.yaml file
+    temp_path = path_raw_folder / 'camera.yaml'
 
-    acfr_std_camera_file = "auv_nav/default_yaml/ts1/SSK17-01/camera.yaml"
-    sx3_camera_file = "auv_nav/default_yaml/ae2000/YK17-23C/camera.yaml"
-    biocam_camera_file = "auv_nav/default_yaml/as6/DY109/camera.yaml"
+    if not temp_path.exists():
+        Console.info('Not found camera.yaml file in /raw folder...Using default camera.yaml file...')
+        # find out default yaml paths
+        root = Path(__file__).resolve().parents[1]
 
-    acfr_std_correct_config_file = (
-        "correct_images/default_yaml/acfr/correct_images.yaml"
-    )
-    sx3_std_correct_config_file = "correct_images/default_yaml/sx3/correct_images.yaml"
-    biocam_std_correct_config_file = (
-        "correct_images/default_yaml/biocam/correct_images.yaml"
-    )
+        acfr_std_camera_file = "auv_nav/default_yaml/ts1/SSK17-01/camera.yaml"
+        sx3_camera_file = "auv_nav/default_yaml/ae2000/YK17-23C/camera.yaml"
+        biocam_camera_file = "auv_nav/default_yaml/as6/DY109/camera.yaml"
 
-    if mission.image.format == "acfr_standard":
-        camera_yaml_path = root / acfr_std_camera_file
-        default_file_path_correct_config = root / acfr_std_correct_config_file
-    elif mission.image.format == "seaxerocks_3":
-        camera_yaml_path = root / sx3_camera_file
-        default_file_path_correct_config = root / sx3_std_correct_config_file
-    elif mission.image.format == "biocam":
-        camera_yaml_path = root / biocam_camera_file
-        default_file_path_correct_config = root / biocam_std_correct_config_file
-    else:
-        Console.warn(
-            "Image system not recognised. Looking for camera.yaml in " "raw folder..."
+        acfr_std_correct_config_file = (
+            "correct_images/default_yaml/acfr/correct_images.yaml"
         )
-        camera_yaml_path = path_raw_folder / "camera.yaml"
-        if not camera_yaml_path.exists():
-            Console.quit(
-                "camera.yaml file for new Image system not found within"
-                " raw folder..."
-            )
+        sx3_std_correct_config_file = "correct_images/default_yaml/sx3/correct_images.yaml"
+        biocam_std_correct_config_file = (
+            "correct_images/default_yaml/biocam/correct_images.yaml"
+        )
+
+        if mission.image.format == "acfr_standard":
+            camera_yaml_path = root / acfr_std_camera_file
+            default_file_path_correct_config = root / acfr_std_correct_config_file
+        elif mission.image.format == "seaxerocks_3":
+            camera_yaml_path = root / sx3_camera_file
+            default_file_path_correct_config = root / sx3_std_correct_config_file
+        elif mission.image.format == "biocam":
+            camera_yaml_path = root / biocam_camera_file
+            default_file_path_correct_config = root / biocam_std_correct_config_file
         else:
-            Console.info("camera.yaml found for new imaging system...")
+            Console.quit(
+                "Image system in camera.yaml does not match with mission.yaml... Provide correct camera.yaml in /raw folder..."
+            )
+    else:
+        Console.info('Found camera.yaml file in /raw folder...')
+        camera_yaml_path = temp_path
+
 
     # instantiate the camerasystem and setup cameras from mission and config files / auv_nav
     camerasystem = CameraSystem(camera_yaml_path, path_raw_folder)
     if camerasystem.camera_system != mission.image.format:
         Console.quit(
-            "Image system not found in camera.yaml file. The mission "
-            "you are trying to process does not seem to have a camera"
+            "Image system in camera.yaml does not match with mission.yaml...Provide correct camera.yaml in /raw folder..."
         )
 
     # check for correct_config yaml path
