@@ -1381,8 +1381,7 @@ def trim_csv_files(filelist, original_csv_path, trimmed_csv_path):
     image_path_list = dataframe['relative_path']
     trimmed_path_list = [path 
                             for path in image_path_list
-                            for item in imagename_list 
-                            if Path(path).name == item ]
+                            if Path(path).name in imagename_list ]
     trimmed_dataframe = dataframe.loc[dataframe['relative_path'].isin(trimmed_path_list) ]
     trimmed_dataframe.to_csv (trimmed_csv_path, index = False, header=True)
 
