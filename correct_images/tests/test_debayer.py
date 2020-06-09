@@ -33,6 +33,8 @@ class testCaseCorrector(unittest.TestCase):
         for i in range(len(bayer_pattern_choices)):
             bayer_pattern = bayer_pattern_choices[i].get("choice")
             image_rgb = corrector.debayer(image_bayer, bayer_pattern)
+            print('-------------------')
+            print(image_rgb)
 
             # TODO check the values
             if bayer_pattern == "grbg":

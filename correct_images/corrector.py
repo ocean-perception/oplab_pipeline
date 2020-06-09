@@ -932,19 +932,19 @@ class Corrector:
         numpy.ndarray
             Debayered image
         """
-
-        image16 = image.astype(np.uint16)
+        Console.info(pattern)
+        image8 = image.astype(np.uint8)
         corrected_rgb_img = None
         if pattern == "rggb" or pattern == "RGGB":
-            corrected_rgb_img = cv2.cvtColor(image16, cv2.COLOR_BAYER_RG2RGB)
+            corrected_rgb_img = cv2.cvtColor(image8, cv2.COLOR_BAYER_RG2RGB)
         elif pattern == "grbg" or pattern == "GRBG":
-            corrected_rgb_img = cv2.cvtColor(image16, cv2.COLOR_BAYER_GR2RGB)
+            corrected_rgb_img = cv2.cvtColor(image8, cv2.COLOR_BAYER_GR2RGB)
         elif pattern == "bggr" or pattern == "BGGR":
-            corrected_rgb_img = cv2.cvtColor(image16, cv2.COLOR_BAYER_BG2RGB)
+            corrected_rgb_img = cv2.cvtColor(image8, cv2.COLOR_BAYER_BG2RGB)
         elif pattern == "gbrg" or pattern == "GBRG":
-            corrected_rgb_img = cv2.cvtColor(image16, cv2.COLOR_BAYER_GB2RGB)
+            corrected_rgb_img = cv2.cvtColor(image8, cv2.COLOR_BAYER_GB2RGB)
         elif pattern == "mono" or pattern == "MONO":
-            return image16
+            return image
         else:
             Console.quit("Bayer pattern not supported (", pattern, ")")
         return corrected_rgb_img
