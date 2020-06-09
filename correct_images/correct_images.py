@@ -205,11 +205,13 @@ def call_parse(args):
         else:
             corrector = Corrector(args.force, camera, correct_config, path)
             ret = corrector.setup()
+            Console.info(corrector._type)
             if ret < 0:
                 Console.warn("Camera not included in correct_images.yaml...")
                 continue
             else:
                 corrector.generate_attenuation_correction_parameters()
+
         Console.info("Removing memmaps...")
         memmap_files_path = corrector.memmap_folder.glob("*.map")
         for file in memmap_files_path:
@@ -252,7 +254,7 @@ def call_process(args):
                 continue
             else:
                 corrector.get_imagelist()
-
+            Console.info(corrector._type)
             # check if necessary folders exist in respective folders
             image_path = Path(corrector._imagelist[0]).resolve()
             image_parent_path = image_path.parents[0]
