@@ -844,7 +844,17 @@ class Corrector:
             for idx in trange(0, len(self.bayer_numpy_filelist))
         )
 
+        # write a filelist.csv containing image filenames which are processed
+        imagefiles = []
+        for path in self.bayer_numpy_filelist:
+            imagefiles.append(Path(path).name)
+        dataframe = pd.DataFrame(imagefiles)
+        filelist_path = self.output_images_folder / "filelist.csv"
+        dataframe.to_csv(filelist_path)
         Console.info("Processing of images is completed...")
+
+
+
 
     def process_image(self, idx, test_phase):
         """Execute series of corrections for an image
@@ -900,6 +910,8 @@ class Corrector:
         self.write_output_image(
             image_rgb, image_filename, self.output_images_folder, self.output_format
         )
+
+
 
     # apply corrections on each image using the correction paramters for targeted brightness and contrast
     def apply_distance_based_corrections(self, image, distance, brightness, contrast):
