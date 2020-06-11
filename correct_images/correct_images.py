@@ -204,13 +204,16 @@ def call_parse(args):
             continue
         else:
             corrector = Corrector(args.force, camera, correct_config, path)
-            ret = corrector.setup()
-            Console.info(corrector._type)
+            ret = corrector.setup('parse')
             if ret < 0:
                 Console.warn("Camera not included in correct_images.yaml...")
                 continue
             else:
-                corrector.generate_attenuation_correction_parameters()
+                if corrector.correction_method == "colour_correction":
+                    corrector.generate_attenuation_correction_parameters()
+                elif corrector.correction_method == "manual_balance":
+                    Console.info('run process for manual_balance...')
+                    continue
 
         Console.info("Removing memmaps...")
         memmap_files_path = corrector.memmap_folder.glob("*.map")
@@ -247,70 +250,39 @@ def call_process(args):
             continue
         else:
             corrector = Corrector(args.force, camera, correct_config, path)
-            corrector.load_generic_config_parameters()
-            ret = corrector.load_camera_specific_config_parameters()
+            ret = corrector.setup('process')
             if ret < 0:
                 Console.warn("Camera not included in correct_images.yaml...")
                 continue
             else:
-                corrector.get_imagelist()
-            Console.info(corrector._type)
-            # check if necessary folders exist in respective folders
-            image_path = Path(corrector._imagelist[0]).resolve()
-            image_parent_path = image_path.parents[0]
-            output_dir_path = get_processed_folder(image_parent_path)
-            output_dir_path = output_dir_path / "attenuation_correction"
-            folder_name = "params_" + camera.name
-            params_path = output_dir_path / folder_name
+                if corrector.correction_method == "colour_correction":
+                    filepath_attenuation_params = Path(corrector.attenuation_parameters_folder) / "attenuation_parameters.npy"
+                    filepath_correction_gains = Path(corrector.attenuation_parameters_folder) / "correction_gains.npy"
+                    filepath_corrected_mean = Path(corrector.attenuation_parameters_folder) / "image_corrected_mean.npy"
+                    filepath_corrected_std = Path(corrector.attenuation_parameters_folder) / "image_corrected_std.npy"
+                    filepath_raw_mean = Path(corrector.attenuation_parameters_folder) / "image_raw_mean.npy"
+                    filepath_raw_std = Path(corrector.attenuation_parameters_folder) / "image_raw_std.npy"
 
-            if not params_path.exists():
-                Console.quit("Parameters do not exist. Please run parse first...")
-            else:
-                filepath_attenuation_params = (
-                    Path(params_path) / "attenuation_parameters.npy"
-                )
-                filepath_correction_gains = Path(params_path) / "correction_gains.npy"
-                filepath_corrected_mean = Path(params_path) / "image_corrected_mean.npy"
-                filepath_corrected_std = Path(params_path) / "image_corrected_std.npy"
-                filepath_raw_mean = Path(params_path) / "image_raw_mean.npy"
-                filepath_raw_std = Path(params_path) / "image_raw_std.npy"
+                    # read parameters from disk
+                    if filepath_attenuation_params.exists():
+                        corrector.image_attenuation_parameters = np.load(
+                            filepath_attenuation_params
+                        )
+                    if filepath_correction_gains.exists():
+                        corrector.correction_gains = np.load(filepath_correction_gains)
+                    if filepath_corrected_mean.exists():
+                        corrector.image_corrected_mean = np.load(filepath_corrected_mean)
+                    if filepath_corrected_std.exists():
+                        corrector.image_corrected_std = np.load(filepath_corrected_std)
+                    if filepath_raw_mean.exists():
+                        corrector.image_raw_mean = np.load(filepath_raw_mean)
+                    if filepath_raw_std.exists():
+                        corrector.image_raw_std = np.load(filepath_raw_std)
+                    Console.info('Correction parameters loaded...')
+                    Console.info('Running process for colour correction...')
+                else:
+                    Console.info('Running process with manual colour balancing...')
 
-                # read in image numpy files
-                folder_name = "bayer_" + camera.name
-                dir_ = Path(output_dir_path) / folder_name
-                corrector.bayer_numpy_filelist = list(dir_.glob("*.npy"))
-
-                # read in distance matrix numpy files
-                folder_name = "distance_" + camera.name
-                dir_ = Path(params_path) / folder_name
-                corrector.distance_matrix_numpy_filelist = list(dir_.glob("*.npy"))
-
-                # read parameters from disk
-                if filepath_attenuation_params.exists():
-                    corrector.image_attenuation_parameters = np.load(
-                        filepath_attenuation_params
-                    )
-                if filepath_correction_gains.exists():
-                    corrector.correction_gains = np.load(filepath_correction_gains)
-                if filepath_corrected_mean.exists():
-                    corrector.image_corrected_mean = np.load(filepath_corrected_mean)
-                if filepath_corrected_std.exists():
-                    corrector.image_corrected_std = np.load(filepath_corrected_std)
-                if filepath_raw_mean.exists():
-                    corrector.image_raw_mean = np.load(filepath_raw_mean)
-                if filepath_raw_std.exists():
-                    corrector.image_raw_std = np.load(filepath_raw_std)
-
-                # check if images exist already
-                folder_name = "developed_" + camera.name
-                output_path = Path(output_dir_path) / folder_name
-                filelist = list(output_path.glob("*.*"))
-                if len(filelist) > 0:
-                    if not args.force:
-                        Console.quit("Overwrite images with process -F ...")
-
-                # invoke process function
-                corrector.output_images_folder = output_path
                 corrector.process_correction()
 
     Console.info("Process completed for all cameras...")
