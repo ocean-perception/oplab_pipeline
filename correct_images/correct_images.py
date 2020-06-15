@@ -120,9 +120,19 @@ def main(args=None):
     )
     subparser_process.set_defaults(func=call_process)
 
+
     if len(sys.argv) == 1 and args is None:
         # Show help if no args provided
         parser.print_help(sys.stderr)
+
+    elif len(sys.argv) == 2 and not sys.argv[1] == "-h":
+        args = parser.parse_args(["correct", sys.argv[1]])
+        print(args)
+
+        if hasattr(args, "func"):
+            args.func(args)
+
+
     else:
         args = parser.parse_args()
         args.func(args)
@@ -314,21 +324,8 @@ def call_correct(args):
     args : parse_args object
         User provided arguments for path of source images
     """
-
-    correct_config, camerasystem = setup(args)
-    path = Path(args.path).resolve()
-
-    for camera in camerasystem.cameras:
-        Console.info("Processing camera:", camera.name)
-
-        if len(camera.image_list) == 0:
-            Console.info("No images found for the camera at the path provided")
-            continue
-        else:
-            corrector = Corrector(args.force, camera, correct_config, path)
-            corrector.setup()
-            corrector.generate_attenuation_correction_parameters()
-            corrector.process_correction()
+    call_parse(args)
+    call_process(args)
 
 
 def setup(args):

@@ -72,7 +72,7 @@ class TestCaseCorrector(unittest.TestCase):
             distance_folder.mkdir(parents=True)
         self.path_processed = path_dummy_folder
         self.distance_folder = distance_folder
-        self.altitude_path = distance_path
+        self.distance_path = distance_path
         self.altitude_min = min_altitude
         self.altitude_max = max_altitude
         self.image_height = ACFR_IMG_HEIGHT
@@ -129,7 +129,7 @@ class TestCaseCorrector(unittest.TestCase):
         # set attributes
         self.distance_metric = "altitude"
         self.path_processed = path_dummy_folder
-        self.altitude_path = distance_path
+        self.distance_path = distance_path
         self.distance_folder = distance_folder
         self._camera_image_file_list = "none"
         self._imagelist = imagelist
@@ -192,7 +192,7 @@ class TestCaseCorrector(unittest.TestCase):
         # set attributes
         self.distance_metric = "altitude"
         self.path_processed = path_dummy_folder
-        self.altitude_path = distance_path
+        self.distance_path = distance_path
         self.distance_folder = distance_folder
         self._camera_image_file_list = "none"
         self._imagelist = imagelist
@@ -213,7 +213,7 @@ class TestCaseCorrector(unittest.TestCase):
         # set Corrector:: attributes
         corrector.distance_metric = "altitude"
         corrector.path_processed = self.path_processed
-        corrector.altitude_path = self.altitude_path
+        corrector.distance_path = self.distance_path
         corrector._camera_image_file_list = "none"
         corrector.image_height = self.image_height
         corrector.image_width = self.image_width
