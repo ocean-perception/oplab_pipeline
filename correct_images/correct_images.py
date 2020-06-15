@@ -268,16 +268,34 @@ def call_process(args):
                         corrector.image_attenuation_parameters = np.load(
                             filepath_attenuation_params
                         )
+                    else:
+                        if corrector.distance_metric == "altitude" or corrector.distance_metric == "depth_map":
+                            Console.quit("Code does not find attenuation_parameters.npy...Please run parse before process...")
                     if filepath_correction_gains.exists():
                         corrector.correction_gains = np.load(filepath_correction_gains)
+                    else:
+                        if corrector.distance_metric == "altitude" or corrector.distance_metric == "depth_map":
+                            Console.quit("Code does not find correction_gains.npy...Please run parse before process...")
                     if filepath_corrected_mean.exists():
                         corrector.image_corrected_mean = np.load(filepath_corrected_mean)
+                    else:
+                        if corrector.distance_metric == "altitude" or corrector.distance_metric == "depth_map":
+                            Console.quit("Code does not find image_corrected_mean.npy...Please run parse before process...")
                     if filepath_corrected_std.exists():
                         corrector.image_corrected_std = np.load(filepath_corrected_std)
+                    else:
+                        if corrector.distance_metric == "altitude" or corrector.distance_metric == "depth_map":
+                            Console.quit("Code does not find image_corrected_std.npy...Please run parse before process...")
                     if filepath_raw_mean.exists():
                         corrector.image_raw_mean = np.load(filepath_raw_mean)
+                    else:
+                        if corrector.distance_metric == "altitude" or corrector.distance_metric == "depth_map" or corrector.distance_metric == "none":
+                            Console.quit("Code does not find image_raw_mean.npy...Please run parse before process...")
                     if filepath_raw_std.exists():
                         corrector.image_raw_std = np.load(filepath_raw_std)
+                    else:
+                        if corrector.distance_metric == "altitude" or corrector.distance_metric == "depth_map" or corrector.distance_metric == "none":
+                            Console.quit("Code does not find image_raw_std.npy...Please run parse before process...")
                     Console.info('Correction parameters loaded...')
                     Console.info('Running process for colour correction...')
                 else:

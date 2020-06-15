@@ -39,24 +39,24 @@ class testCaseCorrector(unittest.TestCase):
             # TODO check the values
             if bayer_pattern == "grbg":
                 self.assertEqual(
-                    image_rgb[1, 1, 0], 120, "Red channel value is incorrect"
+                    image_rgb[1, 1, 0], 240, "Blue channel value is incorrect"
                 )
                 self.assertEqual(
                     image_rgb[1, 1, 1], 120, "Green channel value is incorrect"
                 )
                 self.assertEqual(
-                    image_rgb[1, 1, 2], 240, "Blue channel value is incorrect"
+                    image_rgb[1, 1, 2], 120, "Red channel value is incorrect"
                 )
 
             elif bayer_pattern == "rggb":
                 self.assertEqual(
-                    image_rgb[1, 1, 0], 240, "Red channel value is incorrect"
+                    image_rgb[1, 1, 0], 120, "Blue channel value is incorrect"
                 )
                 self.assertEqual(
                     image_rgb[1, 1, 1], 180, "Green channel value is incorrect"
                 )
                 self.assertEqual(
-                    image_rgb[1, 1, 2], 120, "Blue channel value is incorrect"
+                    image_rgb[1, 1, 2], 240, "Red channel value is incorrect"
                 )
 
 
