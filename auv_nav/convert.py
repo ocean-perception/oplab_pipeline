@@ -128,7 +128,6 @@ def convert(filepath, input_file, ftype, start_datetime, finish_datetime):
 
     filepath = Path(filepath).resolve()
     
-
     camera1_list = []
     camera2_list = []
     interpolate_laser = False
@@ -140,10 +139,11 @@ def convert(filepath, input_file, ftype, start_datetime, finish_datetime):
             Console.info("Processing ACFR stereo pose estimation file...")
             s = AcfrStereoPoseFile(input_file)
             camera1_list, camera2_list = s.convert()
-            file1 = Path("auv_acfr_fore.csv")
-            file2 = Path("auv_acfr_aft.csv")
-            fileout1 = file1.open("w")
-            fileout2 = file2.open("w")
+            file1 = Path("csv/acfr/auv_acfr_Cam51707923.csv") # ToDo: use camera name as specified in mission.yaml. Save in subfolder of json_renav folder.
+            file2 = Path("csv/acfr/auv_acfr_Cam51707925.csv") # ToDo: use camera name as specified in mission.yaml. Save in subfolder of json_renav folder.
+            file1.parent.mkdir(parents=True, exist_ok=True)
+            fileout1 = file1.open("w") # ToDo:  Check if file exists and only overwrite if told to do so ('-F').
+            fileout2 = file2.open("w") # ToDo:  Check if file exists and only overwrite if told to do so ('-F').
             fileout1.write(camera1_list[0].write_csv_header())
             fileout2.write(camera1_list[0].write_csv_header())
             for c1, c2 in zip(camera1_list, camera2_list):
@@ -200,8 +200,9 @@ def convert(filepath, input_file, ftype, start_datetime, finish_datetime):
 
     if interpolate_laser:
         Console.info("Interpolating laser to ACFR stereo pose data...")
-        file3 = Path("auv_acfr_laser.csv")
-        fileout3 = file3.open("w")
+        file3 = Path("csv/acfr/auv_acfr_LM165.csv") # ToDo: use camera name as specified in mission.yaml. Save in subfolder of json_renav folder.
+        file3.parent.mkdir(parents=True, exist_ok=True)
+        fileout3 = file3.open("w") # ToDo: Check if file exists and only overwrite if told to do so ('-F')
         fileout3.write(camera1_list[0].write_csv_header())
         for i in range(len(parsed_json_data)):
             Console.progress(i, len(parsed_json_data))
