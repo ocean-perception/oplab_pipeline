@@ -462,7 +462,7 @@ class Corrector:
         """
 
         # create numpy files as per bayer_numpy_filelist
-        if self._camera.extension == "tif":
+        if self._camera.extension == "tif" or self._camera.extension == "jpg":
             # write numpy files for corresponding bayer images
             for idx in trange(len(self._imagelist)):
                 tmp_tif = imageio.imread(self._imagelist[idx])
