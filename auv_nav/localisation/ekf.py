@@ -8,6 +8,9 @@ See LICENSE.md file in the project root for full license information.
 
 from auv_nav.tools.interpolate import interpolate_dvl
 from auv_nav.tools.interpolate import interpolate
+from auv_nav.tools.body_to_inertial import body_to_inertial
+from auv_nav.sensors import SyncedOrientationBodyVelocity
+from auv_nav.tools.latlon_wgs84 import metres_to_latlon
 from oplab import Console
 
 import math
@@ -31,6 +34,17 @@ class Index:
     DIM = 12
 
 
+class MeasurementReport:
+    valid = 0
+    dropped = 0
+    def add(self, valid):
+        if valid:
+            self.valid += 1
+        else:
+            self.dropped += 1
+        self.total = self.valid + self.dropped
+
+
 class EkfState(object):
     def __init__(self, time, state, covariance):
         # The real-valued time, in seconds, since some epoch
@@ -52,12 +66,40 @@ class EkfState(object):
     def get_time(self):
         return self.time
 
+    def toSyncedOrientationBodyVelocity(self):
+        b = SyncedOrientationBodyVelocity()
+        b.epoch_timestamp = self.time
+        b.northings = self.state[Index.X, 0]
+        b.eastings = self.state[Index.Y, 0]
+        b.depth = self.state[Index.Z, 0]
+        b.northings_std = np.sqrt(self.covariance[Index.X, Index.X])
+        b.eastings_std = np.sqrt(self.covariance[Index.Y, Index.Y])
+        b.depth_std = np.sqrt(self.covariance[Index.Z, Index.Z])
+        b.roll = self.state[Index.ROLL, 0] * 180.0 / math.pi
+        b.pitch = self.state[Index.PITCH, 0] * 180.0 / math.pi
+        b.yaw = self.state[Index.YAW, 0] * 180.0 / math.pi
+        b.roll_std = np.sqrt(self.covariance[Index.ROLL, Index.ROLL]) * 180.0 / math.pi
+        b.pitch_std = np.sqrt(self.covariance[Index.PITCH, Index.PITCH]) * 180.0 / math.pi
+        b.yaw_std = np.sqrt(self.covariance[Index.YAW, Index.YAW]) * 180.0 / math.pi
+        b.x_velocity = self.state[Index.VX, 0]
+        b.y_velocity = self.state[Index.VY, 0]
+        b.z_velocity = self.state[Index.VZ, 0]
+        b.x_velocity_std = np.sqrt(self.covariance[Index.VX, Index.VX])
+        b.y_velocity_std = np.sqrt(self.covariance[Index.VY, Index.VY])
+        b.z_velocity_std = np.sqrt(self.covariance[Index.VZ, Index.VZ])
+        b.covariance = self.covariance
+        return b
+
+
+def warn_if_zero(val, name):
+    if val == 0:
+        Console.warn("The value for", name, "is zero. Is this expected?")
 
 class Measurement(object):
     def __init__(self, sensors_std):
         # The measurement and its associated covariance
-        self.measurement = np.zeros(Index.DIM, dtype=float)
-        self.covariance = np.zeros((Index.DIM, Index.DIM), dtype=float)
+        self.measurement = np.zeros(Index.DIM, dtype=np.float64)
+        self.covariance = np.zeros((Index.DIM, Index.DIM), dtype=np.float64)
         self.sensors_std = sensors_std
 
         # This defines which variables within this measurement
@@ -67,8 +109,15 @@ class Measurement(object):
         # The real-valued time, in seconds, since some epoch
         self.time = 0.0
 
+        # Measurement type string
+        self.type = ''
+
         # The Mahalanobis distance threshold in number of sigmas
-        self.mahalanobis_threshold = 1e20
+        self.mahalanobis_threshold = 5.0
+    
+    def __str__(self):
+        msg = 'Measurement: ' + str(self.measurement) + '\n Covariance: ' + str(self.covariance)
+        return msg
 
     def from_depth(self, value):
         depth_std_factor = self.sensors_std["depth"]["factor"]
@@ -81,6 +130,7 @@ class Measurement(object):
             self.covariance[Index.Z, Index.Z] = (
                 value.depth * depth_std_factor + depth_std_offset
             ) ** 2
+        warn_if_zero(self.covariance[Index.Z, Index.Z], 'Z Covariance')
         self.update_vector[Index.Z] = 1
 
     def from_dvl(self, value):
@@ -97,8 +147,8 @@ class Measurement(object):
 
         if value.x_velocity_std > 0:
             self.covariance[Index.VX, Index.VX] = value.x_velocity_std ** 2
-            self.covariance[Index.VX, Index.VX] = value.y_velocity_std ** 2
-            self.covariance[Index.VX, Index.VX] = value.z_velocity_std ** 2
+            self.covariance[Index.VY, Index.VY] = value.y_velocity_std ** 2
+            self.covariance[Index.VZ, Index.VZ] = value.z_velocity_std ** 2
         else:
             self.covariance[Index.VX, Index.VX] = (
                 abs(value.x_velocity) * velocity_std_factor + velocity_std_offset
@@ -109,6 +159,9 @@ class Measurement(object):
             self.covariance[Index.VZ, Index.VZ] = (
                 abs(value.z_velocity) * velocity_std_factor + velocity_std_offset
             ) ** 2
+        warn_if_zero(self.covariance[Index.VX, Index.VX], 'VX Covariance')
+        warn_if_zero(self.covariance[Index.VY, Index.VY], 'VY Covariance')
+        warn_if_zero(self.covariance[Index.VZ, Index.VZ], 'VZ Covariance')
         self.update_vector[Index.VX] = 1
         self.update_vector[Index.VY] = 1
         self.update_vector[Index.VZ] = 1
@@ -131,8 +184,11 @@ class Measurement(object):
         else:
             self.covariance[Index.X, Index.X] = error ** 2
             self.covariance[Index.Y, Index.Y] = error ** 2
+        warn_if_zero(self.covariance[Index.X, Index.X], 'X Covariance')
+        warn_if_zero(self.covariance[Index.Y, Index.Y], 'Y Covariance')
         self.update_vector[Index.X] = 1
         self.update_vector[Index.Y] = 1
+        self.type = 'USBL'
 
     def from_orientation(self, value):
         imu_noise_std_offset = self.sensors_std["orientation"]["offset"]
@@ -169,6 +225,9 @@ class Measurement(object):
                 * math.pi
                 / 180.0
             ) ** 2
+        warn_if_zero(self.covariance[Index.ROLL, Index.ROLL], 'ROLL Covariance')
+        warn_if_zero(self.covariance[Index.PITCH, Index.PITCH], 'PITCH Covariance')
+        warn_if_zero(self.covariance[Index.YAW, Index.YAW], 'YAW Covariance')
         self.update_vector[Index.ROLL] = 1
         self.update_vector[Index.PITCH] = 1
         self.update_vector[Index.YAW] = 1
@@ -177,6 +236,7 @@ class Measurement(object):
         self.from_orientation(value)
         self.from_dvl(value)
         self.from_depth(value)
+        self.type = 'DR'
 
 
 class EkfImpl(object):
@@ -191,6 +251,7 @@ class EkfImpl(object):
         self.transfer_function_jacobian = np.array([])
         self.states_vector = []
         self.smoothed_states_vector = []
+        self.measurements = {}
 
     def get_states(self):
         return self.states_vector
@@ -229,9 +290,16 @@ class EkfImpl(object):
         return rotation
 
     def check_mahalanobis_distance(self, innovation, innovation_cov, nsigmas):
+        #print('innovation:', innovation.shape)
+        #print('innovation:', innovation)
+        #print('innovation_cov:', innovation_cov.shape)
+        #print('innovation_cov:', innovation_cov)
         sq_mahalanobis = np.dot(innovation.T, innovation_cov @ innovation)
         threshold = nsigmas * nsigmas
         if sq_mahalanobis >= threshold:
+            #print("Mahalanobis distance too large (" 
+            #      + str(float(np.sqrt(sq_mahalanobis))) 
+            #      + "). Correction step will not be applied.")
             return False
         else:
             return True
@@ -266,12 +334,12 @@ class EkfImpl(object):
 
         # Now build the sub-matrices from the full-sized matrices
         update_size = len(update_indices)
-        state_subset = np.zeros((update_size, 1), dtype=float)
-        meas_subset = np.zeros((update_size, 1), dtype=float)
-        meas_cov_subset = np.zeros((update_size, update_size), dtype=float)
-        state_to_meas_subset = np.zeros((update_size, Index.DIM), dtype=float)
-        kalman_gain_subset = np.zeros((update_size, update_size), dtype=float)
-        innovation_subset = np.zeros((update_size, 1), dtype=float)
+        state_subset = np.zeros((update_size, 1), dtype=np.float64)
+        meas_subset = np.zeros((update_size, 1), dtype=np.float64)
+        meas_cov_subset = np.zeros((update_size, update_size), dtype=np.float64)
+        state_to_meas_subset = np.zeros((update_size, Index.DIM), dtype=np.float64)
+        kalman_gain_subset = np.zeros((update_size, update_size), dtype=np.float64)
+        innovation_subset = np.zeros((update_size, 1), dtype=np.float64)
 
         for i, upd_i in enumerate(update_indices):
             meas_subset[i] = measurement.measurement[upd_i]
@@ -302,11 +370,19 @@ class EkfImpl(object):
             """
             state_to_meas_subset[i, upd_i] = 1
 
+        #print('update_indices:\n', update_indices)
+        #print('H:', state_to_meas_subset)
+        #print('R:', meas_cov_subset)
+        #print('R2:', measurement.covariance)
+
         # (1) Compute the Kalman gain: K = (PH') / (HPH' + R)
         pht = self.covariance @ state_to_meas_subset.T
         hphr_inv = np.linalg.inv(state_to_meas_subset @ pht + meas_cov_subset)
         kalman_gain_subset = pht @ hphr_inv
         innovation_subset = meas_subset - state_subset
+
+        #print('K:', kalman_gain_subset)
+        #print('Y:', innovation_subset)
 
         # Wrap angles of the innovation_subset
         for i, idx in enumerate(update_indices):
@@ -317,14 +393,14 @@ class EkfImpl(object):
                     innovation_subset[i] -= 2 * math.pi
 
         # (2) Check mahalanobis distance
-        result = self.check_mahalanobis_distance(
+        valid = self.check_mahalanobis_distance(
             innovation_subset, hphr_inv, measurement.mahalanobis_threshold
         )
-        if result is True:
+        if valid:
             # (3) Apply the gain
             self.state += kalman_gain_subset @ innovation_subset
-            # (4) Update the estimated covariance
-            gain_residual = np.eye(Index.DIM, dtype=float)
+            # (4) Update the estimated covariance (Joseph form)
+            gain_residual = np.eye(Index.DIM, dtype=np.float64)
             gain_residual -= kalman_gain_subset @ state_to_meas_subset
             self.covariance = gain_residual @ self.covariance @ gain_residual.T
             self.covariance += (
@@ -337,8 +413,10 @@ class EkfImpl(object):
             # (5) Update the state for posterior smoothing
             if len(self.states_vector) > 0:
                 self.states_vector[-1].set(self.state, self.covariance)
-        else:
-            print("Mahalanobis distance too large. Correction not applied.")
+        
+        if measurement.type not in self.measurements:
+            self.measurements[measurement.type] = MeasurementReport()
+        self.measurements[measurement.type].add(valid)
 
     def smooth(self, enable=True):
         if len(self.states_vector) < 2:
@@ -390,7 +468,7 @@ class EkfImpl(object):
         cpi = 1.0 / cp
         tp = sp * cpi
 
-        f = np.eye(Index.DIM, dtype=float)
+        f = np.eye(Index.DIM, dtype=np.float64)
         f[Index.X, Index.VX] = cy * cp * delta
         f[Index.X, Index.VY] = (cy * sp * sr - sy * cr) * delta
         f[Index.X, Index.VZ] = (cy * sp * cr + sy * sr) * delta
@@ -500,9 +578,21 @@ class EkfImpl(object):
     def print_state(self):
         print("State at time {0}".format(str(self.last_update_time)))
         s = self.state
-        print("XYZ : ({0}, {1}, {2})".format(str(s[0]), str(s[1]), str(s[2])))
-        print("RPY : ({0}, {1}, {2})".format(str(s[3]), str(s[4]), str(s[5])))
-        print("VXYZ: ({0}, {1}, {2})".format(str(s[6]), str(s[7]), str(s[8])))
+        c = self.covariance
+        print("\tXYZ : ({0}, {1}, {2})".format(str(s[0]), str(s[1]), str(s[2])))
+        print("\tRPY : ({0}, {1}, {2})".format(str(s[3]), str(s[4]), str(s[5])))
+        print("\tVXYZ: ({0}, {1}, {2})".format(str(s[6]), str(s[7]), str(s[8])))
+        print("\tCXYZ: ({0}, {1}, {2})".format(str(c[0, 0]), str(c[1, 1]), str(c[2, 2])))
+        print("\tCRPY: ({0}, {1}, {2})".format(str(c[3, 3]), str(c[4, 4]), str(c[5, 5])))
+        print("\tCVs : ({0}, {1}, {2})".format(str(c[6, 6]), str(c[7, 7]), str(c[8, 8])))
+        print("\tCWs : ({0}, {1}, {2})".format(str(c[9, 9]), str(c[10, 10]), str(c[11, 11])))
+
+    def print_report(self):
+        Console.info("EKF measurements report:")
+        for key in self.measurements:
+            Console.info('\t', key, 'measurements:', 
+                         self.measurements[key].dropped, '/', 
+                         self.measurements[key].total, 'dropped')
 
 
 class ExtendedKalmanFilter(object):
@@ -533,9 +623,10 @@ class ExtendedKalmanFilter(object):
         # self.ekf.print_state()
         # print('-------------------------------')
         while dr_idx < len(dr_list):
+            
             Console.progress(dr_idx, len(dr_list) * 2)
             dr_stamp = dr_list[dr_idx].epoch_timestamp
-            if usbl_idx < len(usbl_list):
+            if usbl_idx < len(usbl_list) and len(usbl_list) > 0:
                 usbl_stamp = usbl_list[usbl_idx].epoch_timestamp
             else:
                 # Fake a posterior USBL measurement to force EKF to read DR
@@ -553,10 +644,15 @@ class ExtendedKalmanFilter(object):
 
             last_update_delta = m.time - f_upda_time
 
-            if last_update_delta > 0:
+            if last_update_delta >= 0:
+                # print('Predict')
                 self.ekf.predict(m.time, last_update_delta)
+                # self.ekf.print_state()
+            # print('Correct')
             self.ekf.correct(m)
+            # self.ekf.print_state()
         self.ekf.smooth(enable=True)
+        self.ekf.print_report()
 
     def get_result(self):
         return self.ekf.get_states()
@@ -580,64 +676,83 @@ class ExtendedKalmanFilter(object):
 
     def get_init_state(self, dr_list, usbl_list):
         dr_index = 0
-        state = []
+        usbl_index = -1
 
-        # Interpolate DR to USBL updates
-        dr_eastings = []
-        dr_northings = []
-        for i in range(len(usbl_list)):
-            while (
-                dr_index < len(dr_list) - 2
-                and usbl_list[i].epoch_timestamp > dr_list[dr_index + 1].epoch_timestamp
-            ):
-                dr_index += 1
-            dr_eastings.append(
-                interpolate(
-                    usbl_list[i].epoch_timestamp,
-                    dr_list[dr_index].epoch_timestamp,
-                    dr_list[dr_index + 1].epoch_timestamp,
-                    dr_list[dr_index].eastings,
-                    dr_list[dr_index + 1].eastings,
+        state = np.array([[dr_list[0].northings, 
+                           dr_list[0].eastings, 
+                           dr_list[0].depth, 
+                           dr_list[0].roll, 
+                           dr_list[0].pitch, 
+                           dr_list[0].yaw, 
+                           dr_list[0].x_velocity, 
+                           dr_list[0].y_velocity, 
+                           dr_list[0].z_velocity, 
+                           0, 
+                           0, 
+                           0]])
+
+
+        eastings_mean = 0.0
+        northings_mean = 0.0
+
+        if len(usbl_list) > 0:
+
+            # Interpolate DR to USBL updates
+            dr_eastings = []
+            dr_northings = []
+            for i in range(len(usbl_list)):
+                while (
+                    dr_index < len(dr_list) - 2
+                    and usbl_list[i].epoch_timestamp > dr_list[dr_index + 1].epoch_timestamp
+                ):
+                    dr_index += 1
+                dr_eastings.append(
+                    interpolate(
+                        usbl_list[i].epoch_timestamp,
+                        dr_list[dr_index].epoch_timestamp,
+                        dr_list[dr_index + 1].epoch_timestamp,
+                        dr_list[dr_index].eastings,
+                        dr_list[dr_index + 1].eastings,
+                    )
                 )
-            )
-            dr_northings.append(
-                interpolate(
-                    usbl_list[i].epoch_timestamp,
-                    dr_list[dr_index].epoch_timestamp,
-                    dr_list[dr_index + 1].epoch_timestamp,
-                    dr_list[dr_index].northings,
-                    dr_list[dr_index + 1].northings,
+                dr_northings.append(
+                    interpolate(
+                        usbl_list[i].epoch_timestamp,
+                        dr_list[dr_index].epoch_timestamp,
+                        dr_list[dr_index + 1].epoch_timestamp,
+                        dr_list[dr_index].northings,
+                        dr_list[dr_index + 1].northings,
+                    )
                 )
-            )
-        usbl_eastings = [i.eastings for i in usbl_list]
-        usbl_northings = [i.northings for i in usbl_list]
-        eastings_error = [y - x for x, y in zip(dr_eastings, usbl_eastings)]
-        northings_error = [y - x for x, y in zip(dr_northings, usbl_northings)]
-        eastings_mean = np.mean(eastings_error)
-        northings_mean = np.mean(northings_error)
+            usbl_eastings = [i.eastings for i in usbl_list]
+            usbl_northings = [i.northings for i in usbl_list]
+            eastings_error = [y - x for x, y in zip(dr_eastings, usbl_eastings)]
+            northings_error = [y - x for x, y in zip(dr_northings, usbl_northings)]
+            eastings_mean = np.mean(eastings_error)
+            northings_mean = np.mean(northings_error)
 
-        # print('Offsetting DR navigation by USBL error offset: ({:.2f}, {:.2f})'.format(northings_mean, eastings_mean))
+            # print('Offsetting DR navigation by USBL error offset: ({:.2f}, {:.2f})'.format(northings_mean, eastings_mean))
 
-        dr_index = 0
-        usbl_index = 0
-        if usbl_list[usbl_index].epoch_timestamp > dr_list[dr_index].epoch_timestamp:
-            while (
-                dr_index < len(dr_list)
-                and usbl_list[usbl_index].epoch_timestamp
-                > dr_list[dr_index].epoch_timestamp
-            ):
-                dr_index += 1
-        elif dr_list[dr_index].epoch_timestamp > usbl_list[usbl_index].epoch_timestamp:
-            while (
-                usbl_index < len(usbl_list)
-                and dr_list[dr_index].epoch_timestamp
-                > usbl_list[usbl_index].epoch_timestamp
-            ):
-                usbl_index += 1
+            dr_index = 0
+            usbl_index = 0
+            if usbl_list[usbl_index].epoch_timestamp > dr_list[dr_index].epoch_timestamp:
+                while (
+                    dr_index < len(dr_list)
+                    and usbl_list[usbl_index].epoch_timestamp
+                    > dr_list[dr_index].epoch_timestamp
+                ):
+                    dr_index += 1
+            elif dr_list[dr_index].epoch_timestamp > usbl_list[usbl_index].epoch_timestamp:
+                while (
+                    usbl_index < len(usbl_list)
+                    and dr_list[dr_index].epoch_timestamp
+                    > usbl_list[usbl_index].epoch_timestamp
+                ):
+                    usbl_index += 1
 
-        # Build state from first known USBL and DR, and use that displacement
-        # error at the start of DR.
-        state = self.build_state(usbl_list[usbl_index], dr_list[dr_index], dr_list[0])
+            # Build state from first known USBL and DR, and use that displacement
+            # error at the start of DR.
+            state = self.build_state(usbl_list[usbl_index], dr_list[dr_index], dr_list[0])
         # Fix DR to index zero
         dr_index = 0
         state[0, Index.X] = state[0, Index.X] - northings_mean

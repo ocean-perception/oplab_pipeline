@@ -1028,23 +1028,9 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
         # TODO: convert from EKF states in meters to lat lon
         dr_idx = 1
         for s in ekf_states:
-            b = SyncedOrientationBodyVelocity()
-            b.epoch_timestamp = s.time
-            b.northings = s.state[Index.X, 0]
-            b.eastings = s.state[Index.Y, 0]
-            b.depth = s.state[Index.Z, 0]
-            b.roll = s.state[Index.ROLL, 0] * 180.0 / math.pi
-            b.pitch = s.state[Index.PITCH, 0] * 180.0 / math.pi
-            b.yaw = s.state[Index.YAW, 0] * 180.0 / math.pi
-            b.roll_std = s.covariance[Index.ROLL, Index.ROLL] * 180.0 / math.pi
-            b.pitch_std = s.covariance[Index.PITCH, Index.PITCH] * 180.0 / math.pi
-            b.yaw_std = s.covariance[Index.YAW, Index.YAW] * 180.0 / math.pi
-            b.x_velocity = s.state[Index.VX, 0]
-            b.y_velocity = s.state[Index.VY, 0]
-            b.z_velocity = s.state[Index.VZ, 0]
-            b.x_velocity_std = s.covariance[Index.VX, Index.VX]
-            b.y_velocity_std = s.covariance[Index.VY, Index.VY]
-            b.z_velocity_std = s.covariance[Index.VZ, Index.VZ]
+            b = s.toSyncedOrientationBodyVelocity()
+
+            # Offset the measurements from the DVL to the robot origin
             [x_offset, y_offset, z_offset] = body_to_inertial(
                 b.roll,
                 b.pitch,
@@ -1056,13 +1042,16 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
             b.northings += x_offset
             b.eastings += y_offset
             b.depth += z_offset
+            
+            # Transform to lat lon using origins
             b.latitude, b.longitude = metres_to_latlon(
                 mission.origin.latitude,
                 mission.origin.longitude,
                 b.eastings,
                 b.northings,
             )
-            b.covariance = s.covariance
+            
+            # Interpolate altitude from DVL
             while (
                 dr_idx < len(dead_reckoning_dvl_list)
                 and dead_reckoning_dvl_list[dr_idx].epoch_timestamp < b.epoch_timestamp
