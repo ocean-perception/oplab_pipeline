@@ -62,10 +62,15 @@ class Corrector:
 
         # setup the corrector instance
 
-    def setup(self):
+    def setup(self, phase):
         """Setup the corrector object by loading required
         configuration parameters and creating output directories
         
+        Parameters
+        ----------
+        phase
+            indicates whether the setup is for a parse or process phase of correct_images
+
         Returns
         -------
         int
@@ -78,8 +83,9 @@ class Corrector:
             return -1
         else:
             self.get_imagelist()
-            self.create_output_directories()
-            self.generate_distance_matrix()
+            self.create_output_directories(phase)
+            if self.correction_method == "colour_correction":
+                self.generate_distance_matrix()
             self.generate_bayer_numpy_filelist(self._imagelist)
             self.generate_bayer_numpyfiles(self.bayer_numpy_filelist)
             return 0
@@ -107,65 +113,152 @@ class Corrector:
         # create directories for storing intermediate image and distance_matrix numpy files,
         # correction parameters and corrected output images
 
-    def create_output_directories(self):
-        """Handle the creation of output directories"""
+    def create_output_directories(self, phase):
+        """Handle the creation of output directories for each camera
 
-        # create output directory path
-        image_path = Path(self._imagelist[0]).resolve()
-        image_parent_path = image_path.parents[0]
-        output_dir_path = get_processed_folder(image_parent_path)
-        self.output_dir_path = output_dir_path / "attenuation_correction"
-        if not self.output_dir_path.exists():
-            self.output_dir_path.mkdir(parents=True)
+        Parameters
+        -----------
+        phase
+            indicates whether the setup is for a parse or process phase of correct_images
+        """
 
-        # create path for image numpy files
-        bayer_numpy_folder_name = "bayer_" + self._camera.name
-        self.bayer_numpy_dir_path = self.output_dir_path / bayer_numpy_folder_name
-        if not self.bayer_numpy_dir_path.exists():
-            self.bayer_numpy_dir_path.mkdir(parents=True)
 
-        # create path for distance matrix numpy files
-        distance_matrix_numpy_folder_name = "distance_" + self._camera.name
-        self.distance_matrix_numpy_folder = (
-            self.output_dir_path / distance_matrix_numpy_folder_name
-        )
-        if not self.distance_matrix_numpy_folder.exists():
-            self.distance_matrix_numpy_folder.mkdir(parents=True)
+        if phase == "parse" or phase == "process":
+            # create output directory path
+            image_path = Path(self._imagelist[0]).resolve()
+            image_parent_path = image_path.parents[0]
+            output_dir_path = get_processed_folder(image_parent_path)
+            self.output_dir_path = output_dir_path / "attenuation_correction"
+            if not self.output_dir_path.exists():
+                self.output_dir_path.mkdir(parents=True)
 
-        # create path for parameters files
-        attenuation_parameters_folder_name = "params_" + self._camera.name
-        self.attenuation_parameters_folder = (
-            self.output_dir_path / attenuation_parameters_folder_name
-        )
-        if not self.attenuation_parameters_folder.exists():
-            self.attenuation_parameters_folder.mkdir(parents=True)
-        else:
-            dir_temp = self.attenuation_parameters_folder
-            file_list = list(dir_temp.glob("*.npy"))
-            if len(file_list) > 0:
-                if self.force == False:
-                    Console.quit(
-                        "Processed files exist. If you want to overwrite them, run correct_images with the force overwrite flag (-F)"
-                    )
+            # create path for image numpy files
+            bayer_numpy_folder_name = "bayer_" + self._camera.name
+            self.bayer_numpy_dir_path = self.output_dir_path / bayer_numpy_folder_name
+            if not self.bayer_numpy_dir_path.exists():
+                self.bayer_numpy_dir_path.mkdir(parents=True)
 
-        # create path for memmap files
-        memmap_folder_name = "memmaps_" + self._camera.name
-        self.memmap_folder = self.output_dir_path / memmap_folder_name
-        if not self.memmap_folder.exists():
-            self.memmap_folder.mkdir(parents=True)
+            # create path for distance matrix numpy files
+            distance_matrix_numpy_folder_name = "distance_" + self._camera.name
+            self.distance_matrix_numpy_folder = (
+                self.output_dir_path / distance_matrix_numpy_folder_name
+            )
+            if not self.distance_matrix_numpy_folder.exists():
+                self.distance_matrix_numpy_folder.mkdir(parents=True)
 
-        # create path for output images
-        output_images_folder_name = "developed_" + self._camera.name
-        self.output_images_folder = self.output_dir_path / output_images_folder_name
-        if not self.output_images_folder.exists():
-            self.output_images_folder.mkdir(parents=True)
-        else:
-            dir_temp = self.output_images_folder
-            file_list = list(dir_temp.glob("*.*"))
-            if len(file_list) > 0:
-                if self.force == False:
-                    Console.quit("Overwrite images with a Force command...")
-        Console.info("Output directories created or existing...")
+            # create path for parameters files
+            attenuation_parameters_folder_name = "params_" + self._camera.name
+            self.attenuation_parameters_folder = (
+                self.output_dir_path / attenuation_parameters_folder_name
+            )
+            if not self.attenuation_parameters_folder.exists():
+                self.attenuation_parameters_folder.mkdir(parents=True)
+
+            # create path for memmap files
+            memmap_folder_name = "memmaps_" + self._camera.name
+            self.memmap_folder = self.output_dir_path / memmap_folder_name
+            if not self.memmap_folder.exists():
+                self.memmap_folder.mkdir(parents=True)
+
+        
+        if phase == "process":
+            # create path for output images
+            output_images_folder_name = "developed_" + self._camera.name
+            self.output_images_folder = self.output_dir_path / output_images_folder_name
+            if not self.output_images_folder.exists():
+                self.output_images_folder.mkdir(parents=True)
+        
+
+        # create target sub directores based on configurations defined in correct_images.yaml
+        self.create_subdirectories(phase)
+        Console.info("Output directories created / existing...")
+
+    
+
+
+    def create_subdirectories(self, phase):
+
+        """Handle the creation of sub directories corresponding to a particular configuration selected
+        through correct_images.yaml file
+
+        Parameters
+        -----------
+        phase
+            indicates whether the setup is for a parse or process phase of correct_images
+        """
+
+        # create folder name for correction parameters based on correction method
+
+        if self.correction_method == "colour_correction":
+            if self.distance_metric == "none":
+                sub_directory_name = "greyworld_corrected"
+            elif self.distance_metric == "altitude":
+                sub_directory_name = "altitude_corrected"
+            elif self.distance_metric == "depth_map":
+                sub_directory_name = "depth_map_corrected"
+
+            output_folder_name = "m" + str(self.brightness) + "_std" + str(self.contrast)
+
+            # appending bayer numpy files path with sub directory and output folder
+            self.bayer_numpy_dir_path =  self.bayer_numpy_dir_path / sub_directory_name / output_folder_name
+            if not self.bayer_numpy_dir_path.exists():
+                self.bayer_numpy_dir_path.mkdir(parents=True)
+
+
+            # appending distance numpy files path with sub directory and output folder
+            self.distance_matrix_numpy_folder = self.distance_matrix_numpy_folder / sub_directory_name / output_folder_name
+            if not self.distance_matrix_numpy_folder.exists():
+                self.distance_matrix_numpy_folder.mkdir(parents=True)
+
+            
+
+            # appending params path with sub directory and output folder
+            self.attenuation_parameters_folder = self.attenuation_parameters_folder / sub_directory_name / output_folder_name
+            if phase == "parse":
+                if not self.attenuation_parameters_folder.exists():
+                    self.attenuation_parameters_folder.mkdir(parents=True)
+                else:
+                    dir_temp = self.attenuation_parameters_folder
+                    file_list = list(dir_temp.glob("*.npy"))
+                    if len(file_list) > 0:
+                        if self.force == False:
+                            Console.quit(
+                            "Parameters exist for current configuration. Run parse with Force (-F flag)..."
+                            )
+                        else:
+                            Console.warn("Code will overwrite existing parameters for current configuration...")
+
+
+            elif phase == "process":
+                if not self.attenuation_parameters_folder.exists():
+                    Console.quit("Run parse before process for current configuration...")
+                else:
+                    Console.info("Found correction parameters for current configuration...")
+
+        
+        elif self.correction_method == "manual_balance":
+            sub_directory_name = "manually_corrected"
+            output_folder_name = "developed_" + str(uuid.uuid4())
+        
+
+        if phase == "process":
+            # appending developed images path with sub directory and output folder
+            self.output_images_folder = self.output_images_folder / sub_directory_name / output_folder_name
+            if not self.output_images_folder.exists():
+                self.output_images_folder.mkdir(parents=True)
+            else:
+                dir_temp = self.output_images_folder
+                file_list = list(dir_temp.glob("*.*"))
+                if len(file_list) > 0:
+                    if self.force == False:
+                        Console.quit(
+                            "Corrected images exist for current configuration. Run process with Force (-F flag)..."
+                        )
+                    else:
+                        Console.warn("Code will overwrite existing corrected images for current configuration...")
+
+
+
 
     # store into object correction paramters specific to the current camera
     def load_camera_specific_config_parameters(self):
@@ -188,10 +281,10 @@ class Corrector:
                 self.brightness = self.cameraconfigs[idx[0]].brightness
                 self.contrast = self.cameraconfigs[idx[0]].contrast
             elif self.correction_method == "manual_balance":
-                self.subtractors_rgb = self.cameraconfigs[idx[0]].subtractors_rgb
-                self.color_correct_matrix_rgb = self.cameraconfigs[
+                self.subtractors_rgb = np.array(self.cameraconfigs[idx[0]].subtractors_rgb)
+                self.color_correct_matrix_rgb = np.array(self.cameraconfigs[
                     idx[0]
-                ].color_correct_matrix_rgb
+                ].color_correct_matrix_rgb)
             image_properties = self._camera.image_properties
             self.image_height = image_properties[0]
             self.image_width = image_properties[1]
@@ -206,21 +299,52 @@ class Corrector:
 
     def get_imagelist(self):
         """Generate list of source images"""
-        # get imagelist for given camera object
-        if self._camera_image_file_list == "none":
+        if self.correction_method == "colour_correction":
+            if self.distance_path == "json_renav_*":
+                Console.info(
+                    "Picking first JSON folder as the default path to auv_nav csv files..."
+                )
+                dir_ = self.path_processed
+                json_list = list(dir_.glob("json_*"))
+                self.distance_path = json_list[0]
+
+            full_metric_path = self.path_processed / self.distance_path
+            full_metric_path = full_metric_path / "csv" / "ekf"
+            metric_file = "auv_ekf_" + self.camera_name + ".csv"
+            self.altitude_path = full_metric_path / metric_file
+
+
+
+            # get imagelist for given camera object
+            if self._camera_image_file_list == "none":
+                self._imagelist = self._camera.image_list
+            # get imagelist from user provided filelist
+            else:
+                path_file_list = Path(self.path_config) / self._camera_image_file_list
+                trimmed_csv_file = 'trimmed_csv_' + self._camera.name + '.csv'
+                self.trimmed_csv_path = Path(self.path_config) / trimmed_csv_file
+
+                if not self.altitude_path.exists():
+                    message = "Path to " + metric_file + " does not exist..."
+                    Console.quit(message)
+                else:
+                    # create trimmed csv based on user's provided list of images
+                    trim_csv_files(path_file_list, self.altitude_path, self.trimmed_csv_path)
+
+                # read trimmed csv filepath
+                dataframe = pd.read_csv(self.trimmed_csv_path)
+                user_imagepath_list = dataframe["relative_path"]
+                user_imagenames_list = [Path(image).name for image in user_imagepath_list]
+                self._imagelist = [
+                    item
+                    for item in self._camera.image_list
+                    for image in user_imagenames_list
+                    if Path(item).name == image
+                ]
+        elif self.correction_method == "manual_balance":
             self._imagelist = self._camera.image_list
-        # get imagelist from user provided filelist
-        else:
-            path_file_list = Path(self.path_config) / self._camera_image_file_list
-            dataframe = pd.read_csv(path_file_list)
-            user_imagepath_list = dataframe["relative_path"]
-            user_imagenames_list = [Path(image).name for image in user_imagepath_list]
-            self._imagelist = [
-                item
-                for item in self._camera.image_list
-                for image in user_imagenames_list
-                if Path(item).name == image
-            ]
+
+
 
         # save a set of distance matrix numpy files
 
@@ -266,28 +390,10 @@ class Corrector:
         elif self.distance_metric == "altitude":
             # check if user provides a filelist
             if self._camera_image_file_list == "none":
-                # check for distance metric path for the full image list in directory
-                if self.distance_path == "json_renav_*":
-                    Console.info(
-                        "Picking first JSON folder as the default path to auv_nav csv files..."
-                    )
-                    dir_ = self.path_processed
-                    json_list = list(dir_.glob("json_*"))
-                    self.distance_path = json_list[0]
-
-                full_metric_path = self.path_processed / self.distance_path
-                full_metric_path = full_metric_path / "csv" / "ekf"
-                metric_file = "auv_ekf_" + self.camera_name + ".csv"
-                metric_file_path = full_metric_path / metric_file
-
-                if not metric_file_path.exists():
-                    message = "Path to " + metric_file + " does not exist..."
-                    Console.quit(message)
-                else:
-                    distance_csv_path = metric_file_path
+                distance_csv_path = self.altitude_path
             else:
                 distance_csv_path = (
-                    Path(self.path_config) / self._camera_image_file_list
+                    Path(self.path_config) / self.trimmed_csv_path
                 )
 
             # read dataframe for corresponding distance csv path
@@ -356,7 +462,7 @@ class Corrector:
         """
 
         # create numpy files as per bayer_numpy_filelist
-        if self._camera.extension == "tif":
+        if self._camera.extension == "tif" or self._camera.extension == "jpg":
             # write numpy files for corresponding bayer images
             for idx in trange(len(self._imagelist)):
                 tmp_tif = imageio.imread(self._imagelist[idx])
@@ -738,7 +844,17 @@ class Corrector:
             for idx in trange(0, len(self.bayer_numpy_filelist))
         )
 
+        # write a filelist.csv containing image filenames which are processed
+        imagefiles = []
+        for path in self.bayer_numpy_filelist:
+            imagefiles.append(Path(path).name)
+        dataframe = pd.DataFrame(imagefiles)
+        filelist_path = self.output_images_folder / "filelist.csv"
+        dataframe.to_csv(filelist_path)
         Console.info("Processing of images is completed...")
+
+
+
 
     def process_image(self, idx, test_phase):
         """Execute series of corrections for an image
@@ -753,20 +869,21 @@ class Corrector:
 
         # load numpy image and distance files
         image = np.load(self.bayer_numpy_filelist[idx])
-        if len(self.distance_matrix_numpy_filelist) > 0:
-            distance = np.load(self.distance_matrix_numpy_filelist[idx])
-        else:
-            distance = None
 
         # apply corrections
         # Console.info('Correcting images to targetted mean and std...')
         if self.correction_method == "colour_correction":
+            if len(self.distance_matrix_numpy_filelist) > 0:
+                distance = np.load(self.distance_matrix_numpy_filelist[idx])
+            else:
+                distance = None
+
             image = self.apply_distance_based_corrections(
                 image, distance, self.brightness, self.contrast
             )
         elif self.correction_method == "manual_balance":
             image = self.apply_manual_balance(
-                image, self.colour_correction_matrix_rgb, self.subtractors_rgb
+                image
             )
 
         # save corrected image back to numpy list for testing purposes
@@ -793,6 +910,8 @@ class Corrector:
         self.write_output_image(
             image_rgb, image_filename, self.output_images_folder, self.output_format
         )
+
+
 
     # apply corrections on each image using the correction paramters for targeted brightness and contrast
     def apply_distance_based_corrections(self, image, distance, brightness, contrast):
@@ -895,14 +1014,14 @@ class Corrector:
             image = image.reshape((self.image_height * self.image_width, 3))
             for i in range(self.image_height * self.image_width):
                 intensity_vector = image[i, :]
-                gain_matrix = self.colour_correction_matrix_rgb
+                gain_matrix = self.color_correct_matrix_rgb
                 intensity_vector = gain_matrix.dot(intensity_vector)
                 intensity_vector = intensity_vector - self.subtractors_rgb
         else:
             # for B/W images, default values are the ones for red channel
             image = (
-                image * self.colour_correction_matrix_rgb[0, 0]
-                - self.subtractors_rgb[0, 0]
+                image * self.color_correct_matrix_rgb[0, 0]
+                - self.subtractors_rgb[0]
             )
 
         return image
@@ -924,19 +1043,18 @@ class Corrector:
         numpy.ndarray
             Debayered image
         """
-
         image16 = image.astype(np.uint16)
         corrected_rgb_img = None
         if pattern == "rggb" or pattern == "RGGB":
-            corrected_rgb_img = cv2.cvtColor(image16, cv2.COLOR_BAYER_RG2BGR)
+            corrected_rgb_img = cv2.cvtColor(image16, cv2.COLOR_BAYER_RG2RGB)
         elif pattern == "grbg" or pattern == "GRBG":
-            corrected_rgb_img = cv2.cvtColor(image16, cv2.COLOR_BAYER_GR2BGR)
+            corrected_rgb_img = cv2.cvtColor(image16, cv2.COLOR_BAYER_GR2RGB)
         elif pattern == "bggr" or pattern == "BGGR":
-            corrected_rgb_img = cv2.cvtColor(image16, cv2.COLOR_BAYER_BG2BGR)
+            corrected_rgb_img = cv2.cvtColor(image16, cv2.COLOR_BAYER_BG2RGB)
         elif pattern == "gbrg" or pattern == "GBRG":
-            corrected_rgb_img = cv2.cvtColor(image16, cv2.COLOR_BAYER_GB2BGR)
+            corrected_rgb_img = cv2.cvtColor(image16, cv2.COLOR_BAYER_GB2RGB)
         elif pattern == "mono" or pattern == "MONO":
-            return image16
+            return image
         else:
             Console.quit("Bayer pattern not supported (", pattern, ")")
         return corrected_rgb_img
@@ -1332,7 +1450,9 @@ def curve_fitting(distancelist, intensitylist):
             ret_params = tmp_params.x
 
     except (ValueError, UnboundLocalError) as e:
-        Console.error("Value Error", a, b, c)
+        Console.error("Value Error due to Overflow", a, b, c)
+        ret_params = init_params
+        Console.warn('Parameters calculated are unoptimised because of Value Error...')
 
     return ret_params
 
@@ -1352,3 +1472,45 @@ def remove_directory(folder):
         else:
             p.unlink()
     folder.rmdir()
+
+
+
+# functions used to create a trimmed auv_ekf_<camera_name>.csv file based on user's selection of images
+def trim_csv_files(filelist, original_csv_path, trimmed_csv_path):
+    """Trim csv files based on the list of images provided by user
+
+    Parameters
+    -----------
+    filelist : user provided list of imagenames which need to be processed
+    original_csv_path : path to the auv_ekf_<camera_name.csv>
+    trimmed_csv_path : path to trimmed csv which needs to be created    
+    """
+
+    imagename_list=get_imagename_list(filelist)
+    dataframe = pd.read_csv(original_csv_path)
+    image_path_list = dataframe['relative_path']
+    trimmed_path_list = [path 
+                            for path in image_path_list
+                            if Path(path).name in imagename_list ]
+    trimmed_dataframe = dataframe.loc[dataframe['relative_path'].isin(trimmed_path_list) ]
+    trimmed_dataframe.to_csv (trimmed_csv_path, index = False, header=True)
+
+
+
+def get_imagename_list(imagename_list_filepath):
+    """ get list of imagenames from the filelist provided by user
+
+    Parameters
+    -----------
+    imagename_list_filepath : Path to the filelist provided in correct_images.yaml
+    """
+
+    with open(imagename_list_filepath, 'r') as imagename_list_file:
+        imagename_list = imagename_list_file.read().splitlines()
+    return imagename_list
+
+
+
+
+
+    

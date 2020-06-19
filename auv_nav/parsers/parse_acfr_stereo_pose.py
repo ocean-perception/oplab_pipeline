@@ -169,9 +169,16 @@ class AcfrStereoPoseFile:
             align the navigation frame axes (North, East, Down) with the stereo
             frame.
             """
-            c1.roll = -entry.y_euler_angle
-            c1.pitch = entry.x_euler_angle
-            c1.yaw = entry.z_euler_angle
+            # # Side-by-side stereo 
+            # c1.roll  = -entry.y_euler_angle
+            # c1.pitch = entry.x_euler_angle
+            # c1.yaw   = entry.z_euler_angle
+
+            # Top-down stereo facing backwards, as in SeaXerocks3 on AE2000
+            c1.roll  =  entry.y_euler_angle
+            c1.pitch = -entry.x_euler_angle
+            c1.yaw   =  entry.z_euler_angle + 90
+
             c1.x_velocity = 0
             c1.y_velocity = 0
             c1.z_velocity = 0

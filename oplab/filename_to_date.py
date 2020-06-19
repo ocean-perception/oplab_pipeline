@@ -94,9 +94,9 @@ class FilenameToDate:
                 of 2"
             if msecond:
                 assert (
-                    len(msecond) == 3
+                    len(msecond) <= 3
                 ), "Milliseconds in filename should \
-                    have a length of 3"
+                    have a maximum length of 3"
             else:
                 msecond = "0"
             if usecond:

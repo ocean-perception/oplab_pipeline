@@ -1,13 +1,13 @@
 camera_system: acfr_standard
 cameras:
   - name: LC
-    type: grbg
+    type: bggr
     bit_depth: 12
     path: 'image/i*/*LC*'
     extension: tif
     filename_to_date: 'xxxYYYYMMDDxhhmmssxfffxxxxx.xxx'
   - name: RC
-    type: grbg
+    type: bggr
     bit_depth: 12
     path: 'image/i*/*RC*'
     extension: tif

@@ -120,9 +120,19 @@ def main(args=None):
     )
     subparser_process.set_defaults(func=call_process)
 
+
     if len(sys.argv) == 1 and args is None:
         # Show help if no args provided
         parser.print_help(sys.stderr)
+
+    elif len(sys.argv) == 2 and not sys.argv[1] == "-h":
+        args = parser.parse_args(["correct", sys.argv[1]])
+        print(args)
+
+        if hasattr(args, "func"):
+            args.func(args)
+
+
     else:
         args = parser.parse_args()
         args.func(args)
@@ -204,12 +214,17 @@ def call_parse(args):
             continue
         else:
             corrector = Corrector(args.force, camera, correct_config, path)
-            ret = corrector.setup()
+            ret = corrector.setup('parse')
             if ret < 0:
                 Console.warn("Camera not included in correct_images.yaml...")
                 continue
             else:
-                corrector.generate_attenuation_correction_parameters()
+                if corrector.correction_method == "colour_correction":
+                    corrector.generate_attenuation_correction_parameters()
+                elif corrector.correction_method == "manual_balance":
+                    Console.info('run process for manual_balance...')
+                    continue
+
         Console.info("Removing memmaps...")
         memmap_files_path = corrector.memmap_folder.glob("*.map")
         for file in memmap_files_path:
@@ -245,70 +260,57 @@ def call_process(args):
             continue
         else:
             corrector = Corrector(args.force, camera, correct_config, path)
-            corrector.load_generic_config_parameters()
-            ret = corrector.load_camera_specific_config_parameters()
+            ret = corrector.setup('process')
             if ret < 0:
                 Console.warn("Camera not included in correct_images.yaml...")
                 continue
             else:
-                corrector.get_imagelist()
+                if corrector.correction_method == "colour_correction":
+                    filepath_attenuation_params = Path(corrector.attenuation_parameters_folder) / "attenuation_parameters.npy"
+                    filepath_correction_gains = Path(corrector.attenuation_parameters_folder) / "correction_gains.npy"
+                    filepath_corrected_mean = Path(corrector.attenuation_parameters_folder) / "image_corrected_mean.npy"
+                    filepath_corrected_std = Path(corrector.attenuation_parameters_folder) / "image_corrected_std.npy"
+                    filepath_raw_mean = Path(corrector.attenuation_parameters_folder) / "image_raw_mean.npy"
+                    filepath_raw_std = Path(corrector.attenuation_parameters_folder) / "image_raw_std.npy"
 
-            # check if necessary folders exist in respective folders
-            image_path = Path(corrector._imagelist[0]).resolve()
-            image_parent_path = image_path.parents[0]
-            output_dir_path = get_processed_folder(image_parent_path)
-            output_dir_path = output_dir_path / "attenuation_correction"
-            folder_name = "params_" + camera.name
-            params_path = output_dir_path / folder_name
+                    # read parameters from disk
+                    if filepath_attenuation_params.exists():
+                        corrector.image_attenuation_parameters = np.load(
+                            filepath_attenuation_params
+                        )
+                    else:
+                        if corrector.distance_metric == "altitude" or corrector.distance_metric == "depth_map":
+                            Console.quit("Code does not find attenuation_parameters.npy...Please run parse before process...")
+                    if filepath_correction_gains.exists():
+                        corrector.correction_gains = np.load(filepath_correction_gains)
+                    else:
+                        if corrector.distance_metric == "altitude" or corrector.distance_metric == "depth_map":
+                            Console.quit("Code does not find correction_gains.npy...Please run parse before process...")
+                    if filepath_corrected_mean.exists():
+                        corrector.image_corrected_mean = np.load(filepath_corrected_mean)
+                    else:
+                        if corrector.distance_metric == "altitude" or corrector.distance_metric == "depth_map":
+                            Console.quit("Code does not find image_corrected_mean.npy...Please run parse before process...")
+                    if filepath_corrected_std.exists():
+                        corrector.image_corrected_std = np.load(filepath_corrected_std)
+                    else:
+                        if corrector.distance_metric == "altitude" or corrector.distance_metric == "depth_map":
+                            Console.quit("Code does not find image_corrected_std.npy...Please run parse before process...")
+                    if filepath_raw_mean.exists():
+                        corrector.image_raw_mean = np.load(filepath_raw_mean)
+                    else:
+                        if corrector.distance_metric == "altitude" or corrector.distance_metric == "depth_map" or corrector.distance_metric == "none":
+                            Console.quit("Code does not find image_raw_mean.npy...Please run parse before process...")
+                    if filepath_raw_std.exists():
+                        corrector.image_raw_std = np.load(filepath_raw_std)
+                    else:
+                        if corrector.distance_metric == "altitude" or corrector.distance_metric == "depth_map" or corrector.distance_metric == "none":
+                            Console.quit("Code does not find image_raw_std.npy...Please run parse before process...")
+                    Console.info('Correction parameters loaded...')
+                    Console.info('Running process for colour correction...')
+                else:
+                    Console.info('Running process with manual colour balancing...')
 
-            if not params_path.exists():
-                Console.quit("Parameters do not exist. Please run parse first...")
-            else:
-                filepath_attenuation_params = (
-                    Path(params_path) / "attenuation_parameters.npy"
-                )
-                filepath_correction_gains = Path(params_path) / "correction_gains.npy"
-                filepath_corrected_mean = Path(params_path) / "image_corrected_mean.npy"
-                filepath_corrected_std = Path(params_path) / "image_corrected_std.npy"
-                filepath_raw_mean = Path(params_path) / "image_raw_mean.npy"
-                filepath_raw_std = Path(params_path) / "image_raw_std.npy"
-
-                # read in image numpy files
-                folder_name = "bayer_" + camera.name
-                dir_ = Path(output_dir_path) / folder_name
-                corrector.bayer_numpy_filelist = list(dir_.glob("*.npy"))
-
-                # read in distance matrix numpy files
-                folder_name = "distance_" + camera.name
-                dir_ = Path(params_path) / folder_name
-                corrector.distance_matrix_numpy_filelist = list(dir_.glob("*.npy"))
-
-                # read parameters from disk
-                if filepath_attenuation_params.exists():
-                    corrector.image_attenuation_parameters = np.load(
-                        filepath_attenuation_params
-                    )
-                if filepath_correction_gains.exists():
-                    corrector.correction_gains = np.load(filepath_correction_gains)
-                if filepath_corrected_mean.exists():
-                    corrector.image_corrected_mean = np.load(filepath_corrected_mean)
-                if filepath_corrected_std.exists():
-                    corrector.image_corrected_std = np.load(filepath_corrected_std)
-                if filepath_raw_mean.exists():
-                    corrector.image_raw_mean = np.load(filepath_raw_mean)
-                if filepath_raw_std.exists():
-                    corrector.image_raw_std = np.load(filepath_raw_std)
-
-                # check if images exist already
-                folder_name = "developed_" + camera.name
-                output_path = Path(output_dir_path) / folder_name
-                filelist = list(output_path.glob("*.*"))
-                if len(filelist) > 0:
-                    if not args.force:
-                        Console.quit("Overwrite images with process -F ...")
-
-                # invoke process function
-                corrector.output_images_folder = output_path
                 corrector.process_correction()
 
     Console.info("Process completed for all cameras...")
@@ -322,21 +324,8 @@ def call_correct(args):
     args : parse_args object
         User provided arguments for path of source images
     """
-
-    correct_config, camerasystem = setup(args)
-    path = Path(args.path).resolve()
-
-    for camera in camerasystem.cameras:
-        Console.info("Processing camera:", camera.name)
-
-        if len(camera.image_list) == 0:
-            Console.info("No images found for the camera at the path provided")
-            continue
-        else:
-            corrector = Corrector(args.force, camera, correct_config, path)
-            corrector.setup()
-            corrector.generate_attenuation_correction_parameters()
-            corrector.process_correction()
+    call_parse(args)
+    call_process(args)
 
 
 def setup(args):
@@ -366,49 +355,49 @@ def setup(args):
     # load mission parameters
     mission = Mission(path_mission)
 
-    # find out default yaml paths
-    root = Path(__file__).resolve().parents[1]
+    # resolve path to camera.yaml file
+    temp_path = path_raw_folder / 'camera.yaml'
 
-    acfr_std_camera_file = "auv_nav/default_yaml/ts1/SSK17-01/camera.yaml"
-    sx3_camera_file = "auv_nav/default_yaml/ae2000/YK17-23C/camera.yaml"
-    biocam_camera_file = "auv_nav/default_yaml/as6/DY109/camera.yaml"
+    if not temp_path.exists():
+        Console.info('Not found camera.yaml file in /raw folder...Using default camera.yaml file...')
+        # find out default yaml paths
+        root = Path(__file__).resolve().parents[1]
 
-    acfr_std_correct_config_file = (
-        "correct_images/default_yaml/acfr/correct_images.yaml"
-    )
-    sx3_std_correct_config_file = "correct_images/default_yaml/sx3/correct_images.yaml"
-    biocam_std_correct_config_file = (
-        "correct_images/default_yaml/biocam/correct_images.yaml"
-    )
+        acfr_std_camera_file = "auv_nav/default_yaml/ts1/SSK17-01/camera.yaml"
+        sx3_camera_file = "auv_nav/default_yaml/ae2000/YK17-23C/camera.yaml"
+        biocam_camera_file = "auv_nav/default_yaml/as6/DY109/camera.yaml"
 
-    if mission.image.format == "acfr_standard":
-        camera_yaml_path = root / acfr_std_camera_file
-        default_file_path_correct_config = root / acfr_std_correct_config_file
-    elif mission.image.format == "seaxerocks_3":
-        camera_yaml_path = root / sx3_camera_file
-        default_file_path_correct_config = root / sx3_std_correct_config_file
-    elif mission.image.format == "biocam":
-        camera_yaml_path = root / biocam_camera_file
-        default_file_path_correct_config = root / biocam_std_correct_config_file
-    else:
-        Console.warn(
-            "Image system not recognised. Looking for camera.yaml in " "raw folder..."
+        acfr_std_correct_config_file = (
+            "correct_images/default_yaml/acfr/correct_images.yaml"
         )
-        camera_yaml_path = path_raw_folder / "camera.yaml"
-        if not camera_yaml_path.exists():
-            Console.quit(
-                "camera.yaml file for new Image system not found within"
-                " raw folder..."
-            )
+        sx3_std_correct_config_file = "correct_images/default_yaml/sx3/correct_images.yaml"
+        biocam_std_correct_config_file = (
+            "correct_images/default_yaml/biocam/correct_images.yaml"
+        )
+
+        if mission.image.format == "acfr_standard":
+            camera_yaml_path = root / acfr_std_camera_file
+            default_file_path_correct_config = root / acfr_std_correct_config_file
+        elif mission.image.format == "seaxerocks_3":
+            camera_yaml_path = root / sx3_camera_file
+            default_file_path_correct_config = root / sx3_std_correct_config_file
+        elif mission.image.format == "biocam":
+            camera_yaml_path = root / biocam_camera_file
+            default_file_path_correct_config = root / biocam_std_correct_config_file
         else:
-            Console.info("camera.yaml found for new imaging system...")
+            Console.quit(
+                "Image system in camera.yaml does not match with mission.yaml... Provide correct camera.yaml in /raw folder..."
+            )
+    else:
+        Console.info('Found camera.yaml file in /raw folder...')
+        camera_yaml_path = temp_path
+
 
     # instantiate the camerasystem and setup cameras from mission and config files / auv_nav
     camerasystem = CameraSystem(camera_yaml_path, path_raw_folder)
     if camerasystem.camera_system != mission.image.format:
         Console.quit(
-            "Image system not found in camera.yaml file. The mission "
-            "you are trying to process does not seem to have a camera"
+            "Image system in camera.yaml does not match with mission.yaml...Provide correct camera.yaml in /raw folder..."
         )
 
     # check for correct_config yaml path

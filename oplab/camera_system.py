@@ -130,7 +130,7 @@ class CameraEntry:
         self._image_properties = []
 
         # read tiff
-        if self.extension == "tif":
+        if self.extension == "tif" or self.extension == "jpg":
             image_matrix = imageio.imread(image_path)
             image_shape = image_matrix.shape
             self._image_properties.append(image_shape[0])
