@@ -571,7 +571,8 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
 
     # perform usbl_filter
     if usbl_filter_activate:
-        usbl_list = usbl_filter(usbl_list, depth_list, sigma_factor, max_auv_speed)
+        usbl_list_no_dist_filter, usbl_list = usbl_filter(usbl_list,
+            depth_list, sigma_factor, max_auv_speed)
         if len(usbl_list) == 0:
             Console.warn("Filtering USBL measurements lead to an empty list. ")
             Console.warn(" * Is USBL reliable?")
@@ -1292,6 +1293,7 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
                     pf_fusion_dvl_list,
                     particles_time_interval,
                     pf_particles_list,
+                    usbl_list_no_dist_filter,
                     usbl_list,
                     plotlypath,
                 ],

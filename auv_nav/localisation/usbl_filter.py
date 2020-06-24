@@ -49,15 +49,23 @@ def distance_filter(usbl1, usbl2, sigma_factor, max_auv_speed):
 
 
 def usbl_filter(usbl_list, depth_list, sigma_factor, max_auv_speed):
-    depth_interpolated = []
-    depth_std_interpolated = []
-    usbl_temp_list = []
+    """Filter USBL data based on time, depth and distance between points
 
+    Returns
+    -------
+    list of Usbl
+        USBL measurements filtered based on time and depth
+    list of Usbl
+        USBL measurements filtered based on time, depth and distance between
+        consecutive measurements
+    """
+
+    # Timestamp-based filtering
     j = 0
     printed1 = False
     printed2 = False
     acceptable_time_difference = 20  # seconds
-    usbl_list2 = []
+    usbl_filtered_list = []
     original_size = len(usbl_list)
     for i in range(len(usbl_list)):
         if (
@@ -77,11 +85,22 @@ def usbl_filter(usbl_list, depth_list, sigma_factor, max_auv_speed):
                 printed2 = True
             continue
         else:
-            usbl_list2.append(usbl_list[i])
-    usbl_list = usbl_list2
+            usbl_filtered_list.append(usbl_list[i])
+    usbl_list = usbl_filtered_list
+    usbl_filtered_list = []
+    Console.info(
+        "{} remain of {} USBL measurements after timestamp based filtering "
+            "(eliminating all USBL for which no depth data exists)."
+            .format(len(usbl_list), original_size
+        )
+    )
 
+    # Depth-based filtering
+    depth_interpolated = []
+    depth_std_interpolated = []
+    # Interpolate depth meter data for USBL timestamps
     for i in range(len(usbl_list)):
-        # Get rid of any USBL measurement before DR
+        # Find depth measurement following USBL measurement
         while (
             j < len(depth_list) - 1
             and depth_list[j].epoch_timestamp < usbl_list[i].epoch_timestamp
@@ -111,16 +130,17 @@ def usbl_filter(usbl_list, depth_list, sigma_factor, max_auv_speed):
         if depth_filter(
             usbl_list[i], depth_interpolated[i], depth_std_interpolated[i], sigma_factor
         ):
-            usbl_temp_list.append(usbl_list[i])
+            usbl_filtered_list.append(usbl_list[i])
         i += 1
     Console.info(
         "{} remain of {} USBL measurements after depth filtering".format(
-            len(usbl_temp_list), original_size
+            len(usbl_filtered_list), original_size
         )
     )
-    usbl_list = usbl_temp_list
-    usbl_temp_list = []
+    usbl_list = usbl_filtered_list
+    usbl_filtered_list = []
 
+    # Distance-based filtering
     continuity_condition = 2
     # want to check continuity over several readings to get rid of just
     # outliers and not good data around them. Current approach has a lot of
@@ -133,7 +153,7 @@ def usbl_filter(usbl_list, depth_list, sigma_factor, max_auv_speed):
             if n == 0:
                 n += 1
             if n > continuity_condition:
-                usbl_temp_list.append(usbl_list[i])
+                usbl_filtered_list.append(usbl_list[i])
                 n = -continuity_condition
                 i += 1
         else:
@@ -142,7 +162,7 @@ def usbl_filter(usbl_list, depth_list, sigma_factor, max_auv_speed):
 
     Console.info(
         "{} remain of {} USBL measurements after distance filter".format(
-            len(usbl_temp_list), original_size
+            len(usbl_filtered_list), original_size
         )
     )
-    return usbl_temp_list
+    return usbl_list, usbl_filtered_list
