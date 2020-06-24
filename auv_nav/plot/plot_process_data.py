@@ -6,8 +6,9 @@ Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.  
 """
 
+from oplab import Console
 import plotly.graph_objs as go
-from plotly import tools
+from plotly import subplots
 import plotly.offline as py
 
 import os
@@ -73,7 +74,7 @@ def make_frame(frame, data, tstamp, mode="lines"):
 
 def plot_orientation_vs_time(orientation_list, plotlypath):
     # orientation
-    print("...plotting orientation_vs_time...")
+    Console.info("Plotting orientation_vs_time...")
     orientation_time = [i.epoch_timestamp for i in orientation_list]
     yaw = [i.yaw for i in orientation_list]
     pitch = [i.pitch for i in orientation_list]
@@ -97,6 +98,7 @@ def plot_orientation_vs_time(orientation_list, plotlypath):
         filename=str(plotlypath / "orientation_vs_time.html"),
         auto_open=False,
     )
+    Console.info("... done plotting orientation_vs_time.")
 
 
 def plot_velocity_vs_time(
@@ -107,7 +109,7 @@ def plot_velocity_vs_time(
     plotlypath,
 ):
     # velocity_body (north,east,down) compared to velocity_inertial
-    print("...plotting velocity_vs_time...")
+    Console.info("Plotting velocity_vs_time...")
 
     dr_time = [i.epoch_timestamp for i in dead_reckoning_dvl_list]
     dr_north_velocity = [i.north_velocity for i in dead_reckoning_dvl_list]
@@ -149,7 +151,7 @@ def plot_velocity_vs_time(
             "blue",
         )
 
-    fig = tools.make_subplots(
+    fig = subplots.make_subplots(
         rows=3,
         cols=2,
         subplot_titles=(
@@ -200,6 +202,7 @@ def plot_velocity_vs_time(
         auto_open=False,
     )
 
+    Console.info("... done plotting velocity_vs_time.")
 
 def plot_deadreckoning_vs_time(
     dead_reckoning_dvl_list,
@@ -212,7 +215,7 @@ def plot_deadreckoning_vs_time(
     plotlypath,
 ):
     # time_dead_reckoning northings eastings depth vs time
-    print("...plotting deadreckoning_vs_time...")
+    Console.info("Plotting deadreckoning_vs_time...")
 
     dr_time = [i.epoch_timestamp for i in dead_reckoning_dvl_list]
     dr_northings = [i.northings for i in dead_reckoning_dvl_list]
@@ -265,7 +268,7 @@ def plot_deadreckoning_vs_time(
     # Altitude vs time
     tr_alt = create_trace(altitude_time, altitude_alt, "Altitude", "red")
 
-    fig = tools.make_subplots(
+    fig = subplots.make_subplots(
         rows=2,
         cols=2,
         subplot_titles=("Northings", "Eastings", "Depth", "Altitude"),
@@ -327,13 +330,14 @@ def plot_deadreckoning_vs_time(
         auto_open=False,
     )
 
+    Console.info("... done plotting deadreckoning_vs_time.")
 
 # pf uncertainty plotly
 # maybe make a slider plot for this, or a dot projection slider
 def plot_pf_uncertainty(
     pf_fusion_dvl_list, pf_northings_std, pf_eastings_std, pf_yaw_std, plotlypath
 ):
-    print("...plotting pf_uncertainty...")
+    Console.info("Plotting pf_uncertainty...")
     pf_time = [i.epoch_timestamp for i in pf_fusion_dvl_list]
 
     tr_pf_northings_std = create_trace(
@@ -360,6 +364,8 @@ def plot_pf_uncertainty(
         filename=str(plotlypath / "pf_uncertainty.html"),
         auto_open=False,
     )
+    
+    Console.info("... done plotting pf_uncertainty.")
 
 
 def plot_uncertainty(
@@ -371,7 +377,7 @@ def plot_uncertainty(
     velocity_inertial_sensor_name,
     plotlypath,
 ):
-    print("...plotting uncertainty...")
+    Console.info("Plotting uncertainty...")
     # Uncertainty plotly --- https://plot.ly/python/line-charts/
     # filled-lines Something like that?
     ori_time = [i.epoch_timestamp for i in orientation_list]
@@ -424,7 +430,7 @@ def plot_uncertainty(
             iv_time, iv_d_vel_std, "down velocity std inertial", "blue"
         )
 
-    fig = tools.make_subplots(
+    fig = subplots.make_subplots(
         rows=2,
         cols=3,
         subplot_titles=(
@@ -477,6 +483,8 @@ def plot_uncertainty(
         filename=str(plotlypath / "uncertainties_plot.html"),
         auto_open=False,
     )
+    
+    Console.info("... done plotting uncertainty.")
 
 
 def plot_2d_deadreckoning(
@@ -489,11 +497,12 @@ def plot_2d_deadreckoning(
     pf_fusion_dvl_list,
     particles_time_interval,
     pf_particles_list,
+    usbl_list_no_dist_filter,
     usbl_list,
     plotlypath,
 ):
     # DR plotly slider *include toggle button that switches between lat long and north east
-    print("...plotting auv_path...")
+    Console.info("Plotting auv_path...")
 
     # might not be robust in the future
     min_timestamp = float("inf")
@@ -508,6 +517,8 @@ def plot_2d_deadreckoning(
         plotly_list.append(["dr_dvl", dead_reckoning_dvl_list, True])
     # if len(velocity_inertial_list) > 1:
     #    plotly_list.append([velocity_inertial_sensor_name, velocity_inertial_list])
+    if len(usbl_list_no_dist_filter) > 1:
+        plotly_list.append(["usbl_without_distance_filter", usbl_list_no_dist_filter, "legendonly"])
     if len(usbl_list) > 1:
         plotly_list.append(["usbl", usbl_list, True])
 
@@ -673,7 +684,7 @@ def plot_2d_deadreckoning(
         auto_open=False,
     )
 
-    print("...plotting auv_path_slider...")
+    Console.info("...plotting auv_path_slider...")
 
     sliders_dict = {
         "active": 0,
@@ -795,11 +806,13 @@ def plot_2d_deadreckoning(
         filename=str(plotlypath / "auv_path_slider.html"),
         auto_open=False,
     )
+    
+    Console.info("... done plotting auv_path.")
 
 
 def plot_2d_localisation(dr_list, pf_list, ekf_list, eks_list, plotlypath):
     # DR plotly slider *include toggle button that switches between lat long and north east
-    print("...plotting auv_path...")
+    Console.info("Plotting auv_path (localisation)...")
 
     # might not be robust in the future
     min_timestamp = float("inf")
@@ -889,7 +902,7 @@ def plot_2d_localisation(dr_list, pf_list, ekf_list, eks_list, plotlypath):
         auto_open=False,
     )
 
-    print("...plotting auv_path_slider...")
+    Console.info("...plotting auv_path_slider (localisation)...")
 
     sliders_dict = {
         "active": 0,
@@ -954,3 +967,6 @@ def plot_2d_localisation(dr_list, pf_list, ekf_list, eks_list, plotlypath):
         filename=str(plotlypath / "auv_localisation_slider.html"),
         auto_open=False,
     )
+
+    Console.info("... done plotting auv_path (localisation).")
+    
