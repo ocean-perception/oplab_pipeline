@@ -114,11 +114,19 @@ def parse_seaxerocks_images(mission, vehicle, category, ftype, outpath):
             # read in date
             if date_string != "date":  # ignore header
                 stereo_index.append(index_string)
+                if len(date_string) != 8:
+                    Console.warn("Date string ({}) in FileTime.csv file has "
+                        "unexpected length. Expected length: 8."
+                        .format(date_string))
                 yyyy = int(date_string[0:4])
                 mm = int(date_string[4:6])
                 dd = int(date_string[6:8])
 
                 # read in time
+                if len(time_string) != 6:
+                    Console.warn("Time string ({}) in FileTime.csv file has "
+                        "unexpected length. Expected length: 6."
+                        .format(time_string))
                 hour = int(time_string[0:2])
                 mins = int(time_string[2:4])
                 secs = int(time_string[4:6])
