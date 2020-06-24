@@ -268,18 +268,8 @@ def eigen_sorted(a):
 
 
 def interpolate_covariance(t, t0, t1, cov0, cov1):
-    eigval0, eigvec0 = eigen_sorted(cov0)
-    eigval1, eigvec1 = eigen_sorted(cov1)
-
     x = (t - t0) / (t1 - t0)
-    eigval = ((1 - x) * np.sqrt(eigval0) + x * np.sqrt(eigval1)) ** 2
-
-    c0 = eigvec0 * eigval0 * eigvec0.T
-    c1 = eigvec1 * eigval1 * eigvec1.T
-    r = c1 * c0.T
-    eigvec = r * eigval0
-    cov = eigvec * eigval * eigvec.T
-
+    cov = (1 - x)*cov0 + x*cov1
     return cov
 
 

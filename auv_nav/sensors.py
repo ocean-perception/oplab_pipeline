@@ -1168,12 +1168,24 @@ class SyncedOrientationBodyVelocity:
         # calculated
         self.northings = 0
         self.eastings = 0
+        self.northings_std = 0
+        self.eastings_std = 0
         self.depth = 0  # from interpolation of depth, not dr
         self.depth_std = 0
 
         self.latitude = 0
         self.longitude = 0
         self.covariance = None
+
+    def __str__(self):
+        msg = 'SyncedOrientationBodyVelocity object:\n'
+        msg += '\tPosition: ('+ str(self.northings) +', '+ str(self.eastings) +', '+ str(self.depth) +')\n'
+        msg += '\tPos. std: ('+ str(self.northings_std) +', '+ str(self.eastings_std) +', '+ str(self.depth_std) +')\n'
+        msg += '\tOrientation: ('+ str(self.roll) +', '+ str(self.pitch) +', '+ str(self.yaw) +')\n'
+        msg += '\tOrient. std: ('+ str(self.roll_std) +', '+ str(self.pitch_std) +', '+ str(self.yaw_std) +')\n'
+        msg += '\tSpeeds: ('+ str(self.x_velocity) +', '+ str(self.y_velocity) +', '+ str(self.z_velocity) +')\n'
+        msg += '\tS. std: ('+ str(self.x_velocity_std) +', '+ str(self.y_velocity_std) +', '+ str(self.z_velocity_std) +')'
+        return msg
 
     def __lt__(self, o):
         return self.epoch_timestamp < o.epoch_timestamp
