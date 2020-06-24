@@ -15,7 +15,9 @@ colour_correction :
 
 cameras : 
   - camera_name : 'LC' #in line with vehicle.yaml
-    image_file_list : 'none' # Only inidicate this if you want to limit the images used. folder is in the image path  
+    image_file_list : 
+      parse : 'none' # Only inidicate this if you want to limit the images used. folder is in the image path
+      process : 'none'  
     colour_correction :
       brightness : 30 # % target across dataset
       contrast : 3 # % target accross dataset  
@@ -24,7 +26,9 @@ cameras :
       colour_correction_matrix_rgb : [[1, 0, 0], [0, 1, 0], [0, 0, 1]] # diagonal terms corresponding to r gain, g gain, b gain
   
   - camera_name : 'RC' #in line with vehicle.yaml
-    image_file_list : 'none' # Only inidicate this if you want to limit the images used
+    image_file_list : 
+      parse : 'none' # Only inidicate this if you want to limit the images used
+      process : 'none'
     colour_correction :
       brightness : 30 # % target across dataset
       contrast : 3 # % target accross dataset  

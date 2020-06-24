@@ -70,7 +70,8 @@ class Config:
     def __init__(
         self,
         camera_name,
-        imagefilelist,
+        imagefilelist_parse,
+        imagefilelist_process,
         brightness,
         contrast,
         subtractors_rgb,
@@ -96,7 +97,8 @@ class Config:
         """
 
         self.camera_name = camera_name
-        self.imagefilelist = imagefilelist
+        self.imagefilelist_parse = imagefilelist_parse
+        self.imagefilelist_process = imagefilelist_process
         self.brightness = brightness
         self.contrast = contrast
         self.subtractors_rgb = subtractors_rgb
@@ -129,7 +131,8 @@ class CameraConfigs:
             self.camera_configs.append(
                 Config(
                     node[i]["camera_name"],
-                    node[i]["image_file_list"],
+                    node[i]["image_file_list"]["parse"],
+                    node[i]["image_file_list"]["process"],
                     node[i]["colour_correction"]["brightness"],
                     node[i]["colour_correction"]["contrast"],
                     node[i]["manual_balance"]["subtractors_rgb"],
