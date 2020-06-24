@@ -78,7 +78,7 @@ class Corrector:
         """
 
         self.load_generic_config_parameters()
-        ret = self.load_camera_specific_config_parameters()
+        ret = self.load_camera_specific_config_parameters(phase)
         if ret < 0:
             return -1
         else:
@@ -261,7 +261,7 @@ class Corrector:
 
 
     # store into object correction paramters specific to the current camera
-    def load_camera_specific_config_parameters(self):
+    def load_camera_specific_config_parameters(self, phase):
         """Load camera specific configuration parameters
 
         Returns
@@ -276,7 +276,10 @@ class Corrector:
             if cameraconfig.camera_name == self._camera.name
         ]
         if len(idx) > 0:
-            self._camera_image_file_list = self.cameraconfigs[idx[0]].imagefilelist
+            if phase == "parse":
+                self._camera_image_file_list = self.cameraconfigs[idx[0]].imagefilelist_parse
+            elif phase == "process":
+                self._camera_image_file_list = self.cameraconfigs[idx[0]].imagefilelist_process
             if self.correction_method == "colour_correction":
                 self.brightness = self.cameraconfigs[idx[0]].brightness
                 self.contrast = self.cameraconfigs[idx[0]].contrast
