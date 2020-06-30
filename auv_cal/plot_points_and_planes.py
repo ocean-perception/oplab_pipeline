@@ -116,7 +116,8 @@ def plot_pointcloud_and_planes(pointcloud, planes, plot_path=None):
     fig = go.Figure()
 
     for i, pc in enumerate(pointcloud):
-        indices = np.random.choice(pc.shape[0], 10000, replace=False)
+        sample_size = min(10000, pc.shape[0])
+        indices = np.random.choice(pc.shape[0], sample_size, replace=False)
         pc_rs = pc[indices]
         fig.add_trace(
             go.Scatter3d(
