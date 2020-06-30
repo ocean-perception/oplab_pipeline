@@ -2,8 +2,8 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
 import cv2
@@ -21,6 +21,26 @@ import time
 
 
 def build_plane(pitch, yaw, point):
+    """Compute plane parametrisation given a point and 2 angles
+
+    Parameters
+    ----------
+    pitch : float
+        Pitch in degrees
+    yaw : float
+        Yaw in degrees
+    point : np.ndarray
+        (vector of length 3) x, y and z values of point
+
+    Returns
+    -------
+    np.ndarray
+        (vector of length 4) Parametrisation of plane defined by ax+by+cz+d=0
+    np.ndarray
+        (vector of length 3) Normal vector (normalised to length 1)
+    float
+        offset
+    """
     a = 1.0
     b = math.tan(math.radians(yaw))
     c = math.tan(math.radians(pitch))
@@ -78,8 +98,21 @@ def get_angles(normal):
 
 
 def findLaserInImage(
-    img, min_green_val, k, num_columns, start_row=0, end_row=-1, prior=None, debug=False
+    img, min_green_val, k, num_columns, start_row=0, end_row=-1, prior=None
 ):
+    """Find laser line projection in image
+
+    For each column of the image, find the coordinate (y-value) where the laser
+    line passes, provided the laser is visible in that column. The laser
+    position is calculated with sub-pixel resolution (-> y value is not an
+    integer).
+
+    Returns
+    -------
+    np.ndarray
+        (n x 2) array of y and x values of detected laser pixels
+    """
+
     height, width = img.shape
     peaks = []
     width_array = np.array(range(50, width - 50))
@@ -126,8 +159,8 @@ def findLaserInImage(
 
 
 def triangulate_lst(x1, x2, P1, P2):
-    """ Point pair triangulation from
-    least squares solution. """
+    """Point pair triangulation from least squares solution"""
+
     M = np.zeros((6, 6))
     M[:3, :4] = P1
     M[3:, :4] = P2
@@ -145,6 +178,7 @@ def triangulate_dlt(p1, p2, P1, P2):
     point. For example, see Hartley & Zisserman section 12.2
     (p.312).
     """
+
     # for info on SVD, see Hartley & Zisserman (2003) p. 593 (see also p. 587)
     A = []
     A.append(float(p1[1]) * P1[2, :] - P1[0, :])
@@ -168,6 +202,13 @@ def draw_laser(
     bottom_right,
     remap,
 ):
+    """Draw identified laser positions on top of laser line images
+
+    Returns
+    -------
+        None
+    """
+
     lfilename = left_image_name.name
     rfilename = right_image_name.name
     lprocessed_folder = get_processed_folder(left_image_name.parent)
@@ -222,7 +263,7 @@ def draw_laser(
         Console.info("Saved " + str(lfilename) + " and " + str(rfilename))
 
 
-def thread_detect(
+def get_laser_pixels_in_image_pair(
     left_image_name,
     left_maps,
     right_image_name,
@@ -238,6 +279,22 @@ def thread_detect(
     remap,
     overwrite,
 ):
+    """Get pixel positions of laser line(s) in images
+
+    Returns
+    -------
+    np.ndarray
+        (n x 2) array of y and x values of top laser line in left_image
+    np.ndarray
+        (n x 2) array of y and x values of top laser line in right_image
+    np.ndarray
+        (n x 2) array of y and x values of bottom laser line in left_image
+        (empty array if `two_lasers` is `False`)
+    np.ndarray
+        (n x 2) array of y and x values of bottom laser line in right_image
+        (empty array if `two_lasers` is `False`)
+    """
+
     def write_file(
         filename,
         image_name,
@@ -252,6 +309,17 @@ def thread_detect(
         two_lasers,
         remap,
     ):
+        """Find laser line(s) in image, write result to file and return values
+
+        Returns
+        -------
+        np.ndarray
+            (n x 2) array of y and x values of top laser line
+        np.ndarray
+            (n x 2) array of y and x values of bottom laser line (empty array
+            if `two_lasers` is `False`)
+        """
+
         p1b = []
         img1 = cv2.imread(str(image_name), cv2.IMREAD_ANYDEPTH)
         if remap:
@@ -289,7 +357,7 @@ def thread_detect(
         p1b = np.array(p1b, dtype=np.float32)
         return p1, p1b
 
-    def do_image(
+    def get_laser_pixels(
         image_name,
         maps,
         min_greenness_value,
@@ -303,6 +371,20 @@ def thread_detect(
         remap,
         overwrite,
     ):
+        """Get pixel positions of laser line(s) in image
+
+        If laser detector has been run previously, read laser pixel positions
+        from file. Otherwis, or if `overwrite` is `True`, run laser detector.
+
+        Returns
+        -------
+        np.ndarray
+            (n x 2) array of y and x values of top laser line
+        np.ndarray
+            (n x 2) array of y and x values of bottom laser line (empty array
+            if `two_lasers` is `False`)
+        """
+
         # Load image
         points = []
         points_b = []
@@ -364,7 +446,7 @@ def thread_detect(
         return points, points_b
 
     # print('PAIR: ' + left_image_name.stem + ' - ' + right_image_name.stem)
-    p1, p1b = do_image(
+    p1, p1b = get_laser_pixels(
         left_image_name,
         left_maps,
         min_greenness_value,
@@ -378,7 +460,7 @@ def thread_detect(
         remap,
         overwrite,
     )
-    p2, p2b = do_image(
+    p2, p2b = get_laser_pixels(
         right_image_name,
         right_maps,
         min_greenness_value,
@@ -407,6 +489,13 @@ def thread_detect(
 
 
 def save_cloud(filename, cloud):
+    """Write list of 3D points to ply file
+
+    Returns
+    -------
+        None
+    """
+
     cloud_size = len(cloud)
 
     header_msg = "ply\n\
@@ -480,12 +569,36 @@ class LaserCalibrator:
         )
 
     def valid(self, p):
+        """Checks if point is within bounding box
+
+        Parameters
+        ----------
+        p : list of 3 numbers
+            Point
+
+        Returns
+        -------
+        bool
+            True if point is inside bounds, False otherwise
+        """
         first = (p[0] > -self.filter_xy) and (p[0] < self.filter_xy)
         second = (p[1] > -self.filter_xy) and (p[1] < self.filter_xy)
         third = (p[2] > self.filter_z_min) and (p[2] < self.filter_z_max)
         return first and second and third
 
     def filter_cloud(self, cloud):
+        """Filter point cloud and only keep points inside bounding box
+
+        Parameters
+        ----------
+        cloud : list of list of 3 numbers
+            cloud
+
+        Returns
+        -------
+        list of list of 3 numbers
+            Filtered point cloud
+        """
         return [p for p in cloud if self.valid(p)]
 
     def pointcloud_from_peaks(self, pk1, pk2):
@@ -523,8 +636,23 @@ class LaserCalibrator:
         return cloud, count, count_inversed
 
     def fit_and_save(self, cloud):
+        """Fit mean plane and uncertainty bounding planes to point cloud
+
+        Parameters
+        ----------
+        cloud : ndarray of shape (nx3)
+            Point cloud
+
+        Returns
+        -------
+        String
+            Plane parameters of the mean plane and a set of uncertainty
+            bounding planes of the point cloud in yaml-file format.
+        """
+
         total_no_points = len(cloud)
 
+        # Fit mean plane
         Console.info("Fitting a plane to", total_no_points, "points...")
         p = Plane([1, 0, 0, 1.5])
         mean_plane, inliers_cloud = p.fit(cloud, self.mdt)
@@ -552,6 +680,7 @@ class LaserCalibrator:
             )
             Console.warn("Try to increase your distance threshold.")
 
+        # Determine uncertainty bounding planes
         cloud_sample_size = int(self.css)
         if cloud_sample_size > len(inliers_cloud_list):
             cloud_sample_size = len(inliers_cloud_list)
@@ -675,6 +804,20 @@ class LaserCalibrator:
         return yaml_msg
 
     def cal(self, limages, rimages):
+        """Main function that is called by the code using the LaserCalibrator
+            class to trigger the computation of laser plane parameters
+
+        Parameters
+        ----------
+        limages : list of Path
+            Paths of images from the first camera
+        rimages : list of Path
+            Paths of images from the second camera
+
+        Returns
+        -------
+        None
+        """
         # Synchronise images
         limages_sync = []
         rimages_sync = []
@@ -737,7 +880,7 @@ class LaserCalibrator:
         Console.info("Processing ", str(len(limages_sync)), " synchronised images...")
         result = joblib.Parallel(n_jobs=-1)(
             [
-                joblib.delayed(thread_detect)(
+                joblib.delayed(get_laser_pixels_in_image_pair)(
                     i,
                     self.left_maps,
                     j,
