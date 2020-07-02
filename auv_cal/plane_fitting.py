@@ -2,14 +2,13 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
 import numpy as np
 from numpy.linalg import norm
 from scipy.optimize import least_squares
-from mpl_toolkits.mplot3d import axes3d
 import matplotlib.pyplot as plt
 
 
@@ -51,6 +50,27 @@ class Plane:
         return residuals
 
     def fit(self, points, min_distance_inliers, verbose=True, output_inliers=True):
+        """Fit plane to points
+
+        Parameters
+        ----------
+        points : ndarray
+            (n x 3) array containing points of point cloud
+        min_distance_inliers : float
+            Points with located within this distance from the plane are kept
+        verbose : bool, optional
+            Enable or disable verbose output. Default: True
+        output_inliers : bool, optional
+            Enable or disable outputting of inliers. Default: True
+
+        Returns
+        -------
+        ndarray (float64)
+            (vector of length 4) Coefficients of plane
+        list of ndarray of length 3
+            (list of ndarray vectors of length 3) Inlier points
+        """
+
         # Coeffs: apex(x, y, z), axis(x, y, z) and theta
         coefficients = np.array([1, 0, 0, -1.5], dtype=np.float64)
         bounds = ([-1.0, -1.0, -1.0, -np.inf], [1.0, 1.0, 1.0, np.inf])
@@ -85,6 +105,19 @@ class Plane:
         return self.coeffs, inliers
 
     def fit_non_robust(self, points):
+        """Fit plane to points
+
+        Parameters
+        ----------
+        points : list of ndarray
+            Each ndarray is a vector containing the x,y,z cooridnates of 1 point
+
+        Returns
+        -------
+        np.ndarray (float64)
+            (vector of length 4) Coefficients of plane
+        """
+
         axyz = np.ones((len(points), 4))
         axyz[:, :3] = points
         m = np.linalg.svd(axyz)[-1][-1, :]
