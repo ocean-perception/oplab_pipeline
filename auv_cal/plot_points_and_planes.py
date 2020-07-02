@@ -4,12 +4,12 @@ Copyright (c) 2020, University of Southampton
 All rights reserved.
 """
 
-import numpy as np
-import plotly.graph_objects as go
 from datetime import datetime
-from plyfile import PlyData
 from pathlib import Path
 import argparse
+import numpy as np
+import plotly.graph_objects as go
+from plyfile import PlyData
 
 
 def read_ply(filename):
@@ -53,7 +53,7 @@ def plane_to_rectuangular_grid(plane, ymin, ymax, zmin, zmax):
     Returns
     -------
     np.ndarray
-        x, y and z of the 4 corners of the plane as matrices for plotting    
+        x, y and z of the 4 corners of the plane as matrices for plotting
     """
 
     a, b, c, d = plane.tolist()
@@ -63,15 +63,16 @@ def plane_to_rectuangular_grid(plane, ymin, ymax, zmin, zmax):
 
 
 def plane_to_isosceles_trapezoid_grid(plane, ydistmin, ydistmax, zmin1, zmax1):
-    """Calculate the x,y,z values of the corners of a plane in the shape of the sheet laser
-    
+    r"""Calculate the x,y,z values of the corners of a plane in the shape of
+        the sheet laser
+
     Drawing::
 
-        .           y=0 ydistmin  
+        .           y=0 ydistmin
         .zmin___   __|__|
-        .         /     \\
-        .        / plane \\
-        .zmax__ /_________\\
+        .         /     \
+        .        / plane \
+        .zmax__ /_________\
         .                 |
         .                 ydistmax
 
@@ -102,30 +103,40 @@ def plane_to_isosceles_trapezoid_grid(plane, ydistmin, ydistmax, zmin1, zmax1):
     return (-d - c * zz - b * yy) / a, yy, zz
 
 
-def plot_pointcloud_and_planes(pointcloud, planes, plot_path=None):
-    """Plots the pointcloud and each of theplanes in the list of planes with plotly
+def plot_pointcloud_and_planes(pointclouds, planes, plot_path=None):
+    """Plots list of pointclouds and planes with plotly
 
-    :param pointcloud: Pointcloud to be plotted
-    :type  pointcloud: (n x 3) numpy array
-    :param planes:     List of planes, parametrized as (a,b,c,d)
-    :type  planes:     List of numpy arrays (vectors with 4 elements)
-    :param plot_path:  (optional) Filename for storing plot as html. If None, plot is not saved.
-    :type  plot_path:  String or None
+    Parameters
+    ----------
+    pointclouds : list of ndarray
+        List of (n x 3) ndarrays with coordintes of points to be plotted
+    planes : list of ndarray
+        List of ndarrays (vectors of length 4) containing plane parameters
+    plot_path: String or None, optional
+        Filename for storing plot as html. If None, plot is displayed but not
+        saved. Default: None.
+
+    Returns
+    -------
+        None
     """
 
     fig = go.Figure()
 
-    for i, pc in enumerate(pointcloud):
+    for i, pc in enumerate(pointclouds):
         sample_size = min(10000, pc.shape[0])
         indices = np.random.choice(pc.shape[0], sample_size, replace=False)
         pc_rs = pc[indices]
+        marker_size = 1
+        if pc_rs.shape[0] < 10:
+            marker_size = 5
         fig.add_trace(
             go.Scatter3d(
                 x=pc_rs.T[0],
                 y=pc_rs.T[1],
                 z=pc_rs.T[2],
                 mode="markers",
-                marker=dict(size=1),
+                marker=dict(size=marker_size),
                 showlegend=True,
                 name="pointcloud" + str(i),
             )
