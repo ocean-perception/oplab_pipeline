@@ -241,10 +241,10 @@ def camera_csv(camera_list, camera_name, csv_filepath, csv_flag):
             "roll [deg],pitch [deg],heading [deg],altitude "
             "[m],timestamp [s],latitude [deg],longitude [deg]"
             ",x_velocity [m/s],y_velocity [m/s],z_velocity [m/s]"
-            ",vehicle_cov_x,vehicle_cov_y,vehicle_cov_z,"
-            "vehicle_cov_roll,vehicle_cov_pitch,vehicle_cov_yaw,"
-            "vehicle_cov_vx,vehicle_cov_vy,vehicle_cov_vz,"
-            "vehicle_cov_vroll,vehicle_cov_vpitch,vehicle_cov_vyaw\n"
+            ",vehicle_var_x [m^2],vehicle_var_y [m^2],vehicle_var_z [m^2],"
+            "vehicle_var_roll [deg^2],vehicle_var_pitch [deg^2],vehicle_var_yaw [deg^2],"
+            "vehicle_var_vx [(m/s)^2],vehicle_var_vy [(m/s)^2],vehicle_var_vz [(m/s)^2],"
+            "vehicle_var_vroll [(deg/s)^2],vehicle_var_vpitch [(deg/s)^2],vehicle_var_vyaw [(deg/s)^2]\n"
         )
 
         if len(camera_list) > 0:

@@ -6,20 +6,24 @@
 #       covariance = measurement*factor + offset
 # If the model is 'sensor', the values from the JSON file are used (default)
 std:
-  usbl:
+  position_xy:
+    # Units: meters
     offset: 2.
     factor: 0.01
     model: sensor
-  dvl:
-    offset: 0.002
-    factor: 0.001
-    model: sensor
-  depth:
+  position_z:
+    # Units: meters
     offset: 0.01
     factor: 0.
     model: sensor
+  speed:
+    # Units: meters/second
+    offset: 0.002
+    factor: 0.001
+    model: sensor
   orientation:
-    offset: 0.003
+    # Units: degrees
+    offset: 0.01
     factor: 0.
     model: sensor
 
@@ -37,6 +41,7 @@ ekf:
   # process_noise_covariance diagonal value for the variable in question, which will cause the filter's predicted error
   # to be larger, which will cause the filter to trust the incoming measurement more during correction. The values are
   # ordered as x, y, z, roll, pitch, yaw, vx, vy, vz, vroll, vpitch, vyaw.
+  # UNITS are m, m, m, rad, rad, rad, m/s, m/s, m/s, rad/s, rad/s, rad/s (all squared)
   process_noise_covariance: [0.05, 0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,
                              0,    0.05, 0,    0,    0,    0,    0,     0,     0,    0,    0,    0,
                              0,    0,    0.06, 0,    0,    0,    0,     0,     0,    0,    0,    0,
@@ -53,6 +58,7 @@ ekf:
   # value (variance) to a large value will result in rapid convergence for initial measurements of the variable in
   # question. Users should take care not to use large values for variables that will not be measured directly. The values
   # are ordered as x, y, z, roll, pitch, yaw, vx, vy, vz, vroll, vpitch, vyaw.
+  # UNITS are m, m, m, rad, rad, rad, m/s, m/s, m/s, rad/s, rad/s, rad/s (all squared)
   initial_estimate_covariance: [1e-9, 0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,
                                 0,    1e-9, 0,    0,    0,    0,    0,    0,    0,    0,     0,     0,
                                 0,    0,    1e-9, 0,    0,    0,    0,    0,    0,    0,     0,     0,

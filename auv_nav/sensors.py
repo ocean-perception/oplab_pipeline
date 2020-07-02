@@ -1149,6 +1149,14 @@ class SyncedOrientationBodyVelocity:
         self.roll_std = 0
         self.pitch_std = 0
         self.yaw_std = 0
+        # orientation speed
+        # from orientation
+        self.vroll = 0
+        self.vpitch = 0
+        self.vyaw = 0
+        self.vroll_std = 0
+        self.vpitch_std = 0
+        self.vyaw_std = 0
         # interpolated
         self.x_velocity = 0
         self.y_velocity = 0

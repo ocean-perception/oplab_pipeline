@@ -115,14 +115,14 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
     chemical_pf_list = []
 
     # std factors and offsets defaults for EKF
-    std_factor_usbl = 0.01
-    std_offset_usbl = 10.0
-    std_factor_dvl = 0.001
-    std_offset_dvl = 0.002
-    std_factor_depth = 0
-    std_offset_depth = 0.01
+    std_factor_position_xy = 0.01
+    std_offset_position_xy_m = 10.0
+    std_factor_position_z = 0
+    std_offset_position_z_m = 0.01
+    std_factor_speed = 0.001
+    std_offset_speed_mps = 0.002
     std_factor_orientation = 0.0
-    std_offset_orientation = 0.003
+    std_offset_orientation_deg = 0.03
 
     # load auv_nav.yaml for particle filter and other setup
     filepath = Path(filepath).resolve()
@@ -182,37 +182,49 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
             ]
         if "std" in load_localisation:
             sensors_std = load_localisation["std"]
+            if "position_xy" not in sensors_std:
+                sensors_std['position_xy'] = sensors_std['usbl']
+            if "position_z" not in sensors_std:
+                sensors_std['position_z'] = sensors_std['depth']
+            if "speed" not in sensors_std:
+                sensors_std['speed'] = sensors_std['dvl']
         else:
             sensors_std = {
-                "usbl": {"factor": std_factor_usbl, "offset": std_offset_usbl},
-                "dvl": {"factor": std_factor_dvl, "offset": std_offset_dvl},
-                "depth": {"factor": std_factor_depth, "offset": std_offset_depth},
+                "position_xy": {
+                    "factor": std_factor_position_xy,
+                    "offset": std_offset_position_xy_m},
+                "position_z": {
+                    "factor": std_factor_position_z,
+                    "offset": std_offset_position_z_m},
+                "speed": {
+                    "factor": std_factor_speed,
+                    "offset": std_offset_speed_mps},
                 "orientation": {
                     "factor": std_factor_orientation,
-                    "offset": std_offset_orientation,
+                    "offset": std_offset_orientation_deg,
                 },
             }
-            # Default to use JSON uncertainties
-            if "model" not in sensors_std["usbl"]:
-                Console.warn(
-                    "No uncertainty model specified for USBL, defaulting to JSON."
-                )
-                sensors_std["usbl"]["model"] = "sensor"
-            if "model" not in sensors_std["dvl"]:
-                Console.warn(
-                    "No uncertainty model specified for DVL, defaulting to JSON."
-                )
-                sensors_std["dvl"]["model"] = "sensor"
-            if "model" not in sensors_std["depth"]:
-                Console.warn(
-                    "No uncertainty model specified for Depth, defaulting to JSON."
-                )
-                sensors_std["depth"]["model"] = "sensor"
-            if "model" not in sensors_std["orientation"]:
-                Console.warn(
-                    "No uncertainty model specified for Orientation, defaulting to JSON."
-                )
-                sensors_std["orientation"]["model"] = "sensor"
+        # Default to use JSON uncertainties
+        if "model" not in sensors_std["position_xy"]:
+            Console.warn(
+                "No uncertainty model specified for position_xy, defaulting to sensor (JSON)."
+            )
+            sensors_std["position_xy"]["model"] = "sensor"
+        if "model" not in sensors_std["speed"]:
+            Console.warn(
+                "No uncertainty model specified for speed, defaulting to sensor (JSON)."
+            )
+            sensors_std["speed"]["model"] = "sensor"
+        if "model" not in sensors_std["position_z"]:
+            Console.warn(
+                "No uncertainty model specified for Depth, defaulting to sensor (JSON)."
+            )
+            sensors_std["position_z"]["model"] = "sensor"
+        if "model" not in sensors_std["orientation"]:
+            Console.warn(
+                "No uncertainty model specified for Orientation, defaulting to sensor (JSON)."
+            )
+            sensors_std["orientation"]["model"] = "sensor"
         if "ekf" in load_localisation:
             ekf_activate = load_localisation["ekf"]["activate"]
             ekf_process_noise_covariance = load_localisation["ekf"][
@@ -407,7 +419,7 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
                         ) < 1.0:
                             velocity_body = BodyVelocity()
                             velocity_body.from_json(
-                                parsed_json_data[i], sensors_std["dvl"]
+                                parsed_json_data[i], sensors_std["speed"]
                             )
                             velocity_body_list.append(velocity_body)
                 if "inertial" in parsed_json_data[i]["frame"]:
@@ -422,7 +434,7 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
 
             if "depth" in parsed_json_data[i]["category"]:
                 depth = Depth()
-                depth.from_json(parsed_json_data[i], sensors_std["depth"])
+                depth.from_json(parsed_json_data[i], sensors_std["position_z"])
                 depth_list.append(depth)
 
             if "altitude" in parsed_json_data[i]["category"]:
@@ -432,7 +444,7 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
 
             if "usbl" in parsed_json_data[i]["category"]:
                 usbl = Usbl()
-                usbl.from_json(parsed_json_data[i], sensors_std["usbl"])
+                usbl.from_json(parsed_json_data[i], sensors_std["position_xy"])
                 usbl_list.append(usbl)
 
             if "image" in parsed_json_data[i]["category"]:
