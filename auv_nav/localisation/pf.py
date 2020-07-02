@@ -8,6 +8,7 @@ See LICENSE.md file in the project root for full license information.
 
 import math
 import numpy as np
+import time
 from numpy.random import randn
 from numpy.random import uniform
 import copy
@@ -147,10 +148,10 @@ class DeadReckoningMovementModel:
         @param state Reference to the state that has to be manipulated.
         @param dt time that has passed since the last filter update in seconds.
         """
-        depth_std_factor = self.sensors_std["depth"]["factor"]
-        depth_std_offset = self.sensors_std["depth"]["offset"]
-        velocity_std_factor = self.sensors_std["dvl"]["factor"]
-        velocity_std_offset = self.sensors_std["dvl"]["offset"]
+        depth_std_factor = self.sensors_std["position_z"]["factor"]
+        depth_std_offset = self.sensors_std["position_z"]["offset"]
+        velocity_std_factor = self.sensors_std["speed"]["factor"]
+        velocity_std_offset = self.sensors_std["speed"]["offset"]
         imu_noise_std_offset = self.sensors_std["orientation"]["offset"]
         imu_noise_std_factor = self.sensors_std["orientation"]["factor"]
 
@@ -213,16 +214,14 @@ class ParticleFilter:
     def __init__(
         self, num_particles, movement_model, observation_model, expected_iterations=0
     ):
-        self.particles = []
+        self.particles = [Particle()]*num_particles
         self.particles_history = []
         self.iteration = 0
         self.iteration_step = int(float(expected_iterations) / 20.0)
         self.mm = movement_model
         self.om = observation_model
-        for i in range(0, num_particles):
-            p = Particle()
+        for p in self.particles:
             p.weight = 1.0 / float(num_particles)
-            self.particles.append(p)
         self.particles_history.append(self.particles)
 
     def __str__(self):
@@ -271,7 +270,7 @@ class ParticleFilter:
 
     def normalize(self):
         s = [p.weight for p in self.particles]
-        norm = sum(s) / len(self.particles)
+        norm = np.sum(s)
         # Avoid division by zero
         if norm < 1e-20:
             norm += 1e-20
@@ -450,7 +449,7 @@ def run_particle_filter(
     Console.info("\t* Number of particles: {}".format(num_particles))
     Console.info(
         "\t* DVL noise std: f(x)={}x+{} m/s".format(
-            sensors_std["dvl"]["factor"], sensors_std["dvl"]["offset"]
+            sensors_std["speed"]["factor"], sensors_std["speed"]["offset"]
         )
     )
     Console.info(
@@ -460,12 +459,12 @@ def run_particle_filter(
     )
     Console.info(
         "\t* Depth noise std: f(x)={}x+{} meters".format(
-            sensors_std["depth"]["factor"], sensors_std["depth"]["offset"]
+            sensors_std["position_z"]["factor"], sensors_std["position_z"]["offset"]
         )
     )
     Console.info(
         "\t* USBL noise std: f(x)={}x+{} meters".format(
-            sensors_std["usbl"]["factor"], sensors_std["usbl"]["offset"]
+            sensors_std["position_xy"]["factor"], sensors_std["position_xy"]["offset"]
         )
     )
     Console.info("Running {} iterations...".format(len(dr_list)))
