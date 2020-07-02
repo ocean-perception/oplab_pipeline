@@ -6,10 +6,13 @@ Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
 
-import cv2
-import numpy as np
 import math
 import random
+import time
+import joblib
+import yaml
+import cv2
+import numpy as np
 from auv_cal.plane_fitting import Plane
 from auv_cal.plot_points_and_planes import plot_pointcloud_and_planes
 from auv_cal.camera_calibrator import resize_with_padding
@@ -17,9 +20,6 @@ from oplab import Console
 from oplab import get_processed_folder
 from auv_nav.parsers.parse_biocam_images import biocam_timestamp_from_filename
 from .euler_angles_from_rotation_matrix import euler_angles_from_rotation_matrix
-import joblib
-import yaml
-import time
 
 
 def build_plane(pitch, yaw, point):
@@ -52,6 +52,33 @@ def build_plane(pitch, yaw, point):
     plane = np.array([a, b, c, d])
     offset = (-d - point[1] * b) / a
     return plane, normal, offset
+
+
+def plane_through_3_points(points):
+    """Compute plane passing through 3 points
+
+    Parameters
+    ----------
+    points : list np.ndarray
+        (list of length 3 of ndarray vectors of length 3) coordinates of points
+
+    Returns
+    -------
+    np.ndarray
+        (vector of length 4) Parametrisation of plane defined by ax+by+cz+d=0
+    """
+
+    assert len(points) == 3
+
+    p0p1 = points[1] - points[0]
+    p0p2 = points[2] - points[0]
+    n = np.cross(p0p1, p0p2)
+    d = -np.dot(n, points[0])
+    plane_parametrization = np.concatenate([n, np.array([d])])
+    if plane_parametrization[0] != 0:
+        plane_parametrization /= plane_parametrization[0]
+
+    return plane_parametrization
 
 
 def opencv_to_ned(xyz):
@@ -557,6 +584,8 @@ def save_cloud(filename, cloud):
 
 
 class LaserCalibrator:
+    TWO_SIGMA = 0.9545  # +/- 2 sigma in case of Gaussian distribution
+
     def __init__(self, stereo_camera_model, config, overwrite=False):
         self.data = []
 
@@ -590,8 +619,6 @@ class LaserCalibrator:
         self.ssp = ransac.get("sample_size_ratio", 0.8)
         self.gip = ransac.get("goal_inliers_ratio", 0.999)
         self.max_iterations = ransac.get("max_iterations", 5000)
-        self.css = uncertainty_generation.get("cloud_sample_size", 1000)
-        self.num_iterations = uncertainty_generation.get("iterations", 100)
 
         self.left_maps = cv2.initUndistortRectifyMap(
             self.sc.left.K,
@@ -609,6 +636,12 @@ class LaserCalibrator:
             (self.sc.right.image_width, self.sc.right.image_height),
             cv2.CV_32FC1,
         )
+
+        self.inliers_1 = None
+        self.triples = []
+        self.uncertainty_planes = []
+        self.in_front_or_behind = []
+
 
     def range_stratified_sampling(self, cloud):
         """Perform range stratified sampling following the parameters 
@@ -726,153 +759,204 @@ class LaserCalibrator:
         # Fit mean plane
         Console.info("Fitting a plane to", total_no_points, "points...")
         p = Plane([1, 0, 0, 1.5])
-        mean_plane, inliers_cloud = p.fit(cloud, self.mdt)
+        mean_plane, self.inliers_cloud_list = p.fit(cloud, self.mdt)
         # p.plot(cloud=cloud)
 
         filename = time.strftime("pointclouds_and_best_model_%Y%m%d_%H%M%S.html")
         plot_pointcloud_and_planes(
-            [np.array(cloud), np.array(inliers_cloud)], [np.array(mean_plane)], filename
+            [np.array(cloud), np.array(self.inliers_cloud_list)],
+            [np.array(mean_plane)], filename
         )  #'pointclouds_and_best_model.html')
 
         scale = 1.0 / mean_plane[0]
         mean_plane = np.array(mean_plane) * scale
         mean_plane = mean_plane.tolist()
 
-        inliers_cloud_list = list(inliers_cloud)
+        Console.info("Least squares found", len(self.inliers_cloud_list), "inliers")
 
-        Console.info("Least squares found", len(inliers_cloud_list), "inliers")
-
-        if len(inliers_cloud_list) < 0.5 * len(cloud) * self.gip:
+        if len(self.inliers_cloud_list) < 0.5 * len(cloud) * self.gip:
             Console.warn("The number of inliers found are off from what you expected.")
             Console.warn(" * Expected inliers:", len(cloud) * self.gip)
-            Console.warn(" * Found inliers:", len(inliers_cloud_list))
+            Console.warn(" * Found inliers:", len(self.inliers_cloud_list))
             Console.warn(
                 "Check the output cloud to see if the found plane makes sense."
             )
             Console.warn("Try to increase your distance threshold.")
 
-        # Determine uncertainty bounding planes
-        cloud_sample_size = int(self.css)
-        if cloud_sample_size > len(inliers_cloud_list):
-            cloud_sample_size = len(inliers_cloud_list)
-        Console.info("Randomly sampling with", cloud_sample_size, "points...")
-
-        planes = []
-        for i in range(0, self.num_iterations):
-            point_cloud_local = random.sample(inliers_cloud_list, cloud_sample_size)
-            total_no_points = len(point_cloud_local)
-            p = Plane([1, 0, 0, 1.5])
-            m = p.fit_non_robust(point_cloud_local)
-            # m, _ = p.fit(cloud, self.mdt, verbose=False, output_inliers=False)
-            angle, pitch, yaw = get_angles(m[0:3])
-            planes.append([angle, pitch, yaw])
-            Console.progress(i, self.num_iterations, prefix="Iterating planes")
-
-        planes = np.array(planes)
-        planes = planes.reshape(-1, 3)
-
-        plane_angle_std = np.std(planes[:, 0])
-        plane_angle_mean = np.mean(planes[:, 0])
-        plane_angle_median = np.median(planes[:, 0])
-        pitch_angle_std = np.std(planes[:, 1])
-        pitch_angle_mean = np.mean(planes[:, 1])
-        yaw_angle_std = np.std(planes[:, 2])
-        yaw_angle_mean = np.mean(planes[:, 2])
-
-        Console.info("Total Number of Points:", total_no_points)
-        Console.info("Plane Standard deviation:\n", plane_angle_std)
-        Console.info("Mean angle:\n", plane_angle_mean)
-        Console.info("Median angle:\n", plane_angle_median)
-        Console.info("Pitch Standard deviation:\n", pitch_angle_std)
-        Console.info("Pitch Mean:\n", pitch_angle_mean)
-        Console.info("Yaw Standard deviation:\n", yaw_angle_std)
-        Console.info("Yaw Mean:\n", yaw_angle_mean)
-
-        inliers_cloud = np.array(inliers_cloud)
+        inliers_cloud = np.array(self.inliers_cloud_list)
         mean_x = np.mean(inliers_cloud[:, 0])
         mean_y = np.mean(inliers_cloud[:, 1])
         mean_z = np.mean(inliers_cloud[:, 2])
         mean_xyz = np.array([mean_x, mean_y, mean_z])
 
-        yaml_msg = ""
+        # Determine minimum distance between points as function of inlier
+        # point cloud size
+        std_y = np.std(inliers_cloud[:, 1])
+        std_z = np.std(inliers_cloud[:, 2])
+        # print("Min y: " + str(np.min(inliers_cloud[:, 1])))
+        # print("Max y: " + str(np.max(inliers_cloud[:, 1])))
+        # print("Std y: " + str(std_y))
+        # print("Min z: " + str(np.min(inliers_cloud[:, 2])))
+        # print("Max z: " + str(np.max(inliers_cloud[:, 2])))
+        # print("Std z: " + str(std_z))
+        min_dist = 2* math.sqrt(std_y**2 + std_z**2)
+        Console.info("Minimum distance for poisson disc sampling: {}"
+                     .format(min_dist))
+        min_sin_angle = 0.866  # = sin(60°)
 
-        yaml_msg = (
-            "mean_xyz_m: "
-            + str(mean_xyz.tolist())
-            + "\n"
-            + "mean_plane: "
-            + str(mean_plane)
-            + "\n"
-            + "plane_angle_std_deg: "
-            + str(plane_angle_std)
-            + "\n"
-            + "plane_angle_mean_deg: "
-            + str(plane_angle_mean)
-            + "\n"
-            + "plane_angle_median_deg: "
-            + str(plane_angle_median)
-            + "\n"
-            + "pitch_angle_std_deg: "
-            + str(pitch_angle_std)
-            + "\n"
-            + "pitch_angle_mean_deg: "
-            + str(pitch_angle_mean)
-            + "\n"
-            + "yaw_angle_std_deg: "
-            + str(yaw_angle_std)
-            + "\n"
-            + "yaw_angle_mean_deg: "
-            + str(yaw_angle_mean)
-            + "\n"
-            + "num_iterations: "
-            + str(self.num_iterations)
-            + "\n"
-            + "total_no_points: "
-            + str(total_no_points)
-            + "\n"
-        )
+        # Append 1 to the points, so they can be multiplied (dot product) with
+        # plane paramters to find out if they are in front, behind or on a
+        # plane.
+        self.inliers_1 = np.concatenate(
+            [inliers_cloud, np.ones((inliers_cloud.shape[0], 1))], axis=1)
 
-        msg = ["minus_2sigma", "mean", "plus_2sigma"]
-        t = ["_pitch_", "_yaw_", "_offset_"]
-        msg_type = ["plane", "normal", "offset_m"]
+        planes_enclose_inliers = False
+        Console.info("Generating uncertainty planes...")
+        while planes_enclose_inliers is False:  # counter < num_uncertainty_planes:
+            point_cloud_local = random.sample(self.inliers_cloud_list, 3)
 
-        for i in range(0, 3):
-            for j in range(0, 3):
-                a = pitch_angle_mean + (1 - i) * 2 * pitch_angle_std
-                b = yaw_angle_mean + (1 - j) * 2 * yaw_angle_std
-                c = mean_xyz
-                plane, normal, offset = build_plane(a, b, c)
-                d = msg[i] + t[0] + msg[j] + t[1] + msg[1] + t[2]
-                yaml_msg += d + msg_type[0] + ": " + str(plane.tolist()) + "\n"
-                yaml_msg += d + msg_type[1] + ": " + str(normal.tolist()) + "\n"
-                yaml_msg += d + msg_type[2] + ": " + str(offset) + "\n"
-                self.data.append([plane, normal, offset, d])
+            # Check if the points are sufficiently far apart and not aligned
+            p0p1 = point_cloud_local[1][1:3] - point_cloud_local[0][1:3]
+            p0p2 = point_cloud_local[2][1:3] - point_cloud_local[0][1:3]
+            p1p2 = point_cloud_local[2][1:3] - point_cloud_local[1][1:3]
+            p0p1_norm = np.linalg.norm(p0p1)
+            p0p2_norm = np.linalg.norm(p0p2)
+            p1p2_norm = np.linalg.norm(p1p2)
 
-        uncertainty_planes = [item[0] for item in self.data]
-        filename = time.strftime("pointclouds_and_uncertainty_%Y%m%d_%H%M%S.html")
+            # Poisson disc sampling: reject points that are too close together
+            if p0p1_norm < min_dist or p0p2_norm < min_dist or p1p2_norm < min_dist:
+                continue
+
+            # Reject points that are too closely aligned
+            if abs(np.cross(p0p1, p0p2))/(p0p1_norm*p0p2_norm) < min_sin_angle:
+                continue
+
+            # Compute plane through the 3 points and append to list
+            self.triples.append(np.array(point_cloud_local))
+            self.uncertainty_planes.append(
+                plane_through_3_points(point_cloud_local))
+            planes_enclose_inliers = self._do_planes_enclose_inliers()
+
+        Console.info("... finished generating {} uncertainty planes."
+                     .format(len(self.uncertainty_planes)))
+
+        filename = time.strftime("pointclouds_and_uncertainty_planes_all_"
+                                 "%Y%m%d_%H%M%S.html")
         plot_pointcloud_and_planes(
-            [np.array(cloud), inliers_cloud], uncertainty_planes, filename
-        )  # 'pointclouds_and_uncertainty_planes.html')
-        # np.save('inliers_cloud.npy', inliers_cloud)    # uncomment to save for debugging
-        # for i, plane in enumerate(uncertainty_planes):
+            self.triples + [np.array(cloud), inliers_cloud],
+            self.uncertainty_planes, filename
+        )
+        # uncomment to save for debugging
+        # np.save('inliers_cloud.npy', inliers_cloud)
+        # for i, plane in enumerate(self.uncertainty_planes):
         #     np.save('plane' + str(i) + '.npy', plane)
 
+        Console.info("Removing uncertainty planes that do not contribute...")
+        self._remove_unnecessary_uncertainty_planes()
+        Console.info("... finished removing non-contributing planes. Reduced "
+                     "number of uncertainty planes to {}."
+                     .format(len(self.uncertainty_planes)))
+        assert self._check_if_planes_enclose_inliers()  # Sanity check
+        filename = time.strftime("pointclouds_and_uncertainty_planes_%Y%m%d_"
+                                 "%H%M%S.html")
+        plot_pointcloud_and_planes(
+            self.triples + [np.array(cloud), inliers_cloud],
+            self.uncertainty_planes, filename
+        )
+
+        yaml_msg = ("mean_xyz_m: " + str(mean_xyz.tolist()) + "\n"
+                    + "mean_plane: " + str(mean_plane) + "\n")
+        for i, up in enumerate(self.uncertainty_planes):
+            yaml_msg = (yaml_msg + "uncertainty_plane_" + str(i).zfill(2)
+                        + ": " + str(up.tolist()) + "\n")
         yaml_msg += (
-            'date: "'
-            + Console.get_date()
-            + '" \n'
-            + 'user: "'
-            + Console.get_username()
-            + '" \n'
-            + 'host: "'
-            + Console.get_hostname()
-            + '" \n'
-            + 'version: "'
-            + Console.get_version()
-            + '" \n'
+            'date: "' + Console.get_date() + '" \n'
+            + 'user: "' + Console.get_username() + '" \n'
+            + 'host: "' + Console.get_hostname() + '" \n'
+            + 'version: "' + Console.get_version() + '" \n'
         )
 
         return yaml_msg
+
+
+    def _do_planes_enclose_inliers(self):
+        """Checks if uncertainty planes enclose at least 95.45% of inliers"""
+
+        # Check for each inlier points if it is in front, beghind or on last
+        # (= latest added) uncertainty plane. 1 if point is in front of the
+        # plane, -1 if behind theplane, 0 if in the plane
+        in_front_or_behind_current = np.sign(
+            self.inliers_1 @ self.uncertainty_planes[-1])
+        if np.size(self.in_front_or_behind) == 0:
+            self.in_front_or_behind = in_front_or_behind_current
+            return False
+        else:
+            self.in_front_or_behind = np.column_stack(
+                (self.in_front_or_behind, in_front_or_behind_current))
+
+        # Check for each point if it is at least once before and once behind
+        # (or in) the plane. If this is the case, it is enclosed by the planes
+        enclosed = (
+            self.in_front_or_behind.min(1) != self.in_front_or_behind.max(1))
+        number_enclosed = np.sum(enclosed)
+
+        population = self.inliers_1.shape[0]
+        min_enclosed = self.TWO_SIGMA * population
+        if number_enclosed > min_enclosed:
+            return True
+        else:
+            return False
+
+
+    def _remove_unnecessary_uncertainty_planes(self):
+        """Remove uncertainty planes that do not contribute to enclosing any
+            points that would not be enclosed with them
+        """
+        population = self.inliers_1.shape[0]  # len(self.inliers_cloud_list)
+        min_enclosed = self.TWO_SIGMA * population
+        j = 0
+        while j < self.in_front_or_behind.shape[1]:
+            temp = np.delete(self.in_front_or_behind, j, 1)
+            enclosed = temp.min(1) != temp.max(1)
+            number_enclosed = np.sum(enclosed)
+            if number_enclosed > min_enclosed:
+                # Means the j-th plane does not contribute and can be deleted
+                self.in_front_or_behind = (
+                    np.delete(self.in_front_or_behind, j, 1))
+                del self.uncertainty_planes[j]
+                del self.triples[j]
+            else:
+                j += 1
+
+
+    def _check_if_planes_enclose_inliers(self):
+        """Checks if (remaining) uncertainty planes enclose at least 95.45% of
+            inliers"""
+        # Check for each inlier points if it is in front, beghind or on last
+        # (= latest added) uncertainty plane. 1 if point is in front of the
+        # plane, -1 if behind theplane, 0 if in the plane
+        in_front_or_behind = []
+        for plane in self.uncertainty_planes:
+            in_front_or_behind_curr = np.sign(self.inliers_1 @ plane)
+            if np.size(in_front_or_behind) == 0:
+                in_front_or_behind = in_front_or_behind_curr
+            else:
+                in_front_or_behind = np.column_stack((in_front_or_behind,
+                                                      in_front_or_behind_curr))
+        # Check for each point if it is at least once before and once behind
+        # (or in) the plane. If this is the case, it is enclosed by the planes
+        enclosed = in_front_or_behind.min(1) != in_front_or_behind.max(1)
+        number_enclosed = np.sum(enclosed)
+
+        population = self.inliers_1.shape[0]
+        min_enclosed = self.TWO_SIGMA * population
+        if number_enclosed > min_enclosed:
+            return True
+        else:
+            print("Uncertainty planes do not enclose sufficient number of "
+                  "points")
+            return False
+
 
     def cal(self, limages, rimages):
         """Main function that is called by the code using the LaserCalibrator
@@ -889,6 +973,7 @@ class LaserCalibrator:
         -------
         None
         """
+
         # Synchronise images
         limages_sync = []
         rimages_sync = []
@@ -980,12 +1065,11 @@ class LaserCalibrator:
         count1lb = 0
         count2lb = 0
         for p1l, p2l, p1bl, p2bl in result:
-            if p1l is None or p2l is None:
-                continue
-            peaks1.append(p1l)
-            count1l += len(p1l)
-            peaks2.append(p2l)
-            count2l += len(p2l)
+            if p1l is not None and p2l is not None:
+                peaks1.append(p1l)
+                count1l += len(p1l)
+                peaks2.append(p2l)
+                count2l += len(p2l)
             if self.two_lasers:
                 if p1bl is None or p2bl is None:
                     continue
