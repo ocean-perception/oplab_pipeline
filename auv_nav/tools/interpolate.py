@@ -273,6 +273,14 @@ def interpolate_covariance(t, t0, t1, cov0, cov1):
     return cov
 
 
+def interpolate_property(centre_list, i, sensor_list, j, prop_name):
+    return interpolate(
+        sensor_list[i].epoch_timestamp,
+        centre_list[j - 1].epoch_timestamp,
+        centre_list[j].epoch_timestamp,
+        centre_list[j - 1].__dict__[prop_name],
+        centre_list[j].__dict__[prop_name])
+
 def interpolate_sensor_list(
     sensor_list,
     sensor_name,
@@ -323,6 +331,7 @@ def interpolate_sensor_list(
                     break
                 j += 1
             # if j>=1: ?
+            
             sensor_list[i].roll = interpolate(
                 sensor_list[i].epoch_timestamp,
                 _centre_list[j - 1].epoch_timestamp,
@@ -453,6 +462,19 @@ def interpolate_sensor_list(
                 sensor_list[i].eastings,
                 sensor_list[i].northings,
             )
+
+            sensor_list[i].northings_std = interpolate_property(_centre_list, i, sensor_list, j, 'northings_std')
+            sensor_list[i].eastings_std = interpolate_property(_centre_list, i, sensor_list, j, 'eastings_std')
+            sensor_list[i].depth_std = interpolate_property(_centre_list, i, sensor_list, j, 'depth_std')
+            sensor_list[i].roll_std = interpolate_property(_centre_list, i, sensor_list, j, 'roll_std')
+            sensor_list[i].pitch_std = interpolate_property(_centre_list, i, sensor_list, j, 'pitch_std')
+            sensor_list[i].yaw_std = interpolate_property(_centre_list, i, sensor_list, j, 'yaw_std')
+            sensor_list[i].x_velocity_std = interpolate_property(_centre_list, i, sensor_list, j, 'x_velocity_std')
+            sensor_list[i].y_velocity_std = interpolate_property(_centre_list, i, sensor_list, j, 'y_velocity_std')
+            sensor_list[i].z_velocity_std = interpolate_property(_centre_list, i, sensor_list, j, 'z_velocity_std')
+            sensor_list[i].vroll_std = interpolate_property(_centre_list, i, sensor_list, j, 'vroll_std')
+            sensor_list[i].vpitch_std = interpolate_property(_centre_list, i, sensor_list, j, 'vpitch_std')
+            sensor_list[i].vyaw_std = interpolate_property(_centre_list, i, sensor_list, j, 'vyaw_std')
 
             if _centre_list[j].covariance is not None:
                 sensor_list[i].covariance = interpolate_covariance(
