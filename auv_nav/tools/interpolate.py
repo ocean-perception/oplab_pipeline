@@ -298,15 +298,20 @@ def interpolate_sensor_list(
     else:
         sensor_overlap_flag = 0
         for i in range(len(sensor_list)):
-            if sensor_list[i].epoch_timestamp < _centre_list[0].epoch_timestamp:
+            if sensor_list[i].epoch_timestamp < start_time:
                 sensor_overlap_flag = 1
                 pass
             else:
-                del sensor_list[:i]
+                if i > 0:
+                    print('WARNING! Deleted', i, 'entries from sensor', sensor_name,'. Reason: data before start of mission')
+                    del sensor_list[:i]
                 break
         for i in range(len(sensor_list)):
             if j >= len(_centre_list) - 1:
-                del sensor_list[i:]
+                ii = len(sensor_list) - i
+                if ii > 0:
+                    print('WARNING! Deleted', ii, 'entries from sensor', sensor_name,'. Reason: data after end of mission')
+                    del sensor_list[i:]
                 sensor_overlap_flag = 1
                 break
             while _centre_list[j].epoch_timestamp < sensor_list[i].epoch_timestamp:
@@ -460,8 +465,8 @@ def interpolate_sensor_list(
 
         if sensor_overlap_flag == 1:
             print(
-                "{} data more than dead reckoning data. Only processed "
-                "overlapping data and ignored the rest.".format(sensor_name)
+                "Sensor data from {} spans further than dead reckoning data."
+                " Data outside DR is ignored.".format(sensor_name)
             )
         print(
             "Complete interpolation and coordinate transfomations "
