@@ -876,7 +876,7 @@ class Corrector:
         # apply corrections
         # Console.info('Correcting images to targetted mean and std...')
         if self.correction_method == "colour_correction":
-            if len(self.distance_matrix_numpy_filelist) > 0 and len(self.distance_matrix_numpy_filelist) < idx:
+            if len(self.distance_matrix_numpy_filelist) > 0 and len(self.distance_matrix_numpy_filelist) > idx:
                 distance = np.load(self.distance_matrix_numpy_filelist[idx])
             else:
                 distance = None
