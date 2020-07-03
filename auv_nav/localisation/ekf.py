@@ -98,9 +98,9 @@ class EkfState(object):
         self.covariance[Index.ROLL, Index.ROLL] = b.roll_std ** 2
         self.covariance[Index.PITCH, Index.PITCH] = b.pitch_std ** 2
         self.covariance[Index.YAW, Index.YAW] = b.yaw_std ** 2
-        self.covariance[Index.VROLL, Index.VROLL] = b.vroll ** 2
-        self.covariance[Index.VPITCH, Index.VPITCH] = b.vpitch ** 2
-        self.covariance[Index.VYAW, Index.VYAW] = b.vyaw ** 2
+        self.covariance[Index.VROLL, Index.VROLL] = b.vroll_std ** 2
+        self.covariance[Index.VPITCH, Index.VPITCH] = b.vpitch_std ** 2
+        self.covariance[Index.VYAW, Index.VYAW] = b.vyaw_std ** 2
 
 
         b.covariance = self.covariance
