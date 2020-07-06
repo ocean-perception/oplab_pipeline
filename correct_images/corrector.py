@@ -1079,7 +1079,7 @@ class Corrector:
             Image
         """
 
-        monocam = MonoCamera(camera_params_file_path)
+        monocam = MonoCamera(self.camera_params_file_path)
         map_x, map_y = monocam.rectification_maps
         image = np.clip(image, 0, 2 ** dst_bit - 1)
         image = cv2.remap(image, map_x, map_y, cv2.INTER_LINEAR)
