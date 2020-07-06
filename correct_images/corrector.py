@@ -401,7 +401,21 @@ class Corrector:
 
             # read dataframe for corresponding distance csv path
             dataframe = pd.read_csv(distance_csv_path)
-            distance_list = dataframe["altitude [m]"]
+            distance_list = []
+            distance_matched_imagelist = []
+            for idx in range(len(dataframe)):
+                imagepath = dataframe["relative_path"][idx]
+                distance = dataframe["altitude [m]"][idx]
+                for i in range(len(self._imagelist)):
+                    if Path(imagepath).name == Path(self._imagelist[i]).name:
+                        distance_matched_imagelist.append(self._imagelist[i])
+                        distance_list.append(distance)
+            
+
+            # update the image list with the ones for which we have got altitude values
+            self._imagelist = distance_matched_imagelist
+
+    
 
             for idx in trange(len(distance_list)):
                 distance_matrix.fill(distance_list[idx])
@@ -876,7 +890,7 @@ class Corrector:
         # apply corrections
         # Console.info('Correcting images to targetted mean and std...')
         if self.correction_method == "colour_correction":
-            if len(self.distance_matrix_numpy_filelist) > 0 and len(self.distance_matrix_numpy_filelist) > idx:
+            if len(self.distance_matrix_numpy_filelist) > 0:
                 distance = np.load(self.distance_matrix_numpy_filelist[idx])
             else:
                 distance = None
