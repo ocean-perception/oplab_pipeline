@@ -81,12 +81,19 @@ class EkfState(object):
         b.roll_std = np.sqrt(self.covariance[Index.ROLL, Index.ROLL]) * 180.0 / math.pi
         b.pitch_std = np.sqrt(self.covariance[Index.PITCH, Index.PITCH]) * 180.0 / math.pi
         b.yaw_std = np.sqrt(self.covariance[Index.YAW, Index.YAW]) * 180.0 / math.pi
+        b.vroll = self.state[Index.VROLL, 0] * 180.0 / math.pi
+        b.vpitch = self.state[Index.VPITCH, 0] * 180.0 / math.pi
+        b.vyaw = self.state[Index.VYAW, 0] * 180.0 / math.pi
+        b.vroll_std = np.sqrt(self.covariance[Index.VROLL, Index.VROLL]) * 180.0 / math.pi
+        b.vpitch_std = np.sqrt(self.covariance[Index.VPITCH, Index.VPITCH]) * 180.0 / math.pi
+        b.vyaw_std = np.sqrt(self.covariance[Index.VYAW, Index.VYAW]) * 180.0 / math.pi
         b.x_velocity = self.state[Index.VX, 0]
         b.y_velocity = self.state[Index.VY, 0]
         b.z_velocity = self.state[Index.VZ, 0]
         b.x_velocity_std = np.sqrt(self.covariance[Index.VX, Index.VX])
         b.y_velocity_std = np.sqrt(self.covariance[Index.VY, Index.VY])
         b.z_velocity_std = np.sqrt(self.covariance[Index.VZ, Index.VZ])
+
         b.covariance = self.covariance
         return b
 
@@ -120,8 +127,8 @@ class Measurement(object):
         return msg
 
     def from_depth(self, value):
-        depth_std_factor = self.sensors_std["depth"]["factor"]
-        depth_std_offset = self.sensors_std["depth"]["offset"]
+        depth_std_factor = self.sensors_std["position_z"]["factor"]
+        depth_std_offset = self.sensors_std["position_z"]["offset"]
         self.time = value.epoch_timestamp
         self.measurement[Index.Z] = value.depth
         if value.depth_std > 0:
@@ -137,8 +144,8 @@ class Measurement(object):
         # Vinnay's dvl_noise model:
         # velocity_std = (-0.0125*((velocity)**2)+0.2*(velocity)+0.2125)/100)
         # assuming noise of x_velocity = y_velocity = z_velocity
-        velocity_std_factor = self.sensors_std["dvl"]["factor"]
-        velocity_std_offset = self.sensors_std["dvl"]["offset"]
+        velocity_std_factor = self.sensors_std["speed"]["factor"]
+        velocity_std_offset = self.sensors_std["speed"]["offset"]
 
         self.time = value.epoch_timestamp
         self.measurement[Index.VX] = value.x_velocity
@@ -167,8 +174,8 @@ class Measurement(object):
         self.update_vector[Index.VZ] = 1
 
     def from_usbl(self, value):
-        usbl_noise_std_offset = self.sensors_std["usbl"]["offset"]
-        usbl_noise_std_factor = self.sensors_std["usbl"]["factor"]
+        usbl_noise_std_offset = self.sensors_std["position_xy"]["offset"]
+        usbl_noise_std_factor = self.sensors_std["position_xy"]["factor"]
         distance = math.sqrt(
             value.northings ** 2 + value.eastings ** 2 + value.depth ** 2
         )

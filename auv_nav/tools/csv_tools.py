@@ -236,22 +236,33 @@ def camera_csv(camera_list, camera_name, csv_filepath, csv_flag):
 
         Console.info("Writing outputs to {}.csv ...".format(camera_name))
         file = csv_file / "{}.csv".format(camera_name)
+        covariance_file = csv_file / '{}_cov.csv'.format(camera_name)
         str_to_write = (
             "relative_path,northing [m],easting [m],depth [m],"
             "roll [deg],pitch [deg],heading [deg],altitude "
             "[m],timestamp [s],latitude [deg],longitude [deg]"
             ",x_velocity [m/s],y_velocity [m/s],z_velocity [m/s]"
-            ",vehicle_cov_x,vehicle_cov_y,vehicle_cov_z,"
-            "vehicle_cov_roll,vehicle_cov_pitch,vehicle_cov_yaw,"
-            "vehicle_cov_vx,vehicle_cov_vy,vehicle_cov_vz,"
-            "vehicle_cov_vroll,vehicle_cov_vpitch,vehicle_cov_vyaw\n"
+            ",vehicle_std_x [m],vehicle_std_y [m],vehicle_std_z [m],"
+            "vehicle_std_roll [deg],vehicle_std_pitch [deg],vehicle_std_yaw [deg],"
+            "vehicle_std_vx [m/s],vehicle_std_vy [m/s],vehicle_std_vz [m/s],"
+            "vehicle_std_vroll [deg/s],vehicle_std_vpitch [deg/s],vehicle_std_vyaw [deg/s]\n"
         )
+
+        str_to_write_cov = 'relative_path'
+        cov = ['x', 'y', 'z',
+               'roll', 'pitch', 'yaw']
+        for a in cov:
+            for b in cov:
+                str_to_write_cov += ', cov_'+a+'_'+b
+        str_to_write_cov += '\n'
 
         if len(camera_list) > 0:
             fileout = file.open("w")
+            fileout_cov = covariance_file.open('w')
 
             # write headers
             fileout.write(str_to_write)
+            fileout_cov.write(str_to_write_cov)
 
             # Loop for each line in csv
             for i in range(len(camera_list)):
@@ -284,13 +295,41 @@ def camera_csv(camera_list, camera_name, csv_filepath, csv_flag):
                         + str(camera_list[i].y_velocity)
                         + ","
                         + str(camera_list[i].z_velocity)
+                        + ","
+                        + str(camera_list[i].northings_std)
+                        + ","
+                        + str(camera_list[i].eastings_std)
+                        + ","
+                        + str(camera_list[i].depth_std)
+                        + ","
+                        + str(camera_list[i].roll_std)
+                        + ","
+                        + str(camera_list[i].pitch_std)
+                        + ","
+                        + str(camera_list[i].yaw_std)
+                        + ","
+                        + str(camera_list[i].x_velocity_std)
+                        + ","
+                        + str(camera_list[i].y_velocity_std)
+                        + ","
+                        + str(camera_list[i].z_velocity_std)
+                        + ","
+                        + str(camera_list[i].vroll_std)
+                        + ","
+                        + str(camera_list[i].vpitch_std)
+                        + ","
+                        + str(camera_list[i].vyaw_std)
                     )
                     if camera_list[i].covariance is not None:
-                        for k in range(camera_list[i].covariance.shape[0]):
-                            c = camera_list[i].covariance[k, k]
-                            str_to_write += "," + str(c)
+                        str_to_write_cov = str(camera_list[i].filename)
+                        for k1 in range(6):
+                            for k2 in range(6):
+                                c = camera_list[i].covariance[k1, k2]
+                                str_to_write_cov += "," + str(c)
                     str_to_write += "\n"
+                    str_to_write_cov += "\n"
                     fileout.write(str_to_write)
+                    fileout_cov.write(str_to_write_cov)
                 except IndexError:
                     Console.quit(
                         "There is something wrong with camera filenames and indexing. Check camera_csv function."

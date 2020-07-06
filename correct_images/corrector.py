@@ -844,7 +844,7 @@ class Corrector:
 
         joblib.Parallel(n_jobs=-2, verbose=3)(
             joblib.delayed(self.process_image)(idx, test_phase)
-            for idx in trange(0, len(self.bayer_numpy_filelist))
+            for idx in trange(0, len(self.bayer_numpy_filelist))   # out of range error here
         )
 
         # write a filelist.csv containing image filenames which are processed
@@ -876,7 +876,7 @@ class Corrector:
         # apply corrections
         # Console.info('Correcting images to targetted mean and std...')
         if self.correction_method == "colour_correction":
-            if len(self.distance_matrix_numpy_filelist) > 0:
+            if len(self.distance_matrix_numpy_filelist) > 0 and len(self.distance_matrix_numpy_filelist) > idx:
                 distance = np.load(self.distance_matrix_numpy_filelist[idx])
             else:
                 distance = None

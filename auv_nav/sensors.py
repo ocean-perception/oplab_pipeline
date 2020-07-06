@@ -956,6 +956,19 @@ class Camera:
         self.y_velocity = 0
         self.z_velocity = 0
 
+        self.northings_std = 0
+        self.eastings_std = 0
+        self.depth_std = 0
+        self.roll_std = 0
+        self.pitch_std = 0
+        self.yaw_std = 0
+        self.x_velocity_std = 0
+        self.y_velocity_std = 0
+        self.z_velocity_std = 0
+        self.vroll_std = 0
+        self.vpitch_std = 0
+        self.vyaw_std = 0
+
         self.altitude = 0
         self.covariance = None
         self.information = None
@@ -1149,6 +1162,14 @@ class SyncedOrientationBodyVelocity:
         self.roll_std = 0
         self.pitch_std = 0
         self.yaw_std = 0
+        # orientation speed
+        # from orientation
+        self.vroll = 0
+        self.vpitch = 0
+        self.vyaw = 0
+        self.vroll_std = 0
+        self.vpitch_std = 0
+        self.vyaw_std = 0
         # interpolated
         self.x_velocity = 0
         self.y_velocity = 0
