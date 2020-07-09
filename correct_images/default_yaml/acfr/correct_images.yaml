@@ -39,3 +39,11 @@ cameras :
 output_settings :
   undistort : False
   compression_parameter : 'png' # 'tiff'
+
+rescale :
+  - camera_name : 'LC'
+    path : # path to images relative to processed folder
+    distance_path : # path to json_renav* folder for auv_ekf_<cameraname>.csv file
+    target_pixel_size : 1 # in centimeter
+    maintain_pixels : 'Y'
+    output_folder : # output path relative to processed images
