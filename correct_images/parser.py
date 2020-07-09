@@ -167,6 +167,57 @@ class OutputSettings:
         self.compression_parameter = node["compression_parameter"]
 
 
+
+
+class RescaleImage:
+
+    def __init__(
+        self,
+        camera_name,
+        path,
+        distance_path,
+        target_pixel_size,
+        maintain_pixels,
+        output_folder,
+    ):
+
+
+        self.camera_name = camera_name
+        self.path = path
+        self.distance_path = distance_path
+        self.target_pixel_size = target_pixel_size / 100
+        self.maintain_pixels = maintain_pixels
+        self.output_folder = output_folder
+
+
+
+class CameraRescale:
+
+
+    def __init__(self, node):
+        """ __init__ is the constructor function
+
+        Parameters
+        -----------
+        node : cdict
+            dictionary object for an entry in correct_images.yaml file
+        """
+        self.rescale_cameras = []
+        self.num_cameras = len(node)
+        for i in range(self.num_cameras):
+            self.rescale_cameras.append(
+                RescaleImage(
+                    node[i]["camera_name"],
+                    node[i]["path"],
+                    node[i]["distance_path"],
+                    node[i]["target_pixel_size"],
+                    node[i]["maintain_pixels"],
+                    node[i]["output_folder"],
+                )
+            )
+
+
+
 class CorrectConfig:
 
     """ class CorrectConfig creates an object from the correct_images.yaml file
@@ -216,3 +267,5 @@ class CorrectConfig:
         self.configs = CameraConfigs(node)
         node = data["output_settings"]
         self.output_settings = OutputSettings(node)
+        node = data["rescale"]
+        self.camerarescale = CameraRescale(node)

@@ -129,14 +129,14 @@ def main(args=None):
     subparser_rescale = subparsers.add_parser(
         "rescale", help="Rescale processed images"
     )
-    subparser_rescale.add_argument("path", help="Path to image directory")
-    subparser_rescale.add_argument("distance_path", help="Path to distance file: either an auv_ekf_<cameraname>.csv or a distance list")
-    subparser_rescale.add_argument("focal_length_x", help="horizontal focal length in pixels for the camera")
-    subparser_rescale.add_argument("focal_length_y", help="vertical focal length in pixels for the camera")
-    subparser_rescale.add_argument("target_pixel_size", help="output resolution")
-    subparser_rescale.add_argument("output_directory", help="path to output directory")
-    subparser_rescale.add_argument("-f", "--filelist", default=None, help="Path to list of images to rescale")
-    subparser_rescale.add_argument("-mp", "--maintain_pixels", default="N", help="maintain original number of pixels : Y (Yes) / N (No)")
+    subparser_rescale.add_argument("path", help="Path to raw folder")
+    #subparser_rescale.add_argument("distance_path", help="Path to distance file: either an auv_ekf_<cameraname>.csv or a distance list")
+    #subparser_rescale.add_argument("focal_length_x", help="horizontal opening angle for the camera")
+    #subparser_rescale.add_argument("focal_length_y", help="vertical opening angle for the camera")
+    #subparser_rescale.add_argument("target_pixel_size", help="output resolution")
+    #subparser_rescale.add_argument("output_directory", help="path to output directory")
+    #subparser_rescale.add_argument("-f", "--filelist", default=None, help="Path to list of images to rescale")
+    #subparser_rescale.add_argument("-mp", "--maintain_pixels", default="N", help="maintain original number of pixels : Y (Yes) / N (No)")
     subparser_rescale.set_defaults(func=call_rescale)
 
 
@@ -349,39 +349,82 @@ def call_correct(args):
 
 
 def call_rescale(args):
-    image_directory = args.path
-    distance_path = args.distance_path
-    f_x = float(args.focal_length_x)
-    f_y = float(args.focal_length_y)
-    target_pixel_size = float(args.target_pixel_size)
-    output_directory = args.output_directory
+    
+    correct_config, camerasystem = setup(args)
+    path = Path(args.path).resolve()
 
+    # obtain parameters for rescale from correct_config
+    rescale_cameras = correct_config.camerarescale.rescale_cameras
 
-    filelist = args.filelist
-    maintain_pixels = args.maintain_pixels
+    for camera in rescale_cameras:
+        name = camera.camera_name
+        distance_path = camera.distance_path
+        image_path = camera.path
+        target_pixel_size = camera.target_pixel_size
+        maintain_pixels = camera.maintain_pixels
+        output_folder = camera.output_folder
 
+        idx = [
+            i
+            for i, camera in enumerate(camerasystem.cameras)
+            if camera.name == name
+        ]
 
-    if not filelist is None:
-        trim_csv_file_path = Path(image_directory) / "trimmed_csv.csv"
-        trim_csv_files(Path(filelist), Path(distance_path), trim_csv_file_path)
-        dataframe = pd.read_csv(trim_csv_file_path)
-        imagepath_list = dataframe["relative_path"]
-        imagenames_list = [Path(image).name for image in imagepath_list]
-    else:
+        if len(idx) > 0:
+            interpolate_method = camerasystem.cameras[idx[0]].interpolate_method
+            message = "Interpolation method is : " + interpolate_method
+            Console.info(message)
+        else:
+            Console.warn("Camera not found in camera.yaml file. Please provide a relevant camera.yaml file...")
+            continue
+        
+        # obtain images to be rescaled
+        path_processed = get_processed_folder(path)
+        image_path = path_processed / image_path
+
+        # obtain path to distance / altitude values
+        full_distance_path = path_processed / distance_path
+        full_distance_path = full_distance_path / "csv" / "ekf"
+        distance_file = "auv_ekf_" + name + ".csv"
+        distance_path = full_distance_path / distance_file
+
+        # obtain focal lengths from calibration file
+        camera_params_folder = path_processed / "calibration"
+        camera_params_filename = "mono_" + name + ".yaml"
+        camera_params_file_path = camera_params_folder / camera_params_filename
+
+        if not camera_params_file_path.exists():
+            Console.quit("Calibration file not found...")
+        else:
+            Console.info("Calibration file found...")
+
+        monocam = MonoCamera(camera_params_file_path)
+        focal_length_x = monocam.K[0, 0]
+        focal_length_y = monocam.K[1, 1]
+
+        print(focal_length_x)
+        print(focal_length_y)
+
+        # create output path
+        output_directory = path_processed / output_folder
+        if not output_directory.exists():
+            output_directory.mkdir(parents=True)
+
+        # call rescale function
         dataframe = pd.read_csv(Path(distance_path))
         imagenames_list = [
             filename
-            for filename in os.listdir(image_directory)
+            for filename in os.listdir(image_path)
                 if filename[-4:] == ".jpg" or filename[-4:] == ".png" or filename[-4:] == ".tif"
         ]
-    Console.info("Distance values loaded...")
-    rescale_images(imagenames_list, image_directory, target_pixel_size, dataframe, output_directory, f_x, f_y, maintain_pixels)
-    Console.info("Rescaling completed ...")
+        Console.info("Distance values loaded...")
+        rescale_images(imagenames_list, image_path, interpolate_method, target_pixel_size, dataframe, output_directory, focal_length_x, focal_length_y, maintain_pixels)
+    Console.info("Rescaling completed for all cameras ...")
 
 
    
     
-def rescale_image(image_path, target_pixel_size, altitude, f_x, f_y, maintain_pixels):
+def rescale_image(image_path, interpolate_method, target_pixel_size, altitude, f_x, f_y, maintain_pixels):
     image, image_width, image_height = get_image_and_info(image_path)
     pixel_height = get_pixel_size(altitude, image_height, f_y)
     pixel_width = get_pixel_size(altitude, image_width, f_x)
@@ -389,26 +432,30 @@ def rescale_image(image_path, target_pixel_size, altitude, f_x, f_y, maintain_pi
     vertical_rescale = pixel_height / target_pixel_size
     horizontal_rescale = pixel_width / target_pixel_size
 
-    print("vert scale:", vertical_rescale)
-    print("hor scale:", horizontal_rescale)
-    print("pixel height:", pixel_height)
-    print("pixel_width:", pixel_width)
+    if interpolate_method == "BICUBIC":
+        method = Image.BICUBIC
+    elif interpolate_method == "BILINEAR":
+        method = Image.BILINEAR
+    elif interpolate_method == "NEAREST_NEIGHBOUR":
+        method = Image.NEAREST
+    elif interpolate_method == "LANCZOS":
+        method = Image.LANCZOS
 
     if maintain_pixels == "N" or maintain_pixels == "No":
         size = (int(image_width * horizontal_rescale), int(image_height * vertical_rescale))
         image = Image.fromarray(image.astype("uint8"), "RGB")
-        image = image.resize(size, Image.BICUBIC)
+        image = image.resize(size, resample=method)
+
 
     elif maintain_pixels == "Y" or maintain_pixels == "Yes":
 
         if vertical_rescale < 1 or horizontal_rescale < 1:
-            
-            step_width = int(1/horizontal_rescale)
-            step_height = int(1/vertical_rescale)
-            for row in range(0, image_height, step_height):
-                for col in range(0, image_width, step_width):
-                    image[row:(row+step_height-1), col:(col+step_width-1)] = image[row, col]
+            size = (int(image_width * horizontal_rescale), int(image_height * vertical_rescale))
             image = Image.fromarray(image.astype("uint8"), "RGB")
+            image = image.resize(size, resample=method)
+            size = (image_width, image_height)
+            image = image.resize(size, resample=method)
+
 
         else:
             crop_width = int((1/horizontal_rescale) * image_width)
@@ -427,7 +474,7 @@ def rescale_image(image_path, target_pixel_size, altitude, f_x, f_y, maintain_pi
 
             # resize the cropped image to the size of original image
             size = (image_width, image_height)
-            image = cropped_image.resize(size, Image.BICUBIC)
+            image = image.resize(size, resample=method)
 
     return image
 
@@ -441,16 +488,13 @@ def get_image_and_info(image_path):
 # uses given opening angle of camera and the altitude parameter to determine the pixel size
 # give width & horizontal, or height & vertical
 def get_pixel_size(altitude, image_size, f):
-    image_spatial_size = altitude * image_size / f
-    #image_spatial_size = (
-    #    2 * float(altitude) * float(math.tan(math.radians(opening_angle / 2)))
-    #)
+    image_spatial_size = float(altitude) * image_size / f
     pixel_size = image_spatial_size / image_size
     return pixel_size
 
 
 def rescale_images(
-    imagenames_list, image_directory, target_pixel_size, dataframe, output_directory, f_x, f_y,
+    imagenames_list, image_directory, interpolate_method, target_pixel_size, dataframe, output_directory, f_x, f_y,
     maintain_pixels
 ):
     Console.info("Rescaling images...")
@@ -466,7 +510,7 @@ def rescale_images(
         trimmed_dataframe = dataframe.loc[dataframe["relative_path"].isin(trimmed_path_list) ]
         altitude = trimmed_dataframe["altitude [m]"]
         rescaled_image = rescale_image(
-                source_image_path, target_pixel_size, altitude, f_x, f_y, maintain_pixels
+                source_image_path, interpolate_method, target_pixel_size, altitude, f_x, f_y, maintain_pixels
             )
         imageio.imwrite(output_image_path, rescaled_image, format="PNG-FI")
 

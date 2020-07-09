@@ -11,6 +11,7 @@ cameras:
               {'name': 'date', 'content': 'YYYYMMDD'},
               {'name': 'time', 'content': 'hhmmss'},
               {'name': 'ms', 'content': 'fff'}]
+    interpolate_method: 'BICUBIC' # 'BICUBIC' 'BILINEAR' 'NEAREST_NEIGHBOUR' 'LANCZOS'
   - name: Cam51707925
     type: gbrg
     bit_depth: 18
@@ -22,6 +23,7 @@ cameras:
               {'name': 'date', 'content': 'YYYYMMDD'},
               {'name': 'time', 'content': 'hhmmss'},
               {'name': 'ms', 'content': 'fff'}]
+    interpolate_method: 'BICUBIC' # 'BICUBIC' 'BILINEAR' 'NEAREST_NEIGHBOUR' 'LANCZOS'
   - name: LM165
     type: grayscale
     bit_depth: 8
@@ -33,3 +35,4 @@ cameras:
               {'name': 'date', 'content': 'YYYYMMDD'},
               {'name': 'time', 'content': 'hhmmss'},
               {'name': 'ms', 'content': 'fff'}]
+    interpolate_method: 'BICUBIC' # 'BICUBIC' 'BILINEAR' 'NEAREST_NEIGHBOUR' 'LANCZOS'
