@@ -16,7 +16,9 @@ colour_correction :
 
 cameras : 
   - camera_name : 'cam61003146' #in line with vehicle.yaml
-    image_file_list : 'none' # Only inidicate this if you want to limit the images used. folder is in the image path  
+    image_file_list : # Only inidicate this if you want to limit the images used. folder is in the image path  
+      parse : 'none'
+      process : 'none'
     colour_correction :
       brightness : 30 # % target across dataset
       contrast : 3 # % target accross dataset  
@@ -26,6 +28,8 @@ cameras :
   
   - camera_name : 'cam61004444' #in line with vehicle.yaml
     image_file_list : 'none' # Only inidicate this if you want to limit the images used
+      parse : 'none'
+      process : 'none'
     colour_correction :
       brightness : 30 # % target across dataset
       contrast : 3 # % target accross dataset  
