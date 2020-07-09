@@ -85,7 +85,7 @@ class Corrector:
             self.get_imagelist()
             self.create_output_directories(phase)
             if self.correction_method == "colour_correction":
-                self.generate_distance_matrix()
+                self.generate_distance_matrix(phase)
             self.generate_bayer_numpy_filelist(self._imagelist)
             self.generate_bayer_numpyfiles(self.bayer_numpy_filelist)
             return 0
@@ -213,7 +213,7 @@ class Corrector:
             
 
             # appending params path with sub directory and output folder
-            self.attenuation_parameters_folder = self.attenuation_parameters_folder / sub_directory_name / output_folder_name
+            self.attenuation_parameters_folder = self.attenuation_parameters_folder / sub_directory_name
             if phase == "parse":
                 if not self.attenuation_parameters_folder.exists():
                     self.attenuation_parameters_folder.mkdir(parents=True)
@@ -351,7 +351,7 @@ class Corrector:
 
         # save a set of distance matrix numpy files
 
-    def generate_distance_matrix(self):
+    def generate_distance_matrix(self, phase):
         """Generate distance matrix numpy files and save them"""
 
         # create empty distance matrix and list to store paths to the distance numpy files
@@ -401,22 +401,16 @@ class Corrector:
 
             # read dataframe for corresponding distance csv path
             dataframe = pd.read_csv(distance_csv_path)
-            distance_list = []
-            distance_matched_imagelist = []
-            for idx in range(len(dataframe)):
-                imagepath = dataframe["relative_path"][idx]
-                distance = dataframe["altitude [m]"][idx]
-                for i in range(len(self._imagelist)):
-                    if Path(imagepath).name == Path(self._imagelist[i]).name:
-                        distance_matched_imagelist.append(self._imagelist[i])
-                        distance_list.append(distance)
+            distance_list = dataframe["altitude [m]"]
             
-
-            # update the image list with the ones for which we have got altitude values
-            self._imagelist = distance_matched_imagelist
-
-    
-
+            if phase == "process":
+                if len(distance_list) < len(self._imagelist):
+                    temp = []
+                    for idx in range(len(distance_list)):
+                        temp.append(self._imagelist[idx])
+                    self._imagelist = temp
+                    Console.warn("Image list is corrected with respect to distance list...")
+            
             for idx in trange(len(distance_list)):
                 distance_matrix.fill(distance_list[idx])
                 imagename = Path(self._imagelist[idx]).stem

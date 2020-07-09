@@ -131,8 +131,8 @@ def main(args=None):
     )
     subparser_rescale.add_argument("path", help="Path to image directory")
     subparser_rescale.add_argument("distance_path", help="Path to distance file: either an auv_ekf_<cameraname>.csv or a distance list")
-    subparser_rescale.add_argument("hor_open_angle", help="horizontal opening angle for the camera")
-    subparser_rescale.add_argument("vert_open_angle", help="vertical opening angle for the camera")
+    subparser_rescale.add_argument("focal_length_x", help="horizontal focal length in pixels for the camera")
+    subparser_rescale.add_argument("focal_length_y", help="vertical focal length in pixels for the camera")
     subparser_rescale.add_argument("target_pixel_size", help="output resolution")
     subparser_rescale.add_argument("output_directory", help="path to output directory")
     subparser_rescale.add_argument("-f", "--filelist", default=None, help="Path to list of images to rescale")
@@ -351,8 +351,8 @@ def call_correct(args):
 def call_rescale(args):
     image_directory = args.path
     distance_path = args.distance_path
-    hor_open_angle = float(args.hor_open_angle)
-    vert_open_angle = float(args.vert_open_angle)
+    f_x = float(args.focal_length_x)
+    f_y = float(args.focal_length_y)
     target_pixel_size = float(args.target_pixel_size)
     output_directory = args.output_directory
 
@@ -375,19 +375,24 @@ def call_rescale(args):
                 if filename[-4:] == ".jpg" or filename[-4:] == ".png" or filename[-4:] == ".tif"
         ]
     Console.info("Distance values loaded...")
-    rescale_images(imagenames_list, image_directory, target_pixel_size, dataframe, output_directory, hor_open_angle, vert_open_angle, maintain_pixels)
+    rescale_images(imagenames_list, image_directory, target_pixel_size, dataframe, output_directory, f_x, f_y, maintain_pixels)
     Console.info("Rescaling completed ...")
 
 
    
     
-def rescale_image(image_path, target_pixel_size, altitude, horizontal_opening_angle, vertical_opening_angle, maintain_pixels):
+def rescale_image(image_path, target_pixel_size, altitude, f_x, f_y, maintain_pixels):
     image, image_width, image_height = get_image_and_info(image_path)
-    pixel_height = get_pixel_size(altitude, image_height, vertical_opening_angle)
-    pixel_width = get_pixel_size(altitude, image_width, horizontal_opening_angle)
+    pixel_height = get_pixel_size(altitude, image_height, f_y)
+    pixel_width = get_pixel_size(altitude, image_width, f_x)
     
     vertical_rescale = pixel_height / target_pixel_size
     horizontal_rescale = pixel_width / target_pixel_size
+
+    print("vert scale:", vertical_rescale)
+    print("hor scale:", horizontal_rescale)
+    print("pixel height:", pixel_height)
+    print("pixel_width:", pixel_width)
 
     if maintain_pixels == "N" or maintain_pixels == "No":
         size = (int(image_width * horizontal_rescale), int(image_height * vertical_rescale))
@@ -435,16 +440,17 @@ def get_image_and_info(image_path):
 
 # uses given opening angle of camera and the altitude parameter to determine the pixel size
 # give width & horizontal, or height & vertical
-def get_pixel_size(altitude, image_size, opening_angle):
-    image_spatial_size = (
-        2 * float(altitude) * float(math.tan(math.radians(opening_angle / 2)))
-    )
+def get_pixel_size(altitude, image_size, f):
+    image_spatial_size = altitude * image_size / f
+    #image_spatial_size = (
+    #    2 * float(altitude) * float(math.tan(math.radians(opening_angle / 2)))
+    #)
     pixel_size = image_spatial_size / image_size
     return pixel_size
 
 
 def rescale_images(
-    imagenames_list, image_directory, target_pixel_size, dataframe, output_directory, horizontal_opening_angle, vertical_opening_angle,
+    imagenames_list, image_directory, target_pixel_size, dataframe, output_directory, f_x, f_y,
     maintain_pixels
 ):
     Console.info("Rescaling images...")
@@ -460,7 +466,7 @@ def rescale_images(
         trimmed_dataframe = dataframe.loc[dataframe["relative_path"].isin(trimmed_path_list) ]
         altitude = trimmed_dataframe["altitude [m]"]
         rescaled_image = rescale_image(
-                source_image_path, target_pixel_size, altitude, horizontal_opening_angle, vertical_opening_angle, maintain_pixels
+                source_image_path, target_pixel_size, altitude, f_x, f_y, maintain_pixels
             )
         imageio.imwrite(output_image_path, rescaled_image, format="PNG-FI")
 
