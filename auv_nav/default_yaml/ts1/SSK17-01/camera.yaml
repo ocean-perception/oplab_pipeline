@@ -1,14 +1,14 @@
 camera_system: acfr_standard
 cameras:
   - name: LC
-    type: bggr
+    type: rggb
     bit_depth: 12
     path: 'image/i*/*LC*'
     extension: tif
     filename_to_date: 'xxxYYYYMMDDxhhmmssxfffxxxxx.xxx'
     interpolate_method: 'BICUBIC' # 'BICUBIC' 'BILINEAR' 'NEAREST_NEIGHBOUR' 'LANCZOS'
   - name: RC
-    type: bggr
+    type: rggb
     bit_depth: 12
     path: 'image/i*/*RC*'
     extension: tif
