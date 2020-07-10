@@ -1057,13 +1057,13 @@ class Corrector:
         image16 = image.astype(np.uint16)
         corrected_rgb_img = None
         if pattern == "rggb" or pattern == "RGGB":
-            corrected_rgb_img = cv2.cvtColor(image16, cv2.COLOR_BAYER_RG2RGB)
+            corrected_rgb_img = cv2.cvtColor(image16, cv2.COLOR_BAYER_BG2RGB_EA)
         elif pattern == "grbg" or pattern == "GRBG":
-            corrected_rgb_img = cv2.cvtColor(image16, cv2.COLOR_BAYER_GR2RGB)
+            corrected_rgb_img = cv2.cvtColor(image16, cv2.COLOR_BAYER_GB2RGB_EA)
         elif pattern == "bggr" or pattern == "BGGR":
-            corrected_rgb_img = cv2.cvtColor(image16, cv2.COLOR_BAYER_BG2RGB)
+            corrected_rgb_img = cv2.cvtColor(image16, cv2.COLOR_BAYER_RG2RGB_EA)
         elif pattern == "gbrg" or pattern == "GBRG":
-            corrected_rgb_img = cv2.cvtColor(image16, cv2.COLOR_BAYER_GB2RGB)
+            corrected_rgb_img = cv2.cvtColor(image16, cv2.COLOR_BAYER_GR2RGB_EA)
         elif pattern == "mono" or pattern == "MONO":
             return image
         else:

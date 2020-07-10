@@ -34,11 +34,11 @@ Test_images:
               [60, 60, 60, 60, 60]]
   bayer:
     image_1: [[240, 120, 240],
-              [240, 120, 240],
-              [240, 120, 240]]
+              [120, 60, 120],
+              [60, 30, 60]]
     pattern:
-      - choice: 'rggb'
       - choice: 'grbg'
+      - choice: 'rggb'
 
 
 
