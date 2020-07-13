@@ -413,25 +413,28 @@ class Corrector:
             
             for idx in trange(len(distance_list)):
                 distance_matrix.fill(distance_list[idx])
-                imagename = Path(self._imagelist[idx]).stem
-                distance_matrix_numpy_file = imagename + ".npy"
-                distance_matrix_numpy_file_path = (
-                    self.distance_matrix_numpy_folder / distance_matrix_numpy_file
-                )
-                self.distance_matrix_numpy_filelist.append(
-                    distance_matrix_numpy_file_path
-                )
+                if idx >= len(self._imagelist):
+                    break
+                else:
+                    imagename = Path(self._imagelist[idx]).stem
+                    distance_matrix_numpy_file = imagename + ".npy"
+                    distance_matrix_numpy_file_path = (
+                        self.distance_matrix_numpy_folder / distance_matrix_numpy_file
+                    )
+                    self.distance_matrix_numpy_filelist.append(
+                        distance_matrix_numpy_file_path
+                    )
 
-                # create the distance matrix numpy file
-                np.save(distance_matrix_numpy_file_path, distance_matrix)
+                    # create the distance matrix numpy file
+                    np.save(distance_matrix_numpy_file_path, distance_matrix)
+
+                    # filter images based on altitude range
+                    if distance_list[idx] < self.altitude_max and distance_list[idx] > self.altitude_min:
+                        self.altitude_based_filtered_indices.append(idx)
 
             Console.info("Distance matrix numpy files written successfully")
 
-            self.altitude_based_filtered_indices = [
-                index
-                for index, distance in enumerate(distance_list)
-                if distance < self.altitude_max and distance > self.altitude_min
-            ]
+
             Console.info(
                 len(self.altitude_based_filtered_indices),
                 "Images filtered as per altitude range...",

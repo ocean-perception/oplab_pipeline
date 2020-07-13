@@ -6,11 +6,9 @@ cameras:
     path: 'image/i*/*LC*'
     extension: tif
     filename_to_date: 'xxxYYYYMMDDxhhmmssxfffxxxxx.xxx'
-    interpolate_method: 'BICUBIC' # 'BICUBIC' 'BILINEAR' 'NEAREST_NEIGHBOUR' 'LANCZOS'
   - name: RC
     type: rggb
     bit_depth: 12
     path: 'image/i*/*RC*'
     extension: tif
     filename_to_date: 'xxxYYYYMMDDxhhmmssxfffxxxxx.xxx'
-    interpolate_method: 'BICUBIC' # 'BICUBIC' 'BILINEAR' 'NEAREST_NEIGHBOUR' 'LANCZOS'

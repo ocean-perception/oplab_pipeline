@@ -62,7 +62,6 @@ class CameraEntry:
                 self.columns,
                 self.raw_folder,
             )
-            self.interpolate_method = node["interpolate_method"]
 
     def write(self, node):
         pass
