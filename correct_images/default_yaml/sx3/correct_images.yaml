@@ -48,8 +48,15 @@ cameras :
       subtractors_rgb: [0, 0, 0] # -c values (zero capped)
       colour_correction_matrix_rgb: [[1, 0, 0], [0, 1, 0], [0, 0, 1]] # diagonal terms corresponding to r gain, g gain, b gain
 
-
-
 output_settings :
   undistort : False
   compression_parameter : 'png' # 'tiff'
+
+rescale :
+  - camera_name : 'Cam51707923'
+    path : # path to images relative to processed folder
+    distance_path : # path to json_renav* folder for auv_ekf_<cameraname>.csv file
+    interpolate_method : 'bicubic' # bicubic, nearest_neighbour, bilinear, lanczos
+    target_pixel_size : 1 # in centimeter
+    maintain_pixels : 'Y'
+    output_folder : # output path relative to processed images

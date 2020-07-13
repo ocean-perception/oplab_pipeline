@@ -359,6 +359,7 @@ def call_rescale(args):
     for camera in rescale_cameras:
         name = camera.camera_name
         distance_path = camera.distance_path
+        interpolate_method = camera.interpolate_method
         image_path = camera.path
         target_pixel_size = camera.target_pixel_size
         maintain_pixels = camera.maintain_pixels
@@ -371,9 +372,7 @@ def call_rescale(args):
         ]
 
         if len(idx) > 0:
-            interpolate_method = camerasystem.cameras[idx[0]].interpolate_method
-            message = "Interpolation method is : " + interpolate_method
-            Console.info(message)
+            Console.info("Camera found in camera.yaml file...")
         else:
             Console.warn("Camera not found in camera.yaml file. Please provide a relevant camera.yaml file...")
             continue
@@ -410,6 +409,7 @@ def call_rescale(args):
         if not output_directory.exists():
             output_directory.mkdir(parents=True)
 
+        
         # call rescale function
         dataframe = pd.read_csv(Path(distance_path))
         imagenames_list = [
