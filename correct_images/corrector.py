@@ -309,6 +309,8 @@ class Corrector:
                 )
                 dir_ = self.path_processed
                 json_list = list(dir_.glob("json_*"))
+                if len(json_list) == 0:
+                    Console.quit("No navigation solution could be found. Please run auv_nav parse and process first")
                 self.distance_path = json_list[0]
 
             full_metric_path = self.path_processed / self.distance_path
