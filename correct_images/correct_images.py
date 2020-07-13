@@ -432,13 +432,13 @@ def rescale_image(image_path, interpolate_method, target_pixel_size, altitude, f
     vertical_rescale = pixel_height / target_pixel_size
     horizontal_rescale = pixel_width / target_pixel_size
 
-    if interpolate_method == "BICUBIC":
+    if interpolate_method == "bicubic":
         method = Image.BICUBIC
-    elif interpolate_method == "BILINEAR":
+    elif interpolate_method == "bilinear":
         method = Image.BILINEAR
-    elif interpolate_method == "NEAREST_NEIGHBOUR":
+    elif interpolate_method == "nearest_neighbour":
         method = Image.NEAREST
-    elif interpolate_method == "LANCZOS":
+    elif interpolate_method == "lanczos":
         method = Image.LANCZOS
 
     if maintain_pixels == "N" or maintain_pixels == "No":
