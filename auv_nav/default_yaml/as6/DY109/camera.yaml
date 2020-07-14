@@ -18,22 +18,15 @@ cameras:
     path: 'image/cam61004444_laser'
     extension: jpg
     filename_to_date: 'YYYYMMDDxhhmmssxfffuuuxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxx'
-  - name: cam61003146_laser
-    type: grayscale
-    bit_depth: 16
-    path: 'image/cam61003146_laser'
-    extension: jpg
-    filename_to_date: 'YYYYMMDDxhhmmssxfffuuuxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxx'
   - name: cam61003146
     type: rggb
     bit_depth: 16
-    path: 'image/cam61003146'
+    path: 'image/cam61003146_laser'
     extension: tif
-    filename_to_date: YYYYMMDDxhhmmssxfffuuuxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxx
+    filename_to_date: 'YYYYMMDDxhhmmssxfffuuuxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxx'
   - name: cam61004444
     type: grayscale
     bit_depth: 16
-    path: 'image/cam61004444'
+    path: 'image/cam61004444_laser'
     extension: tif
     filename_to_date: 'YYYYMMDDxhhmmssxfffuuuxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxx'
-
