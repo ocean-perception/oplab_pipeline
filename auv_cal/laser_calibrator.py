@@ -539,9 +539,10 @@ class LaserCalibrator:
         self.end_row_b = detection.get("end_row_b", -1)
         self.two_lasers = detection.get("two_lasers", False)
 
-        self.filter_xy = filtering.get("cloud_xy", 30.0)
-        self.filter_z_min = filtering.get("cloud_z_min", 0.0)
-        self.filter_z_max = filtering.get("cloud_z_max", 15.0)
+        self.filter_max_range = filtering.get("max_range_m", 20.0)
+        self.filter_min_range = filtering.get("min_range_m", 3.0)
+        self.filter_rss_bin_size = filtering.get("rss_bin_size_m", 0.5)
+        self.filter_max_bin_elements = filtering.get("max_bin_elements", 300)
 
         self.max_point_cloud_size = ransac.get("max_cloud_size", 10000)
         self.mdt = ransac.get("min_distance_threshold", 0.002)
@@ -568,40 +569,69 @@ class LaserCalibrator:
             cv2.CV_32FC1,
         )
 
-    def valid(self, p):
-        """Checks if point is within bounding box
+    def range_stratified_sampling(self, cloud):
+        """Perform range stratified sampling following the parameters 
+            filter_rss_bin_size and filter_max_bin_elements over 
+            the range filter_min_range and filter_max_range
 
         Parameters
         ----------
-        p : list of 3 numbers
-            Point
+        cloud : list
+            Input list of points
 
         Returns
         -------
-        bool
-            True if point is inside bounds, False otherwise
+        sampled cloud
+            Output list of points sampled 
         """
-        first = (p[0] > -self.filter_xy) and (p[0] < self.filter_xy)
-        second = (p[1] > -self.filter_xy) and (p[1] < self.filter_xy)
-        third = (p[2] > self.filter_z_min) and (p[2] < self.filter_z_max)
-        return first and second and third
+        num_bins = math.ceil((self.filter_max_range - self.filter_min_range) / self.filter_rss_bin_size)
+        bin_den = (self.filter_max_range - self.filter_min_range)/num_bins
+        
+        max_bin_elements = self.filter_max_bin_elements
+        bins = [None]*num_bins
 
-    def filter_cloud(self, cloud):
-        """Filter point cloud and only keep points inside bounding box
+        # Shuffle the list in-place
+        random.shuffle(cloud)
 
-        Parameters
-        ----------
-        cloud : list of list of 3 numbers
-            cloud
+        output_cloud = []
+        for p in cloud:
+            r = math.sqrt(p[0]*p[0] + p[1]*p[1] + p[2]*p[2])
+            if r <= self.filter_max_range or r >= self.filter_min_range:
+                corresp_bin = round((r - self.filter_min_range)/bin_den)
+                if corresp_bin < len(bins):
+                    if bins[corresp_bin] is None:
+                        bins[corresp_bin] = [p]
+                        output_cloud.append(p)
+                    elif len(bins[corresp_bin]) < max_bin_elements:
+                        bins[corresp_bin].append(p)
+                        output_cloud.append(p)
+        print('Summary for bins:')
+        for i in range(num_bins):
+            if bins[i] is not None:
+                print(' * bin', i, ':', len(bins[i]))
+            else:
+                print(' * bin', i, ': 0')
 
-        Returns
-        -------
-        list of list of 3 numbers
-            Filtered point cloud
-        """
-        return [p for p in cloud if self.valid(p)]
+        return output_cloud
+        
 
     def pointcloud_from_peaks(self, pk1, pk2):
+        """Triangulate a point cloud from two frames.
+        Two peaks are a valid pair if they share the same column and have a difference in row
+        index of 1.0.
+
+        Parameters
+        ----------
+        pk1 : list of lists
+            List of lists of (row, col) of detected laser peaks for the first frame
+        pk2 : list of lists
+            List of lists of (row, col) of detected laser peaks for the second frame
+
+        Returns
+        -------
+        list, int, int
+            Returns the triangulated pointcloud using LST and the number of valid/invalid points.
+        """
         cloud = []
         count = 0
         i = 0
@@ -978,7 +1008,8 @@ class LaserCalibrator:
             save_cloud(processed_folder / "../points_b.ply", point_cloud_ned_b)
 
         rss_before = len(point_cloud_ned)
-        point_cloud_filt = self.filter_cloud(point_cloud_ned)
+        #point_cloud_filt = self.filter_cloud(point_cloud_ned)
+        point_cloud_filt = self.range_stratified_sampling(point_cloud_ned)
         rss_after = len(point_cloud_filt)
         Console.info(
             "Points after filtering: " + str(rss_after) + "/" + str(rss_before)
@@ -996,7 +1027,8 @@ class LaserCalibrator:
         if self.two_lasers:
             Console.info("Fitting a plane to second line...")
             rss_before = len(point_cloud_ned_b)
-            point_cloud_b_filt = self.filter_cloud(point_cloud_ned_b)
+            #point_cloud_b_filt = self.filter_cloud(point_cloud_ned_b)
+            point_cloud_b_filt = self.range_stratified_sampling(point_cloud_ned_b)
             rss_after = len(point_cloud_b_filt)
             Console.info(
                 "Points after filtering: " + str(rss_after) + "/" + str(rss_before)
