@@ -13,6 +13,8 @@ import socket
 import getpass
 import datetime
 import pkg_resources
+import timeit
+import threading, queue
 
 
 class BColors:
@@ -25,6 +27,17 @@ class BColors:
     BOLD = "\033[1m"
     UNDERLINE = "\033[4m"
 
+
+class CodeTimer:
+    def __init__(self, name=None):
+        self.name = " '"  + name + "'" if name else ''
+
+    def __enter__(self):
+        self.start = timeit.default_timer()
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.took = (timeit.default_timer() - self.start) * 1000.0
+        print(BColors.OKBLUE + self.name + ' took ▸ ' + BColors.ENDC + str(self.took) + ' ms')
 
 # Singleton class to wrap the console output
 class Console:

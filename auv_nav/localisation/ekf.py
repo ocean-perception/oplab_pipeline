@@ -9,7 +9,7 @@ See LICENSE.md file in the project root for full license information.
 from auv_nav.tools.interpolate import interpolate_dvl
 from auv_nav.tools.interpolate import interpolate
 from auv_nav.tools.body_to_inertial import body_to_inertial
-from auv_nav.sensors import SyncedOrientationBodyVelocity
+from auv_nav.sensors import SyncedOrientationBodyVelocity, Camera
 from auv_nav.tools.latlon_wgs84 import metres_to_latlon
 from oplab import Console
 
@@ -66,33 +66,49 @@ class EkfState(object):
     def get_time(self):
         return self.time
 
+    def fromSyncedOrientationBodyVelocity(self, b):
+        self.time = b.epoch_timestamp
+        self.state[Index.X, 0] = b.northings
+        self.state[Index.Y, 0] = b.eastings
+        self.state[Index.Z, 0] = b.depth
+        self.state[Index.ROLL, 0] = b.roll * math.pi / 180.0 
+        self.state[Index.PITCH, 0] = b.pitch * math.pi / 180.0 
+        self.state[Index.YAW, 0] = b.yaw * math.pi / 180.0 
+        self.state[Index.VROLL, 0] = b.vroll * math.pi / 180.0 
+        self.state[Index.VPITCH, 0] = b.vpitch * math.pi / 180.0 
+        self.state[Index.VYAW, 0] = b.vyaw * math.pi / 180.0 
+        self.state[Index.VX, 0] = b.x_velocity
+        self.state[Index.VY, 0] = b.y_velocity
+        self.state[Index.VZ, 0] = b.z_velocity
+        self.covariance = b.covariance
+
     def toSyncedOrientationBodyVelocity(self):
         b = SyncedOrientationBodyVelocity()
         b.epoch_timestamp = self.time
         b.northings = self.state[Index.X, 0]
         b.eastings = self.state[Index.Y, 0]
         b.depth = self.state[Index.Z, 0]
-        b.northings_std = np.sqrt(self.covariance[Index.X, Index.X])
-        b.eastings_std = np.sqrt(self.covariance[Index.Y, Index.Y])
-        b.depth_std = np.sqrt(self.covariance[Index.Z, Index.Z])
+        b.northings_std = np.sqrt(abs(self.covariance[Index.X, Index.X]))
+        b.eastings_std = np.sqrt(abs(self.covariance[Index.Y, Index.Y]))
+        b.depth_std = np.sqrt(abs(self.covariance[Index.Z, Index.Z]))
         b.roll = self.state[Index.ROLL, 0] * 180.0 / math.pi
         b.pitch = self.state[Index.PITCH, 0] * 180.0 / math.pi
         b.yaw = self.state[Index.YAW, 0] * 180.0 / math.pi
-        b.roll_std = np.sqrt(self.covariance[Index.ROLL, Index.ROLL]) * 180.0 / math.pi
-        b.pitch_std = np.sqrt(self.covariance[Index.PITCH, Index.PITCH]) * 180.0 / math.pi
-        b.yaw_std = np.sqrt(self.covariance[Index.YAW, Index.YAW]) * 180.0 / math.pi
+        b.roll_std = np.sqrt(abs(self.covariance[Index.ROLL, Index.ROLL]) * 180.0 / math.pi)
+        b.pitch_std = np.sqrt(abs(self.covariance[Index.PITCH, Index.PITCH]) * 180.0 / math.pi)
+        b.yaw_std = np.sqrt(abs(self.covariance[Index.YAW, Index.YAW]) * 180.0 / math.pi)
         b.vroll = self.state[Index.VROLL, 0] * 180.0 / math.pi
         b.vpitch = self.state[Index.VPITCH, 0] * 180.0 / math.pi
         b.vyaw = self.state[Index.VYAW, 0] * 180.0 / math.pi
-        b.vroll_std = np.sqrt(self.covariance[Index.VROLL, Index.VROLL]) * 180.0 / math.pi
-        b.vpitch_std = np.sqrt(self.covariance[Index.VPITCH, Index.VPITCH]) * 180.0 / math.pi
-        b.vyaw_std = np.sqrt(self.covariance[Index.VYAW, Index.VYAW]) * 180.0 / math.pi
+        b.vroll_std = np.sqrt(abs(self.covariance[Index.VROLL, Index.VROLL]) * 180.0 / math.pi)
+        b.vpitch_std = np.sqrt(abs(self.covariance[Index.VPITCH, Index.VPITCH]) * 180.0 / math.pi)
+        b.vyaw_std = np.sqrt(abs(self.covariance[Index.VYAW, Index.VYAW]) * 180.0 / math.pi)
         b.x_velocity = self.state[Index.VX, 0]
         b.y_velocity = self.state[Index.VY, 0]
         b.z_velocity = self.state[Index.VZ, 0]
-        b.x_velocity_std = np.sqrt(self.covariance[Index.VX, Index.VX])
-        b.y_velocity_std = np.sqrt(self.covariance[Index.VY, Index.VY])
-        b.z_velocity_std = np.sqrt(self.covariance[Index.VZ, Index.VZ])
+        b.x_velocity_std = np.sqrt(abs(self.covariance[Index.VX, Index.VX]))
+        b.y_velocity_std = np.sqrt(abs(self.covariance[Index.VY, Index.VY]))
+        b.z_velocity_std = np.sqrt(abs(self.covariance[Index.VZ, Index.VZ]))
 
         b.covariance = self.covariance
         return b
@@ -329,6 +345,7 @@ class EkfImpl(object):
         # (3) Save the state for posterior smoothing
         s = EkfState(timestamp, self.state, self.covariance)
         self.states_vector.append(s)
+        return s
 
     def correct(self, measurement):
         # First, determine how many state vector values we're updating
@@ -661,6 +678,37 @@ class ExtendedKalmanFilter(object):
         self.ekf.smooth(enable=True)
         self.ekf.print_report()
 
+    def predict(self, new_stamp):
+        # find the two closest states
+        states_stamps = np.array([s.time for s in self.ekf.smoothed_states_vector])
+        upper_idx = np.searchsorted(states_stamps, new_stamp)
+        lower_idx = upper_idx - 1
+        
+        # Find closest state in time 
+        sl = self.ekf.smoothed_states_vector[lower_idx]
+        su = self.ekf.smoothed_states_vector[upper_idx]
+
+        s = sl
+        dt = new_stamp - sl.time
+        if dt > su.time - new_stamp:
+            s = su
+            # Set a negative dt to predict backwards
+            dt = new_stamp - su.time
+
+        # Predict from that state
+        self.ekf.set_state(s.state)
+        self.ekf.set_covariance(s.covariance)
+        predicted_s = self.ekf.predict(new_stamp, dt)
+
+        # Convert the output to SyncedOrientationBodyVelocity
+        predicted_b = predicted_s.toSyncedOrientationBodyVelocity()
+        return predicted_b
+
+    def predictAndTransform(self, camera_entry, origin_offsets, sensor_offsets, latlon_reference):
+        b = self.predict(camera_entry.epoch_timestamp)
+        camera_entry.fromSyncedBodyVelocity(b, origin_offsets, sensor_offsets, latlon_reference)
+        return camera_entry
+
     def get_result(self):
         return self.ekf.get_states()
 
@@ -765,3 +813,4 @@ class ExtendedKalmanFilter(object):
         state[0, Index.X] = state[0, Index.X] - northings_mean
         state[0, Index.Y] = state[0, Index.Y] - eastings_mean
         return state.T, dr_index, usbl_index
+
