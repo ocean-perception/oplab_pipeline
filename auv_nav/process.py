@@ -40,6 +40,7 @@ from oplab import valid_dive
 from oplab import Vehicle
 from oplab import Mission
 from oplab import Console
+from oplab import CodeTimer
 
 # Import librarys
 import yaml
@@ -48,7 +49,6 @@ import time
 import copy
 import math
 import threading
-
 from pathlib import Path
 import numpy as np
 
@@ -386,6 +386,7 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
     nav_standard_file = outpath / "nav_standard.json"
     nav_standard_file = get_processed_folder(nav_standard_file)
     Console.info("Loading json file {}".format(nav_standard_file))
+
     with nav_standard_file.open("r") as nav_standard:
         parsed_json_data = json.load(nav_standard)
 
@@ -1161,43 +1162,25 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
                     pf_fusion_centre_list,
                 )
     if len(ekf_list) > 1:
-        if len(camera1_ekf_list) > 1:
-            interpolate_sensor_list(
-                camera1_ekf_list,
-                mission.image.cameras[0].name,
-                camera1_offsets,
-                origin_offsets,
-                latlon_reference,
-                ekf_list,
-            )
-        if len(camera2_ekf_list) > 1:
-            interpolate_sensor_list(
-                camera2_ekf_list,
-                mission.image.cameras[1].name,
-                camera2_offsets,
-                origin_offsets,
-                latlon_reference,
-                ekf_list,
-            )
-        if len(camera3_ekf_list) > 1:
-            if len(mission.image.cameras) > 2:
-                interpolate_sensor_list(
-                    camera3_ekf_list,
-                    mission.image.cameras[2].name,
-                    camera3_offsets,
-                    origin_offsets,
-                    latlon_reference,
-                    ekf_list,
-                )
-            elif len(mission.image.cameras) == 2:  # Biocam
-                interpolate_sensor_list(
-                    camera3_ekf_list,
-                    mission.image.cameras[1].name + "_laser",
-                    camera3_offsets,
-                    origin_offsets,
-                    latlon_reference,
-                    ekf_list,
-                )
+        """ camera1_ekf_list = Parallel(n_jobs=12, verbose=10)(delayed(ekf.predictAndTransform)(c.epoch_timestamp, origin_offsets, camera1_offsets) for c in camera1_ekf_list) 
+        camera2_ekf_list = Parallel(n_jobs=12, verbose=10)(delayed(ekf.predictAndTransform)(c.epoch_timestamp, origin_offsets, camera2_offsets) for c in camera2_ekf_list) 
+        camera3_ekf_list = Parallel(n_jobs=12, verbose=10)(delayed(ekf.predictAndTransform)(c.epoch_timestamp, origin_offsets, camera3_offsets) for c in camera3_ekf_list) """
+
+        with CodeTimer('EKF predict cam1'):
+            if len(camera1_ekf_list) > 1:
+                camera1_ekf_list = [ekf.predictAndTransform(c, origin_offsets, camera1_offsets, latlon_reference) for c in camera1_ekf_list]
+
+        print('camera3 will take', len(camera3_ekf_list)/len(camera1_ekf_list), 'times more time.')
+        with CodeTimer('EKF predict cam2'):
+            if len(camera2_ekf_list) > 1:
+                camera2_ekf_list = [ekf.predictAndTransform(c, origin_offsets, camera2_offsets, latlon_reference) for c in camera2_ekf_list]
+            #for c in camera2_ekf_list:
+            #    c = ekf.predictAndTransform(c.epoch_timestamp, origin_offsets, camera2_offsets)
+        with CodeTimer('EKF predict cam3'):
+            if len(camera3_ekf_list) > 1:
+                camera3_ekf_list = [ekf.predictAndTransform(c, origin_offsets, camera3_offsets, latlon_reference) for c in camera3_ekf_list]
+            #for c in camera3_ekf_list:
+            #    c = ekf.predictAndTransform(c.epoch_timestamp, origin_offsets, camera3_offsets)
 
     # perform interpolations of state data to chemical time stamps for both
     # DR and PF
