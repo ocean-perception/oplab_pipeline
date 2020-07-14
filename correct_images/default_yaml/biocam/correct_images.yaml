@@ -23,7 +23,7 @@ cameras :
       contrast : 3 # % target accross dataset  
     manual_balance :
       subtractors_rgb : [0, 0, 0] # -c values (zero capped)
-      colour_correction_matrix_rgb : [[1, 0, 0], [0, 1, 0], [0, 0, 1]] # diagonal terms corresponding to r gain, g gain, b gain
+      colour_gain_matrix_rgb : [[1, 0, 0], [0, 1, 0], [0, 0, 1]] # diagonal terms corresponding to r gain, g gain, b gain
   
   - camera_name : 'cam61004444' #in line with vehicle.yaml
     image_file_list : 
@@ -34,7 +34,7 @@ cameras :
       contrast : 3 # % target accross dataset  
     manual_balance:
       subtractors_rgb: [0, 0, 0] # -c values (zero capped)
-      colour_correction_matrix_rgb: [[1, 0, 0], [0, 1, 0], [0, 0, 1]] # diagonal terms corresponding to r gain, g gain, b gain
+      colour_gain_matrix_rgb: [[1, 0, 0], [0, 1, 0], [0, 0, 1]] # diagonal terms corresponding to r gain, g gain, b gain
     
 output_settings :
   undistort : False

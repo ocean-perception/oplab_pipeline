@@ -75,7 +75,7 @@ class Config:
         brightness,
         contrast,
         subtractors_rgb,
-        color_correct_matrix_rgb,
+        color_gain_matrix_rgb,
     ):
 
         """ __init__ is the constructor function
@@ -102,7 +102,7 @@ class Config:
         self.brightness = brightness
         self.contrast = contrast
         self.subtractors_rgb = subtractors_rgb
-        self.color_correct_matrix_rgb = color_correct_matrix_rgb
+        self.color_gain_matrix_rgb = color_gain_matrix_rgb
 
 
 class CameraConfigs:
@@ -136,7 +136,7 @@ class CameraConfigs:
                     node[i]["colour_correction"]["brightness"],
                     node[i]["colour_correction"]["contrast"],
                     node[i]["manual_balance"]["subtractors_rgb"],
-                    node[i]["manual_balance"]["colour_correction_matrix_rgb"],
+                    node[i]["manual_balance"]["colour_gain_matrix_rgb"],
                 )
             )
 
