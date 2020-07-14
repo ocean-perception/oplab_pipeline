@@ -1,5 +1,4 @@
 # Yaml 1.0
-
 version: 1
 
 method: 'colour_correction'
@@ -16,30 +15,36 @@ colour_correction :
 
 cameras : 
   - camera_name : 'cam61003146' #in line with vehicle.yaml
-    image_file_list : # Only inidicate this if you want to limit the images used. folder is in the image path  
-      parse : 'none'
-      process : 'none'
+    image_file_list : 
+      parse : 'none' # Only inidicate this if you want to limit the images used. folder is in the image path
+      process : 'none'  
     colour_correction :
       brightness : 30 # % target across dataset
       contrast : 3 # % target accross dataset  
     manual_balance :
       subtractors_rgb : [0, 0, 0] # -c values (zero capped)
-      colour_correction_matrix_rgb : [[1, 0, 0], [0, 1, 0], [0, 0, 1]] # diagonal terms corresponding to r gain, g gain, b gain
+      colour_gain_matrix_rgb : [[1, 0, 0], [0, 1, 0], [0, 0, 1]] # diagonal terms corresponding to r gain, g gain, b gain
   
   - camera_name : 'cam61004444' #in line with vehicle.yaml
-    image_file_list : 'none' # Only inidicate this if you want to limit the images used
-      parse : 'none'
+    image_file_list : 
+      parse : 'none' # Only inidicate this if you want to limit the images used
       process : 'none'
     colour_correction :
       brightness : 30 # % target across dataset
       contrast : 3 # % target accross dataset  
     manual_balance:
       subtractors_rgb: [0, 0, 0] # -c values (zero capped)
-      colour_correction_matrix_rgb: [[1, 0, 0], [0, 1, 0], [0, 0, 1]] # diagonal terms corresponding to r gain, g gain, b gain
+      colour_gain_matrix_rgb: [[1, 0, 0], [0, 1, 0], [0, 0, 1]] # diagonal terms corresponding to r gain, g gain, b gain
     
-
-
-
 output_settings :
   undistort : False
   compression_parameter : 'png' # 'tiff'
+
+rescale :
+  - camera_name : 'cam61003146'
+    path : # path to images relative to processed folder
+    distance_path : # path to json_renav* folder for auv_ekf_<cameraname>.csv file
+    interpolate_method : 'bicubic' # bicubic, nearest_neighbour, bilinear, lanczos
+    target_pixel_size : 1 # in centimeter
+    maintain_pixels : 'Y'
+    output_folder : # output path relative to processed images

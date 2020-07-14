@@ -30,6 +30,7 @@ import sys
 import uuid
 import datetime
 from scipy import optimize
+from datetime import datetime
 
 # -----------------------------------------
 
@@ -238,7 +239,11 @@ class Corrector:
         
         elif self.correction_method == "manual_balance":
             sub_directory_name = "manually_corrected"
-            output_folder_name = "developed_" + str(uuid.uuid4())
+            temp1 = str(datetime.now())
+            temp2 = temp1.split(":")
+            temp3 = temp2[0].split(" ")
+            temp4 = temp3[0] + "_" + temp3[1] + "_" + temp2[1]
+            output_folder_name = "developed_" + temp4
         
 
         if phase == "process":
@@ -285,9 +290,9 @@ class Corrector:
                 self.contrast = self.cameraconfigs[idx[0]].contrast
             elif self.correction_method == "manual_balance":
                 self.subtractors_rgb = np.array(self.cameraconfigs[idx[0]].subtractors_rgb)
-                self.color_correct_matrix_rgb = np.array(self.cameraconfigs[
+                self.color_gain_matrix_rgb = np.array(self.cameraconfigs[
                     idx[0]
-                ].color_correct_matrix_rgb)
+                ].color_gain_matrix_rgb)
             image_properties = self._camera.image_properties
             self.image_height = image_properties[0]
             self.image_width = image_properties[1]
@@ -309,6 +314,8 @@ class Corrector:
                 )
                 dir_ = self.path_processed
                 json_list = list(dir_.glob("json_*"))
+                if len(json_list) == 0:
+                    Console.quit("No navigation solution could be found. Please run auv_nav parse and process first")
                 self.distance_path = json_list[0]
 
             full_metric_path = self.path_processed / self.distance_path
@@ -413,25 +420,28 @@ class Corrector:
             
             for idx in trange(len(distance_list)):
                 distance_matrix.fill(distance_list[idx])
-                imagename = Path(self._imagelist[idx]).stem
-                distance_matrix_numpy_file = imagename + ".npy"
-                distance_matrix_numpy_file_path = (
-                    self.distance_matrix_numpy_folder / distance_matrix_numpy_file
-                )
-                self.distance_matrix_numpy_filelist.append(
-                    distance_matrix_numpy_file_path
-                )
+                if idx >= len(self._imagelist):
+                    break
+                else:
+                    imagename = Path(self._imagelist[idx]).stem
+                    distance_matrix_numpy_file = imagename + ".npy"
+                    distance_matrix_numpy_file_path = (
+                        self.distance_matrix_numpy_folder / distance_matrix_numpy_file
+                    )
+                    self.distance_matrix_numpy_filelist.append(
+                        distance_matrix_numpy_file_path
+                    )
 
-                # create the distance matrix numpy file
-                np.save(distance_matrix_numpy_file_path, distance_matrix)
+                    # create the distance matrix numpy file
+                    np.save(distance_matrix_numpy_file_path, distance_matrix)
+
+                    # filter images based on altitude range
+                    if distance_list[idx] < self.altitude_max and distance_list[idx] > self.altitude_min:
+                        self.altitude_based_filtered_indices.append(idx)
 
             Console.info("Distance matrix numpy files written successfully")
 
-            self.altitude_based_filtered_indices = [
-                index
-                for index, distance in enumerate(distance_list)
-                if distance < self.altitude_max and distance > self.altitude_min
-            ]
+
             Console.info(
                 len(self.altitude_based_filtered_indices),
                 "Images filtered as per altitude range...",
@@ -1025,15 +1035,17 @@ class Corrector:
             image = image.reshape((self.image_height * self.image_width, 3))
             for i in range(self.image_height * self.image_width):
                 intensity_vector = image[i, :]
-                gain_matrix = self.color_correct_matrix_rgb
+                gain_matrix = self.color_gain_matrix_rgb
                 intensity_vector = gain_matrix.dot(intensity_vector)
                 intensity_vector = intensity_vector - self.subtractors_rgb
+                image[i, :] = np.clip(intensity_vector, a_min = 0, a_max = 255)
         else:
             # for B/W images, default values are the ones for red channel
             image = (
-                image * self.color_correct_matrix_rgb[0, 0]
+                image * self.color_gain_matrix_rgb[0, 0]
                 - self.subtractors_rgb[0]
             )
+            image = np.clip(image, a_min = 0, a_max = 255)
 
         return image
 

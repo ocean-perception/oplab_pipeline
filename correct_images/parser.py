@@ -75,7 +75,7 @@ class Config:
         brightness,
         contrast,
         subtractors_rgb,
-        color_correct_matrix_rgb,
+        color_gain_matrix_rgb,
     ):
 
         """ __init__ is the constructor function
@@ -102,7 +102,7 @@ class Config:
         self.brightness = brightness
         self.contrast = contrast
         self.subtractors_rgb = subtractors_rgb
-        self.color_correct_matrix_rgb = color_correct_matrix_rgb
+        self.color_gain_matrix_rgb = color_gain_matrix_rgb
 
 
 class CameraConfigs:
@@ -136,7 +136,7 @@ class CameraConfigs:
                     node[i]["colour_correction"]["brightness"],
                     node[i]["colour_correction"]["contrast"],
                     node[i]["manual_balance"]["subtractors_rgb"],
-                    node[i]["manual_balance"]["colour_correction_matrix_rgb"],
+                    node[i]["manual_balance"]["colour_gain_matrix_rgb"],
                 )
             )
 
@@ -176,15 +176,16 @@ class RescaleImage:
         camera_name,
         path,
         distance_path,
+        interpolate_method,
         target_pixel_size,
         maintain_pixels,
         output_folder,
     ):
 
-
         self.camera_name = camera_name
         self.path = path
         self.distance_path = distance_path
+        self.interpolate_method = interpolate_method
         self.target_pixel_size = target_pixel_size / 100
         self.maintain_pixels = maintain_pixels
         self.output_folder = output_folder
@@ -210,6 +211,7 @@ class CameraRescale:
                     node[i]["camera_name"],
                     node[i]["path"],
                     node[i]["distance_path"],
+                    node[i]["interpolate_method"],
                     node[i]["target_pixel_size"],
                     node[i]["maintain_pixels"],
                     node[i]["output_folder"],
