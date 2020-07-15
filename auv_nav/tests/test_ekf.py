@@ -33,9 +33,9 @@ class TestEkf(unittest.TestCase):
              [0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0.01, 0],
              [0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0.02]])
         self.sensors_std = {
-                "usbl": {"factor": 1.0, "offset": 0.0},
-                "dvl": {"factor": 1.0, "offset": 0.0},
-                "depth": {"factor": 1.0, "offset": 0.0},
+                "position_xy": {"factor": 1.0, "offset": 0.0},
+                "speed": {"factor": 1.0, "offset": 0.0},
+                "position_z": {"factor": 1.0, "offset": 0.0},
                 "orientation": {"factor": 1.0, "offset": 0.0,
                 },
             }
