@@ -36,7 +36,7 @@ class TestCameraSystem(unittest.TestCase):
         self.assertEqual(len(cs.cameras), 2, "Wrong camera count")
 
         self.assertEqual(cs.cameras[0].name, "LC", "Wrong camera name")
-        self.assertEqual(cs.cameras[0].type, "grgb", "Wrong camera type")
+        self.assertEqual(cs.cameras[0].type, "bggr", "Wrong camera type")
         self.assertEqual(cs.cameras[0].bit_depth, 12, "Wrong camera bit_depth")
         self.assertEqual(cs.cameras[0].path, "image/i*/", "Wrong camera path")
         self.assertEqual(cs.cameras[0].extension, "tif", "Wrong camera extension")
@@ -47,7 +47,7 @@ class TestCameraSystem(unittest.TestCase):
         )
 
         self.assertEqual(cs.cameras[1].name, "RC", "Wrong camera name")
-        self.assertEqual(cs.cameras[1].type, "grgb", "Wrong camera type")
+        self.assertEqual(cs.cameras[1].type, "bggr", "Wrong camera type")
         self.assertEqual(cs.cameras[1].bit_depth, 12, "Wrong camera bit_depth")
         self.assertEqual(cs.cameras[1].path, "image/i*/", "Wrong camera path")
         self.assertEqual(cs.cameras[1].extension, "tif", "Wrong camera extension")
