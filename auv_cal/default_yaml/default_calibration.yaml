@@ -35,7 +35,7 @@ camera_calibration:
 laser_calibration:
   detection:
     window_size: 5
-    min_greenness_value: 15
+    min_greenness_ratio: 0.01
     num_columns: 1024
     remap: true
     start_row: 0
