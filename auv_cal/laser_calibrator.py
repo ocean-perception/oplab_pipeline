@@ -98,7 +98,7 @@ def get_angles(normal):
 
 
 def findLaserInImage(
-    img, min_green_val, k, num_columns, start_row=0, end_row=-1, prior=None
+    img, min_green_ratio, k, num_columns, start_row=0, end_row=-1, prior=None
 ):
     """Find laser line projection in image
 
@@ -112,6 +112,19 @@ def findLaserInImage(
     np.ndarray
         (n x 2) array of y and x values of detected laser pixels
     """
+
+
+    img_max_value = 0
+    if img.dtype.type is np.float32 or img.dtype.type is np.float64:
+        img_max_value = 1.0
+    elif img.dtype.type is np.uint8:
+        img_max_value = 255
+    elif img.dtype.type is np.uint16:
+        img_max_value = 65535
+    elif img.dtype.type is np.uint32:
+        img_max_value = 4294967295
+    else:
+        Console.quit("Image bit depth not supported")
 
     height, width = img.shape
     peaks = []
@@ -152,7 +165,7 @@ def findLaserInImage(
                 )  # vgmax: v value in image, where gmax occurrs
             vw += 1
         if (
-            gmax > min_green_val
+            gmax > min_green_ratio*img_max_value
         ):  # If `true`, there is a point in the current column, which presumably belongs to the laser line
             peaks.append([vgmax, u])
     return np.array(peaks)
@@ -268,7 +281,7 @@ def get_laser_pixels_in_image_pair(
     left_maps,
     right_image_name,
     right_maps,
-    min_greenness_value,
+    min_greenness_ratio,
     k,
     num_columns,
     start_row,
@@ -299,7 +312,7 @@ def get_laser_pixels_in_image_pair(
         filename,
         image_name,
         maps,
-        min_greenness_value,
+        min_greenness_ratio,
         k,
         num_columns,
         start_row,
@@ -326,7 +339,7 @@ def get_laser_pixels_in_image_pair(
             img1 = cv2.remap(img1, maps[0], maps[1], cv2.INTER_LANCZOS4)
         p1 = findLaserInImage(
             img1,
-            min_greenness_value,
+            min_greenness_ratio,
             k,
             num_columns,
             start_row=start_row,
@@ -338,7 +351,7 @@ def get_laser_pixels_in_image_pair(
         if two_lasers:
             p1b = findLaserInImage(
                 img1,
-                min_greenness_value,
+                min_greenness_ratio,
                 k,
                 num_columns,
                 start_row=start_row_b,
@@ -360,7 +373,7 @@ def get_laser_pixels_in_image_pair(
     def get_laser_pixels(
         image_name,
         maps,
-        min_greenness_value,
+        min_greenness_ratio,
         k,
         num_columns,
         start_row,
@@ -400,7 +413,7 @@ def get_laser_pixels_in_image_pair(
                 filename,
                 image_name,
                 maps,
-                min_greenness_value,
+                min_greenness_ratio,
                 k,
                 num_columns,
                 start_row,
@@ -433,7 +446,7 @@ def get_laser_pixels_in_image_pair(
                     filename,
                     image_name,
                     maps,
-                    min_greenness_value,
+                    min_greenness_ratio,
                     k,
                     num_columns,
                     start_row,
@@ -449,7 +462,7 @@ def get_laser_pixels_in_image_pair(
     p1, p1b = get_laser_pixels(
         left_image_name,
         left_maps,
-        min_greenness_value,
+        min_greenness_ratio,
         k,
         num_columns,
         start_row,
@@ -463,7 +476,7 @@ def get_laser_pixels_in_image_pair(
     p2, p2b = get_laser_pixels(
         right_image_name,
         right_maps,
-        min_greenness_value,
+        min_greenness_ratio,
         k,
         num_columns,
         start_row,
@@ -530,7 +543,7 @@ class LaserCalibrator:
         uncertainty_generation = config.get("uncertainty_generation", {})
 
         self.k = detection.get("window_size", 5)
-        self.min_greenness_value = detection.get("min_greenness_value", 15)
+        self.min_greenness_ratio = detection.get("min_greenness_ratio", 0.01)
         self.num_columns = detection.get("num_columns", 1024)
         self.remap = detection.get("remap", True)
         self.start_row = detection.get("start_row", 0)
@@ -915,7 +928,7 @@ class LaserCalibrator:
                     self.left_maps,
                     j,
                     self.right_maps,
-                    self.min_greenness_value,
+                    self.min_greenness_ratio,
                     self.k,
                     self.num_columns,
                     self.start_row,
