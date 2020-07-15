@@ -31,6 +31,7 @@ import uuid
 import datetime
 from scipy import optimize
 from datetime import datetime
+from PIL import Image
 
 # -----------------------------------------
 
@@ -139,27 +140,29 @@ class Corrector:
             if not self.bayer_numpy_dir_path.exists():
                 self.bayer_numpy_dir_path.mkdir(parents=True)
 
-            # create path for distance matrix numpy files
-            distance_matrix_numpy_folder_name = "distance_" + self._camera.name
-            self.distance_matrix_numpy_folder = (
-                self.output_dir_path / distance_matrix_numpy_folder_name
-            )
-            if not self.distance_matrix_numpy_folder.exists():
-                self.distance_matrix_numpy_folder.mkdir(parents=True)
+            
+            if self.correction_method == "colour_correction":
+                # create path for distance matrix numpy files
+                distance_matrix_numpy_folder_name = "distance_" + self._camera.name
+                self.distance_matrix_numpy_folder = (
+                    self.output_dir_path / distance_matrix_numpy_folder_name
+                )
+                if not self.distance_matrix_numpy_folder.exists():
+                    self.distance_matrix_numpy_folder.mkdir(parents=True)
 
-            # create path for parameters files
-            attenuation_parameters_folder_name = "params_" + self._camera.name
-            self.attenuation_parameters_folder = (
-                self.output_dir_path / attenuation_parameters_folder_name
-            )
-            if not self.attenuation_parameters_folder.exists():
-                self.attenuation_parameters_folder.mkdir(parents=True)
+                # create path for parameters files
+                attenuation_parameters_folder_name = "params_" + self._camera.name
+                self.attenuation_parameters_folder = (
+                    self.output_dir_path / attenuation_parameters_folder_name
+                )
+                if not self.attenuation_parameters_folder.exists():
+                    self.attenuation_parameters_folder.mkdir(parents=True)
 
-            # create path for memmap files
-            memmap_folder_name = "memmaps_" + self._camera.name
-            self.memmap_folder = self.output_dir_path / memmap_folder_name
-            if not self.memmap_folder.exists():
-                self.memmap_folder.mkdir(parents=True)
+                # create path for memmap files
+                memmap_folder_name = "memmaps_" + self._camera.name
+                self.memmap_folder = self.output_dir_path / memmap_folder_name
+                if not self.memmap_folder.exists():
+                    self.memmap_folder.mkdir(parents=True)
 
         
         if phase == "process":
@@ -242,8 +245,8 @@ class Corrector:
             temp1 = str(datetime.now())
             temp2 = temp1.split(":")
             temp3 = temp2[0].split(" ")
-            temp4 = temp3[0] + "_" + temp3[1] + "_" + temp2[1]
-            output_folder_name = "developed_" + temp4
+            temp4 = temp3[0] + temp3[1] + temp2[1]
+            output_folder_name = "developed_2021"
         
 
         if phase == "process":
@@ -353,6 +356,7 @@ class Corrector:
                 ]
         elif self.correction_method == "manual_balance":
             self._imagelist = self._camera.image_list
+            print(self._imagelist)
 
 
 
@@ -889,7 +893,10 @@ class Corrector:
         """
 
         # load numpy image and distance files
+
         image = np.load(self.bayer_numpy_filelist[idx])
+
+        Console.info("Loaded Image...")
 
         # apply corrections
         # Console.info('Correcting images to targetted mean and std...')
@@ -903,8 +910,9 @@ class Corrector:
                 image, distance, self.brightness, self.contrast
             )
         elif self.correction_method == "manual_balance":
+            image8 = bytescaling(image)
             image = self.apply_manual_balance(
-                image
+                image8         
             )
 
         # save corrected image back to numpy list for testing purposes
@@ -927,10 +935,11 @@ class Corrector:
 
         # write to output files
         image_filename = Path(self.bayer_numpy_filelist[idx]).stem
-        image_rgb = image_rgb.astype(np.uint8)
+        #image_rgb = (image_rgb/256).astype(np.uint8)
         self.write_output_image(
             image_rgb, image_filename, self.output_images_folder, self.output_format
         )
+        Console.info("Written to output image file...")
 
 
 
@@ -1038,14 +1047,14 @@ class Corrector:
                 gain_matrix = self.color_gain_matrix_rgb
                 intensity_vector = gain_matrix.dot(intensity_vector)
                 intensity_vector = intensity_vector - self.subtractors_rgb
-                image[i, :] = np.clip(intensity_vector, a_min = 0, a_max = 255)
+                image[i, :] = intensity_vector # np.clip(intensity_vector, a_min = 0, a_max = 255)
         else:
             # for B/W images, default values are the ones for red channel
             image = (
                 image * self.color_gain_matrix_rgb[0, 0]
                 - self.subtractors_rgb[0]
             )
-            image = np.clip(image, a_min = 0, a_max = 255)
+            #image = np.clip(image, a_min = 0, a_max = 255)
 
         return image
 
@@ -1148,8 +1157,16 @@ class Corrector:
         """
 
         file = filename + "." + dest_format
-        file_path = Path(dest_path) / file
-        imageio.imwrite(file_path, image)
+        file_path = self.path_processed / file
+        print(image.shape)
+        print(file_path)
+        imageio.imwrite(file_path, image, format="PNG-FI")
+        '''
+        imagefile = Image.fromarray(image)
+        if not file_path.exists():
+            with open(file_path, 'w') as f:
+                imagefile.save(f)
+        '''
 
 
 # NON-MEMBER FUNCTIONS:
@@ -1532,6 +1549,41 @@ def get_imagename_list(imagename_list_filepath):
         imagename_list = imagename_list_file.read().splitlines()
     return imagename_list
 
+
+def bytescaling(data, cmin=None, cmax=None, high=255, low=0):
+    """
+    Converting the input image to uint8 dtype and scaling
+    the range to ``(low, high)`` (default 0-255). If the input image already has 
+    dtype uint8, no scaling is done.
+    :param data: 16-bit image data array
+    :param cmin: bias scaling of small values (def: data.min())
+    :param cmax: bias scaling of large values (def: data.max())
+    :param high: scale max value to high. (def: 255)
+    :param low: scale min value to low. (def: 0)
+    :return: 8-bit image data array
+    """
+    if data.dtype == np.uint8:
+        return data
+
+    if high > 255:
+        high = 255
+    if low < 0:
+        low = 0
+    if high < low:
+        raise ValueError("`high` should be greater than or equal to `low`.")
+
+    if cmin is None:
+        cmin = data.min()
+    if cmax is None:
+        cmax = data.max()
+
+    cscale = cmax - cmin
+    if cscale == 0:
+        cscale = 1
+
+    scale = float(high - low) / cscale
+    bytedata = (data - cmin) * scale + low
+    return (bytedata.clip(low, high) + 0.5).astype(np.uint8)
 
 
 
