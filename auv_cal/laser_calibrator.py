@@ -530,10 +530,11 @@ def save_cloud(filename, cloud):
 
 
 class LaserCalibrator:
-    def __init__(self, stereo_camera_model, config, overwrite=False):
+    def __init__(self, stereo_camera_model, stereo2laser_camera_model, config, overwrite=False):
         self.data = []
 
         self.sc = stereo_camera_model
+        self.slc = stereo2laser_camera_model
         self.config = config
         self.overwrite = overwrite
 
@@ -672,9 +673,13 @@ class LaserCalibrator:
                 if p[2] < 0 or p is None:
                     count_inversed += 1
                 else:
+                    # Transform to the laser camera
+                    p_lc = self.slc.R @ p_unrec + self.slc.t.T
+                    p_lc = p_lc.flatten()
+
                     # Store it in the cloud
                     count += 1
-                    cloud.append(p_unrec)
+                    cloud.append(p_lc)
             i += 1
         return cloud, count, count_inversed
 

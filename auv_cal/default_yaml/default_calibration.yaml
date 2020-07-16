@@ -33,6 +33,7 @@ camera_calibration:
   invert: True
 
 laser_calibration:
+  laser_camera: LM165
   detection:
     window_size: 5
     min_greenness_ratio: 0.01
