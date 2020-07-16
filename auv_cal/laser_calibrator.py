@@ -850,15 +850,14 @@ class LaserCalibrator:
             + '" \n'
         )
 
-        cv2ned = np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]], dtype=float)
-        roll, pitch, yaw = euler_angles_from_rotation_matrix(self.slc.R @ cv2ned)
+        roll, pitch, yaw = euler_angles_from_rotation_matrix(self.slc.R)
         yaml_msg += (
             'relative_transformation:\n'
             + "  surge_m: " + str(-self.slc.t[1, 0]) + "\n"
             + "  sway_m: " + str(self.slc.t[0, 0]) + "\n"
             + "  heave_m: " + str(self.slc.t[2, 0]) + "\n"
-            + "  roll_deg: " + str(roll*180.0/math.pi) + "\n"
-            + "  pitch_deg: " + str(pitch*180.0/math.pi) + "\n"
+            + "  roll_deg: " + str(-pitch*180.0/math.pi) + "\n"
+            + "  pitch_deg: " + str(roll*180.0/math.pi) + "\n"
             + "  yaw_deg: " + str(yaw*180.0/math.pi) + "\n"
         )
 
