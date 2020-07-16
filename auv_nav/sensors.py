@@ -936,141 +936,7 @@ class Usbl(OutputFormat):
         return data
 
 
-class Camera:
-    def __init__(self, timestamp=None):
-        self.epoch_timestamp = None
-        self.filename = ""
-        #
-        self.northings = 0
-        self.eastings = 0
-        self.depth = 0
 
-        self.latitude = 0
-        self.longitude = 0
-
-        # interpolated data
-        self.roll = 0
-        self.pitch = 0
-        self.yaw = 0
-        self.x_velocity = 0
-        self.y_velocity = 0
-        self.z_velocity = 0
-
-        self.northings_std = 0
-        self.eastings_std = 0
-        self.depth_std = 0
-        self.roll_std = 0
-        self.pitch_std = 0
-        self.yaw_std = 0
-        self.x_velocity_std = 0
-        self.y_velocity_std = 0
-        self.z_velocity_std = 0
-        self.vroll_std = 0
-        self.vpitch_std = 0
-        self.vyaw_std = 0
-
-        self.altitude = 0
-        self.covariance = None
-        self.information = None
-
-    def get_info(self):
-        try:
-            self.information = np.linalg.inv(self.covariance)
-        except np.linalg.LinAlgError as err:
-            Console.error(
-                "Failed to invert covariance matrix: " + " Error: " + str(err)
-            )
-
-    def from_json(self, json, cam_name):
-        if cam_name in json:
-            self.epoch_timestamp = json[cam_name][0]["epoch_timestamp"]
-            self.filename = json[cam_name][0]["filename"]
-        else:
-            self.epoch_timestamp = json["epoch_timestamp"]
-            self.filename = json["filename"]
-
-    def to_acfr(self):
-        data = (
-            "VIS: "
-            + str(self.epoch_timestamp)
-            + " ["
-            + str(self.epoch_timestamp)
-            + "] "
-            + str(self.filename)
-            + " exp: 0\n"
-        )
-        return data
-
-    def write_csv_header(self):
-        return (
-            "Imagenumber,Northing [m],Easting [m],Depth [m],"
-            "Roll [deg],Pitch [deg],Heading [deg],Altitude "
-            "[m],Timestamp,Latitude [deg],Longitude [deg]"
-            ",x_velocity,y_velocity,z_velocity\n"
-        )
-
-    def write_csv_header_cov(self):
-        str_to_write_cov = ""
-        cov = [
-            "x",
-            "y",
-            "z",
-            "roll",
-            "pitch",
-            "yaw",
-            "vx",
-            "vy",
-            "vz",
-            "vroll",
-            "vpitch",
-            "vyaw",
-        ]
-        for a in cov:
-            for b in cov:
-                str_to_write_cov += ", cov_" + a + "_" + b
-        str_to_write_cov += "\n"
-        return str_to_write_cov
-
-    def to_csv(self):
-        return (
-            str(self.filename)
-            + ","
-            + str(self.northings)
-            + ","
-            + str(self.eastings)
-            + ","
-            + str(self.depth)
-            + ","
-            + str(self.roll)
-            + ","
-            + str(self.pitch)
-            + ","
-            + str(self.yaw)
-            + ","
-            + str(self.altitude)
-            + ","
-            + str(self.epoch_timestamp)
-            + ","
-            + str(self.latitude)
-            + ","
-            + str(self.longitude)
-            + ","
-            + str(self.x_velocity)
-            + ","
-            + str(self.y_velocity)
-            + ","
-            + str(self.z_velocity)
-            + "\n"
-        )
-
-    def to_csv_cov(self):
-        if self.covariance is not None:
-            cov = self.covariance.flatten().tolist()
-            cov = [item for sublist in cov for item in sublist]
-            str_to_write_cov = str(self.filename)
-            for c in cov:
-                str_to_write_cov += ", {:.6f}".format(c)
-            str_to_write_cov += "\n"
 
 
 class Tide(OutputFormat):
@@ -1211,10 +1077,157 @@ class SyncedOrientationBodyVelocity:
     def __lt__(self, o):
         return self.epoch_timestamp < o.epoch_timestamp
 
+class Camera(SyncedOrientationBodyVelocity):
+    def __init__(self, timestamp=None):
+        super().__init__(self)
+        self.filename = ""
+        self.information = None
 
-# class synced_velocity_inertial_orientation:
-#   def __init__(self):
-#       self.epoch_timestamp = 0
+    def fromSyncedBodyVelocity(self, other, origin_offsets, sensor_offsets, latlon_reference):
+        [x_offset, y_offset, z_offset] = body_to_inertial(
+            other.roll, other.pitch, other.yaw,
+            origin_offsets[0] - sensor_offsets[0],
+            origin_offsets[1] - sensor_offsets[1],
+            origin_offsets[2] - sensor_offsets[2])
 
-# maybe do one synchronised orientation_bodyVelocity, and then one class of dead_reckoning.
-# and separate these steps in extract_data?
+        self.epoch_timestamp = other.epoch_timestamp
+        self.roll = other.roll
+        self.pitch = other.pitch
+        self.yaw = other.yaw
+        self.roll_std = other.roll_std
+        self.pitch_std = other.pitch_std
+        self.yaw_std = other.yaw_std
+        self.vroll = other.vroll
+        self.vpitch = other.vpitch
+        self.vyaw = other.vyaw
+        self.vroll_std = other.vroll_std
+        self.vpitch_std = other.vpitch_std
+        self.vyaw_std = other.vyaw_std
+        self.x_velocity = other.x_velocity
+        self.y_velocity = other.y_velocity
+        self.z_velocity = other.z_velocity
+        self.x_velocity_std = other.x_velocity_std
+        self.y_velocity_std = other.y_velocity_std
+        self.z_velocity_std = other.z_velocity_std
+        self.north_velocity = other.north_velocity
+        self.east_velocity = other.east_velocity
+        self.down_velocity = other.down_velocity
+        self.north_velocity_std = other.north_velocity_std
+        self.east_velocity_std = other.east_velocity_std
+        self.down_velocity_std = other.down_velocity_std
+        self.altitude = other.altitude - z_offset
+        self.northings = other.northings - x_offset
+        self.eastings = other.eastings - y_offset
+        self.northings_std = other.northings_std
+        self.eastings_std = other.eastings_std
+        self.depth = other.depth - z_offset
+        self.depth_std = other.depth_std
+        self.covariance = other.covariance
+
+        latitude_reference, longitude_reference = latlon_reference
+
+        [self.latitude, self.longitude] = metres_to_latlon(
+                latitude_reference,
+                longitude_reference,
+                other.eastings,
+                other.northings,
+            )
+
+    def get_info(self):
+        try:
+            self.information = np.linalg.inv(self.covariance)
+        except np.linalg.LinAlgError as err:
+            Console.error(
+                "Failed to invert covariance matrix: " + " Error: " + str(err)
+            )
+
+    def from_json(self, json, cam_name):
+        if cam_name in json:
+            self.epoch_timestamp = json[cam_name][0]["epoch_timestamp"]
+            self.filename = json[cam_name][0]["filename"]
+        else:
+            self.epoch_timestamp = json["epoch_timestamp"]
+            self.filename = json["filename"]
+
+    def to_acfr(self):
+        data = (
+            "VIS: "
+            + str(self.epoch_timestamp)
+            + " ["
+            + str(self.epoch_timestamp)
+            + "] "
+            + str(self.filename)
+            + " exp: 0\n"
+        )
+        return data
+
+    def write_csv_header(self):
+        return (
+            "Imagenumber,Northing [m],Easting [m],Depth [m],"
+            "Roll [deg],Pitch [deg],Heading [deg],Altitude "
+            "[m],Timestamp,Latitude [deg],Longitude [deg]"
+            ",x_velocity,y_velocity,z_velocity\n"
+        )
+
+    def write_csv_header_cov(self):
+        str_to_write_cov = ""
+        cov = [
+            "x",
+            "y",
+            "z",
+            "roll",
+            "pitch",
+            "yaw",
+            "vx",
+            "vy",
+            "vz",
+            "vroll",
+            "vpitch",
+            "vyaw",
+        ]
+        for a in cov:
+            for b in cov:
+                str_to_write_cov += ", cov_" + a + "_" + b
+        str_to_write_cov += "\n"
+        return str_to_write_cov
+
+    def to_csv(self):
+        return (
+            str(self.filename)
+            + ","
+            + str(self.northings)
+            + ","
+            + str(self.eastings)
+            + ","
+            + str(self.depth)
+            + ","
+            + str(self.roll)
+            + ","
+            + str(self.pitch)
+            + ","
+            + str(self.yaw)
+            + ","
+            + str(self.altitude)
+            + ","
+            + str(self.epoch_timestamp)
+            + ","
+            + str(self.latitude)
+            + ","
+            + str(self.longitude)
+            + ","
+            + str(self.x_velocity)
+            + ","
+            + str(self.y_velocity)
+            + ","
+            + str(self.z_velocity)
+            + "\n"
+        )
+
+    def to_csv_cov(self):
+        if self.covariance is not None:
+            cov = self.covariance.flatten().tolist()
+            cov = [item for sublist in cov for item in sublist]
+            str_to_write_cov = str(self.filename)
+            for c in cov:
+                str_to_write_cov += ", {:.6f}".format(c)
+            str_to_write_cov += "\n"

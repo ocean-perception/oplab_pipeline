@@ -98,7 +98,7 @@ def get_angles(normal):
 
 
 def findLaserInImage(
-    img, min_green_val, k, num_columns, start_row=0, end_row=-1, prior=None
+    img, min_green_ratio, k, num_columns, start_row=0, end_row=-1, prior=None
 ):
     """Find laser line projection in image
 
@@ -112,6 +112,19 @@ def findLaserInImage(
     np.ndarray
         (n x 2) array of y and x values of detected laser pixels
     """
+
+
+    img_max_value = 0
+    if img.dtype.type is np.float32 or img.dtype.type is np.float64:
+        img_max_value = 1.0
+    elif img.dtype.type is np.uint8:
+        img_max_value = 255
+    elif img.dtype.type is np.uint16:
+        img_max_value = 65535
+    elif img.dtype.type is np.uint32:
+        img_max_value = 4294967295
+    else:
+        Console.quit("Image bit depth not supported")
 
     height, width = img.shape
     peaks = []
@@ -152,7 +165,7 @@ def findLaserInImage(
                 )  # vgmax: v value in image, where gmax occurrs
             vw += 1
         if (
-            gmax > min_green_val
+            gmax > min_green_ratio*img_max_value
         ):  # If `true`, there is a point in the current column, which presumably belongs to the laser line
             peaks.append([vgmax, u])
     return np.array(peaks)
@@ -268,7 +281,7 @@ def get_laser_pixels_in_image_pair(
     left_maps,
     right_image_name,
     right_maps,
-    min_greenness_value,
+    min_greenness_ratio,
     k,
     num_columns,
     start_row,
@@ -299,7 +312,7 @@ def get_laser_pixels_in_image_pair(
         filename,
         image_name,
         maps,
-        min_greenness_value,
+        min_greenness_ratio,
         k,
         num_columns,
         start_row,
@@ -326,7 +339,7 @@ def get_laser_pixels_in_image_pair(
             img1 = cv2.remap(img1, maps[0], maps[1], cv2.INTER_LANCZOS4)
         p1 = findLaserInImage(
             img1,
-            min_greenness_value,
+            min_greenness_ratio,
             k,
             num_columns,
             start_row=start_row,
@@ -338,7 +351,7 @@ def get_laser_pixels_in_image_pair(
         if two_lasers:
             p1b = findLaserInImage(
                 img1,
-                min_greenness_value,
+                min_greenness_ratio,
                 k,
                 num_columns,
                 start_row=start_row_b,
@@ -360,7 +373,7 @@ def get_laser_pixels_in_image_pair(
     def get_laser_pixels(
         image_name,
         maps,
-        min_greenness_value,
+        min_greenness_ratio,
         k,
         num_columns,
         start_row,
@@ -400,7 +413,7 @@ def get_laser_pixels_in_image_pair(
                 filename,
                 image_name,
                 maps,
-                min_greenness_value,
+                min_greenness_ratio,
                 k,
                 num_columns,
                 start_row,
@@ -433,7 +446,7 @@ def get_laser_pixels_in_image_pair(
                     filename,
                     image_name,
                     maps,
-                    min_greenness_value,
+                    min_greenness_ratio,
                     k,
                     num_columns,
                     start_row,
@@ -449,7 +462,7 @@ def get_laser_pixels_in_image_pair(
     p1, p1b = get_laser_pixels(
         left_image_name,
         left_maps,
-        min_greenness_value,
+        min_greenness_ratio,
         k,
         num_columns,
         start_row,
@@ -463,7 +476,7 @@ def get_laser_pixels_in_image_pair(
     p2, p2b = get_laser_pixels(
         right_image_name,
         right_maps,
-        min_greenness_value,
+        min_greenness_ratio,
         k,
         num_columns,
         start_row,
@@ -517,10 +530,11 @@ def save_cloud(filename, cloud):
 
 
 class LaserCalibrator:
-    def __init__(self, stereo_camera_model, config, overwrite=False):
+    def __init__(self, stereo_camera_model, stereo2laser_camera_model, config, overwrite=False):
         self.data = []
 
         self.sc = stereo_camera_model
+        self.slc = stereo2laser_camera_model
         self.config = config
         self.overwrite = overwrite
 
@@ -530,7 +544,7 @@ class LaserCalibrator:
         uncertainty_generation = config.get("uncertainty_generation", {})
 
         self.k = detection.get("window_size", 5)
-        self.min_greenness_value = detection.get("min_greenness_value", 15)
+        self.min_greenness_ratio = detection.get("min_greenness_ratio", 0.01)
         self.num_columns = detection.get("num_columns", 1024)
         self.remap = detection.get("remap", True)
         self.start_row = detection.get("start_row", 0)
@@ -539,9 +553,10 @@ class LaserCalibrator:
         self.end_row_b = detection.get("end_row_b", -1)
         self.two_lasers = detection.get("two_lasers", False)
 
-        self.filter_xy = filtering.get("cloud_xy", 30.0)
-        self.filter_z_min = filtering.get("cloud_z_min", 0.0)
-        self.filter_z_max = filtering.get("cloud_z_max", 15.0)
+        self.filter_max_range = filtering.get("max_range_m", 20.0)
+        self.filter_min_range = filtering.get("min_range_m", 3.0)
+        self.filter_rss_bin_size = filtering.get("rss_bin_size_m", 0.5)
+        self.filter_max_bin_elements = filtering.get("max_bin_elements", 300)
 
         self.max_point_cloud_size = ransac.get("max_cloud_size", 10000)
         self.mdt = ransac.get("min_distance_threshold", 0.002)
@@ -568,40 +583,69 @@ class LaserCalibrator:
             cv2.CV_32FC1,
         )
 
-    def valid(self, p):
-        """Checks if point is within bounding box
+    def range_stratified_sampling(self, cloud):
+        """Perform range stratified sampling following the parameters 
+            filter_rss_bin_size and filter_max_bin_elements over 
+            the range filter_min_range and filter_max_range
 
         Parameters
         ----------
-        p : list of 3 numbers
-            Point
+        cloud : list
+            Input list of points
 
         Returns
         -------
-        bool
-            True if point is inside bounds, False otherwise
+        sampled cloud
+            Output list of points sampled 
         """
-        first = (p[0] > -self.filter_xy) and (p[0] < self.filter_xy)
-        second = (p[1] > -self.filter_xy) and (p[1] < self.filter_xy)
-        third = (p[2] > self.filter_z_min) and (p[2] < self.filter_z_max)
-        return first and second and third
+        num_bins = math.ceil((self.filter_max_range - self.filter_min_range) / self.filter_rss_bin_size)
+        bin_den = (self.filter_max_range - self.filter_min_range)/num_bins
+        
+        max_bin_elements = self.filter_max_bin_elements
+        bins = [None]*num_bins
 
-    def filter_cloud(self, cloud):
-        """Filter point cloud and only keep points inside bounding box
+        # Shuffle the list in-place
+        random.shuffle(cloud)
 
-        Parameters
-        ----------
-        cloud : list of list of 3 numbers
-            cloud
+        output_cloud = []
+        for p in cloud:
+            r = math.sqrt(p[0]*p[0] + p[1]*p[1] + p[2]*p[2])
+            if r <= self.filter_max_range or r >= self.filter_min_range:
+                corresp_bin = round((r - self.filter_min_range)/bin_den)
+                if corresp_bin < len(bins):
+                    if bins[corresp_bin] is None:
+                        bins[corresp_bin] = [p]
+                        output_cloud.append(p)
+                    elif len(bins[corresp_bin]) < max_bin_elements:
+                        bins[corresp_bin].append(p)
+                        output_cloud.append(p)
+        print('Summary for bins:')
+        for i in range(num_bins):
+            if bins[i] is not None:
+                print(' * bin', i, ':', len(bins[i]))
+            else:
+                print(' * bin', i, ': 0')
 
-        Returns
-        -------
-        list of list of 3 numbers
-            Filtered point cloud
-        """
-        return [p for p in cloud if self.valid(p)]
+        return output_cloud
+        
 
     def pointcloud_from_peaks(self, pk1, pk2):
+        """Triangulate a point cloud from two frames.
+        Two peaks are a valid pair if they share the same column and have a difference in row
+        index of 1.0.
+
+        Parameters
+        ----------
+        pk1 : list of lists
+            List of lists of (row, col) of detected laser peaks for the first frame
+        pk2 : list of lists
+            List of lists of (row, col) of detected laser peaks for the second frame
+
+        Returns
+        -------
+        list, int, int
+            Returns the triangulated pointcloud using LST and the number of valid/invalid points.
+        """
         cloud = []
         count = 0
         i = 0
@@ -629,9 +673,13 @@ class LaserCalibrator:
                 if p[2] < 0 or p is None:
                     count_inversed += 1
                 else:
+                    # Transform to the laser camera
+                    p_lc = self.slc.R @ p_unrec + self.slc.t.T
+                    p_lc = p_lc.flatten()
+
                     # Store it in the cloud
                     count += 1
-                    cloud.append(p_unrec)
+                    cloud.append(p_lc)
             i += 1
         return cloud, count, count_inversed
 
@@ -885,7 +933,7 @@ class LaserCalibrator:
                     self.left_maps,
                     j,
                     self.right_maps,
-                    self.min_greenness_value,
+                    self.min_greenness_ratio,
                     self.k,
                     self.num_columns,
                     self.start_row,
@@ -978,7 +1026,8 @@ class LaserCalibrator:
             save_cloud(processed_folder / "../points_b.ply", point_cloud_ned_b)
 
         rss_before = len(point_cloud_ned)
-        point_cloud_filt = self.filter_cloud(point_cloud_ned)
+        #point_cloud_filt = self.filter_cloud(point_cloud_ned)
+        point_cloud_filt = self.range_stratified_sampling(point_cloud_ned)
         rss_after = len(point_cloud_filt)
         Console.info(
             "Points after filtering: " + str(rss_after) + "/" + str(rss_before)
@@ -996,7 +1045,8 @@ class LaserCalibrator:
         if self.two_lasers:
             Console.info("Fitting a plane to second line...")
             rss_before = len(point_cloud_ned_b)
-            point_cloud_b_filt = self.filter_cloud(point_cloud_ned_b)
+            #point_cloud_b_filt = self.filter_cloud(point_cloud_ned_b)
+            point_cloud_b_filt = self.range_stratified_sampling(point_cloud_ned_b)
             rss_after = len(point_cloud_b_filt)
             Console.info(
                 "Points after filtering: " + str(rss_after) + "/" + str(rss_before)

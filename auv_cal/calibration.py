@@ -151,6 +151,7 @@ def calibrate_laser(
     right_filepath,
     right_extension,
     stereo_calibration_file,
+    stereo2laser_calibration_file,
     config,
     output_file,
     output_file_b,
@@ -169,6 +170,7 @@ def calibrate_laser(
         return
     try:
         model = StereoCamera(stereo_calibration_file)
+        model2 = StereoCamera(stereo2laser_calibration_file)
 
         def check_prop(name, dic_to_check, default_value):
             if name in dic_to_check:
@@ -176,7 +178,10 @@ def calibrate_laser(
             else:
                 return default_value
 
-        lc = LaserCalibrator(stereo_camera_model=model, config=config, overwrite=foa)
+        lc = LaserCalibrator(stereo_camera_model=model, 
+                             stereo2laser_camera_model=model2, 
+                             config=config, 
+                             overwrite=foa)
         lc.cal(left_image_list[skip_first:], right_image_list[skip_first:])
         Console.info("Writing calibration to " "'{}'" "".format(output_file))
         with output_file.open("w") as f:
@@ -464,6 +469,11 @@ class Calibrator:
         Console.info(
             "The laser planes are not calibrated, running laser calibration..."
         )
+
+        if 'laser_camera' not in self.calibration_config['laser_calibration']:
+            Console.quit('Please specify the laser camera in the laser_calibration section. Example: \nlaser_calibration:\n    laser_camera: LM165\n')
+        laser_camera = self.calibration_config['laser_calibration']['laser_camera']
+
         # Check if the stereo pair has already been calibrated
         stereo_calibration_file = self.output_path / str(
             "stereo_" + c0["name"] + "_" + c1["name"] + ".yaml"
@@ -475,6 +485,17 @@ class Calibrator:
                 + "..."
             )
             self.stereo()
+        # Check if the stereo pair has already been calibrated
+        stereo2laser_calibration_file = self.output_path / str(
+            "stereo_" + c0["name"] + "_" + laser_camera + ".yaml"
+        )
+        if not stereo2laser_calibration_file.exists():
+            Console.quit(
+                "Could not find a stereo calibration file "
+                + str(stereo2laser_calibration_file)
+                + "... Have you called auv_cal stereo first?" 
+            )
+        
         left_name = c0["name"]
         left_filepath = get_processed_folder(self.filepath) / str(
             c0["laser_calibration"]["path"]
@@ -519,6 +540,7 @@ class Calibrator:
             right_filepath,
             right_extension,
             stereo_calibration_file,
+            stereo2laser_calibration_file,
             self.calibration_config["laser_calibration"],
             calibration_file,
             calibration_file_b,

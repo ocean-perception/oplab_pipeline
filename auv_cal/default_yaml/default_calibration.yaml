@@ -33,9 +33,10 @@ camera_calibration:
   invert: True
 
 laser_calibration:
+  laser_camera: LM165
   detection:
     window_size: 5
-    min_greenness_value: 15
+    min_greenness_ratio: 0.01
     num_columns: 1024
     remap: true
     start_row: 0
@@ -44,9 +45,10 @@ laser_calibration:
     end_row_b: -1
     two_lasers: false
   filter:
-    cloud_xy: 30.0
-    cloud_z_min: 4.0
-    cloud_z_max: 15.0
+    max_range_m: 3.0
+    min_range_m: 20.0
+    rss_bin_size_m: 0.5
+    max_bin_elements: 300
   ransac:
     max_cloud_size: 10000
     min_distance_threshold: 0.002

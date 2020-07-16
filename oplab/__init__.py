@@ -8,6 +8,7 @@ from oplab.folder_structure import get_processed_folders  # noqa
 from oplab.mission import Mission  # noqa
 from oplab.vehicle import Vehicle  # noqa
 from oplab.console import Console  # noqa
+from oplab.console import CodeTimer  # noqa
 from oplab.folder_structure import valid_dive  # noqa
 from oplab.filename_to_date import FilenameToDate  # noqa
 from oplab.camera_system import CameraSystem  # noqa
