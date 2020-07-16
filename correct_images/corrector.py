@@ -356,7 +356,6 @@ class Corrector:
                 ]
         elif self.correction_method == "manual_balance":
             self._imagelist = self._camera.image_list
-            print(self._imagelist)
 
 
 
@@ -578,6 +577,7 @@ class Corrector:
                 else:
                     image_memmap_per_channel = image_memmap[:, :, :, i]
                 # calculate mean, std for image and target_altitude
+                print(image_memmap_per_channel.shape)
                 raw_image_mean, raw_image_std = mean_std(image_memmap_per_channel)
                 self.image_raw_mean[i] = raw_image_mean
                 self.image_raw_std[i] = raw_image_std
@@ -691,6 +691,7 @@ class Corrector:
             image_memmap_path, image_memmap = load_memmap_from_numpyfilelist(
                 self.memmap_folder, self.bayer_numpy_filelist
             )
+
             for i in range(self.image_channels):
                 if self.image_channels == 1:
                     image_memmap_per_channel = image_memmap
@@ -698,6 +699,7 @@ class Corrector:
                     image_memmap_per_channel = image_memmap[:, :, :, i]
 
                 # calculate mean, std for image and target_altitude
+                print(image_memmap_per_channel.shape)
                 raw_image_mean, raw_image_std = mean_std(image_memmap_per_channel)
                 self.image_raw_mean[i] = raw_image_mean
                 self.image_raw_std[i] = raw_image_std
@@ -896,10 +898,7 @@ class Corrector:
 
         image = np.load(self.bayer_numpy_filelist[idx])
 
-        Console.info("Loaded Image...")
-
         # apply corrections
-        # Console.info('Correcting images to targetted mean and std...')
         if self.correction_method == "colour_correction":
             if len(self.distance_matrix_numpy_filelist) > 0:
                 distance = np.load(self.distance_matrix_numpy_filelist[idx])
@@ -910,11 +909,9 @@ class Corrector:
                 image, distance, self.brightness, self.contrast
             )
         elif self.correction_method == "manual_balance":
-            image8 = bytescaling(image)
             image = self.apply_manual_balance(
-                image8         
+                bytescaling(image)         
             )
-
         # save corrected image back to numpy list for testing purposes
         if test_phase:
             np.save(self.bayer_numpy_filelist[idx], image)
@@ -936,10 +933,10 @@ class Corrector:
         # write to output files
         image_filename = Path(self.bayer_numpy_filelist[idx]).stem
         #image_rgb = (image_rgb/256).astype(np.uint8)
+        #image_rgb = bytescaling(image_rgb)
         self.write_output_image(
             image_rgb, image_filename, self.output_images_folder, self.output_format
         )
-        Console.info("Written to output image file...")
 
 
 
@@ -1157,10 +1154,8 @@ class Corrector:
         """
 
         file = filename + "." + dest_format
-        file_path = self.path_processed / file
-        print(image.shape)
-        print(file_path)
-        imageio.imwrite(file_path, image, format="PNG-FI")
+        file_path = dest_path / file
+        imageio.imwrite(file_path, image)
         '''
         imagefile = Image.fromarray(image)
         if not file_path.exists():

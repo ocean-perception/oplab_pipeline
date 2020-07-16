@@ -72,7 +72,7 @@ class TestCaseCorrector(unittest.TestCase):
             distance_folder.mkdir(parents=True)
         self.path_processed = path_dummy_folder
         self.distance_folder = distance_folder
-        self.distance_path = distance_path
+        self.distance_path_list = [path_to_camera1_csv, path_to_camera2_csv]
         self.altitude_min = min_altitude
         self.altitude_max = max_altitude
         self.image_height = ACFR_IMG_HEIGHT
@@ -129,7 +129,7 @@ class TestCaseCorrector(unittest.TestCase):
         # set attributes
         self.distance_metric = "altitude"
         self.path_processed = path_dummy_folder
-        self.distance_path = distance_path
+        self.distance_path_list = [path_to_camera1_csv, path_to_camera2_csv, path_to_camera3_csv]
         self.distance_folder = distance_folder
         self._camera_image_file_list = "none"
         self._imagelist = imagelist
@@ -192,7 +192,7 @@ class TestCaseCorrector(unittest.TestCase):
         # set attributes
         self.distance_metric = "altitude"
         self.path_processed = path_dummy_folder
-        self.distance_path = distance_path
+        self.distance_path_list = [path_to_camera1_csv, path_to_camera2_csv]
         self.distance_folder = distance_folder
         self._camera_image_file_list = "none"
         self._imagelist = imagelist
@@ -213,7 +213,6 @@ class TestCaseCorrector(unittest.TestCase):
         # set Corrector:: attributes
         corrector.distance_metric = "altitude"
         corrector.path_processed = self.path_processed
-        corrector.distance_path = self.distance_path
         corrector._camera_image_file_list = "none"
         corrector.image_height = self.image_height
         corrector.image_width = self.image_width
@@ -221,12 +220,17 @@ class TestCaseCorrector(unittest.TestCase):
         corrector.distance_matrix_numpy_folder = self.distance_folder
         corrector.altitude_min = self.altitude_min
         corrector.altitude_max = self.altitude_max
+        corrector.correction_method = "colour_correction"
 
+        i = 0
         for camera in self.cameras:
+
             # set camera name
             corrector.camera_name = camera
+            print(len(self.distance_path_list))
+            corrector.altitude_path = self.distance_path_list[i]
             # test feature for chosen camera
-            corrector.generate_distance_matrix()
+            corrector.generate_distance_matrix("parse")
             self.assertEqual(
                 len(corrector._imagelist),
                 len(corrector.distance_matrix_numpy_filelist),
@@ -252,6 +256,7 @@ class TestCaseCorrector(unittest.TestCase):
                     False,
                     "distance matrix values out of altitude bounds error",
                 )
+            i = i + 1
 
     def test_acfr_distance_matrix_generation(self):
         self.createACFRDummyDataset()
