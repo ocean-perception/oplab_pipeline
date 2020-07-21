@@ -566,9 +566,6 @@ class Corrector:
             image_memmap_path, image_memmap = load_memmap_from_numpyfilelist(
                 self.memmap_folder, filtered_image_numpy_filelist
             )
-            distance_memmap_path, distance_memmap = load_memmap_from_numpyfilelist(
-                self.memmap_folder, filtered_distance_numpy_filelist
-            )
 
             for i in range(self.image_channels):
 
@@ -582,12 +579,25 @@ class Corrector:
                 self.image_raw_mean[i] = raw_image_mean
                 self.image_raw_std[i] = raw_image_std
 
+                # release memory for image memmap
+                del image_memmap_per_channel
+                del image_memmap
+
+                # load distance memmap
+                distance_memmap_path, distance_memmap = load_memmap_from_numpyfilelist(
+                    self.memmap_folder, filtered_distance_numpy_filelist
+                )
+
                 target_altitude = mean_std(distance_memmap, False)
 
                 # compute the mean distance for each image
                 [n, a, b] = distance_memmap.shape
                 distance_vector = distance_memmap.reshape((n, a * b))
                 mean_distance_array = distance_vector.mean(axis=1)
+
+                # release memory for distance memmap
+                del distance_memmap
+                del distance_vector
 
                 # compute histogram of distance with respect to altitude range(min, max)
                 bin_band = 0.1
@@ -600,22 +610,59 @@ class Corrector:
                 for idx_bin in trange(1, hist_bounds.size):
                     tmp_idxs = np.where(idxs == idx_bin)[0]
                     if len(tmp_idxs) > 0:
+
+                        # load image memmap
+                        image_memmap_path, image_memmap = load_memmap_from_numpyfilelist(
+                            self.memmap_folder, filtered_image_numpy_filelist
+                        )
+
+                        if self.image_channels == 1:
+                            image_memmap_per_channel = image_memmap
+                        else:
+                            image_memmap_per_channel = image_memmap[:, :, :, i]
+                        # release memory allocated for image memmap
+                        del image_memmap
+
                         bin_images = image_memmap_per_channel[tmp_idxs]
-                        bin_distances = distance_memmap[tmp_idxs]
+                        # release memory for image memmap per channel
+                        del image_memmap_per_channel
+
                         if self.smoothing == "mean":
                             bin_images_sample = np.mean(bin_images, axis=0)
-                            bin_distances_sample = np.mean(bin_distances, axis=0)
                         elif self.smoothing == "mean_trimmed":
                             bin_images_sample = image_mean_std_trimmed(bin_images)
-                            bin_distances_sample = np.mean(bin_distances, axis=0)
                         elif self.smoothing == "median":
                             bin_images_sample = np.median(bin_images, axis=0)
-                            bin_distances_sample = np.mean(bin_distances, axis=0)
 
+                        # release memory from bin_images
                         del bin_images
-                        del bin_distances
 
                         bin_images_sample_list.append(bin_images_sample)
+
+                for idx_bin in trange(1, hist_bounds.size):
+                    tmp_idxs = np.where(idxs == idx_bin)[0]
+                    if len(tmp_idxs) > 0:
+
+                        # load distance memmap
+                        distance_memmap_path, distance_memmap = load_memmap_from_numpyfilelist(
+                            self.memmap_folder, filtered_distance_numpy_filelist
+                        )
+
+                        bin_distances = distance_memmap[tmp_idxs]
+
+                        # release memory from distance memmap
+                        del distance_memmap
+
+                        if self.smoothing == "mean":
+                            bin_distances_sample = np.mean(bin_distances, axis=0)
+                        elif self.smoothing == "mean_trimmed":
+                            bin_distances_sample = np.mean(bin_distances, axis=0)
+                        elif self.smoothing == "median":
+                            bin_distances_sample = np.mean(bin_distances, axis=0)
+
+                        # release memory from bin_distances
+                        del bin_distances
+
                         bin_distances_sample_list.append(bin_distances_sample)
 
                 images_for_attenuation_calculation = np.array(bin_images_sample_list)
@@ -631,6 +678,11 @@ class Corrector:
                         self.image_height * self.image_width,
                     ]
                 )
+
+                #release memory from bin samples lists
+                del bin_distances_sample_list
+                del bin_images_sample_list
+
 
                 # calculate attenuation parameters per channel
                 attenuation_parameters = self.calculate_attenuation_parameters(
@@ -664,6 +716,9 @@ class Corrector:
                 )
                 self.image_corrected_mean[i] = image_corrected_mean
                 self.image_corrected_std[i] = image_corrected_std
+
+                
+
 
             Console.info("Correction parameters generated for all channels...")
 
@@ -710,6 +765,8 @@ class Corrector:
         np.save(image_raw_std_file, self.image_raw_std)
 
         Console.info("Correction parameters saved...")
+
+    
 
     # calculate image attenuation parameters
     def calculate_attenuation_parameters(
@@ -895,9 +952,9 @@ class Corrector:
         """
 
         # load numpy image and distance files
-
         image = np.load(self.bayer_numpy_filelist[idx])
 
+        
         # apply corrections
         if self.correction_method == "colour_correction":
             if len(self.distance_matrix_numpy_filelist) > 0:
@@ -908,32 +965,43 @@ class Corrector:
             image = self.apply_distance_based_corrections(
                 image, distance, self.brightness, self.contrast
             )
+            if not self._type == "grayscale":
+                # debayer images
+                image_rgb = self.debayer(image, self._type)
+            else:
+                image_rgb = image
+
         elif self.correction_method == "manual_balance":
-            image = self.apply_manual_balance(
-                bytescaling(image)         
+            if not self._type == "grayscale":
+                # debayer images
+                image_rgb = self.debayer(image, self._type)
+            else:
+                image_rgb = image
+            image_rgb = self.apply_manual_balance(
+                image_rgb         
             )
+        
         # save corrected image back to numpy list for testing purposes
         if test_phase:
             np.save(self.bayer_numpy_filelist[idx], image)
 
-        # debayer images of source images are bayer ones
-        if not self._type == "grayscale":
-            # debayer images
-            image_rgb = self.debayer(image, self._type)
-        else:
-            image_rgb = image
+
 
         # apply distortion corrections
         if self.undistort:
             image_rgb = self.distortion_correct(image_rgb)
 
-        # apply gamma corrections to rgb images
-        image_rgb = self.gamma_correct(image_rgb)
+        # apply gamma corrections to rgb images for colour correction
+        if self.correction_method == "colour_correction":
+            image_rgb = self.gamma_correct(image_rgb)
+
+        # apply scaling to 8 bit and format image to unit8
+        image_rgb = bytescaling(image_rgb)
+        image_rgb = image_rgb.astype(np.uint8)
+
 
         # write to output files
         image_filename = Path(self.bayer_numpy_filelist[idx]).stem
-        #image_rgb = (image_rgb/256).astype(np.uint8)
-        #image_rgb = bytescaling(image_rgb)
         self.write_output_image(
             image_rgb, image_filename, self.output_images_folder, self.output_format
         )
@@ -1041,17 +1109,15 @@ class Corrector:
             image = image.reshape((self.image_height * self.image_width, 3))
             for i in range(self.image_height * self.image_width):
                 intensity_vector = image[i, :]
+                intensity_vector = intensity_vector - self.subtractors_rgb
                 gain_matrix = self.color_gain_matrix_rgb
                 intensity_vector = gain_matrix.dot(intensity_vector)
-                intensity_vector = intensity_vector - self.subtractors_rgb
                 image[i, :] = intensity_vector # np.clip(intensity_vector, a_min = 0, a_max = 255)
         else:
             # for B/W images, default values are the ones for red channel
-            image = (
-                image * self.color_gain_matrix_rgb[0, 0]
-                - self.subtractors_rgb[0]
-            )
-            #image = np.clip(image, a_min = 0, a_max = 255)
+            image = image - self.subtractors_rgb[0]
+            image = image * self.color_gain_matrix_rgb[0, 0]
+                
 
         return image
 
@@ -1273,10 +1339,13 @@ def mean_std(data, calculate_std=True):
     [n, a, b] = data.shape
 
     data.reshape((n, a * b))
+    Console.info("memory allocated...")
 
     ret_mean = data.mean(axis=0)
+    Console.info("mean calculated...")
     if calculate_std:
         ret_std = data.std(axis=0)
+        Console.info("std calculated...")
         return ret_mean.reshape((a, b)), ret_std.reshape((a, b))
 
     else:
@@ -1488,6 +1557,12 @@ def curve_fitting(distancelist, intensitylist):
         Console.error("Value Error due to Overflow", a, b, c)
         ret_params = init_params
         Console.warn('Parameters calculated are unoptimised because of Value Error...')
+    
+    # release memory from altitudes and intensities
+    del altitudes
+    del intensities
+    del distancelist
+    del intensitylist
 
     return ret_params
 
