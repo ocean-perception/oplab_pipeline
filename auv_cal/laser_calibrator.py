@@ -15,6 +15,7 @@ from auv_cal.plot_points_and_planes import plot_pointcloud_and_planes
 from oplab import Console
 from oplab import get_processed_folder
 from auv_nav.parsers.parse_biocam_images import biocam_timestamp_from_filename
+from .euler_angles_from_rotation_matrix import euler_angles_from_rotation_matrix
 import joblib
 import yaml
 import time
@@ -847,6 +848,17 @@ class LaserCalibrator:
             + 'version: "'
             + Console.get_version()
             + '" \n'
+        )
+
+        roll, pitch, yaw = euler_angles_from_rotation_matrix(self.slc.R)
+        yaml_msg += (
+            'relative_transformation:\n'
+            + "  surge_m: " + str(-self.slc.t[1, 0]) + "\n"
+            + "  sway_m: " + str(self.slc.t[0, 0]) + "\n"
+            + "  heave_m: " + str(self.slc.t[2, 0]) + "\n"
+            + "  roll_deg: " + str(-pitch*180.0/math.pi) + "\n"
+            + "  pitch_deg: " + str(roll*180.0/math.pi) + "\n"
+            + "  yaw_deg: " + str(yaw*180.0/math.pi) + "\n"
         )
 
         return yaml_msg
