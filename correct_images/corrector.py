@@ -32,7 +32,7 @@ import datetime
 from scipy import optimize
 from datetime import datetime
 from PIL import Image
-
+from skimage.transform import resize
 # -----------------------------------------
 
 
@@ -245,8 +245,8 @@ class Corrector:
             temp1 = str(datetime.now())
             temp2 = temp1.split(":")
             temp3 = temp2[0].split(" ")
-            temp4 = temp3[0] + temp3[1] + temp2[1]
-            output_folder_name = "developed_2021"
+            temp4 = temp3[1] + temp2[1]
+            output_folder_name = "developed_" + temp4
         
 
         if phase == "process":
@@ -380,21 +380,46 @@ class Corrector:
             else:
                 Console.info("Path to depth maps found...")
                 depth_map_list = list(path_depth.glob("*.npy"))
-                self.distance_matrix_numpy_filelist = [
+                depth_map_list = [
                     Path(item)
                     for item in depth_map_list
                     for image_path in self._imagelist
-                    if Path(item).stem in Path(image_path).stem
+                    if Path(image_path).stem in Path(item).stem
                 ]
-                Console.info("Filtering depth maps...")
-                for idx in trange((len(self.distance_matrix_numpy_filelist))):
-                    depth_array = np.load(self.distance_matrix_numpy_filelist[idx])
-                    min_depth = depth_array.min()
-                    max_depth = depth_array.max()
+                for idx in trange(len(depth_map_list)):
+                    if idx >= len(self._imagelist):
+                        break
+                    depth_map = depth_map_list[idx]
+                    depth_array = np.load(depth_map)
+                    distance_matrix_size = (self.image_height, self.image_width)
+                    distance_matrix = resize(depth_array, distance_matrix_size,
+                        preserve_range=True)
+                    #distance_matrix = np.resize(depth_array, distance_matrix_size)
+
+                    imagename = Path(self._imagelist[idx]).stem
+                    distance_matrix_numpy_file = imagename + ".npy"
+                    distance_matrix_numpy_file_path = (
+                        self.distance_matrix_numpy_folder / distance_matrix_numpy_file
+                    )
+                    self.distance_matrix_numpy_filelist.append(
+                        distance_matrix_numpy_file_path
+                    )
+
+                    # create the distance matrix numpy file
+                    np.save(distance_matrix_numpy_file_path, distance_matrix)
+                    min_depth = distance_matrix.min()
+                    max_depth = distance_matrix.max()
                     if min_depth > self.altitude_max or max_depth < self.altitude_min:
                         continue
                     else:
                         self.altitude_based_filtered_indices.append(idx)
+                if phase == "process":
+                    if len(self.distance_matrix_numpy_filelist) < len(self._imagelist):
+                        temp = []
+                        for idx in range(len(self.distance_matrix_numpy_filelist)):
+                            temp.append(self._imagelist[idx])
+                        self._imagelist = temp
+                        Console.warn("Image list is corrected with respect to distance list...")
                 if len(self.altitude_based_filtered_indices) < 3:
                     Console.quit(
                         "Insufficient number of images to compute attenuation parameters..."
@@ -563,10 +588,9 @@ class Corrector:
                 if file.exists():
                     file.unlink()
 
-            image_memmap_path, image_memmap = load_memmap_from_numpyfilelist(
-                self.memmap_folder, filtered_image_numpy_filelist
-            )
-
+            image_memmap_path, image_memmap = load_memmap_from_numpyfilelist(self.memmap_folder, filtered_image_numpy_filelist)
+            distance_memmap_path, distance_memmap = load_memmap_from_numpyfilelist(self.memmap_folder, filtered_distance_numpy_filelist)
+            
             for i in range(self.image_channels):
 
                 if self.image_channels == 1:
@@ -579,14 +603,6 @@ class Corrector:
                 self.image_raw_mean[i] = raw_image_mean
                 self.image_raw_std[i] = raw_image_std
 
-                # release memory for image memmap
-                del image_memmap_per_channel
-                del image_memmap
-
-                # load distance memmap
-                distance_memmap_path, distance_memmap = load_memmap_from_numpyfilelist(
-                    self.memmap_folder, filtered_distance_numpy_filelist
-                )
 
                 target_altitude = mean_std(distance_memmap, False)
 
@@ -595,9 +611,6 @@ class Corrector:
                 distance_vector = distance_memmap.reshape((n, a * b))
                 mean_distance_array = distance_vector.mean(axis=1)
 
-                # release memory for distance memmap
-                del distance_memmap
-                del distance_vector
 
                 # compute histogram of distance with respect to altitude range(min, max)
                 bin_band = 0.1
@@ -611,59 +624,26 @@ class Corrector:
                     tmp_idxs = np.where(idxs == idx_bin)[0]
                     if len(tmp_idxs) > 0:
 
-                        # load image memmap
-                        image_memmap_path, image_memmap = load_memmap_from_numpyfilelist(
-                            self.memmap_folder, filtered_image_numpy_filelist
-                        )
-
-                        if self.image_channels == 1:
-                            image_memmap_per_channel = image_memmap
-                        else:
-                            image_memmap_per_channel = image_memmap[:, :, :, i]
-                        # release memory allocated for image memmap
-                        del image_memmap
-
                         bin_images = image_memmap_per_channel[tmp_idxs]
-                        # release memory for image memmap per channel
-                        del image_memmap_per_channel
+                        bin_distances = distance_memmap[tmp_idxs]
 
                         if self.smoothing == "mean":
                             bin_images_sample = np.mean(bin_images, axis=0)
+                            bin_distances_sample = np.mean(bin_distances, axis=0)
                         elif self.smoothing == "mean_trimmed":
                             bin_images_sample = image_mean_std_trimmed(bin_images)
+                            bin_distances_sample = np.mean(bin_distances, axis=0)
                         elif self.smoothing == "median":
                             bin_images_sample = np.median(bin_images, axis=0)
+                            bin_distances_sample = np.mean(bin_distances, axis=0)
 
                         # release memory from bin_images
                         del bin_images
-
-                        bin_images_sample_list.append(bin_images_sample)
-
-                for idx_bin in trange(1, hist_bounds.size):
-                    tmp_idxs = np.where(idxs == idx_bin)[0]
-                    if len(tmp_idxs) > 0:
-
-                        # load distance memmap
-                        distance_memmap_path, distance_memmap = load_memmap_from_numpyfilelist(
-                            self.memmap_folder, filtered_distance_numpy_filelist
-                        )
-
-                        bin_distances = distance_memmap[tmp_idxs]
-
-                        # release memory from distance memmap
-                        del distance_memmap
-
-                        if self.smoothing == "mean":
-                            bin_distances_sample = np.mean(bin_distances, axis=0)
-                        elif self.smoothing == "mean_trimmed":
-                            bin_distances_sample = np.mean(bin_distances, axis=0)
-                        elif self.smoothing == "median":
-                            bin_distances_sample = np.mean(bin_distances, axis=0)
-
-                        # release memory from bin_distances
                         del bin_distances
 
+                        bin_images_sample_list.append(bin_images_sample)
                         bin_distances_sample_list.append(bin_distances_sample)
+
 
                 images_for_attenuation_calculation = np.array(bin_images_sample_list)
                 distances_for_attenuation_calculation = np.array(
@@ -678,10 +658,6 @@ class Corrector:
                         self.image_height * self.image_width,
                     ]
                 )
-
-                #release memory from bin samples lists
-                del bin_distances_sample_list
-                del bin_images_sample_list
 
 
                 # calculate attenuation parameters per channel
@@ -1558,11 +1534,6 @@ def curve_fitting(distancelist, intensitylist):
         ret_params = init_params
         Console.warn('Parameters calculated are unoptimised because of Value Error...')
     
-    # release memory from altitudes and intensities
-    del altitudes
-    del intensities
-    del distancelist
-    del intensitylist
 
     return ret_params
 
