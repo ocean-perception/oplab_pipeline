@@ -210,6 +210,8 @@ def draw_laser(
     right_image_name,
     left_maps,
     right_maps,
+    left_roi, 
+    right_roi,
     top_left,
     top_right,
     bottom_left,
@@ -238,6 +240,8 @@ def draw_laser(
     if not lfilename.exists() or not rfilename.exists():
         limg = cv2.imread(str(left_image_name), cv2.IMREAD_ANYDEPTH)
         rimg = cv2.imread(str(right_image_name), cv2.IMREAD_ANYDEPTH)
+        limg = limg[left_roi[0]:left_roi[1], left_roi[2]:left_roi[3]]
+        rimg = rimg[right_roi[0]:right_roi[1], right_roi[2]:right_roi[3]]
 
         channels = 1
         if limg.ndim == 3:
@@ -280,8 +284,10 @@ def draw_laser(
 def get_laser_pixels_in_image_pair(
     left_image_name,
     left_maps,
+    left_roi,
     right_image_name,
     right_maps,
+    right_roi,
     min_greenness_ratio,
     k,
     num_columns,
@@ -313,6 +319,7 @@ def get_laser_pixels_in_image_pair(
         filename,
         image_name,
         maps,
+        roi,
         min_greenness_ratio,
         k,
         num_columns,
@@ -336,6 +343,8 @@ def get_laser_pixels_in_image_pair(
 
         p1b = []
         img1 = cv2.imread(str(image_name), cv2.IMREAD_ANYDEPTH)
+        # get ROI
+        img1 = img1[roi[0]:roi[1], roi[2]:roi[3]]
         if remap:
             img1 = cv2.remap(img1, maps[0], maps[1], cv2.INTER_LANCZOS4)
         p1 = findLaserInImage(
@@ -374,6 +383,7 @@ def get_laser_pixels_in_image_pair(
     def get_laser_pixels(
         image_name,
         maps,
+        roi,
         min_greenness_ratio,
         k,
         num_columns,
@@ -414,6 +424,7 @@ def get_laser_pixels_in_image_pair(
                 filename,
                 image_name,
                 maps,
+                roi,
                 min_greenness_ratio,
                 k,
                 num_columns,
@@ -447,6 +458,7 @@ def get_laser_pixels_in_image_pair(
                     filename,
                     image_name,
                     maps,
+                    roi,
                     min_greenness_ratio,
                     k,
                     num_columns,
@@ -463,6 +475,7 @@ def get_laser_pixels_in_image_pair(
     p1, p1b = get_laser_pixels(
         left_image_name,
         left_maps,
+        left_roi,
         min_greenness_ratio,
         k,
         num_columns,
@@ -477,6 +490,7 @@ def get_laser_pixels_in_image_pair(
     p2, p2b = get_laser_pixels(
         right_image_name,
         right_maps,
+        right_roi,
         min_greenness_ratio,
         k,
         num_columns,
@@ -493,6 +507,8 @@ def get_laser_pixels_in_image_pair(
         right_image_name,
         left_maps,
         right_maps,
+        left_roi,
+        right_roi,
         p1,
         p2,
         p1b,
@@ -531,11 +547,10 @@ def save_cloud(filename, cloud):
 
 
 class LaserCalibrator:
-    def __init__(self, stereo_camera_model, stereo2laser_camera_model, config, overwrite=False):
+    def __init__(self, stereo_camera_model, config, overwrite=False):
         self.data = []
 
         self.sc = stereo_camera_model
-        self.slc = stereo2laser_camera_model
         self.config = config
         self.overwrite = overwrite
 
@@ -567,12 +582,64 @@ class LaserCalibrator:
         self.css = uncertainty_generation.get("cloud_sample_size", 1000)
         self.num_iterations = uncertainty_generation.get("iterations", 100)
 
+        a = -1
+
+        wl, hl = self.sc.left.size
+        wr, hr = self.sc.right.size
+
+        print("Left size is:", wl, hl, "with ratio:", wl/hl)
+        print("Right size is:", wr, hr, "with ratio:", wr/hr)
+        # Select the smallest common size.
+        self.new_size = (min([wl, wr]), min([hl, hr]))
+        new_w, new_h = self.new_size
+
+        # Left ROI
+        w_shift = 0
+        h_shift = 0
+        if new_w < wl:
+            w_shift = int((wl - new_w) / 2)
+        if new_h < wl:
+            h_shift = int((hl - new_h) / 2)
+        self.left_roi =  w_shift, w_shift+new_w, h_shift, h_shift+new_h
+        # Shift CX and CY in camera intrinsics
+        self.sc.left.K[0, 2] -= w_shift 
+        self.sc.left.K[1, 2] -= h_shift
+        print("Shifting left by", w_shift, h_shift)
+        print("Left ROI is", self.left_roi)
+
+        # Right ROI
+        w_shift = 0
+        h_shift = 0
+        if new_w < wr:
+            w_shift = int((wr - new_w) / 2)
+        if new_h < wr:
+            h_shift = int((hr - new_h) / 2)
+        self.right_roi =  w_shift, w_shift+new_w, h_shift, h_shift+new_h
+        # Shift CX and CY in camera intrinsics
+        self.sc.right.K[0, 2] -= w_shift 
+        self.sc.right.K[1, 2] -= h_shift
+        print("Shifting right by", w_shift, h_shift)
+        print("Right ROI is", self.right_roi)
+
+        print("Rectifying stereo...")
+        self.sc.left.R, self.sc.right.R, self.sc.left.P, self.sc.right.P = cv2.stereoRectify(
+            self.sc.left.K,
+            self.sc.left.d,
+            self.sc.right.K,
+            self.sc.right.d,
+            self.new_size,
+            self.sc.R,
+            self.sc.t,
+            flags=cv2.CALIB_ZERO_DISPARITY,
+            alpha=a,
+        )[0:4]
+
         self.left_maps = cv2.initUndistortRectifyMap(
             self.sc.left.K,
             self.sc.left.d,
             self.sc.left.R,
             self.sc.left.P,
-            (self.sc.left.image_width, self.sc.left.image_height),
+            self.new_size,
             cv2.CV_32FC1,
         )
         self.right_maps = cv2.initUndistortRectifyMap(
@@ -580,7 +647,7 @@ class LaserCalibrator:
             self.sc.right.d,
             self.sc.right.R,
             self.sc.right.P,
-            (self.sc.right.image_width, self.sc.right.image_height),
+            self.new_size,
             cv2.CV_32FC1,
         )
 
@@ -664,6 +731,8 @@ class LaserCalibrator:
                 # Triangulate using Least Squares
                 p = triangulate_lst(pk1[i1], pk2[i2], self.sc.left.P, self.sc.right.P)
 
+                # print(pk1[i1], pk2[i2], p)
+
                 # Remove rectification rotation
                 if self.remap:
                     p_unrec = self.sc.left.R.T @ p
@@ -674,13 +743,10 @@ class LaserCalibrator:
                 if p[2] < 0 or p is None:
                     count_inversed += 1
                 else:
-                    # Transform to the laser camera
-                    p_lc = self.slc.R @ p_unrec + self.slc.t.T
-                    p_lc = p_lc.flatten()
-
                     # Store it in the cloud
                     count += 1
-                    cloud.append(p_lc)
+                    cloud.append(p_unrec)
+                cloud.append(p_unrec)
             i += 1
         return cloud, count, count_inversed
 
@@ -850,17 +916,6 @@ class LaserCalibrator:
             + '" \n'
         )
 
-        roll, pitch, yaw = euler_angles_from_rotation_matrix(self.slc.R)
-        yaml_msg += (
-            'relative_transformation:\n'
-            + "  surge_m: " + str(-self.slc.t[1, 0]) + "\n"
-            + "  sway_m: " + str(self.slc.t[0, 0]) + "\n"
-            + "  heave_m: " + str(self.slc.t[2, 0]) + "\n"
-            + "  roll_deg: " + str(-pitch*180.0/math.pi) + "\n"
-            + "  pitch_deg: " + str(roll*180.0/math.pi) + "\n"
-            + "  yaw_deg: " + str(yaw*180.0/math.pi) + "\n"
-        )
-
         return yaml_msg
 
     def cal(self, limages, rimages):
@@ -885,7 +940,10 @@ class LaserCalibrator:
         if len(limages[0].stem) < 26:
             for i, lname in enumerate(limages):
                 for j, rname in enumerate(rimages):
-                    if lname.stem == rname.stem:
+                    name = lname.stem
+                    if 'image' in name:
+                        name = name[5:]
+                    if name == rname.stem:
                         limages_sync.append(lname)
                         rimages_sync.append(rname)
         else:
@@ -943,8 +1001,10 @@ class LaserCalibrator:
                 joblib.delayed(get_laser_pixels_in_image_pair)(
                     i,
                     self.left_maps,
+                    self.left_roi,
                     j,
                     self.right_maps,
+                    self.right_roi,
                     self.min_greenness_ratio,
                     self.k,
                     self.num_columns,

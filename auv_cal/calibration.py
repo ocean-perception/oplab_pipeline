@@ -151,7 +151,6 @@ def calibrate_laser(
     right_filepath,
     right_extension,
     stereo_calibration_file,
-    stereo2laser_calibration_file,
     config,
     output_file,
     output_file_b,
@@ -170,7 +169,6 @@ def calibrate_laser(
         return
     try:
         model = StereoCamera(stereo_calibration_file)
-        model2 = StereoCamera(stereo2laser_calibration_file)
 
         def check_prop(name, dic_to_check, default_value):
             if name in dic_to_check:
@@ -179,7 +177,6 @@ def calibrate_laser(
                 return default_value
 
         lc = LaserCalibrator(stereo_camera_model=model, 
-                             stereo2laser_camera_model=model2, 
                              config=config, 
                              overwrite=foa)
         lc.cal(left_image_list[skip_first:], right_image_list[skip_first:])
@@ -370,10 +367,9 @@ class Calibrator:
             )
         # Check for a second stereo pair
         if len(self.calibration_config["cameras"]) > 2:
-            c0 = self.calibration_config["cameras"][0]
-            c1 = self.calibration_config["cameras"][2]
+            c2 = self.calibration_config["cameras"][2]
             calibration_file = self.output_path / str(
-                "stereo_" + c0["name"] + "_" + c1["name"] + ".yaml"
+                "stereo_" + c0["name"] + "_" + c2["name"] + ".yaml"
             )
             Console.info("Looking for a calibration file at " + str(calibration_file))
             if calibration_file.exists() and not self.fo:
@@ -381,57 +377,94 @@ class Calibrator:
                     "The stereo pair "
                     + c0["name"]
                     + "_"
-                    + c1["name"]
+                    + c2["name"]
                     + " has already been calibrated. If you want to overwrite the calibration, use the -F flag."
                 )
             Console.info(
                 "The stereo camera is not calibrated, running stereo calibration..."
             )
-            left_name = c0["name"]
-            left_filepaths = build_filepath(
-                self.filepath, c0["camera_calibration"]["path"]
+            
+            laser_name = c2["name"]
+            laser_filepaths = build_filepath(
+                self.filepath, c2["camera_calibration"]["path"]
             )
-            left_extension = str(c0["camera_calibration"]["glob_pattern"])
-            right_name = c1["name"]
-            right_filepaths = build_filepath(
-                self.filepath, c1["camera_calibration"]["path"]
-            )
-            right_extension = str(c1["camera_calibration"]["glob_pattern"])
+            laser_extension = str(c2["camera_calibration"]["glob_pattern"])
             left_calibration_file = self.output_path / str(
                 "mono_" + left_name + ".yaml"
             )
-            right_calibration_file = self.output_path / str(
-                "mono_" + right_name + ".yaml"
+            laser_calibration_file = self.output_path / str(
+                "mono_" + laser_name + ".yaml"
             )
-            if (
-                not left_calibration_file.exists()
-                or not right_calibration_file.exists()
-            ):
-                if not left_calibration_file.exists():
-                    Console.warn(
-                        "Could not find a monocular calibration file "
-                        + str(left_calibration_file)
-                        + "..."
-                    )
-                if not right_calibration_file.exists():
-                    Console.warn(
-                        "Could not find a monocular calibration file "
-                        + str(right_calibration_file)
-                        + "..."
-                    )
-                self.mono()
-            if left_calibration_file.exists() and right_calibration_file.exists():
-                Console.info(
-                    "Loading previous monocular calibrations at \
-                                \n\t * {}\n\t * {}".format(
-                        str(left_calibration_file), str(right_calibration_file)
-                    )
+            if laser_calibration_file.exists():
+                Console.warn(
+                    "Could not find a monocular calibration file "
+                    + str(laser_calibration_file)
+                    + "..."
                 )
+                self.mono()
+
             calibrate_stereo(
                 left_name,
                 left_filepaths,
                 left_extension,
                 left_calibration_file,
+                laser_name,
+                laser_filepaths,
+                laser_extension,
+                laser_calibration_file,
+                self.calibration_config["camera_calibration"],
+                calibration_file,
+                self.fo,
+                self.foa,
+            )
+
+            calibration_file = self.output_path / str(
+                "stereo_" + c2["name"] + "_" + c0["name"] + ".yaml"
+            )
+
+            calibrate_stereo(
+                laser_name,
+                laser_filepaths,
+                laser_extension,
+                laser_calibration_file,
+                left_name,
+                left_filepaths,
+                left_extension,
+                left_calibration_file,
+                self.calibration_config["camera_calibration"],
+                calibration_file,
+                self.fo,
+                self.foa,
+            )
+
+            calibration_file = self.output_path / str(
+                "stereo_" + c1["name"] + "_" + c2["name"] + ".yaml"
+            )
+            
+            calibrate_stereo(
+                right_name,
+                right_filepaths,
+                right_extension,
+                right_calibration_file,
+                laser_name,
+                laser_filepaths,
+                laser_extension,
+                laser_calibration_file,
+                self.calibration_config["camera_calibration"],
+                calibration_file,
+                self.fo,
+                self.foa,
+            )
+
+            calibration_file = self.output_path / str(
+                "stereo_" + c2["name"] + "_" + c1["name"] + ".yaml"
+            )
+            
+            calibrate_stereo(
+                laser_name,
+                laser_filepaths,
+                laser_extension,
+                laser_calibration_file,
                 right_name,
                 right_filepaths,
                 right_extension,
@@ -451,32 +484,33 @@ class Calibrator:
             Console.quit(
                 'There is no field "laser_calibration" for the second camera in the calibration.yaml'
             )
-        c0 = self.calibration_config["cameras"][0]
-        c1 = self.calibration_config["cameras"][1]
-        if len(self.calibration_config["cameras"]) > 2:
-            c2 = self.calibration_config["cameras"][2]
+
+        laser_camera = self.calibration_config["cameras"][1]
+        strobed_camera = self.calibration_config["cameras"][0]
         calibration_file = self.output_path / "laser_calibration_top.yaml"
         calibration_file_b = self.output_path / "laser_calibration_bottom.yaml"
+        if len(self.calibration_config["cameras"]) > 2:
+            strobed_camera2 = self.calibration_config["cameras"][1]
+            laser_camera = self.calibration_config["cameras"][2]
+            calibration_file = self.output_path / str("laser_calibration_top_" + strobed_camera["name"] + ".yaml")
+            calibration_file_b = self.output_path / str("laser_calibration_top_" + strobed_camera2["name"] + ".yaml")
+        
         Console.info("Looking for a calibration file at " + str(calibration_file))
         if calibration_file.exists() and not self.fo:
             Console.quit(
                 "The laser planes from cameras "
-                + c0["name"]
+                + laser_camera["name"]
                 + " and "
-                + c1["name"]
+                + strobed_camera["name"]
                 + " have already been calibrated. If you want to overwite the calibration, use the -F flag."
             )
         Console.info(
             "The laser planes are not calibrated, running laser calibration..."
         )
 
-        if 'laser_camera' not in self.calibration_config['laser_calibration']:
-            Console.quit('Please specify the laser camera in the laser_calibration section. Example: \nlaser_calibration:\n    laser_camera: LM165\n')
-        laser_camera = self.calibration_config['laser_calibration']['laser_camera']
-
         # Check if the stereo pair has already been calibrated
         stereo_calibration_file = self.output_path / str(
-            "stereo_" + c0["name"] + "_" + c1["name"] + ".yaml"
+            "stereo_" + laser_camera["name"] + "_" + strobed_camera["name"] + ".yaml"
         )
         if not stereo_calibration_file.exists():
             Console.warn(
@@ -485,62 +519,51 @@ class Calibrator:
                 + "..."
             )
             self.stereo()
-        # Check if the stereo pair has already been calibrated
-        stereo2laser_calibration_file = self.output_path / str(
-            "stereo_" + c0["name"] + "_" + laser_camera + ".yaml"
-        )
-        if not stereo2laser_calibration_file.exists():
-            Console.quit(
-                "Could not find a stereo calibration file "
-                + str(stereo2laser_calibration_file)
-                + "... Have you called auv_cal stereo first?" 
-            )
         
-        left_name = c0["name"]
-        left_filepath = get_processed_folder(self.filepath) / str(
-            c0["laser_calibration"]["path"]
+        laser_name = laser_camera["name"]
+        laser_filepath = get_processed_folder(self.filepath) / str(
+            laser_camera["laser_calibration"]["path"]
         )
-        left_extension = str(c0["laser_calibration"]["glob_pattern"])
-        right_name = c1["name"]
-        right_filepath = get_processed_folder(self.filepath) / str(
-            c1["laser_calibration"]["path"]
+        laser_extension = str(laser_camera["laser_calibration"]["glob_pattern"])
+        strobed_name = strobed_camera["name"]
+        strobed_filepath = get_processed_folder(self.filepath) / str(
+            strobed_camera["laser_calibration"]["path"]
         )
-        right_extension = str(c1["laser_calibration"]["glob_pattern"])
-        if not left_filepath.exists():
-            left_filepath = get_raw_folder(left_filepath)
-            if not left_filepath.exists():
+        strobed_extension = str(strobed_camera["laser_calibration"]["glob_pattern"])
+        if not laser_filepath.exists():
+            laser_filepath = get_raw_folder(laser_filepath)
+            if not laser_filepath.exists():
                 Console.quit(
                     "Could not find stereo image folders ("
-                    + str(c0["laser_calibration"]["path"])
+                    + str(laser_camera["laser_calibration"]["path"])
                     + ") neither in processed nor in raw folder."
                 )
-        if not right_filepath.exists():
-            right_filepath = get_raw_folder(right_filepath)
-            if not right_filepath.exists():
+        if not strobed_filepath.exists():
+            strobed_filepath = get_raw_folder(strobed_filepath)
+            if not strobed_filepath.exists():
                 Console.quit(
                     "Could not find stereo image folders ("
-                    + str(c1["laser_calibration"]["path"])
+                    + str(strobed_camera["laser_calibration"]["path"])
                     + ") neither in processed nor in raw folder."
                 )
-        left_filepath = left_filepath.resolve()
-        right_filepath = right_filepath.resolve()
+        laser_filepath = laser_filepath.resolve()
+        strobed_filepath = strobed_filepath.resolve()
         Console.info(
             "Reading stereo images of laser line from "
-            + str(left_filepath)
+            + str(laser_filepath)
             + " and "
-            + str(right_filepath)
+            + str(strobed_filepath)
         )
         if not "skip_first" in self.calibration_config:
             self.calibration_config["skip_first"] = 0
         calibrate_laser(
-            left_name,
-            left_filepath,
-            left_extension,
-            right_name,
-            right_filepath,
-            right_extension,
+            laser_name,
+            laser_filepath,
+            laser_extension,
+            strobed_name,
+            strobed_filepath,
+            strobed_extension,
             stereo_calibration_file,
-            stereo2laser_calibration_file,
             self.calibration_config["laser_calibration"],
             calibration_file,
             calibration_file_b,
@@ -548,3 +571,29 @@ class Calibrator:
             self.fo,
             self.foa,
         )
+
+        if len(self.calibration_config["cameras"]) > 2:
+            strobed2_name = strobed_camera2["name"]
+            strobed2_filepath = get_processed_folder(self.filepath) / str(
+                strobed_camera2["laser_calibration"]["path"]
+            )
+            strobed2_filepath = strobed2_filepath.resolve()
+            strobed2_extension = str(strobed_camera2["laser_calibration"]["glob_pattern"])
+            stereo_calibration_file = self.output_path / str(
+                "stereo_" + laser_camera["name"] + "_" + strobed_camera2["name"] + ".yaml"
+            )
+            calibrate_laser(
+                laser_name,
+                laser_filepath,
+                laser_extension,
+                strobed2_name,
+                strobed2_filepath,
+                strobed2_extension,
+                stereo_calibration_file,
+                self.calibration_config["laser_calibration"],
+                calibration_file_b,
+                calibration_file_b,
+                self.calibration_config["skip_first"],
+                self.fo,
+                self.foa,
+            )
