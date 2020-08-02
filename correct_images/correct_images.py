@@ -47,6 +47,7 @@ from cv2 import imread, imwrite
 from PIL import Image
 
 import math
+import shutil
 
 # Main function
 def main(args=None):
@@ -243,7 +244,8 @@ def call_parse(args):
                 elif corrector.correction_method == "manual_balance":
                     Console.info('run process for manual_balance...')
                     continue
-
+        
+        # remove memmaps
         Console.info("Removing memmaps...")
         memmap_files_path = corrector.memmap_folder.glob("*.map")
         for file in memmap_files_path:
@@ -251,10 +253,25 @@ def call_parse(args):
                 file.unlink()
         print("-----------------------------------------------------")
 
+        # remove bayer image numpy files
+        try:
+            shutil.rmtree(corrector.bayer_numpy_dir_path, ignore_errors=True)
+        except:
+            Console.warn("could not delete the folder for image numpy files...")
+        
+        # remove distance matrix numpy files
+        try:
+            shutil.rmtree(corrector.distance_matrix_numpy_folder, ignore_errors=True)
+        except:
+            Console.warn("could not delete the folder for image numpy files...")
+
+
+
+
     Console.info(
         "Parse completed for all cameras. Please run process to develop corrected images..."
     )
-    # remove memmaps
+    
 
 
 def call_process(args):
@@ -331,6 +348,18 @@ def call_process(args):
                     Console.info('Running process with manual colour balancing...')
 
                 corrector.process_correction()
+
+        # remove bayer image numpy files
+        try:
+            shutil.rmtree(corrector.bayer_numpy_dir_path, ignore_errors=True)
+        except:
+            Console.warn("could not delete the folder for image numpy files...")
+        
+        # remove distance matrix numpy files
+        try:
+            shutil.rmtree(corrector.distance_matrix_numpy_folder, ignore_errors=True)
+        except:
+            Console.warn("could not delete the folder for image numpy files...")
 
     Console.info("Process completed for all cameras...")
 
