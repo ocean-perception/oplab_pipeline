@@ -719,6 +719,14 @@ class Corrector:
 
         # compute only the raw image mean and std if distance matrix is null
         if len(self.distance_matrix_numpy_filelist) == 0:
+
+            # delete existing memmap files
+            memmap_files_path = self.memmap_folder.glob("*.map")
+            for file in memmap_files_path:
+                if file.exists():
+                    file.unlink()
+
+
             image_memmap_path, image_memmap = load_memmap_from_numpyfilelist(
                 self.memmap_folder, self.bayer_numpy_filelist
             )
