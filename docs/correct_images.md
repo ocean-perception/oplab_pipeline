@@ -1,10 +1,11 @@
 # correct_images
 
-correct_images has 3 commands:
+correct_images has 4 commands:
 - `parse`, which reads raw image files of filetypes `tif` and `raw` for Tuna Sand and Ae2000 dives respectively. Parse generates colour attenuation coefficients in the form of numpy arrays inside the parameters folder within the processed folder structure. the `parameters` folders are named after the corresponding camera systems to which the raw image files belong. Example `params_LC` for Tuna Sand dataset.
 - `process`, which generates corrected images using the attenuation parameters from parse. corrected images are saved inside `develop` folders named after the corresponding camera systems to which the raw image files belong.
 - `debayer`, which converts `raw` and `tif` bayer images to debayered `png` files using a particular bayer filter pattern.
 - `correct`, which runs parse followed by process in one go. This can be used for small datasets which are being processed for the first time.
+- `rescale`, which generates rescaled image for a target image scale with or without maintaining total number of pixels in original image
 
 `correct_images parse` usage:
 ```
@@ -18,6 +19,20 @@ optional arguments:
   -F, --Force  Force overwrite if correction parameters already exist.
 ```
 For parse the code looks for a configuration file `correct_images.yaml` inside the succesion of folders within configuration folder structure. If the code does not find a configuration file, it copies default `correct_images.yaml` from setup folder. The code reads camera systems, image format and image path from `mission.yaml` and automatically updates the default `correct_images.yaml` file copied into the configuration folder structure. At this point the code is ready to run the parse.
+
+```
+Parse can be run in two modes of correction:
+  (1) `colour_correction` : correction parameters are computed for each colour channel and target image is automatically balanced for colour and image stats (brightness and contrast)
+
+  (2) `manual_balance` : target images are developed by applying user provided intenisty gains and subtractors for each channel
+```
+```Example:
+following is the configuration setting in correct_images.yaml for colour_correction
+
+`# Yaml 1.0`
+`version: 1`
+
+`method: 'colour_correction'`
 
 ```
 Note: 
