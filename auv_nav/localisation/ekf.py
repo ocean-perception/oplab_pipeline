@@ -467,10 +467,7 @@ class EkfImpl(object):
                 # Wrap angles of the innovation_subset
                 for idx in range(Index.DIM):
                     if idx == Index.ROLL or idx == Index.PITCH or idx == Index.YAW:
-                        while innovation[idx] < -math.pi:
-                            innovation[idx] += 2 * math.pi
-                        while innovation[idx] > math.pi:
-                            innovation[idx] -= 2 * math.pi
+                        innovation[idx] = np.arctan2(np.sin(innovation[idx]), np.cos(innovation[idx]))
 
                 x_prior_smoothed = x_prior + J @ innovation
                 p_prior_smoothed = p_prior + J @ (p_smoothed - p_prior_pred) @ J.T
