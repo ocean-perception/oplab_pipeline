@@ -47,6 +47,7 @@ from cv2 import imread, imwrite
 from PIL import Image
 
 import math
+import shutil
 
 # Main function
 def main(args=None):
@@ -130,13 +131,6 @@ def main(args=None):
         "rescale", help="Rescale processed images"
     )
     subparser_rescale.add_argument("path", help="Path to raw folder")
-    #subparser_rescale.add_argument("distance_path", help="Path to distance file: either an auv_ekf_<cameraname>.csv or a distance list")
-    #subparser_rescale.add_argument("focal_length_x", help="horizontal opening angle for the camera")
-    #subparser_rescale.add_argument("focal_length_y", help="vertical opening angle for the camera")
-    #subparser_rescale.add_argument("target_pixel_size", help="output resolution")
-    #subparser_rescale.add_argument("output_directory", help="path to output directory")
-    #subparser_rescale.add_argument("-f", "--filelist", default=None, help="Path to list of images to rescale")
-    #subparser_rescale.add_argument("-mp", "--maintain_pixels", default="N", help="maintain original number of pixels : Y (Yes) / N (No)")
     subparser_rescale.set_defaults(func=call_rescale)
 
 
@@ -243,7 +237,8 @@ def call_parse(args):
                 elif corrector.correction_method == "manual_balance":
                     Console.info('run process for manual_balance...')
                     continue
-
+        
+        # remove memmaps
         Console.info("Removing memmaps...")
         memmap_files_path = corrector.memmap_folder.glob("*.map")
         for file in memmap_files_path:
@@ -251,10 +246,25 @@ def call_parse(args):
                 file.unlink()
         print("-----------------------------------------------------")
 
+        # remove bayer image numpy files
+        try:
+            shutil.rmtree(corrector.bayer_numpy_dir_path, ignore_errors=True)
+        except:
+            Console.warn("could not delete the folder for image numpy files...")
+        
+        # remove distance matrix numpy files
+        try:
+            shutil.rmtree(corrector.distance_matrix_numpy_folder, ignore_errors=True)
+        except:
+            Console.warn("could not delete the folder for image numpy files...")
+
+
+
+
     Console.info(
         "Parse completed for all cameras. Please run process to develop corrected images..."
     )
-    # remove memmaps
+    
 
 
 def call_process(args):
@@ -332,6 +342,18 @@ def call_process(args):
 
                 corrector.process_correction()
 
+        # remove bayer image numpy files
+        try:
+            shutil.rmtree(corrector.bayer_numpy_dir_path, ignore_errors=True)
+        except:
+            Console.warn("could not delete the folder for image numpy files...")
+        
+        # remove distance matrix numpy files
+        try:
+            shutil.rmtree(corrector.distance_matrix_numpy_folder, ignore_errors=True)
+        except:
+            Console.warn("could not delete the folder for image numpy files...")
+
     Console.info("Process completed for all cameras...")
 
 
@@ -352,6 +374,9 @@ def call_rescale(args):
     
     correct_config, camerasystem = setup(args)
     path = Path(args.path).resolve()
+
+    # install freeimage plugins if not installed
+    imageio.plugins.freeimage.download()
 
     # obtain parameters for rescale from correct_config
     rescale_cameras = correct_config.camerarescale.rescale_cameras
@@ -506,13 +531,18 @@ def rescale_images(
         image_path_list = dataframe["relative_path"]
         trimmed_path_list = [path 
                             for path in image_path_list
-                            if Path(path).name == image_name ]
+                            if Path(path).stem in image_name ]
         trimmed_dataframe = dataframe.loc[dataframe["relative_path"].isin(trimmed_path_list) ]
         altitude = trimmed_dataframe["altitude [m]"]
-        rescaled_image = rescale_image(
+        if len(altitude) > 0:
+            rescaled_image = rescale_image(
                 source_image_path, interpolate_method, target_pixel_size, altitude, f_x, f_y, maintain_pixels
             )
-        imageio.imwrite(output_image_path, rescaled_image, format="PNG-FI")
+            imageio.imwrite(output_image_path, rescaled_image, format="PNG-FI")
+        else:
+            msg = "Did not get distance values for image: " + image_name
+            Console.warn(msg)
+            
 
 
 

@@ -85,11 +85,11 @@ class FilenameToDate:
             assert len(day) == 2, "Day in filename should have a length of 2"
             assert len(hour) == 2, "Hour in filename should have a length of 2"
             assert (
-                len(minute) == 2
+                len(minute) <= 2
             ), "Minute in filename should have a length \
                 of 2"
             assert (
-                len(second) == 2
+                len(second) <= 2
             ), "Second in filename should have a length \
                 of 2"
             if msecond:
@@ -101,12 +101,14 @@ class FilenameToDate:
                 msecond = "0"
             if usecond:
                 assert (
-                    len(usecond) == 3
+                    len(usecond) <= 3
                 ), "Microseconds in filename should \
                     have a length of 3"
             else:
                 usecond = "0"
             microsecond = int(msecond) * 1000 + int(usecond)
+            date = datetime.now()
+            '''
             date = datetime(
                 int(year),
                 int(month),
@@ -116,6 +118,7 @@ class FilenameToDate:
                 int(second),
                 microsecond,
             )
+            '''
             stamp = float(calendar.timegm(date.timetuple()))
             return stamp + microsecond * 1e-6
         else:
