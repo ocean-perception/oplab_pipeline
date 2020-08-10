@@ -27,17 +27,12 @@ def write_csv(csv_filepath, data_list, csv_filename, csv_flag):
             "timestamp,northing [m],easting [m],depth [m],"
             "roll [deg],pitch [deg],heading [deg],altitude "
             "[m],latitude [deg],longitude [deg]"
-        )
-        cov = (
-            ",vehicle_cov_x,vehicle_cov_y,vehicle_cov_z,vehicle_cov_roll"
-            ",vehicle_cov_pitch,vehicle_cov_yaw,vehicle_cov_vx,"
-            "vehicle_cov_vy,vehicle_cov_vz,vehicle_cov_vroll,"
-            "vehicle_cov_vpitch,vehicle_cov_vyaw"
+            ",vehicle_std_x [m],vehicle_std_y [m],vehicle_std_z [m],"
+            "vehicle_std_roll [deg],vehicle_std_pitch [deg],vehicle_std_yaw [deg],"
+            "vehicle_std_vx [m/s],vehicle_std_vy [m/s],vehicle_std_vz [m/s],"
+            "vehicle_std_vroll [deg/s],vehicle_std_vpitch [deg/s],vehicle_std_vyaw [deg/s]\n"
         )
         if len(data_list) > 0:
-            if data_list[0].covariance is not None:
-                str_to_write += cov
-            str_to_write += "\n"
             with file.open("w") as fileout:
                 fileout.write(str_to_write)
                 for i in range(len(data_list)):
@@ -62,12 +57,31 @@ def write_csv(csv_filepath, data_list, csv_filename, csv_flag):
                             + str(data_list[i].latitude)
                             + ","
                             + str(data_list[i].longitude)
+                            + ","
+                            + str(data_list[i].northings_std)
+                            + ","
+                            + str(data_list[i].eastings_std)
+                            + ","
+                            + str(data_list[i].depth_std)
+                            + ","
+                            + str(data_list[i].roll_std)
+                            + ","
+                            + str(data_list[i].pitch_std)
+                            + ","
+                            + str(data_list[i].yaw_std)
+                            + ","
+                            + str(data_list[i].x_velocity_std)
+                            + ","
+                            + str(data_list[i].y_velocity_std)
+                            + ","
+                            + str(data_list[i].z_velocity_std)
+                            + ","
+                            + str(data_list[i].vroll_std)
+                            + ","
+                            + str(data_list[i].vpitch_std)
+                            + ","
+                            + str(data_list[i].vyaw_std)
                         )
-
-                        if data_list[i].covariance is not None:
-                            for k in range(data_list[i].covariance.shape[0]):
-                                c = data_list[i].covariance[k, k]
-                                str_to_write += "," + str(c)
                         str_to_write += "\n"
                         fileout.write(str_to_write)
                     except IndexError:
