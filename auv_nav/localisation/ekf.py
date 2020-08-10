@@ -327,7 +327,7 @@ class EkfImpl(object):
         else:
             return True
 
-    def predict(self, timestamp, delta, append=True):
+    def predict(self, timestamp, delta, save_state=True):
         f = self.compute_transfer_function(delta, self.state)
         A = self.compute_transfer_function_jacobian(delta, self.state, f)
         # (1) Project the state forward: x = Ax + Bu (really, x = f(x, u))
@@ -344,7 +344,7 @@ class EkfImpl(object):
 
         # (3) Save the state for posterior smoothing
         s = EkfState(timestamp, self.state, self.covariance)
-        if append:
+        if save_state:
             self.states_vector.append(s)
         return s
 
@@ -699,7 +699,7 @@ class ExtendedKalmanFilter(object):
         # Predict from that state
         self.ekf.set_state(s.state)
         self.ekf.set_covariance(s.covariance)
-        predicted_s = self.ekf.predict(new_stamp, dt, append=False)
+        predicted_s = self.ekf.predict(new_stamp, dt, save_state=False)
 
         # Convert the output to SyncedOrientationBodyVelocity
         predicted_b = predicted_s.toSyncedOrientationBodyVelocity()
