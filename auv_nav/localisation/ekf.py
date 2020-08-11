@@ -335,7 +335,7 @@ class EkfImpl(object):
 
         # (2) Project the error forward: P = J * P * J' + Q
         self.covariance = A @ self.covariance @ A.T
-        self.covariance += delta * self.process_noise_covariance
+        self.covariance += abs(delta) * self.process_noise_covariance
 
         # print('Prediction {0}'.format(str(self.state.T)))
         self.last_update_time = timestamp
