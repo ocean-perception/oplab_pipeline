@@ -252,11 +252,17 @@ Configuration fields :
 `output_folder` : folder for saving the rescaled images. output folder will be created relative to the processed chain.
 
 Example of rescaled images :
-```
-Downscaled image with target pixel size of 1 cm from original pixel size of 1 mm.
 
-![]()
 ```
+Downscaled image with target pixel size of 1 cm from original pixel size of 1 mm. Original number of pixels are maintained. Hence, the image appears blurred.
+```
+![](https://github.com/ocean-perception/oplab_pipeline/blob/develop/docs/images/PR_20180811_163514_163_LC16_down_maintain_yes.png)
+```
+Upscaled image with target pixel size of 0.3 mm from original pixel size of 1 mm. Original number of pixels are maintained. Hence, the image appears cropped from center.
+```
+![](https://github.com/ocean-perception/oplab_pipeline/blob/develop/docs/images/PR_20180811_163514_163_LC16_up_maintain_yes.png)
+
+
 
 
 
@@ -275,8 +281,7 @@ the correct_images.yaml file should be placed in the following path
 `../configuration/year/cruise/platform/dive/correct_images.yaml`
 
 ```
-#YAML 1.0
-
+# Yaml 1.0
 version: 1
 
 method: 'colour_correction'
@@ -293,25 +298,37 @@ colour_correction :
 
 cameras : 
   - camera_name : 'LC' #in line with vehicle.yaml
-    image_file_list : 'none' # Only inidicate this if you want to limit the images used. folder is in the image path  
+    image_file_list : 
+      parse : 'none' # Only inidicate this if you want to limit the images used. folder is in the image path
+      process : 'none'  
     colour_correction :
       brightness : 30 # % target across dataset
       contrast : 3 # % target accross dataset  
     manual_balance :
       subtractors_rgb : [0, 0, 0] # -c values (zero capped)
-      colour_correction_matrix_rgb : [[1, 0, 0], [0, 1, 0], [0, 0, 1]] # diagonal terms corresponding to r gain, g gain, b gain
+      colour_gain_matrix_rgb : [[1, 0, 0], [0, 1, 0], [0, 0, 1]] # diagonal terms corresponding to r gain, g gain, b gain
   
   - camera_name : 'RC' #in line with vehicle.yaml
-    image_file_list : 'none' # Only inidicate this if you want to limit the images used
+    image_file_list : 
+      parse : 'none' # Only inidicate this if you want to limit the images used
+      process : 'none'
     colour_correction :
       brightness : 30 # % target across dataset
       contrast : 3 # % target accross dataset  
     manual_balance:
       subtractors_rgb: [0, 0, 0] # -c values (zero capped)
-      colour_correction_matrix_rgb: [[1, 0, 0], [0, 1, 0], [0, 0, 1]] # diagonal terms corresponding to r gain, g gain, b gain
+      colour_gain_matrix_rgb: [[1, 0, 0], [0, 1, 0], [0, 0, 1]] # diagonal terms corresponding to r gain, g gain, b gain
     
 output_settings :
   undistort : False
   compression_parameter : 'png' # 'tiff'
-```
 
+rescale :
+  - camera_name : 'LC'
+    path : # path to images relative to processed folder
+    distance_path : # path to json_renav* folder for auv_ekf_<cameraname>.csv file
+    interpolate_method : 'bicubic' # bicubic, nearest_neighbour, bilinear, lanczos
+    target_pixel_size : 1 # in centimeter
+    maintain_pixels : 'Y'
+    output_folder : # output path relative to processed images
+```
