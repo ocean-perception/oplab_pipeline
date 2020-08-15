@@ -1,13 +1,13 @@
-### correct_images
+### correct_images ###
 
-##correct_images has 4 commands:
+##correct_images has 4 commands:##
 - `parse`, which reads raw image files of filetypes `tif` and `raw` for Tuna Sand and Ae2000 dives respectively. Parse generates colour attenuation coefficients in the form of numpy arrays inside the parameters folder within the processed folder structure. the `parameters` folders are named after the corresponding camera systems to which the raw image files belong. Example `params_LC` for Tuna Sand dataset.
 - `process`, which generates corrected images using the attenuation parameters from parse. corrected images are saved inside `develop` folders named after the corresponding camera systems to which the raw image files belong.
 - `debayer`, which converts `raw` and `tif` bayer images to debayered `png` files using a particular bayer filter pattern.
 - `correct`, which runs parse followed by process in one go. This can be used for small datasets which are being processed for the first time.
 - `rescale`, which generates rescaled image for a target image scale with or without maintaining total number of pixels in original image
 
-#correct_images `parse` usage:
+#correct_images `parse` usage:#
 ```
 correct_images parse [-h] [-F] path
 
@@ -96,7 +96,7 @@ Configuration fields :
                              Note : put the filelist.txt within `configuration` folder chain where `correct_images.yaml` is found.
 
 
-#`correct_images process` usage:
+#`correct_images process` usage:#
 ```
 correct_images process [-h] [-F] path
 
@@ -163,7 +163,7 @@ Configuration fields :
                              Note : this list may be the same as that was used for `parse` or it can be different.
 
 
-#`correct_images debayer` usage:
+#`correct_images debayer` usage:#
 ```
 correct_images debayer [-h] [-p PATTERN] [-i IMAGE] [-o OUTPUT] [-o_format OUTPUT_FORMAT] path filetype
 
@@ -191,7 +191,7 @@ default bayer filter pattern used by code is `GRBG`.
 
 default value for output image format is `png`.
 
-#`correct_images correct` usage:
+#`correct_images correct` usage:#
 ```
 correct_images correct [-h] path
 
@@ -204,7 +204,7 @@ optional arguments:
 
 Note : `correct` function may be used in case a small data set needs to be processed for the first time. `correct` function runs `parse` and `process` stages in one go. Hence all default settings will be assumed.
 
-#`correct_images rescale` usage :
+#`correct_images rescale` usage :#
 ```
 correct_images rescale [-h] path
 
