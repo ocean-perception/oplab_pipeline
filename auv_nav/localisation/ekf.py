@@ -327,7 +327,7 @@ class EkfImpl(object):
         else:
             return True
 
-    def predict(self, timestamp, delta):
+    def predict(self, timestamp, delta, append=True):
         f = self.compute_transfer_function(delta, self.state)
         A = self.compute_transfer_function_jacobian(delta, self.state, f)
         # (1) Project the state forward: x = Ax + Bu (really, x = f(x, u))
@@ -335,7 +335,7 @@ class EkfImpl(object):
 
         # (2) Project the error forward: P = J * P * J' + Q
         self.covariance = A @ self.covariance @ A.T
-        self.covariance += delta * self.process_noise_covariance
+        self.covariance += abs(delta) * self.process_noise_covariance
 
         # print('Prediction {0}'.format(str(self.state.T)))
         self.last_update_time = timestamp
@@ -344,7 +344,8 @@ class EkfImpl(object):
 
         # (3) Save the state for posterior smoothing
         s = EkfState(timestamp, self.state, self.covariance)
-        self.states_vector.append(s)
+        if append:
+            self.states_vector.append(s)
         return s
 
     def correct(self, measurement):
@@ -467,10 +468,7 @@ class EkfImpl(object):
                 # Wrap angles of the innovation_subset
                 for idx in range(Index.DIM):
                     if idx == Index.ROLL or idx == Index.PITCH or idx == Index.YAW:
-                        while innovation[idx] < -math.pi:
-                            innovation[idx] += 2 * math.pi
-                        while innovation[idx] > math.pi:
-                            innovation[idx] -= 2 * math.pi
+                        innovation[idx] = np.arctan2(np.sin(innovation[idx]), np.cos(innovation[idx]))
 
                 x_prior_smoothed = x_prior + J @ innovation
                 p_prior_smoothed = p_prior + J @ (p_smoothed - p_prior_pred) @ J.T
@@ -627,7 +625,7 @@ class ExtendedKalmanFilter(object):
         sensors_std,
         dr_list,
         usbl_list,
-    ):
+        ):
         """
         Get the first USBL, DVL and Orientation reading for EKF initialization
         """
@@ -698,7 +696,7 @@ class ExtendedKalmanFilter(object):
         # Predict from that state
         self.ekf.set_state(s.state)
         self.ekf.set_covariance(s.covariance)
-        predicted_s = self.ekf.predict(new_stamp, dt)
+        predicted_s = self.ekf.predict(new_stamp, dt, append=False)
 
         # Convert the output to SyncedOrientationBodyVelocity
         predicted_b = predicted_s.toSyncedOrientationBodyVelocity()
