@@ -503,6 +503,33 @@ class Calibrator(object):
         return calmessage
 
 
+def resize_with_padding(img, size):
+    width, height = size
+    o_height, o_width = img.shape[0], img.shape[1]
+
+    ar = float(width) / float(height)
+    o_ar = float(o_width) / float(o_height)
+
+    left, right, top, bottom = 0, 0, 0, 0
+
+    if ar < o_ar:
+        # Image needs padding on top/bottom
+        top = int((float(o_width) / ar  - o_height)/ 2.)
+        bottom = top
+    elif ar > o_ar:
+        # Image needs padding on left/right
+        left = int((ar*float(o_height) - o_width)/2.)
+        right = left       
+
+    img = cv2.copyMakeBorder(img, top, bottom, left, right, cv2.BORDER_CONSTANT, value=0)
+
+    if img.shape[0] != height:
+        # needs scaling
+        img = cv2.resize(img, size)
+    
+    return img
+
+
 class MonoCalibrator(Calibrator):
     """
     Calibration class for monocular cameras::
@@ -515,9 +542,14 @@ class MonoCalibrator(Calibrator):
 
     is_mono = True  # TODO Could get rid of is_mono
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, target_width=None, target_height=None, *args, **kwargs):
         if "name" not in kwargs:
             kwargs["name"] = "narrow_stereo/left"
+        self.resize = False
+        if target_width is not None and target_height is not None:
+            self.resize = True
+            self.target_height = target_height
+            self.target_width = target_width
         super(MonoCalibrator, self).__init__(*args, **kwargs)
         self.R = numpy.eye(3, dtype=numpy.float64)
         self.P = numpy.zeros((3, 4), dtype=numpy.float64)
@@ -534,6 +566,8 @@ class MonoCalibrator(Calibrator):
         self.good_corners = []
         test_image = cv2.imread(str(images_list[0]))
         self.size = (test_image.shape[1], test_image.shape[0])
+        if self.resize:
+            self.size = self.target_width, self.target_height
         with json_file.open("r") as f:
             data = json.load(f)
             for lf in data:
@@ -568,6 +602,10 @@ class MonoCalibrator(Calibrator):
         """
         test_image = cv2.imread(str(images_list[0]))
         self.size = (test_image.shape[1], test_image.shape[0])
+
+        if self.resize:
+            self.size = self.target_width, self.target_height
+
         self.good_corners = []
         self.db = []
         self.json = []
@@ -575,6 +613,10 @@ class MonoCalibrator(Calibrator):
 
         def get_image_corners(i):
             gray = cv2.imread(str(i))
+
+            if self.resize:
+                gray = resize_with_padding(gray, self.size)
+
             ok, corners, board = self.get_corners(gray)
             if not ok:
                 print("Chessboard NOT detected in " + str(i.name))
@@ -592,6 +634,8 @@ class MonoCalibrator(Calibrator):
                     cv2.waitKey(3)
                     name = Path(i).stem
                     filename = Path("/tmp/" + self.name + "/" + name + "_corners.png")
+                    if self.resize:
+                        filename = Path("/tmp/" + self.name + "/resized_" + name + "_corners.png")
                     if not filename.parents[0].exists():
                         filename.parents[0].mkdir(parents=True)
                     # print('Writing debug image to ' + str(filename))
@@ -602,7 +646,7 @@ class MonoCalibrator(Calibrator):
             else:
                 print("Image " + str(i.name) + " is blurry, discarded.")
 
-        result = joblib.Parallel(n_jobs=4)(
+        result = joblib.Parallel(n_jobs=-2)(
             [joblib.delayed(get_image_corners)(i) for i in images_list]
         )
 
@@ -640,6 +684,8 @@ class MonoCalibrator(Calibrator):
                         if name == "":
                             name = i[2].stem
         filename = Path("/tmp/" + self.name + "_corners.png")
+        if self.resize:
+            filename = Path("/tmp/resized_" + self.name + "_corners.png")
         if not filename.parents[0].exists():
             filename.parents[0].mkdir(parents=True)
         print("Writing corners image to " + str(filename))
@@ -649,6 +695,8 @@ class MonoCalibrator(Calibrator):
             raise CalibrationException("No corners found in images!")
         print("Using " + str(len(self.good_corners)) + " inlier files!")
         filename = Path("/tmp/" + self.name + "/" + name + "_inliers.txt")
+        if self.resize:
+            filename = Path("/tmp/" + self.name + "/resized_" + name + "_inliers.txt")
         if not filename.parents[0].exists():
             filename.parents[0].mkdir(parents=True)
         with filename.open("w") as f:

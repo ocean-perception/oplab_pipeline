@@ -12,6 +12,7 @@ import math
 import random
 from auv_cal.plane_fitting import Plane
 from auv_cal.plot_points_and_planes import plot_pointcloud_and_planes
+from auv_cal.camera_calibrator import resize_with_padding
 from oplab import Console
 from oplab import get_processed_folder
 from auv_nav.parsers.parse_biocam_images import biocam_timestamp_from_filename
@@ -239,6 +240,16 @@ def draw_laser(
         limg = cv2.imread(str(left_image_name), cv2.IMREAD_ANYDEPTH)
         rimg = cv2.imread(str(right_image_name), cv2.IMREAD_ANYDEPTH)
 
+        height, width = limg.shape[0], limg.shape[1]
+        map_height, map_width = left_maps[0].shape[0], left_maps[0].shape[1]
+        if height != map_height or width != map_width:
+            limg = resize_with_padding(limg, (map_width, map_height))
+
+        height, width = rimg.shape[0], rimg.shape[1]
+        map_height, map_width = right_maps[0].shape[0], right_maps[0].shape[1]
+        if height != map_height or width != map_width:
+            rimg = resize_with_padding(rimg, (map_width, map_height))
+
         channels = 1
         if limg.ndim == 3:
             channels = limg.shape[-1]
@@ -336,6 +347,12 @@ def get_laser_pixels_in_image_pair(
 
         p1b = []
         img1 = cv2.imread(str(image_name), cv2.IMREAD_ANYDEPTH)
+
+        height, width = img1.shape[0], img1.shape[1]
+        map_height, map_width = maps[0].shape[0], maps[0].shape[1]
+        if height != map_height or width != map_width:
+            img1 = resize_with_padding(img1, (map_width, map_height))
+
         if remap:
             img1 = cv2.remap(img1, maps[0], maps[1], cv2.INTER_LANCZOS4)
         p1 = findLaserInImage(
@@ -531,11 +548,10 @@ def save_cloud(filename, cloud):
 
 
 class LaserCalibrator:
-    def __init__(self, stereo_camera_model, stereo2laser_camera_model, config, overwrite=False):
+    def __init__(self, stereo_camera_model, config, overwrite=False):
         self.data = []
 
         self.sc = stereo_camera_model
-        self.slc = stereo2laser_camera_model
         self.config = config
         self.overwrite = overwrite
 
@@ -660,7 +676,7 @@ class LaserCalibrator:
                 i2 += 1
             if i2 == len(pk2):
                 continue
-            if pk2[i2][1] - pk1[i1][1] < 1.0:
+            if abs(pk2[i2][1] - pk1[i1][1]) < 1.0:
                 # Triangulate using Least Squares
                 p = triangulate_lst(pk1[i1], pk2[i2], self.sc.left.P, self.sc.right.P)
 
@@ -674,13 +690,9 @@ class LaserCalibrator:
                 if p[2] < 0 or p is None:
                     count_inversed += 1
                 else:
-                    # Transform to the laser camera
-                    p_lc = self.slc.R @ p_unrec + self.slc.t.T
-                    p_lc = p_lc.flatten()
-
                     # Store it in the cloud
                     count += 1
-                    cloud.append(p_lc)
+                    cloud.append(p_unrec)
             i += 1
         return cloud, count, count_inversed
 
@@ -850,17 +862,6 @@ class LaserCalibrator:
             + '" \n'
         )
 
-        roll, pitch, yaw = euler_angles_from_rotation_matrix(self.slc.R)
-        yaml_msg += (
-            'relative_transformation:\n'
-            + "  surge_m: " + str(-self.slc.t[1, 0]) + "\n"
-            + "  sway_m: " + str(self.slc.t[0, 0]) + "\n"
-            + "  heave_m: " + str(self.slc.t[2, 0]) + "\n"
-            + "  roll_deg: " + str(-pitch*180.0/math.pi) + "\n"
-            + "  pitch_deg: " + str(roll*180.0/math.pi) + "\n"
-            + "  yaw_deg: " + str(yaw*180.0/math.pi) + "\n"
-        )
-
         return yaml_msg
 
     def cal(self, limages, rimages):
@@ -885,7 +886,10 @@ class LaserCalibrator:
         if len(limages[0].stem) < 26:
             for i, lname in enumerate(limages):
                 for j, rname in enumerate(rimages):
-                    if lname.stem == rname.stem:
+                    name = lname.stem
+                    if 'image' in name:
+                        name = name[5:]
+                    if name == rname.stem:
                         limages_sync.append(lname)
                         rimages_sync.append(rname)
         else:

@@ -30,6 +30,10 @@ class MonoCamera:
             filename = Path(filename)
             fs = cv2.FileStorage(str(filename), cv2.FILE_STORAGE_READ)
             self.from_node(fs)
+    
+    @property
+    def aspect_ratio(self):
+        return float(self.image_width)/float(self.image_height)
 
     @property
     def rectification_maps(self):
@@ -222,6 +226,14 @@ class StereoCamera:
             self.left.from_node(fs.getNode("left"))
             self.right.from_node(fs.getNode("right"))
             self.from_node(fs.getNode("extrinsics"))
+        
+        self.different_resolution = False
+        self.different_aspect_ratio = False
+        if self.left.image_width != self.right.image_width \
+            or self.left.image_height != self.right.image_height:
+            self.different_resolution = True
+        if self.left.aspect_ratio != self.right.aspect_ratio:
+            self.different_aspect_ratio =  True
 
     def from_node(self, fs):
         self.R = fs.getNode("rotation_matrix").mat()
