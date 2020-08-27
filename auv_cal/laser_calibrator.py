@@ -342,14 +342,14 @@ def get_laser_pixels_in_image_pair(
     np.ndarray
         (n x 2) array of y and x values of top laser line in right_image
     np.ndarray
-        (n x 2) array of y and x values of bottom laser line in left_image
+        (m x 2) array of y and x values of bottom laser line in left_image
         (empty array if `two_lasers` is `False`)
     np.ndarray
-        (n x 2) array of y and x values of bottom laser line in right_image
+        (m x 2) array of y and x values of bottom laser line in right_image
         (empty array if `two_lasers` is `False`)
     """
 
-    def write_file(
+    def find_laser_write_file(
         filename,
         image_name,
         maps,
@@ -366,12 +366,18 @@ def get_laser_pixels_in_image_pair(
     ):
         """Find laser line(s) in image, write result to file and return values
 
+        Finds the laser line (both, if there are two) in an image and writes
+        the corrdinates to file(s) as well as returning them to the calling
+        function. The map passed as argument to this function is used to
+        rectify the image first, so the returned pixel coordinates are
+        rectified ones.
+
         Returns
         -------
         np.ndarray
             (n x 2) array of y and x values of top laser line
         np.ndarray
-            (n x 2) array of y and x values of bottom laser line (empty array
+            (m x 2) array of y and x values of bottom laser line (empty array
             if `two_lasers` is `False`)
         """
 
@@ -443,7 +449,7 @@ def get_laser_pixels_in_image_pair(
         np.ndarray
             (n x 2) array of y and x values of top laser line
         np.ndarray
-            (n x 2) array of y and x values of bottom laser line (empty array
+            (m x 2) array of y and x values of bottom laser line (empty array
             if `two_lasers` is `False`)
         """
 
@@ -458,7 +464,7 @@ def get_laser_pixels_in_image_pair(
         fstem = str(image_name.stem) + "_"  + camera_name + ".txt"
         filename = output_path / fstem
         if overwrite or not filename.exists():
-            points, points_b = write_file(
+            points, points_b = find_laser_write_file(
                 filename,
                 image_name,
                 maps,
@@ -492,7 +498,7 @@ def get_laser_pixels_in_image_pair(
                         points_b.append([a1b[i][0], a1b[i][1]])
                     points_b = np.array(points_b, dtype=np.float32)
             else:
-                points, points_b = write_file(
+                points, points_b = find_laser_write_file(
                     filename,
                     image_name,
                     maps,
@@ -1014,11 +1020,6 @@ class LaserCalibrator:
                     limages_sync.append(limages[i])
                     rimages_sync.append(rimages[sync_pair])
 
-        peaks1 = []
-        peaks2 = []
-        peaks1b = []
-        peaks2b = []
-
         processed_folder = get_processed_folder(limages[0].parent)
 
         limages_rs = []
@@ -1060,6 +1061,12 @@ class LaserCalibrator:
             ]
         )
 
+        # Lists of (rectified) coordinates of laser detections stored in
+        # ndarrays, where each entry contains the detections of one image.
+        peaks1 = []   # Laser detections in images of top laser in left camera
+        peaks2 = []   # Laser detections in images of top laser in right camera
+        peaks1b = []  # Laser detections in images of bottom laser in left camera
+        peaks2b = []  # Laser detections in images of bottom laser in right camera
         count1l = 0
         count2l = 0
         count1lb = 0
