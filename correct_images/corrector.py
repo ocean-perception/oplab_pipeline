@@ -739,6 +739,8 @@ class Corrector:
 
                 # calculate mean, std for image and target_altitude
                 print(image_memmap_per_channel.shape)
+                Console.info(f"Memmap for channel is shape: {image_memmap_per_channel.shape}")
+                Console.info(f"Memmap for channel is of type: {type(image_memmap_per_channel)}")
                 raw_image_mean, raw_image_std = mean_std(image_memmap_per_channel)
                 self.image_raw_mean[i] = raw_image_mean
                 self.image_raw_std[i] = raw_image_std
@@ -1301,7 +1303,7 @@ def load_memmap_from_numpyfilelist(filepath, numpyfilelist):
     )
     Console.info("Loading memmaps from numpy files...")
     for idx in trange(0, len(numpyfilelist), ascii=True, desc=message):
-        memmap_handle[idx, ...] = np.load(numpyfilelist[idx], mmep_mode='r')
+        memmap_handle[idx, ...] = np.load(numpyfilelist[idx])
 
     return memmap_path, memmap_handle
 
@@ -1325,19 +1327,30 @@ def mean_std(data, calculate_std=True):
 
     [n, a, b] = data.shape
 
-    data.reshape((n, a * b))
+    Console.info(f"{type(data)} of shape {data.shape}")
+    data = data.reshape((n, a * b))
+    Console.info(f"{type(data)} of shape {data.shape}")
     Console.info("memory allocated...")
 
     ret_mean = data.mean(axis=0)
     Console.info("mean calculated...")
     if calculate_std:
-        ret_std = data.std(axis=0)
+        ret_std = memory_efficient_std(data)#data.std(axis=0)
         Console.info("std calculated...")
         return ret_mean.reshape((a, b)), ret_std.reshape((a, b))
 
     else:
         return ret_mean.reshape((a, b))
 
+
+def memory_efficient_std(data):
+    ret_std = np.zeros(data.shape[1])
+    BLOCKSIZE = 256
+    message = "Calculating standard deviation per point"
+    for block_start in trange(0, data.shape[1], BLOCKSIZE, ascii=True, desc=message):
+        block_data = data[:,block_start:block_start + BLOCKSIZE]
+        ret_std[block_start:block_start + BLOCKSIZE] = np.std(block_data, axis=0)
+    return ret_std
 
 def image_mean_std_trimmed(data, ratio_trimming=0.2, calculate_std=True):
     """Compute trimmed mean and std for image intensities using parallel computing
