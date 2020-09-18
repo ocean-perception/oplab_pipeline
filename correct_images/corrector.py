@@ -1301,7 +1301,7 @@ def load_memmap_from_numpyfilelist(filepath, numpyfilelist):
     )
     Console.info("Loading memmaps from numpy files...")
     for idx in trange(0, len(numpyfilelist), ascii=True, desc=message):
-        memmap_handle[idx, ...] = np.load(numpyfilelist[idx])
+        memmap_handle[idx, ...] = np.load(numpyfilelist[idx], mmep_mode='r')
 
     return memmap_path, memmap_handle
 
