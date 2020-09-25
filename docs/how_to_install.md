@@ -17,8 +17,8 @@ Requires [Python3.6.2](https://www.python.org/downloads/release/python-362/) or 
 You can also use [Anaconda](https://www.anaconda.com/download/), which comes with the Spyder IDE, that in turn uses the IPython shell.
 
 ### When using Python from standard terminal or the Anaconda prompt ###
-The oplab_pipeline project is compiled into binaries. Navigate to the oplab_pipeline folder and execute  
-`pip install .`
+The oplab_pipeline project is compiled into binaries. To do this, navigate to the oplab_pipeline folder and execute  
+`pip3 install -U .` resp. if you are using Anaconda run `pip install -U .` from the Anaconda Prompt (Anaconda3). The `-U` is strictly only required in certain cases when oplab_pipeline is already installed and changes are made, but it is safer to always pip install with `-U` to avoid the latest updates being skipped when updating the binaries.
 
 `auv_nav`, `auv_cal` and `correct_images` can now be used as a command from any folder on your computer. You can test that by trying to display the help by calling `auv_nav -h`.  
 To run the unit tests, execute  

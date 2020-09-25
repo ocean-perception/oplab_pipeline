@@ -11,8 +11,15 @@ oplab_pipeline is a python toolchain to process AUV dives from raw data into nav
 
 Please review the latest changes in the [CHANGELOG.md](CHANGELOG.md). 
 
+
+## Installation
+`cd` into the oplab-pipeline folder and run `pip3 install .`, resp. if you are using Anaconda run `pip install .` from the Anaconda Prompt (Anaconda3).  
+This will make the commands `auv_nav`, `auv_cal` and `correct_images` available in the terminal. For more details refer to the documentation.
+
+
 ## Documentation
 The documentation is hosted in [read the docs](https://oplab-pipeline.readthedocs.io).
+
 
 ## Citation
 If you use this software, please cite the following article:
