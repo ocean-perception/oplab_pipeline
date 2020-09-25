@@ -1307,7 +1307,6 @@ def load_memmap_from_numpyfilelist(filepath, numpyfilelist):
 
     return memmap_path, memmap_handle
 
-
 # calculate the mean and std of an image
 def mean_std(data, calculate_std=True):
     """Compute mean and std for image intensities and distance values
