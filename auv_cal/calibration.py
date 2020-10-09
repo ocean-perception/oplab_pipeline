@@ -136,15 +136,15 @@ def calibrate_stereo(
             Console.info("  Camera:", right_name, "is", model.right.size)
             right_calib = right_calib.parent / ('resized_' + right_calib.name)
             if not right_calib.with_suffix(".json").exists():
-                calibrate_mono(right_name, 
-                           right_filepaths,
-                           right_extension, 
-                           config, 
-                           right_calib, 
-                           fo, 
-                           foa,
-                           target_width=model.left.image_width,
-                           target_height=model.left.image_height)
+                calibrate_mono(right_name,
+                               right_filepaths,
+                               right_extension,
+                               config,
+                               right_calib,
+                               fo,
+                               foa,
+                               target_width=model.left.image_width,
+                               target_height=model.left.image_height)
             model = StereoCamera(left=left_calib, right=right_calib)
 
             right_calib = right_calib.with_suffix(".json")
@@ -495,10 +495,15 @@ class Calibrator:
             )
         c0 = self.calibration_config["cameras"][0]
         c1 = self.calibration_config["cameras"][1]
+        self.laser_imp(c1, c0)
         if len(self.calibration_config["cameras"]) > 2:
             c1 = self.calibration_config["cameras"][2]
-        calibration_file = self.output_path / "laser_calibration_top.yaml"
-        calibration_file_b = self.output_path / "laser_calibration_bottom.yaml"
+            self.laser_imp(c0, c1)
+
+    def laser_imp(self, c0, c1):
+        main_camera_name = c1["name"]
+        calibration_file = self.output_path / ("laser_calibration_top_" + main_camera_name + ".yaml")
+        calibration_file_b = self.output_path / ("laser_calibration_bottom_" + main_camera_name + ".yaml")
         Console.info("Looking for a calibration file at " + str(calibration_file))
         if calibration_file.exists() and not self.fo:
             Console.quit(
