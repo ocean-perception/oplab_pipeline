@@ -315,7 +315,7 @@ class Calibrator(object):
 
         # Set to true after we perform calibration
         self.calibrated = False
-        self.debug = False
+        self.debug = True
         self.calib_flags = flags
         self.checkerboard_flags = checkerboard_flags
         self.pattern = pattern
@@ -627,19 +627,20 @@ class MonoCalibrator(Calibrator):
             if _is_sharp(gray, corners, board):
                 print("Chessboard detected! in " + str(i.name))
                 if self.debug:
+                    gray_copy = gray.copy()
                     img = cv2.drawChessboardCorners(
-                        gray, (board.n_cols, board.n_rows), corners, ok
+                        gray_copy, (board.n_cols, board.n_rows), corners, ok
                     )
-                    cv2.imshow("Monocular calibration", img)
-                    cv2.waitKey(3)
+                    # cv2.imshow("Monocular calibration", img)
+                    # cv2.waitKey(3)
                     name = Path(i).stem
                     filename = Path("/tmp/" + self.name + "/" + name + "_corners.png")
                     if self.resize:
                         filename = Path("/tmp/" + self.name + "/resized_" + name + "_corners.png")
                     if not filename.parents[0].exists():
                         filename.parents[0].mkdir(parents=True)
-                    # print('Writing debug image to ' + str(filename))
-                    # cv2.imwrite(str(filename), img)
+                    print('Writing debug image to ' + str(filename))
+                    cv2.imwrite(str(filename), img)
 
                 return [(params, gray), (corners, board), i]
 
@@ -708,8 +709,10 @@ class MonoCalibrator(Calibrator):
         :param good: Good corner positions and boards
         :type good: [(corners, ChessboardInfo)]
         """
-        print("Calibrating monocular...")
+        Console.info("Calibrating monocular...")
         boards = [b for (_, b) in self.good_corners]
+
+        Console.info('Got', len(boards), 'detected calibration boards')
 
         ipts = [points for (points, _) in self.good_corners]
         opts = self.mk_object_points(boards)
@@ -725,7 +728,7 @@ class MonoCalibrator(Calibrator):
             opts, ipts, self.size, self.intrinsics, self.distortion
         )[0]
 
-        print("Calibrate camera error: " + str(self.avg_reprojection_error))
+        Console.info("Calibrate camera error: " + str(self.avg_reprojection_error))
 
         # R is identity matrix for monocular calibration
         self.R = numpy.eye(3, dtype=numpy.float64)
@@ -737,6 +740,7 @@ class MonoCalibrator(Calibrator):
         rmse = 0
         for (params, gray) in self.db:
             error = self.linear_error_from_image(gray)
+            print('Error is', error)
             if error is None:
                 continue
             rmse += error
@@ -744,7 +748,10 @@ class MonoCalibrator(Calibrator):
                 linear_error.append(error)
             else:
                 linear_error.append(1e3)
-        rmse = math.sqrt((rmse ** 2) / len(linear_error))
+        if len(linear_error) > 0:
+            rmse = math.sqrt((rmse ** 2) / len(linear_error))
+        else:
+            Console.warn('Linear error vector empty')
         # print(linear_error)
         # print('RSME: ' + str(rmse))
         # print(self.intrinsics)
@@ -752,14 +759,12 @@ class MonoCalibrator(Calibrator):
         if iteration < 5 and self.avg_reprojection_error > 0.5:
             lin_error_mean = np.mean(np.array(linear_error))
             lin_error_std = np.std(np.array(linear_error))
-            # print('Mean: ' + str(lin_error_mean))
-            # print('Std: ' + str(lin_error_std))
             self.good_corners = [
                 c
                 for c, e in zip(self.good_corners, linear_error)
                 if e < lin_error_mean + 2 * lin_error_std
             ]
-            print(
+            Console.info(
                 "Using "
                 + str(len(self.good_corners))
                 + " inlier files after filtering!"
@@ -782,7 +787,7 @@ class MonoCalibrator(Calibrator):
                 )
                 if not filename.parents[0].exists():
                     filename.parents[0].mkdir(parents=True)
-                print("Writing debug remap image to " + str(filename))
+                Console.info("Writing debug remap image to " + str(filename))
                 cv2.imwrite(str(filename), img)
 
     def set_alpha(self, a):
@@ -913,8 +918,8 @@ def find_common_filenames(list1, list2):
         for i, lname in enumerate(lf):
             for j, rname in enumerate(rf):
                 if lname == rname:
-                    # print(lname, rname)
-                    # print(list1[i]['file'], list2[j]['file'])
+                    # Console.info(lname, rname)
+                    # Console.info(list1[i]['file'], list2[j]['file'])
                     result.append((list1[i], list2[j]))
     elif camera_format == "biocam":
         stamp_pc1 = []
@@ -939,7 +944,7 @@ def find_common_filenames(list1, list2):
 
             (sync_difference, sync_pair) = min((v, k) for k, v in enumerate(values))
             if sync_difference < tolerance:
-                # print(lf[i] + ' syncs with ' + rf[sync_pair] + ' with dif ' + str(sync_difference))
+                # Console.info(lf[i] + ' syncs with ' + rf[sync_pair] + ' with dif ' + str(sync_difference))
                 result.append((list1[i], list2[sync_pair]))
     elif camera_format == "acfr":
         stamp_cam1 = []
@@ -963,7 +968,7 @@ def find_common_filenames(list1, list2):
                 # print(lf[i] + ' syncs with ' + rf[sync_pair] + ' with dif ' + str(sync_difference))
                 result.append((list1[i], list2[sync_pair]))
     else:
-        print("\n\n\n[ERROR]: Stereo format not known, calibration will not work\n\n\n")
+        Console.error("Stereo format not known, calibration will not work")
     return result
 
 
@@ -976,7 +981,7 @@ class StereoCalibrator(Calibrator):
         rimages = [cv2.imread("right%d.png") for i in range(8)]
         sc = StereoCalibrator()
         sc.cal(limages, rimages)
-        print sc.as_message()
+        Console.info sc.as_message()
     """
 
     is_mono = False
@@ -1008,7 +1013,7 @@ class StereoCalibrator(Calibrator):
 
     def cal_from_json(self, left_json, right_json):
         common = find_common_filenames(left_json, right_json)
-        print("Found " + str(len(common)) + " common files!")
+        Console.info("Found " + str(len(common)) + " common files!")
         self.good_corners = []
         for lf, rf in common:
             lboard = ChessboardInfo()
@@ -1020,7 +1025,7 @@ class StereoCalibrator(Calibrator):
             if self.is_good_sample(lparams, lcorners, threshold=0.15):
                 lgray = cv2.imread(lf["file"])
                 rgray = cv2.imread(rf["file"])
-                print(
+                Console.info(
                     (
                         "*** Added sample %d, p_x = %.3f, p_y = %.3f, p_size = %.3f, skew = %.3f"
                         % tuple([len(self.db)] + lparams)
@@ -1032,10 +1037,10 @@ class StereoCalibrator(Calibrator):
                 # cv2.namedWindow("Stereo calibration", 0)
                 # cv2.imshow("Stereo calibration", vis)
                 # cv2.waitKey(3)
-                # print(lf['file'], rf['file'])
+                # Console.info(lf['file'], rf['file'])
                 self.db.append((lparams, lgray, rgray))
                 self.good_corners.append((lcorners, rcorners, lboard))
-        print("Using " + str(len(self.good_corners)) + " inlier files!")
+        Console.info("Using " + str(len(self.good_corners)) + " inlier files!")
         self.cal_fromcorners()
 
     def cal(self, limages_list, rimages_list):
@@ -1073,14 +1078,14 @@ class StereoCalibrator(Calibrator):
                 ):
                     self.db.append((params, lgray, rgray))
                     self.good_corners.append((lcorners, rcorners, lboard))
-                    # print(("*** Added sample %d, p_x = %.3f, p_y = %.3f, p_size = %.3f, skew = %.3f" %
+                    # Console.info(("*** Added sample %d, p_x = %.3f, p_y = %.3f, p_size = %.3f, skew = %.3f" %
                     #        tuple([len(self.db)] + params)))
 
                     self.inliers.append(
                         (lgray, rgray, lcorners, lboard, rcorners, rboard)
                     )
 
-                    print("Writing debug images to /tmp/")
+                    Console.info("Writing debug images to /tmp/")
                     if self.debug:
                         # limg = cv2.drawChessboardCorners(lgray, (lboard.n_cols, lboard.n_rows), lcorners, lok)
                         # rimg = cv2.drawChessboardCorners(rgray, (rboard.n_cols, rboard.n_rows), rcorners, rok)
@@ -1108,7 +1113,7 @@ class StereoCalibrator(Calibrator):
                         cv2.imwrite(str(lfilename), limg)
                         cv2.imwrite(str(rfilename), rimg)
                 elif self.debug:
-                    print(
+                    Console.info(
                         "Image "
                         + str(i)
                         + " or "
@@ -1131,7 +1136,7 @@ class StereoCalibrator(Calibrator):
         self.T = numpy.zeros((3, 1), dtype=numpy.float64)
         self.R = numpy.eye(3, dtype=numpy.float64)
 
-        print(
+        Console.info(
             "Calibrating stereo with " + str(len(self.good_corners)) + " image pairs..."
         )
         if len(self.good_corners) < 8:
@@ -1159,7 +1164,7 @@ class StereoCalibrator(Calibrator):
             self.l.size,
             flags=flags,
         )
-        print("Calibrated with RMS = {}".format(str(self.avg_reprojection_error)))
+        Console.info("Calibrated with RMS = {}".format(str(self.avg_reprojection_error)))
 
         # print(self.l.intrinsics)
         # print(self.l.distortion)
@@ -1186,7 +1191,7 @@ class StereoCalibrator(Calibrator):
                 for c, e in zip(self.good_corners, epipolar_error)
                 if e < epi_error_mean + 2 * epi_error_std
             ]
-            print(
+            Console.info(
                 "Using "
                 + str(len(self.good_corners))
                 + " inlier files after filtering!"
@@ -1195,7 +1200,7 @@ class StereoCalibrator(Calibrator):
 
         if self.debug:
             errors = []
-            print("Writing debug images to /tmp/")
+            Console.info("Writing debug images to /tmp/")
             for i, (params, limg, rimg) in enumerate(self.db):
                 error = self.epipolar_error_from_images(limg, rimg)
 
@@ -1236,7 +1241,7 @@ class StereoCalibrator(Calibrator):
                 cv2.imwrite(str(filename), final_image)
                 if error is not None:
                     errors.append(error)
-            # print(errors)
+            # Console.info(errors)
 
     def set_alpha(self, a):
         """
@@ -1245,7 +1250,7 @@ class StereoCalibrator(Calibrator):
         in calibrated image are valid) to 1 (zoomed out, all pixels in
         original image are in calibrated image).
         """
-        print("Rectifying stereo...")
+        Console.info("Rectifying stereo...")
         self.l.R, self.r.R, self.l.P, self.r.P = cv2.stereoRectify(
             self.l.intrinsics,
             self.l.distortion,
@@ -1276,12 +1281,12 @@ class StereoCalibrator(Calibrator):
         )
 
     def report(self):
-        print("\nLeft:")
+        Console.info("\nLeft:")
         self.lrreport(self.l.distortion, self.l.intrinsics, self.l.R, self.l.P)
-        print("\nRight:")
+        Console.info("\nRight:")
         self.lrreport(self.r.distortion, self.r.intrinsics, self.r.R, self.r.P)
-        print("self.T ", numpy.ravel(self.T).tolist())
-        print("self.R ", numpy.ravel(self.R).tolist())
+        Console.info("self.T ", numpy.ravel(self.T).tolist())
+        Console.info("self.R ", numpy.ravel(self.R).tolist())
 
     def yaml(self):
         d1 = self.l.distortion
@@ -1293,7 +1298,7 @@ class StereoCalibrator(Calibrator):
         k2 = self.r.intrinsics
         r2 = self.r.R
         p2 = self.r.P
-        print(d1.shape)
+        Console.info(d1.shape)
         num_images = self.num_images
         error = self.avg_reprojection_error
 
@@ -1405,13 +1410,13 @@ class StereoCalibrator(Calibrator):
         lok, lcorners, lboard = self.get_corners(limage)
         rok, rcorners, rboard = self.get_corners(rimage)
 
-        # vis = np.concatenate((limage, rimage), axis=1)
-        # cv2.namedWindow("Stereo error", 0)
-        # cv2.imshow("Stereo error", vis)
-        # cv2.waitKey(3)
+        vis = np.concatenate((limage, rimage), axis=1)
+        cv2.namedWindow("Stereo error", 0)
+        cv2.imshow("Stereo error", vis)
+        cv2.waitKey(0)
 
         if lcorners is None or rcorners is None:
-            print("ERROR cannot find the calibration pattern!!")
+            Console.error("Cannot find the calibration pattern!!")
             return None
 
         lundistorted = self.l.undistort_points(lcorners)
