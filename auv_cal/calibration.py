@@ -129,7 +129,7 @@ def calibrate_stereo(
             right_json = json.load(f)
 
         model = StereoCamera(left=left_calib, right=right_calib)
-
+        resized = False
         if model.different_aspect_ratio or model.different_resolution:
             Console.warn("Stereo calibration: Calibrating two cameras with different resolution.")
             Console.info("  Camera:", left_name, "is", model.left.size)
@@ -146,7 +146,7 @@ def calibrate_stereo(
                                target_width=model.left.image_width,
                                target_height=model.left.image_height)
             model = StereoCamera(left=left_calib, right=right_calib)
-
+            resized = True
             right_calib = right_calib.with_suffix(".json")
             with right_calib.open("r") as f:
                 right_json = json.load(f)
@@ -156,6 +156,8 @@ def calibrate_stereo(
             boards=[ChessboardInfo(config["rows"], config["cols"], config["size"])],
             pattern=check_pattern(config),
             invert=config["invert"],
+            resized=resized,
+            name=left_name + '_' + right_name,
         )
         # sc.cal(left_image_list, right_image_list)
         sc.cal_from_json(
