@@ -13,25 +13,19 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 from tqdm import trange
-from tqdm import tqdm
 import cv2
 import imageio
-import os
 from oplab import get_raw_folder
 from oplab import get_processed_folder
 from oplab import get_config_folder
 from oplab import Console
-from oplab import CameraSystem
 from correct_images.parser import CorrectConfig
 from oplab.camera_models import MonoCamera
-import yaml
 import joblib
-import sys
 import uuid
 import datetime
 from scipy import optimize
 from datetime import datetime
-from PIL import Image
 from skimage.transform import resize
 # -----------------------------------------
 
@@ -193,6 +187,8 @@ class Corrector:
 
         # create folder name for correction parameters based on correction method
 
+        sub_directory_name = 'unknown_sub_directory_name'
+        output_folder_name = 'unknown_output_folder_name'
         if self.correction_method == "colour_correction":
             if self.distance_metric == "none":
                 sub_directory_name = "greyworld_corrected"
@@ -501,7 +497,7 @@ class Corrector:
 
         # write the intermediate image numpy files to disk
 
-    def generate_bayer_numpyfiles(self, bayer_numpy_filelist):
+    def generate_bayer_numpyfiles(self, bayer_numpy_filelist: list):
 
         """Generates image numpy files
         
@@ -620,6 +616,8 @@ class Corrector:
 
                 bin_images_sample_list = []
                 bin_distances_sample_list = []
+                bin_images_sample = None
+                bin_distances_sample = None
 
                 for idx_bin in trange(1, hist_bounds.size):
                     tmp_idxs = np.where(idxs == idx_bin)[0]
@@ -892,8 +890,6 @@ class Corrector:
 
         Parameters
         -----------
-        idx : int
-            index to the list of image numpy files
         test_phase : bool
             argument needed to indicate function is being called for unit testing
         """
@@ -943,7 +939,7 @@ class Corrector:
 
         # load numpy image and distance files
         image = np.load(self.bayer_numpy_filelist[idx])
-
+        image_rgb = None
         
         # apply corrections
         if self.correction_method == "colour_correction":
@@ -1275,7 +1271,7 @@ def load_xviii_bayer_from_binary(binary_data, image_height, image_width):
 
 
 # store into memmaps the distance and image numpy files
-def load_memmap_from_numpyfilelist(filepath, numpyfilelist):
+def load_memmap_from_numpyfilelist(filepath, numpyfilelist : list):
     """Generate memmaps from numpy arrays
     
     Parameters
@@ -1434,6 +1430,8 @@ def calc_mean_and_std_trimmed(data, rate_trimming, calc_std=True):
     numpy.ndarray
     """
 
+    mean = None
+    std = None
     if rate_trimming <= 0:
         mean = np.mean(data)
         if calc_std:
@@ -1452,7 +1450,7 @@ def calc_mean_and_std_trimmed(data, rate_trimming, calc_std=True):
     return np.array([mean, std])
 
 
-def exp_curve(x, a, b, c):
+def exp_curve(x: np.ndarray, a: float, b: float, c: float) -> float:
     """Compute exponent value with respect to a distance value
 
     Parameters
@@ -1474,7 +1472,7 @@ def exp_curve(x, a, b, c):
     return a * np.exp(b * x) + c
 
 
-def residual_exp_curve(params, x, y):
+def residual_exp_curve(params: np.ndarray, x: np.ndarray, y: np.ndarray):
     """Compute residuals with respect to init params
 
     Parameters
@@ -1512,6 +1510,7 @@ def curve_fitting(distancelist, intensitylist):
     numpy.ndarray
         parameters
     """
+    ret_params = None
 
     loss = "soft_l1"
     # loss='linear'
@@ -1541,7 +1540,7 @@ def curve_fitting(distancelist, intensitylist):
         a = 1.01
         b = -0.01
 
-    init_params = np.array([a, b, c])
+    init_params = np.array([a, b, c], dtype=float)
     # tmp_params=None
     try:
         tmp_params = optimize.least_squares(
