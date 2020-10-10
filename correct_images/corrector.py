@@ -374,7 +374,7 @@ class Corrector:
             Console.info("Null distance matrix created")
 
         elif self.distance_metric == "depth_map":
-            path_depth = self.path_processed / self.distance_path
+            path_depth = self.path_processed / 'depth_map'# self.distance_path
             if not path_depth.exists():
                 Console.quit("Depth maps not found...")
             else:
@@ -409,6 +409,7 @@ class Corrector:
                     np.save(distance_matrix_numpy_file_path, distance_matrix)
                     min_depth = distance_matrix.min()
                     max_depth = distance_matrix.max()
+                    
                     if min_depth > self.altitude_max or max_depth < self.altitude_min:
                         continue
                     else:
@@ -1530,9 +1531,12 @@ def curve_fitting(distancelist, intensitylist):
     idx_0 = int(len(intensities) * 0.3)
     idx_1 = int(len(intensities) * 0.7)
 
-    b = (np.log((intensities[idx_0] - c) / (intensities[idx_1] - c))) / (
-        altitudes[idx_0] - altitudes[idx_1]
-    )
+    # Avoid zero divisions
+    b = 0
+    if intensities[idx_1] != 0:
+        b = (np.log((intensities[idx_0] - c) / (intensities[idx_1] - c))) / (
+            altitudes[idx_0] - altitudes[idx_1]
+        )
     a = (intensities[idx_1] - c) / np.exp(b * altitudes[idx_1])
     if a < 1 or b > 0 or np.isnan(a) or np.isnan(b):
         a = 1.01

@@ -216,6 +216,7 @@ def draw_laser(
     bottom_left,
     bottom_right,
     remap,
+    camera_name,
 ):
     """Draw identified laser positions on top of laser line images
 
@@ -228,8 +229,8 @@ def draw_laser(
     rfilename = right_image_name.name
     lprocessed_folder = get_processed_folder(left_image_name.parent)
     rprocessed_folder = get_processed_folder(right_image_name.parent)
-    lsaving_folder = lprocessed_folder / "laser_detection"
-    rsaving_folder = rprocessed_folder / "laser_detection"
+    lsaving_folder = lprocessed_folder / ("laser_detection_" + camera_name)
+    rsaving_folder = rprocessed_folder / ("laser_detection_" + camera_name)
     if not lsaving_folder.exists():
         lsaving_folder.mkdir(parents=True, exist_ok=True)
     if not rsaving_folder.exists():
@@ -303,6 +304,7 @@ def get_laser_pixels_in_image_pair(
     two_lasers,
     remap,
     overwrite,
+    camera_name,
 ):
     """Get pixel positions of laser line(s) in images
 
@@ -333,6 +335,7 @@ def get_laser_pixels_in_image_pair(
         end_row_b,
         two_lasers,
         remap,
+        camera_name,
     ):
         """Find laser line(s) in image, write result to file and return values
 
@@ -401,6 +404,7 @@ def get_laser_pixels_in_image_pair(
         two_lasers,
         remap,
         overwrite,
+        camera_name,
     ):
         """Get pixel positions of laser line(s) in image
 
@@ -424,7 +428,7 @@ def get_laser_pixels_in_image_pair(
         # print(str(image_name))
         if not output_path.exists():
             output_path.mkdir(parents=True, exist_ok=True)
-        fstem = str(image_name.stem) + ".txt"
+        fstem = str(image_name.stem) + "_"  + camera_name + ".txt"
         filename = output_path / fstem
         if overwrite or not filename.exists():
             points, points_b = write_file(
@@ -440,6 +444,7 @@ def get_laser_pixels_in_image_pair(
                 end_row_b,
                 two_lasers,
                 remap,
+                camera_name,
             )
         else:
             # print('Opening ' + filename.name)
@@ -473,6 +478,7 @@ def get_laser_pixels_in_image_pair(
                     end_row_b,
                     two_lasers,
                     remap,
+                    camera_name,
                 )
         return points, points_b
 
@@ -490,6 +496,7 @@ def get_laser_pixels_in_image_pair(
         two_lasers,
         remap,
         overwrite,
+        camera_name,
     )
     p2, p2b = get_laser_pixels(
         right_image_name,
@@ -504,6 +511,7 @@ def get_laser_pixels_in_image_pair(
         two_lasers,
         remap,
         overwrite,
+        camera_name,
     )
     draw_laser(
         left_image_name,
@@ -515,6 +523,7 @@ def get_laser_pixels_in_image_pair(
         p1b,
         p2b,
         remap,
+        camera_name,
     )
     return p1, p2, p1b, p2b
 
@@ -552,6 +561,7 @@ class LaserCalibrator:
         self.data = []
 
         self.sc = stereo_camera_model
+        self.camera_name = self.sc.left.name
         self.config = config
         self.overwrite = overwrite
 
@@ -959,6 +969,7 @@ class LaserCalibrator:
                     self.two_lasers,
                     self.remap,
                     self.overwrite,
+                    self.camera_name,
                 )
                 for i, j in zip(limages_rs, rimages_rs)
             ]
@@ -1037,9 +1048,9 @@ class LaserCalibrator:
                 [joblib.delayed(opencv_to_ned)(i) for i in point_cloud_b]
             )
 
-        save_cloud(processed_folder / "../points.ply", point_cloud_ned)
+        save_cloud(processed_folder / ("../points_" + self.camera_name + ".ply"), point_cloud_ned)
         if self.two_lasers:
-            save_cloud(processed_folder / "../points_b.ply", point_cloud_ned_b)
+            save_cloud(processed_folder / ("../points_b_" + self.camera_name + ".ply"), point_cloud_ned_b)
 
         rss_before = len(point_cloud_ned)
         #point_cloud_filt = self.filter_cloud(point_cloud_ned)
@@ -1050,7 +1061,7 @@ class LaserCalibrator:
         )
         rs_size = min(rss_after, self.max_point_cloud_size)
         point_cloud_rs = random.sample(point_cloud_filt, rs_size)
-        save_cloud(processed_folder / "../points_rs.ply", point_cloud_rs)
+        save_cloud(processed_folder / ("../points_rs_" + self.camera_name + ".ply"), point_cloud_rs)
         point_cloud_rs = np.array(point_cloud_rs)
         point_cloud_rs = point_cloud_rs.reshape(-1, 3)
         point_cloud_filt = np.array(point_cloud_filt)
@@ -1069,7 +1080,7 @@ class LaserCalibrator:
             )
             rs_size = min(rss_after, self.max_point_cloud_size)
             point_cloud_b_rs = random.sample(point_cloud_b_filt, rs_size)
-            save_cloud(processed_folder / "../points_b_rs.ply", point_cloud_b_rs)
+            save_cloud(processed_folder / ("../points_b_rs_" + self.camera_name + ".ply"), point_cloud_b_rs)
             point_cloud_b_rs = np.array(point_cloud_b_rs)
             point_cloud_b_rs = point_cloud_b_rs.reshape(-1, 3)
             point_cloud_b_filt = np.array(point_cloud_b_filt)
