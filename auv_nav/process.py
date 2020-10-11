@@ -467,18 +467,6 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
                 chemical.from_json(parsed_json_data[i])
                 chemical_list.append(chemical)
 
-    if particle_filter_activate:
-        camera1_pf_list = copy.deepcopy(camera1_list)
-        camera2_pf_list = copy.deepcopy(camera2_list)
-        camera3_pf_list = copy.deepcopy(camera3_list)
-        chemical_pf_list = copy.deepcopy(chemical_list)
-
-    if ekf_activate:
-        camera1_ekf_list = copy.deepcopy(camera1_list)
-        camera2_ekf_list = copy.deepcopy(camera2_list)
-        camera3_ekf_list = copy.deepcopy(camera3_list)
-        chemical_ekf_list = copy.deepcopy(chemical_list)
-
     # make path for processed outputs
     json_filename = (
         "json_renav_"
@@ -1122,6 +1110,19 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
                 latlon_reference,
                 dead_reckoning_centre_list,
             )
+
+    # Copy lists from already interpolated data
+    if particle_filter_activate:
+        camera1_pf_list = copy.deepcopy(camera1_list)
+        camera2_pf_list = copy.deepcopy(camera2_list)
+        camera3_pf_list = copy.deepcopy(camera3_list)
+        chemical_pf_list = copy.deepcopy(chemical_list)
+
+    if ekf_activate:
+        camera1_ekf_list = copy.deepcopy(camera1_list)
+        camera2_ekf_list = copy.deepcopy(camera2_list)
+        camera3_ekf_list = copy.deepcopy(camera3_list)
+        chemical_ekf_list = copy.deepcopy(chemical_list)
 
     if len(pf_fusion_centre_list) > 1:
         if len(camera1_pf_list) > 1:
