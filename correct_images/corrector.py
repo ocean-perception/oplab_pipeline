@@ -425,11 +425,15 @@ class Corrector:
         elif self.distance_metric == "altitude":
             # check if user provides a filelist
             if self._camera_image_file_list == "none":
-                distance_csv_path = self.altitude_path
+                distance_csv_path = Path(self.altitude_path)
             else:
                 distance_csv_path = (
                     Path(self.path_config) / self.trimmed_csv_path
                 )
+
+            # Check if file exists
+            if not distance_csv_path.exists():
+                Console.quit("The navigation CSV file is not present. Run auv_nav first.")
 
             # read dataframe for corresponding distance csv path
             dataframe = pd.read_csv(distance_csv_path)
