@@ -704,6 +704,7 @@ class ExtendedKalmanFilter(object):
 
     def predictAndTransform(self, camera_entry, origin_offsets, sensor_offsets, latlon_reference):
         b = self.predict(camera_entry.epoch_timestamp)
+        b.altitude = camera_entry.altitude
         camera_entry.fromSyncedBodyVelocity(b, origin_offsets, sensor_offsets, latlon_reference)
         return camera_entry
 
