@@ -7,6 +7,7 @@ See LICENSE.md file in the project root for full license information.
 """
 
 import yaml
+import numpy as np
 from oplab import Console
 
 
@@ -23,7 +24,7 @@ class ColourCorrection:
         maximum permissible height for an image for use in calculating attenuation coefficients
     altitude_min : int
         minimum permissible height for an image for use in calculating attenuation coefficients
-    smooting : string
+    smoothing : string
         method of sampling intensity values
     window_size : int
         control how noisy the parameters can be
@@ -48,7 +49,7 @@ class ColourCorrection:
         self.outlier_reject = node["curve_fitting_outlier_rejection"]
 
 
-class Config:
+class CameraConfig:
     """ class Config creates an object for camera specific configuration parameters from correct_images.yaml file
 
     Attributes
@@ -67,34 +68,34 @@ class Config:
         parameters for manual balance of images
     """
 
-    def __init__(
-        self,
-        camera_name,
-        imagefilelist_parse,
-        imagefilelist_process,
-        brightness,
-        contrast,
-        subtractors_rgb,
-        color_gain_matrix_rgb,
-    ):
-
+    def __init__(self, node):
         """ __init__ is the constructor function
 
         Parameters
         -----------
-        camera_name : string
-            name of camera
-        imagefilelist : list
-            list of paths to images provided by user
-        brightness : int
-            target mean for the image intensities
-        contrast : int
-            target std for the image intensities
-        subtractors_rgb : matrix
-            parameters for manual balance of images
-        color_correct_matrix_rgb : matrix
-            parameters for manual balance of images
+        node : cdict
+            dictionary object for an entry in correct_images.yaml file
         """
+
+        camera_name = node["camera_name"]
+
+        imagefilelist_parse = 'none'
+        imagefilelist_process = 'none'
+        if 'image_file_list' in node:
+            imagefilelist_parse = node["image_file_list"].get("parse", 'none')
+            imagefilelist_process = node["image_file_list"].get("process", 'none')
+
+        brightness = 30.
+        contrast = 3.
+        if 'colour_correction' in node:
+            brightness = node["colour_correction"].get("brightness", 30.)
+            contrast = node["colour_correction"].get("contrast", 3.)
+
+        subtractors_rgb = np.array([0, 0, 0])
+        color_gain_matrix_rgb = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+        if 'manual_balance' in node:
+            subtractors_rgb = node["manual_balance"].get("subtractors_rgb", subtractors_rgb)
+            color_gain_matrix_rgb = node["manual_balance"].get("colour_gain_matrix_rgb", color_gain_matrix_rgb)
 
         self.camera_name = camera_name
         self.imagefilelist_parse = imagefilelist_parse
@@ -128,17 +129,7 @@ class CameraConfigs:
         self.camera_configs = []
         self.num_cameras = len(node)
         for i in range(self.num_cameras):
-            self.camera_configs.append(
-                Config(
-                    node[i]["camera_name"],
-                    node[i]["image_file_list"]["parse"],
-                    node[i]["image_file_list"]["process"],
-                    node[i]["colour_correction"]["brightness"],
-                    node[i]["colour_correction"]["contrast"],
-                    node[i]["manual_balance"]["subtractors_rgb"],
-                    node[i]["manual_balance"]["colour_gain_matrix_rgb"],
-                )
-            )
+            self.camera_configs.append(CameraConfig(node[i]))
 
 
 class OutputSettings:
@@ -193,8 +184,6 @@ class RescaleImage:
 
 
 class CameraRescale:
-
-
     def __init__(self, node):
         """ __init__ is the constructor function
 
@@ -219,9 +208,7 @@ class CameraRescale:
             )
 
 
-
 class CorrectConfig:
-
     """ class CorrectConfig creates an object from the correct_images.yaml file
     
     Attributes
@@ -238,7 +225,6 @@ class CorrectConfig:
         object contains parameters for output settings
 
     """
-
     def __init__(self, filename=None):
 
         """ __init__ is the constructor function
@@ -256,13 +242,23 @@ class CorrectConfig:
 
         if "version" not in data:
             Console.error(
-                "It seems you are using an old correct_images.yaml. You will have to delete it and run this software again."
+                "It seems you are using an old correct_images.yaml.",
+                "You will have to delete it and run this software again."
             )
             Console.error("Delete the file with:")
             Console.error("    rm ", filename)
             Console.quit("Wrong correct_images.yaml format")
         self.version = data["version"]
+
+        valid_methods = ['manual_balance',
+                         'colour_correction']
         self.method = data["method"]
+
+        if self.method not in valid_methods:
+            Console.quit("The method requested (", self.method,
+                         ") is not supported or implemented. The valid methods",
+                         "are:", ' '.join(m for m in valid_methods))
+
         node = data["colour_correction"]
         self.color_correction = ColourCorrection(node)
         node = data["cameras"]

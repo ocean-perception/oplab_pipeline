@@ -19,3 +19,6 @@ scipy>=1.2.1
 sphinx_rtd_theme>=0.4.3
 tqdm>=4.32.2
 scikit-image>=0.17.2
+
+setuptools~=42.0.2
+numba~=0.51.2
