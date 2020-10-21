@@ -118,6 +118,22 @@ def get_processed_folders(dirs):
         return get_processed_folder(dirs)
 
 
+def remove_directory(folder: Path):
+    """Remove a specific directory recursively
+
+    Parameters
+    -----------
+    folder : Path
+        folder to be removed
+    """
+    for p in folder.iterdir():
+        if p.is_dir():
+            remove_directory(p)
+        else:
+            p.unlink()
+    folder.rmdir()
+
+
 def _copy(self, target):
     if not target.parent.exists():
         target.parent.mkdir(exist_ok=True, parents=True)
