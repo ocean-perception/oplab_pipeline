@@ -14,7 +14,6 @@ import getpass
 import datetime
 import pkg_resources
 import timeit
-import threading, queue
 
 
 class BColors:
@@ -39,12 +38,13 @@ class CodeTimer:
         self.took = (timeit.default_timer() - self.start) * 1000.0
         print(BColors.OKBLUE + self.name + ' took ▸ ' + BColors.ENDC + str(self.took) + ' ms')
 
+
 # Singleton class to wrap the console output
 class Console:
     """Console utility functions"""
 
     @staticmethod
-    def warn(*args, **kwargs):
+    def warn(*args, **kwargs) -> None:
         """Print a warning message"""
         print(
             BColors.WARNING + "WARN ▸ " + BColors.ENDC + " ".join(map(str, args)),
@@ -52,7 +52,7 @@ class Console:
         )
 
     @staticmethod
-    def error(*args, **kwargs):
+    def error(*args, **kwargs) -> None:
         """Print and error message"""
         print(
             BColors.FAIL + "ERROR ▸ " + BColors.ENDC + " ".join(map(str, args)),
@@ -60,7 +60,7 @@ class Console:
         )
 
     @staticmethod
-    def info(*args, **kwargs):
+    def info(*args, **kwargs) -> None:
         """Print and information message"""
         print(
             BColors.OKBLUE + "INFO ▸ " + BColors.ENDC + " ".join(map(str, args)),
@@ -68,7 +68,7 @@ class Console:
         )
 
     @staticmethod
-    def quit(*args, **kwargs):
+    def quit(*args, **kwargs) -> None:
         """Print a FAIL message and stop execution"""
         print("\n")
         print(BColors.FAIL + "**** " + BColors.ENDC + "Exiting.")
@@ -83,7 +83,7 @@ class Console:
         quit()
 
     @staticmethod
-    def banner():
+    def banner() -> None:
         """Displays Ocean Perception banner and copyright"""
         print(" ")
         print(BColors.OKBLUE + "     ● ● " + BColors.ENDC + " Ocean Perception")
@@ -103,7 +103,7 @@ class Console:
         print(" ")
 
     @staticmethod
-    def get_username():
+    def get_username() -> str:
         """Returns the computer username
 
         Returns:
