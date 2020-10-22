@@ -37,6 +37,7 @@ class Index:
 class MeasurementReport:
     valid = 0
     dropped = 0
+
     def add(self, valid):
         if valid:
             self.valid += 1
@@ -53,7 +54,7 @@ class EkfState(object):
         # A 12 dimensional state vector
         self.state = state
 
-        # A 12x12 covariance matrix
+        # A 12 x 12 covariance matrix
         self.covariance = covariance
 
     def set(self, state, covariance):
@@ -306,6 +307,7 @@ class EkfImpl(object):
         self.state[Index.YAW] = self.clamp_rotation(self.state[Index.YAW])
 
     def clamp_rotation(self, rotation):
+        rotation = (rotation % 2*math.pi)
         while rotation > math.pi:
             rotation -= 2 * math.pi
         while rotation < -math.pi:
@@ -681,8 +683,11 @@ class ExtendedKalmanFilter(object):
         states_stamps = np.array([s.time for s in self.ekf.smoothed_states_vector])
         upper_idx = np.searchsorted(states_stamps, new_stamp)
         lower_idx = upper_idx - 1
-        
-        # Find closest state in time 
+
+        # Find closest state in time
+        if upper_idx == len(states_stamps):
+            upper_idx = len(states_stamps) - 1
+            lower_idx = upper_idx
         sl = self.ekf.smoothed_states_vector[lower_idx]
         su = self.ekf.smoothed_states_vector[upper_idx]
 
