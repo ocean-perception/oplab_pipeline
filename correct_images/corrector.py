@@ -62,45 +62,49 @@ class Corrector:
             self.path_config = get_config_folder(path)
         self.force = force
 
-        """Load general configuration parameters"""
-        self.correction_method = self.correct_config.method
-        if self.correction_method == "colour_correction":
-            self.distance_metric = self.correct_config.color_correction.distance_metric
-            self.distance_path = self.correct_config.color_correction.metric_path
-            self.altitude_max = self.correct_config.color_correction.altitude_max
-            self.altitude_min = self.correct_config.color_correction.altitude_min
-            self.smoothing = self.correct_config.color_correction.smoothing
-            self.window_size = self.correct_config.color_correction.window_size
-            self.outlier_rejection = (
-                self.correct_config.color_correction.outlier_reject
-            )
-        self.cameraconfigs = self.correct_config.configs.camera_configs
-        self.undistort = self.correct_config.output_settings.undistort_flag
-        self.output_format = self.correct_config.output_settings.compression_parameter
-
-        # Load camera parameters
-        cam_idx = self.get_camera_idx()
-        if cam_idx is None:
-            Console.error("Camera not included in correct_images.yaml...")
-            Console.quit("Camera index not found in correct_images.yaml")
-        self.user_specified_image_list_parse = self.cameraconfigs[cam_idx].imagefilelist_parse
-        self.user_specified_image_list_process = self.cameraconfigs[cam_idx].imagefilelist_process
         self.user_specified_image_list = None  # To be overwritten on parse/process
-        self.camera_image_list = None
-        if self.correction_method == "colour_correction":
-            self.brightness = self.cameraconfigs[cam_idx].brightness
-            self.contrast = self.cameraconfigs[cam_idx].contrast
-        elif self.correction_method == "manual_balance":
-            self.subtractors_rgb = np.array(self.cameraconfigs[cam_idx].subtractors_rgb)
-            self.color_gain_matrix_rgb = np.array(self.cameraconfigs[
-                                                      cam_idx
-                                                  ].color_gain_matrix_rgb)
-        image_properties = self.camera.image_properties
-        self.image_height = image_properties[0]
-        self.image_width = image_properties[1]
-        self.image_channels = image_properties[2]
-        self.camera_name = self.camera.name
-        self._type = self.camera.type
+
+        if self.correct_config is not None:
+            """Load general configuration parameters"""
+            self.correction_method = self.correct_config.method
+            if self.correction_method == "colour_correction":
+                self.distance_metric = self.correct_config.color_correction.distance_metric
+                self.distance_path = self.correct_config.color_correction.metric_path
+                self.altitude_max = self.correct_config.color_correction.altitude_max
+                self.altitude_min = self.correct_config.color_correction.altitude_min
+                self.smoothing = self.correct_config.color_correction.smoothing
+                self.window_size = self.correct_config.color_correction.window_size
+                self.outlier_rejection = (
+                    self.correct_config.color_correction.outlier_reject
+                )
+            self.cameraconfigs = self.correct_config.configs.camera_configs
+            self.undistort = self.correct_config.output_settings.undistort_flag
+            self.output_format = self.correct_config.output_settings.compression_parameter
+
+            # Load camera parameters
+            cam_idx = self.get_camera_idx()
+            if cam_idx is None:
+                Console.error("Camera not included in correct_images.yaml...")
+                Console.quit("Camera index not found in correct_images.yaml")
+            self.user_specified_image_list_parse = self.cameraconfigs[cam_idx].imagefilelist_parse
+            self.user_specified_image_list_process = self.cameraconfigs[cam_idx].imagefilelist_process
+            self.camera_image_list = None
+            if self.correction_method == "colour_correction":
+                # Brighness and contrast are percentages of 255
+                # e.g. brightness of 30 means 30% of 255 = 77
+                self.brightness = float(self.cameraconfigs[cam_idx].brightness)*2.55
+                self.contrast = float(self.cameraconfigs[cam_idx].contrast)*2.55
+            elif self.correction_method == "manual_balance":
+                self.subtractors_rgb = np.array(self.cameraconfigs[cam_idx].subtractors_rgb)
+                self.color_gain_matrix_rgb = np.array(self.cameraconfigs[
+                                                        cam_idx
+                                                    ].color_gain_matrix_rgb)
+            image_properties = self.camera.image_properties
+            self.image_height = image_properties[0]
+            self.image_width = image_properties[1]
+            self.image_channels = image_properties[2]
+            self.camera_name = self.camera.name
+            self._type = self.camera.type
 
         # Members for folder paths
         self.output_dir_path = None
