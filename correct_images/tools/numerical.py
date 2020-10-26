@@ -6,7 +6,7 @@ import datetime
 from scipy import optimize
 import math
 from datetime import datetime
-from numba import jit, njit, int32, uint8, float32
+from numba import jit, njit
 
 
 @njit
@@ -16,6 +16,7 @@ def mean_std_array(data: np.ndarray) -> (np.ndarray, np.ndarray):
     mean_array = np.zeros((a, b), dtype=np.float32)
     std_array = np.zeros((a, b), dtype=np.float32)
 
+    # Welford's online algorithm
     # https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
     for i in range(a):
         for j in range(b):
