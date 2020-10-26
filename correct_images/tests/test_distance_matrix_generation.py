@@ -216,7 +216,7 @@ class TestCaseCorrector(unittest.TestCase):
         corrector._camera_image_file_list = "none"
         corrector.image_height = self.image_height
         corrector.image_width = self.image_width
-        corrector._imagelist = self._imagelist
+        corrector.camera_image_list = self._imagelist
         corrector.distance_matrix_numpy_folder = self.distance_folder
         corrector.altitude_min = self.altitude_min
         corrector.altitude_max = self.altitude_max
@@ -228,11 +228,11 @@ class TestCaseCorrector(unittest.TestCase):
             # set camera name
             corrector.camera_name = camera
             print(len(self.distance_path_list))
-            corrector.altitude_path = self.distance_path_list[i]
+            corrector.altitude_csv_path = self.distance_path_list[i]
             # test feature for chosen camera
             corrector.generate_distance_matrix("parse")
             self.assertEqual(
-                len(corrector._imagelist),
+                len(corrector.camera_image_list),
                 len(corrector.distance_matrix_numpy_filelist),
                 "Length of distance matrix filelist does not match with imagelist",
             )
