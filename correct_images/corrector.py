@@ -982,13 +982,6 @@ class Corrector:
                     self.image_attenuation_parameters[i],
                     self.correction_gains[i],
                 )
-                intensities = corrections.pixel_stat(
-                    intensities,
-                    self.image_corrected_mean[i],
-                    self.image_corrected_std[i],
-                    brightness,
-                    contrast,
-                )
             else:
                 intensities = corrections.pixel_stat(
                     intensities,
