@@ -839,8 +839,6 @@ class Corrector:
         image_raw_mean_file = self.attenuation_parameters_folder / "image_raw_mean.npy"
         image_raw_std_file = self.attenuation_parameters_folder / "image_raw_std.npy"
 
-        print(image_raw_mean_file)
-        print(image_raw_std_file)
         np.save(image_raw_mean_file, self.image_raw_mean)
         np.save(image_raw_std_file, self.image_raw_std)
 
