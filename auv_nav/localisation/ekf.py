@@ -155,6 +155,7 @@ class Measurement(object):
                 value.depth * depth_std_factor + depth_std_offset
             ) ** 2
         warn_if_zero(self.covariance[Index.Z, Index.Z], 'Z Covariance')
+        #print('Depth cov:', self.covariance[Index.Z, Index.Z])
         self.update_vector[Index.Z] = 1
 
     def from_dvl(self, value):
@@ -186,6 +187,7 @@ class Measurement(object):
         warn_if_zero(self.covariance[Index.VX, Index.VX], 'VX Covariance')
         warn_if_zero(self.covariance[Index.VY, Index.VY], 'VY Covariance')
         warn_if_zero(self.covariance[Index.VZ, Index.VZ], 'VZ Covariance')
+        #print('DVL cov:', self.covariance[Index.VX, Index.VX])
         self.update_vector[Index.VX] = 1
         self.update_vector[Index.VY] = 1
         self.update_vector[Index.VZ] = 1
@@ -210,6 +212,7 @@ class Measurement(object):
             self.covariance[Index.Y, Index.Y] = error ** 2
         warn_if_zero(self.covariance[Index.X, Index.X], 'X Covariance')
         warn_if_zero(self.covariance[Index.Y, Index.Y], 'Y Covariance')
+        #print('USBL cov:', self.covariance[Index.X, Index.X])
         self.update_vector[Index.X] = 1
         self.update_vector[Index.Y] = 1
         self.type = 'USBL'
@@ -252,6 +255,7 @@ class Measurement(object):
         warn_if_zero(self.covariance[Index.ROLL, Index.ROLL], 'ROLL Covariance')
         warn_if_zero(self.covariance[Index.PITCH, Index.PITCH], 'PITCH Covariance')
         warn_if_zero(self.covariance[Index.YAW, Index.YAW], 'YAW Covariance')
+        #print('Ori cov:', self.covariance[Index.YAW, Index.YAW])
         self.update_vector[Index.ROLL] = 1
         self.update_vector[Index.PITCH] = 1
         self.update_vector[Index.YAW] = 1
@@ -307,7 +311,7 @@ class EkfImpl(object):
         self.state[Index.YAW] = self.clamp_rotation(self.state[Index.YAW])
 
     def clamp_rotation(self, rotation):
-        rotation = (rotation % 2*math.pi)
+        #rotation = (rotation % 2*math.pi)
         while rotation > math.pi:
             rotation -= 2 * math.pi
         while rotation < -math.pi:
@@ -336,8 +340,11 @@ class EkfImpl(object):
         self.state = f @ self.state
 
         # (2) Project the error forward: P = J * P * J' + Q
+        # print('0:', delta, self.covariance[Index.X, Index.X])
         self.covariance = A @ self.covariance @ A.T
+        # print('1:', delta, self.covariance[Index.X, Index.X])
         self.covariance += abs(delta) * self.process_noise_covariance
+        # print('2:', timestamp, self.covariance[Index.X, Index.X])
 
         # print('Prediction {0}'.format(str(self.state.T)))
         self.last_update_time = timestamp
@@ -399,11 +406,14 @@ class EkfImpl(object):
 
         #print('update_indices:\n', update_indices)
         #print('H:', state_to_meas_subset)
+        #print('z:', meas_subset)
         #print('R:', meas_cov_subset)
         #print('R2:', measurement.covariance)
+        #print('covariance:\n', self.covariance)
 
         # (1) Compute the Kalman gain: K = (PH') / (HPH' + R)
         pht = self.covariance @ state_to_meas_subset.T
+        #print('pht:\n',pht)
         hphr_inv = np.linalg.inv(state_to_meas_subset @ pht + meas_cov_subset)
         kalman_gain_subset = pht @ hphr_inv
         innovation_subset = meas_subset - state_subset
@@ -578,7 +588,7 @@ class EkfImpl(object):
         y_coeff = -sp * sr
         z_coeff = -sp * cr
         dFz_dP = (x_coeff * vx + y_coeff * vy + z_coeff * vz) * delta
-        dFY_dP = (sr * tp * cpi * vpitch - cr * tp * cpi * vyaw) * delta
+        dFY_dP = (sr * tp * cpi * vpitch + cr * tp * cpi * vyaw) * delta
 
         tfjac = copy.deepcopy(f)
         tfjac[Index.X, Index.ROLL] = dFx_dR
