@@ -152,6 +152,7 @@ def calibrate_stereo(
                 right_json = json.load(f)
 
         sc = StereoCalibrator(
+            name=left_name+'-'+right_name,
             stereo_camera_model=model,
             boards=[ChessboardInfo(config["rows"], config["cols"], config["size"])],
             pattern=check_pattern(config),
