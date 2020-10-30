@@ -104,6 +104,7 @@ def run_setup():
             "oplab_pipeline_version": ["commit_hash.txt"],
         },
         install_requires=[
+            "wheel>=0.30.0",
             "prettytable>=0.7.2",
             "PyYAML>=3.12",
             "argparse>=1.1",
