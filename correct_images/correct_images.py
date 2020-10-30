@@ -163,7 +163,6 @@ def call_process(args):
 
     for camera in camerasystem.cameras:
         Console.info("Processing for camera", camera.name)
-        print("-----------------------------------------------------")
 
         if len(camera.image_list) == 0:
             Console.info("No images found for the camera at the path provided...")

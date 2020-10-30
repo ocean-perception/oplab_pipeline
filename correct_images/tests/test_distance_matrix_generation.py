@@ -209,6 +209,7 @@ class TestCaseCorrector(unittest.TestCase):
     def run_distance_matrix_generation(self):
         # create Corrector object
         corrector = Corrector(True)
+        corrector.path_config = Path('.')
 
         # set Corrector:: attributes
         corrector.distance_metric = "altitude"
@@ -221,6 +222,7 @@ class TestCaseCorrector(unittest.TestCase):
         corrector.altitude_min = self.altitude_min
         corrector.altitude_max = self.altitude_max
         corrector.correction_method = "colour_correction"
+        corrector.user_specified_image_list = 'none'
 
         i = 0
         for camera in self.cameras:

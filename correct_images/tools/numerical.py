@@ -1,3 +1,4 @@
+from typing import Tuple
 import numpy as np
 from tqdm import trange
 from oplab import Console
@@ -6,11 +7,11 @@ import datetime
 from scipy import optimize
 import math
 from datetime import datetime
-from numba import jit, njit
+from numba import njit
 
 
 @njit
-def mean_std_array(data: np.ndarray) -> (np.ndarray, np.ndarray):
+def mean_std_array(data: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     [n, a, b] = data.shape
 
     mean_array = np.zeros((a, b), dtype=np.float32)
