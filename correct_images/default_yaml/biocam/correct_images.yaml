@@ -45,6 +45,6 @@ rescale :
     path : # path to images relative to processed folder
     distance_path : # path to json_renav* folder for auv_ekf_<cameraname>.csv file
     interpolate_method : 'bicubic' # bicubic, nearest_neighbour, bilinear, lanczos
-    target_pixel_size : 1 # in centimeter
-    maintain_pixels : 'Y'
+    target_pixel_size : 0.01 # in meters
+    maintain_pixels : True
     output_folder : # output path relative to processed images
