@@ -47,7 +47,7 @@ def main(args=None):
         "-p",
         "--pattern",
         default="GRBG",
-        help="Bayer pattern (GRBG for Unagi, BGGR for BioCam)",
+        help="Bayer pattern (GRBG for Unagi and SeaXerocks3, BGGR for BioCam)",
     )
     subparser_debayer.add_argument(
         "-i", "--image", default=None, help="Single raw image to test."
