@@ -83,9 +83,12 @@ class Corrector:
 
             # Load camera parameters
             cam_idx = self.get_camera_idx()
+            self.camera_found = False
             if cam_idx is None:
-                Console.error("Camera not included in correct_images.yaml...")
-                Console.quit("Camera index not found in correct_images.yaml")
+                Console.info("Camera not included in correct_images.yaml. No processing will be done for this camera.")
+                return
+            else:
+                self.camera_found = True
             self.user_specified_image_list_parse = self.cameraconfigs[cam_idx].imagefilelist_parse
             self.user_specified_image_list_process = self.cameraconfigs[cam_idx].imagefilelist_process
             self.camera_image_list = None
@@ -135,6 +138,8 @@ class Corrector:
         self.camera_params_file_path = None
 
     def parse(self):
+        if not self.camera_found:
+            return
         self.user_specified_image_list = self.user_specified_image_list_parse
         self.setup('parse')
         if self.correction_method == "colour_correction":
@@ -146,6 +151,8 @@ class Corrector:
         self.cleanup()
 
     def process(self):
+        if not self.camera_found:
+            return
         self.user_specified_image_list = self.user_specified_image_list_process
         self.setup('process')
         if self.correction_method == "colour_correction":
@@ -206,7 +213,7 @@ class Corrector:
         for file in memmap_files_path:
             if file.exists():
                 file.unlink()
-        print("-----------------------------------------------------")
+        # print("-----------------------------------------------------")
 
         # remove bayer image numpy files
         try:
@@ -394,7 +401,7 @@ class Corrector:
         if len(idx) > 0:
             return idx[0]
         else:
-            Console.quit("The requested camera", self.camera.name,
+            Console.warn("The camera", self.camera.name,
                          "could not be found in the correct_images.yaml")
             return None
 
@@ -700,7 +707,7 @@ class Corrector:
                 else:
                     image_memmap_per_channel = image_memmap[:, :, :, i]
                 # calculate mean, std for image and target_altitude
-                print(image_memmap_per_channel.shape)
+                # print(image_memmap_per_channel.shape)
                 raw_image_mean, raw_image_std = mean_std(image_memmap_per_channel)
                 self.image_raw_mean[i] = raw_image_mean
                 self.image_raw_std[i] = raw_image_std
@@ -833,13 +840,13 @@ class Corrector:
                     image_memmap_per_channel = image_memmap[:, :, :, i]
 
                 # calculate mean, std for image and target_altitude
-                print(image_memmap_per_channel.shape)
+                # print(image_memmap_per_channel.shape)
                 Console.info(f"Memmap for channel is shape: {image_memmap_per_channel.shape}")
                 Console.info(f"Memmap for channel is of type: {type(image_memmap_per_channel)}")
                 raw_image_mean, raw_image_std = mean_std(image_memmap_per_channel)
                 self.image_raw_mean[i] = raw_image_mean
                 self.image_raw_std[i] = raw_image_std
-        print(self.attenuation_parameters_folder)
+        # print(self.attenuation_parameters_folder)
         image_raw_mean_file = self.attenuation_parameters_folder / "image_raw_mean.npy"
         image_raw_std_file = self.attenuation_parameters_folder / "image_raw_std.npy"
 

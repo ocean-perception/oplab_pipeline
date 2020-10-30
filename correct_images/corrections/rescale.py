@@ -1,5 +1,6 @@
-import imageio
 from PIL import Image
+import imageio
+import numpy as np
 from oplab import get_processed_folder
 from oplab import Console
 from oplab import MonoCamera
@@ -9,27 +10,20 @@ import pandas as pd
 import os
 
 
-def get_image_and_info(image_path):
-    image = imageio.imread(image_path)
-    image_shape = image.shape
-    return image, image_shape[1], image_shape[0]
-
-
-# uses given opening angle of camera and the altitude parameter to determine the pixel size
-# give width & horizontal, or height & vertical
-def get_pixel_size(altitude, image_size, f):
-    image_spatial_size = float(altitude) * image_size / f
-    pixel_size = image_spatial_size / image_size
-    return pixel_size
-
-
-def rescale(image_path, interpolate_method, target_pixel_size, altitude, f_x, f_y, maintain_pixels):
-    image, image_width, image_height = get_image_and_info(image_path)
-    pixel_height = get_pixel_size(altitude, image_height, f_y)
-    pixel_width = get_pixel_size(altitude, image_width, f_x)
-
-    vertical_rescale = pixel_height / target_pixel_size
-    horizontal_rescale = pixel_width / target_pixel_size
+def rescale(image_array: np.ndarray, 
+            interpolate_method: str, 
+            target_pixel_size_m: float, 
+            altitude: float, 
+            f_x: float, 
+            f_y: float, 
+            maintain_pixels: bool) -> np.ndarray:
+    image_shape = image_array.shape
+    image_height = image_shape[0]
+    image_width = image_shape[1]
+    pixel_height = altitude / f_y
+    pixel_width = altitude / f_x
+    vertical_rescale = pixel_height / target_pixel_size_m
+    horizontal_rescale = pixel_width / target_pixel_size_m
 
     method = None
     if interpolate_method == "bicubic":
@@ -40,22 +34,26 @@ def rescale(image_path, interpolate_method, target_pixel_size, altitude, f_x, f_
         method = Image.NEAREST
     elif interpolate_method == "lanczos":
         method = Image.LANCZOS
+    else:
+        Console.error("The requested rescaling method is not implemented.")
+        Console.error("Valid methods are: ")
+        Console.error("  * bicubic")
+        Console.error("  * bilinear")
+        Console.error("  * nearest_neighbour")
+        Console.error("  * lanczos")
+        Console.quit("Rescaling method not implemented.")
 
-    if maintain_pixels == "N" or maintain_pixels == "No":
-        size = (int(image_width * horizontal_rescale), int(image_height * vertical_rescale))
-        image = Image.fromarray(image.astype("uint8"), "RGB")
-        image = image.resize(size, resample=method)
+    image_rgb = Image.fromarray(image_array, "RGB")
 
-    elif maintain_pixels == "Y" or maintain_pixels == "Yes":
+    if maintain_pixels:
         if vertical_rescale < 1 or horizontal_rescale < 1:
             size = (int(image_width * horizontal_rescale), int(image_height * vertical_rescale))
-            image = Image.fromarray(image.astype("uint8"), "RGB")
-            image = image.resize(size, resample=method)
+            image_rgb = image_rgb.resize(size, resample=method)
             size = (image_width, image_height)
-            image = image.resize(size, resample=method)
+            image_rgb = image_rgb.resize(size, resample=method)
         else:
-            crop_width = int(( 1 /horizontal_rescale) * image_width)
-            crop_height = int(( 1 /vertical_rescale) * image_height)
+            crop_width = int(( 1 / horizontal_rescale) * image_width)
+            crop_height = int(( 1 / vertical_rescale) * image_height)
 
             # find crop box dimensions
             box_left = int((image_width - crop_width) / 2)
@@ -65,20 +63,23 @@ def rescale(image_path, interpolate_method, target_pixel_size, altitude, f_x, f_
 
             # crop the image to the center
             box = (box_left, box_upper, box_right, box_lower)
-            image = Image.fromarray(image.astype("uint8"), "RGB")
-            cropped_image = image.crop(box)
+            cropped_image = image_rgb.crop(box)
 
             # resize the cropped image to the size of original image
             size = (image_width, image_height)
-            image = image.resize(size, resample=method)
+            image_rgb = cropped_image.resize(size, resample=method)
+    else:
+        size = (int(image_width * horizontal_rescale), int(image_height * vertical_rescale))
+        image_rgb = image_rgb.resize(size, resample=method)
 
+    image = np.array(image_rgb, dtype=np.uint8)
     return image
 
 
 def rescale_images(imagenames_list,
                    image_directory,
                    interpolate_method,
-                   target_pixel_size,
+                   target_pixel_size_m,
                    dataframe,
                    output_directory,
                    f_x,
@@ -95,8 +96,15 @@ def rescale_images(imagenames_list,
         trimmed_dataframe = dataframe.loc[dataframe["relative_path"].isin(trimmed_path_list)]
         altitude = trimmed_dataframe["altitude [m]"]
         if len(altitude) > 0:
+            image = imageio.imread(source_image_path).astype("uint8")
             rescaled_image = rescale(
-                source_image_path, interpolate_method, target_pixel_size, altitude, f_x, f_y, maintain_pixels
+                image, 
+                interpolate_method, 
+                target_pixel_size_m, 
+                altitude, 
+                f_x, 
+                f_y, 
+                maintain_pixels
             )
             imageio.imwrite(output_image_path, rescaled_image, format="PNG-FI")
         else:
@@ -109,7 +117,7 @@ def rescale_camera(path, camera_system, camera):
     interpolate_method = camera.interpolate_method
     image_path = camera.path
     target_pixel_size = camera.target_pixel_size
-    maintain_pixels = camera.maintain_pixels
+    maintain_pixels = bool(camera.maintain_pixels)
     output_folder = camera.output_folder
 
     idx = [

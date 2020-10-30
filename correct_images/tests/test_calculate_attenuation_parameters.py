@@ -11,7 +11,7 @@ import yaml
 import os
 import numpy as np
 from pathlib import Path
-from correct_images.corrector import *
+from correct_images.corrector import Corrector
 from oplab import Console
 import pandas as pd
 import tempfile
@@ -169,12 +169,12 @@ class testCaseCorrector(unittest.TestCase):
             "Std values are incorrect and not same for all pixels along green channel",
         )
         self.assertEqual(
-            (image_mean_blue_int == 60).all(),
+            (image_mean_blue_int == 50).all(),
             True,
             "Mean values are incorrect and not same for all pixels along blue channel",
         )
         self.assertEqual(
-            (image_std_blue_int == 0).all(),
+            (image_std_blue_int == 14).all(),
             True,
             "Std values are incorrect and not same for all pixels along blue channel",
         )
