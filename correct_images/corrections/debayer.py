@@ -62,7 +62,7 @@ def debayer_folder(output_dir: Path, filetype, pattern, output_format, image=Non
 
     def debayer_image(
         image_path, _filetype, _pattern, _output_dir, _output_format
-    ):
+    ): 
         Console.info("Debayering image {}".format(image_path.name))
         if _filetype == "raw":
             xviii_binary_data = np.fromfile(str(image_path), dtype=np.uint8)
@@ -74,6 +74,7 @@ def debayer_folder(output_dir: Path, filetype, pattern, output_format, image=Non
         image_name = str(image_path.stem)
         write_output_image(img_rgb, image_name, _output_dir, _output_format)
 
+    output_dir = Path(output_dir)
     image_list = []
     if not output_dir.exists():
         Console.info("Creating output dir {}".format(output_dir))
