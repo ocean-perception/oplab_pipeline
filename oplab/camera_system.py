@@ -79,7 +79,7 @@ class CameraEntry:
         raw_dir = get_raw_folder(self.raw_folder)
 
         split_glob = str(self.path).split("*")
-        print(len(split_glob))
+        # print(len(split_glob))
         img_dir = ""
         if len(split_glob) == 2:
             pre_glob = split_glob[0] + "*"

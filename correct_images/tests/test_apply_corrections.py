@@ -11,7 +11,9 @@ import yaml
 import os
 import numpy as np
 from pathlib import Path
-from correct_images.corrector import *
+from correct_images.corrector import Corrector
+from correct_images.tools.file_handlers import load_memmap_from_numpyfilelist
+from correct_images.tools.numerical import mean_std
 from oplab import Console
 import pandas as pd
 import tempfile
@@ -94,8 +96,8 @@ class testCaseCorrector(unittest.TestCase):
         corrector.image_channels = image_1.shape[2]
 
         corrector.correction_method = "colour_correction"
-        corrector.brightness = 45
-        corrector.contrast = 15
+        corrector.brightness = 45.0/100*255
+        corrector.contrast = 15.0/100*255
         corrector.altitude_based_filtered_indices = [0, 1, 2]
         corrector.memmap_folder = path_memmap_folder
 
@@ -154,24 +156,28 @@ class testCaseCorrector(unittest.TestCase):
         image_std_red_int = image_std_red.astype(int)
         image_std_green_int = image_std_green.astype(int)
 
-        self.assertEqual(
-            (image_mean_red_int == corrector.brightness).all(),
-            True,
+        print(image_mean_red_int)
+        print(corrector.brightness)
+        self.assertTrue(
+            np.logical_and(corrector.brightness - 1 <= image_mean_red_int, image_mean_red_int <= corrector.brightness + 1).all(),
             "Mean values are incorrect and not same for all pixels along red channel",
         )
-        self.assertEqual(
-            (image_std_red_int == corrector.contrast).all(),
-            True,
+        print(image_std_red_int)
+        print(corrector.contrast)
+        self.assertTrue(
+            np.logical_and(corrector.contrast - 1 <= image_std_red_int, image_std_red_int <= corrector.contrast + 1).all(),
             "Std values are incorrect and not same for all pixels along red channel",
         )
-        self.assertEqual(
-            (image_mean_green_int == corrector.brightness).all(),
-            True,
+        print(corrector.brightness)
+        print(image_mean_green_int)
+        self.assertTrue(
+            np.logical_and(corrector.brightness - 1 <= image_mean_green_int, image_mean_green_int <= corrector.brightness + 1).all(),
             "Mean values are incorrect and not same for all pixels along green channel",
         )
-        self.assertEqual(
-            (image_std_green_int == corrector.contrast).all(),
-            True,
+        print(image_std_green_int)
+        print(corrector.contrast)
+        self.assertTrue(
+            np.logical_and(corrector.contrast - 1 <= image_std_green_int, image_std_green_int <= corrector.contrast + 1).all(),
             "Std values are incorrect and not same for all pixels along green channel",
         )
 
@@ -251,8 +257,8 @@ class testCaseCorrector(unittest.TestCase):
         corrector.image_channels = 1
 
         corrector.correction_method = "colour_correction"
-        corrector.brightness = 45
-        corrector.contrast = 15
+        corrector.brightness = 45.0/100*255
+        corrector.contrast = 15.0/100*255
 
         corrector.altitude_based_filtered_indices = [0, 1, 2]
         corrector.memmap_folder = path_memmap_folder
@@ -299,14 +305,16 @@ class testCaseCorrector(unittest.TestCase):
         image_mean_int = image_mean.astype(int)
         image_std_int = image_std.astype(int)
 
-        self.assertEqual(
-            (image_mean_int == corrector.brightness).all(),
-            True,
+        print(image_mean_int)
+        print(corrector.brightness)
+        self.assertTrue(
+            np.logical_and(corrector.brightness - 1 <= image_mean_int, image_mean_int <= corrector.brightness + 1).all(),
             "Mean values are incorrect and not same for all pixels along red channel",
         )
-        self.assertEqual(
-            (image_std_int == corrector.contrast).all(),
-            True,
+        print(image_std_int)
+        print(corrector.contrast)
+        self.assertTrue(
+            np.logical_and(corrector.contrast - 1 <= image_std_int, image_std_int <= corrector.contrast + 1).all(),
             "Std values are incorrect and not same for all pixels along red channel",
         )
 
