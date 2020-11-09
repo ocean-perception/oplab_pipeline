@@ -34,6 +34,8 @@ from auv_nav.plot.plot_process_data import plot_deadreckoning_vs_time
 from auv_nav.plot.plot_process_data import plot_pf_uncertainty
 from auv_nav.plot.plot_process_data import plot_uncertainty
 from auv_nav.plot.plot_process_data import plot_2d_deadreckoning
+from auv_nav.tools.dvl_level_arm import compute_angular_speeds
+from auv_nav.tools.dvl_level_arm import correct_lever_arm
 from oplab import get_config_folder
 from oplab import get_processed_folder
 from oplab import valid_dive
@@ -668,6 +670,18 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
             velocity_body_list[j + 1].z_velocity_std,
         )
 
+        linear_speeds = [dead_reckoning_dvl.x_velocity,
+                         dead_reckoning_dvl.y_velocity,
+                         dead_reckoning_dvl.z_velocity]
+        angular_speeds = compute_angular_speeds(orientation_list, i)
+        offsets = [vehicle.dvl.surge,
+                   vehicle.dvl.sway,
+                   vehicle.dvl.heave]
+        [vx, vy, vz] = correct_lever_arm(linear_speeds, angular_speeds, offsets)
+        dead_reckoning_dvl.x_velocity = vx
+        dead_reckoning_dvl.y_velocity = vy
+        dead_reckoning_dvl.z_velocity = vz
+
         [x_offset, y_offset, z_offset] = body_to_inertial(
             orientation_list[i].roll,
             orientation_list[i].pitch,
@@ -1175,14 +1189,10 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
         with CodeTimer('EKF predict cam2'):
             if len(camera2_ekf_list) > 1:
                 camera2_ekf_list = [ekf.predictAndTransform(c, origin_offsets, camera2_offsets, latlon_reference) for c in camera2_ekf_list]
-            #for c in camera2_ekf_list:
-            #    c = ekf.predictAndTransform(c.epoch_timestamp, origin_offsets, camera2_offsets)
         with CodeTimer('EKF predict cam3'):
             if len(camera3_ekf_list) > 1:
                 camera3_ekf_list = [ekf.predictAndTransform(c, origin_offsets, camera3_offsets, latlon_reference) for c in camera3_ekf_list]
-            #for c in camera3_ekf_list:
-            #    c = ekf.predictAndTransform(c.epoch_timestamp, origin_offsets, camera3_offsets)
-
+        
     # perform interpolations of state data to chemical time stamps for both
     # DR and PF
     if len(chemical_list) > 1:
