@@ -21,6 +21,7 @@ from oplab import get_config_folder
 from oplab import Console
 from correct_images.parser import CorrectConfig
 from correct_images import corrections
+from correct_images.tools.numerical import mean_array, median_array
 from correct_images.tools.numerical import image_mean_std_trimmed, mean_std
 from correct_images.tools.file_handlers import write_output_image
 from correct_images.tools.file_handlers import load_memmap_from_numpyfilelist
@@ -545,6 +546,7 @@ class Corrector:
                     self.camera_image_list = temp
                     Console.warn("Image list is corrected with respect to distance list...")
 
+            Console.info("Creating altitude-based distance matrices")
             for idx in trange(len(distance_list)):
                 # TODO use actual camera geometrics to compute distance to seafloor
                 distance_matrix.fill(distance_list[idx])
@@ -560,8 +562,9 @@ class Corrector:
                         distance_matrix_numpy_file_path
                     )
 
-                    # create the distance matrix numpy file
-                    np.save(distance_matrix_numpy_file_path, distance_matrix)
+                    if phase == "parse" and not distance_matrix_numpy_file_path.exists():
+                        # create the distance matrix numpy file
+                        np.save(distance_matrix_numpy_file_path, distance_matrix)
 
                     # filter images based on altitude range
                     if self.altitude_max > distance_list[idx] > self.altitude_min:
@@ -613,40 +616,25 @@ class Corrector:
         if self.camera.extension == "tif" or self.camera.extension == "jpg":
             # write numpy files for corresponding bayer images
             for idx in trange(len(self.camera_image_list)):
-                tmp_tif = imageio.imread(self.camera_image_list[idx])
-                tmp_npy = np.array(tmp_tif, np.uint16)
-                np.save(bayer_numpy_filelist[idx], tmp_npy)
+                np_fn_path = Path(bayer_numpy_filelist[idx])
+                if not np_fn_path.exists():
+                    tmp_tif = imageio.imread(self.camera_image_list[idx])
+                    tmp_npy = np.array(tmp_tif, np.uint16)
+                    np.save(bayer_numpy_filelist[idx], tmp_npy)
         if self.camera.extension == "raw":
             # create numpy files as per bayer_numpy_filelist
             raw_image_for_size = np.fromfile(str(self.camera_image_list[0]), dtype=np.uint8)
-            binary_data = np.zeros(
-                (len(self.camera_image_list), raw_image_for_size.shape[0]),
-                dtype=raw_image_for_size.dtype,
-            )
-            for idx in range(len(self.camera_image_list)):
-                binary_data[idx] = np.fromfile(
-                    str(self.camera_image_list[idx]), dtype=raw_image_for_size.dtype
-                )
-            Console.info("Writing RAW images to numpy...")
 
-            for idx in trange(len(self.camera_image_list)):
-                image_raw = xviii.load_xviii_bayer_from_binary(
-                        binary_data[idx, :], self.image_height, self.image_width
-                    )
-                np.save(bayer_numpy_filelist[idx], image_raw)
-
-        """
-            image_raw = joblib.Parallel(n_jobs=-2, verbose=3, max_nbytes=1e6)(
-                [
-                    joblib.delayed(xviii.load_xviii_bayer_from_binary)(
-                        binary_data[idx, :], self.image_height, self.image_width
-                    )
+            with tqdm_joblib(tqdm(desc="RAW images to numpy", total=len(self.bayer_numpy_filelist))) as progress_bar:
+                joblib.Parallel(n_jobs=-2, verbose=3)(
+                    joblib.delayed(xviii.xviii_to_np_file)(
+                        bayer_numpy_filelist[idx], 
+                        str(self.camera_image_list[idx]),
+                        raw_image_for_size.dtype,
+                        self.image_height, 
+                        self.image_width)
                     for idx in trange(len(self.camera_image_list))
-                ]
-            )
-            for idx in trange(len(self.camera_image_list)):
-                np.save(bayer_numpy_filelist[idx], image_raw[idx])
-        """
+                )
 
         Console.info("Image numpy files written successfully...")
 
@@ -676,6 +664,10 @@ class Corrector:
             (self.image_channels, self.image_height, self.image_width)
         )
 
+        _, image_memmap = load_memmap_from_numpyfilelist(
+            self.memmap_folder, self.bayer_numpy_filelist
+        )
+
         # compute correction parameters if distance matrix is generated
         if len(self.distance_matrix_numpy_filelist) > 0:
             # create image and distance_matrix memmaps
@@ -695,10 +687,8 @@ class Corrector:
                 if file.exists():
                     file.unlink()
 
-            image_memmap_path, image_memmap = load_memmap_from_numpyfilelist(self.memmap_folder,
-                                                                             filtered_image_numpy_filelist)
-            distance_memmap_path, distance_memmap = load_memmap_from_numpyfilelist(self.memmap_folder,
-                                                                                   filtered_distance_numpy_filelist)
+            _, distance_memmap = load_memmap_from_numpyfilelist(
+                self.memmap_folder, filtered_distance_numpy_filelist)
 
             for i in range(self.image_channels):
 
@@ -708,10 +698,12 @@ class Corrector:
                     image_memmap_per_channel = image_memmap[:, :, :, i]
                 # calculate mean, std for image and target_altitude
                 # print(image_memmap_per_channel.shape)
+                Console.info("Computing raw mean and std")
                 raw_image_mean, raw_image_std = mean_std(image_memmap_per_channel)
                 self.image_raw_mean[i] = raw_image_mean
                 self.image_raw_std[i] = raw_image_std
 
+                Console.info("Computing altitude mean and std")
                 target_altitude = mean_std(distance_memmap, False)
 
                 # compute the mean distance for each image
@@ -729,6 +721,7 @@ class Corrector:
                 bin_images_sample = None
                 bin_distances_sample = None
 
+                Console.info("Computing histogram of distance to altitude")
                 for idx_bin in trange(1, hist_bounds.size):
                     tmp_idxs = np.where(idxs == idx_bin)[0]
                     if len(tmp_idxs) > 0:
@@ -736,14 +729,14 @@ class Corrector:
                         bin_distances = distance_memmap[tmp_idxs]
 
                         if self.smoothing == "mean":
-                            bin_images_sample = np.mean(bin_images, axis=0)
-                            bin_distances_sample = np.mean(bin_distances, axis=0)
+                            bin_images_sample = mean_array(bin_images)
+                            bin_distances_sample = mean_array(bin_distances)
                         elif self.smoothing == "mean_trimmed":
                             bin_images_sample = image_mean_std_trimmed(bin_images)
-                            bin_distances_sample = np.mean(bin_distances, axis=0)
+                            bin_distances_sample = mean_array(bin_distances)
                         elif self.smoothing == "median":
-                            bin_images_sample = np.median(bin_images, axis=0)
-                            bin_distances_sample = np.mean(bin_distances, axis=0)
+                            bin_images_sample = median_array(bin_images)
+                            bin_distances_sample = mean_array(bin_distances)
 
                         # release memory from bin_images
                         del bin_images
@@ -829,10 +822,6 @@ class Corrector:
                 if file.exists():
                     file.unlink()
 
-            image_memmap_path, image_memmap = load_memmap_from_numpyfilelist(
-                self.memmap_folder, self.bayer_numpy_filelist
-            )
-
             for i in range(self.image_channels):
                 if self.image_channels == 1:
                     image_memmap_per_channel = image_memmap
@@ -881,7 +870,7 @@ class Corrector:
         Console.info("Processing images for color, distortion, gamma corrections...")
 
         with tqdm_joblib(tqdm(desc="Correcting images", total=len(self.bayer_numpy_filelist))) as progress_bar:
-            joblib.Parallel(n_jobs=-2, verbose=3, max_nbytes=1e6)(
+            joblib.Parallel(n_jobs=-2, verbose=3)(
                 joblib.delayed(self.process_image)(idx, test_phase)
                 for idx in range(0, len(self.bayer_numpy_filelist))  # out of range error here
             )

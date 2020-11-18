@@ -1,5 +1,6 @@
 from numba import njit
 import numpy as np
+from pathlib import Path
 
 
 # read binary raw image files for xviii camera
@@ -51,3 +52,13 @@ def load_xviii_bayer_from_binary(binary_data, image_height, image_width):
 
     bayer_img = bayer_img / 1024
     return bayer_img
+
+
+def xviii_to_np_file(np_filename, raw_filename, dtype, image_height, image_width):
+    np_fn_path = Path(np_filename)
+    if not np_fn_path.exists():
+        binary_data = np.fromfile(raw_filename, dtype)
+        image_raw = load_xviii_bayer_from_binary(
+                binary_data[:], image_height, image_width
+            )
+        np.save(np_filename, image_raw)

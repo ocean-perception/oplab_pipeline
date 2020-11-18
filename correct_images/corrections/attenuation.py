@@ -58,14 +58,28 @@ def attenuation_correct_memmap(image_memmap: np.ndarray,
             Resulting images after applying attenuation correction
         """
         print('Applying attenuation corrections to images')
-        for i_img in range(image_memmap.shape[0]):
-            # memmap data can not be updated in joblib .
+
+        def apply_attn_corr_to_memmap(i_img,
+                                      image_memmap,
+                                      distance_memmap,
+                                      attenuation_parameters,
+                                      gains):
             image_memmap[i_img, ...] = attenuation_correct(
                 image_memmap[i_img, ...],
                 distance_memmap[i_img, ...],
                 attenuation_parameters,
                 gains,
             )
+
+        with tqdm_joblib(tqdm(desc="Aplying attenuation correction", total=image_memmap.shape[0])) as progress_bar:
+            joblib.Parallel(n_jobs=-2, verbose=3)(
+                joblib.delayed(apply_attn_corr_to_memmap)(
+                        i_img,
+                        image_memmap,
+                        distance_memmap,
+                        attenuation_parameters,
+                        gains)
+                    for i_img in range(image_memmap.shape[0]))
         return image_memmap
 
 
@@ -122,7 +136,7 @@ def calculate_attenuation_parameters(
     print("Start curve fitting...")
 
     with tqdm_joblib(tqdm(desc="Curve fitting", total=image_height * image_width)) as progress_bar:
-        results = joblib.Parallel(n_jobs=-2, verbose=3, max_nbytes=1e6)(
+        results = joblib.Parallel(n_jobs=-2, verbose=3)(
             [
                 joblib.delayed(curve_fitting)(np.array(distances[:, i_pixel]),
                                               np.array(images[:, i_pixel]))
@@ -135,3 +149,5 @@ def calculate_attenuation_parameters(
             [image_height, image_width, 3]
         )
         return attenuation_parameters
+
+

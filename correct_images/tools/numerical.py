@@ -7,7 +7,44 @@ import datetime
 from scipy import optimize
 import math
 from datetime import datetime
-from numba import njit
+from numba import njit, prange
+
+@njit
+def median_array(data: np.ndarray) -> np.ndarray:
+    [n, a, b] = data.shape
+    median_array = np.zeros((a, b), dtype=np.float32)
+    for i in range(a):
+        for j in range(b):
+            mean = 0.
+            lst = [0]*n
+            for k in range(n):
+                count = k + 1
+                lst[k] = data[k, i, j]
+            s = sorted(lst)
+            median = 0
+            if n % 2 == 0:
+                for k in range(n//2-1, n//2+1):
+                    median += s[k]
+                median /= 2.0
+            else:
+                median = s[n//2]
+            median_array[i, j] = median
+    return median_array
+
+@njit
+def mean_array(data: np.ndarray) -> np.ndarray:
+    [n, a, b] = data.shape
+    mean_array = np.zeros((a, b), dtype=np.float32)
+    for i in range(a):
+        for j in range(b):
+            mean = 0.
+            for k in range(n):
+                count = k + 1
+                new_value = data[k, i, j]
+                delta = new_value - mean
+                mean += delta / count
+            mean_array[i, j] = mean
+    return mean_array
 
 
 @njit
@@ -131,7 +168,7 @@ def image_mean_std_trimmed(data, ratio_trimming=0.2, calculate_std=True):
             ret_mean[idx_a, :] = np.array(results)[:, 0]
             ret_std[idx_a, :] = np.array(results)[:, 1]
             """
-            results = joblib.Parallel(n_jobs=-2, verbose=3, max_nbytes=1e6)(
+            results = joblib.Parallel(n_jobs=-2, verbose=3)(
                 [
                     joblib.delayed(calc_mean_and_std_trimmed)(
                         data[effective_index, idx_a, idx_b][0],
