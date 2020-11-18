@@ -4,6 +4,9 @@ from pathlib import Path
 from tqdm import trange
 from oplab import Console
 import uuid
+from tqdm import tqdm
+from correct_images.tools.joblib_tqdm import tqdm_joblib
+import joblib
 import imageio
 
 
@@ -58,7 +61,6 @@ def load_memmap_from_numpyfilelist(filepath, numpyfilelist: list):
         memmap_path and memmap_handle
     """
 
-    message = "loading binary files into memmap..."
     image = np.load(str(numpyfilelist[0]))
     list_shape = [len(numpyfilelist)]
     list_shape = list_shape + list(image.shape)
@@ -70,8 +72,15 @@ def load_memmap_from_numpyfilelist(filepath, numpyfilelist: list):
         filename=memmap_path, mode="w+", shape=tuple(list_shape), dtype=np.float32
     )
     Console.info("Loading memmaps from numpy files...")
-    for idx in trange(0, len(numpyfilelist), ascii=True, desc=message):
+
+    def memmap_loader(numpyfilelist, memmap_handle, idx):
         memmap_handle[idx, ...] = np.load(numpyfilelist[idx])
+
+    with tqdm_joblib(tqdm(desc="numpy images to memmap", total=len(numpyfilelist))) as progress_bar:
+        joblib.Parallel(n_jobs=-2, verbose=3)(
+            joblib.delayed(memmap_loader)(numpyfilelist, memmap_handle, idx)
+            for idx in range(len(numpyfilelist))
+        )
 
     return memmap_path, memmap_handle
 
