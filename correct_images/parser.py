@@ -82,20 +82,20 @@ class CameraConfig:
         imagefilelist_parse = 'none'
         imagefilelist_process = 'none'
         if 'image_file_list' in node:
-            imagefilelist_parse = node["image_file_list"].get("parse", 'none')
-            imagefilelist_process = node["image_file_list"].get("process", 'none')
+            imagefilelist_parse = node.get("image_file_list", {}).get("parse", 'none')
+            imagefilelist_process = node.get("image_file_list", {}).get("process", 'none')
 
         brightness = 30.
         contrast = 3.
         if 'colour_correction' in node:
-            brightness = node["colour_correction"].get("brightness", 30.)
-            contrast = node["colour_correction"].get("contrast", 3.)
+            brightness = node.get("colour_correction", {}).get("brightness", brightness)
+            contrast = node.get("colour_correction", {}).get("contrast", contrast)
 
         subtractors_rgb = np.array([0, 0, 0])
         color_gain_matrix_rgb = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
         if 'manual_balance' in node:
-            subtractors_rgb = node["manual_balance"].get("subtractors_rgb", subtractors_rgb)
-            color_gain_matrix_rgb = node["manual_balance"].get("colour_gain_matrix_rgb", color_gain_matrix_rgb)
+            subtractors_rgb = node.get("manual_balance", {}).get("subtractors_rgb", subtractors_rgb)
+            color_gain_matrix_rgb = node.get("manual_balance", {}).get("colour_gain_matrix_rgb", color_gain_matrix_rgb)
 
         self.camera_name = camera_name
         self.imagefilelist_parse = imagefilelist_parse
