@@ -315,7 +315,7 @@ class Calibrator(object):
 
         # Set to true after we perform calibration
         self.calibrated = False
-        self.debug = True
+        self.debug = False
         self.calib_flags = flags
         self.checkerboard_flags = checkerboard_flags
         self.pattern = pattern
@@ -1357,6 +1357,8 @@ class StereoCalibrator(Calibrator):
             flags=cv2.CALIB_ZERO_DISPARITY,
             alpha=a,
         )[0:4]
+
+        print(self.l.P, '\n', self.r.P)
 
         self.l.mapx, self.l.mapy = cv2.initUndistortRectifyMap(
             self.l.intrinsics,
