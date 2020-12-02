@@ -124,6 +124,7 @@ def run_setup():
             "tqdm>=4.40.2",
             "setuptools>=42.0.2",
             "numba>=0.51.2",
+            "geographiclib>=1.50",
         ],
     )
 
