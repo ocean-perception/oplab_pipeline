@@ -857,12 +857,12 @@ class LaserCalibrator:
         # for i, plane in enumerate(self.uncertainty_planes):
         #     np.save('plane' + str(i) + '.npy', plane)
 
-        Console.info("Removing uncertainty planes that do not contribute...")
-        self._remove_unnecessary_uncertainty_planes()
-        Console.info("... finished removing non-contributing planes. Reduced "
-                     "number of uncertainty planes to {}."
-                     .format(len(self.uncertainty_planes)))
-        assert self._check_if_planes_enclose_inliers()  # Sanity check
+        # Console.info("Removing uncertainty planes that do not contribute...")
+        # self._remove_unnecessary_uncertainty_planes()
+        # Console.info("... finished removing non-contributing planes. Reduced "
+        #              "number of uncertainty planes to {}."
+        #              .format(len(self.uncertainty_planes)))
+        # assert self._check_if_planes_enclose_inliers()  # Sanity check
         filename = time.strftime("pointclouds_and_uncertainty_planes_%Y%m%d_"
                                  "%H%M%S.html")
         plot_pointcloud_and_planes(
