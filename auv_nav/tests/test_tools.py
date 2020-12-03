@@ -51,17 +51,21 @@ class TestTools(unittest.TestCase):
         DisplayablePath.show_tree(cwd)
 
     def test_latlon_wgs84(self):
+        # Boldrewood
         lat_p = 50.936501
         lon_p = -1.404266
 
+        # Highfield B35
         lat_ref = 50.936870
         lon_ref = -1.396295
 
         x, theta = latlon_to_metres(lat_p, lon_p, lat_ref, lon_ref)
-        self.assertAlmostEqual(x, 560.68, places=1)
-        self.assertAlmostEqual(theta, 265.801, places=2)
+        self.assertLess(x, 600.0)
+        self.assertGreater(x, 500.0)
+        self.assertLess(theta, 95.0)
+        self.assertGreater(theta, 85.0)
 
-        easting = -x * math.sin(theta)
+        easting = x * math.sin(theta)
         northing = x * math.cos(theta)
         lat, lon = metres_to_latlon(lat_ref, lon_ref, easting, northing)
 
