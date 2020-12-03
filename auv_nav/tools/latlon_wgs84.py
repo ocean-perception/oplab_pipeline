@@ -18,7 +18,8 @@ def latlon_to_metres(latitude, longitude, latitude_reference, longitude_referenc
                                  longitude_reference)
 
     distance = ret['s12']
-    bearing = ret['azi1']
+    bearing = - ret['azi1'] 
+    # The angle needs to be converted to NED
 
     return (distance, bearing)
 

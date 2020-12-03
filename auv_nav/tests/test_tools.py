@@ -65,8 +65,8 @@ class TestTools(unittest.TestCase):
         self.assertLess(theta, 95.0)
         self.assertGreater(theta, 85.0)
 
-        easting = x * math.sin(theta)
-        northing = x * math.cos(theta)
+        easting = x * math.sin(math.radians(theta))
+        northing = x * math.cos(math.radians(theta))
         lat, lon = metres_to_latlon(lat_ref, lon_ref, easting, northing)
 
         self.assertAlmostEqual(lat, lat_p, places=2)
