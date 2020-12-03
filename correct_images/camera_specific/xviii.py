@@ -55,10 +55,8 @@ def load_xviii_bayer_from_binary(binary_data, image_height, image_width):
 
 
 def xviii_to_np_file(np_filename, raw_filename, dtype, image_height, image_width):
-    np_fn_path = Path(np_filename)
-    if not np_fn_path.exists():
-        binary_data = np.fromfile(raw_filename, dtype)
-        image_raw = load_xviii_bayer_from_binary(
-                binary_data[:], image_height, image_width
-            )
-        np.save(np_filename, image_raw)
+    binary_data = np.fromfile(raw_filename, dtype)
+    image_raw = load_xviii_bayer_from_binary(
+            binary_data[:], image_height, image_width
+        )
+    np.save(np_filename, image_raw)

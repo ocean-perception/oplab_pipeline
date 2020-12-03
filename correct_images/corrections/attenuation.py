@@ -60,11 +60,12 @@ def attenuation_correct_memmap(image_memmap: np.ndarray,
         print('Applying attenuation corrections to images')
 
         for i_img in trange(image_memmap.shape[0]):
-            atn_crr_params = attenuation_parameters.squeeze()
-            den = atn_crr_params[:, :, 0] * np.exp(atn_crr_params[:, :, 1] * distance_memmap[i_img, ...])
-            den += atn_crr_params[:, :, 2]
-            img = (gains / den * image_memmap[i_img, ...])
-            image_memmap[i_img, ...] = img.astype(np.float32)
+            image_memmap[i_img, ...] = attenuation_correct(
+                image_memmap[i_img, ...],
+                distance_memmap[i_img, ...],
+                attenuation_parameters,
+                gains,
+            )
         return image_memmap
 
 

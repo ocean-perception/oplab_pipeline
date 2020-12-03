@@ -562,7 +562,7 @@ class Corrector:
                         distance_matrix_numpy_file_path
                     )
 
-                    if phase == "parse" and not distance_matrix_numpy_file_path.exists():
+                    if phase == "parse":
                         # create the distance matrix numpy file
                         np.save(distance_matrix_numpy_file_path, distance_matrix)
 
@@ -617,10 +617,9 @@ class Corrector:
             # write numpy files for corresponding bayer images
             for idx in trange(len(self.camera_image_list)):
                 np_fn_path = Path(bayer_numpy_filelist[idx])
-                if not np_fn_path.exists():
-                    tmp_tif = imageio.imread(self.camera_image_list[idx])
-                    tmp_npy = np.array(tmp_tif, np.uint16)
-                    np.save(bayer_numpy_filelist[idx], tmp_npy)
+                tmp_tif = imageio.imread(self.camera_image_list[idx])
+                tmp_npy = np.array(tmp_tif, np.uint16)
+                np.save(bayer_numpy_filelist[idx], tmp_npy)
         if self.camera.extension == "raw":
             # create numpy files as per bayer_numpy_filelist
             raw_image_for_size = np.fromfile(str(self.camera_image_list[0]), dtype=np.uint8)
@@ -636,7 +635,7 @@ class Corrector:
                     for idx in trange(len(self.camera_image_list))
                 )
 
-        Console.info("Image numpy files written successfully...")
+        Console.info("Image numpy files written successfully.")
 
     # compute correction parameters either for attenuation correction or static correction of images
     def generate_attenuation_correction_parameters(self):
