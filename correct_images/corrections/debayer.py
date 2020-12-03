@@ -5,6 +5,7 @@ from pathlib import Path
 import cv2
 from correct_images.tools.file_handlers import write_output_image
 from correct_images.camera_specific import xviii
+from correct_images.tools.joblib_tqdm import tqdm_joblib
 
 
 # convert bayer image to RGB based
@@ -90,11 +91,12 @@ def debayer_folder(output_dir: Path, filetype, pattern, output_format, image=Non
         image_list.append(single_image)
     Console.info("Found " + str(len(image_list)) + " image(s)...")
 
-    joblib.Parallel(n_jobs=-2, verbose=3)(
-        [
-            joblib.delayed(debayer_image)(
-                image_path, filetype, pattern, output_dir, output_format
-            )
-            for image_path in image_list
-        ]
-    )
+    with tqdm_joblib(tqdm(desc="Debayering inages", total=len(image_list))) as progress_bar:
+        joblib.Parallel(n_jobs=-2, verbose=0)(
+            [
+                joblib.delayed(debayer_image)(
+                    image_path, filetype, pattern, output_dir, output_format
+                )
+                for image_path in image_list
+            ]
+        )
