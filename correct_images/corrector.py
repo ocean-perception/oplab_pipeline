@@ -626,7 +626,7 @@ class Corrector:
             raw_image_for_size = np.fromfile(str(self.camera_image_list[0]), dtype=np.uint8)
 
             with tqdm_joblib(tqdm(desc="RAW images to numpy", total=len(self.bayer_numpy_filelist))) as progress_bar:
-                joblib.Parallel(n_jobs=-2, verbose=3)(
+                joblib.Parallel(n_jobs=-2, verbose=0)(
                     joblib.delayed(xviii.xviii_to_np_file)(
                         bayer_numpy_filelist[idx], 
                         str(self.camera_image_list[idx]),
@@ -870,7 +870,7 @@ class Corrector:
         Console.info("Processing images for color, distortion, gamma corrections...")
 
         with tqdm_joblib(tqdm(desc="Correcting images", total=len(self.bayer_numpy_filelist))) as progress_bar:
-            joblib.Parallel(n_jobs=-2, verbose=3)(
+            joblib.Parallel(n_jobs=-2, verbose=0)(
                 joblib.delayed(self.process_image)(idx, test_phase)
                 for idx in range(0, len(self.bayer_numpy_filelist))  # out of range error here
             )

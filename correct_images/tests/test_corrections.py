@@ -195,6 +195,7 @@ class testCorrections(unittest.TestCase):
             self.assertEqual(p, 3)
 
         maintain_pixels = True
+        expected_image_size = image_size
         for interpolate_method in interpolate_methods:
             img_scaled = corrections.rescale(fake_img,
                 interpolate_method, target_pixel_size_m, 

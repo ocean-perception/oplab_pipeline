@@ -15,10 +15,8 @@ def median_array(data: np.ndarray) -> np.ndarray:
     median_array = np.zeros((a, b), dtype=np.float32)
     for i in range(a):
         for j in range(b):
-            mean = 0.
             lst = [0]*n
             for k in range(n):
-                count = k + 1
                 lst[k] = data[k, i, j]
             s = sorted(lst)
             median = 0
@@ -89,23 +87,6 @@ def mean_std(data, calculate_std=True):
         mean and std of input image
     """
 
-    """
-    [n, a, b] = data.shape
-
-    #Console.info(f"{type(data)} of shape {data.shape}")
-    data = data.reshape((n, a * b))
-    #Console.info(f"{type(data)} of shape {data.shape}")
-    print("memory allocated...")
-
-    ret_mean = data.mean(dtype=np.float64, axis=0)
-    print("mean calculated...")
-    if calculate_std:
-        ret_std = memory_efficient_std(data)  #data.std(axis=0)
-        print("std calculated...")
-        return ret_mean.reshape((a, b)), ret_std.reshape((a, b))
-    else:
-        return ret_mean.reshape((a, b))
-    """
     mean_array, std_array = mean_std_array(data)
     if calculate_std:
         return mean_array, std_array
@@ -151,8 +132,7 @@ def image_mean_std_trimmed(data, ratio_trimming=0.2, calculate_std=True):
     )
 
     if ratio_trimming <= 0:
-        ret_mean = np.mean(data, axis=0)
-        ret_std = np.std(data, axis=0)
+        ret_mean, ret_std = mean_std_array(data)
         return ret_mean, ret_std
 
     else:
@@ -167,18 +147,6 @@ def image_mean_std_trimmed(data, ratio_trimming=0.2, calculate_std=True):
                 )
             ret_mean[idx_a, :] = np.array(results)[:, 0]
             ret_std[idx_a, :] = np.array(results)[:, 1]
-            """
-            results = joblib.Parallel(n_jobs=-2, verbose=3)(
-                [
-                    joblib.delayed(calc_mean_and_std_trimmed)(
-                        data[effective_index, idx_a, idx_b][0],
-                        ratio_trimming,
-                        calculate_std,
-                    )
-                    for idx_b in trange(b)
-                ]
-            )
-            """
         if not calculate_std:
             return ret_mean
         else:
@@ -206,25 +174,11 @@ def calc_mean_and_std_trimmed(data, rate_trimming, calc_std=True):
     std = None
     if rate_trimming <= 0:
         mean, std = mean_std_array(data)
-        """
-        mean = np.mean(data)
-        if calc_std:
-            std = np.std(data)
-        """
     else:
         sorted_values = np.sort(data)
         idx_left_limit = int(len(data) * rate_trimming / 2.0)
         idx_right_limit = int(len(data) * (1.0 - rate_trimming / 2.0))
-
         mean, std = mean_std_array(sorted_values[idx_left_limit:idx_right_limit])
-        """
-        mean = np.mean(sorted_values[idx_left_limit:idx_right_limit])
-        std = 0
-
-        if calc_std:
-            std = np.std(sorted_values[idx_left_limit:idx_right_limit])
-        """
-
     return np.array([mean, std])
 
 
