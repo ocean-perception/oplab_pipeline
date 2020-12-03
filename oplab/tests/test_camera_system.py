@@ -117,7 +117,7 @@ class TestCameraSystem(unittest.TestCase):
         self.assertEqual(len(cs.cameras), 3, "Wrong camera count")
 
         self.assertEqual(cs.cameras[0].name, "Cam51707923", "Wrong camera name")
-        self.assertEqual(cs.cameras[0].type, "rggb", "Wrong camera type")
+        self.assertEqual(cs.cameras[0].type, "grbg", "Wrong camera type")
         self.assertEqual(cs.cameras[0].bit_depth, 18, "Wrong camera bit_depth")
         self.assertEqual(
             cs.cameras[0].path,
@@ -139,7 +139,7 @@ class TestCameraSystem(unittest.TestCase):
         self.checkValidColumns(cs.cameras[0].columns)
 
         self.assertEqual(cs.cameras[1].name, "Cam51707925", "Wrong camera name")
-        self.assertEqual(cs.cameras[1].type, "rggb", "Wrong camera type")
+        self.assertEqual(cs.cameras[1].type, "grbg", "Wrong camera type")
         self.assertEqual(cs.cameras[1].bit_depth, 18, "Wrong camera bit_depth")
         self.assertEqual(
             cs.cameras[1].path,

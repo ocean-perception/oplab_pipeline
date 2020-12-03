@@ -107,8 +107,7 @@ class FilenameToDate:
             else:
                 usecond = "0"
             microsecond = int(msecond) * 1000 + int(usecond)
-            date = datetime.now()
-            '''
+
             date = datetime(
                 int(year),
                 int(month),
@@ -118,7 +117,6 @@ class FilenameToDate:
                 int(second),
                 microsecond,
             )
-            '''
             stamp = float(calendar.timegm(date.timetuple()))
             return stamp + microsecond * 1e-6
         else:
