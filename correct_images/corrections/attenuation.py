@@ -2,7 +2,7 @@ import numpy as np
 import joblib
 from correct_images.tools.curve_fitting import curve_fitting
 from correct_images.tools.joblib_tqdm import tqdm_joblib
-from tqdm import tqdm
+from tqdm import tqdm, trange
 
 
 def attenuation_correct(img: np.ndarray,
@@ -59,27 +59,12 @@ def attenuation_correct_memmap(image_memmap: np.ndarray,
         """
         print('Applying attenuation corrections to images')
 
-        def apply_attn_corr_to_memmap(i_img,
-                                      image_memmap,
-                                      distance_memmap,
-                                      attenuation_parameters,
-                                      gains):
-            image_memmap[i_img, ...] = attenuation_correct(
-                image_memmap[i_img, ...],
-                distance_memmap[i_img, ...],
-                attenuation_parameters,
-                gains,
-            )
-
-        with tqdm_joblib(tqdm(desc="Aplying attenuation correction", total=image_memmap.shape[0])) as progress_bar:
-            joblib.Parallel(n_jobs=-2, verbose=3)(
-                joblib.delayed(apply_attn_corr_to_memmap)(
-                        i_img,
-                        image_memmap,
-                        distance_memmap,
-                        attenuation_parameters,
-                        gains)
-                    for i_img in range(image_memmap.shape[0]))
+        for i_img in trange(image_memmap.shape[0]):
+            atn_crr_params = attenuation_parameters.squeeze()
+            den = atn_crr_params[:, :, 0] * np.exp(atn_crr_params[:, :, 1] * distance_memmap[i_img, ...])
+            den += atn_crr_params[:, :, 2]
+            img = (gains / den * image_memmap[i_img, ...])
+            image_memmap[i_img, ...] = img.astype(np.float32)
         return image_memmap
 
 
@@ -136,7 +121,7 @@ def calculate_attenuation_parameters(
     print("Start curve fitting...")
 
     with tqdm_joblib(tqdm(desc="Curve fitting", total=image_height * image_width)) as progress_bar:
-        results = joblib.Parallel(n_jobs=-2, verbose=3)(
+        results = joblib.Parallel(n_jobs=-2, verbose=0)(
             [
                 joblib.delayed(curve_fitting)(np.array(distances[:, i_pixel]),
                                               np.array(images[:, i_pixel]))
