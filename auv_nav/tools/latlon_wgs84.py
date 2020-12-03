@@ -12,15 +12,12 @@ from geographiclib.geodesic import Geodesic
 
 def latlon_to_metres(latitude, longitude, latitude_reference, longitude_reference):
     
-    ret = Geodesic.WGS84.Inverse(latitude, 
-                                 longitude,
-                                 latitude_reference, 
-                                 longitude_reference)
-
+    ret = Geodesic.WGS84.Inverse(latitude_reference, 
+                                 longitude_reference,
+                                 latitude, 
+                                 longitude)
     distance = ret['s12']
-    bearing = - ret['azi1'] 
-    # The angle needs to be converted to NED
-
+    bearing = ret['azi1'] 
     return (distance, bearing)
 
 

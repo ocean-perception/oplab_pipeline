@@ -52,18 +52,42 @@ class TestTools(unittest.TestCase):
 
     def test_latlon_wgs84(self):
         # Boldrewood
-        lat_p = 50.936501
-        lon_p = -1.404266
+        lat_ref = 50.936501
+        lon_ref = -1.404266
 
         # Highfield B35
-        lat_ref = 50.936870
-        lon_ref = -1.396295
+        lat_p = 50.936870
+        lon_p = -1.396295
 
         x, theta = latlon_to_metres(lat_p, lon_p, lat_ref, lon_ref)
         self.assertLess(x, 600.0)
         self.assertGreater(x, 500.0)
-        self.assertGreater(theta, -95.0)
-        self.assertLess(theta, -80.0)
+        self.assertGreater(theta, 85.0)
+        self.assertLess(theta, 90.0)
+
+        print(x, theta)
+
+        easting = x * math.sin(math.radians(theta))
+        northing = x * math.cos(math.radians(theta))
+        print(northing, easting)
+        lat, lon = metres_to_latlon(lat_ref, lon_ref, easting, northing)
+
+        self.assertAlmostEqual(lat, lat_p, places=2)
+        self.assertAlmostEqual(lon, lon_p, places=2)
+
+        # Sydney
+        lat_ref = -33.8559799094 
+        lon_ref = 151.20666584
+
+        # Tokyo
+        lat_p = 35.652832
+        lon_p = 139.839478
+
+        x, theta = latlon_to_metres(lat_p, lon_p, lat_ref, lon_ref)
+        self.assertLess(x, 8.5e6)
+        self.assertGreater(x, 7.5e6)
+        self.assertGreater(theta, -20)
+        self.assertLess(theta, 10)
 
         easting = x * math.sin(math.radians(theta))
         northing = x * math.cos(math.radians(theta))
