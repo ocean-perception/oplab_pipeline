@@ -11,23 +11,14 @@ from geographiclib.geodesic import Geodesic
 
 
 def latlon_to_metres(latitude, longitude, latitude_reference, longitude_reference):
+    
     ret = Geodesic.WGS84.Inverse(latitude, 
-                                 longitude, 
+                                 longitude,
                                  latitude_reference, 
                                  longitude_reference)
+
     distance = ret['s12']
-
-    y = math.sin(longitude - longitude_reference) * math.cos(latitude)
-    x = (math.cos(latitude_reference) * math.sin(latitude) 
-         - math.sin(latitude_reference) * math.cos(latitude) 
-         * math.cos(longitude - longitude_reference))
-
-    bearing = math.degrees(math.atan2(y, x))
-
-    while bearing > 360:
-        bearing = bearing - 360
-    while bearing < 0:
-        bearing = bearing + 360
+    bearing = ret['azi1']
 
     return (distance, bearing)
 
