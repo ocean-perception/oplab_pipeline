@@ -113,7 +113,7 @@ def run_setup():
             "imageio>=2.6.1",
             "joblib>=0.14.1",
             "matplotlib>=3.2.1",
-            "numpy>=1.16.1",
+            "numpy>=1.17.3",
             "pandas>=0.25.3",
             "pillow>=7.2.0",
             "plotly>=4.7.1",
