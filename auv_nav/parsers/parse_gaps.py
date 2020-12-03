@@ -318,17 +318,7 @@ def parse_gaps(mission, vehicle, category, ftype, outpath):
 
                     # determine range to input to uncertainty model
                     latitude = latitude_degrees + latitude_minutes / 60.0
-                    try:
-                        if latitude_negative_flag:
-                            latitude = -latitude
-                    except NameError:
-                        pass
                     longitude = longitude_degrees + longitude_minutes / 60.0
-                    try:
-                        if longitude_negative_flag:
-                            longitude = -longitude
-                    except NameError:
-                        pass
 
                     lateral_distance, bearing = latlon_to_metres(
                         latitude, longitude, latitude_ship, longitude_ship
@@ -341,11 +331,11 @@ def parse_gaps(mission, vehicle, category, ftype, outpath):
 
                     # determine uncertainty in terms of latitude and longitude
                     latitude_offset, longitude_offset = metres_to_latlon(
-                        latitude, longitude, distance_std, distance_std
+                        abs(latitude), abs(longitude), distance_std, distance_std
                     )
 
-                    latitude_std = latitude - latitude_offset
-                    longitude_std = longitude - longitude_offset
+                    latitude_std = abs(latitude) - latitude_offset
+                    longitude_std = abs(longitude) - longitude_offset
 
                     # calculate in metres from reference
                     lateral_distance_ship, bearing_ship = latlon_to_metres(
