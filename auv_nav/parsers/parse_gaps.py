@@ -131,6 +131,8 @@ def parse_gaps(mission, vehicle, category, ftype, outpath):
                             epoch_timestamp = epoch_time + msec / 1000 + timeoffset
 
                             # get position
+                            latitude_negative_flag = False
+                            longitude_negative_flag = False
                             latitude_string = line_split_no_checksum[7]
                             latitude_degrees = int(latitude_string[0:2])
                             latitude_minutes = float(latitude_string[2:10])
@@ -144,6 +146,14 @@ def parse_gaps(mission, vehicle, category, ftype, outpath):
                                 longitude_negative_flag = True
 
                             depth = float(line_split_no_checksum[12])
+
+                            latitude = latitude_degrees + latitude_minutes / 60.0
+                            longitude = longitude_degrees + longitude_minutes / 60.0
+
+                            if latitude_negative_flag:
+                                latitude = -latitude
+                            if longitude_negative_flag:
+                                longitude = -longitude
 
                             # flag raised to proceed
                             flag_got_time = 3
@@ -316,14 +326,14 @@ def parse_gaps(mission, vehicle, category, ftype, outpath):
                     while heading_ship < 0:
                         heading_ship = heading_ship + 360
 
-                    # determine range to input to uncertainty model
-                    latitude = latitude_degrees + latitude_minutes / 60.0
-                    longitude = longitude_degrees + longitude_minutes / 60.0
+                    
 
                     lateral_distance, bearing = latlon_to_metres(
                         latitude, longitude, latitude_ship, longitude_ship
                     )
 
+                    
+                    # determine range to input to uncertainty model
                     distance = math.sqrt(
                         lateral_distance * lateral_distance + depth * depth
                     )
@@ -334,8 +344,9 @@ def parse_gaps(mission, vehicle, category, ftype, outpath):
                         abs(latitude), abs(longitude), distance_std, distance_std
                     )
 
-                    latitude_std = abs(latitude) - latitude_offset
-                    longitude_std = abs(longitude) - longitude_offset
+
+                    latitude_std = abs(abs(latitude) - latitude_offset)
+                    longitude_std = abs(abs(longitude) - longitude_offset)
 
                     # calculate in metres from reference
                     lateral_distance_ship, bearing_ship = latlon_to_metres(
