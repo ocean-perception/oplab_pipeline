@@ -149,7 +149,6 @@ class Corrector:
         elif self.correction_method == "manual_balance":
             Console.info('run process for manual_balance...')
             return False
-        #self.cleanup()
 
     def process(self):
         if not self.camera_found:
@@ -204,7 +203,7 @@ class Corrector:
         else:
             Console.info('Running process with manual colour balancing...')
         self.process_correction()
-        #self.cleanup()
+        self.cleanup()
 
     def cleanup(self):
         # TODO(MMC) was done before for each camera (a single corrector instance)
@@ -663,9 +662,7 @@ class Corrector:
             (self.image_channels, self.image_height, self.image_width)
         )
 
-        _, image_memmap = load_memmap_from_numpyfilelist(
-            self.memmap_folder, self.bayer_numpy_filelist
-        )
+        image_memmap = None
 
         # compute correction parameters if distance matrix is generated
         if len(self.distance_matrix_numpy_filelist) > 0:
@@ -679,6 +676,10 @@ class Corrector:
                 filtered_distance_numpy_filelist.append(
                     self.distance_matrix_numpy_filelist[idx]
                 )
+
+            _, image_memmap = load_memmap_from_numpyfilelist(
+                self.memmap_folder, filtered_image_numpy_filelist
+            )
 
             _, distance_memmap = load_memmap_from_numpyfilelist(
                 self.memmap_folder, filtered_distance_numpy_filelist)
