@@ -57,10 +57,7 @@ def attenuation_correct_memmap(image_memmap: np.ndarray,
         numpy.ndarray
             Resulting images after applying attenuation correction
         """
-        print('Applying attenuation corrections to images')
-
-        print('Applying attenuation corrections to images')
-        for i_img in range(image_memmap.shape[0]):
+        for i_img in trange(image_memmap.shape[0]):
             # memmap data can not be updated in joblib .
             image_memmap[i_img, ...] = attenuation_correct(
                 image_memmap[i_img, ...],
