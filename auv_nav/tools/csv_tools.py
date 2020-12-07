@@ -270,13 +270,16 @@ def camera_csv(camera_list, camera_name, csv_filepath, csv_flag):
                 str_to_write_cov += ', cov_'+a+'_'+b
         str_to_write_cov += '\n'
 
+        fileout = None
+        fileout_cov = None
         if len(camera_list) > 0:
             fileout = file.open("w")
-            fileout_cov = covariance_file.open('w')
-
+            
             # write headers
             fileout.write(str_to_write)
-            fileout_cov.write(str_to_write_cov)
+            if camera_list[0].covariance is not None:
+                fileout_cov = covariance_file.open('w')
+                fileout_cov.write(str_to_write_cov)
 
             # Loop for each line in csv
             for i in range(len(camera_list)):
@@ -340,10 +343,10 @@ def camera_csv(camera_list, camera_name, csv_filepath, csv_flag):
                             for k2 in range(6):
                                 c = camera_list[i].covariance[k1, k2]
                                 str_to_write_cov += "," + str(c)
+                        str_to_write_cov += "\n"
+                        fileout_cov.write(str_to_write_cov)
                     str_to_write += "\n"
-                    str_to_write_cov += "\n"
                     fileout.write(str_to_write)
-                    fileout_cov.write(str_to_write_cov)
                 except IndexError:
                     Console.quit(
                         "There is something wrong with camera filenames and indexing. Check camera_csv function."
