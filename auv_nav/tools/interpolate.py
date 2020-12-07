@@ -274,12 +274,16 @@ def interpolate_covariance(t, t0, t1, cov0, cov1):
 
 
 def interpolate_property(centre_list, i, sensor_list, j, prop_name):
-    return interpolate(
-        sensor_list[i].epoch_timestamp,
-        centre_list[j - 1].epoch_timestamp,
-        centre_list[j].epoch_timestamp,
-        centre_list[j - 1].__dict__[prop_name],
-        centre_list[j].__dict__[prop_name])
+    if (centre_list[j - 1].__dict__[prop_name] is None 
+        or centre_list[j].__dict__[prop_name] is None):
+        return None
+    else:
+        return interpolate(
+            sensor_list[i].epoch_timestamp,
+            centre_list[j - 1].epoch_timestamp,
+            centre_list[j].epoch_timestamp,
+            centre_list[j - 1].__dict__[prop_name],
+            centre_list[j].__dict__[prop_name])
 
 def interpolate_sensor_list(
     sensor_list,

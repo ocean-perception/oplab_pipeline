@@ -52,7 +52,7 @@ class OutputFormat:
 
     def __init__(self):
         # Nothing to do
-        self.epoch_timestamp = 0
+        self.epoch_timestamp = None
 
     def __lt__(self, o):
         return self.epoch_timestamp < o.epoch_timestamp
@@ -305,16 +305,16 @@ class InertialVelocity(OutputFormat):
 
         # interpolated data.
         # maybe separate below to synced_velocity_inertial_orientation_...?
-        self.roll = 0
-        self.pitch = 0
-        self.yaw = 0
+        self.roll = None
+        self.pitch = None
+        self.yaw = None
 
-        self.northings = 0
-        self.eastings = 0
-        self.depth = 0
+        self.northings = None
+        self.eastings = None
+        self.depth = None
 
-        self.latitude = 0
-        self.longitude = 0
+        self.latitude = None
+        self.longitude = None
 
     def valid(self):
         if (
@@ -625,9 +625,9 @@ class Altitude(OutputFormat):
         self.altitude_std = None
         self.altitude_timestamp = None
         # interpolate depth and add altitude for every altitude measurement
-        self.seafloor_depth = 0
-        self.sound_velocity = 0
-        self.sound_velocity_correction = 0
+        self.seafloor_depth = None
+        self.sound_velocity = None
+        self.sound_velocity_correction = None
 
     def valid(self):
         return (
@@ -698,35 +698,35 @@ class Usbl(OutputFormat):
 
         self.latitude = None
         self.longitude = None
-        self.latitude_std = 0
-        self.longitude_std = 0
+        self.latitude_std = None
+        self.longitude_std = None
 
         self.northings = None
         self.eastings = None
-        self.northings_std = 0
-        self.eastings_std = 0
+        self.northings_std = None
+        self.eastings_std = None
 
-        self.depth = 0
-        self.depth_std = 0
+        self.depth = None
+        self.depth_std = None
 
-        self.distance_to_ship = 0
+        self.distance_to_ship = None
 
-        self.latitude_ship = 0
-        self.longitude_ship = 0
-        self.northings_ship = 0
-        self.eastings_ship = 0
-        self.heading_ship = 0
+        self.latitude_ship = None
+        self.longitude_ship = None
+        self.northings_ship = None
+        self.eastings_ship = None
+        self.heading_ship = None
 
         # temporary solution for fk180731 cruise
-        # self.epoch_timestamp = 0 timestamp
-        self.northings_ship = 0
-        self.eastings_ship = 0
-        # self.northings_target = 0 northings
-        # self.eastings_target = 0 eastings
-        # self.depth = 0 depth
-        self.lateral_distace = 0
-        self.distance = 0
-        self.bearing = 0
+        # self.epoch_timestamp = None timestamp
+        self.northings_ship = None
+        self.eastings_ship = None
+        # self.northings_target = None northings
+        # self.eastings_target = None eastings
+        # self.depth = None depth
+        self.lateral_distace = None
+        self.distance = None
+        self.bearing = None
 
         if std_factor is not None:
             self.std_factor = std_factor
@@ -999,18 +999,18 @@ class Other:
         self.epoch_timestamp = None
         self.data = []
 
-        self.northings = 0
-        self.eastings = 0
-        self.depth = 0
+        self.northings = None
+        self.eastings = None
+        self.depth = None
 
-        self.latitude = 0
-        self.longitude = 0
+        self.latitude = None
+        self.longitude = None
 
-        self.roll = 0
-        self.pitch = 0
-        self.yaw = 0
+        self.roll = None
+        self.pitch = None
+        self.yaw = None
 
-        self.altitude = 0
+        self.altitude = None
         self.covariance = None
 
     def from_json(self, json):
@@ -1022,50 +1022,51 @@ class SyncedOrientationBodyVelocity:
     def __init__(self, timestamp=None):
         self.epoch_timestamp = None
         # from orientation
-        self.roll = 0
-        self.pitch = 0
-        self.yaw = 0
-        self.roll_std = 0
-        self.pitch_std = 0
-        self.yaw_std = 0
+        self.roll = None
+        self.pitch = None
+        self.yaw = None
+        self.roll_std = None
+        self.pitch_std = None
+        self.yaw_std = None
         # orientation speed
         # from orientation
-        self.vroll = 0
-        self.vpitch = 0
-        self.vyaw = 0
-        self.vroll_std = 0
-        self.vpitch_std = 0
-        self.vyaw_std = 0
+        self.vroll = None
+        self.vpitch = None
+        self.vyaw = None
+        self.vroll_std = None
+        self.vpitch_std = None
+        self.vyaw_std = None
         # interpolated
-        self.x_velocity = 0
-        self.y_velocity = 0
-        self.z_velocity = 0
-        self.x_velocity_std = 0
-        self.y_velocity_std = 0
-        self.z_velocity_std = 0
+        self.x_velocity = None
+        self.y_velocity = None
+        self.z_velocity = None
+        self.x_velocity_std = None
+        self.y_velocity_std = None
+        self.z_velocity_std = None
         # transformed
-        self.north_velocity = 0
-        self.east_velocity = 0
-        self.down_velocity = 0
-        self.north_velocity_std = 0
-        self.east_velocity_std = 0
-        self.down_velocity_std = 0
+        self.north_velocity = None
+        self.east_velocity = None
+        self.down_velocity = None
+        self.north_velocity_std = None
+        self.east_velocity_std = None
+        self.down_velocity_std = None
         # interpolated
-        self.altitude = 0
+        self.altitude = None
         # calculated
-        self.northings = 0
-        self.eastings = 0
-        self.northings_std = 0
-        self.eastings_std = 0
-        self.depth = 0  # from interpolation of depth, not dr
-        self.depth_std = 0
+        self.northings = None
+        self.eastings = None
+        self.northings_std = None
+        self.eastings_std = None
+        self.depth = None  # from interpolation of depth, not dr
+        self.depth_std = None
 
-        self.latitude = 0
-        self.longitude = 0
+        self.latitude = None
+        self.longitude = None
         self.covariance = None
 
     def __str__(self):
         msg = 'SyncedOrientationBodyVelocity object:\n'
+        msg += '\tTimestamp: ' + str(self.epoch_timestamp) + '\n'
         msg += '\tPosition: ('+ str(self.northings) +', '+ str(self.eastings) +', '+ str(self.depth) +')\n'
         msg += '\tPos. std: ('+ str(self.northings_std) +', '+ str(self.eastings_std) +', '+ str(self.depth_std) +')\n'
         msg += '\tOrientation: ('+ str(self.roll) +', '+ str(self.pitch) +', '+ str(self.yaw) +')\n'

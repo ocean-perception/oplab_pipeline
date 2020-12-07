@@ -560,7 +560,7 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
         ):
             j = j + 1
 
-        if j >= 1:
+        if j > 0:
             altitude_list[i].seafloor_depth = (
                 interpolate(
                     altitude_list[i].epoch_timestamp,
@@ -571,6 +571,7 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
                 )
                 + altitude_list[i].altitude
             )
+    altitude_list[0].seafloor_depth = altitude_list[1].seafloor_depth
 
     # perform usbl_filter
     if usbl_filter_activate:
@@ -744,9 +745,11 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
         dead_reckoning_dvl_list.append(dead_reckoning_dvl)
 
     # dead reckoning solution
+    dead_reckoning_dvl_list[0].northings = 0.0
+    dead_reckoning_dvl_list[0].eastings = 0.0
     for i in range(len(dead_reckoning_dvl_list)):
         # dead reckoning solution
-        if i >= 1:
+        if i > 0:
             [
                 dead_reckoning_dvl_list[i].northings,
                 dead_reckoning_dvl_list[i].eastings,
@@ -881,8 +884,10 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
                     depth_list[k].depth,
                 )  # depth directly interpolated from depth sensor
 
+        velocity_inertial_list[0].northings = 0.0
+        velocity_inertial_list[0].eastings = 0.0
         for i in range(len(velocity_inertial_list)):
-            if i >= 1:
+            if i > 0:
                 [
                     velocity_inertial_list[i].northings,
                     velocity_inertial_list[i].eastings,
