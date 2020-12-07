@@ -35,8 +35,15 @@ class Index:
 
 
 class MeasurementReport:
-    valid = 0
-    dropped = 0
+    __slots__ = [
+        'valid', 
+        'dropped', 
+        'total'
+    ]
+
+    def __init__(self):
+        self.valid = 0
+        self.dropped = 0
 
     def add(self, valid):
         if valid:
@@ -47,6 +54,8 @@ class MeasurementReport:
 
 
 class EkfState(object):
+    __slots__ = ['time', 'state', 'covariance']
+
     def __init__(self, time, state, covariance):
         # The real-valued time, in seconds, since some epoch
         self.time = time
@@ -120,6 +129,15 @@ def warn_if_zero(val, name):
         Console.warn("The value for", name, "is zero. Is this expected?")
 
 class Measurement(object):
+    __slots__ = [
+        'measurement', 
+        'covariance', 
+        'sensors_std', 
+        'update_vector',
+        'time',
+        'type',
+        'mahalanobis_threshold'
+    ]
     def __init__(self, sensors_std):
         # The measurement and its associated covariance
         self.measurement = np.zeros(Index.DIM, dtype=np.float64)
@@ -268,6 +286,19 @@ class Measurement(object):
 
 
 class EkfImpl(object):
+    __slots__ = [
+        'covariance',
+        'state',
+        'initialized',
+        'last_update_time',
+        'predicted_state',
+        'process_noise_covariance',
+        'transfer_function',
+        'transfer_function_jacobian',
+        'states_vector',
+        'smoothed_states_vector',
+        'measurements',
+    ]
     def __init__(self):
         self.covariance = np.array([])
         self.state = np.array([])
@@ -630,6 +661,7 @@ class EkfImpl(object):
 
 
 class ExtendedKalmanFilter(object):
+    __slots__ = ['ekf']
     def __init__(
         self,
         initial_estimate_covariance,
