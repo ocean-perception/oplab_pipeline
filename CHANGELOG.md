@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.6 (2020-12-08)
+ - Sensors are initialised to None by default
+ - Removed unused covariance outputs for DR
+ - Standard deviation outputs in CSV
+ - Covariance CSVs for EKF
+ - Added tool to scale images
+ - Corrected bayer pattern bugs
+
 ## 0.1.0 (2020-06-01)
  - First public release
  - Added changelog
