@@ -20,13 +20,14 @@ from auv_nav.tools.time_conversions import date_time_to_epoch
 from auv_nav.tools.time_conversions import read_timezone
 from oplab import get_raw_folder
 from oplab import Console
+from oplab import Mission, Vehicle
 
 # http://www.json.org/
 data_list = []
 # need to make acfr parsers
 
 
-def parse_ae2000(mission, vehicle, category, ftype, outpath):
+def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
     # parser meta data
     class_string = "measurement"
     sensor_string = "ae20000"
@@ -140,7 +141,7 @@ def parse_ae2000(mission, vehicle, category, ftype, outpath):
                     # phins convention is west +ve so a minus should be necessary
                     east_velocity = float(df["vye"][row_index])
                     north_velocity = float(df["vxe"][row_index])
-                    down_velocity = -9999
+                    down_velocity = None
 
                     east_velocity_std = (
                         abs(east_velocity) * mission.velocity.std_factor
@@ -150,7 +151,7 @@ def parse_ae2000(mission, vehicle, category, ftype, outpath):
                         abs(north_velocity) * mission.velocity.std_factor
                         + mission.velocity.std_offset
                     )
-                    down_velocity_std = -9999
+                    down_velocity_std = None
                     # write out in the required format interlace at end
                     data = {
                         "epoch_timestamp": float(epoch_timestamp),
@@ -168,8 +169,8 @@ def parse_ae2000(mission, vehicle, category, ftype, outpath):
                                 "east_velocity_std": float(east_velocity_std),
                             },
                             {
-                                "down_velocity": float(down_velocity),
-                                "down_velocity_std": float(down_velocity_std),
+                                "down_velocity": down_velocity,
+                                "down_velocity_std": down_velocity_std,
                             },
                         ],
                     }
@@ -182,9 +183,9 @@ def parse_ae2000(mission, vehicle, category, ftype, outpath):
                     pitch = float(df["Pitch"][row_index])
                     heading = float(df["Yaw"][row_index])
 
-                    heading_std = -9999
-                    roll_std = -9999
-                    pitch_std = -9999
+                    heading_std = mission.orientation.std_factor*abs(heading) + mission.orientation.std_offset
+                    roll_std = mission.orientation.std_factor*abs(roll) + mission.orientation.std_offset
+                    pitch_std = mission.orientation.std_factor*abs(pitch) + mission.orientation.std_offset
                     # account for sensor rotational offset
                     headingoffset = vehicle.ins.yaw
 
@@ -223,9 +224,9 @@ def parse_ae2000(mission, vehicle, category, ftype, outpath):
                     pitch_rate = float(df["prate"][row_index])
                     heading_rate = float(df["yrate"][row_index])
 
-                    heading_rate_std = -9999
-                    roll_rate_std = -9999
-                    pitch_rate_std = -9999
+                    heading_rate_std = None
+                    roll_rate_std = None
+                    pitch_rate_std = None
 
                     data = {
                         "epoch_timestamp": float(epoch_timestamp),
@@ -236,15 +237,15 @@ def parse_ae2000(mission, vehicle, category, ftype, outpath):
                         "data": [
                             {
                                 "heading_rate": float(heading_rate),
-                                "heading_rate_std": float(heading_rate_std),
+                                "heading_rate_std": heading_rate_std,
                             },
                             {
                                 "roll_rate": float(roll_rate),
-                                "roll_rate_std": float(roll_rate_std),
+                                "roll_rate_std": roll_rate_std,
                             },
                             {
                                 "pitch_rate": float(pitch_rate),
-                                "pitch_rate_std": float(pitch_rate_std),
+                                "pitch_rate_std": pitch_rate_std,
                             },
                         ],
                     }
@@ -279,8 +280,8 @@ def parse_ae2000(mission, vehicle, category, ftype, outpath):
                         altitude * mission.altitude.std_factor
                         + mission.altitude.std_offset
                     )
-                    sound_velocity = -9999
-                    sound_velocity_correction = -9999
+                    sound_velocity = None
+                    sound_velocity_correction = None
 
                     # write out in the required format interlace at end
                     data = {
@@ -296,10 +297,9 @@ def parse_ae2000(mission, vehicle, category, ftype, outpath):
                                 "altitude_std": float(altitude_std),
                             },
                             {
-                                "sound_velocity": float(sound_velocity),
-                                "sound_velocity_correction": float(
-                                    sound_velocity_correction
-                                ),
+                                "sound_velocity": sound_velocity,
+                                "sound_velocity_correction": 
+                                    sound_velocity_correction,
                             },
                         ],
                     }
@@ -308,8 +308,8 @@ def parse_ae2000(mission, vehicle, category, ftype, outpath):
             if ftype == "acfr":
                 if category == "velocity":
 
-                    sound_velocity = -9999
-                    sound_velocity_correction = -9999
+                    sound_velocity = None
+                    sound_velocity_correction = None
                     altitude = float(df["Height"][row_index])
 
                     # DVL convention is +ve aft to forward
@@ -348,7 +348,7 @@ def parse_ae2000(mission, vehicle, category, ftype, outpath):
                         + " vz:"
                         + str(float(zz_velocity))
                         + " nx:0 ny:0 nz:0 COG:0 SOG:0 bt_status:0 h_true:0 p_gimbal:0 sv: "
-                        + str(float(sound_velocity))
+                        + str(sound_velocity)
                         + "\n"
                     )
                     data_list += data
@@ -358,9 +358,9 @@ def parse_ae2000(mission, vehicle, category, ftype, outpath):
                     pitch = float(df["Pitch"][row_index])
                     heading = float(df["Yaw"][row_index])
 
-                    roll_std = -9999
-                    pitch_std = -9999
-                    heading_std = -9999
+                    heading_std = mission.orientation.std_factor*abs(heading) + mission.orientation.std_offset
+                    roll_std = mission.orientation.std_factor*abs(roll) + mission.orientation.std_offset
+                    pitch_std = mission.orientation.std_factor*abs(pitch) + mission.orientation.std_offset
 
                     # account for sensor rotational offset
                     headingoffset = vehicle.ins.yaw
