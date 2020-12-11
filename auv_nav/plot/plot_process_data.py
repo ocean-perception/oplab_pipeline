@@ -144,12 +144,13 @@ def plot_velocity_vs_time(
             "{} east velocity".format(velocity_inertial_sensor_name),
             "blue",
         )
-        tr_inertial_down = create_trace(
-            inertial_time,
-            inertial_down_velocity,
-            "{} down velocity".format(velocity_inertial_sensor_name),
-            "blue",
-        )
+        if inertial_down_velocity[0] is not None:
+            tr_inertial_down = create_trace(
+                inertial_time,
+                inertial_down_velocity,
+                "{} down velocity".format(velocity_inertial_sensor_name),
+                "blue",
+            )
 
     fig = subplots.make_subplots(
         rows=3,
@@ -166,9 +167,12 @@ def plot_velocity_vs_time(
     )
     fig.append_trace(tr_dr_north, 1, 1)
     if len(velocity_inertial_list) > 0:
-        fig.append_trace(tr_inertial_north, 1, 1)
-        fig.append_trace(tr_inertial_east, 2, 1)
-        fig.append_trace(tr_inertial_down, 3, 1)
+        if velocity_inertial_list[0].north_velocity is not None:
+            fig.append_trace(tr_inertial_north, 1, 1)
+        if velocity_inertial_list[0].east_velocity is not None:
+            fig.append_trace(tr_inertial_east, 2, 1)
+        if velocity_inertial_list[0].down_velocity is not None:
+            fig.append_trace(tr_inertial_down, 3, 1)
     fig.append_trace(tr_dr_east, 2, 1)
     fig.append_trace(tr_dr_down, 3, 1)
     fig.append_trace(tr_dr_x, 1, 2)
@@ -420,15 +424,18 @@ def plot_uncertainty(
     tr_e = create_trace(usbl_time, usbl_easting_std, "easting std usbl", "green")
 
     if len(velocity_inertial_list) > 0:
-        tr_iv_n = create_trace(
-            iv_time, iv_n_vel_std, "north velocity std inertial", "red"
-        )
-        tr_iv_e = create_trace(
-            iv_time, iv_e_vel_std, "east velocity std inertial", "green"
-        )
-        tr_iv_d = create_trace(
-            iv_time, iv_d_vel_std, "down velocity std inertial", "blue"
-        )
+        if iv_n_vel_std[0] is not None:
+            tr_iv_n = create_trace(
+                iv_time, iv_n_vel_std, "north velocity std inertial", "red"
+            )
+        if iv_e_vel_std[0] is not None:
+            tr_iv_e = create_trace(
+                iv_time, iv_e_vel_std, "east velocity std inertial", "green"
+            )
+        if iv_d_vel_std[0] is not None:
+            tr_iv_d = create_trace(
+                iv_time, iv_d_vel_std, "down velocity std inertial", "blue"
+            )
 
     fig = subplots.make_subplots(
         rows=2,
@@ -456,9 +463,12 @@ def plot_uncertainty(
     fig.append_trace(tr_depth, 2, 1)
 
     if len(velocity_inertial_list) > 0:
-        fig.append_trace(tr_iv_n, 2, 2)
-        fig.append_trace(tr_iv_e, 2, 2)
-        fig.append_trace(tr_iv_d, 2, 2)
+        if iv_n_vel_std[0] is not None:
+            fig.append_trace(tr_iv_n, 2, 2)
+        if iv_e_vel_std[0] is not None:
+            fig.append_trace(tr_iv_e, 2, 2)
+        if iv_d_vel_std[0] is not None:
+            fig.append_trace(tr_iv_d, 2, 2)
 
     fig.append_trace(tr_n, 2, 3)
     fig.append_trace(tr_e, 2, 3)
