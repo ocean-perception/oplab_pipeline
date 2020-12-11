@@ -13,6 +13,7 @@ from auv_nav.tools.latlon_wgs84 import latlon_to_metres
 from auv_nav.tools.latlon_wgs84 import metres_to_latlon
 from oplab import Console
 from math import sqrt, atan2, pi, sin, cos
+import math
 import json as js
 import numpy as np
 
@@ -653,6 +654,7 @@ class Altitude(OutputFormat):
     def from_json(self, json):
         self.epoch_timestamp = json["epoch_timestamp"]
         self.altitude = json["data"][0]["altitude"]
+        self.altitude_std = json["data"][0]["altitude_std"]
 
     def write_csv_header(self):
         return "epoch_timestamp," + "altitude\n"
@@ -802,9 +804,17 @@ class Usbl(OutputFormat):
             self.eastings_std = (
                 sensor_std["offset"] + sensor_std["factor"] * self.distance_to_ship
             )
-            self.latitude_std = self.eastings_std / 111.111e3
-            self.longitude_std = self.northings_std / 111.111e3
 
+            # determine range to input to uncertainty model
+            distance = math.sqrt(self.distance_to_ship**2  + self.depth**2)
+            distance_std = sensor_std["factor"] * distance + sensor_std["offset"]
+
+            # determine uncertainty in terms of latitude and longitude
+            latitude_offset, longitude_offset = metres_to_latlon(
+                abs(self.latitude), abs(self.longitude), distance_std, distance_std
+            )
+            self.latitude_std = abs(abs(self.latitude) - latitude_offset)
+            self.longitude_std = abs(abs(self.longitude) - longitude_offset)
         else:
             Console.error("The STD model you entered for USBL is not supported.")
             Console.quit("STD model not supported.")
