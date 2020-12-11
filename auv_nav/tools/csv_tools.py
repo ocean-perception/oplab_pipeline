@@ -388,7 +388,7 @@ def other_data_csv(data_list, data_name, csv_filepath, csv_flag):
         df.to_csv(csv_file / "{}.csv".format(data_name), header=True, index=False)
 
 
-def write_raw_sensor_csv(csv_filepath, data_list, csv_filename, mutex=None):
+def write_sensor_csv(csv_filepath, data_list, csv_filename, mutex=None):
     if len(data_list) > 0:
         # check the relvant folders exist and if note create them
         csv_file = Path(csv_filepath)

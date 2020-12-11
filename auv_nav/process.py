@@ -14,7 +14,7 @@ from auv_nav.tools.time_conversions import epoch_from_json
 from auv_nav.tools.time_conversions import epoch_to_datetime
 from auv_nav.tools.latlon_wgs84 import metres_to_latlon
 from auv_nav.tools.body_to_inertial import body_to_inertial
-from auv_nav.tools.csv_tools import write_csv, write_raw_sensor_csv, write_sidescan_csv
+from auv_nav.tools.csv_tools import write_csv, write_sensor_csv, write_sidescan_csv
 from auv_nav.tools.csv_tools import camera_csv
 from auv_nav.tools.csv_tools import other_data_csv
 from auv_nav.tools.csv_tools import spp_csv
@@ -509,44 +509,44 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
     Console.info("\t* Usbl: {} elements".format(len(usbl_list)))
 
     Console.info("Writing outputs to: {}".format(renavpath))
-    raw_sensor_path = renavpath / "csv" / "sensors"
+    raw_sensor_path = renavpath / "csv" / "sensor_values_and_uncertainties"
 
     threads = []
     mutex = threading.Lock()
     t = threading.Thread(
-        target=write_raw_sensor_csv,
-        args=[raw_sensor_path, velocity_body_list, "velocity_body_raw", mutex],
+        target=write_sensor_csv,
+        args=[raw_sensor_path, velocity_body_list, "velocity_body", mutex],
     )
     t.start()
     threads.append(t)
     t = threading.Thread(
-        target=write_raw_sensor_csv,
-        args=[raw_sensor_path, altitude_list, "altitude_raw", mutex],
+        target=write_sensor_csv,
+        args=[raw_sensor_path, altitude_list, "altitude", mutex],
     )
     t.start()
     threads.append(t)
     t = threading.Thread(
-        target=write_raw_sensor_csv,
-        args=[raw_sensor_path, orientation_list, "orientation_raw", mutex],
+        target=write_sensor_csv,
+        args=[raw_sensor_path, orientation_list, "orientation", mutex],
     )
     t.start()
     threads.append(t)
     t = threading.Thread(
-        target=write_raw_sensor_csv,
-        args=[raw_sensor_path, depth_list, "depth_raw", mutex],
+        target=write_sensor_csv,
+        args=[raw_sensor_path, depth_list, "depth", mutex],
     )
     t.start()
     threads.append(t)
     t = threading.Thread(
-        target=write_raw_sensor_csv,
-        args=[raw_sensor_path, usbl_list, "usbl_raw", mutex],
+        target=write_sensor_csv,
+        args=[raw_sensor_path, usbl_list, "usbl", mutex],
     )
     t.start()
     threads.append(t)
     if len(camera3_list) > 0:
         t = threading.Thread(
-            target=write_raw_sensor_csv,
-            args=[raw_sensor_path, camera3_list, "camera3_raw", mutex],
+            target=write_sensor_csv,
+            args=[raw_sensor_path, camera3_list, "camera3", mutex],
         )
         t.start()
         threads.append(t)

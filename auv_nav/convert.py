@@ -11,7 +11,7 @@ from auv_nav.tools.time_conversions import epoch_from_json
 from auv_nav.tools.time_conversions import epoch_to_datetime
 from auv_nav.tools.latlon_wgs84 import metres_to_latlon
 from auv_nav.tools.body_to_inertial import body_to_inertial
-from auv_nav.tools.csv_tools import write_csv, write_raw_sensor_csv
+from auv_nav.tools.csv_tools import write_csv
 from auv_nav.tools.csv_tools import camera_csv
 from auv_nav.tools.csv_tools import other_data_csv
 from auv_nav.tools.interpolate import interpolate_camera
