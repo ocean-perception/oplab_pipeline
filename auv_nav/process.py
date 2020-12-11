@@ -116,16 +116,6 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
     chemical_list = []
     chemical_pf_list = []
 
-    # std factors and offsets defaults for EKF
-    std_factor_position_xy = 0.01
-    std_offset_position_xy_m = 10.0
-    std_factor_position_z = 0
-    std_offset_position_z_m = 0.01
-    std_factor_speed = 0.001
-    std_offset_speed_mps = 0.002
-    std_factor_orientation = 0.0
-    std_offset_orientation_deg = 0.03
-
     # load auv_nav.yaml for particle filter and other setup
     filepath = Path(filepath).resolve()
     filepath = get_processed_folder(filepath)
@@ -190,22 +180,7 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
                 sensors_std['position_z'] = sensors_std['depth']
             if "speed" not in sensors_std:
                 sensors_std['speed'] = sensors_std['dvl']
-        else:
-            sensors_std = {
-                "position_xy": {
-                    "factor": std_factor_position_xy,
-                    "offset": std_offset_position_xy_m},
-                "position_z": {
-                    "factor": std_factor_position_z,
-                    "offset": std_offset_position_z_m},
-                "speed": {
-                    "factor": std_factor_speed,
-                    "offset": std_offset_speed_mps},
-                "orientation": {
-                    "factor": std_factor_orientation,
-                    "offset": std_offset_orientation_deg,
-                },
-            }
+
         # Default to use JSON uncertainties
         if "model" not in sensors_std["position_xy"]:
             Console.warn(
