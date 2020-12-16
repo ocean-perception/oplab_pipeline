@@ -528,6 +528,7 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
 
     # interpolate to find the appropriate depth to compute seafloor depth for each altitude measurement
     j = 0
+    non_processed_altitude_index_list = []
     for i in range(len(altitude_list)):
         while (
             j < len(depth_list) - 1
@@ -546,7 +547,13 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
                 )
                 + altitude_list[i].altitude
             )
-    altitude_list[0].seafloor_depth = altitude_list[1].seafloor_depth
+        else:
+            non_processed_altitude_index_list.append(i)
+
+    non_processed_altitude_index_list.reverse()
+    for i in non_processed_altitude_index_list:
+        altitude_list[i].seafloor_depth = altitude_list[i+1].seafloor_depth
+
 
     # perform usbl_filter
     if usbl_filter_activate:
