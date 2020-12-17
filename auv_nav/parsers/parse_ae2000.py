@@ -105,13 +105,11 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
         # time_tuple = dt_obj.timetuple()
         # epoch_time = time.mktime(time_tuple)
         epoch_timestamp = epoch_time + msec / 1000 + timeoffset
-
-        if "Height" in df.columns:
-            if float(df["Height"][row_index]) > altitude_limit:
-                continue
         
         if ftype == "oplab":
             if category == "velocity":
+                if df["dvl_validBottom"][row_index] != '1':
+                    continue
 
                 frame_string = "body"
 
@@ -314,6 +312,8 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
                 data_list.append(data)
 
             if category == "altitude":
+                if df["dvl_validBottom"][row_index] != '1':
+                    continue
                 frame_string = "body"
                 altitude = float(df["dvl_rangeBottom"][row_index])
                 altitude_std = (
@@ -347,6 +347,8 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
 
         if ftype == "acfr":
             if category == "velocity":
+                if df["dvl_validBottom"][row_index] != '1':
+                    continue
 
                 sound_velocity = None
                 sound_velocity_correction = None
