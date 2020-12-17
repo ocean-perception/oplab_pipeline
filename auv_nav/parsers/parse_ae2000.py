@@ -41,20 +41,37 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
     filepath = mission.velocity.filepath
 
     if category == 'velocity' or category == 'altitude':
-        filename = mission.velocity.filename
+        if category == 'velocity':
+            filename = mission.velocity.filename # e.g. dvl180805123503.csv
+        else:
+            filename = mission.altitude.filename # e.g. dvl180805123503.csv
+        if filename[0:3] != 'dvl' or len(filename) != 19:
+            Console.error(
+                "Expected filename of the form dvlYYMMDDhhmmss.csv for velocity or altitutde, but you provided "
+                + filename)
         yyyy = int(filename[3:5]) + 2000
         mm = int(filename[5:7])
         dd = int(filename[7:9])
     elif category == 'orientation':
-        filename = mission.orientation.filename
+        filename = mission.orientation.filename # e.g. quadrans180805123456.csv
+        if filename[0:8] != 'quadrans' or len(filename) != 24:
+            Console.error(
+                "Expected filename of the form quadransYYMMDDhhmmss.csv for orientation, but you provided "
+                + filename)
         yyyy = int(filename[8:10]) + 2000
         mm = int(filename[10:12])
         dd = int(filename[12:14])
-    else:
-        filename = mission.depth.filename
+    elif category == 'depth':
+        filename = mission.depth.filename # e.g. pos180805123456.csv
+        if filename[0:3] != 'pos' or len(filename) != 19:
+            Console.error(
+                "Expected filename of the form posYYMMDDhhmmss.csv for depth, but you provided "
+                + filename)
         yyyy = int(filename[3:5]) + 2000
         mm = int(filename[5:7])
         dd = int(filename[7:9])
+    else:
+        Console.error("Unexpected category: " + category)
 
     timezone_offset = read_timezone(timezone)
 
