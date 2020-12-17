@@ -33,9 +33,7 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
     class_string = "measurement"
     sensor_string = "ae20000"
 
-    altitude_limit = 200  # value given by ae2000 when there is no bottom lock
     # read in date from filename
-
     timezone = mission.velocity.timezone
     timeoffset = mission.velocity.timeoffset
     filepath = mission.velocity.filepath
@@ -108,7 +106,7 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
         
         if ftype == "oplab":
             if category == "velocity":
-                if df["dvl_validBottom"][row_index] != '1':
+                if int(df["dvl_validBottom"][row_index]) != 1:
                     continue
 
                 frame_string = "body"
@@ -312,7 +310,7 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
                 data_list.append(data)
 
             if category == "altitude":
-                if df["dvl_validBottom"][row_index] != '1':
+                if int(df["dvl_validBottom"][row_index]) != 1:
                     continue
                 frame_string = "body"
                 altitude = float(df["dvl_rangeBottom"][row_index])
@@ -347,7 +345,7 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
 
         if ftype == "acfr":
             if category == "velocity":
-                if df["dvl_validBottom"][row_index] != '1':
+                if int(df["dvl_validBottom"][row_index]) != 1:
                     continue
 
                 sound_velocity = None
