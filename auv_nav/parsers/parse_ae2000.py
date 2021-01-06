@@ -82,6 +82,7 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
     if ftype == "acfr":
         data_list = ""
 
+    previous_depth = 0
     filepath = get_raw_folder(outpath / ".." / filepath)
     df = pd.read_csv(filepath / filename)
 
@@ -294,6 +295,10 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
 
                 if depth <= 0 or math.isnan(depth):
                     continue
+
+                if depth == previous_depth:
+                    continue
+                previous_depth = depth
 
                 # write out in the required format interlace at end
                 data = {
