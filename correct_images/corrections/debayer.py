@@ -4,7 +4,8 @@ import joblib
 from pathlib import Path
 import cv2
 from correct_images.tools.file_handlers import write_output_image
-from correct_images.camera_specific import xviii
+from correct_images.loaders import xviii
+from correct_images.loaders import default
 from correct_images.tools.joblib_tqdm import tqdm_joblib
 
 
@@ -65,11 +66,13 @@ def debayer_folder(output_dir: Path, filetype, pattern, output_format, image=Non
         image_path, _filetype, _pattern, _output_dir, _output_format
     ): 
         Console.info("Debayering image {}".format(image_path.name))
+
+        # Define image loader
+        loader = default.loader
         if _filetype == "raw":
-            xviii_binary_data = np.fromfile(str(image_path), dtype=np.uint8)
-            img = xviii.load_xviii_bayer_from_binary(xviii_binary_data, 1024, 1280)
-        else:
-            img = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
+            loader = xviii.loader
+
+        img = loader(image_path)
         img_rgb = debayer(img, _pattern)
         img_rgb = img_rgb.astype(np.uint8)
         image_name = str(image_path.stem)
