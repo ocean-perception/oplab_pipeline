@@ -8,9 +8,91 @@ from scipy import optimize
 import math
 from datetime import datetime
 from numba import njit, prange
+from ..loaders import default
 
-@njit
+
+class RunningMeanStd:
+    __slots__ = ["_mean", "mean2", "_std", "count"]
+    def __init__(self, dimensions):
+        self._mean = np.zeros(dimensions, dtype=np.float32)
+        self.mean2 = np.zeros(dimensions, dtype=np.float32)
+        self._std = np.zeros(dimensions, dtype=np.float32)
+        self.count = 0
+    
+    def compute(self, image):
+        self.count += 1
+        delta = image - self._mean
+        self._mean += delta / self.count
+        self.mean2 += delta * (image - self._mean)
+
+    @property
+    def mean(self):
+        if self.count > 1:
+            return self._mean
+        else: 
+            return None
+    
+    @property
+    def std(self):
+        if self.count > 1:
+            self._std = np.sqrt(self.mean2 / self.count)
+            return self._std
+        else:
+            return None
+
+
+def running_mean_std(file_list, loader=default.loader):
+    """Compute running mean and std of a list of image filenames
+
+    Parameters
+    ----------
+    file_list : list
+        List of image filenames. Can be list of str or list of Path
+    loader : function
+        Function to read one filename into a numpy array
+
+    Returns
+    -------
+    (np.ndarray, np.ndarray)
+        Mean and std arrays
+    """
+    count = 0
+    tmp = loader(file_list[0])
+    dimensions = tmp.shape
+
+    mean = np.zeros(dimensions, dtype=np.float32)
+    mean2 = np.zeros(dimensions, dtype=np.float32)
+    std = np.zeros(dimensions, dtype=np.float32)
+
+    for item in file_list:
+        value = loader(item)
+        count += 1
+        delta = value - mean
+        mean += delta / count
+        delta2 = value - mean
+        mean2 += delta * delta2
+    if count > 1:
+        std = np.sqrt(mean2 / count)
+
+    print('mean shape:', mean.shape)
+    print('std shape:', std.shape)
+    return mean, std
+
+
 def median_array(data: np.ndarray) -> np.ndarray:
+    if len(data.shape) == 3:
+        # Monochrome
+        return median_array_impl(data)
+    elif len(data.shape) == 4:
+        # Colour
+        [n, a, b, c] = data.shape
+        median_array = np.zeros((a, b, c), dtype=np.float32)
+        for c in range(data.shape[3]):
+            median_array[:, :, c] = median_array_impl(data[:, :, :, c])
+        return median_array
+        
+@njit
+def median_array_impl(data: np.ndarray) -> np.ndarray:
     [n, a, b] = data.shape
     median_array = np.zeros((a, b), dtype=np.float32)
     for i in range(a):

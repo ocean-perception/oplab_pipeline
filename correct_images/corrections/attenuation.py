@@ -31,7 +31,7 @@ def attenuation_correct(img: np.ndarray,
     den = atn_crr_params[:, :, 0] * np.exp(atn_crr_params[:, :, 1] * altitude)
     den += atn_crr_params[:, :, 2]
     img = (gain / den * img)
-    return img.astype(np.float32)
+    return img.astype(np.float32).squeeze()
 
 
 def attenuation_correct_memmap(image_memmap: np.ndarray,
@@ -70,8 +70,10 @@ def attenuation_correct_memmap(image_memmap: np.ndarray,
 
 # compute gain values for each pixel for a targeted altitude using the attenuation parameters
 def calculate_correction_gains(target_altitude : np.ndarray,
-                               attenuation_parameters : np.ndarray
-                               ) -> np.ndarray:
+                               attenuation_parameters : np.ndarray,
+                               image_height : int, 
+                               image_width : int, 
+                               image_channels : int) -> np.ndarray:
     """Compute correction gains for an image
 
     Parameters
@@ -87,17 +89,25 @@ def calculate_correction_gains(target_altitude : np.ndarray,
         The correction gains
     """
 
-    attenuation_parameters = attenuation_parameters.squeeze()
-    return (
-        attenuation_parameters[:, :, 0]
-        * np.exp(attenuation_parameters[:, :, 1] * target_altitude)
-        + attenuation_parameters[:, :, 2]
+    image_correction_gains = np.empty(
+        (image_channels, image_height, image_width)
     )
+
+    for i_channel in range(image_channels):
+
+        #attenuation_parameters = attenuation_parameters.squeeze()
+        correction_gains =  (
+            attenuation_parameters[i_channel, :, :, 0]
+            * np.exp(attenuation_parameters[i_channel, :, :, 1] * target_altitude)
+            + attenuation_parameters[i_channel, :, :, 2]
+        )
+        image_correction_gains[i_channel] = correction_gains
+    return image_correction_gains
 
 
 # calculate image attenuation parameters
 def calculate_attenuation_parameters(
-        images, distances, image_height, image_width
+        images, distances, image_height, image_width, image_channels
 ):
     """Compute attenuation parameters for all images
 
@@ -118,21 +128,26 @@ def calculate_attenuation_parameters(
         attenuation_parameters
     """
 
-    print("Start curve fitting...")
+    image_attenuation_parameters = np.empty(
+        (image_channels, image_height, image_width, 3)
+    )
 
-    with tqdm_joblib(tqdm(desc="Curve fitting", total=image_height * image_width)) as progress_bar:
-        results = joblib.Parallel(n_jobs=-2, verbose=0)(
-            [
-                joblib.delayed(curve_fitting)(np.array(distances[:, i_pixel]),
-                                              np.array(images[:, i_pixel]))
-                for i_pixel in range(image_height * image_width)
-            ]
-        )
+    for i_channel in range(image_channels):
+        with tqdm_joblib(tqdm(desc="Curve fitting", total=image_height * image_width)) as progress_bar:
+            results = joblib.Parallel(n_jobs=-2, verbose=0)(
+                [
+                    joblib.delayed(curve_fitting)(np.array(distances[:, i_pixel]),
+                                                np.array(images[:, i_pixel, i_channel]))
+                    for i_pixel in range(image_height * image_width)
+                ]
+            )
 
-        attenuation_parameters = np.array(results)
-        attenuation_parameters = attenuation_parameters.reshape(
-            [image_height, image_width, 3]
-        )
-        return attenuation_parameters
+            attenuation_parameters = np.array(results)
+            attenuation_parameters = attenuation_parameters.reshape(
+                [image_height, image_width, 3]
+            )
+        image_attenuation_parameters[i_channel] = attenuation_parameters
+        
+    return image_attenuation_parameters
 
 

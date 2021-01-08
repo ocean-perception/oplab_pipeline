@@ -54,9 +54,24 @@ def load_xviii_bayer_from_binary(binary_data, image_height, image_width):
     return bayer_img
 
 
-def xviii_to_np_file(np_filename, raw_filename, dtype, image_height, image_width):
-    binary_data = np.fromfile(raw_filename, dtype)
-    image_raw = load_xviii_bayer_from_binary(
+def loader(raw_filename, image_width=1280, image_height=1024):
+    """XVIII image loader
+
+    Parameters
+    ----------
+    raw_filename : Path
+        Image file path
+    image_width : int
+        Image height
+    image_height : int
+        Image height
+
+    Returns
+    -------
+    np.ndarray
+        Loaded image in matrix form (numpy)
+    """
+    binary_data = np.fromfile(raw_filename, dtype=np.uint8)
+    return load_xviii_bayer_from_binary(
             binary_data[:], image_height, image_width
         )
-    np.save(np_filename, image_raw)

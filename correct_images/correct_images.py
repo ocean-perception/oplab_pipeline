@@ -141,7 +141,8 @@ def call_parse(args):
             continue
         else:
             corrector = Corrector(args.force, camera, correct_config, path)
-            corrector.parse()
+            if corrector.camera_found:
+                corrector.parse()
 
     Console.info(
         "Parse completed for all cameras. Please run process to develop corrected images..."
@@ -169,7 +170,8 @@ def call_process(args):
             continue
         else:
             corrector = Corrector(args.force, camera, correct_config, path)
-            corrector.process()
+            if corrector.camera_found:
+                corrector.process()
     Console.info("Process completed for all cameras...")
 
 

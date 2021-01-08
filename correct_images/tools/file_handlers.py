@@ -44,6 +44,7 @@ def get_imagename_list(image_files_paths):
     return image_name_list
 
 
+
 # store into memmaps the distance and image numpy files
 def load_memmap_from_numpyfilelist(filepath, numpyfilelist: list):
     """Generate memmaps from numpy arrays
@@ -105,3 +106,4 @@ def write_output_image(image, filename, dest_path, dest_format):
     file = filename + "." + dest_format
     file_path = dest_path / file
     imageio.imwrite(file_path, image)
+    return file_path
