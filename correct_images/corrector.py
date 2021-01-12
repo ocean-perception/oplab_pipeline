@@ -147,13 +147,15 @@ class Corrector:
             self.create_output_directories()
 
             # Define basic filepaths
-            self.attenuation_params_filepath = Path(
-                self.attenuation_parameters_folder) / "attenuation_parameters.npy"
-            self.correction_gains_filepath = Path(self.attenuation_parameters_folder) / "correction_gains.npy"
-            self.corrected_mean_filepath = Path(self.attenuation_parameters_folder) / "image_corrected_mean.npy"
-            self.corrected_std_filepath = Path(self.attenuation_parameters_folder) / "image_corrected_std.npy"
-            self.raw_mean_filepath = Path(self.attenuation_parameters_folder) / "image_raw_mean.npy"
-            self.raw_std_filepath = Path(self.attenuation_parameters_folder) / "image_raw_std.npy"
+
+            if self.correction_method == "colour_correction":
+                self.attenuation_params_filepath = Path(
+                    self.attenuation_parameters_folder) / "attenuation_parameters.npy"
+                self.correction_gains_filepath = Path(self.attenuation_parameters_folder) / "correction_gains.npy"
+                self.corrected_mean_filepath = Path(self.attenuation_parameters_folder) / "image_corrected_mean.npy"
+                self.corrected_std_filepath = Path(self.attenuation_parameters_folder) / "image_corrected_std.npy"
+                self.raw_mean_filepath = Path(self.attenuation_parameters_folder) / "image_raw_mean.npy"
+                self.raw_std_filepath = Path(self.attenuation_parameters_folder) / "image_raw_std.npy"
 
             # Define image loader
             self.loader = default.loader
@@ -415,7 +417,9 @@ class Corrector:
         distance_list = dataframe["altitude [m]"]
 
         if len(distance_list) != len(self.camera_image_list):
-            Console.quit("The number of images does not coincide with the altitude measurements.")
+            Console.warn("The number of images does not coincide with the altitude measurements.")
+            Console.info("Using image file paths from CSV instead.")
+            self.camera_image_list = [self.path_raw / i for i in dataframe["relative_path"].tolist()]
 
         self.altitude_list = distance_list.copy()
 
@@ -500,7 +504,6 @@ class Corrector:
             bin_images_sample_list = []
             bin_distances_sample_list = []
             idxs = np.digitize(distance_vector, hist_bins)
-            """
             for idx_bin in trange(1, hist_bins.size):
                 tmp_idxs = np.where(idxs == idx_bin)[0]
                 #print("In bin", idx_bin,"there are", len(tmp_idxs), "images")
@@ -587,9 +590,8 @@ class Corrector:
             )
             # Save correction gains
             np.save(self.correction_gains_filepath, self.correction_gains)
-            """
-            self.image_attenuation_parameters = np.load(self.attenuation_params_filepath)
-            self.correction_gains = np.load(self.correction_gains_filepath)
+#           self.image_attenuation_parameters = np.load(self.attenuation_params_filepath)
+#           self.correction_gains = np.load(self.correction_gains_filepath)
 
             # apply gains to images
             Console.info("Applying attenuation corrections to images...")
@@ -668,13 +670,13 @@ class Corrector:
                 self.camera_params_file_path = camera_params_file_path
 
         # Debayer mean and std for Pixel Stats
-        if self._type != "grayscale" and self.distance_metric != "none":
-            self.image_corrected_mean = corrections.debayer(self.image_corrected_mean, self._type)
-            self.image_corrected_std = corrections.debayer(self.image_corrected_std, self._type)                   
-
-        elif self._type != "grayscale" and self.distance_metric == "none":
-            self.image_raw_mean = corrections.debayer(self.image_raw_mean, self._type)
-            self.image_raw_std = corrections.debayer(self.image_raw_std, self._type)
+        if self._type != "grayscale" and self.correction_method == "colour_correction":
+            if self.distance_metric != "none":
+                self.image_corrected_mean = corrections.debayer(self.image_corrected_mean, self._type)
+                self.image_corrected_std = corrections.debayer(self.image_corrected_std, self._type)                   
+            elif self.distance_metric == "none":
+                self.image_raw_mean = corrections.debayer(self.image_raw_mean, self._type)
+                self.image_raw_std = corrections.debayer(self.image_raw_std, self._type)
 
         Console.info("Processing images for color, distortion, gamma corrections...")
 
