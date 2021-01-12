@@ -147,7 +147,6 @@ class Corrector:
             self.create_output_directories()
 
             # Define basic filepaths
-
             if self.correction_method == "colour_correction":
                 self.attenuation_params_filepath = Path(
                     self.attenuation_parameters_folder) / "attenuation_parameters.npy"

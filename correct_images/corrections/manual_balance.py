@@ -38,6 +38,7 @@ def manual_balance(image : numpy.ndarray,
             intensity_vector = intensity_vector - negative_offset_rgb
             intensity_vector = gain_matrix_rgb.dot(intensity_vector)
             image[i, :] = intensity_vector
+        image = image.reshape((image_height, image_width, 3))
     else:
         image = image - negative_offset_rgb[0]
         image = image * gain_matrix_rgb[0, 0]
