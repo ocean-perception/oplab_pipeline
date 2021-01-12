@@ -11,6 +11,7 @@ See LICENSE.md file in the project root for full license information.
 # all imports go here
 import numpy as np
 import pandas as pd
+import random
 import os
 from pathlib import Path
 from tqdm import trange
@@ -128,8 +129,8 @@ class Corrector:
             if self.correction_method == "colour_correction":
                 # Brighness and contrast are percentages of 255
                 # e.g. brightness of 30 means 30% of 255 = 77
-                self.brightness = float(self.cameraconfigs[cam_idx].brightness)*2.55
-                self.contrast = float(self.cameraconfigs[cam_idx].contrast)*2.55
+                self.brightness = float(self.cameraconfigs[cam_idx].brightness)
+                self.contrast = float(self.cameraconfigs[cam_idx].contrast)
             elif self.correction_method == "manual_balance":
                 self.subtractors_rgb = np.array(self.cameraconfigs[cam_idx].subtractors_rgb)
                 self.color_gain_matrix_rgb = np.array(self.cameraconfigs[
@@ -207,11 +208,11 @@ class Corrector:
             else:
                 if self.distance_metric != "none":
                     Console.quit("Code does not find image_corrected_std.npy...Please run parse before process...")
-            if self.raw_mean_filepath.exists():
+            if self.raw_mean_filepath.exists() and self.distance_metric == "none":
                 self.image_raw_mean = np.load(self.raw_mean_filepath)
             elif self.distance_metric == "none":
                 Console.quit("Code does not find image_raw_mean.npy...Please run parse before process...")
-            if self.raw_std_filepath.exists():
+            if self.raw_std_filepath.exists() and self.distance_metric == "none":
                 self.image_raw_std = np.load(self.raw_std_filepath)
             elif self.distance_metric == "none":
                 Console.quit("Code does not find image_raw_std.npy...Please run parse before process...")
@@ -261,14 +262,6 @@ class Corrector:
             self.output_dir_path.mkdir(parents=True)
 
         if self.correction_method == "colour_correction":
-            # create path for distance matrix numpy files
-            distance_matrix_numpy_folder_name = "distance_" + self.camera.name
-            self.distance_matrix_numpy_folder = (
-                    self.output_dir_path / distance_matrix_numpy_folder_name
-            )
-            if not self.distance_matrix_numpy_folder.exists():
-                self.distance_matrix_numpy_folder.mkdir(parents=True)
-
             # create path for parameters files
             attenuation_parameters_folder_name = "params_" + self.camera.name
             self.attenuation_parameters_folder = (
@@ -484,6 +477,10 @@ class Corrector:
             (self.image_channels, self.image_height, self.image_width)
         )
 
+        image_size_gb = self.image_channels * self.image_height * self.image_width * 8. / (1024.**3)
+        max_bin_size_gb = 50.0
+        max_bin_size = int(max_bin_size_gb/image_size_gb)
+
         bin_band = 0.1
         hist_bins = np.arange(self.altitude_min, self.altitude_max, bin_band)
 
@@ -503,7 +500,7 @@ class Corrector:
             bin_images_sample_list = []
             bin_distances_sample_list = []
             idxs = np.digitize(distance_vector, hist_bins)
-
+            """
             for idx_bin in trange(1, hist_bins.size):
                 tmp_idxs = np.where(idxs == idx_bin)[0]
                 #print("In bin", idx_bin,"there are", len(tmp_idxs), "images")
@@ -511,6 +508,11 @@ class Corrector:
                     bin_images = [self.camera_image_list[i] for i in tmp_idxs]
                     bin_distances_sample = None
                     bin_images_sample = None
+
+                    # Random sample if memmap has to be created
+                    if self.smoothing != "mean" and len(bin_images) > max_bin_size:
+                        Console.info("Random sampling altitude bin to fit in", max_bin_size_gb, "Gb")
+                        bin_images = random.sample(bin_images, max_bin_size)
                     
                     if self.depth_map_list is None:
                         # Generate matrices on the fly
@@ -570,6 +572,7 @@ class Corrector:
             # Save attenuation parameter results. 
             np.save(self.attenuation_params_filepath, self.image_attenuation_parameters)
 
+            
             #self.image_attenuation_parameters = np.load(self.attenuation_params_filepath)
 
             # compute correction gains per channel
@@ -584,9 +587,9 @@ class Corrector:
             )
             # Save correction gains
             np.save(self.correction_gains_filepath, self.correction_gains)
-
-            #self.image_attenuation_parameters = np.load(self.attenuation_params_filepath)
-            #self.correction_gains = np.load(self.correction_gains_filepath)
+            """
+            self.image_attenuation_parameters = np.load(self.attenuation_params_filepath)
+            self.correction_gains = np.load(self.correction_gains_filepath)
 
             # apply gains to images
             Console.info("Applying attenuation corrections to images...")
@@ -616,22 +619,33 @@ class Corrector:
                     self.correction_gains)
                 runner.compute(corrected_img)
 
-            image_corrected_mean = runner.mean
-            image_corrected_std = runner.std
+            image_corrected_mean = runner.mean.reshape(self.image_height, self.image_width, self.image_channels)
+            image_corrected_std = runner.std.reshape(self.image_height, self.image_width, self.image_channels)
 
             # save parameters for process            
             np.save(self.corrected_mean_filepath, image_corrected_mean)
             np.save(self.corrected_std_filepath, image_corrected_std)
-            imageio.imwrite(Path(self.attenuation_parameters_folder) / "image_corrected_mean.png", image_corrected_mean)
-            imageio.imwrite(Path(self.attenuation_parameters_folder) / "image_corrected_std.png", image_corrected_std)
+            imageio.imwrite(Path(self.attenuation_parameters_folder) / "image_corrected_mean.png", image_corrected_mean.astype(np.uint8))
+            imageio.imwrite(Path(self.attenuation_parameters_folder) / "image_corrected_std.png", image_corrected_std.astype(np.uint8))
+
+            if self._type != "grayscale":
+                image_corrected_mean_rgb = corrections.debayer(image_corrected_mean, self._type)
+                image_corrected_std_rgb = corrections.debayer(image_corrected_std, self._type)
+                imageio.imwrite(Path(self.attenuation_parameters_folder) / "image_corrected_mean_rgb.png", image_corrected_mean_rgb.astype(np.uint8))
+                imageio.imwrite(Path(self.attenuation_parameters_folder) / "image_corrected_std_rgb.png", image_corrected_std_rgb.astype(np.uint8))
         else:
             Console.info("No altitude or depth maps available. Computing raw mean and std.")
-            # compute only the raw image mean and std if distance matrix is null
-            raw_image_mean, raw_image_std = mean_std(self.camera_image_list)
-            np.save(self.raw_mean_filepath, raw_image_mean)
-            np.save(self.raw_std_filepath, raw_image_std)
-            imageio.imwrite(Path(self.attenuation_parameters_folder) / "raw_image_mean.png", raw_image_mean)
-            imageio.imwrite(Path(self.attenuation_parameters_folder) / "raw_image_std.png", raw_image_std)
+            image_raw_mean, image_raw_std = mean_std(self.camera_image_list)
+            np.save(self.raw_mean_filepath, image_raw_mean)
+            np.save(self.raw_std_filepath, image_raw_std)
+            imageio.imwrite(Path(self.attenuation_parameters_folder) / "image_raw_mean.png", image_raw_mean)
+            imageio.imwrite(Path(self.attenuation_parameters_folder) / "image_raw_std.png", image_raw_std)
+
+            if self._type != "grayscale":
+                image_raw_mean_rgb = corrections.debayer(image_raw_mean, self._type)
+                image_raw_std_rgb = corrections.debayer(image_raw_std, self._type)
+                imageio.imwrite(Path(self.attenuation_parameters_folder) / "image_raw_mean_rgb.png", image_raw_mean_rgb.astype(np.uint8))
+                imageio.imwrite(Path(self.attenuation_parameters_folder) / "image_raw_std_rgb.png", image_raw_std_rgb.astype(np.uint8))
 
         Console.info("Correction parameters saved...")
 
@@ -653,12 +667,21 @@ class Corrector:
                 Console.info("Calibration file found...")
                 self.camera_params_file_path = camera_params_file_path
 
+        # Debayer mean and std for Pixel Stats
+        if self._type != "grayscale" and self.distance_metric != "none":
+            self.image_corrected_mean = corrections.debayer(self.image_corrected_mean, self._type)
+            self.image_corrected_std = corrections.debayer(self.image_corrected_std, self._type)                   
+
+        elif self._type != "grayscale" and self.distance_metric == "none":
+            self.image_raw_mean = corrections.debayer(self.image_raw_mean, self._type)
+            self.image_raw_std = corrections.debayer(self.image_raw_std, self._type)
+
         Console.info("Processing images for color, distortion, gamma corrections...")
 
         with tqdm_joblib(tqdm(desc="Correcting images", total=len(self.camera_image_list))) as progress_bar:
             self.processed_image_list = joblib.Parallel(n_jobs=-2, verbose=0)(
                 joblib.delayed(self.process_image)(idx)
-                for idx in range(0, len(self.camera_image_list))  # out of range error here
+                for idx in range(0, len(self.camera_image_list))
             )
 
         # write a filelist.csv containing image filenames which are processed
@@ -679,8 +702,8 @@ class Corrector:
             index to the list of image numpy files
         """
 
-        # load image and distance files
-        image = self.loader(self.camera_image_list[idx])
+        # load image and convert to float
+        image = self.loader(self.camera_image_list[idx]).astype(np.float32)
         image_rgb = None
 
         # apply corrections
@@ -692,15 +715,35 @@ class Corrector:
                 distance = self.altitude_list[idx]
                 distance_matrix = np.empty((self.image_height, self.image_width))
                 distance_matrix.fill(distance)
-
-            image = self.apply_distance_based_corrections(
-                image, distance_matrix, self.brightness, self.contrast
-            )
+            if distance_matrix is not None:
+                image = corrections.attenuation_correct(
+                    image,
+                    distance_matrix,
+                    self.image_attenuation_parameters,
+                    self.correction_gains,
+                )
             if not self._type == "grayscale":
                 # debayer images
                 image_rgb = corrections.debayer(image, self._type)
             else:
                 image_rgb = image
+            
+            if distance_matrix is not None:
+                image_rgb = corrections.pixel_stat(
+                    image_rgb,
+                    self.image_corrected_mean,
+                    self.image_corrected_std,
+                    self.brightness,
+                    self.contrast,
+                )
+            else:
+                image_rgb = corrections.pixel_stat(
+                    image_rgb,
+                    self.image_raw_mean,
+                    self.image_raw_std,
+                    self.brightness,
+                    self.contrast,
+                )
 
         elif self.correction_method == "manual_balance":
             if not self._type == "grayscale":
@@ -729,50 +772,3 @@ class Corrector:
             image_rgb, image_filename, self.output_images_folder, self.output_format
         )
 
-    # apply corrections on each image using the correction parameters for targeted brightness and contrast
-    def apply_distance_based_corrections(self, image, distance_matrix, brightness, contrast):
-        """Apply attenuation corrections to images
-
-        Parameters
-        -----------
-        image : numpy.ndarray
-            image data to be debayered
-        distance_matrix : numpy.ndarray
-            distance values
-        brightness : int
-            target mean for output image
-        contrast : int
-            target std for output image
-
-        Returns
-        -------
-        numpy.ndarray
-            Corrected image
-        """
-
-        if distance_matrix is not None:
-            image = corrections.attenuation_correct(
-                image,
-                distance_matrix,
-                self.image_attenuation_parameters,
-                self.correction_gains,
-            )
-            # Achieve desired mean and std after
-            # attenuation correction
-            image = corrections.pixel_stat(
-                image,
-                self.image_corrected_mean,
-                self.image_corrected_std,
-                self.brightness,
-                self.contrast,
-            )
-        else:
-            image = corrections.pixel_stat(
-                image,
-                self.image_raw_mean,
-                self.image_raw_std,
-                self.brightness,
-                self.contrast,
-            )
-
-        return image

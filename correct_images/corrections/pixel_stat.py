@@ -11,9 +11,9 @@ def pixel_stat(img, img_mean, img_std, target_mean, target_std, dst_bit=8):
         current mean
     img_std : int
         current std
-    target_mean : int
+    target_mean : float
         desired mean
-    target_std : int
+    target_std : float
         desired std
     dst_bit : int
         destination bit depth
@@ -23,16 +23,22 @@ def pixel_stat(img, img_mean, img_std, target_mean, target_std, dst_bit=8):
     numpy.ndarray
         Corrected image
     """
+
+    target_mean = target_mean / 100. * 2**dst_bit
+    target_std = target_std / 100. * 2**dst_bit
+
+    img = img.astype(np.float32)
     if len(img.shape) == 2:
         # Monochrome
         return pixel_stat_impl(img, img_mean, img_std, target_mean, target_std, dst_bit)
     elif len(img.shape) == 3:
+        # Colour
         [a, b, c] = img.shape
         corrected_img = np.zeros((a, b, c), dtype=np.float32)
-        for c in range(img.shape[3]):
+        for c in range(img.shape[2]):
             corrected_img[:, :, c] = pixel_stat_impl(img[:, :, c], img_mean[:, :, c], img_std[:, :, c], target_mean, target_std, dst_bit)
         return corrected_img
-        # Colour
+
 
 def pixel_stat_impl(img, img_mean, img_std, target_mean, target_std, dst_bit=8):
     """Generate target stats for single channel images

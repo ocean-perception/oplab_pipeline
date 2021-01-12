@@ -17,7 +17,7 @@ def create_memmap(image_list, loader=default.loader):
     size = 1
     for i in list_shape:
         size *= i
-    image_memmap = np.memmap(filename=filename_map, mode="w+", shape=tuple(list_shape), dtype=np.float)
+    image_memmap = np.memmap(filename=filename_map, mode="w+", shape=tuple(list_shape), dtype=np.float32)
     joblib.Parallel(n_jobs=-1, verbose=0)(
         joblib.delayed(memmap_loader)(image_list, image_memmap, idx, loader, dimensions[1], dimensions[0])
         for idx in range(len(image_list))
@@ -26,7 +26,7 @@ def create_memmap(image_list, loader=default.loader):
 
 
 def memmap_loader(image_list, memmap_handle, idx, loader=default.loader, new_width=None, new_height=None):
-    np_im = loader(image_list[idx])
+    np_im = loader(image_list[idx]).astype(np.float32)
     
     dimensions = np_im.shape
 

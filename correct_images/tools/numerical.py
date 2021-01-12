@@ -12,15 +12,19 @@ from ..loaders import default
 
 
 class RunningMeanStd:
-    __slots__ = ["_mean", "mean2", "_std", "count"]
-    def __init__(self, dimensions):
+    __slots__ = ["_mean", "mean2", "_std", "count", "clipping_max"]
+    def __init__(self, dimensions, clipping_max=250):
         self._mean = np.zeros(dimensions, dtype=np.float32)
         self.mean2 = np.zeros(dimensions, dtype=np.float32)
         self._std = np.zeros(dimensions, dtype=np.float32)
         self.count = 0
+        self.clipping_max = clipping_max
     
     def compute(self, image):
         self.count += 1
+        # clipping to mean if above threshold
+        image[image > self.clipping_max] = self._mean[image > self.clipping_max]
+        image = image.astype(np.float32)
         delta = image - self._mean
         self._mean += delta / self.count
         self.mean2 += delta * (image - self._mean)
@@ -36,6 +40,7 @@ class RunningMeanStd:
     def std(self):
         if self.count > 1:
             self._std = np.sqrt(self.mean2 / self.count)
+            self._std[self._std < 1] = 1.0
             return self._std
         else:
             return None
@@ -65,7 +70,7 @@ def running_mean_std(file_list, loader=default.loader):
     std = np.zeros(dimensions, dtype=np.float32)
 
     for item in file_list:
-        value = loader(item)
+        value = loader(item).astype(np.float32)
         count += 1
         delta = value - mean
         mean += delta / count
@@ -73,9 +78,6 @@ def running_mean_std(file_list, loader=default.loader):
         mean2 += delta * delta2
     if count > 1:
         std = np.sqrt(mean2 / count)
-
-    print('mean shape:', mean.shape)
-    print('std shape:', std.shape)
     return mean, std
 
 
