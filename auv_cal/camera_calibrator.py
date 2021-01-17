@@ -585,9 +585,9 @@ class MonoCalibrator(Calibrator):
                     )
                     lgray2 = lgray.copy()
                     limg = cv2.drawChessboardCorners(lgray2, (lboard.n_cols, lboard.n_rows), lcorners, True)
-                    cv2.namedWindow("Mono calibration1", 0)
-                    cv2.imshow("Mono calibration1", limg)
-                    cv2.waitKey(3)
+                    #cv2.namedWindow("Mono calibration1", 0)
+                    #cv2.imshow("Mono calibration1", limg)
+                    #cv2.waitKey(3)
                     self.last_frame_corners = lcorners
                     self.db.append((params, lgray))
                     self.good_corners.append((lcorners, lboard))
@@ -1093,9 +1093,9 @@ class StereoCalibrator(Calibrator):
                 limg = cv2.drawChessboardCorners(lgray_copy, (lboard.n_cols, lboard.n_rows), lcorners, True)
                 rimg = cv2.drawChessboardCorners(rgray_copy, (lboard.n_cols, lboard.n_rows), rcorners, True)
                 vis = np.concatenate((limg, rimg), axis=1)
-                cv2.namedWindow("Stereo calibration", 0)
-                cv2.imshow("Stereo calibration", vis)
-                cv2.waitKey(3)
+                #cv2.namedWindow("Stereo calibration", 0)
+                #cv2.imshow("Stereo calibration", vis)
+                #cv2.waitKey(3)
                 # Console.info(lf['file'], rf['file'])
                 self.db.append((lparams, lgray, rgray))
                 self.good_corners.append((lcorners, rcorners, lboard))
@@ -1508,9 +1508,9 @@ class StereoCalibrator(Calibrator):
         rok, rcorners, rboard = self.get_corners(rimage)
 
         vis = np.concatenate((limage, rimage), axis=1)
-        cv2.namedWindow("Stereo error", 0)
-        cv2.imshow("Stereo error", vis)
-        cv2.waitKey(3)
+        #cv2.namedWindow("Stereo error", 0)
+        #cv2.imshow("Stereo error", vis)
+        #cv2.waitKey(3)
 
         if lcorners is None or rcorners is None:
             # Console.warn("Cannot find the calibration pattern again when computing the epipolar error.")
