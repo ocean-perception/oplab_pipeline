@@ -765,7 +765,6 @@ class Corrector:
 
         # apply scaling to 8 bit and format image to unit8
         image_rgb = corrections.bytescaling(image_rgb)
-        image_rgb = image_rgb.astype(np.uint8)
 
         # write to output files
         image_filename = Path(self.camera_image_list[idx]).stem

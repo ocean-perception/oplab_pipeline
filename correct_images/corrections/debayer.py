@@ -26,6 +26,7 @@ def debayer(image: np.ndarray, pattern: str) -> np.ndarray:
     numpy.ndarray
         Debayered image
     """
+    input_type = image.dtype
     image16 = image.astype(np.uint16)
     corrected_rgb_img = None
     if pattern == "rggb" or pattern == "RGGB":
@@ -40,7 +41,7 @@ def debayer(image: np.ndarray, pattern: str) -> np.ndarray:
         return image
     else:
         Console.quit("Bayer pattern not supported (", pattern, ")")
-    return corrected_rgb_img
+    return corrected_rgb_img.astype(input_type)
 
 
 def debayer_folder(output_dir: Path, filetype, pattern, output_format, image=None, image_dir=None) -> None:
