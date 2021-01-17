@@ -201,11 +201,15 @@ class Corrector:
                     Console.quit("Code does not find correction_gains.npy...Please run parse before process...")
             if self.corrected_mean_filepath.exists():
                 self.image_corrected_mean = np.load(self.corrected_mean_filepath)
+                if self._type == 'grayscale':
+                    self.image_corrected_mean = self.image_corrected_mean.squeeze()
             else:
                 if self.distance_metric != "none":
                     Console.quit("Code does not find image_corrected_mean.npy...Please run parse before process...")
             if self.corrected_std_filepath.exists():
                 self.image_corrected_std = np.load(self.corrected_std_filepath)
+                if self._type == 'grayscale':
+                    self.image_corrected_std = self.image_corrected_std.squeeze()
             else:
                 if self.distance_metric != "none":
                     Console.quit("Code does not find image_corrected_std.npy...Please run parse before process...")
