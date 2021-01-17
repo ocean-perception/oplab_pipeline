@@ -14,9 +14,9 @@ from ..loaders import default
 class RunningMeanStd:
     __slots__ = ["_mean", "mean2", "_std", "count", "clipping_max"]
     def __init__(self, dimensions, clipping_max=250):
-        self._mean = np.zeros(dimensions, dtype=np.float32)
-        self.mean2 = np.zeros(dimensions, dtype=np.float32)
-        self._std = np.zeros(dimensions, dtype=np.float32)
+        self._mean = np.zeros(dimensions, dtype=np.float64)
+        self.mean2 = np.zeros(dimensions, dtype=np.float64)
+        self._std = np.zeros(dimensions, dtype=np.float64)
         self.count = 0
         self.clipping_max = clipping_max
     
@@ -24,7 +24,7 @@ class RunningMeanStd:
         self.count += 1
         # clipping to mean if above threshold
         image[image > self.clipping_max] = self._mean[image > self.clipping_max]
-        image = image.astype(np.float32)
+        image = image.astype(np.float64)
         delta = image - self._mean
         self._mean += delta / self.count
         self.mean2 += delta * (image - self._mean)
@@ -65,12 +65,12 @@ def running_mean_std(file_list, loader=default.loader):
     tmp = loader(file_list[0])
     dimensions = tmp.shape
 
-    mean = np.zeros(dimensions, dtype=np.float32)
-    mean2 = np.zeros(dimensions, dtype=np.float32)
-    std = np.zeros(dimensions, dtype=np.float32)
+    mean = np.zeros(dimensions, dtype=np.float64)
+    mean2 = np.zeros(dimensions, dtype=np.float64)
+    std = np.zeros(dimensions, dtype=np.float64)
 
     for item in file_list:
-        value = loader(item).astype(np.float32)
+        value = loader(item).astype(np.float64)
         count += 1
         delta = value - mean
         mean += delta / count
@@ -116,7 +116,7 @@ def median_array_impl(data: np.ndarray) -> np.ndarray:
 @njit
 def mean_array(data: np.ndarray) -> np.ndarray:
     [n, a, b] = data.shape
-    mean_array = np.zeros((a, b), dtype=np.float32)
+    mean_array = np.zeros((a, b), dtype=np.float64)
     for i in range(a):
         for j in range(b):
             mean = 0.
@@ -133,8 +133,8 @@ def mean_array(data: np.ndarray) -> np.ndarray:
 def mean_std_array(data: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     [n, a, b] = data.shape
 
-    mean_array = np.zeros((a, b), dtype=np.float32)
-    std_array = np.zeros((a, b), dtype=np.float32)
+    mean_array = np.zeros((a, b), dtype=np.float64)
+    std_array = np.zeros((a, b), dtype=np.float64)
 
     # Welford's online algorithm
     # https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
@@ -206,8 +206,8 @@ def image_mean_std_trimmed(data, ratio_trimming=0.2, calculate_std=True):
     """
 
     [n, a, b] = data.shape
-    ret_mean = np.zeros((a, b), np.float32)
-    ret_std = np.zeros((a, b), np.float32)
+    ret_mean = np.zeros((a, b), np.float64)
+    ret_std = np.zeros((a, b), np.float64)
 
     effective_index = [list(range(0, n))]
 

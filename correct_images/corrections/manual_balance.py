@@ -30,17 +30,19 @@ def manual_balance(image : numpy.ndarray,
     if len(image_shape) > 2:
         image_channels = image_shape[2]
 
+    input_image = image.copy()
+
     if image_channels == 3:
         # corrections for RGB images
-        image = image.reshape((image_height * image_width, 3))
+        input_image = input_image.reshape((image_height * image_width, 3))
         for i in range(image_height * image_width):
-            intensity_vector = image[i, :]
+            intensity_vector = input_image[i, :]
             intensity_vector = intensity_vector - negative_offset_rgb
             intensity_vector = gain_matrix_rgb.dot(intensity_vector)
-            image[i, :] = intensity_vector
-        image = image.reshape((image_height, image_width, 3))
+            input_image[i, :] = intensity_vector
+        input_image = input_image.reshape((image_height, image_width, 3))
     else:
-        image = image - negative_offset_rgb[0]
-        image = image * gain_matrix_rgb[0, 0]
+        input_image = input_image - negative_offset_rgb[0]
+        input_image = input_image * gain_matrix_rgb[0, 0]
 
-    return image
+    return input_image

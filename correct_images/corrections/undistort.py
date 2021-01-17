@@ -24,6 +24,6 @@ def distortion_correct(camera_params_file_path, image, dst_bit=8):
 
     monocam = MonoCamera(camera_params_file_path)
     map_x, map_y = monocam.rectification_maps
-    image = np.clip(image, 0, 2 ** dst_bit - 1)
-    image = cv2.remap(image, map_x, map_y, cv2.INTER_LINEAR)
-    return image
+    ret_image = np.clip(image, 0, 2 ** dst_bit - 1)
+    ret_image = cv2.remap(ret_image, map_x, map_y, cv2.INTER_LINEAR)
+    return ret_image

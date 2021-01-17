@@ -50,7 +50,9 @@ def load_xviii_bayer_from_binary(binary_data, image_height, image_width):
             )
             count += 12
 
-    bayer_img = bayer_img / 1024
+    # Scale down from 18 bits to 16 bit to process with OpenCV debayer
+    bayer_img = bayer_img.astype(np.float32) / (2**10)
+    bayer_img = bayer_img
     return bayer_img
 
 

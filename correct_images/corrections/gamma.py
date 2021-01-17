@@ -16,11 +16,11 @@ def gamma_correct(image, bitdepth=8):
     numpy.ndarray
         Image
     """
-    image = np.divide(image, (2 ** bitdepth - 1))
+    ret_image = np.divide(image, (2 ** bitdepth - 1))
     if all(i < 0.0031308 for i in image.flatten()):
-        image = 12.92 * image
+        ret_image = 12.92 * ret_image
     else:
-        image = 1.055 * np.power(image, (1 / 1.5)) - 0.055
-    image = np.multiply(np.array(image), np.array(2 ** bitdepth - 1))
-    image = np.clip(image, 0, 2 ** bitdepth - 1)
-    return image
+        ret_image = 1.055 * np.power(ret_image, (1 / 1.5)) - 0.055
+    ret_image = np.multiply(np.array(ret_image), np.array(2 ** bitdepth - 1))
+    ret_image = np.clip(ret_image, 0, 2 ** bitdepth - 1)
+    return ret_image

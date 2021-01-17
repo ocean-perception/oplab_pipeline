@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def bytescaling(data : np.ndarray, cmin=None, cmax=None, high=255, low=0):
+def bytescaling(data : np.ndarray, cmin=None, cmax=None, dst_bit=8):
     """
     Converting the input image to uint8 dtype and scaling
     the range to ``(low, high)`` (default 0-255). If the input image already has
@@ -16,12 +16,8 @@ def bytescaling(data : np.ndarray, cmin=None, cmax=None, high=255, low=0):
     if data.dtype == np.uint8:
         return data
 
-    if high > 255:
-        high = 255
-    if low < 0:
-        low = 0
-    if high < low:
-        raise ValueError("`high` should be greater than or equal to `low`.")
+    high = 2^dst_bit - 1
+    low = 0
 
     if cmin is None:
         cmin = data.min()
@@ -34,7 +30,8 @@ def bytescaling(data : np.ndarray, cmin=None, cmax=None, high=255, low=0):
 
     scale = float(high - low) / cscale
     bytedata = (data - cmin) * scale + low
-    return (bytedata.clip(low, high) + 0.5).astype(np.uint8)
+    ret = np.clip(bytedata, 0, 2 ** dst_bit - 1)
+    return ret
 
 
 

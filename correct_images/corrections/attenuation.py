@@ -31,8 +31,10 @@ def attenuation_correct(img: np.ndarray,
     # so we need to remove that first layer
     # (e.g. [1, 1024, 1280, 3] -> [1024, 1280, 3]])
     atn_crr_params = atn_crr_params.squeeze()
+
+    img_float32 = img.astype(np.float32)
     gain = gain.squeeze()
-    img = (
+    img_float32 = (
         (
             gain
             / (
@@ -40,9 +42,9 @@ def attenuation_correct(img: np.ndarray,
                 + atn_crr_params[:, :, 2]
             )
         )
-        * img
-    ).astype(np.float32)
-    return img
+        * img_float32
+    )
+    return img_float32
 
 
 def attenuation_correct_memmap(image_memmap: np.ndarray,
@@ -101,7 +103,7 @@ def calculate_correction_gains(target_altitude : np.ndarray,
     """
 
     image_correction_gains = np.empty(
-        (image_channels, image_height, image_width)
+        (image_channels, image_height, image_width), dtype=np.float64
     )
 
     for i_channel in range(image_channels):
@@ -140,7 +142,7 @@ def calculate_attenuation_parameters(
     """
 
     image_attenuation_parameters = np.empty(
-        (image_channels, image_height, image_width, 3)
+        (image_channels, image_height, image_width, 3), dtype=np.float64
     )
 
     for i_channel in range(image_channels):

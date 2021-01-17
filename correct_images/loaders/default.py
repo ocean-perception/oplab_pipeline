@@ -1,4 +1,5 @@
-import imageio
+import cv2
+import numpy as np
 
 def loader(image_filepath, image_width=None, image_height=None):
     """Default image loader using ImageIO
@@ -17,4 +18,7 @@ def loader(image_filepath, image_width=None, image_height=None):
     np.ndarray
         Loaded image in matrix form (numpy)
     """
-    return imageio.imread(image_filepath)
+
+    image =  cv2.imread(image_filepath, cv2.IMREAD_UNCHANGED)
+    image = image.astype(np.float32)
+    return image
