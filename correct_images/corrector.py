@@ -456,7 +456,7 @@ class Corrector:
             (self.image_channels, self.image_height, self.image_width)
         )
 
-        image_size_gb = self.image_channels * self.image_height * self.image_width * 8. / (1024.**3)
+        image_size_gb = self.image_channels * self.image_height * self.image_width * 32. / (1024.**3)
         max_bin_size_gb = 50.0
         max_bin_size = int(max_bin_size_gb/image_size_gb)
 
@@ -518,8 +518,8 @@ class Corrector:
                         del memmap_handle
                         os.remove(memmap_filename)
 
-                    cv2.imwrite("bin_images_sample_"+str(idx_bin)+".png", bin_images_sample)
-                    cv2.imwrite("bin_distances_sample_"+str(idx_bin)+".png", bin_distances_sample)
+                    #imageio.imwrite("bin_images_sample_"+str(idx_bin)+".png", bin_images_sample)
+                    #imageio.imwrite("bin_distances_sample_"+str(idx_bin)+".png", bin_distances_sample)
                     bin_images_sample_list.append(bin_images_sample)
                     bin_distances_sample_list.append(bin_distances_sample)
 

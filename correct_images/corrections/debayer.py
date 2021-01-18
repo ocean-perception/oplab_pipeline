@@ -11,7 +11,7 @@ from correct_images.tools.joblib_tqdm import tqdm_joblib
 
 # convert bayer image to RGB based
 # on the bayer pattern for the camera
-def debayer(image: np.ndarray, pattern: str) -> np.ndarray:
+def debayer(image: np.ndarray, pattern: str, src_bit=8, dst_bit=8) -> np.ndarray:
     """Perform debayering of input image
 
     Parameters
@@ -27,7 +27,9 @@ def debayer(image: np.ndarray, pattern: str) -> np.ndarray:
         Debayered image
     """
 
-    image16 = image.astype(np.uint16)
+    # Make use of 16 bit debayering
+    image16_float = image.astype(np.float32) * (2 **(16 - src_bit))
+    image16 = image16_float.astype(np.uint16)
 
     corrected_rgb_img = None
     if pattern == "rggb" or pattern == "RGGB":
@@ -42,6 +44,9 @@ def debayer(image: np.ndarray, pattern: str) -> np.ndarray:
         return image
     else:
         Console.quit("Bayer pattern not supported (", pattern, ")")
+
+    # Scale down to 8 bits. 
+    corrected_rgb_img = corrected_rgb_img.astype(np.float32) * (2 **(dst_bit - 16))
     return corrected_rgb_img
 
 

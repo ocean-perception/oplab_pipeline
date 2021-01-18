@@ -50,13 +50,11 @@ def load_xviii_bayer_from_binary(binary_data, image_height, image_width):
             )
             count += 12
 
-    # Scale down from 18 bits to 16 bit to process with OpenCV debayer
-    bayer_img = bayer_img.astype(np.float32) / (2**10)
-    bayer_img = bayer_img
+    bayer_img = bayer_img.astype(np.float32)
     return bayer_img
 
 
-def loader(raw_filename, image_width=1280, image_height=1024):
+def loader(raw_filename, image_width=1280, image_height=1024, src_bit=18, dst_bit=8):
     """XVIII image loader
 
     Parameters
@@ -74,6 +72,9 @@ def loader(raw_filename, image_width=1280, image_height=1024):
         Loaded image in matrix form (numpy)
     """
     binary_data = np.fromfile(raw_filename, dtype=np.uint8)
-    return load_xviii_bayer_from_binary(
+    bayer_img =  load_xviii_bayer_from_binary(
             binary_data[:], image_height, image_width
         )
+    # Scale down from 18 bits to 16 bit to process with OpenCV debayer
+    image = bayer_img * (2 **(dst_bit - src_bit))
+    return image
