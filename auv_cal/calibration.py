@@ -411,7 +411,7 @@ class Calibrator:
             )
             left_name = c0["name"]
             left_filepaths = build_filepath(
-                self.filepath, c0["camera_calibration"]["path"]
+                get_processed_folder(self.filepath), c0["camera_calibration"]["path"]
             )
             left_extension = str(c0["camera_calibration"]["glob_pattern"])
             right_name = c2["name"]
