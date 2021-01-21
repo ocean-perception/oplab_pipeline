@@ -676,7 +676,7 @@ class LaserCalibrator:
         output_cloud = []
         for p in cloud:
             r = math.sqrt(p[0]*p[0] + p[1]*p[1] + p[2]*p[2])
-            if r <= self.filter_max_range or r >= self.filter_min_range:
+            if r <= self.filter_max_range and r >= self.filter_min_range:
                 corresp_bin = round((r - self.filter_min_range)/bin_den)
                 if corresp_bin < len(bins):
                     if bins[corresp_bin] is None:
