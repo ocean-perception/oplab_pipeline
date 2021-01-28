@@ -18,7 +18,7 @@ import calendar
 from auv_nav.tools.interpolate import interpolate
 from auv_nav.tools.time_conversions import date_time_to_epoch
 from auv_nav.tools.latlon_wgs84 import latlon_to_metres
-from oplab import Console
+from oplab import Console, get_raw_folder
 
 
 class HyBisPos:
@@ -87,12 +87,14 @@ class HybisImporter:
             Console.error("Hybis converter expects dead_reckoning format to be: hybis")
             Console.quit("Invalid mission.yaml")
         
-        if mission.image.format != "directory_modification_time":
-            Console.error('Hybis converter expects images format to be of type: directory_modification_time')
+        if mission.image.format != "hybis":
+            Console.error('Hybis converter expects images format to be of type: hybis')
             Console.quit("Invalid mission.yaml")
 
         navigation_file = Path(mission.dead_reckoning.filepath) / mission.dead_reckoning.filename
+        navigation_file = get_raw_folder(navigation_file)
         image_path = Path(mission.image.cameras[0].path)
+        image_path = get_raw_folder(image_path)
         reference_lat = mission.origin.latitude
         reference_lon = mission.origin.longitude
 
@@ -156,18 +158,18 @@ class HybisImporter:
             longitude_ref = reference_lon
 
         self.data = [
-            "Imagenumber, ",
-            "Northing [m], ",
-            "Easting [m], ",
-            "Depth [m], ",
-            "Roll [deg], ",
-            "Pitch [deg], ",
-            "Heading [deg], ",
-            "Altitude [m], ",
-            "Timestamp, ",
-            "Latitude [deg], ",
-            "Longitude [deg],",
-            "Filename\n",
+            "image_number,",
+            "northing [m],",
+            "easting [m],",
+            "depth [m],",
+            "roll [deg],",
+            "pitch [deg],",
+            "heading [deg],",
+            "altitude [m],",
+            "timestamp,",
+            "latitude [deg],",
+            "longitude [deg],",
+            "relative_path\n",
         ]
 
         image_list = sorted(os.listdir(str(image_path)))

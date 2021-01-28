@@ -78,7 +78,8 @@ def import_data(filepath, ftype, force_overwite):
     output_dr_centre_path = renavpath / "csv" / "dead_reckoning"
     if not output_dr_centre_path.exists():
         output_dr_centre_path.mkdir(parents=True)
-    output_dr_centre_path = output_dr_centre_path / (ftype + "_dr_centre.csv")
+    camera_name = mission.image.cameras[0].name
+    output_dr_centre_path = output_dr_centre_path / ("auv_dr_" + camera_name + ".csv")
 
     importer.write(output_dr_centre_path)
 

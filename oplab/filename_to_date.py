@@ -13,6 +13,7 @@ from datetime import datetime
 import calendar
 import pandas as pd
 from oplab import get_raw_folder
+import os
 
 
 def resolve(filename, folder):
@@ -42,10 +43,14 @@ class FilenameToDate:
     def __call__(self, filename: str):
         # Get the name without extension
         filename = Path(filename)
-        stamp_format = Path(self.stamp_format)
-        filename = filename.stem
-        stamp_format = stamp_format.stem
-        return self.string_to_epoch(filename, self.stamp_format)
+        if self.stamp_format == 'm':
+            modification_time = os.stat(str(filename)).st_mtime
+            return modification_time
+        else:
+            stamp_format = Path(self.stamp_format)
+            filename = filename.stem
+            stamp_format = stamp_format.stem
+            return self.string_to_epoch(filename, self.stamp_format)
 
     def string_to_epoch(self, filename, stamp_format):
         year = ""

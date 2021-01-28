@@ -15,7 +15,7 @@ dead_reckoning:
   timeoffset: 0.0
 
 image:
-  format: directory_modification_time
+  format: hybis
   cameras:
     - name: scorpio
       type: rgb

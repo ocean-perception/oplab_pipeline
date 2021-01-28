@@ -97,11 +97,13 @@ def run_setup():
                 "correct_images = correct_images.correct_images:main",
             ],
         },
+        include_package_data=True,
         package_data={
-            "": ["default_yaml/*.yaml"],
-            "auv_nav": ["default_yaml/*/*/*.yaml"],
-            "correct_images": ["default_yaml/*/*.yaml"],
-            "oplab_pipeline_version": ["commit_hash.txt"],
+            "": [
+                "default_yaml/*/*/*.yaml",
+                "default_yaml/*/*.yaml",
+                "default_yaml/*.yaml",
+                "commit_hash.txt"]
         },
         install_requires=[
             "wheel>=0.30.0",
@@ -125,6 +127,7 @@ def run_setup():
             "setuptools>=42.0.2",
             "numba>=0.51.2",
             "geographiclib>=1.50",
+            "psutil>=5.8.0",
         ],
     )
 

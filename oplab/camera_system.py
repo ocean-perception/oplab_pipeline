@@ -79,7 +79,6 @@ class CameraEntry:
         raw_dir = get_raw_folder(self.raw_folder)
 
         split_glob = str(self.path).split("*")
-        # print(len(split_glob))
         img_dir = ""
         if len(split_glob) == 2:
             pre_glob = split_glob[0] + "*"
@@ -130,7 +129,7 @@ class CameraEntry:
         self._image_properties = []
 
         # read tiff
-        if self.extension == "tif" or self.extension == "jpg":
+        if self.extension == "tif" or self.extension == "jpg" or self.extension == "JPG":
             image_matrix = imageio.imread(image_path)
             image_shape = image_matrix.shape
             self._image_properties.append(image_shape[0])
