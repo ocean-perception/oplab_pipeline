@@ -158,7 +158,7 @@ def calculate_attenuation_parameters(
 
     if num_jobs > cpus:
         num_jobs = cpus
-    elif num_jobs < 0:
+    elif num_jobs <= 0:
         num_jobs = 1
         Console.warn("You might have not enough available RAM to continue.")
 
