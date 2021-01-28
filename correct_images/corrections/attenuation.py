@@ -3,6 +3,8 @@ import joblib
 from correct_images.tools.curve_fitting import curve_fitting
 from correct_images.tools.joblib_tqdm import tqdm_joblib
 from tqdm import tqdm, trange
+import psutil
+from oplab import Console
 
 
 def attenuation_correct(img: np.ndarray,
@@ -145,9 +147,28 @@ def calculate_attenuation_parameters(
         (image_channels, image_height, image_width, 3), dtype=np.float64
     )
 
+    # Check available RAM and allocate threads accordingly
+    mem = psutil.virtual_memory()
+    available_bytes = mem.available # in bytes
+    required_bytes = image_channels * image_height * image_width *  8 * len(images)
+    num_jobs = int(available_bytes/required_bytes)
+
+    # Keep one alive!
+    cpus = psutil.cpu_count() - 1
+
+    if num_jobs > cpus:
+        num_jobs = cpus
+    elif num_jobs < 0:
+        num_jobs = 1
+        Console.warn("You might have not enough available RAM to continue.")
+
+    if num_jobs < cpus - 1:
+        Console.info("Assigning", num_jobs, "jobs to your CPU to save RAM")
+
+
     for i_channel in range(image_channels):
         with tqdm_joblib(tqdm(desc="Curve fitting", total=image_height * image_width)) as progress_bar:
-            results = joblib.Parallel(n_jobs=-2, verbose=0)(
+            results = joblib.Parallel(n_jobs=num_jobs, verbose=0)(
                 [
                     joblib.delayed(curve_fitting)(np.array(distances[:, i_pixel]),
                                                 np.array(images[:, i_pixel, i_channel]))
