@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.7 (2021-01-28)
+ - auv_nav convert has been renamed to auv_nav export and import
+ - hybis format is not supported as import
+ - Improved correct_images processing pipeline to use less hard drive and RAM.
+
 ## 0.1.0 (2020-06-01)
  - First public release
  - Added changelog
