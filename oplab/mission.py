@@ -258,6 +258,7 @@ class Mission:
         self.altitude = DefaultEntry()
         self.usbl = DefaultEntry()
         self.tide = DefaultEntry()
+        self.dead_reckoning = DefaultEntry()
         self.image = ImageEntry()
         self.filename = None
 
@@ -349,6 +350,9 @@ class Mission:
                 if "tide" in data:
                     self.tide.load(data["tide"])
 
+                if "dead_reckoning" in data:
+                    self.dead_reckoning.load(data["dead_reckoning"])
+
                 if "image" in data:
                     self.image.load(data["image"], self.version)
                     for camera in self.image.cameras:
@@ -413,6 +417,9 @@ class Mission:
                 if not self.tide.empty():
                     mission_dict["tide"] = OrderedDict()
                     self.tide.write(mission_dict["tide"])
+                if not self.dead_reckoning.empty():
+                    mission_dict["dead_reckoning"] = OrderedDict()
+                    self.dead_reckoning.write(mission_dict["dead_reckoning"])
                 if not self.image.empty():
                     mission_dict["image"] = OrderedDict()
                     self.image.write(mission_dict["image"])

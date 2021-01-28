@@ -1,0 +1,11 @@
+#YAML 1.0
+origin: #centre of robot
+  x_offset: 0
+  y_offset: 0
+  z_offset: 0
+
+# distance with reference to origin/centre of robot
+scorpio: #Camera
+  x_offset: 0.0
+  y_offset: 0.0
+  z_offset: 0.0

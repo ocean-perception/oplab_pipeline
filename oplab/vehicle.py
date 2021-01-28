@@ -134,8 +134,8 @@ class Vehicle:
                             camera_name,
                         )
                         Console.error(
-                            "Please make sure that the name used in mission.yaml and \
-                            the frame name used in vehicle.yaml are the same."
+                            "Please make sure that the name used in mission.yaml and ",
+                            "the frame name used in vehicle.yaml are the same."
                         )
                         Console.quit(
                             "Your vehicle.yaml or your mission.yaml are malformed."
