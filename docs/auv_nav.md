@@ -43,18 +43,18 @@ optional arguments:
                         dataset.
 ```
 
-`auv_nav convert` usage:
+`auv_nav export` usage:
 ```
-auv_nav convert [-h] [-f FORMAT] [-s START_DATETIME] [-e END_DATETIME] path
+auv_nav export [-h] [-f FORMAT] [-s START_DATETIME] [-e END_DATETIME] path
 
 positional arguments:
-  path                  Path to folder where the data to process is. The
+  path                  Path to folder where the data to export is. The
                         folder has to be generated using auv_nav parse.
 
 optional arguments:
   -h, --help            show this help message and exit
   -f FORMAT, --format FORMAT
-                        Format in which the data is output. Default: 'acfr'.
+                        Format in which the data is exported. Default: 'acfr'.
   -s START_DATETIME, --start START_DATETIME
                         Start date & time in YYYYMMDDhhmmss from which data
                         will be processed. If not set, start at beginning of
@@ -64,9 +64,23 @@ optional arguments:
                         will be processed. If not set process to end of
                         dataset.
 ```
-The algorithm will read in the nav_standard.json file obtained after the parsing and will write the required formats and outputs. At v0.0.1.6 the following output formats are available:
+The algorithm will read in the nav_standard.json file obtained after the parsing and will write the required formats and outputs. At v0.1.6 the following output formats are available:
 * acfr: The AFCR format uses a 'dRAWLOGS_cv' folder name and outputs its navigation solution to a file called 'combined.RAW.auv' as well as to a 'mission.cfg' to the processing folder root.
 
+`auv_nav import` usage:
+```
+auv_nav import [-h] [-f FORMAT] path
+
+positional arguments:
+  path                  Path to folder where the data to import is.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -f FORMAT, --format FORMAT
+                        Format in which the data is. For example: 'hybis'.
+```
+The algorithm will import a dive using the format provided and generate the same outputs as `auv_nav process` would. 
+At version v0.1.7 only `hybis` format is supported.
 
 ## Inputs and outputs of `auv_nav` ##
 When running `auv_nav`, the user indicates the path of the dive folder. Typically `auv_nav` is run from the dive folder, in which case the (relative) path is ".". This folder must be a subfolder (can be nested in multiple levels of subfolders) of a folder called eihter "raw", "processed" or "configuration". `auv_nav` automatically reads and writes files in the corresponding subfolders of these 3 folders, i.e. reads raw inputs from the subfolder of "raw", configurations from the corresponding subfolder in the "configuration" folder and writes the outputs to the corresponding subfolder in "processed". When writing files, missing subfolders are automatically created. If one or several of the output files already exist, `auv_nav` aborts unless overwriting is enabled with the command line key `-F` or `--Force`.
