@@ -257,6 +257,7 @@ def load_configuration_and_camera_system(path):
         acfr_std_camera_file = "auv_nav/default_yaml/ts1/SSK17-01/camera.yaml"
         sx3_camera_file = "auv_nav/default_yaml/ae2000/YK17-23C/camera.yaml"
         biocam_camera_file = "auv_nav/default_yaml/as6/DY109/camera.yaml"
+        hybis_camera_file = "auv_nav/default_yaml/hybis/camera.yaml"
 
         acfr_std_correct_config_file = (
             "correct_images/default_yaml/acfr/correct_images.yaml"
@@ -264,6 +265,9 @@ def load_configuration_and_camera_system(path):
         sx3_std_correct_config_file = "correct_images/default_yaml/sx3/correct_images.yaml"
         biocam_std_correct_config_file = (
             "correct_images/default_yaml/biocam/correct_images.yaml"
+        )
+        hybis_std_correct_config_file = (
+            "correct_images/default_yaml/hybis/correct_images.yaml"
         )
 
         if mission.image.format == "acfr_standard":
@@ -275,6 +279,9 @@ def load_configuration_and_camera_system(path):
         elif mission.image.format == "biocam":
             camera_yaml_path = root / biocam_camera_file
             default_file_path_correct_config = root / biocam_std_correct_config_file
+        elif mission.image.format == "hybis":
+            camera_yaml_path = root / hybis_camera_file
+            default_file_path_correct_config = root / hybis_std_correct_config_file
         else:
             Console.quit(
                 "Image system in camera.yaml does not match with mission.yaml.",

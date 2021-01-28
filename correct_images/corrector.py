@@ -331,9 +331,13 @@ class Corrector:
                     Console.quit("No navigation solution could be found. Please run auv_nav parse and process first")
                 self.distance_path = json_list[0]
 
-            full_metric_path = self.path_processed / self.distance_path
-            full_metric_path = full_metric_path / "csv" / "ekf"
+            metric_path = self.path_processed / self.distance_path
+            # Try if ekf exists:
+            full_metric_path = metric_path / "csv" / "ekf"
             metric_file = "auv_ekf_" + self.camera_name + ".csv"
+            if not full_metric_path.exists():
+                full_metric_path = metric_path / "csv" / "dead_reckoning"
+                metric_file = "auv_dr_" + self.camera_name + ".csv"
             self.altitude_csv_path = full_metric_path / metric_file
 
             # get imagelist for given camera object
@@ -547,9 +551,6 @@ class Corrector:
             )
             # Save attenuation parameter results. 
             np.save(self.attenuation_params_filepath, self.image_attenuation_parameters)
-
-            
-            #self.image_attenuation_parameters = np.load(self.attenuation_params_filepath)
 
             # compute correction gains per channel
             target_altitude = distance_vector.mean()
