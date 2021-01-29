@@ -177,6 +177,7 @@ class HybisImporter:
         Console.info("Interpolating...")
         for k, filename in enumerate(image_list):
             modification_time = os.stat(str(image_path) + '/' + filename).st_mtime
+            filename = mission.image.cameras[0].path + '/' + filename
 
             i = 0
             while (
@@ -242,27 +243,27 @@ class HybisImporter:
 
             msg = (
                 str(k)
-                + ", "
+                + ","
                 + str(northings)
-                + ", "
+                + ","
                 + str(eastings)
-                + ", "
+                + ","
                 + str(depth)
-                + ", "
+                + ","
                 + str(roll)
-                + ", "
+                + ","
                 + str(pitch)
-                + ", "
+                + ","
                 + str(heading)
-                + ", "
+                + ","
                 + str(altitude)
-                + ", "
+                + ","
                 + str(modification_time)
-                + ", "
+                + ","
                 + str(latitude)
-                + ", "
+                + ","
                 + str(longitude)
-                + ", "
+                + ","
                 + str(filename)
                 + "\n"
             )
