@@ -24,10 +24,12 @@ from oplab import get_config_folder
 from oplab import Console
 from correct_images.parser import CorrectConfig
 from correct_images import corrections
-from correct_images.tools.numerical import mean_array, median_array
+from correct_images.tools.numerical import median_array
 from correct_images.tools.numerical import running_mean_std, RunningMeanStd
+from correct_images.tools.memmap import convert_to_memmap
+from correct_images.tools.memmap import open_memmap
 from correct_images.tools.memmap import create_memmap
-from correct_images.tools.numerical import image_mean_std_trimmed, mean_std
+from correct_images.tools.numerical import image_mean_std_trimmed
 from correct_images.tools.file_handlers import write_output_image
 from correct_images.tools.file_handlers import load_memmap_from_numpyfilelist
 from correct_images.tools.file_handlers import trim_csv_files
@@ -99,6 +101,9 @@ class Corrector:
         self.user_specified_image_list_parse = None 
         self.user_specified_image_list_process = None 
 
+        # Use default loader
+        self.loader = default.loader
+
         if self.correct_config is not None:
             """Load general configuration parameters"""
             self.correction_method = self.correct_config.method
@@ -158,7 +163,6 @@ class Corrector:
                 self.raw_std_filepath = Path(self.attenuation_parameters_folder) / "image_raw_std.npy"
 
             # Define image loader
-            self.loader = default.loader
             if self.camera.extension == "raw":
                 self.loader = xviii.loader
 
@@ -442,30 +446,48 @@ class Corrector:
 
         # create empty matrices to store image correction parameters
         self.image_raw_mean = np.empty(
-            (self.image_channels, self.image_height, self.image_width)
+            (self.image_channels, self.image_height, self.image_width), 
+            dtype=np.float32
         )
         self.image_raw_std = np.empty(
-            (self.image_channels, self.image_height, self.image_width)
+            (self.image_channels, self.image_height, self.image_width), 
+            dtype=np.float32
         )
         self.image_attenuation_parameters = np.empty(
-            (self.image_channels, self.image_height, self.image_width, 3)
+            (self.image_channels, self.image_height, self.image_width, 3), 
+            dtype=np.float32
         )
         self.image_corrected_mean = np.empty(
-            (self.image_channels, self.image_height, self.image_width)
+            (self.image_channels, self.image_height, self.image_width), 
+            dtype=np.float32
         )
         self.image_corrected_std = np.empty(
-            (self.image_channels, self.image_height, self.image_width)
+            (self.image_channels, self.image_height, self.image_width), 
+            dtype=np.float32
         )
         self.correction_gains = np.empty(
-            (self.image_channels, self.image_height, self.image_width)
+            (self.image_channels, self.image_height, self.image_width), 
+            dtype=np.float32
         )
 
-        image_size_gb = self.image_channels * self.image_height * self.image_width * 32. / (1024.**3)
+        image_size_gb = self.image_channels * self.image_height * self.image_width * 4. / (1024.**3)
         max_bin_size_gb = 50.0
         max_bin_size = int(max_bin_size_gb/image_size_gb)
 
         bin_band = 0.1
         hist_bins = np.arange(self.altitude_min, self.altitude_max, bin_band)
+
+
+        images_fn, images_map = open_memmap(
+            shape=(len(hist_bins), 
+                   self.image_height * self.image_width, 
+                   self.image_channels),
+            dtype=np.float32)
+
+        distances_fn, distances_map = open_memmap(
+            shape=(len(hist_bins),
+                   self.image_height * self.image_width),
+            dtype=np.float32)
 
         distance_vector = None
 
@@ -480,75 +502,29 @@ class Corrector:
             distance_vector = self.altitude_list
 
         if distance_vector is not None:
-            bin_images_sample_list = []
-            bin_distances_sample_list = []
             idxs = np.digitize(distance_vector, hist_bins)
-            for idx_bin in trange(1, hist_bins.size):
-                tmp_idxs = np.where(idxs == idx_bin)[0]
-                #print("In bin", idx_bin,"there are", len(tmp_idxs), "images")
-                if len(tmp_idxs) > 0:
-                    bin_images = [self.camera_image_list[i] for i in tmp_idxs]
-                    bin_distances_sample = None
-                    bin_images_sample = None
-
-                    # Random sample if memmap has to be created
-                    if self.smoothing != "mean" and len(bin_images) > max_bin_size:
-                        Console.info("Random sampling altitude bin to fit in", max_bin_size_gb, "Gb")
-                        bin_images = random.sample(bin_images, max_bin_size)
-                    
-                    if self.depth_map_list is None:
-                        # Generate matrices on the fly
-                        distance_bin = distance_vector[tmp_idxs]
-                        distance_bin_sample = distance_bin.mean()
-                        #print("distance_bin_sample ", distance_bin_sample, "m")
-                        bin_distances_sample = np.empty((
-                            self.image_height, self.image_width))
-                        bin_distances_sample.fill(distance_bin_sample)
-                    else:
-                        bin_distances = [self.depth_map_list[i] for i in tmp_idxs]
-                        bin_distances_sample = running_mean_std(bin_distances, loader=self.loader)[0]
-
-                    if self.smoothing == "mean":
-                        bin_images_sample = running_mean_std(bin_images, loader=self.loader)[0]
-                    elif self.smoothing == "mean_trimmed":
-                        memmap_filename, memmap_handle = create_memmap(bin_images, loader=self.loader)
-                        bin_images_sample = image_mean_std_trimmed(memmap_handle)
-                        del memmap_handle
-                        os.remove(memmap_filename)
-                    elif self.smoothing == "median":
-                        memmap_filename, memmap_handle = create_memmap(bin_images, loader=self.loader)
-                        #print("memmap_handle size", memmap_handle.shape)
-                        bin_images_sample = median_array(memmap_handle)
-                        del memmap_handle
-                        os.remove(memmap_filename)
-
-                    #imageio.imwrite("bin_images_sample_"+str(idx_bin)+".png", bin_images_sample)
-                    #imageio.imwrite("bin_distances_sample_"+str(idx_bin)+".png", bin_distances_sample)
-                    bin_images_sample_list.append(bin_images_sample)
-                    bin_distances_sample_list.append(bin_distances_sample)
-
-            images_for_attenuation_calculation = np.array(bin_images_sample_list)
-            distances_for_attenuation_calculation = np.array(
-                bin_distances_sample_list
-            )
-            images_for_attenuation_calculation = images_for_attenuation_calculation.reshape(
-                [len(bin_images_sample_list), self.image_height * self.image_width, self.image_channels]
-            )
-            distances_for_attenuation_calculation = distances_for_attenuation_calculation.reshape(
-                [
-                    len(bin_distances_sample_list),
-                    self.image_height * self.image_width,
-                ]
-            )
+            
+            with tqdm_joblib(tqdm(desc="Computing altitude histogram", total=len(hist_bins) - 1)) as _:
+                joblib.Parallel(n_jobs=2, verbose=0)(
+                    joblib.delayed(self.compute_distance_bin)(idxs, idx_bin, images_map, distances_map, max_bin_size, max_bin_size_gb, distance_vector)
+                    for idx_bin in range(1, len(hist_bins))
+                )
 
             # calculate attenuation parameters per channel
             self.image_attenuation_parameters = corrections.calculate_attenuation_parameters(
-                images_for_attenuation_calculation,
-                distances_for_attenuation_calculation,
+                images_map,
+                distances_map,
                 self.image_height,
                 self.image_width,
                 self.image_channels
             )
+
+            # delete memmap handles
+            del images_map
+            os.remove(images_fn)
+            del distances_map
+            os.remove(distances_fn)
+
             # Save attenuation parameter results. 
             np.save(self.attenuation_params_filepath, self.image_attenuation_parameters)
 
@@ -605,13 +581,60 @@ class Corrector:
             imageio.imwrite(Path(self.attenuation_parameters_folder) / "image_corrected_std.png", image_corrected_std)
         else:
             Console.info("No altitude or depth maps available. Computing raw mean and std.")
-            image_raw_mean, image_raw_std = mean_std(self.camera_image_list)
+            image_raw_mean, image_raw_std = running_mean_std(self.camera_image_list, self.loader)
             np.save(self.raw_mean_filepath, image_raw_mean)
             np.save(self.raw_std_filepath, image_raw_std)
             imageio.imwrite(Path(self.attenuation_parameters_folder) / "image_raw_mean.png", image_raw_mean)
             imageio.imwrite(Path(self.attenuation_parameters_folder) / "image_raw_std.png", image_raw_std)
 
         Console.info("Correction parameters saved...")
+
+    def compute_distance_bin(self, idxs, idx_bin, images_map, distances_map, max_bin_size, max_bin_size_gb, distance_vector):
+        tmp_idxs = np.where(idxs == idx_bin)[0]
+        #print("In bin", idx_bin,"there are", len(tmp_idxs), "images")
+        if len(tmp_idxs) > 0:
+            bin_images = [self.camera_image_list[i] for i in tmp_idxs]
+            bin_distances_sample = None
+            bin_images_sample = None
+
+            # Random sample if memmap has to be created
+            if self.smoothing != "mean" and len(bin_images) > max_bin_size:
+                Console.info("Random sampling altitude bin to fit in", max_bin_size_gb, "Gb")
+                bin_images = random.sample(bin_images, max_bin_size)
+            
+            if self.depth_map_list is None:
+                # Generate matrices on the fly
+                distance_bin = distance_vector[tmp_idxs]
+                distance_bin_sample = distance_bin.mean()
+                #print("distance_bin_sample ", distance_bin_sample, "m")
+                bin_distances_sample = np.empty((
+                    self.image_height, self.image_width))
+                bin_distances_sample.fill(distance_bin_sample)
+            else:
+                bin_distances = [self.depth_map_list[i] for i in tmp_idxs]
+                bin_distances_sample = running_mean_std(bin_distances, loader=self.loader)[0]
+
+            if self.smoothing == "mean":
+                bin_images_sample = running_mean_std(bin_images, loader=self.loader)[0]
+            elif self.smoothing == "mean_trimmed":
+                memmap_filename, memmap_handle = create_memmap(bin_images, loader=self.loader)
+                bin_images_sample = image_mean_std_trimmed(memmap_handle)
+                del memmap_handle
+                os.remove(memmap_filename)
+            elif self.smoothing == "median":
+                memmap_filename, memmap_handle = create_memmap(bin_images, loader=self.loader)
+                #print("memmap_handle size", memmap_handle.shape)
+                bin_images_sample = median_array(memmap_handle)
+                del memmap_handle
+                os.remove(memmap_filename)
+
+            #imageio.imwrite("bin_images_sample_"+str(idx_bin)+".png", bin_images_sample)
+            #imageio.imwrite("bin_distances_sample_"+str(idx_bin)+".png", bin_distances_sample)
+            #bin_images_sample_list.append(bin_images_sample)
+            #bin_distances_sample_list.append(bin_distances_sample)
+
+            images_map[idx_bin] = bin_images_sample.reshape([self.image_height * self.image_width, self.image_channels])
+            distances_map[idx_bin] = bin_distances_sample.reshape([self.image_height * self.image_width])
 
     # execute the corrections of images using the gain values in case of attenuation correction or static color balance
     def process_correction(self):

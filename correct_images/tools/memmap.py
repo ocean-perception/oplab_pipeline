@@ -8,7 +8,6 @@ from correct_images.tools.joblib_tqdm import tqdm_joblib
 
 
 def create_memmap(image_list, loader=default.loader):
-
     tmp = loader(image_list[0])
     dimensions = tmp.shape
 
@@ -22,6 +21,18 @@ def create_memmap(image_list, loader=default.loader):
         joblib.delayed(memmap_loader)(image_list, image_memmap, idx, loader, dimensions[1], dimensions[0])
         for idx in range(len(image_list))
     )
+    return filename_map, image_memmap
+
+
+def open_memmap(shape, dtype):
+    filename_map = "memmap_" + str(uuid.uuid4()) + ".map"
+    image_memmap = np.memmap(filename=filename_map, mode="w+", shape=shape, dtype=dtype)
+    return filename_map, image_memmap
+
+def convert_to_memmap(array, loader=default.loader):
+    filename_map = "memmap_" + str(uuid.uuid4()) + ".map"
+    image_memmap = np.memmap(filename=filename_map, mode="w+", shape=array.shape, dtype=array.dtype)
+    image_memmap[:] = array[:]
     return filename_map, image_memmap
 
 

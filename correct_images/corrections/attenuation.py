@@ -49,40 +49,6 @@ def attenuation_correct(img: np.ndarray,
     return img_float32
 
 
-def attenuation_correct_memmap(image_memmap: np.ndarray,
-                               distance_memmap: np.ndarray,
-                               attenuation_parameters: np.ndarray,
-                               gains: np.ndarray) -> np.ndarray:
-        """Apply attenuation corrections to an image memmap
-
-        Parameters
-        -----------
-        image_memmap : numpy.ndarray
-            input image memmap
-        distance_memmap : numpy.ndarray
-            input distance memmap
-        attenuation_parameters : numpy.ndarray
-            attenuation coefficients
-        gains : numpy.ndarray
-            gain values for the image
-
-
-        Returns
-        -------
-        numpy.ndarray
-            Resulting images after applying attenuation correction
-        """
-        for i_img in trange(image_memmap.shape[0]):
-            # memmap data can not be updated in joblib .
-            image_memmap[i_img, ...] = attenuation_correct(
-                image_memmap[i_img, ...],
-                distance_memmap[i_img, ...],
-                attenuation_parameters,
-                gains,
-            )
-        return image_memmap
-
-
 # compute gain values for each pixel for a targeted altitude using the attenuation parameters
 def calculate_correction_gains(target_altitude : np.ndarray,
                                attenuation_parameters : np.ndarray,
@@ -144,13 +110,13 @@ def calculate_attenuation_parameters(
     """
 
     image_attenuation_parameters = np.empty(
-        (image_channels, image_height, image_width, 3), dtype=np.float64
+        (image_channels, image_height, image_width, 3), dtype=np.float32
     )
 
     # Check available RAM and allocate threads accordingly
     mem = psutil.virtual_memory()
     available_bytes = mem.available # in bytes
-    required_bytes = image_channels * image_height * image_width *  8 * len(images)
+    required_bytes = image_channels * image_height * image_width * 4 * len(images)
     num_jobs = int(available_bytes/required_bytes)
 
     # Keep one alive!
@@ -170,8 +136,9 @@ def calculate_attenuation_parameters(
         with tqdm_joblib(tqdm(desc="Curve fitting", total=image_height * image_width)) as progress_bar:
             results = joblib.Parallel(n_jobs=num_jobs, verbose=0)(
                 [
-                    joblib.delayed(curve_fitting)(np.array(distances[:, i_pixel]),
-                                                np.array(images[:, i_pixel, i_channel]))
+                    joblib.delayed(curve_fitting)(
+                        distances[:, i_pixel],
+                        images[:, i_pixel, i_channel])
                     for i_pixel in range(image_height * image_width)
                 ]
             )
