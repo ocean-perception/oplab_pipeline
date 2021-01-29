@@ -1,0 +1,8 @@
+camera_system: hybis
+cameras:
+  - name: scorpio
+    type: rgb
+    bit_depth: 8
+    path: 'image/scorpio'
+    extension: JPG
+    filename_to_date: 'm'
