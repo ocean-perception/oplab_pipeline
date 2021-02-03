@@ -18,6 +18,13 @@ import json as js
 import numpy as np
 
 
+def float_or_none(val):
+    if val is not None:
+        return float(val)
+    else:
+        return None
+
+
 class PhinsHeaders:
     # define headers used in phins
     START = "$PIXSE"
@@ -237,24 +244,24 @@ class BodyVelocity(OutputFormat):
 
     def _to_json(self):
         data = {
-            "epoch_timestamp": float(self.epoch_timestamp),
-            "epoch_timestamp_dvl": float(self.epoch_timestamp_dvl),
+            "epoch_timestamp": float_or_none(self.epoch_timestamp),
+            "epoch_timestamp_dvl": float_or_none(self.epoch_timestamp_dvl),
             "class": "measurement",
             "sensor": self.sensor_string,
             "frame": "body",
             "category": Category.VELOCITY,
             "data": [
                 {
-                    "x_velocity": float(self.x_velocity),
-                    "x_velocity_std": float(self.x_velocity_std),
+                    "x_velocity": float_or_none(self.x_velocity),
+                    "x_velocity_std": float_or_none(self.x_velocity_std),
                 },
                 {
-                    "y_velocity": float(self.y_velocity),
-                    "y_velocity_std": float(self.y_velocity_std),
+                    "y_velocity": float_or_none(self.y_velocity),
+                    "y_velocity_std": float_or_none(self.y_velocity_std),
                 },
                 {
-                    "z_velocity": float(self.z_velocity),
-                    "z_velocity_std": float(self.z_velocity_std),
+                    "z_velocity": float_or_none(self.z_velocity),
+                    "z_velocity_std": float_or_none(self.z_velocity_std),
                 },
             ],
         }
@@ -360,16 +367,16 @@ class InertialVelocity(OutputFormat):
             "category": Category.VELOCITY,
             "data": [
                 {
-                    "north_velocity": float(self.north_velocity),
-                    "north_velocity_std": float(self.north_velocity_std),
+                    "north_velocity": float_or_none(self.north_velocity),
+                    "north_velocity_std": float_or_none(self.north_velocity_std),
                 },
                 {
-                    "east_velocity": float(self.east_velocity),
-                    "east_velocity_std": float(self.east_velocity_std),
+                    "east_velocity": float_or_none(self.east_velocity),
+                    "east_velocity_std": float_or_none(self.east_velocity_std),
                 },
                 {
-                    "down_velocity": float(self.down_velocity),
-                    "down_velocity_std": float(self.down_velocity_std),
+                    "down_velocity": float_or_none(self.down_velocity),
+                    "down_velocity_std": float_or_none(self.down_velocity_std),
                 },
             ],
         }
@@ -490,15 +497,15 @@ class Orientation(OutputFormat):
 
     def _to_json(self):
         data = {
-            "epoch_timestamp": float(self.epoch_timestamp),
+            "epoch_timestamp": float_or_none(self.epoch_timestamp),
             "class": "measurement",
             "sensor": self.sensor_string,
             "frame": "body",
             "category": Category.ORIENTATION,
             "data": [
-                {"heading": float(self.yaw), "heading_std": float(self.yaw_std)},
-                {"roll": float(self.roll), "roll_std": float(self.roll_std)},
-                {"pitch": float(self.pitch), "pitch_std": float(self.pitch_std)},
+                {"heading": float_or_none(self.yaw), "heading_std": float_or_none(self.yaw_std)},
+                {"roll": float_or_none(self.roll), "roll_std": float_or_none(self.roll_std)},
+                {"pitch": float_or_none(self.pitch), "pitch_std": float_or_none(self.pitch_std)},
             ],
         }
         return data
@@ -599,13 +606,13 @@ class Depth(OutputFormat):
 
     def _to_json(self):
         data = {
-            "epoch_timestamp": float(self.epoch_timestamp),
-            "epoch_timestamp_depth": float(self.depth_timestamp),
+            "epoch_timestamp": float_or_none(self.epoch_timestamp),
+            "epoch_timestamp_depth": float_or_none(self.depth_timestamp),
             "class": "measurement",
             "sensor": self.sensor_string,
             "frame": "inertial",
             "category": Category.DEPTH,
-            "data": [{"depth": float(self.depth), "depth_std": float(self.depth_std)}],
+            "data": [{"depth": float_or_none(self.depth), "depth_std": float_or_none(self.depth_std)}],
         }
         return data
 
@@ -664,20 +671,20 @@ class Altitude(OutputFormat):
 
     def _to_json(self):
         data = {
-            "epoch_timestamp": float(self.epoch_timestamp),
-            "epoch_timestamp_dvl": float(self.altitude_timestamp),
+            "epoch_timestamp": float_or_none(self.epoch_timestamp),
+            "epoch_timestamp_dvl": float_or_none(self.altitude_timestamp),
             "class": "measurement",
             "sensor": self.sensor_string,
             "frame": "body",
             "category": Category.ALTITUDE,
             "data": [
                 {
-                    "altitude": float(self.altitude),
-                    "altitude_std": float(self.altitude_std),
+                    "altitude": float_or_none(self.altitude),
+                    "altitude_std": float_or_none(self.altitude_std),
                 },
                 {
-                    "sound_velocity": float(self.sound_velocity),
-                    "sound_velocity_correction": float(self.sound_velocity_correction),
+                    "sound_velocity": float_or_none(self.sound_velocity),
+                    "sound_velocity_correction": float_or_none(self.sound_velocity_correction),
                 },
             ],
         }
@@ -873,41 +880,41 @@ class Usbl(OutputFormat):
 
     def _to_json(self):
         data = {
-            "epoch_timestamp": float(self.epoch_timestamp),
+            "epoch_timestamp": float_or_none(self.epoch_timestamp),
             "class": "measurement",
             "sensor": self.sensor_string,
             "frame": "inertial",
             "category": Category.USBL,
             "data_ship": [
                 {
-                    "latitude": float(self.latitude_ship),
-                    "longitude": float(self.longitude_ship),
+                    "latitude": float_or_none(self.latitude_ship),
+                    "longitude": float_or_none(self.longitude_ship),
                 },
                 {
-                    "northings": float(self.northings_ship),
-                    "eastings": float(self.eastings_ship),
+                    "northings": float_or_none(self.northings_ship),
+                    "eastings": float_or_none(self.eastings_ship),
                 },
-                {"heading": float(self.heading_ship)},
+                {"heading": float_or_none(self.heading_ship)},
             ],
             "data_target": [
                 {
-                    "latitude": float(self.latitude),
-                    "latitude_std": float(self.latitude_std),
+                    "latitude": float_or_none(self.latitude),
+                    "latitude_std": float_or_none(self.latitude_std),
                 },
                 {
-                    "longitude": float(self.longitude),
-                    "longitude_std": float(self.longitude_std),
+                    "longitude": float_or_none(self.longitude),
+                    "longitude_std": float_or_none(self.longitude_std),
                 },
                 {
-                    "northings": float(self.northings),
-                    "northings_std": float(self.northings_std),
+                    "northings": float_or_none(self.northings),
+                    "northings_std": float_or_none(self.northings_std),
                 },
                 {
-                    "eastings": float(self.eastings),
-                    "eastings_std": float(self.eastings_std),
+                    "eastings": float_or_none(self.eastings),
+                    "eastings_std": float_or_none(self.eastings_std),
                 },
-                {"depth": float(self.depth), "depth_std": float(self.depth_std)},
-                {"distance_to_ship": float(self.distance_to_ship)},
+                {"depth": float_or_none(self.depth), "depth_std": float_or_none(self.depth_std)},
+                {"distance_to_ship": float_or_none(self.distance_to_ship)},
             ],
         }
         return data
@@ -992,13 +999,13 @@ class Tide(OutputFormat):
 
     def _to_json(self):
         data = {
-            "epoch_timestamp": float(self.epoch_timestamp),
+            "epoch_timestamp": float_or_none(self.epoch_timestamp),
             "class": "measurement",
             "sensor": self.sensor_string,
             "frame": "inertial",
             "category": Category.TIDE,
             "data": [
-                {"height": float(self.height), "height_std": float(self.height_std)}
+                {"height": float_or_none(self.height), "height_std": float_or_none(self.height_std)}
             ],
         }
         return data
