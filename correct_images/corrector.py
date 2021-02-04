@@ -412,7 +412,7 @@ class Corrector:
 
         self.altitude_list = self.altitude_list[idx_cond]
         self.camera_image_list = [self.camera_image_list[i] for i in idx_cond]
-        
+
         Console.info(
             len(self.altitude_list), '/', len(distance_list),
             "Images filtered as per altitude range...",
@@ -477,7 +477,6 @@ class Corrector:
         bin_band = 0.1
         hist_bins = np.arange(self.altitude_min, self.altitude_max, bin_band)
 
-
         images_fn, images_map = open_memmap(
             shape=(len(hist_bins), 
                    self.image_height * self.image_width, 
@@ -540,8 +539,9 @@ class Corrector:
             )
             # Save correction gains
             np.save(self.correction_gains_filepath, self.correction_gains)
-#           self.image_attenuation_parameters = np.load(self.attenuation_params_filepath)
-#           self.correction_gains = np.load(self.correction_gains_filepath)
+            
+            #self.image_attenuation_parameters = np.load(self.attenuation_params_filepath)
+            #self.correction_gains = np.load(self.correction_gains_filepath)
 
             # apply gains to images
             Console.info("Applying attenuation corrections to images...")
@@ -556,6 +556,8 @@ class Corrector:
                 # Load the distance matrix
                 if self.depth_map_list is None:
                     # Generate matrices on the fly
+                    if not i in distance_vector.index:
+                        continue
                     distance = distance_vector[i]
                     distance_mtx = np.empty((
                         self.image_height, self.image_width))
@@ -604,7 +606,7 @@ class Corrector:
             
             if self.depth_map_list is None:
                 # Generate matrices on the fly
-                distance_bin = distance_vector[tmp_idxs]
+                distance_bin = distance_vector[distance_vector.index.intersection(tmp_idxs)]
                 distance_bin_sample = distance_bin.mean()
                 #print("distance_bin_sample ", distance_bin_sample, "m")
                 bin_distances_sample = np.empty((
@@ -654,17 +656,6 @@ class Corrector:
                 Console.info("Calibration file found...")
                 self.camera_params_file_path = camera_params_file_path
 
-        # Debayer mean and std for Pixel Stats
-        """
-        if self._type != "grayscale" and self.correction_method == "colour_correction":
-            if self.distance_metric != "none":
-                self.image_corrected_mean = corrections.debayer(self.image_corrected_mean, self._type)
-                self.image_corrected_std = corrections.debayer(self.image_corrected_std, self._type)                   
-            elif self.distance_metric == "none":
-                self.image_raw_mean = corrections.debayer(self.image_raw_mean, self._type)
-                self.image_raw_std = corrections.debayer(self.image_raw_std, self._type)
-        """
-
         Console.info("Processing images for color, distortion, gamma corrections...")
 
         with tqdm_joblib(tqdm(desc="Correcting images", total=len(self.camera_image_list))) as progress_bar:
@@ -701,6 +692,8 @@ class Corrector:
             if self.distance_metric == "depth_map":
                 distance_matrix = depth_map.loader(self.depth_map_list[idx], self.image_width, self.image_height)
             elif self.distance_metric == "altitude":
+                if idx not in self.altitude_list:
+                    return None
                 distance = self.altitude_list[idx]
                 distance_matrix = np.empty((self.image_height, self.image_width))
                 distance_matrix.fill(distance)
@@ -728,8 +721,7 @@ class Corrector:
                     self.brightness,
                     self.contrast,
                 )
-
-            if not self._type == "grayscale":
+            if self._type != "grayscale" and self._type != 'rgb':
                 # debayer images
                 image_rgb = corrections.debayer(image, self._type)
             else:
