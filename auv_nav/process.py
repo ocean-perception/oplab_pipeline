@@ -1169,15 +1169,15 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
         camera3_ekf_list = Parallel(n_jobs=12, verbose=10)(delayed(ekf.predictAndTransform)(c.epoch_timestamp, origin_offsets, camera3_offsets) for c in camera3_ekf_list) """
 
         with CodeTimer('EKF predict cam1'):
-            if len(camera1_ekf_list) > 1:
+            if len(camera1_ekf_list) > 0:
                 camera1_ekf_list = [ekf.predictAndTransform(c, origin_offsets, camera1_offsets, latlon_reference) for c in camera1_ekf_list]
-
-        print('camera3 will take', len(camera3_ekf_list)/len(camera1_ekf_list), 'times more time.')
+                if len(camera3_ekf_list) > 0 and len(camera1_ekf_list) > 0:
+                    print('camera3 will take', len(camera3_ekf_list)/len(camera1_ekf_list), 'times more time.')
         with CodeTimer('EKF predict cam2'):
-            if len(camera2_ekf_list) > 1:
+            if len(camera2_ekf_list) > 0:
                 camera2_ekf_list = [ekf.predictAndTransform(c, origin_offsets, camera2_offsets, latlon_reference) for c in camera2_ekf_list]
         with CodeTimer('EKF predict cam3'):
-            if len(camera3_ekf_list) > 1:
+            if len(camera3_ekf_list) > 0:
                 camera3_ekf_list = [ekf.predictAndTransform(c, origin_offsets, camera3_offsets, latlon_reference) for c in camera3_ekf_list]
         
     # perform interpolations of state data to chemical time stamps for both
