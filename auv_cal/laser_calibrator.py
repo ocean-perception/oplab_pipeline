@@ -1027,12 +1027,11 @@ class LaserCalibrator:
 
         rs_size = 500
         if len(limages) > rs_size:
-            rs_size = int((len(limages_sync) / rs_size) - 1)
-            i = 0
-            while i < len(limages_sync):
-                limages_rs.append(limages_sync[i])
-                rimages_rs.append(rimages_sync[i])
-                i += rs_size
+            f = lambda m, n: [i*n//m + n//(2*m) for i in range(m)] # See https://stackoverflow.com/a/9873804/707946
+            selection = f(rs_size, len(limages))
+            for s in selection:
+                limages_rs.append(limages_sync[s])
+                rimages_rs.append(rimages_sync[s])
         else:
             limages_rs = limages
             rimages_rs = rimages
