@@ -107,6 +107,9 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
         
         if ftype == "oplab":
             if category == "velocity":
+                if math.isnan(df["dvl_validBottom"][row_index]):
+                    print("dvl_validBottom is NaN in row ", row_index)
+                    continue
                 if int(df["dvl_validBottom"][row_index]) != 1:
                     continue
 
@@ -315,6 +318,9 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
                 data_list.append(data)
 
             if category == "altitude":
+                if math.isnan(df["dvl_validBottom"][row_index]):
+                    print("dvl_validBottom is NaN in row ", row_index)
+                    continue
                 if int(df["dvl_validBottom"][row_index]) != 1:
                     continue
                 frame_string = "body"
