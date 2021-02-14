@@ -115,7 +115,9 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
 
                 frame_string = "body"
 
-                headingoffset = vehicle.dvl.yaw
+                roll_offset    = vehicle.dvl.roll
+                pitch_offset   = vehicle.dvl.pitch
+                heading_offset = vehicle.dvl.yaw
 
                 # DVL convention is +ve aft to forward
                 x_velocity = float(df["dvl_surgeVelBottom"][row_index])/1000.
@@ -127,7 +129,8 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
 
                 # account for sensor rotational offset
                 [x_velocity, y_velocity, z_velocity] = body_to_inertial(
-                    0, 0, headingoffset, x_velocity, y_velocity, z_velocity
+                    roll_offset, pitch_offset, heading_offset,
+                    x_velocity, y_velocity, z_velocity
                 )
                 # print('OUT:',x_velocity, y_velocity, z_velocity)
                 # y_velocity=-1*y_velocity
@@ -222,13 +225,11 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
                 roll_std = mission.orientation.std_factor*abs(roll) + mission.orientation.std_offset
                 pitch_std = mission.orientation.std_factor*abs(pitch) + mission.orientation.std_offset
                 # account for sensor rotational offset
+                if vehicle.ins.roll != 0 or vehicle.ins.pitch != 0:
+                    Console.quit("INS roll and pitch offsets are currently not supported")
+
                 headingoffset = vehicle.ins.yaw
-
-                [roll, pitch, heading] = body_to_inertial(
-                    0, 0, headingoffset, roll, pitch, heading
-                )
-
-                # heading=heading+headingoffset
+                heading = heading + headingoffset
                 if heading > 360:
                     heading = heading - 360
                 if heading < 0:
@@ -414,16 +415,10 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
                 pitch_std = mission.orientation.std_factor*abs(pitch) + mission.orientation.std_offset
 
                 # account for sensor rotational offset
+                if vehicle.ins.roll != 0 or vehicle.ins.pitch != 0:
+                    Console.quit("INS roll and pitch offsets are currently not supported")
                 headingoffset = vehicle.ins.yaw
-
-                [roll, pitch, heading] = body_to_inertial(
-                    0, 0, headingoffset, roll, pitch, heading
-                )
-                [roll_std, pitch_std, heading_std] = body_to_inertial(
-                    0, 0, headingoffset, roll_std, pitch_std, heading_std
-                )
-
-                # heading=heading+headingoffset
+                heading=heading+headingoffset
                 if heading > 360:
                     heading = heading - 360
                 if heading < 0:
