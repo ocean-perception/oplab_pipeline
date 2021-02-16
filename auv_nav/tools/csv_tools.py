@@ -344,7 +344,8 @@ def camera_csv(camera_list, camera_name, csv_filepath, csv_flag):
                                 c = camera_list[i].covariance[k1, k2]
                                 str_to_write_cov += "," + str(c)
                         str_to_write_cov += "\n"
-                        fileout_cov.write(str_to_write_cov)
+                        if camera_list[0].covariance is not None:
+                            fileout_cov.write(str_to_write_cov)
                     str_to_write += "\n"
                     fileout.write(str_to_write)
                 except IndexError:
