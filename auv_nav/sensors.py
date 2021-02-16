@@ -1100,6 +1100,7 @@ class Camera(SyncedOrientationBodyVelocity):
         super().__init__(self)
         self.filename = ""
         self.information = None
+        self.updated = False
 
     def fromSyncedBodyVelocity(self, other, origin_offsets, sensor_offsets, latlon_reference):
         [x_offset, y_offset, _] = body_to_inertial(
@@ -1150,6 +1151,8 @@ class Camera(SyncedOrientationBodyVelocity):
                 other.eastings,
                 other.northings,
             )
+        
+        self.updated = True
 
     def get_info(self):
         try:

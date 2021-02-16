@@ -13,6 +13,7 @@ from auv_nav.sensors import SyncedOrientationBodyVelocity, Camera
 from auv_nav.tools.latlon_wgs84 import metres_to_latlon
 from oplab import Console
 
+from typing import List
 import math
 import numpy as np
 import copy
@@ -200,7 +201,7 @@ class Measurement(object):
                 abs(value.y_velocity) * velocity_std_factor + velocity_std_offset
             ) ** 2
             self.covariance[Index.VZ, Index.VZ] = (
-                abs(value.z_velocity) * velocity_std_factor + velocity_std_offset
+                abs(value.z_velocity) * velocity_std_factor + velocity_std_offset ## hack here
             ) ** 2
         warn_if_zero(self.covariance[Index.VX, Index.VX], 'VX Covariance')
         warn_if_zero(self.covariance[Index.VY, Index.VY], 'VY Covariance')
@@ -661,7 +662,14 @@ class EkfImpl(object):
 
 
 class ExtendedKalmanFilter(object):
-    __slots__ = ['ekf']
+    __slots__ = [
+        'ekf',
+        'initial_estimate_covariance',
+        'process_noise_covariance',
+        'sensors_std',
+        'dr_list',
+        'usbl_list',
+        ]
     def __init__(
         self,
         initial_estimate_covariance,
@@ -673,42 +681,77 @@ class ExtendedKalmanFilter(object):
         """
         Get the first USBL, DVL and Orientation reading for EKF initialization
         """
-        state0, dr_idx, usbl_idx = self.get_init_state(dr_list, usbl_list)
+
+        self.initial_estimate_covariance = initial_estimate_covariance
+        self.process_noise_covariance = process_noise_covariance
+        self.sensors_std = sensors_std
+        self.dr_list = dr_list
+        self.usbl_list = usbl_list
+        self.run()
+
+    def run(self, timestamp_list=None):
+        state0, dr_idx, usbl_idx = self.get_init_state(self.dr_list, self.usbl_list)
         # Get first measurement (e.g. zero) as a start
-        start_time = dr_list[0].epoch_timestamp
+        start_time = self.dr_list[0].epoch_timestamp
         current_time = start_time
 
         self.ekf = EkfImpl()
         self.ekf.set_state(state0)
         self.ekf.set_last_update_time(current_time)
-        self.ekf.set_covariance(initial_estimate_covariance)
-        self.ekf.set_process_noise_covariance(process_noise_covariance)
+        self.ekf.set_covariance(self.initial_estimate_covariance)
+        self.ekf.set_process_noise_covariance(self.process_noise_covariance)
+
+        timestamp_list_idx = 0
+        if timestamp_list is not None:
+            # Advance until the time in the list is greather than current_time
+            while timestamp_list[timestamp_list_idx] < current_time:
+                timestamp_list_idx += 1
+        
+        next_prediction_time = None
 
         # print('-------------------------------')
         # print("Running EKF...")
         # self.ekf.print_state()
         # print('-------------------------------')
-        while dr_idx < len(dr_list):
-            
-            Console.progress(dr_idx, len(dr_list) * 2)
-            dr_stamp = dr_list[dr_idx].epoch_timestamp
-            if usbl_idx < len(usbl_list) and len(usbl_list) > 0:
-                usbl_stamp = usbl_list[usbl_idx].epoch_timestamp
+        while dr_idx < len(self.dr_list):
+            # Show progress
+            if timestamp_list is None:
+                Console.progress(dr_idx, len(self.dr_list) * 2)
+            else:
+                Console.progress(timestamp_list_idx, len(timestamp_list) * 2)
+
+            dr_stamp = self.dr_list[dr_idx].epoch_timestamp
+            if usbl_idx < len(self.usbl_list) and len(self.usbl_list) > 0:
+                usbl_stamp = self.usbl_list[usbl_idx].epoch_timestamp
             else:
                 # Fake a posterior USBL measurement to force EKF to read DR
                 usbl_stamp = dr_stamp + 1
 
-            m = Measurement(sensors_std)
-            f_upda_time = self.ekf.get_last_update_time()
+            last_update_time = self.ekf.get_last_update_time()
+
+            if timestamp_list is not None:
+                if len(timestamp_list) > timestamp_list_idx:
+                    next_prediction_time = timestamp_list[timestamp_list_idx]
+                else:
+                    # Fake a posterior time to force EKF to use DR
+                    next_prediction_time = dr_stamp + 1
+            
+                if next_prediction_time < dr_stamp and next_prediction_time < usbl_stamp:
+                    self.ekf.predict(next_prediction_time, next_prediction_time - last_update_time)
+                    timestamp_list_idx += 1
+                    # Iterate again
+                    continue
+
+            m = Measurement(self.sensors_std)
 
             if dr_stamp < usbl_stamp:
-                m.from_synced_orientation_body_velocity(dr_list[dr_idx])
+                m.from_synced_orientation_body_velocity(self.dr_list[dr_idx])
                 dr_idx += 1
-            elif usbl_idx < len(usbl_list):
-                m.from_usbl(usbl_list[usbl_idx])
+            elif usbl_idx < len(self.usbl_list):
+                m.from_usbl(self.usbl_list[usbl_idx])
                 usbl_idx += 1
 
-            last_update_delta = m.time - f_upda_time
+            last_update_delta = m.time - last_update_time
 
             if last_update_delta >= 0:
                 # print('Predict')
@@ -719,41 +762,6 @@ class ExtendedKalmanFilter(object):
             # self.ekf.print_state()
         self.ekf.smooth(enable=True)
         self.ekf.print_report()
-
-    def predict(self, new_stamp):
-        # find the two closest states
-        states_stamps = np.array([s.time for s in self.ekf.smoothed_states_vector])
-        upper_idx = np.searchsorted(states_stamps, new_stamp)
-        lower_idx = upper_idx - 1
-
-        # Find closest state in time
-        if upper_idx == len(states_stamps):
-            upper_idx = len(states_stamps) - 1
-            lower_idx = upper_idx
-        sl = self.ekf.smoothed_states_vector[lower_idx]
-        su = self.ekf.smoothed_states_vector[upper_idx]
-
-        s = sl
-        dt = new_stamp - sl.time
-        if dt > su.time - new_stamp:
-            s = su
-            # Set a negative dt to predict backwards
-            dt = new_stamp - su.time
-
-        # Predict from that state
-        self.ekf.set_state(s.state)
-        self.ekf.set_covariance(s.covariance)
-        predicted_s = self.ekf.predict(new_stamp, dt, save_state=False)
-
-        # Convert the output to SyncedOrientationBodyVelocity
-        predicted_b = predicted_s.toSyncedOrientationBodyVelocity()
-        return predicted_b
-
-    def predictAndTransform(self, camera_entry, origin_offsets, sensor_offsets, latlon_reference):
-        b = self.predict(camera_entry.epoch_timestamp)
-        b.altitude = camera_entry.altitude
-        camera_entry.fromSyncedBodyVelocity(b, origin_offsets, sensor_offsets, latlon_reference)
-        return camera_entry
 
     def get_result(self):
         return self.ekf.get_states()
@@ -860,3 +868,74 @@ class ExtendedKalmanFilter(object):
         state[0, Index.Y] = state[0, Index.Y] - eastings_mean
         return state.T, dr_index, usbl_index
 
+
+def save_ekf_to_list(ekf_states, mission, vehicle, dead_reckoning_dvl_list):
+    ekf_list = []
+    dr_idx = 1
+    for s in ekf_states:
+        b = s.toSyncedOrientationBodyVelocity()
+
+        # Offset the measurements from the DVL to the robot origin
+        [x_offset, y_offset, z_offset] = body_to_inertial(
+            b.roll,
+            b.pitch,
+            b.yaw,
+            vehicle.origin.surge - vehicle.dvl.surge,
+            vehicle.origin.sway - vehicle.dvl.sway,
+            vehicle.origin.heave - vehicle.dvl.heave,
+        )
+        b.northings += x_offset
+        b.eastings += y_offset
+        b.depth += z_offset
+        
+        # Transform to lat lon using origins
+        b.latitude, b.longitude = metres_to_latlon(
+            mission.origin.latitude,
+            mission.origin.longitude,
+            b.eastings,
+            b.northings,
+        )
+        
+        # Interpolate altitude from DVL
+        while (
+            dr_idx < len(dead_reckoning_dvl_list)
+            and dead_reckoning_dvl_list[dr_idx].epoch_timestamp < b.epoch_timestamp
+        ):
+            dr_idx += 1
+        b.altitude = interpolate(
+            b.epoch_timestamp,
+            dead_reckoning_dvl_list[dr_idx - 1].epoch_timestamp,
+            dead_reckoning_dvl_list[dr_idx].epoch_timestamp,
+            dead_reckoning_dvl_list[dr_idx - 1].altitude,
+            dead_reckoning_dvl_list[dr_idx].altitude,
+        )
+        ekf_list.append(b)
+    return ekf_list
+
+
+def update_camera_list(
+        camera_list: List[Camera], 
+        ekf_list: List[SyncedOrientationBodyVelocity], 
+        origin_offsets, 
+        camera1_offsets, 
+        latlon_reference):
+    ekf_idx = 0
+    c_idx = 0
+    while c_idx < len(camera_list) and ekf_idx < len(ekf_list):
+        cam_ts = camera_list[c_idx].epoch_timestamp
+        ekf_ts = ekf_list[ekf_idx].epoch_timestamp
+        if cam_ts < ekf_ts:
+            if not camera_list[c_idx].updated:
+                Console.error("There is a camera entry with index", c_idx, "that is not updated to EKF...")
+            c_idx += 1
+        elif cam_ts > ekf_ts:
+            ekf_idx += 1
+        elif cam_ts == ekf_ts:
+            camera_list[c_idx].fromSyncedBodyVelocity(
+                ekf_list[ekf_idx], 
+                origin_offsets, 
+                camera1_offsets, 
+                latlon_reference)
+            c_idx += 1
+            ekf_idx += 1
+    return camera_list
