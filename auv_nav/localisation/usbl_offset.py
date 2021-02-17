@@ -14,6 +14,7 @@ See LICENSE.md file in the project root for full license information.
 # Date: 13/02/2018
 
 from auv_nav.tools.interpolate import interpolate
+from oplab import Console
 
 
 def usbl_offset(
@@ -36,7 +37,7 @@ def usbl_offset(
 
     # Find suitable start points
     if time_usbl[0] < time_dead_reckoning[0]:
-        print("usbl starts before dead_reckoning")
+        Console.info("USBL starts before dead_reckoning")
         while exit_flag is False:
             if start_usbl + 1 >= len(time_usbl):
                 break

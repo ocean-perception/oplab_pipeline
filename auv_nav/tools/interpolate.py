@@ -10,6 +10,7 @@ from auv_nav.sensors import SyncedOrientationBodyVelocity, Usbl
 from auv_nav.tools.latlon_wgs84 import metres_to_latlon
 from auv_nav.tools.body_to_inertial import body_to_inertial
 from auv_nav.sensors import Camera
+from oplab import Console
 import numpy as np
 
 
@@ -303,7 +304,7 @@ def interpolate_sensor_list(
         sensor_list[0].epoch_timestamp > end_time
         or sensor_list[-1].epoch_timestamp < start_time
     ):
-        print(
+        Console.warn(
             "{} timestamps does not overlap with dead reckoning data, "
             "check timestamp_history.pdf via -v option.".format(sensor_name)
         )
@@ -315,14 +316,14 @@ def interpolate_sensor_list(
                 pass
             else:
                 if i > 0:
-                    print('WARNING! Deleted', i, 'entries from sensor', sensor_name,'. Reason: data before start of mission')
+                    Console.warn('Deleted', i, 'entries from sensor', sensor_name,'. Reason: data before start of mission')
                     del sensor_list[:i]
                 break
         for i in range(len(sensor_list)):
             if j >= len(_centre_list) - 1:
                 ii = len(sensor_list) - i
                 if ii > 0:
-                    print('WARNING! Deleted', ii, 'entries from sensor', sensor_name,'. Reason: data after end of mission')
+                    Console.warn('Deleted', ii, 'entries from sensor', sensor_name,'. Reason: data after end of mission')
                     del sensor_list[i:]
                 sensor_overlap_flag = 1
                 break
@@ -490,11 +491,11 @@ def interpolate_sensor_list(
                 )
 
         if sensor_overlap_flag == 1:
-            print(
+            Console.warn(
                 "Sensor data from {} spans further than dead reckoning data."
                 " Data outside DR is ignored.".format(sensor_name)
             )
-        print(
+        Console.info(
             "Complete interpolation and coordinate transfomations "
             "for {}".format(sensor_name)
         )
