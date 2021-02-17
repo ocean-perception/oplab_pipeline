@@ -687,7 +687,6 @@ class ExtendedKalmanFilter(object):
         self.sensors_std = sensors_std
         self.dr_list = dr_list
         self.usbl_list = usbl_list
-        self.run()
 
     def run(self, timestamp_list=None):
         state0, dr_idx, usbl_idx = self.get_init_state(self.dr_list, self.usbl_list)
@@ -700,6 +699,10 @@ class ExtendedKalmanFilter(object):
         self.ekf.set_last_update_time(current_time)
         self.ekf.set_covariance(self.initial_estimate_covariance)
         self.ekf.set_process_noise_covariance(self.process_noise_covariance)
+
+        # Case when no empty list is provided
+        if len(timestamp_list) == 0:
+            timestamp_list = None
 
         timestamp_list_idx = 0
         if timestamp_list is not None:

@@ -1012,27 +1012,6 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
             pf_fusion_centre_list[i].latitude = lat
             pf_fusion_centre_list[i].longitude = lon
 
-    ekf = None
-    if ekf_activate and len(usbl_list) > 0:
-        # velocity_body_list, list of BodyVelocity()
-        # orientation_list, list of Orientation()
-        # depth_list, list of Depth()
-        # usbl_list, list of Usbl()
-        Console.info("Running EKF...")
-        ekf_start_time = time.time()
-        ekf = ExtendedKalmanFilter(
-            ekf_initial_estimate_covariance,
-            ekf_process_noise_covariance,
-            sensors_std,
-            dead_reckoning_dvl_list,
-            usbl_list,
-        )
-        ekf_end_time = time.time()
-        ekf_elapsed_time = ekf_end_time - ekf_start_time
-        Console.info("EKF took {} mins".format(ekf_elapsed_time / 60))
-        ekf_states = ekf.get_smoothed_result()
-        ekf_list = save_ekf_to_list(ekf_states, mission, vehicle, dead_reckoning_dvl_list)
-
     origin_offsets = [vehicle.origin.surge, vehicle.origin.sway, vehicle.origin.heave]
     latlon_reference = [mission.origin.latitude, mission.origin.longitude]
 
@@ -1127,52 +1106,66 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
                     latlon_reference,
                     pf_fusion_centre_list,
                 )
-    if len(ekf_list) > 1:
-        """ camera1_ekf_list = Parallel(n_jobs=12, verbose=10)(delayed(ekf.predictAndTransform)(c.epoch_timestamp, origin_offsets, camera1_offsets) for c in camera1_ekf_list) 
-        camera2_ekf_list = Parallel(n_jobs=12, verbose=10)(delayed(ekf.predictAndTransform)(c.epoch_timestamp, origin_offsets, camera2_offsets) for c in camera2_ekf_list) 
-        camera3_ekf_list = Parallel(n_jobs=12, verbose=10)(delayed(ekf.predictAndTransform)(c.epoch_timestamp, origin_offsets, camera3_offsets) for c in camera3_ekf_list) """
 
-        with CodeTimer('EKF cam1'):
-            if len(camera1_ekf_list) > 0:
-                camera1_timestamp_list = [x.epoch_timestamp for x in camera1_ekf_list]
-                ekf.run(camera1_timestamp_list)
-                ekf_states = ekf.get_smoothed_result()
-                camera1_ekf_sbv_list = save_ekf_to_list(ekf_states, mission, vehicle, dead_reckoning_dvl_list)
-                camera1_ekf_list = update_camera_list(
-                    camera1_ekf_list, 
-                    camera1_ekf_sbv_list, 
-                    origin_offsets, 
-                    camera1_offsets, 
-                    latlon_reference)
-                #camera1_ekf_list = [ekf.predictAndTransform(c, origin_offsets, camera1_offsets, latlon_reference) for c in camera1_ekf_list]
-                #if len(camera3_ekf_list) > 0 and len(camera1_ekf_list) > 0:
-                #    print('camera3 will take', len(camera3_ekf_list)/len(camera1_ekf_list), 'times more time.')
-        with CodeTimer('EKF cam2'):
-            if len(camera2_ekf_list) > 0:
-                #camera2_ekf_list = [ekf.predictAndTransform(c, origin_offsets, camera2_offsets, latlon_reference) for c in camera2_ekf_list]
-                camera2_timestamp_list = [x.epoch_timestamp for x in camera2_ekf_list]
-                ekf.run(camera2_timestamp_list)
-                ekf_states = ekf.get_smoothed_result()
-                camera2_ekf_sbv_list = save_ekf_to_list(ekf_states, mission, vehicle, dead_reckoning_dvl_list)
-                camera2_ekf_list = update_camera_list(
-                    camera2_ekf_list, 
-                    camera2_ekf_sbv_list, 
-                    origin_offsets, 
-                    camera2_offsets, 
-                    latlon_reference)
-        with CodeTimer('EKF cam3'):
-            if len(camera3_ekf_list) > 0:
-                #camera3_ekf_list = [ekf.predictAndTransform(c, origin_offsets, camera3_offsets, latlon_reference) for c in camera3_ekf_list]
-                camera3_timestamp_list = [x.epoch_timestamp for x in camera3_ekf_list]
-                ekf.run(camera3_timestamp_list)
-                ekf_states = ekf.get_smoothed_result()
-                camera3_ekf_sbv_list = save_ekf_to_list(ekf_states, mission, vehicle, dead_reckoning_dvl_list)
-                camera3_ekf_list = update_camera_list(
-                    camera3_ekf_list, 
-                    camera3_ekf_sbv_list, 
-                    origin_offsets, 
-                    camera3_offsets, 
-                    latlon_reference)
+    # Aggregate timestamps to run EKF only once
+    ekf_timestamps = []
+
+    if len(camera1_ekf_list) > 0:
+        camera1_timestamp_list = [x.epoch_timestamp for x in camera1_ekf_list]
+        ekf_timestamps += camera1_timestamp_list
+    if len(camera2_ekf_list) > 0:
+        camera2_timestamp_list = [x.epoch_timestamp for x in camera2_ekf_list]
+        ekf_timestamps += camera2_timestamp_list
+    if len(camera3_ekf_list) > 0:
+        camera3_timestamp_list = [x.epoch_timestamp for x in camera3_ekf_list]
+        ekf_timestamps += camera3_timestamp_list
+
+    # Sort timestamps and remove duplicates in place
+    ekf_timestamps = sorted(set(ekf_timestamps))
+
+    if ekf_activate and len(usbl_list) > 0:
+        # velocity_body_list, list of BodyVelocity()
+        # orientation_list, list of Orientation()
+        # depth_list, list of Depth()
+        # usbl_list, list of Usbl()
+        Console.info("Running EKF...")
+        ekf_start_time = time.time()
+        ekf = ExtendedKalmanFilter(
+            ekf_initial_estimate_covariance,
+            ekf_process_noise_covariance,
+            sensors_std,
+            dead_reckoning_dvl_list,
+            usbl_list,
+        )
+        ekf.run(ekf_timestamps)
+        ekf_end_time = time.time()
+        ekf_elapsed_time = ekf_end_time - ekf_start_time
+        Console.info("EKF took {} mins".format(ekf_elapsed_time / 60))
+        ekf_states = ekf.get_smoothed_result()
+        ekf_list = save_ekf_to_list(ekf_states, mission, vehicle, dead_reckoning_dvl_list)
+
+
+    if len(camera1_ekf_list) > 0:
+        camera1_ekf_list = update_camera_list(
+            camera1_ekf_list, 
+            ekf_list, 
+            origin_offsets, 
+            camera1_offsets, 
+            latlon_reference)
+    if len(camera2_ekf_list) > 0:
+        camera2_ekf_list = update_camera_list(
+            camera2_ekf_list, 
+            ekf_list, 
+            origin_offsets, 
+            camera2_offsets, 
+            latlon_reference)
+    if len(camera3_ekf_list) > 0:
+        camera3_ekf_list = update_camera_list(
+            camera3_ekf_list, 
+            ekf_list, 
+            origin_offsets, 
+            camera3_offsets, 
+            latlon_reference)
         
     # perform interpolations of state data to chemical time stamps for both
     # DR and PF
