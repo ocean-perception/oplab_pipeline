@@ -657,15 +657,18 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
                          dead_reckoning_dvl.y_velocity,
                          dead_reckoning_dvl.z_velocity]
         angular_speeds = compute_angular_speeds(orientation_list, i)
-        offsets = [vehicle.dvl.surge,
-                   vehicle.dvl.sway,
-                   vehicle.dvl.heave]
-        [vx, vy, vz] = correct_lever_arm(linear_speeds, angular_speeds, offsets)
+        dvl_pos_on_vehicle = [vehicle.dvl.surge,
+                              vehicle.dvl.sway,
+                              vehicle.dvl.heave]
+        [vx, vy, vz] = correct_lever_arm(
+            linear_speeds, 
+            angular_speeds, 
+            dvl_pos_on_vehicle)
         dead_reckoning_dvl.x_velocity = vx
         dead_reckoning_dvl.y_velocity = vy
         dead_reckoning_dvl.z_velocity = vz
 
-        [x_offset, y_offset, z_offset] = body_to_inertial(
+        [north_velocity, east_velocity, down_velocity] = body_to_inertial(
             orientation_list[i].roll,
             orientation_list[i].pitch,
             orientation_list[i].yaw,
@@ -674,11 +677,11 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
             dead_reckoning_dvl.z_velocity,
         )
 
-        dead_reckoning_dvl.north_velocity = x_offset
-        dead_reckoning_dvl.east_velocity = y_offset
-        dead_reckoning_dvl.down_velocity = z_offset
+        dead_reckoning_dvl.north_velocity = north_velocity
+        dead_reckoning_dvl.east_velocity = east_velocity
+        dead_reckoning_dvl.down_velocity = down_velocity
 
-        [x_offset, y_offset, z_offset] = body_to_inertial(
+        [north_velocity_std, east_velocity_std, down_velocity_std] = body_to_inertial(
             orientation_list[i].roll,
             orientation_list[i].pitch,
             orientation_list[i].yaw,
@@ -687,9 +690,9 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
             dead_reckoning_dvl.z_velocity_std,
         )
 
-        dead_reckoning_dvl.north_velocity_std = x_offset
-        dead_reckoning_dvl.east_velocity_std = y_offset
-        dead_reckoning_dvl.down_velocity_std = z_offset
+        dead_reckoning_dvl.north_velocity_std = north_velocity_std
+        dead_reckoning_dvl.east_velocity_std = east_velocity_std
+        dead_reckoning_dvl.down_velocity_std = down_velocity_std
 
         while (
             n < len(altitude_list) - 1
