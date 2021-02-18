@@ -83,8 +83,8 @@ def plane_through_3_points(points):
 
 def opencv_to_ned(xyz):
     new_point = np.zeros((3, 1), dtype=np.float32)
-    new_point[0] = xyz[1]
-    new_point[1] = -xyz[0]
+    new_point[0] = -xyz[1]
+    new_point[1] = xyz[0]
     new_point[2] = xyz[2]
     return new_point
 
@@ -157,7 +157,7 @@ def findLaserInImage(
 
     height, width = img.shape
     peaks = []
-    width_array = np.array(range(50, width - 50))
+    width_array = np.array(range(80, width - 80))
 
     if end_row == -1:
         end_row = height
@@ -664,6 +664,7 @@ class LaserCalibrator:
         sampled cloud
             Output list of points sampled 
         """
+        
         num_bins = math.ceil((self.filter_max_range - self.filter_min_range) / self.filter_rss_bin_size)
         bin_den = (self.filter_max_range - self.filter_min_range)/num_bins
         
@@ -676,8 +677,8 @@ class LaserCalibrator:
         output_cloud = []
         for p in cloud:
             r = math.sqrt(p[0]*p[0] + p[1]*p[1] + p[2]*p[2])
-            if r <= self.filter_max_range and r >= self.filter_min_range:
-                corresp_bin = round((r - self.filter_min_range)/bin_den)
+            if r < self.filter_max_range and r >= self.filter_min_range:
+                corresp_bin = math.floor((r - self.filter_min_range)/bin_den)
                 if corresp_bin < len(bins):
                     if bins[corresp_bin] is None:
                         bins[corresp_bin] = [p]
@@ -685,12 +686,16 @@ class LaserCalibrator:
                     elif len(bins[corresp_bin]) < max_bin_elements:
                         bins[corresp_bin].append(p)
                         output_cloud.append(p)
-        print('Summary for bins:')
+                else:
+                    raise IndexError("List index corresp_bin out of range")
+        Console.info("filter_min_range: ", self.filter_min_range)
+        Console.info("filter_max_range: ", self.filter_max_range)
+        Console.info('Summary for bins:')
         for i in range(num_bins):
             if bins[i] is not None:
-                print(' * bin', i, ':', len(bins[i]))
+                Console.info(' * bin', i, ':', len(bins[i]))
             else:
-                print(' * bin', i, ': 0')
+                Console.info(' * bin', i, ': 0')
 
         return output_cloud
         
@@ -818,7 +823,9 @@ class LaserCalibrator:
 
         planes_enclose_inliers = False
         Console.info("Generating uncertainty planes...")
-        while planes_enclose_inliers is False:  # counter < num_uncertainty_planes:
+        max_uncertainty_planes = 300
+        while (planes_enclose_inliers is False and
+               len(self.uncertainty_planes) < max_uncertainty_planes):
             point_cloud_local = random.sample(self.inliers_cloud_list, 3)
 
             # Check if the points are sufficiently far apart and not aligned
@@ -841,10 +848,14 @@ class LaserCalibrator:
             self.triples.append(np.array(point_cloud_local))
             self.uncertainty_planes.append(
                 plane_through_3_points(point_cloud_local))
+            Console.info("Number of planes: {}", len(self.uncertainty_planes))
             planes_enclose_inliers = self._do_planes_enclose_inliers()
 
         Console.info("... finished generating {} uncertainty planes."
                      .format(len(self.uncertainty_planes)))
+        
+        if len(self.uncertainty_planes) >= max_uncertainty_planes:
+            Console.warn("Stopped due to reaching max_uncertainty_planes")
 
         filename = time.strftime("pointclouds_and_uncertainty_planes_all_"
                                  "%Y%m%d_%H%M%S.html")
