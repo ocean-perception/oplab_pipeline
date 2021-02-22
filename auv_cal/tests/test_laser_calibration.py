@@ -2,13 +2,11 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
 import unittest
-import os
-import math
 import numpy as np
 from auv_cal.laser_calibrator import build_plane
 from auv_cal.laser_calibrator import opencv_to_ned
@@ -33,7 +31,9 @@ class TestLaserCalibration(unittest.TestCase):
         self.assertAlmostEqual(b[1], -1.0)
         self.assertAlmostEqual(b[2], 3.0)
 
-    def assert_plane_normal(self, pitch, yaw, expected_normal, centroid=[0, 0, 0]):
+    def assert_plane_normal(
+        self, pitch, yaw, expected_normal, centroid=[0, 0, 0]
+    ):
         centroid = np.array(centroid)
         plane, normal, offset = build_plane(pitch, yaw, centroid)
 

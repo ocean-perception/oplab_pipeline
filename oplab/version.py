@@ -2,16 +2,17 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
+import os.path
 
 """oplab_pipeline package version script
 
 The script writes a "commit_hash.txt" file with the last git tag available.
 The number is used to put version numbers for the python package.
 """
-import os.path
+
 
 version = ""
 

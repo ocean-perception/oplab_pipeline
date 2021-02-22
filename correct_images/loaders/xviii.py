@@ -1,6 +1,13 @@
-from numba import njit
+# -*- coding: utf-8 -*-
+"""
+Copyright (c) 2020, University of Southampton
+All rights reserved.
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
+"""
+
 import numpy as np
-from pathlib import Path
+from numba import njit
 
 
 # read binary raw image files for xviii camera
@@ -31,12 +38,16 @@ def load_xviii_bayer_from_binary(binary_data, image_height, image_width):
     count = 0
     for i in range(0, img_h, 1):
         for j in range(0, img_w, 4):
-            chunk = binary_data[count : count + 12]
+            chunk = binary_data[count : count + 12]  # noqa
             bayer_img[i, j] = (
-                ((chunk[3] & 0xFF) << 16) | ((chunk[2] & 0xFF) << 8) | (chunk[1] & 0xFF)
+                ((chunk[3] & 0xFF) << 16)
+                | ((chunk[2] & 0xFF) << 8)
+                | (chunk[1] & 0xFF)
             )
             bayer_img[i, j + 1] = (
-                ((chunk[0] & 0xFF) << 16) | ((chunk[7] & 0xFF) << 8) | (chunk[6] & 0xFF)
+                ((chunk[0] & 0xFF) << 16)
+                | ((chunk[7] & 0xFF) << 8)
+                | (chunk[6] & 0xFF)
             )
             bayer_img[i, j + 2] = (
                 ((chunk[5] & 0xFF) << 16)
@@ -54,7 +65,9 @@ def load_xviii_bayer_from_binary(binary_data, image_height, image_width):
     return bayer_img
 
 
-def loader(raw_filename, image_width=1280, image_height=1024, src_bit=18, dst_bit=8):
+def loader(
+    raw_filename, image_width=1280, image_height=1024, src_bit=18, dst_bit=8
+):
     """XVIII image loader
 
     Parameters
@@ -72,9 +85,9 @@ def loader(raw_filename, image_width=1280, image_height=1024, src_bit=18, dst_bi
         Loaded image in matrix form (numpy)
     """
     binary_data = np.fromfile(raw_filename, dtype=np.uint8)
-    bayer_img =  load_xviii_bayer_from_binary(
-            binary_data[:], image_height, image_width
-        )
+    bayer_img = load_xviii_bayer_from_binary(
+        binary_data[:], image_height, image_width
+    )
     # Scale down from 18 bits to 16 bit to process with OpenCV debayer
-    image = bayer_img * (2 **(dst_bit - src_bit))
+    image = bayer_img * (2 ** (dst_bit - src_bit))
     return image

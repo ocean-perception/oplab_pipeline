@@ -2,28 +2,23 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
 import pynmea2
-from auv_nav.sensors import Category
-from auv_nav.sensors import Usbl
-from oplab import get_raw_folder
-from oplab import get_file_list
-from auv_nav.tools.time_conversions import date_time_to_epoch
-from auv_nav.tools.time_conversions import read_timezone
+from auv_nav.sensors import Category, Usbl
+from auv_nav.tools.time_conversions import date_time_to_epoch, read_timezone
+from oplab import get_file_list, get_raw_folder
 
 
 def parse_NOC_nmea(mission, vehicle, category, ftype, outpath):
     # parser meta data
-    class_string = "measurement"
     sensor_string = "autosub"
     category = category
     output_format = ftype
 
     if category == Category.USBL:
-        filename = mission.usbl.filename
         filepath = mission.usbl.filepath
         timezone = mission.usbl.timezone
         beacon_id = mission.usbl.label

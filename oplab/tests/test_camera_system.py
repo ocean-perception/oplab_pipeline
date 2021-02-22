@@ -10,14 +10,20 @@ class TestFilenameToDate(unittest.TestCase):
         conv = FilenameToDate("xxxYYYYMMDDxhhmmssxfffxxxxx.xxx")
         d = conv("PR_20180811_153729_762_RC16.tif")
         self.assertEqual(
-            d, 1534001849.762, "Filename to date conversion is wrong for AcfrStandard"
+            d,
+            1534001849.762,
+            "Filename to date conversion is wrong for AcfrStandard",
         )
 
     def testBiocam(self):
-        conv = FilenameToDate("YYYYMMDDxhhmmssxfffuuuxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxx")
+        conv = FilenameToDate(
+            "YYYYMMDDxhhmmssxfffuuuxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxx"
+        )
         d = conv("20190913_101347_962382_20190913_101346_411014_pcoc.tif")
         self.assertEqual(
-            d, 1568369627.962382, "Filename to date conversion is wrong for BioCam"
+            d,
+            1568369627.962382,
+            "Filename to date conversion is wrong for BioCam",
         )
 
 
@@ -32,14 +38,18 @@ class TestCameraSystem(unittest.TestCase):
         root = Path(__file__).parents[1]
         acfr_std_camera_file = "default_yaml/ts1/SSK17-01/camera.yaml"
         cs = CameraSystem(root / acfr_std_camera_file)
-        self.assertEqual(cs.camera_system, "acfr_standard", "Wrong camera system")
+        self.assertEqual(
+            cs.camera_system, "acfr_standard", "Wrong camera system"
+        )
         self.assertEqual(len(cs.cameras), 2, "Wrong camera count")
 
         self.assertEqual(cs.cameras[0].name, "LC", "Wrong camera name")
         self.assertEqual(cs.cameras[0].type, "bggr", "Wrong camera type")
         self.assertEqual(cs.cameras[0].bit_depth, 12, "Wrong camera bit_depth")
         self.assertEqual(cs.cameras[0].path, "image/i*/", "Wrong camera path")
-        self.assertEqual(cs.cameras[0].extension, "tif", "Wrong camera extension")
+        self.assertEqual(
+            cs.cameras[0].extension, "tif", "Wrong camera extension"
+        )
         self.assertEqual(
             cs.cameras[0].filename_to_date,
             "xxxYYYYMMDDxhhmmssxfffxxxxx.xxx",
@@ -50,7 +60,9 @@ class TestCameraSystem(unittest.TestCase):
         self.assertEqual(cs.cameras[1].type, "bggr", "Wrong camera type")
         self.assertEqual(cs.cameras[1].bit_depth, 12, "Wrong camera bit_depth")
         self.assertEqual(cs.cameras[1].path, "image/i*/", "Wrong camera path")
-        self.assertEqual(cs.cameras[1].extension, "tif", "Wrong camera extension")
+        self.assertEqual(
+            cs.cameras[1].extension, "tif", "Wrong camera extension"
+        )
         self.assertEqual(
             cs.cameras[1].filename_to_date,
             "xxxYYYYMMDDxhhmmssxfffxxxxx.xxx",
@@ -62,10 +74,14 @@ class TestCameraSystem(unittest.TestCase):
         content = ""
         for item in node:
             self.assertIn(
-                "name", item, "Field name is not present in timestamp file columns"
+                "name",
+                item,
+                "Field name is not present in timestamp file columns",
             )
             self.assertIn(
-                "content", item, "Field name is not present in timestamp file columns"
+                "content",
+                item,
+                "Field name is not present in timestamp file columns",
             )
             content += item["content"]
 
@@ -92,17 +108,17 @@ class TestCameraSystem(unittest.TestCase):
         self.assertEqual(
             content.count("m"),
             2,
-            "Minute speficication is incorrect for timestamp file data columns",
+            "Minute speficication is incorrect for timestamp file data columns",  # noqa
         )
         self.assertEqual(
             content.count("s"),
             2,
-            "Second speficication is incorrect for timestamp file data columns",
+            "Second speficication is incorrect for timestamp file data columns",  # noqa
         )
         self.assertEqual(
             content.count("f"),
             3,
-            "Millisecond speficication is incorrect for timestamp file data columns",
+            "Millisecond speficication is incorrect for timestamp file data columns",  # noqa
         )
 
     @patch("oplab.filename_to_date.resolve")
@@ -113,10 +129,14 @@ class TestCameraSystem(unittest.TestCase):
 
         sx3_camera_file = "default_yaml/ae2000/YK17-23C/camera.yaml"
         cs = CameraSystem(root / sx3_camera_file)
-        self.assertEqual(cs.camera_system, "seaxerocks_3", "Wrong camera system")
+        self.assertEqual(
+            cs.camera_system, "seaxerocks_3", "Wrong camera system"
+        )
         self.assertEqual(len(cs.cameras), 3, "Wrong camera count")
 
-        self.assertEqual(cs.cameras[0].name, "Cam51707923", "Wrong camera name")
+        self.assertEqual(
+            cs.cameras[0].name, "Cam51707923", "Wrong camera name"
+        )
         self.assertEqual(cs.cameras[0].type, "grbg", "Wrong camera type")
         self.assertEqual(cs.cameras[0].bit_depth, 18, "Wrong camera bit_depth")
         self.assertEqual(
@@ -124,7 +144,9 @@ class TestCameraSystem(unittest.TestCase):
             "image/SeaXerocksData*/Xviii/Cam51707923",
             "Wrong camera path",
         )
-        self.assertEqual(cs.cameras[0].extension, "raw", "Wrong camera extension")
+        self.assertEqual(
+            cs.cameras[0].extension, "raw", "Wrong camera extension"
+        )
         self.assertEqual(
             cs.cameras[0].filename_to_date,
             "iiiiiii.xxx",
@@ -135,10 +157,14 @@ class TestCameraSystem(unittest.TestCase):
             "image/SeaXerocksData*/Xviii/FileTime.csv",
             "Wrong camera timestamp_file",
         )
-        self.assertEqual(len(cs.cameras[0].columns), 4, "Wrong number of columns")
+        self.assertEqual(
+            len(cs.cameras[0].columns), 4, "Wrong number of columns"
+        )
         self.checkValidColumns(cs.cameras[0].columns)
 
-        self.assertEqual(cs.cameras[1].name, "Cam51707925", "Wrong camera name")
+        self.assertEqual(
+            cs.cameras[1].name, "Cam51707925", "Wrong camera name"
+        )
         self.assertEqual(cs.cameras[1].type, "grbg", "Wrong camera type")
         self.assertEqual(cs.cameras[1].bit_depth, 18, "Wrong camera bit_depth")
         self.assertEqual(
@@ -146,7 +172,9 @@ class TestCameraSystem(unittest.TestCase):
             "image/SeaXerocksData*/Xviii/Cam51707925",
             "Wrong camera path",
         )
-        self.assertEqual(cs.cameras[1].extension, "raw", "Wrong camera extension")
+        self.assertEqual(
+            cs.cameras[1].extension, "raw", "Wrong camera extension"
+        )
         self.assertEqual(
             cs.cameras[1].filename_to_date,
             "iiiiiii.xxx",
@@ -163,9 +191,13 @@ class TestCameraSystem(unittest.TestCase):
         self.assertEqual(cs.cameras[2].type, "grayscale", "Wrong camera type")
         self.assertEqual(cs.cameras[2].bit_depth, 8, "Wrong camera bit_depth")
         self.assertEqual(
-            cs.cameras[2].path, "image/SeaXerocksData*/LM165", "Wrong camera path"
+            cs.cameras[2].path,
+            "image/SeaXerocksData*/LM165",
+            "Wrong camera path",
         )
-        self.assertEqual(cs.cameras[2].extension, "tif", "Wrong camera extension")
+        self.assertEqual(
+            cs.cameras[2].extension, "tif", "Wrong camera extension"
+        )
         self.assertEqual(
             cs.cameras[2].filename_to_date,
             "iiiiiii.xxx",
@@ -185,39 +217,55 @@ class TestCameraSystem(unittest.TestCase):
         self.assertEqual(cs.camera_system, "biocam", "Wrong camera system")
         self.assertEqual(len(cs.cameras), 3, "Wrong camera count")
 
-        self.assertEqual(cs.cameras[0].name, "cam61003146", "Wrong camera name")
+        self.assertEqual(
+            cs.cameras[0].name, "cam61003146", "Wrong camera name"
+        )
         self.assertEqual(cs.cameras[0].type, "rggb", "Wrong camera type")
         self.assertEqual(cs.cameras[0].bit_depth, 16, "Wrong camera bit_depth")
         self.assertEqual(
-            cs.cameras[0].path, "image/cam61003146_strobed", "Wrong camera path"
+            cs.cameras[0].path,
+            "image/cam61003146_strobed",
+            "Wrong camera path",
         )
-        self.assertEqual(cs.cameras[0].extension, "tif", "Wrong camera extension")
+        self.assertEqual(
+            cs.cameras[0].extension, "tif", "Wrong camera extension"
+        )
         self.assertEqual(
             cs.cameras[0].filename_to_date,
             "YYYYMMDDxhhmmssxfffuuuxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxx",
             "Wrong camera filename_to_date",
         )
 
-        self.assertEqual(cs.cameras[1].name, "cam61004444", "Wrong camera name")
+        self.assertEqual(
+            cs.cameras[1].name, "cam61004444", "Wrong camera name"
+        )
         self.assertEqual(cs.cameras[1].type, "grayscale", "Wrong camera type")
         self.assertEqual(cs.cameras[1].bit_depth, 16, "Wrong camera bit_depth")
         self.assertEqual(
-            cs.cameras[1].path, "image/cam61004444_strobed", "Wrong camera path"
+            cs.cameras[1].path,
+            "image/cam61004444_strobed",
+            "Wrong camera path",
         )
-        self.assertEqual(cs.cameras[1].extension, "tif", "Wrong camera extension")
+        self.assertEqual(
+            cs.cameras[1].extension, "tif", "Wrong camera extension"
+        )
         self.assertEqual(
             cs.cameras[1].filename_to_date,
             "YYYYMMDDxhhmmssxfffuuuxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxx",
             "Wrong camera filename_to_date",
         )
 
-        self.assertEqual(cs.cameras[2].name, "cam61004444_laser", "Wrong camera name")
+        self.assertEqual(
+            cs.cameras[2].name, "cam61004444_laser", "Wrong camera name"
+        )
         self.assertEqual(cs.cameras[2].type, "grayscale", "Wrong camera type")
         self.assertEqual(cs.cameras[2].bit_depth, 16, "Wrong camera bit_depth")
         self.assertEqual(
             cs.cameras[2].path, "image/cam61004444_laser", "Wrong camera path"
         )
-        self.assertEqual(cs.cameras[2].extension, "jpg", "Wrong camera extension")
+        self.assertEqual(
+            cs.cameras[2].extension, "jpg", "Wrong camera extension"
+        )
         self.assertEqual(
             cs.cameras[2].filename_to_date,
             "YYYYMMDDxhhmmssxfffuuuxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxx",

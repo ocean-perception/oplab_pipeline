@@ -2,14 +2,21 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
-from oplab import Console, Mission, Vehicle 
-from oplab import get_raw_folder, get_processed_folder
+from pathlib import Path
+
+from oplab import (
+    Console,
+    Mission,
+    Vehicle,
+    get_processed_folder,
+    get_raw_folder,
+)
+
 from auv_nav.converters import HybisImporter
 from auv_nav.tools.time_conversions import epoch_to_datetime
-from pathlib import Path
 
 
 def import_data(filepath, ftype, force_overwite):
@@ -33,7 +40,6 @@ def import_data(filepath, ftype, force_overwite):
     mission.write(mission_processed)
     # mission_file.copy(mission_processed)
     vehicle.write(vehicle_processed)
-
 
     importer = None
     if ftype == "hybis":
@@ -66,11 +72,15 @@ def import_data(filepath, ftype, force_overwite):
     elif renavpath.is_dir() and not force_overwite:
         # Check if dataset has already been processed
         Console.error(
-            "It looks like this dataset has already been processed for the specified time span."
+            "It looks like this dataset has already been processed for the",
+            "specified time span.",
         )
-        Console.error("The following directory already exist: {}".format(renavpath))
         Console.error(
-            "To overwrite the contents of this directory rerun auv_nav with the flag -F."
+            "The following directory already exist: {}".format(renavpath)
+        )
+        Console.error(
+            "To overwrite the contents of this directory rerun auv_nav with",
+            "the flag -F.",
         )
         Console.error("Example:   auv_nav process -F PATH")
         Console.quit("auv_nav process would overwrite json_renav files")
@@ -79,7 +89,9 @@ def import_data(filepath, ftype, force_overwite):
     if not output_dr_centre_path.exists():
         output_dr_centre_path.mkdir(parents=True)
     camera_name = mission.image.cameras[0].name
-    output_dr_centre_path = output_dr_centre_path / ("auv_dr_" + camera_name + ".csv")
+    output_dr_centre_path = output_dr_centre_path / (
+        "auv_dr_" + camera_name + ".csv"
+    )
 
     importer.write(output_dr_centre_path)
 

@@ -2,29 +2,26 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
-# Scripts to parse ixsea blue gaps data. Interpolates ship gps reading for valid underwater position measurements to determine accurate range and so measurement uncertainty
+# Scripts to parse ixsea blue gaps data.
+# Interpolates ship gps reading for valid underwater position measurements
+# to determine accurate range and so measurement uncertainty
 
 # Author: Blair Thornton
 # Date: 31/08/2017
 
-import os
-
 # from datetime import datetime
 import math
+import os
 
-# http://www.json.org/
-# sys.path.append("..")
-from auv_nav.tools.latlon_wgs84 import latlon_to_metres
-from auv_nav.tools.latlon_wgs84 import metres_to_latlon
-from auv_nav.tools.time_conversions import date_time_to_epoch
-from auv_nav.tools.time_conversions import read_timezone
-from oplab import get_raw_folder
-from oplab import Console
 from auv_nav.sensors import Category
+
+from auv_nav.tools.latlon_wgs84 import latlon_to_metres, metres_to_latlon
+from auv_nav.tools.time_conversions import date_time_to_epoch, read_timezone
+from oplab import Console, get_raw_folder
 
 
 def parse_gaps(mission, vehicle, category, ftype, outpath):
@@ -80,11 +77,15 @@ def parse_gaps(mission, vehicle, category, ftype, outpath):
                 line_split_no_checksum = line_split[0].strip().split(",")
                 broken_packet_flag = False
                 # print(line_split_no_checksum)
-                # keep on upating ship position to find the prior interpolation value of ship coordinates
+                # keep on upating ship position to find the prior interpolation
+                #  value of ship coordinates
                 # line_split_no_checksum[0] == header_absolute:
                 if header_absolute in line_split_no_checksum[0]:
                     # start with a ship coordinate
-                    if line_split_no_checksum[6] == str(usbl_id) and flag_got_time == 2:
+                    if (
+                        line_split_no_checksum[6] == str(usbl_id)
+                        and flag_got_time == 2
+                    ):
                         if (
                             line_split_no_checksum[11] == "F"
                             and line_split_no_checksum[13] == "1"
@@ -102,7 +103,7 @@ def parse_gaps(mission, vehicle, category, ftype, outpath):
                                 mins = int(time_string[2:4])
                                 secs = int(time_string[4:6])
                                 msec = int(time_string[7:10])
-                            except ValueError as verr:
+                            except ValueError:
                                 broken_packet_flag = True
                                 pass
 
@@ -128,7 +129,9 @@ def parse_gaps(mission, vehicle, category, ftype, outpath):
                             # dt_obj = datetime(yyyy,mm,dd,hour,mins,secs)
                             # time_tuple = dt_obj.timetuple()
                             # epoch_time = time.mktime(time_tuple)
-                            epoch_timestamp = epoch_time + msec / 1000 + timeoffset
+                            epoch_timestamp = (
+                                epoch_time + msec / 1000 + timeoffset
+                            )
 
                             # get position
                             latitude_negative_flag = False
@@ -147,8 +150,12 @@ def parse_gaps(mission, vehicle, category, ftype, outpath):
 
                             depth = float(line_split_no_checksum[12])
 
-                            latitude = latitude_degrees + latitude_minutes / 60.0
-                            longitude = longitude_degrees + longitude_minutes / 60.0
+                            latitude = (
+                                latitude_degrees + latitude_minutes / 60.0
+                            )
+                            longitude = (
+                                longitude_degrees + longitude_minutes / 60.0
+                            )
 
                             if latitude_negative_flag:
                                 latitude = -latitude
@@ -179,7 +186,7 @@ def parse_gaps(mission, vehicle, category, ftype, outpath):
 
                             try:
                                 msec = int(time_string[7:10])
-                            except ValueError as verr:
+                            except ValueError:
                                 broken_packet_flag = True
                                 pass
 
@@ -210,8 +217,12 @@ def parse_gaps(mission, vehicle, category, ftype, outpath):
 
                             # get position
                             latitude_string = line_split_no_checksum[7]
-                            latitude_degrees_ship_prior = int(latitude_string[0:2])
-                            latitude_minutes_ship_prior = float(latitude_string[2:10])
+                            latitude_degrees_ship_prior = int(
+                                latitude_string[0:2]
+                            )
+                            latitude_minutes_ship_prior = float(
+                                latitude_string[2:10]
+                            )
                             latitude_prior = (
                                 latitude_degrees_ship_prior
                                 + latitude_minutes_ship_prior / 60.0
@@ -220,8 +231,12 @@ def parse_gaps(mission, vehicle, category, ftype, outpath):
                                 latitude_prior = -latitude_prior
 
                             longitude_string = line_split_no_checksum[9]
-                            longitude_degrees_ship_prior = int(longitude_string[0:3])
-                            longitude_minutes_ship_prior = float(longitude_string[3:11])
+                            longitude_degrees_ship_prior = int(
+                                longitude_string[0:3]
+                            )
+                            longitude_minutes_ship_prior = float(
+                                longitude_string[3:11]
+                            )
                             longitude_prior = (
                                 longitude_degrees_ship_prior
                                 + longitude_minutes_ship_prior / 60.0
@@ -250,7 +265,13 @@ def parse_gaps(mission, vehicle, category, ftype, outpath):
 
                                 # calculate epoch time
                                 epoch_time = date_time_to_epoch(
-                                    yyyy, mm, dd, hour, mins, secs, timezone_offset
+                                    yyyy,
+                                    mm,
+                                    dd,
+                                    hour,
+                                    mins,
+                                    secs,
+                                    timezone_offset,
                                 )
                                 # dt_obj = datetime(yyyy,mm,dd,hour,mins,secs)
                                 # time_tuple = dt_obj.timetuple()
@@ -300,13 +321,18 @@ def parse_gaps(mission, vehicle, category, ftype, outpath):
 
                     else:
 
-                        heading_ship_posterior = float(line_split_no_checksum[1])
+                        heading_ship_posterior = float(
+                            line_split_no_checksum[1]
+                        )
                         flag_got_time = flag_got_time + 1
 
                 if flag_got_time >= 5:
                     # interpolate for the ships location and heading
-                    inter_time = (epoch_timestamp - epoch_timestamp_ship_prior) / (
-                        epoch_timestamp_ship_posterior - epoch_timestamp_ship_prior
+                    inter_time = (
+                        epoch_timestamp - epoch_timestamp_ship_prior
+                    ) / (
+                        epoch_timestamp_ship_posterior
+                        - epoch_timestamp_ship_prior
                     )
                     longitude_ship = (
                         inter_time * (longitude_posterior - longitude_prior)
@@ -317,7 +343,8 @@ def parse_gaps(mission, vehicle, category, ftype, outpath):
                         + latitude_prior
                     )
                     heading_ship = (
-                        inter_time * (heading_ship_posterior - heading_ship_prior)
+                        inter_time
+                        * (heading_ship_posterior - heading_ship_prior)
                         + heading_ship_prior
                     )
 
@@ -326,24 +353,25 @@ def parse_gaps(mission, vehicle, category, ftype, outpath):
                     while heading_ship < 0:
                         heading_ship = heading_ship + 360
 
-                    
-
                     lateral_distance, bearing = latlon_to_metres(
                         latitude, longitude, latitude_ship, longitude_ship
                     )
 
-                    
                     # determine range to input to uncertainty model
                     distance = math.sqrt(
                         lateral_distance * lateral_distance + depth * depth
                     )
-                    distance_std = distance_std_factor * distance + distance_std_offset
+                    distance_std = (
+                        distance_std_factor * distance + distance_std_offset
+                    )
 
                     # determine uncertainty in terms of latitude and longitude
                     latitude_offset, longitude_offset = metres_to_latlon(
-                        abs(latitude), abs(longitude), distance_std, distance_std
+                        abs(latitude),
+                        abs(longitude),
+                        distance_std,
+                        distance_std,
                     )
-
 
                     latitude_std = abs(abs(latitude) - latitude_offset)
                     longitude_std = abs(abs(longitude) - longitude_offset)
@@ -356,14 +384,19 @@ def parse_gaps(mission, vehicle, category, ftype, outpath):
                         longitude_reference,
                     )
                     eastings_ship = (
-                        math.sin(bearing_ship * math.pi / 180.0) * lateral_distance_ship
+                        math.sin(bearing_ship * math.pi / 180.0)
+                        * lateral_distance_ship
                     )
                     northings_ship = (
-                        math.cos(bearing_ship * math.pi / 180.0) * lateral_distance_ship
+                        math.cos(bearing_ship * math.pi / 180.0)
+                        * lateral_distance_ship
                     )
 
                     lateral_distance_target, bearing_target = latlon_to_metres(
-                        latitude, longitude, latitude_reference, longitude_reference
+                        latitude,
+                        longitude,
+                        latitude_reference,
+                        longitude_reference,
                     )
                     eastings_target = (
                         math.sin(bearing_target * math.pi / 180.0)
@@ -374,7 +407,7 @@ def parse_gaps(mission, vehicle, category, ftype, outpath):
                         * lateral_distance_target
                     )
 
-                    if broken_packet_flag == False:
+                    if not broken_packet_flag:
 
                         if ftype == "oplab" and category == Category.USBL:
                             data = {
@@ -422,7 +455,9 @@ def parse_gaps(mission, vehicle, category, ftype, outpath):
                         elif ftype == "oplab" and category == Category.DEPTH:
                             data = {
                                 "epoch_timestamp": float(epoch_timestamp),
-                                "epoch_timestamp_depth": float(epoch_timestamp),
+                                "epoch_timestamp_depth": float(
+                                    epoch_timestamp
+                                ),
                                 "class": class_string,
                                 "sensor": sensor_string,
                                 "frame": "inertial",

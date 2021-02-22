@@ -9,17 +9,17 @@ See LICENSE.md file in the project root for full license information.
 import math
 import random
 import time
-import joblib
-import yaml
+
 import cv2
+import joblib
 import numpy as np
+import yaml
+from auv_nav.parsers.parse_biocam_images import biocam_timestamp_from_filename
+from oplab import Console, get_processed_folder
+
+from auv_cal.camera_calibrator import resize_with_padding
 from auv_cal.plane_fitting import Plane
 from auv_cal.plot_points_and_planes import plot_pointcloud_and_planes
-from auv_cal.camera_calibrator import resize_with_padding
-from oplab import Console
-from oplab import get_processed_folder
-from auv_nav.parsers.parse_biocam_images import biocam_timestamp_from_filename
-from .euler_angles_from_rotation_matrix import euler_angles_from_rotation_matrix
 
 
 def build_plane(pitch, yaw, point):
@@ -142,7 +142,6 @@ def findLaserInImage(
         (n x 2) array of y and x values of detected laser pixels
     """
 
-
     img_max_value = 0
     if img.dtype.type is np.float32 or img.dtype.type is np.float64:
         img_max_value = 1.0
@@ -166,7 +165,9 @@ def findLaserInImage(
         if num_columns > 0:
             incr = int(len(width_array) / num_columns) - 1
             incr = max(incr, 1)
-            columns = [width_array[i] for i in range(0, len(width_array), incr)]
+            columns = [
+                width_array[i] for i in range(0, len(width_array), incr)
+            ]
         else:
             columns = width_array
     else:
@@ -194,8 +195,9 @@ def findLaserInImage(
                 )  # vgmax: v value in image, where gmax occurrs
             vw += 1
         if (
-            gmax > min_green_ratio*img_max_value
-        ):  # If `true`, there is a point in the current column, which presumably belongs to the laser line
+            gmax > min_green_ratio * img_max_value
+        ):  # If `true`, there is a point in the current column, which
+            # presumably belongs to the laser line
             peaks.append([vgmax, u])
     return np.array(peaks)
 
@@ -283,7 +285,9 @@ def draw_laser(
             channels = limg.shape[-1]
 
         if remap:
-            limg_remap = cv2.remap(limg, left_maps[0], left_maps[1], cv2.INTER_LANCZOS4)
+            limg_remap = cv2.remap(
+                limg, left_maps[0], left_maps[1], cv2.INTER_LANCZOS4
+            )
             rimg_remap = cv2.remap(
                 rimg, right_maps[0], right_maps[1], cv2.INTER_LANCZOS4
             )
@@ -296,8 +300,12 @@ def draw_laser(
             limg_colour[:, :, 1] = limg_remap
             rimg_colour[:, :, 1] = rimg_remap
         elif channels == 1:
-            limg_colour = np.zeros((limg.shape[0], limg.shape[1], 3), dtype=np.uint8)
-            rimg_colour = np.zeros((rimg.shape[0], rimg.shape[1], 3), dtype=np.uint8)
+            limg_colour = np.zeros(
+                (limg.shape[0], limg.shape[1], 3), dtype=np.uint8
+            )
+            rimg_colour = np.zeros(
+                (rimg.shape[0], rimg.shape[1], 3), dtype=np.uint8
+            )
             limg_colour[:, :, 1] = limg
             rimg_colour[:, :, 1] = rimg
         else:
@@ -308,9 +316,13 @@ def draw_laser(
         for p in top_right:
             cv2.circle(rimg_colour, (int(p[1]), int(p[0])), 1, (255, 0, 0), -1)
         for p in bottom_left:
-            cv2.circle(limg_colour, (int(p[1]), int(p[0])), 1, (255, 0, 127), -1)
+            cv2.circle(
+                limg_colour, (int(p[1]), int(p[0])), 1, (255, 0, 127), -1
+            )
         for p in bottom_right:
-            cv2.circle(rimg_colour, (int(p[1]), int(p[0])), 1, (0, 255, 127), -1)
+            cv2.circle(
+                rimg_colour, (int(p[1]), int(p[0])), 1, (0, 255, 127), -1
+            )
         cv2.imwrite(str(lfilename), limg_colour)
         cv2.imwrite(str(rfilename), rimg_colour)
         Console.info("Saved " + str(lfilename) + " and " + str(rfilename))
@@ -400,7 +412,10 @@ def get_laser_pixels_in_image_pair(
             end_row=end_row,
         )
         write_str = "top: \n- " + "- ".join(
-            ["[" + str(p1[i][0]) + ", " + str(p1[i][1]) + "]\n" for i in range(len(p1))]
+            [
+                "[" + str(p1[i][0]) + ", " + str(p1[i][1]) + "]\n"
+                for i in range(len(p1))
+            ]
         )
         if two_lasers:
             p1b = findLaserInImage(
@@ -461,7 +476,7 @@ def get_laser_pixels_in_image_pair(
         # print(str(image_name))
         if not output_path.exists():
             output_path.mkdir(parents=True, exist_ok=True)
-        fstem = str(image_name.stem) + "_"  + camera_name + ".txt"
+        fstem = str(image_name.stem) + "_" + camera_name + ".txt"
         filename = output_path / fstem
         if overwrite or not filename.exists():
             points, points_b = find_laser_write_file(
@@ -586,7 +601,9 @@ def save_cloud(filename, cloud):
     with filename.open("w") as f:
         f.write(header_msg)
         for p in cloud:
-            f.write("{0:.5f} {1:.5f} {2:.5f}\n".format(p[0][0], p[1][0], p[2][0]))
+            f.write(
+                "{0:.5f} {1:.5f} {2:.5f}\n".format(p[0][0], p[1][0], p[2][0])
+            )
 
 
 class LaserCalibrator:
@@ -603,7 +620,7 @@ class LaserCalibrator:
         detection = config.get("detection", {})
         filtering = config.get("filter", {})
         ransac = config.get("ransac", {})
-        uncertainty_generation = config.get("uncertainty_generation", {})
+        # uncertainty_generation = config.get("uncertainty_generation", {})
 
         self.k = detection.get("window_size", 5)
         self.min_greenness_ratio = detection.get("min_greenness_ratio", 0.01)
@@ -648,10 +665,9 @@ class LaserCalibrator:
         self.uncertainty_planes = []
         self.in_front_or_behind = []
 
-
     def range_stratified_sampling(self, cloud):
-        """Perform range stratified sampling following the parameters 
-            filter_rss_bin_size and filter_max_bin_elements over 
+        """Perform range stratified sampling following the parameters
+            filter_rss_bin_size and filter_max_bin_elements over
             the range filter_min_range and filter_max_range
 
         Parameters
@@ -662,23 +678,26 @@ class LaserCalibrator:
         Returns
         -------
         sampled cloud
-            Output list of points sampled 
+            Output list of points sampled
         """
-        
-        num_bins = math.ceil((self.filter_max_range - self.filter_min_range) / self.filter_rss_bin_size)
-        bin_den = (self.filter_max_range - self.filter_min_range)/num_bins
-        
+
+        num_bins = math.ceil(
+            (self.filter_max_range - self.filter_min_range)
+            / self.filter_rss_bin_size
+        )
+        bin_den = (self.filter_max_range - self.filter_min_range) / num_bins
+
         max_bin_elements = self.filter_max_bin_elements
-        bins = [None]*num_bins
+        bins = [None] * num_bins
 
         # Shuffle the list in-place
         random.shuffle(cloud)
 
         output_cloud = []
         for p in cloud:
-            r = math.sqrt(p[0]*p[0] + p[1]*p[1] + p[2]*p[2])
+            r = math.sqrt(p[0] * p[0] + p[1] * p[1] + p[2] * p[2])
             if r < self.filter_max_range and r >= self.filter_min_range:
-                corresp_bin = math.floor((r - self.filter_min_range)/bin_den)
+                corresp_bin = math.floor((r - self.filter_min_range) / bin_den)
                 if corresp_bin < len(bins):
                     if bins[corresp_bin] is None:
                         bins[corresp_bin] = [p]
@@ -690,32 +709,34 @@ class LaserCalibrator:
                     raise IndexError("List index corresp_bin out of range")
         Console.info("filter_min_range: ", self.filter_min_range)
         Console.info("filter_max_range: ", self.filter_max_range)
-        Console.info('Summary for bins:')
+        Console.info("Summary for bins:")
         for i in range(num_bins):
             if bins[i] is not None:
-                Console.info(' * bin', i, ':', len(bins[i]))
+                Console.info(" * bin", i, ":", len(bins[i]))
             else:
-                Console.info(' * bin', i, ': 0')
+                Console.info(" * bin", i, ": 0")
 
         return output_cloud
-        
 
     def pointcloud_from_peaks(self, pk1, pk2):
         """Triangulate a point cloud from two frames.
-        Two peaks are a valid pair if they share the same column and have a difference in row
-        index of 1.0.
+        Two peaks are a valid pair if they share the same column and have a
+        difference in row index of 1.0.
 
         Parameters
         ----------
         pk1 : list of lists
-            List of lists of (row, col) of detected laser peaks for the first frame
+            List of lists of (row, col) of detected laser peaks for the first
+            frame
         pk2 : list of lists
-            List of lists of (row, col) of detected laser peaks for the second frame
+            List of lists of (row, col) of detected laser peaks for the second
+            frame
 
         Returns
         -------
         list, int, int
-            Returns the triangulated pointcloud using LST and the number of valid/invalid points.
+            Returns the triangulated pointcloud using LST and the number of
+            valid/invalid points.
         """
         cloud = []
         count = 0
@@ -732,7 +753,9 @@ class LaserCalibrator:
                 continue
             if abs(pk2[i2][1] - pk1[i1][1]) < 1.0:
                 # Triangulate using Least Squares
-                p = triangulate_lst(pk1[i1], pk2[i2], self.sc.left.P, self.sc.right.P)
+                p = triangulate_lst(
+                    pk1[i1], pk2[i2], self.sc.left.P, self.sc.right.P
+                )
 
                 # Remove rectification rotation
                 if self.remap:
@@ -773,20 +796,27 @@ class LaserCalibrator:
         mean_plane, self.inliers_cloud_list = p.fit(cloud, self.mdt)
         # p.plot(cloud=cloud)
 
-        filename = time.strftime("pointclouds_and_best_model_%Y%m%d_%H%M%S.html")
+        filename = time.strftime(
+            "pointclouds_and_best_model_%Y%m%d_%H%M%S.html"
+        )
         plot_pointcloud_and_planes(
             [np.array(cloud), np.array(self.inliers_cloud_list)],
-            [np.array(mean_plane)], filename
-        )  #'pointclouds_and_best_model.html')
+            [np.array(mean_plane)],
+            filename,
+        )  # 'pointclouds_and_best_model.html')
 
         scale = 1.0 / mean_plane[0]
         mean_plane = np.array(mean_plane) * scale
         mean_plane = mean_plane.tolist()
 
-        Console.info("Least squares found", len(self.inliers_cloud_list), "inliers")
+        Console.info(
+            "Least squares found", len(self.inliers_cloud_list), "inliers"
+        )
 
         if len(self.inliers_cloud_list) < 0.5 * len(cloud) * self.gip:
-            Console.warn("The number of inliers found are off from what you expected.")
+            Console.warn(
+                "The number of inliers found are off from what you expected."
+            )
             Console.warn(" * Expected inliers:", len(cloud) * self.gip)
             Console.warn(" * Found inliers:", len(self.inliers_cloud_list))
             Console.warn(
@@ -810,22 +840,26 @@ class LaserCalibrator:
         # print("Min z: " + str(np.min(inliers_cloud[:, 2])))
         # print("Max z: " + str(np.max(inliers_cloud[:, 2])))
         # print("Std z: " + str(std_z))
-        min_dist = 2* math.sqrt(std_y**2 + std_z**2)
-        Console.info("Minimum distance for poisson disc sampling: {}"
-                     .format(min_dist))
+        min_dist = 2 * math.sqrt(std_y ** 2 + std_z ** 2)
+        Console.info(
+            "Minimum distance for poisson disc sampling: {}".format(min_dist)
+        )
         min_sin_angle = 0.866  # = sin(60°)
 
         # Append 1 to the points, so they can be multiplied (dot product) with
         # plane paramters to find out if they are in front, behind or on a
         # plane.
         self.inliers_1 = np.concatenate(
-            [inliers_cloud, np.ones((inliers_cloud.shape[0], 1))], axis=1)
+            [inliers_cloud, np.ones((inliers_cloud.shape[0], 1))], axis=1
+        )
 
         planes_enclose_inliers = False
         Console.info("Generating uncertainty planes...")
         max_uncertainty_planes = 300
-        while (planes_enclose_inliers is False and
-               len(self.uncertainty_planes) < max_uncertainty_planes):
+        while (
+            planes_enclose_inliers is False
+            and len(self.uncertainty_planes) < max_uncertainty_planes
+        ):
             point_cloud_local = random.sample(self.inliers_cloud_list, 3)
 
             # Check if the points are sufficiently far apart and not aligned
@@ -837,31 +871,44 @@ class LaserCalibrator:
             p1p2_norm = np.linalg.norm(p1p2)
 
             # Poisson disc sampling: reject points that are too close together
-            if p0p1_norm < min_dist or p0p2_norm < min_dist or p1p2_norm < min_dist:
+            if (
+                p0p1_norm < min_dist
+                or p0p2_norm < min_dist
+                or p1p2_norm < min_dist
+            ):
                 continue
 
             # Reject points that are too closely aligned
-            if abs(np.cross(p0p1, p0p2))/(p0p1_norm*p0p2_norm) < min_sin_angle:
+            if (
+                abs(np.cross(p0p1, p0p2)) / (p0p1_norm * p0p2_norm)
+                < min_sin_angle
+            ):
                 continue
 
             # Compute plane through the 3 points and append to list
             self.triples.append(np.array(point_cloud_local))
             self.uncertainty_planes.append(
-                plane_through_3_points(point_cloud_local))
+                plane_through_3_points(point_cloud_local)
+            )
             Console.info("Number of planes: {}", len(self.uncertainty_planes))
             planes_enclose_inliers = self._do_planes_enclose_inliers()
 
-        Console.info("... finished generating {} uncertainty planes."
-                     .format(len(self.uncertainty_planes)))
-        
+        Console.info(
+            "... finished generating {} uncertainty planes.".format(
+                len(self.uncertainty_planes)
+            )
+        )
+
         if len(self.uncertainty_planes) >= max_uncertainty_planes:
             Console.warn("Stopped due to reaching max_uncertainty_planes")
 
-        filename = time.strftime("pointclouds_and_uncertainty_planes_all_"
-                                 "%Y%m%d_%H%M%S.html")
+        filename = time.strftime(
+            "pointclouds_and_uncertainty_planes_all_" "%Y%m%d_%H%M%S.html"
+        )
         plot_pointcloud_and_planes(
             self.triples + [np.array(cloud), inliers_cloud],
-            self.uncertainty_planes, filename
+            self.uncertainty_planes,
+            filename,
         )
         # uncomment to save for debugging
         # np.save('inliers_cloud.npy', inliers_cloud)
@@ -870,31 +917,52 @@ class LaserCalibrator:
 
         # Console.info("Removing uncertainty planes that do not contribute...")
         # self._remove_unnecessary_uncertainty_planes()
-        # Console.info("... finished removing non-contributing planes. Reduced "
+        # Console.info("... finished removing non-contributing planes. Reduced"
         #              "number of uncertainty planes to {}."
         #              .format(len(self.uncertainty_planes)))
         # assert self._check_if_planes_enclose_inliers()  # Sanity check
-        filename = time.strftime("pointclouds_and_uncertainty_planes_%Y%m%d_"
-                                 "%H%M%S.html")
+        filename = time.strftime(
+            "pointclouds_and_uncertainty_planes_%Y%m%d_" "%H%M%S.html"
+        )
         plot_pointcloud_and_planes(
             self.triples + [np.array(cloud), inliers_cloud],
-            self.uncertainty_planes, filename
+            self.uncertainty_planes,
+            filename,
         )
 
-        yaml_msg = ("mean_xyz_m: " + str(mean_xyz.tolist()) + "\n"
-                    + "mean_plane: " + str(mean_plane) + "\n")
+        yaml_msg = (
+            "mean_xyz_m: "
+            + str(mean_xyz.tolist())
+            + "\n"
+            + "mean_plane: "
+            + str(mean_plane)
+            + "\n"
+        )
         for i, up in enumerate(self.uncertainty_planes):
-            yaml_msg = (yaml_msg + "uncertainty_plane_" + str(i).zfill(2)
-                        + ": " + str(up.tolist()) + "\n")
+            yaml_msg = (
+                yaml_msg
+                + "uncertainty_plane_"
+                + str(i).zfill(2)
+                + ": "
+                + str(up.tolist())
+                + "\n"
+            )
         yaml_msg += (
-            'date: "' + Console.get_date() + '" \n'
-            + 'user: "' + Console.get_username() + '" \n'
-            + 'host: "' + Console.get_hostname() + '" \n'
-            + 'version: "' + Console.get_version() + '" \n'
+            'date: "'
+            + Console.get_date()
+            + '" \n'
+            + 'user: "'
+            + Console.get_username()
+            + '" \n'
+            + 'host: "'
+            + Console.get_hostname()
+            + '" \n'
+            + 'version: "'
+            + Console.get_version()
+            + '" \n'
         )
 
         return yaml_msg
-
 
     def _do_planes_enclose_inliers(self):
         """Checks if uncertainty planes enclose at least 95.45% of inliers"""
@@ -903,18 +971,21 @@ class LaserCalibrator:
         # (= latest added) uncertainty plane. 1 if point is in front of the
         # plane, -1 if behind theplane, 0 if in the plane
         in_front_or_behind_current = np.sign(
-            self.inliers_1 @ self.uncertainty_planes[-1])
+            self.inliers_1 @ self.uncertainty_planes[-1]
+        )
         if np.size(self.in_front_or_behind) == 0:
             self.in_front_or_behind = in_front_or_behind_current
             return False
         else:
             self.in_front_or_behind = np.column_stack(
-                (self.in_front_or_behind, in_front_or_behind_current))
+                (self.in_front_or_behind, in_front_or_behind_current)
+            )
 
         # Check for each point if it is at least once before and once behind
         # (or in) the plane. If this is the case, it is enclosed by the planes
-        enclosed = (
-            self.in_front_or_behind.min(1) != self.in_front_or_behind.max(1))
+        enclosed = self.in_front_or_behind.min(
+            1
+        ) != self.in_front_or_behind.max(1)
         number_enclosed = np.sum(enclosed)
 
         population = self.inliers_1.shape[0]
@@ -924,10 +995,9 @@ class LaserCalibrator:
         else:
             return False
 
-
     def _remove_unnecessary_uncertainty_planes(self):
         """Remove uncertainty planes that do not contribute to enclosing any
-            points that would not be enclosed with them
+        points that would not be enclosed with them
         """
         population = self.inliers_1.shape[0]  # len(self.inliers_cloud_list)
         min_enclosed = self.TWO_SIGMA * population
@@ -938,17 +1008,17 @@ class LaserCalibrator:
             number_enclosed = np.sum(enclosed)
             if number_enclosed > min_enclosed:
                 # Means the j-th plane does not contribute and can be deleted
-                self.in_front_or_behind = (
-                    np.delete(self.in_front_or_behind, j, 1))
+                self.in_front_or_behind = np.delete(
+                    self.in_front_or_behind, j, 1
+                )
                 del self.uncertainty_planes[j]
                 del self.triples[j]
             else:
                 j += 1
 
-
     def _check_if_planes_enclose_inliers(self):
         """Checks if (remaining) uncertainty planes enclose at least 95.45% of
-            inliers"""
+        inliers"""
         # Check for each inlier points if it is in front, beghind or on last
         # (= latest added) uncertainty plane. 1 if point is in front of the
         # plane, -1 if behind theplane, 0 if in the plane
@@ -958,8 +1028,9 @@ class LaserCalibrator:
             if np.size(in_front_or_behind) == 0:
                 in_front_or_behind = in_front_or_behind_curr
             else:
-                in_front_or_behind = np.column_stack((in_front_or_behind,
-                                                      in_front_or_behind_curr))
+                in_front_or_behind = np.column_stack(
+                    (in_front_or_behind, in_front_or_behind_curr)
+                )
         # Check for each point if it is at least once before and once behind
         # (or in) the plane. If this is the case, it is enclosed by the planes
         enclosed = in_front_or_behind.min(1) != in_front_or_behind.max(1)
@@ -970,10 +1041,11 @@ class LaserCalibrator:
         if number_enclosed > min_enclosed:
             return True
         else:
-            print("Uncertainty planes do not enclose sufficient number of "
-                  "points")
+            print(
+                "Uncertainty planes do not enclose sufficient number of "
+                "points"
+            )
             return False
-
 
     def cal(self, limages, rimages):
         """Main function that is called by the code using the LaserCalibrator
@@ -999,7 +1071,7 @@ class LaserCalibrator:
             for i, lname in enumerate(limages):
                 for j, rname in enumerate(rimages):
                     name = lname.stem
-                    if 'image' in name:
+                    if "image" in name:
                         name = name[5:]
                     if name == rname.stem:
                         limages_sync.append(lname)
@@ -1025,9 +1097,13 @@ class LaserCalibrator:
                 for j in range(len(rimages)):
                     values.append(abs(stamp_pc1[i] - stamp_pc2[j]))
 
-                (sync_difference, sync_pair) = min((v, k) for k, v in enumerate(values))
+                (sync_difference, sync_pair) = min(
+                    (v, k) for k, v in enumerate(values)
+                )
                 if sync_difference < tolerance:
-                    # print(limages[i].stem + ' syncs with ' + rimages[sync_pair].stem + ' with dif ' + str(sync_difference))
+                    # print(limages[i].stem + ' syncs with '
+                    # + rimages[sync_pair].stem + ' with dif '
+                    # + str(sync_difference))
                     limages_sync.append(limages[i])
                     rimages_sync.append(rimages[sync_pair])
 
@@ -1038,7 +1114,9 @@ class LaserCalibrator:
 
         rs_size = 500
         if len(limages) > rs_size:
-            f = lambda m, n: [i*n//m + n//(2*m) for i in range(m)] # See https://stackoverflow.com/a/9873804/707946
+            f = lambda m, n: [  # noqa
+                i * n // m + n // (2 * m) for i in range(m)
+            ]  # See https://stackoverflow.com/a/9873804/707946
             selection = f(rs_size, len(limages))
             for s in selection:
                 limages_rs.append(limages_sync[s])
@@ -1047,7 +1125,9 @@ class LaserCalibrator:
             limages_rs = limages
             rimages_rs = rimages
 
-        Console.info("Processing ", str(len(limages_sync)), " synchronised images...")
+        Console.info(
+            "Processing ", str(len(limages_sync)), " synchronised images..."
+        )
         result = joblib.Parallel(n_jobs=-1)(
             [
                 joblib.delayed(get_laser_pixels_in_image_pair)(
@@ -1073,10 +1153,14 @@ class LaserCalibrator:
 
         # Lists of (rectified) coordinates of laser detections stored in
         # ndarrays, where each entry contains the detections of one image.
-        peaks1 = []   # Laser detections in images of top laser in left camera
-        peaks2 = []   # Laser detections in images of top laser in right camera
-        peaks1b = []  # Laser detections in images of bottom laser in left camera
-        peaks2b = []  # Laser detections in images of bottom laser in right camera
+        peaks1 = []  # Laser detections in images of top laser in left camera
+        peaks2 = []  # Laser detections in images of top laser in right camera
+        peaks1b = (
+            []
+        )  # Laser detections in images of bottom laser in left camera
+        peaks2b = (
+            []
+        )  # Laser detections in images of bottom laser in right camera
         count1l = 0
         count2l = 0
         count1lb = 0
@@ -1099,8 +1183,12 @@ class LaserCalibrator:
         Console.info("Found {} top peaks in camera 1!".format(str(count1l)))
         Console.info("Found {} top peaks in camera 2!".format(str(count2l)))
         if self.two_lasers:
-            Console.info("Found {} bottom peaks in camera 1!".format(str(count1lb)))
-            Console.info("Found {} bottom peaks in camera 2!".format(str(count2lb)))
+            Console.info(
+                "Found {} bottom peaks in camera 1!".format(str(count1lb))
+            )
+            Console.info(
+                "Found {} bottom peaks in camera 2!".format(str(count2lb))
+            )
 
         point_cloud = []
         point_cloud_b = []
@@ -1119,7 +1207,9 @@ class LaserCalibrator:
             count_bad += cb
         Console.info("Found {} potential TOP points".format(count_good))
         Console.info("Found {} wrong TOP points".format(count_bad))
-        Console.info("Found " + str(len(point_cloud)) + " TOP triangulated points!")
+        Console.info(
+            "Found " + str(len(point_cloud)) + " TOP triangulated points!"
+        )
         if self.two_lasers:
             result = joblib.Parallel(n_jobs=-1)(
                 [
@@ -1136,7 +1226,9 @@ class LaserCalibrator:
             Console.info("Found {} potential BOTTOM points".format(count_good))
             Console.info("Found {} wrong BOTTOM points".format(count_bad))
             Console.info(
-                "Found " + str(len(point_cloud)) + " BOTTOM triangulated points!"
+                "Found "
+                + str(len(point_cloud))
+                + " BOTTOM triangulated points!"
             )
 
         # Change coordinate system
@@ -1149,12 +1241,19 @@ class LaserCalibrator:
                 [joblib.delayed(opencv_to_ned)(i) for i in point_cloud_b]
             )
 
-        save_cloud(processed_folder / ("../points_" + self.camera_name + ".ply"), point_cloud_ned)
+        save_cloud(
+            processed_folder / ("../points_" + self.camera_name + ".ply"),
+            point_cloud_ned,
+        )
         if self.two_lasers:
-            save_cloud(processed_folder / ("../points_b_" + self.camera_name + ".ply"), point_cloud_ned_b)
+            save_cloud(
+                processed_folder
+                / ("../points_b_" + self.camera_name + ".ply"),
+                point_cloud_ned_b,
+            )
 
         rss_before = len(point_cloud_ned)
-        #point_cloud_filt = self.filter_cloud(point_cloud_ned)
+        # point_cloud_filt = self.filter_cloud(point_cloud_ned)
         point_cloud_filt = self.range_stratified_sampling(point_cloud_ned)
         rss_after = len(point_cloud_filt)
         Console.info(
@@ -1162,7 +1261,10 @@ class LaserCalibrator:
         )
         rs_size = min(rss_after, self.max_point_cloud_size)
         point_cloud_rs = random.sample(point_cloud_filt, rs_size)
-        save_cloud(processed_folder / ("../points_rs_" + self.camera_name + ".ply"), point_cloud_rs)
+        save_cloud(
+            processed_folder / ("../points_rs_" + self.camera_name + ".ply"),
+            point_cloud_rs,
+        )
         point_cloud_rs = np.array(point_cloud_rs)
         point_cloud_rs = point_cloud_rs.reshape(-1, 3)
         point_cloud_filt = np.array(point_cloud_filt)
@@ -1173,15 +1275,24 @@ class LaserCalibrator:
         if self.two_lasers:
             Console.info("Fitting a plane to second line...")
             rss_before = len(point_cloud_ned_b)
-            #point_cloud_b_filt = self.filter_cloud(point_cloud_ned_b)
-            point_cloud_b_filt = self.range_stratified_sampling(point_cloud_ned_b)
+            # point_cloud_b_filt = self.filter_cloud(point_cloud_ned_b)
+            point_cloud_b_filt = self.range_stratified_sampling(
+                point_cloud_ned_b
+            )
             rss_after = len(point_cloud_b_filt)
             Console.info(
-                "Points after filtering: " + str(rss_after) + "/" + str(rss_before)
+                "Points after filtering: "
+                + str(rss_after)
+                + "/"
+                + str(rss_before)
             )
             rs_size = min(rss_after, self.max_point_cloud_size)
             point_cloud_b_rs = random.sample(point_cloud_b_filt, rs_size)
-            save_cloud(processed_folder / ("../points_b_rs_" + self.camera_name + ".ply"), point_cloud_b_rs)
+            save_cloud(
+                processed_folder
+                / ("../points_b_rs_" + self.camera_name + ".ply"),
+                point_cloud_b_rs,
+            )
             point_cloud_b_rs = np.array(point_cloud_b_rs)
             point_cloud_b_rs = point_cloud_b_rs.reshape(-1, 3)
             point_cloud_b_filt = np.array(point_cloud_b_filt)

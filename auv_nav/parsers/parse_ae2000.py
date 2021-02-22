@@ -2,8 +2,8 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
 # Scripts to parse ae2000 logs
@@ -11,21 +11,14 @@ See LICENSE.md file in the project root for full license information.
 # Author: Blair Thornton
 # Date: 14/02/2018
 
-# from datetime import datetime
-import pandas as pd
 import math
 
-# sys.path.append("..")
+import pandas as pd
 from auv_nav.tools.body_to_inertial import body_to_inertial
-from auv_nav.tools.time_conversions import date_time_to_epoch
-from auv_nav.tools.time_conversions import read_timezone
-from oplab import get_raw_folder
-from oplab import Console
-from oplab import Mission, Vehicle
+from auv_nav.tools.time_conversions import date_time_to_epoch, read_timezone
+from oplab import Console, Mission, Vehicle, get_raw_folder
 
-# http://www.json.org/
 data_list = []
-# need to make acfr parsers
 
 
 def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
@@ -38,33 +31,41 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
     timeoffset = mission.velocity.timeoffset
     filepath = mission.velocity.filepath
 
-    if category == 'velocity' or category == 'altitude':
-        if category == 'velocity':
-            filename = mission.velocity.filename # e.g. dvl180805123503.csv
+    if category == "velocity" or category == "altitude":
+        if category == "velocity":
+            filename = mission.velocity.filename  # e.g. dvl180805123503.csv
         else:
-            filename = mission.altitude.filename # e.g. dvl180805123503.csv
-        if filename[0:3] != 'dvl' or len(filename) != 19:
+            filename = mission.altitude.filename  # e.g. dvl180805123503.csv
+        if filename[0:3] != "dvl" or len(filename) != 19:
             Console.error(
-                "Expected filename of the form dvlYYMMDDhhmmss.csv for velocity or altitutde, but you provided "
-                + filename)
+                "Expected filename of the form dvlYYMMDDhhmmss.csv for",
+                "velocity or altitutde, but you provided",
+                filename,
+            )
         yyyy = int(filename[3:5]) + 2000
         mm = int(filename[5:7])
         dd = int(filename[7:9])
-    elif category == 'orientation':
-        filename = mission.orientation.filename # e.g. quadrans180805123456.csv
-        if filename[0:8] != 'quadrans' or len(filename) != 24:
+    elif category == "orientation":
+        filename = (
+            mission.orientation.filename
+        )  # e.g. quadrans180805123456.csv
+        if filename[0:8] != "quadrans" or len(filename) != 24:
             Console.error(
-                "Expected filename of the form quadransYYMMDDhhmmss.csv for orientation, but you provided "
-                + filename)
+                "Expected filename of the form quadransYYMMDDhhmmss.csv for",
+                "orientation, but you provided ",
+                filename,
+            )
         yyyy = int(filename[8:10]) + 2000
         mm = int(filename[10:12])
         dd = int(filename[12:14])
-    elif category == 'depth':
-        filename = mission.depth.filename # e.g. pos180805123456.csv
-        if filename[0:3] != 'pos' or len(filename) != 19:
+    elif category == "depth":
+        filename = mission.depth.filename  # e.g. pos180805123456.csv
+        if filename[0:3] != "pos" or len(filename) != 19:
             Console.error(
-                "Expected filename of the form posYYMMDDhhmmss.csv for depth, but you provided "
-                + filename)
+                "Expected filename of the form posYYMMDDhhmmss.csv for depth,",
+                "but you provided ",
+                filename,
+            )
         yyyy = int(filename[3:5]) + 2000
         mm = int(filename[5:7])
         dd = int(filename[7:9])
@@ -86,7 +87,8 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
     filepath = get_raw_folder(outpath / ".." / filepath)
     df = pd.read_csv(filepath / filename)
 
-    # list of time value in the first column (starting from 2nd row, not considering first row)
+    # list of time value in the first column (starting from 2nd row,
+    # not considering first row)
     time_column = df.iloc[:, 0]
     # length of this should match every other column
     for row_index in range(len(time_column)):
@@ -99,12 +101,14 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
         secs = int(timestamp_s_ms[0])
         msec = int(timestamp_s_ms[1])
 
-        epoch_time = date_time_to_epoch(yyyy, mm, dd, hour, mins, secs, timezone_offset)
+        epoch_time = date_time_to_epoch(
+            yyyy, mm, dd, hour, mins, secs, timezone_offset
+        )
         # dt_obj = datetime(yyyy,mm,dd,hour,mins,secs)
         # time_tuple = dt_obj.timetuple()
         # epoch_time = time.mktime(time_tuple)
         epoch_timestamp = epoch_time + msec / 1000 + timeoffset
-        
+
         if ftype == "oplab":
             if category == "velocity":
                 if math.isnan(df["dvl_validBottom"][row_index]):
@@ -115,22 +119,30 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
 
                 frame_string = "body"
 
-                roll_offset    = vehicle.dvl.roll
-                pitch_offset   = vehicle.dvl.pitch
+                roll_offset = vehicle.dvl.roll
+                pitch_offset = vehicle.dvl.pitch
                 heading_offset = vehicle.dvl.yaw
 
                 # DVL convention is +ve aft to forward
-                x_velocity = float(df["dvl_surgeVelBottom"][row_index])/1000.
+                x_velocity = (
+                    float(df["dvl_surgeVelBottom"][row_index]) / 1000.0
+                )
 
                 # DVL convention is +ve port to starboard
-                y_velocity = float(df["dvl_swayVelBottom"][row_index])/1000.
+                y_velocity = float(df["dvl_swayVelBottom"][row_index]) / 1000.0
                 # DVL convention is bottom to top +ve
-                z_velocity = float(df["dvl_heaveVelBottom"][row_index])/1000.
+                z_velocity = (
+                    float(df["dvl_heaveVelBottom"][row_index]) / 1000.0
+                )
 
                 # account for sensor rotational offset
                 [x_velocity, y_velocity, z_velocity] = body_to_inertial(
-                    roll_offset, pitch_offset, heading_offset,
-                    x_velocity, y_velocity, z_velocity
+                    roll_offset,
+                    pitch_offset,
+                    heading_offset,
+                    x_velocity,
+                    y_velocity,
+                    z_velocity,
                 )
                 # print('OUT:',x_velocity, y_velocity, z_velocity)
                 # y_velocity=-1*y_velocity
@@ -221,12 +233,23 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
                 pitch = float(df["pitch"][row_index])
                 heading = float(df["yaw"][row_index])
 
-                heading_std = mission.orientation.std_factor*abs(heading) + mission.orientation.std_offset
-                roll_std = mission.orientation.std_factor*abs(roll) + mission.orientation.std_offset
-                pitch_std = mission.orientation.std_factor*abs(pitch) + mission.orientation.std_offset
+                heading_std = (
+                    mission.orientation.std_factor * abs(heading)
+                    + mission.orientation.std_offset
+                )
+                roll_std = (
+                    mission.orientation.std_factor * abs(roll)
+                    + mission.orientation.std_offset
+                )
+                pitch_std = (
+                    mission.orientation.std_factor * abs(pitch)
+                    + mission.orientation.std_offset
+                )
                 # account for sensor rotational offset
                 if vehicle.ins.roll != 0 or vehicle.ins.pitch != 0:
-                    Console.quit("INS roll and pitch offsets are currently not supported")
+                    Console.quit(
+                        "INS roll and pitch offsets are currently not supported"  # noqa
+                    )
 
                 headingoffset = vehicle.ins.yaw
                 heading = heading + headingoffset
@@ -294,7 +317,8 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
 
                 depth = float(df["Depth"][row_index])
                 depth_std = (
-                    abs(depth) * mission.depth.std_factor + mission.depth.std_offset
+                    abs(depth) * mission.depth.std_factor
+                    + mission.depth.std_offset
                 )
 
                 if depth <= 0 or math.isnan(depth):
@@ -348,8 +372,7 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
                         },
                         {
                             "sound_velocity": sound_velocity,
-                            "sound_velocity_correction": 
-                                sound_velocity_correction,
+                            "sound_velocity_correction": sound_velocity_correction,  # noqa
                         },
                     ],
                 }
@@ -365,14 +388,20 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
                 altitude = float(df["dvl_rangeBottom"][row_index])
 
                 # DVL convention is +ve aft to forward
-                xx_velocity = float(df["dvl_surgeVelBottom"][row_index])/1000.
+                xx_velocity = (
+                    float(df["dvl_surgeVelBottom"][row_index]) / 1000.0
+                )
                 # DVL convention is +ve port to starboard
-                yy_velocity = float(df["dvl_swayVelBottom"][row_index])/1000.
+                yy_velocity = (
+                    float(df["dvl_swayVelBottom"][row_index]) / 1000.0
+                )
                 # DVL convention is bottom to top +ve
-                zz_velocity = float(df["dvl_heaveVelBottom"][row_index])/1000.
+                zz_velocity = (
+                    float(df["dvl_heaveVelBottom"][row_index]) / 1000.0
+                )
 
                 # account for sensor offset
-                # [xx_velocity,yy_velocity,zz_velocity] = body_to_inertial(0, 0, headingoffset, xx_velocity, yy_velocity, zz_velocity)
+                # [xx_velocity,yy_velocity,zz_velocity] = body_to_inertial(0, 0, headingoffset, xx_velocity, yy_velocity, zz_velocity) # noqa
                 # yy_velocity=-1*yy_velocity
                 # zz_velocity=-1*zz_velocity
 
@@ -399,7 +428,7 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
                     + str(float(yy_velocity))
                     + " vz:"
                     + str(float(zz_velocity))
-                    + " nx:0 ny:0 nz:0 COG:0 SOG:0 bt_status:0 h_true:0 p_gimbal:0 sv: "
+                    + " nx:0 ny:0 nz:0 COG:0 SOG:0 bt_status:0 h_true:0 p_gimbal:0 sv: "  # noqa
                     + str(sound_velocity)
                     + "\n"
                 )
@@ -410,15 +439,26 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
                 pitch = float(df["pitch"][row_index])
                 heading = float(df["yaw"][row_index])
 
-                heading_std = mission.orientation.std_factor*abs(heading) + mission.orientation.std_offset
-                roll_std = mission.orientation.std_factor*abs(roll) + mission.orientation.std_offset
-                pitch_std = mission.orientation.std_factor*abs(pitch) + mission.orientation.std_offset
+                heading_std = (
+                    mission.orientation.std_factor * abs(heading)
+                    + mission.orientation.std_offset
+                )
+                roll_std = (
+                    mission.orientation.std_factor * abs(roll)
+                    + mission.orientation.std_offset
+                )
+                pitch_std = (
+                    mission.orientation.std_factor * abs(pitch)
+                    + mission.orientation.std_offset
+                )
 
                 # account for sensor rotational offset
                 if vehicle.ins.roll != 0 or vehicle.ins.pitch != 0:
-                    Console.quit("INS roll and pitch offsets are currently not supported")
+                    Console.quit(
+                        "INS roll and pitch offsets are currently not supported"  # noqa
+                    )
                 headingoffset = vehicle.ins.yaw
-                heading=heading+headingoffset
+                heading = heading + headingoffset
                 if heading > 360:
                     heading = heading - 360
                 if heading < 0:

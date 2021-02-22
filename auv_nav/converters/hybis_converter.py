@@ -2,22 +2,18 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
-import os
-import sys
 import math
-import argparse
-import pandas as pd
+import os
 from pathlib import Path
-from datetime import datetime, timedelta
-import calendar
 
+import pandas as pd
 from auv_nav.tools.interpolate import interpolate
-from auv_nav.tools.time_conversions import date_time_to_epoch
 from auv_nav.tools.latlon_wgs84 import latlon_to_metres
+from auv_nav.tools.time_conversions import date_time_to_epoch
 from oplab import Console, get_raw_folder
 
 
@@ -52,8 +48,8 @@ class HyBisPos:
         final = 0
         if len(latlon) == 11:
             final = 1
-        deg = float(latlon[0 : 3 - final])
-        minutes = float(latlon[3 - final : 11 - final])
+        deg = float(latlon[0 : 3 - final])  # noqa
+        minutes = float(latlon[3 - final : 11 - final])  # noqa
         zone = latlon[11 - final]
         decdeg = deg + minutes / 60.0
         if zone == "W" or zone == "S":
@@ -80,18 +76,27 @@ class HybisImporter:
     def __init__(self, mission, filepath):
 
         if mission.dead_reckoning.empty():
-            Console.error("Hybis converter expects dead_reckoning in mission.yaml")
+            Console.error(
+                "Hybis converter expects dead_reckoning in mission.yaml"
+            )
             Console.quit("Invalid mission.yaml")
 
-        if mission.dead_reckoning.format != 'hybis':
-            Console.error("Hybis converter expects dead_reckoning format to be: hybis")
+        if mission.dead_reckoning.format != "hybis":
+            Console.error(
+                "Hybis converter expects dead_reckoning format to be: hybis"
+            )
             Console.quit("Invalid mission.yaml")
-        
+
         if mission.image.format != "hybis":
-            Console.error('Hybis converter expects images format to be of type: hybis')
+            Console.error(
+                "Hybis converter expects images format to be of type: hybis"
+            )
             Console.quit("Invalid mission.yaml")
 
-        navigation_file = Path(mission.dead_reckoning.filepath) / mission.dead_reckoning.filename
+        navigation_file = (
+            Path(mission.dead_reckoning.filepath)
+            / mission.dead_reckoning.filename
+        )
         navigation_file = get_raw_folder(navigation_file)
         image_path = Path(mission.image.cameras[0].path)
         image_path = get_raw_folder(image_path)
@@ -176,12 +181,15 @@ class HybisImporter:
         Console.info("Found " + str(len(image_list)) + " images!")
         Console.info("Interpolating...")
         for k, filename in enumerate(image_list):
-            modification_time = os.stat(str(image_path) + '/' + filename).st_mtime
-            filename = mission.image.cameras[0].path + '/' + filename
+            modification_time = os.stat(
+                str(image_path) + "/" + filename
+            ).st_mtime
+            filename = mission.image.cameras[0].path + "/" + filename
 
             i = 0
             while (
-                i < len(hybis_vec) - 2 and hybis_vec[i].epoch_timestamp < modification_time
+                i < len(hybis_vec) - 2
+                and hybis_vec[i].epoch_timestamp < modification_time
             ):
                 i += 1
 
@@ -277,4 +285,3 @@ class HybisImporter:
         with output_file.open("w", encoding="utf-8") as fileout:
             for line in self.data:
                 fileout.write(str(line))
-

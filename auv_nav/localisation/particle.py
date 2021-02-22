@@ -2,8 +2,8 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
 import math
@@ -15,7 +15,7 @@ class Particle:
         # self.imu_noise    = 0.0 # yaw_noise (don;t)
         # self.usbl_noise   = 0.0 # = USBL std
 
-        self.parentID = ""  # '0-0'/'0-1'/'0-2'/... so can string split and determine encoded location
+        self.parentID = ""  # '0-0'/'0-1'/'0-2'/... so can string split and determine encoded location # noqa
         self.childIDList = []  # ['1-0','1-1','1'3']
 
         # self.weight = 1 # [] 0
@@ -23,7 +23,7 @@ class Particle:
         self.averaged_error = 0
         self.error = []  # 0
 
-        # self.trajectoryNrEsTs = [] # [[easting, northing, timestamp], [easting, northing, timestamp], ...] # write a function to plot nice graphs for visualization purposes (for you and publishing)
+        # self.trajectoryNrEsTs = [] # [[easting, northing, timestamp], [easting, northing, timestamp], ...] # write a function to plot nice graphs for visualization purposes (for you and publishing) # noqa
         self.eastings = []
         self.northings = []
         self.timestamps = []
@@ -64,16 +64,15 @@ class Particle:
         self.yaw.append(new_yaw)
         self.altitude.append(new_altitude)
         self.depth.append(new_depth)
-        # self.trajectoryNrEsTs.append([new_easting, new_northing, new_timestamp])
 
     # def set_error(self, measurement):
-    #     self.error = math.sqrt((self.eastings[0] - measurement.eastings) ** 2 + (self.northings[0] - measurement.northings) ** 2)
+    #     self.error = math.sqrt((self.eastings[0] - measurement.eastings) ** 2 + (self.northings[0] - measurement.northings) ** 2) # noqa
 
     def set_weight(self, new_weight):
         self.weight = new_weight
 
     def Gaussian(self, mu, sigma, x):
-        # calculates the probability of x for 1-dim Gaussian with mean mu and sigma (standard deviation)
+        # calculates the probability of x for 1-dim Gaussian with mean mu and sigma (standard deviation) # noqa
         return math.exp(-((mu - x) ** 2) / (sigma ** 2) / 2.0) / math.sqrt(
             2.0 * math.pi * (sigma ** 2)
         )
@@ -86,11 +85,11 @@ class Particle:
             + (self.northings[-1] - measurement.northings) ** 2
         )
         self.error.append(dist)
-        # prob *= self.Gaussian(0, measurement.northings_std, dist) # it should be there (mu = dist = 0), but measurement says its there (x = dist = particle - measurement), with some uncertainty (std = sense_noise)
+        # prob *= self.Gaussian(0, measurement.northings_std, dist) # it should be there (mu = dist = 0), but measurement says its there (x = dist = particle - measurement), with some uncertainty (std = sense_noise) # noqa
         prob *= self.Gaussian(0, measurement_error, dist)
         #        for i in range(len(landmarks)):
-        #            dist = math.sqrt((self.x - landmarks[i][0]) ** 2 + (self.y - landmarks[i][1]) ** 2)
-        #            prob *= self.Gaussian(dist, self.sense_noise, measurement[i])
+        #            dist = math.sqrt((self.x - landmarks[i][0]) ** 2 + (self.y - landmarks[i][1]) ** 2) # noqa
+        #            prob *= self.Gaussian(dist, self.sense_noise, measurement[i]) # noqa
         return prob
 
     def __repr__(self):

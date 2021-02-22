@@ -2,20 +2,20 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
-from auv_nav.parse import parse
-from auv_nav.process import process
-from auv_nav.export import export
-from auv_nav.import_data import import_data
+import argparse
+import os
+import sys
 
 from oplab import Console
 
-import sys
-import argparse
-import os
+from auv_nav.export import export
+from auv_nav.import_data import import_data
+from auv_nav.parse import parse
+from auv_nav.process import process
 
 
 def main(args=None):
@@ -32,7 +32,7 @@ def main(args=None):
     """
 
     # enable VT100 Escape Sequence for WINDOWS 10 for Console outputs
-    # https://stackoverflow.com/questions/16755142/how-to-make-win32-console-recognize-ansi-vt100-escape-sequences
+    # https://stackoverflow.com/questions/16755142/how-to-make-win32-console-recognize-ansi-vt100-escape-sequences # noqa
     os.system("")
     Console.banner()
     Console.info("Running auv_nav version " + str(Console.get_version()))
@@ -72,7 +72,8 @@ def main(args=None):
         "--merge",
         dest="merge",
         action="store_true",
-        help="Merge multiple dives into a single JSON file. Requires more than one dive PATH.",
+        help="Merge multiple dives into a single JSON file. Requires more \
+        than one dive PATH.",
     )
     subparser_parse.set_defaults(func=call_parse_data)
 
@@ -137,13 +138,16 @@ def main(args=None):
         target.",
     )
     subparser_export.add_argument(
-        "path", default=".", help="Dive folder to export.",
+        "path",
+        default=".",
+        help="Dive folder to export.",
     )
     subparser_export.add_argument(
         "-i",
         "--input",
         dest="input",
-        help="Input pose file (e.g. stereo_pose_est.data) to import camera positions from.",
+        help="Input pose file (e.g. stereo_pose_est.data) to import camera \
+        positions from.",
     )
     subparser_export.add_argument(
         "-f",
@@ -179,7 +183,9 @@ def main(args=None):
         target.",
     )
     subparser_import.add_argument(
-        "path", default=".", help="Dive folder to import.",
+        "path",
+        default=".",
+        help="Dive folder to import.",
     )
     subparser_import.add_argument(
         "-f",
@@ -217,7 +223,13 @@ def call_process_data(args):
 
 
 def call_export_data(args):
-    export(args.path, args.input, args.format, args.start_datetime, args.end_datetime)
+    export(
+        args.path,
+        args.input,
+        args.format,
+        args.start_datetime,
+        args.end_datetime,
+    )
 
 
 def call_import_data(args):

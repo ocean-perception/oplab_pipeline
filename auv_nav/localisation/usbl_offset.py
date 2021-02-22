@@ -2,8 +2,8 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
 # Scripts to shift deadreackoning data to a single USBL position. This should
@@ -29,9 +29,6 @@ def usbl_offset(
     start_dead_reckoning = 0
     start_usbl = 0
 
-    end_dead_reckoning = 0
-    end_usbl = 0
-
     threshold = 20  # what to consider a big jump in time
     exit_flag = False
 
@@ -42,15 +39,18 @@ def usbl_offset(
             if start_usbl + 1 >= len(time_usbl):
                 break
             if (
-                time_dead_reckoning[start_dead_reckoning] - time_usbl[start_usbl + 1]
+                time_dead_reckoning[start_dead_reckoning]
+                - time_usbl[start_usbl + 1]
                 > 0
             ):
                 start_usbl = start_usbl + 1
             else:
                 if (
-                    time_dead_reckoning[start_dead_reckoning] - time_usbl[start_usbl]
+                    time_dead_reckoning[start_dead_reckoning]
+                    - time_usbl[start_usbl]
                     < threshold
-                    and time_usbl[start_usbl + 1] - time_usbl[start_usbl] < threshold
+                    and time_usbl[start_usbl + 1] - time_usbl[start_usbl]
+                    < threshold
                 ):
                     start_usbl += 1
                     exit_flag = True
@@ -59,14 +59,20 @@ def usbl_offset(
     else:
         # print('usbl starts after dead_reckoning')
         while exit_flag is False:
-            if time_dead_reckoning[start_dead_reckoning] - time_usbl[start_usbl] < 0:
+            if (
+                time_dead_reckoning[start_dead_reckoning]
+                - time_usbl[start_usbl]
+                < 0
+            ):
                 start_dead_reckoning = start_dead_reckoning + 1
 
             else:
                 if (
-                    time_dead_reckoning[start_dead_reckoning] - time_usbl[start_usbl]
+                    time_dead_reckoning[start_dead_reckoning]
+                    - time_usbl[start_usbl]
                     < threshold
-                    and time_usbl[start_usbl + 1] - time_usbl[start_usbl] < threshold
+                    and time_usbl[start_usbl + 1] - time_usbl[start_usbl]
+                    < threshold
                 ):
                     start_usbl += 1
                     exit_flag = True
@@ -80,7 +86,10 @@ def usbl_offset(
         if start_dead_reckoning + 1 >= len(time_dead_reckoning):
             break
         try:
-            while time_dead_reckoning[start_dead_reckoning + 1] < time_usbl[j_usbl]:
+            while (
+                time_dead_reckoning[start_dead_reckoning + 1]
+                < time_usbl[j_usbl]
+            ):
                 start_dead_reckoning += 1
         except IndexError:
             break
@@ -105,11 +114,14 @@ def usbl_offset(
 
     northings_offset = sum(
         northings_usbl[
-            start_usbl : start_usbl + len(northings_dead_reckoning_interpolated)
+            start_usbl : start_usbl  # noqa
+            + len(northings_dead_reckoning_interpolated)
         ]
     ) / len(
         northings_usbl[
-            start_usbl : (start_usbl + len(northings_dead_reckoning_interpolated))
+            start_usbl : (  # noqa
+                start_usbl + len(northings_dead_reckoning_interpolated)
+            )
         ]
     ) - sum(
         northings_dead_reckoning_interpolated
@@ -118,11 +130,14 @@ def usbl_offset(
     )
     eastings_offset = sum(
         eastings_usbl[
-            start_usbl : (start_usbl + len(eastings_dead_reckoning_interpolated))
+            start_usbl : (  # noqa
+                start_usbl + len(eastings_dead_reckoning_interpolated)
+            )
         ]
     ) / len(
         eastings_usbl[
-            start_usbl : start_usbl + len(eastings_dead_reckoning_interpolated)
+            start_usbl : start_usbl  # noqa
+            + len(eastings_dead_reckoning_interpolated)
         ]
     ) - sum(
         eastings_dead_reckoning_interpolated

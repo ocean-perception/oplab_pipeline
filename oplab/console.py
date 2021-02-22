@@ -2,18 +2,17 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
-
-"""Utility class to print messages to the console
-"""
-
 import socket
 import getpass
 import datetime
 import pkg_resources
 import timeit
+
+"""Utility class to print messages to the console
+"""
 
 
 class BColors:
@@ -29,14 +28,21 @@ class BColors:
 
 class CodeTimer:
     def __init__(self, name=None):
-        self.name = " '"  + name + "'" if name else ''
+        self.name = " '" + name + "'" if name else ""
 
     def __enter__(self):
         self.start = timeit.default_timer()
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.took = (timeit.default_timer() - self.start) * 1000.0
-        print(BColors.OKBLUE + self.name + ' took ▸ ' + BColors.ENDC + str(self.took) + ' ms')
+        print(
+            BColors.OKBLUE
+            + self.name
+            + " took ▸ "
+            + BColors.ENDC
+            + str(self.took)
+            + " ms"
+        )
 
 
 # Singleton class to wrap the console output
@@ -47,7 +53,10 @@ class Console:
     def warn(*args, **kwargs) -> None:
         """Print a warning message"""
         print(
-            BColors.WARNING + "WARN ▸ " + BColors.ENDC + " ".join(map(str, args)),
+            BColors.WARNING
+            + "WARN ▸ "
+            + BColors.ENDC
+            + " ".join(map(str, args)),
             **kwargs
         )
 
@@ -55,7 +64,10 @@ class Console:
     def error(*args, **kwargs) -> None:
         """Print and error message"""
         print(
-            BColors.FAIL + "ERROR ▸ " + BColors.ENDC + " ".join(map(str, args)),
+            BColors.FAIL
+            + "ERROR ▸ "
+            + BColors.ENDC
+            + " ".join(map(str, args)),
             **kwargs
         )
 
@@ -63,7 +75,10 @@ class Console:
     def info(*args, **kwargs) -> None:
         """Print and information message"""
         print(
-            BColors.OKBLUE + "INFO ▸ " + BColors.ENDC + " ".join(map(str, args)),
+            BColors.OKBLUE
+            + "INFO ▸ "
+            + BColors.ENDC
+            + " ".join(map(str, args)),
             **kwargs
         )
 
@@ -86,7 +101,9 @@ class Console:
     def banner() -> None:
         """Displays Ocean Perception banner and copyright"""
         print(" ")
-        print(BColors.OKBLUE + "     ● ● " + BColors.ENDC + " Ocean Perception")
+        print(
+            BColors.OKBLUE + "     ● ● " + BColors.ENDC + " Ocean Perception"
+        )
         print(
             BColors.OKBLUE
             + "     ● "
@@ -156,10 +173,12 @@ class Console:
 
     @staticmethod
     def write_metadata():
-        """Writes all metadata to a string. Useful to write on processed files or configurations.
+        """Writes all metadata to a string. Useful to write on processed
+        files or configurations.
 
         Returns:
-            str -- String containing computer metadata (username, host, date and software version)
+            str -- String containing computer metadata (username, host, date
+            and software version)
         """
         msg = (
             'date: "'

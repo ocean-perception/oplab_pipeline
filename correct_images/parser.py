@@ -2,17 +2,18 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
-import yaml
 import numpy as np
+import yaml
 from oplab import Console
 
 
 class ColourCorrection:
-    """ class ColourCorrection creates an object for generic colour correction parameters from correct_images.yaml file
+    """class ColourCorrection creates an object for generic colour correction
+    parameters from correct_images.yaml file
 
     Attributes
     -----------
@@ -21,9 +22,11 @@ class ColourCorrection:
     metric_path : string
         path to the file containing distance values
     altitude_max : int
-        maximum permissible height for an image for use in calculating attenuation coefficients
+        maximum permissible height for an image for use in calculating
+        attenuation coefficients
     altitude_min : int
-        minimum permissible height for an image for use in calculating attenuation coefficients
+        minimum permissible height for an image for use in calculating
+        attenuation coefficients
     smoothing : string
         method of sampling intensity values
     window_size : int
@@ -33,7 +36,7 @@ class ColourCorrection:
     """
 
     def __init__(self, node):
-        """ __init__ is the constructor function
+        """__init__ is the constructor function
 
         Parameters
         -----------
@@ -50,7 +53,8 @@ class ColourCorrection:
 
 
 class CameraConfig:
-    """ class Config creates an object for camera specific configuration parameters from correct_images.yaml file
+    """class Config creates an object for camera specific configuration
+    parameters from correct_images.yaml file
 
     Attributes
     -----------
@@ -69,7 +73,7 @@ class CameraConfig:
     """
 
     def __init__(self, node):
-        """ __init__ is the constructor function
+        """__init__ is the constructor function
 
         Parameters
         -----------
@@ -79,23 +83,35 @@ class CameraConfig:
 
         camera_name = node["camera_name"]
 
-        imagefilelist_parse = 'none'
-        imagefilelist_process = 'none'
-        if 'image_file_list' in node:
-            imagefilelist_parse = node.get("image_file_list", {}).get("parse", 'none')
-            imagefilelist_process = node.get("image_file_list", {}).get("process", 'none')
+        imagefilelist_parse = "none"
+        imagefilelist_process = "none"
+        if "image_file_list" in node:
+            imagefilelist_parse = node.get("image_file_list", {}).get(
+                "parse", "none"
+            )
+            imagefilelist_process = node.get("image_file_list", {}).get(
+                "process", "none"
+            )
 
-        brightness = 30.
-        contrast = 3.
-        if 'colour_correction' in node:
-            brightness = node.get("colour_correction", {}).get("brightness", brightness)
-            contrast = node.get("colour_correction", {}).get("contrast", contrast)
+        brightness = 30.0
+        contrast = 3.0
+        if "colour_correction" in node:
+            brightness = node.get("colour_correction", {}).get(
+                "brightness", brightness
+            )
+            contrast = node.get("colour_correction", {}).get(
+                "contrast", contrast
+            )
 
         subtractors_rgb = np.array([0, 0, 0])
         color_gain_matrix_rgb = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
-        if 'manual_balance' in node:
-            subtractors_rgb = node.get("manual_balance", {}).get("subtractors_rgb", subtractors_rgb)
-            color_gain_matrix_rgb = node.get("manual_balance", {}).get("colour_gain_matrix_rgb", color_gain_matrix_rgb)
+        if "manual_balance" in node:
+            subtractors_rgb = node.get("manual_balance", {}).get(
+                "subtractors_rgb", subtractors_rgb
+            )
+            color_gain_matrix_rgb = node.get("manual_balance", {}).get(
+                "colour_gain_matrix_rgb", color_gain_matrix_rgb
+            )
 
         self.camera_name = camera_name
         self.imagefilelist_parse = imagefilelist_parse
@@ -108,18 +124,19 @@ class CameraConfig:
 
 class CameraConfigs:
 
-    """ class OutputSettings creates an object for output_settings parameters from the correct_images.yaml file
-    
+    """class OutputSettings creates an object for output_settings parameters
+    from the correct_images.yaml file
+
     Attributes
     ----------
     camera_configs : Config object
-        object stores camera specific configuration parameters 
+        object stores camera specific configuration parameters
     num_cameras : int
         number of cameras in the system
     """
 
     def __init__(self, node):
-        """ __init__ is the constructor function
+        """__init__ is the constructor function
 
         Parameters
         -----------
@@ -134,8 +151,9 @@ class CameraConfigs:
 
 class OutputSettings:
 
-    """ class OutputSettings creates an object for output_settings parameters from the correct_images.yaml file
-    
+    """class OutputSettings creates an object for output_settings parameters
+    from the correct_images.yaml file
+
     Attributes
     ----------
     undistort_flag : bool
@@ -146,7 +164,7 @@ class OutputSettings:
 
     def __init__(self, node):
 
-        """ __init__ is the constructor function
+        """__init__ is the constructor function
 
         Parameters
         -----------
@@ -158,10 +176,7 @@ class OutputSettings:
         self.compression_parameter = node["compression_parameter"]
 
 
-
-
 class RescaleImage:
-
     def __init__(
         self,
         camera_name,
@@ -182,10 +197,9 @@ class RescaleImage:
         self.output_folder = output_folder
 
 
-
 class CameraRescale:
     def __init__(self, node):
-        """ __init__ is the constructor function
+        """__init__ is the constructor function
 
         Parameters
         -----------
@@ -209,8 +223,8 @@ class CameraRescale:
 
 
 class CorrectConfig:
-    """ class CorrectConfig creates an object from the correct_images.yaml file
-    
+    """class CorrectConfig creates an object from the correct_images.yaml file
+
     Attributes
     ----------
     version : str
@@ -220,14 +234,15 @@ class CorrectConfig:
     color_correction : ColourCorrection Object
         object contains parameters for colour based corrections
     configs : CameraConfigs Object
-        object contains camera specific configuration parameters 
+        object contains camera specific configuration parameters
     output_settings : OutputSettings Object
         object contains parameters for output settings
 
     """
+
     def __init__(self, filename=None):
 
-        """ __init__ is the constructor function
+        """__init__ is the constructor function
 
         Parameters
         -----------
@@ -243,21 +258,24 @@ class CorrectConfig:
         if "version" not in data:
             Console.error(
                 "It seems you are using an old correct_images.yaml.",
-                "You will have to delete it and run this software again."
+                "You will have to delete it and run this software again.",
             )
             Console.error("Delete the file with:")
             Console.error("    rm ", filename)
             Console.quit("Wrong correct_images.yaml format")
         self.version = data["version"]
 
-        valid_methods = ['manual_balance',
-                         'colour_correction']
+        valid_methods = ["manual_balance", "colour_correction"]
         self.method = data["method"]
 
         if self.method not in valid_methods:
-            Console.quit("The method requested (", self.method,
-                         ") is not supported or implemented. The valid methods",
-                         "are:", ' '.join(m for m in valid_methods))
+            Console.quit(
+                "The method requested (",
+                self.method,
+                ") is not supported or implemented. The valid methods",
+                "are:",
+                " ".join(m for m in valid_methods),
+            )
 
         node = data["colour_correction"]
         self.color_correction = ColourCorrection(node)

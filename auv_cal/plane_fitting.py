@@ -6,10 +6,10 @@ Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
 
+import matplotlib.pyplot as plt
 import numpy as np
 from numpy.linalg import norm
 from scipy.optimize import least_squares
-import matplotlib.pyplot as plt
 
 
 class Plane:
@@ -49,7 +49,9 @@ class Plane:
             residuals[i] = self.distance(p)
         return residuals
 
-    def fit(self, points, min_distance_inliers, verbose=True, output_inliers=True):
+    def fit(
+        self, points, min_distance_inliers, verbose=True, output_inliers=True
+    ):
         """Fit plane to points
 
         Parameters
@@ -110,7 +112,7 @@ class Plane:
         Parameters
         ----------
         points : list of ndarray
-            Each ndarray is a vector containing the x,y,z cooridnates of 1 point
+            Each array is a vector containing the x,y,z coordinates of 1 point
 
         Returns
         -------

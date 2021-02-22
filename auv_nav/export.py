@@ -2,50 +2,44 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
-from auv_nav.tools.time_conversions import string_to_epoch
-from auv_nav.tools.time_conversions import epoch_from_json
-from auv_nav.tools.time_conversions import epoch_to_datetime
-from auv_nav.tools.latlon_wgs84 import metres_to_latlon
-from auv_nav.tools.body_to_inertial import body_to_inertial
-from auv_nav.tools.csv_tools import write_csv
-from auv_nav.tools.csv_tools import camera_csv
-from auv_nav.tools.csv_tools import other_data_csv
-from auv_nav.tools.interpolate import interpolate_camera
-from auv_nav.parsers.parse_acfr_stereo_pose import AcfrStereoPoseFile
-from auv_nav.sensors import BodyVelocity, InertialVelocity
-from auv_nav.sensors import Altitude, Depth, Usbl, Orientation
-from auv_nav.sensors import Other, Camera
-from auv_nav.sensors import SyncedOrientationBodyVelocity
-from oplab import get_config_folder
-from oplab import get_processed_folder
-from oplab import valid_dive
-from oplab import Vehicle
-from oplab import Mission
-from oplab import Console
+import json
+from pathlib import Path
+from oplab import (
+    Console,
+    Mission,
+    Vehicle,
+    get_processed_folder,
+    valid_dive,
+)
 
 from auv_nav.converters import AcfrExporter
-
-
-# Import librarys
-import yaml
-import json
-import time
-import copy
-import math
-
-from pathlib import Path
-import numpy as np
+from auv_nav.parsers.parse_acfr_stereo_pose import AcfrStereoPoseFile
+from auv_nav.sensors import (
+    Altitude,
+    BodyVelocity,
+    Camera,
+    Depth,
+    InertialVelocity,
+    Orientation,
+    Usbl,
+)
+from auv_nav.tools.interpolate import interpolate_camera
+from auv_nav.tools.time_conversions import (
+    epoch_from_json,
+    epoch_to_datetime,
+    string_to_epoch,
+)
 
 
 def export(filepath, input_file, ftype, start_datetime, finish_datetime):
     Console.info("Requested data conversion to {}".format(ftype))
 
     filepath = Path(filepath).resolve()
-    
+
     camera1_list = []
     camera2_list = []
     interpolate_laser = False
@@ -57,11 +51,19 @@ def export(filepath, input_file, ftype, start_datetime, finish_datetime):
             Console.info("Processing ACFR stereo pose estimation file...")
             s = AcfrStereoPoseFile(input_file)
             camera1_list, camera2_list = s.convert()
-            file1 = Path("csv/acfr/auv_acfr_Cam51707923.csv") # ToDo: use camera name as specified in mission.yaml. Save in subfolder of json_renav folder.
-            file2 = Path("csv/acfr/auv_acfr_Cam51707925.csv") # ToDo: use camera name as specified in mission.yaml. Save in subfolder of json_renav folder.
+            file1 = Path(
+                "csv/acfr/auv_acfr_Cam51707923.csv"
+            )  # ToDo: use camera name as specified in mission.yaml.
+            # Save in subfolder of json_renav folder.
+            file2 = Path(
+                "csv/acfr/auv_acfr_Cam51707925.csv"
+            )  # ToDo: use camera name as specified in mission.yaml.
+            # Save in subfolder of json_renav folder.
             file1.parent.mkdir(parents=True, exist_ok=True)
-            fileout1 = file1.open("w") # ToDo:  Check if file exists and only overwrite if told to do so ('-F').
-            fileout2 = file2.open("w") # ToDo:  Check if file exists and only overwrite if told to do so ('-F').
+            fileout1 = file1.open("w")
+            # ToDo:  Check if file exists and only overwrite if told ('-F').
+            fileout2 = file2.open("w")
+            # ToDo:  Check if file exists and only overwrite if told ('-F').
             fileout1.write(camera1_list[0].write_csv_header())
             fileout2.write(camera1_list[0].write_csv_header())
             for c1, c2 in zip(camera1_list, camera2_list):
@@ -118,9 +120,14 @@ def export(filepath, input_file, ftype, start_datetime, finish_datetime):
 
     if interpolate_laser:
         Console.info("Interpolating laser to ACFR stereo pose data...")
-        file3 = Path("csv/acfr/auv_acfr_LM165.csv") # ToDo: use camera name as specified in mission.yaml. Save in subfolder of json_renav folder.
+        file3 = Path(
+            "csv/acfr/auv_acfr_LM165.csv"
+        )  # ToDo: use camera name as specified in mission.yaml.
+        # Save in subfolder of json_renav folder.
         file3.parent.mkdir(parents=True, exist_ok=True)
-        fileout3 = file3.open("w") # ToDo: Check if file exists and only overwrite if told to do so ('-F')
+        fileout3 = file3.open(
+            "w"
+        )  # ToDo: Check if file exists and only overwrite if told ('-F')
         fileout3.write(camera1_list[0].write_csv_header())
         for i in range(len(parsed_json_data)):
             Console.progress(i, len(parsed_json_data))
@@ -143,12 +150,17 @@ def export(filepath, input_file, ftype, start_datetime, finish_datetime):
     for i in range(len(parsed_json_data)):
         Console.progress(i, len(parsed_json_data))
         epoch_timestamp = parsed_json_data[i]["epoch_timestamp"]
-        if epoch_timestamp >= epoch_start_time and epoch_timestamp <= epoch_finish_time:
+        if (
+            epoch_timestamp >= epoch_start_time
+            and epoch_timestamp <= epoch_finish_time
+        ):
             if "velocity" in parsed_json_data[i]["category"]:
                 if "body" in parsed_json_data[i]["frame"]:
-                    # to check for corrupted data point which have inertial frame data values
+                    # to check for corrupted data point which have inertial
+                    # frame data values
                     if "epoch_timestamp_dvl" in parsed_json_data[i]:
-                        # confirm time stamps of dvl are aligned with main clock (within a second)
+                        # confirm time stamps of dvl are aligned with main
+                        # clock (within a second)
                         if (
                             abs(
                                 parsed_json_data[i]["epoch_timestamp"]
@@ -167,7 +179,9 @@ def export(filepath, input_file, ftype, start_datetime, finish_datetime):
 
             if "orientation" in parsed_json_data[i]["category"]:
                 orientation = Orientation()
-                orientation.from_json(parsed_json_data[i], sensors_std["orientation"])
+                orientation.from_json(
+                    parsed_json_data[i], sensors_std["orientation"]
+                )
                 exporter.add(orientation)
 
             if "depth" in parsed_json_data[i]["category"]:

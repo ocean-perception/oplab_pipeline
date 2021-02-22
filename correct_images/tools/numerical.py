@@ -1,29 +1,38 @@
-from typing import Tuple
-import numpy as np
-from tqdm import trange
-from oplab import Console
-import joblib
+# -*- coding: utf-8 -*-
+"""
+Copyright (c) 2020, University of Southampton
+All rights reserved.
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
+"""
+
 import datetime
-from scipy import optimize
 import math
-from datetime import datetime
-from numba import njit, prange
+from typing import Tuple
+
+import numpy as np
+from numba import njit
+from tqdm import trange
+
 from ..loaders import default
 
 
 class RunningMeanStd:
     __slots__ = ["_mean", "mean2", "_std", "count", "clipping_max"]
+
     def __init__(self, dimensions, clipping_max=250):
         self._mean = np.zeros(dimensions, dtype=np.float32)
         self.mean2 = np.zeros(dimensions, dtype=np.float32)
         self._std = np.zeros(dimensions, dtype=np.float32)
         self.count = 0
         self.clipping_max = clipping_max
-    
+
     def compute(self, image):
         self.count += 1
         # clipping to mean if above threshold
-        image[image > self.clipping_max] = self._mean[image > self.clipping_max]
+        image[image > self.clipping_max] = self._mean[
+            image > self.clipping_max
+        ]
         image = image.astype(np.float32)
         delta = image - self._mean
         self._mean += delta / self.count
@@ -33,9 +42,9 @@ class RunningMeanStd:
     def mean(self):
         if self.count > 1:
             return self._mean
-        else: 
+        else:
             return None
-    
+
     @property
     def std(self):
         if self.count > 1:
@@ -92,26 +101,28 @@ def median_array(data: np.ndarray) -> np.ndarray:
         for c in range(data.shape[3]):
             median_array[:, :, c] = median_array_impl(data[:, :, :, c])
         return median_array
-        
+
+
 @njit
 def median_array_impl(data: np.ndarray) -> np.ndarray:
     [n, a, b] = data.shape
     median_array = np.zeros((a, b), dtype=np.float32)
     for i in range(a):
         for j in range(b):
-            lst = [0]*n
+            lst = [0] * n
             for k in range(n):
                 lst[k] = data[k, i, j]
             s = sorted(lst)
             median = 0
             if n % 2 == 0:
-                for k in range(n//2-1, n//2+1):
+                for k in range(n // 2 - 1, n // 2 + 1):
                     median += s[k]
                 median /= 2.0
             else:
-                median = s[n//2]
+                median = s[n // 2]
             median_array[i, j] = median
     return median_array
+
 
 @njit
 def mean_array(data: np.ndarray) -> np.ndarray:
@@ -119,7 +130,7 @@ def mean_array(data: np.ndarray) -> np.ndarray:
     mean_array = np.zeros((a, b), dtype=np.float32)
     for i in range(a):
         for j in range(b):
-            mean = 0.
+            mean = 0.0
             for k in range(n):
                 count = k + 1
                 new_value = data[k, i, j]
@@ -142,17 +153,17 @@ def mean_std_array(data: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     # https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
     for i in range(a):
         for j in range(b):
-            mean = 0.
-            mean_sq = 0.
+            mean = 0.0
+            mean_sq = 0.0
             for k in range(n):
                 count = k + 1
                 new_value = data[k, i, j]
                 delta = new_value - mean
                 mean += delta / count
                 delta2 = new_value - mean
-                mean_sq += delta*delta2
+                mean_sq += delta * delta2
             mean_array[i, j] = mean
-            std_array[i, j] = math.sqrt(mean_sq/n)
+            std_array[i, j] = math.sqrt(mean_sq / n)
     return mean_array, std_array
 
 
@@ -204,8 +215,9 @@ def image_mean_std_trimmed(data, ratio_trimming=0.2, calculate_std=True):
 
     effective_index = [list(range(0, n))]
 
-    message = "calculating mean and std of images " + datetime.datetime.now().strftime(
-        "%Y-%m-%d %H:%M:%S"
+    message = (
+        "calculating mean and std of images "
+        + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     )
 
     if ratio_trimming <= 0:
@@ -215,7 +227,7 @@ def image_mean_std_trimmed(data, ratio_trimming=0.2, calculate_std=True):
     else:
 
         for idx_a in trange(a, ascii=True, desc=message):
-            results = [None]*b
+            results = [None] * b
             for idx_b in range(b):
                 results[idx_b] = calc_mean_and_std_trimmed(
                     data[effective_index, idx_a, idx_b][0],
@@ -255,10 +267,7 @@ def calc_mean_and_std_trimmed(data, rate_trimming, calc_std=True):
         sorted_values = np.sort(data)
         idx_left_limit = int(len(data) * rate_trimming / 2.0)
         idx_right_limit = int(len(data) * (1.0 - rate_trimming / 2.0))
-        mean, std = mean_std_array(sorted_values[idx_left_limit:idx_right_limit])
+        mean, std = mean_std_array(
+            sorted_values[idx_left_limit:idx_right_limit]
+        )
     return np.array([mean, std])
-
-
-
-
-

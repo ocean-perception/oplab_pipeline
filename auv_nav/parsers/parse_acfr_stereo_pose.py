@@ -2,14 +2,15 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
+
+import math
+from pathlib import Path
 
 from auv_nav import Camera
 from oplab import Console
-from pathlib import Path
-import math
 
 
 class AcfrStereoPose:
@@ -41,18 +42,18 @@ class AcfrStereoPose:
         Parameters
         ----------
         line : a string that contains a line of the document
-            The string should contain 15 items separated by spaces. According to ACFR format, 
+            The string should contain 15 items separated by spaces. According to ACFR format, # noqa
             the items should be:
             1) Pose identifier                   - integer value
             2) Timestamp                         - in seconds
             3) Latitude                          - in degrees
             4) Longitude                         - in degrees
-            5) X position (North)                - in meters, relative to local nav frame
-            6) Y position (East)                 - in meters, relative to local nav frame
-            7) Z position (Depth)                - in meters, relative to local nav frame
-            8) X-axis Euler angle                - in radians, relative to local nav frame
-            9) Y-axis Euler angle                - in radians, relative to local nav frame
-            10) Z-axis Euler angle               - in radians, relative to local nav frame
+            5) X position (North)                - in meters, relative to local nav frame # noqa
+            6) Y position (East)                 - in meters, relative to local nav frame # noqa
+            7) Z position (Depth)                - in meters, relative to local nav frame # noqa
+            8) X-axis Euler angle                - in radians, relative to local nav frame # noqa
+            9) Y-axis Euler angle                - in radians, relative to local nav frame # noqa
+            10) Z-axis Euler angle               - in radians, relative to local nav frame # noqa
             11) Left image name
             12) Right image name
             13) Vehicle altitude                   - in meters
@@ -61,7 +62,9 @@ class AcfrStereoPose:
         """
         parts = line.split()
         if len(parts) != 15:
-            Console.error("The line passed to ACFR stereo pose parser is malformed.")
+            Console.error(
+                "The line passed to ACFR stereo pose parser is malformed."
+            )
         self.id = int(parts[0])
         self.stamp = float(parts[1])
         self.latitude = float(parts[2])
@@ -115,8 +118,7 @@ class AcfrStereoPose:
 
 
 class AcfrStereoPoseFile:
-    """Parse an ACFR stereo pose file
-    """
+    """Parse an ACFR stereo pose file"""
 
     def __init__(self, filename=None):
         self._entries = []
@@ -159,25 +161,25 @@ class AcfrStereoPoseFile:
             c1.longitude = entry.longitude
             """
             Note: The Euler angles correspond to the orientation of the stereo-
-            rig, and do not correspond to the roll, pitch and heading of the 
+            rig, and do not correspond to the roll, pitch and heading of the
             vehicle. The stereo-frame is defined such that the positive Z-axis
-            is along the principal ray of the camera (in the direction the 
+            is along the principal ray of the camera (in the direction the
             camera is pointed), and the X and Y axes are aligned with the image
-            axes. The positive X axis is pointing towards the right of the image,
-            while the positive Y axis points to the bottom of the image. The
-            Euler angles specify the sequence of rotations in XYZ order, that 
-            align the navigation frame axes (North, East, Down) with the stereo
-            frame.
+            axes. The positive X axis is pointing towards the right of the
+            image, while the positive Y axis points to the bottom of the image.
+            The Euler angles specify the sequence of rotations in XYZ order,
+            that align the navigation frame axes (North, East, Down) with the
+            stereo frame.
             """
-            # # Side-by-side stereo 
+            # # Side-by-side stereo
             # c1.roll  = -entry.y_euler_angle
             # c1.pitch = entry.x_euler_angle
             # c1.yaw   = entry.z_euler_angle
 
             # Top-down stereo facing backwards, as in SeaXerocks3 on AE2000
-            c1.roll  =  entry.y_euler_angle
+            c1.roll = entry.y_euler_angle
             c1.pitch = -entry.x_euler_angle
-            c1.yaw   =  entry.z_euler_angle + 90
+            c1.yaw = entry.z_euler_angle + 90
 
             c1.x_velocity = 0
             c1.y_velocity = 0

@@ -1,22 +1,31 @@
-from PIL import Image
+# -*- coding: utf-8 -*-
+"""
+Copyright (c) 2020, University of Southampton
+All rights reserved.
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
+"""
+
+import os
+from pathlib import Path
+
 import imageio
 import numpy as np
-from oplab import get_processed_folder
-from oplab import Console
-from oplab import MonoCamera
-from pathlib import Path
-from tqdm import trange
 import pandas as pd
-import os
+from oplab import Console, MonoCamera, get_processed_folder
+from PIL import Image
+from tqdm import trange
 
 
-def rescale(image_array: np.ndarray, 
-            interpolate_method: str, 
-            target_pixel_size_m: float, 
-            altitude: float, 
-            f_x: float, 
-            f_y: float, 
-            maintain_pixels: bool) -> np.ndarray:
+def rescale(
+    image_array: np.ndarray,
+    interpolate_method: str,
+    target_pixel_size_m: float,
+    altitude: float,
+    f_x: float,
+    f_y: float,
+    maintain_pixels: bool,
+) -> np.ndarray:
     image_shape = image_array.shape
     image_height = image_shape[0]
     image_width = image_shape[1]
@@ -47,13 +56,16 @@ def rescale(image_array: np.ndarray,
 
     if maintain_pixels:
         if vertical_rescale < 1 or horizontal_rescale < 1:
-            size = (int(image_width * horizontal_rescale), int(image_height * vertical_rescale))
+            size = (
+                int(image_width * horizontal_rescale),
+                int(image_height * vertical_rescale),
+            )
             image_rgb = image_rgb.resize(size, resample=method)
             size = (image_width, image_height)
             image_rgb = image_rgb.resize(size, resample=method)
         else:
-            crop_width = int(( 1 / horizontal_rescale) * image_width)
-            crop_height = int(( 1 / vertical_rescale) * image_height)
+            crop_width = int((1 / horizontal_rescale) * image_width)
+            crop_height = int((1 / vertical_rescale) * image_height)
 
             # find crop box dimensions
             box_left = int((image_width - crop_width) / 2)
@@ -69,22 +81,27 @@ def rescale(image_array: np.ndarray,
             size = (image_width, image_height)
             image_rgb = cropped_image.resize(size, resample=method)
     else:
-        size = (int(image_width * horizontal_rescale), int(image_height * vertical_rescale))
+        size = (
+            int(image_width * horizontal_rescale),
+            int(image_height * vertical_rescale),
+        )
         image_rgb = image_rgb.resize(size, resample=method)
 
     image = np.array(image_rgb, dtype=np.uint8)
     return image
 
 
-def rescale_images(imagenames_list,
-                   image_directory,
-                   interpolate_method,
-                   target_pixel_size_m,
-                   dataframe,
-                   output_directory,
-                   f_x,
-                   f_y,
-                   maintain_pixels):
+def rescale_images(
+    imagenames_list,
+    image_directory,
+    interpolate_method,
+    target_pixel_size_m,
+    dataframe,
+    output_directory,
+    f_x,
+    f_y,
+    maintain_pixels,
+):
     Console.info("Rescaling images...")
 
     for idx in trange(len(imagenames_list)):
@@ -92,23 +109,29 @@ def rescale_images(imagenames_list,
         source_image_path = Path(image_directory) / image_name
         output_image_path = Path(output_directory) / image_name
         image_path_list = dataframe["relative_path"]
-        trimmed_path_list = [path for path in image_path_list if Path(path).stem in image_name]
-        trimmed_dataframe = dataframe.loc[dataframe["relative_path"].isin(trimmed_path_list)]
+        trimmed_path_list = [
+            path for path in image_path_list if Path(path).stem in image_name
+        ]
+        trimmed_dataframe = dataframe.loc[
+            dataframe["relative_path"].isin(trimmed_path_list)
+        ]
         altitude = trimmed_dataframe["altitude [m]"]
         if len(altitude) > 0:
             image = imageio.imread(source_image_path).astype("uint8")
             rescaled_image = rescale(
-                image, 
-                interpolate_method, 
-                target_pixel_size_m, 
-                altitude, 
-                f_x, 
-                f_y, 
-                maintain_pixels
+                image,
+                interpolate_method,
+                target_pixel_size_m,
+                altitude,
+                f_x,
+                f_y,
+                maintain_pixels,
             )
             imageio.imwrite(output_image_path, rescaled_image, format="PNG-FI")
         else:
-            Console.warn("Did not get distance values for image: " + image_name)
+            Console.warn(
+                "Did not get distance values for image: " + image_name
+            )
 
 
 def rescale_camera(path, camera_system, camera):
@@ -129,7 +152,10 @@ def rescale_camera(path, camera_system, camera):
     if len(idx) > 0:
         Console.info("Camera found in camera.yaml file...")
     else:
-        Console.warn("Camera not found in camera.yaml file. Please provide a relevant camera.yaml file...")
+        Console.warn(
+            "Camera not found in camera.yaml file. Please provide a relevant \
+            camera.yaml file..."
+        )
         return False
 
     # obtain images to be rescaled
@@ -166,9 +192,20 @@ def rescale_camera(path, camera_system, camera):
     imagenames_list = [
         filename
         for filename in os.listdir(image_path)
-        if filename[-4:] == ".jpg" or filename[-4:] == ".png" or filename[-4:] == ".tif"
+        if filename[-4:] == ".jpg"
+        or filename[-4:] == ".png"
+        or filename[-4:] == ".tif"
     ]
     Console.info("Distance values loaded...")
-    rescale_images(imagenames_list, image_path, interpolate_method, target_pixel_size, dataframe,
-                   output_directory, focal_length_x, focal_length_y, maintain_pixels)
+    rescale_images(
+        imagenames_list,
+        image_path,
+        interpolate_method,
+        target_pixel_size,
+        dataframe,
+        output_directory,
+        focal_length_x,
+        focal_length_y,
+        maintain_pixels,
+    )
     return True

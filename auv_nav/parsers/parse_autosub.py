@@ -2,16 +2,19 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
 import scipy.io as spio
-from auv_nav.sensors import BodyVelocity
-from auv_nav.sensors import Orientation, Depth, Altitude
-from auv_nav.sensors import Category
-from oplab import get_raw_folder
-from oplab import Console
+from auv_nav.sensors import (
+    Altitude,
+    BodyVelocity,
+    Category,
+    Depth,
+    Orientation,
+)
+from oplab import Console, get_raw_folder
 
 
 def loadmat(filename):
@@ -52,7 +55,6 @@ def _todict(matobj):
 
 def parse_autosub(mission, vehicle, category, ftype, outpath):
     # parser meta data
-    class_string = "measurement"
     sensor_string = "autosub"
     category = category
     output_format = ftype
@@ -98,7 +100,7 @@ def parse_autosub(mission, vehicle, category, ftype, outpath):
                 data_list.append(data)
             else:
                 data_list[-1] = data
-            previous_timestamp = body_velocity.epoch_timestamp;
+            previous_timestamp = body_velocity.epoch_timestamp
     if category == Category.ORIENTATION:
         Console.info("... parsing autosub orientation")
         previous_timestamp = 0
@@ -109,7 +111,7 @@ def parse_autosub(mission, vehicle, category, ftype, outpath):
                 data_list.append(data)
             else:
                 data_list[-1] = data
-            previous_timestamp = orientation.epoch_timestamp;
+            previous_timestamp = orientation.epoch_timestamp
     if category == Category.DEPTH:
         Console.info("... parsing autosub depth")
         previous_timestamp = 0
@@ -120,7 +122,7 @@ def parse_autosub(mission, vehicle, category, ftype, outpath):
                 data_list.append(data)
             else:
                 data_list[-1] = data
-            previous_timestamp = depth.epoch_timestamp;
+            previous_timestamp = depth.epoch_timestamp
     if category == Category.ALTITUDE:
         Console.info("... parsing autosub altitude")
         previous_timestamp = 0
@@ -131,5 +133,5 @@ def parse_autosub(mission, vehicle, category, ftype, outpath):
                 data_list.append(data)
             else:
                 data_list[-1] = data
-            previous_timestamp = altitude.epoch_timestamp;
+            previous_timestamp = altitude.epoch_timestamp
     return data_list

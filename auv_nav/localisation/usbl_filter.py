@@ -2,8 +2,8 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
 from auv_nav.tools.interpolate import interpolate
@@ -90,8 +90,8 @@ def usbl_filter(usbl_list, depth_list, sigma_factor, max_auv_speed):
     usbl_filtered_list = []
     Console.info(
         "{} remain of {} USBL measurements after timestamp based filtering "
-            "(eliminating all USBL for which no depth data exists)."
-            .format(len(usbl_list), original_size
+        "(eliminating all USBL for which no depth data exists).".format(
+            len(usbl_list), original_size
         )
     )
 
@@ -128,7 +128,10 @@ def usbl_filter(usbl_list, depth_list, sigma_factor, max_auv_speed):
 
     for i in range(len(depth_interpolated)):
         if depth_filter(
-            usbl_list[i], depth_interpolated[i], depth_std_interpolated[i], sigma_factor
+            usbl_list[i],
+            depth_interpolated[i],
+            depth_std_interpolated[i],
+            sigma_factor,
         ):
             usbl_filtered_list.append(usbl_list[i])
         i += 1
@@ -148,7 +151,9 @@ def usbl_filter(usbl_list, depth_list, sigma_factor, max_auv_speed):
     i = continuity_condition
     n = -continuity_condition
     while i < len(usbl_list) - continuity_condition:
-        if distance_filter(usbl_list[i], usbl_list[i + n], sigma_factor, max_auv_speed):
+        if distance_filter(
+            usbl_list[i], usbl_list[i + n], sigma_factor, max_auv_speed
+        ):
             n += 1
             if n == 0:
                 n += 1

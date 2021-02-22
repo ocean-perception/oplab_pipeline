@@ -2,37 +2,39 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
 
-# this is the main entry point to correct images
-# IMPORT --------------------------------
-# all imports go here
-import os
 import argparse
+import os
+import sys
 from pathlib import Path
 
-from oplab import Console
-from oplab import get_raw_folder
-from oplab import get_config_folder
-from oplab import Mission
-from oplab import CameraSystem
+import imageio
+from oplab import (
+    CameraSystem,
+    Console,
+    Mission,
+    get_config_folder,
+    get_raw_folder,
+)
+
+from correct_images import corrections
 from correct_images.corrector import Corrector
 from correct_images.parser import CorrectConfig
-from correct_images import corrections
-import sys
-import imageio
 
 
 # Main function
 def main(args=None):
     # enable VT100 Escape Sequence for WINDOWS 10 for Console outputs
-    # https://stackoverflow.com/questions/16755142/how-to-make-win32-console-recognize-ansi-vt100-escape-sequences
+    # https://stackoverflow.com/questions/16755142/how-to-make-win32-console-recognize-ansi-vt100-escape-sequences # noqa
     os.system("")
     Console.banner()
-    Console.info("Running correct_images version " + str(Console.get_version()))
+    Console.info(
+        "Running correct_images version " + str(Console.get_version())
+    )
 
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
@@ -42,7 +44,9 @@ def main(args=None):
         "debayer", help="Debayer without correction"
     )
     subparser_debayer.add_argument("path", help="Path to bayer images.")
-    subparser_debayer.add_argument("filetype", help="type of image: raw / tif / tiff")
+    subparser_debayer.add_argument(
+        "filetype", help="type of image: raw / tif / tiff"
+    )
     subparser_debayer.add_argument(
         "-p",
         "--pattern",
@@ -52,18 +56,26 @@ def main(args=None):
     subparser_debayer.add_argument(
         "-i", "--image", default=None, help="Single raw image to test."
     )
-    subparser_debayer.add_argument("-o", "--output", default=".", help="Output folder.")
     subparser_debayer.add_argument(
-        "-o_format", "--output_format", default="png", help="Output image format."
+        "-o", "--output", default=".", help="Output folder."
+    )
+    subparser_debayer.add_argument(
+        "-o_format",
+        "--output_format",
+        default="png",
+        help="Output image format.",
     )
     subparser_debayer.set_defaults(func=call_debayer)
 
     # subparser correct
     subparser_correct = subparsers.add_parser(
         "correct",
-        help="Correct images for attenuation / distortion / gamma and debayering",
+        help="Correct images for attenuation / distortion / gamma and \
+            debayering",
     )
-    subparser_correct.add_argument("path", help="Path to raw directory till dive.")
+    subparser_correct.add_argument(
+        "path", help="Path to raw directory till dive."
+    )
     subparser_correct.add_argument(
         "-F",
         "--Force",
@@ -77,7 +89,9 @@ def main(args=None):
     subparser_parse = subparsers.add_parser(
         "parse", help="Compute the correction parameters"
     )
-    subparser_parse.add_argument("path", help="Path to raw directory till dive.")
+    subparser_parse.add_argument(
+        "path", help="Path to raw directory till dive."
+    )
     subparser_parse.add_argument(
         "-F",
         "--Force",
@@ -91,7 +105,9 @@ def main(args=None):
     subparser_process = subparsers.add_parser(
         "process", help="Process image correction"
     )
-    subparser_process.add_argument("path", help="Path to raw directory till dive.")
+    subparser_process.add_argument(
+        "path", help="Path to raw directory till dive."
+    )
     subparser_process.add_argument(
         "-F",
         "--Force",
@@ -122,7 +138,8 @@ def main(args=None):
 
 
 def call_parse(args):
-    """Perform parsing of configuration yaml files and generate image correction parameters
+    """Perform parsing of configuration yaml files and generate image
+    correction parameters
 
     Parameters
     -----------
@@ -137,7 +154,9 @@ def call_parse(args):
         Console.info("Parsing for camera", camera.name)
 
         if len(camera.image_list) == 0:
-            Console.info("No images found for the camera at the path provided...")
+            Console.info(
+                "No images found for the camera at the path provided..."
+            )
             continue
         else:
             corrector = Corrector(args.force, camera, correct_config, path)
@@ -145,13 +164,14 @@ def call_parse(args):
                 corrector.parse()
 
     Console.info(
-        "Parse completed for all cameras. Please run process to develop corrected images..."
+        "Parse completed for all cameras. Please run process to develop \
+        corrected images..."
     )
-    
+
 
 def call_process(args):
-    """Perform processing on source images using correction parameters generated in parse
-    and outputs corrected images
+    """Perform processing on source images using correction parameters
+    generated in parse and outputs corrected images
 
     Parameters
     -----------
@@ -166,7 +186,9 @@ def call_process(args):
         Console.info("Processing for camera", camera.name)
 
         if len(camera.image_list) == 0:
-            Console.info("No images found for the camera at the path provided...")
+            Console.info(
+                "No images found for the camera at the path provided..."
+            )
             continue
         else:
             corrector = Corrector(args.force, camera, correct_config, path)
@@ -176,7 +198,7 @@ def call_process(args):
 
 
 def call_correct(args):
-    """Perform parse and process in one go. Can be used for small datasets 
+    """Perform parse and process in one go. Can be used for small datasets
 
     Parameters
     -----------
@@ -209,18 +231,16 @@ def call_debayer(args):
     image = args.image
     output_dir = args.output
     output_format = args.output_format
-    corrections.debayer_folder(output_dir,
-                               filetype,
-                               pattern,
-                               output_format,
-                               image,
-                               image_dir)
+    corrections.debayer_folder(
+        output_dir, filetype, pattern, output_format, image, image_dir
+    )
     Console.info("Debayering finished")
 
 
 def load_configuration_and_camera_system(path):
-    """Generate correct_config and camera system objects from input config yaml files
-    
+    """Generate correct_config and camera system objects from input config
+    yaml files
+
     Parameters
     -----------
     path : Path
@@ -244,13 +264,16 @@ def load_configuration_and_camera_system(path):
     mission = Mission(path_mission)
 
     # resolve path to camera.yaml file
-    temp_path = path_raw_folder / 'camera.yaml'
+    temp_path = path_raw_folder / "camera.yaml"
 
     default_file_path_correct_config = None
     camera_yaml_path = None
 
     if not temp_path.exists():
-        Console.info('Not found camera.yaml file in /raw folder...Using default camera.yaml file...')
+        Console.info(
+            "Not found camera.yaml file in /raw folder...Using default \
+            camera.yaml file..."
+        )
         # find out default yaml paths
         root = Path(__file__).resolve().parents[1]
 
@@ -262,7 +285,9 @@ def load_configuration_and_camera_system(path):
         acfr_std_correct_config_file = (
             "correct_images/default_yaml/acfr/correct_images.yaml"
         )
-        sx3_std_correct_config_file = "correct_images/default_yaml/sx3/correct_images.yaml"
+        sx3_std_correct_config_file = (
+            "correct_images/default_yaml/sx3/correct_images.yaml"
+        )
         biocam_std_correct_config_file = (
             "correct_images/default_yaml/biocam/correct_images.yaml"
         )
@@ -272,38 +297,48 @@ def load_configuration_and_camera_system(path):
 
         if mission.image.format == "acfr_standard":
             camera_yaml_path = root / acfr_std_camera_file
-            default_file_path_correct_config = root / acfr_std_correct_config_file
+            default_file_path_correct_config = (
+                root / acfr_std_correct_config_file
+            )
         elif mission.image.format == "seaxerocks_3":
             camera_yaml_path = root / sx3_camera_file
-            default_file_path_correct_config = root / sx3_std_correct_config_file
+            default_file_path_correct_config = (
+                root / sx3_std_correct_config_file
+            )
         elif mission.image.format == "biocam":
             camera_yaml_path = root / biocam_camera_file
-            default_file_path_correct_config = root / biocam_std_correct_config_file
+            default_file_path_correct_config = (
+                root / biocam_std_correct_config_file
+            )
         elif mission.image.format == "hybis":
             camera_yaml_path = root / hybis_camera_file
-            default_file_path_correct_config = root / hybis_std_correct_config_file
+            default_file_path_correct_config = (
+                root / hybis_std_correct_config_file
+            )
         else:
             Console.quit(
-                "Image system in camera.yaml does not match with mission.yaml.",
-                "Provide correct camera.yaml in /raw folder... "
+                "Image system in camera.yaml does not match with mission.yaml",
+                "Provide correct camera.yaml in /raw folder... ",
             )
     else:
-        Console.info('Found camera.yaml file in /raw folder...')
+        Console.info("Found camera.yaml file in /raw folder...")
         camera_yaml_path = temp_path
 
-    # instantiate the camera system and setup cameras from mission and config files / auv_nav
+    # instantiate the camera system and setup cameras from mission and
+    # config files / auv_nav
     camera_system = CameraSystem(camera_yaml_path, path_raw_folder)
     if camera_system.camera_system != mission.image.format:
         Console.quit(
             "Image system in camera.yaml does not match with mission.yaml...",
-            "Provide correct camera.yaml in /raw folder..."
+            "Provide correct camera.yaml in /raw folder...",
         )
 
     # check for correct_config yaml path
     path_correct_images = path_config_folder / "correct_images.yaml"
     if path_correct_images.exists():
         Console.info(
-            "Configuration file correct_images.yaml file found at", path_correct_images
+            "Configuration file correct_images.yaml file found at",
+            path_correct_images,
         )
     else:
         default_file_path_correct_config.copy(path_correct_images)

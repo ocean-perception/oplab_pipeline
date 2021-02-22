@@ -2,58 +2,77 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
-from auv_nav.tools.interpolate import interpolate
-from auv_nav.tools.interpolate import interpolate_sensor_list
-from auv_nav.tools.interpolate import interpolate_altitude
-from auv_nav.tools.time_conversions import string_to_epoch
-from auv_nav.tools.time_conversions import epoch_from_json
-from auv_nav.tools.time_conversions import epoch_to_datetime
-from auv_nav.tools.latlon_wgs84 import metres_to_latlon
-from auv_nav.tools.body_to_inertial import body_to_inertial
-from auv_nav.tools.csv_tools import write_csv, write_sensor_csv, write_sidescan_csv
-from auv_nav.tools.csv_tools import camera_csv
-from auv_nav.tools.csv_tools import other_data_csv
-from auv_nav.tools.csv_tools import spp_csv
-from auv_nav.sensors import BodyVelocity, InertialVelocity
-from auv_nav.sensors import Altitude, Depth, Usbl, Orientation
-from auv_nav.sensors import Tide
-from auv_nav.sensors import Other, Camera
-from auv_nav.sensors import SyncedOrientationBodyVelocity
-from auv_nav.localisation.dead_reckoning import dead_reckoning
-from auv_nav.localisation.usbl_offset import usbl_offset
-from auv_nav.localisation.pf import run_particle_filter
-from auv_nav.localisation.ekf import ExtendedKalmanFilter, Index, save_ekf_to_list, update_camera_list
-from auv_nav.localisation.usbl_filter import usbl_filter
-from auv_nav.plot.plot_process_data import plot_orientation_vs_time
-from auv_nav.plot.plot_process_data import plot_velocity_vs_time
-from auv_nav.plot.plot_process_data import plot_deadreckoning_vs_time
-from auv_nav.plot.plot_process_data import plot_pf_uncertainty
-from auv_nav.plot.plot_process_data import plot_uncertainty
-from auv_nav.plot.plot_process_data import plot_2d_deadreckoning
-from auv_nav.tools.dvl_level_arm import compute_angular_speeds
-from auv_nav.tools.dvl_level_arm import correct_lever_arm
-from oplab import get_config_folder
-from oplab import get_processed_folder
-from oplab import valid_dive
-from oplab import Vehicle
-from oplab import Mission
-from oplab import Console
-from oplab import CodeTimer
-
-# Import librarys
-import yaml
-import json
-import time
 import copy
-import math
+import json
 import threading
+import time
 from pathlib import Path
+
 import numpy as np
 
+# Import libraries
+import yaml
+from oplab import (
+    Console,
+    Mission,
+    Vehicle,
+    get_config_folder,
+    get_processed_folder,
+    valid_dive,
+)
+
+from auv_nav.localisation.dead_reckoning import dead_reckoning
+from auv_nav.localisation.ekf import (
+    ExtendedKalmanFilter,
+    save_ekf_to_list,
+    update_camera_list,
+)
+from auv_nav.localisation.pf import run_particle_filter
+from auv_nav.localisation.usbl_filter import usbl_filter
+from auv_nav.localisation.usbl_offset import usbl_offset
+from auv_nav.plot.plot_process_data import (
+    plot_2d_deadreckoning,
+    plot_deadreckoning_vs_time,
+    plot_orientation_vs_time,
+    plot_pf_uncertainty,
+    plot_uncertainty,
+    plot_velocity_vs_time,
+)
+from auv_nav.sensors import (
+    Altitude,
+    BodyVelocity,
+    Camera,
+    Depth,
+    InertialVelocity,
+    Orientation,
+    Other,
+    SyncedOrientationBodyVelocity,
+    Usbl,
+)
+from auv_nav.tools.body_to_inertial import body_to_inertial
+from auv_nav.tools.csv_tools import (
+    camera_csv,
+    other_data_csv,
+    spp_csv,
+    write_csv,
+    write_sensor_csv,
+    write_sidescan_csv,
+)
+from auv_nav.tools.dvl_level_arm import (
+    compute_angular_speeds,
+    correct_lever_arm,
+)
+from auv_nav.tools.interpolate import interpolate, interpolate_sensor_list
+from auv_nav.tools.latlon_wgs84 import metres_to_latlon
+from auv_nav.tools.time_conversions import (
+    epoch_from_json,
+    epoch_to_datetime,
+    string_to_epoch,
+)
 
 """
 Assumes filename_camera of 1, 2, and 3 contains the image number between the
@@ -96,10 +115,8 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
     camera3_list = []
     camera3_pf_list = []
 
-    # tide placeholder
-    tide_list = []
-
-    # placeholders for interpolated velocity body measurements based on orientation and transformed coordinates
+    # placeholders for interpolated velocity body measurements based on
+    # orientation and transformed coordinates
     dead_reckoning_centre_list = []
     dead_reckoning_dvl_list = []
 
@@ -114,7 +131,8 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
 
     # placeholders for chemical data
     chemical_list = []
-    chemical_pf_list = []
+    # chemical_ekf_list = []
+    # chemical_pf_list = []
 
     # load auv_nav.yaml for particle filter and other setup
     filepath = Path(filepath).resolve()
@@ -125,13 +143,17 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
     # check that it is a valid dive folder
     if not valid_dive(filepath):
         Console.error(
-            "The dive folder supplied does not contain any mission or vehicle YAML files. Is the path correct?"
+            "The dive folder supplied does not contain any mission or vehicle",
+            "YAML files. Is the path correct?",
         )
         Console.quit("Invalid path")
 
-    # check if auv_nav.yaml file exist, if not, generate one with default settings
+    # check if auv_nav.yaml file exist, if not, generate one with default
+    # settings
     if localisation_file.exists():
-        Console.info("Loading existing auv_nav.yaml at {}".format(localisation_file))
+        Console.info(
+            "Loading existing auv_nav.yaml at {}".format(localisation_file)
+        )
     else:
         root = Path(__file__).parents[1]
         default_localisation = root / "auv_nav/default_yaml" / "auv_nav.yaml"
@@ -158,7 +180,9 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
             max_auv_speed = load_localisation["usbl_filter"]["max_auv_speed"]
             sigma_factor = load_localisation["usbl_filter"]["sigma_factor"]
         if "particle_filter" in load_localisation:
-            particle_filter_activate = load_localisation["particle_filter"]["activate"]
+            particle_filter_activate = load_localisation["particle_filter"][
+                "activate"
+            ]
             dvl_noise_sigma_factor = load_localisation["particle_filter"][
                 "dvl_noise_sigma_factor"
             ]
@@ -168,38 +192,44 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
             usbl_noise_sigma_factor = load_localisation["particle_filter"][
                 "usbl_noise_sigma_factor"
             ]
-            particles_number = load_localisation["particle_filter"]["particles_number"]
+            particles_number = load_localisation["particle_filter"][
+                "particles_number"
+            ]
             particles_time_interval = load_localisation["particle_filter"][
                 "particles_plot_time_interval"
             ]
         if "std" in load_localisation:
             sensors_std = load_localisation["std"]
             if "position_xy" not in sensors_std:
-                sensors_std['position_xy'] = sensors_std['usbl']
+                sensors_std["position_xy"] = sensors_std["usbl"]
             if "position_z" not in sensors_std:
-                sensors_std['position_z'] = sensors_std['depth']
+                sensors_std["position_z"] = sensors_std["depth"]
             if "speed" not in sensors_std:
-                sensors_std['speed'] = sensors_std['dvl']
+                sensors_std["speed"] = sensors_std["dvl"]
 
         # Default to use JSON uncertainties
         if "model" not in sensors_std["position_xy"]:
             Console.warn(
-                "No uncertainty model specified for position_xy, defaulting to sensor (JSON)."
+                "No uncertainty model specified for position_xy, defaulting",
+                "to sensor (JSON).",
             )
             sensors_std["position_xy"]["model"] = "sensor"
         if "model" not in sensors_std["speed"]:
             Console.warn(
-                "No uncertainty model specified for speed, defaulting to sensor (JSON)."
+                "No uncertainty model specified for speed, defaulting to",
+                "sensor (JSON).",
             )
             sensors_std["speed"]["model"] = "sensor"
         if "model" not in sensors_std["position_z"]:
             Console.warn(
-                "No uncertainty model specified for Depth, defaulting to sensor (JSON)."
+                "No uncertainty model specified for Depth, defaulting to",
+                "sensor (JSON).",
             )
             sensors_std["position_z"]["model"] = "sensor"
         if "model" not in sensors_std["orientation"]:
             Console.warn(
-                "No uncertainty model specified for Orientation, defaulting to sensor (JSON)."
+                "No uncertainty model specified for Orientation, defaulting",
+                "to sensor (JSON).",
             )
             sensors_std["orientation"]["model"] = "sensor"
         if "ekf" in load_localisation:
@@ -213,7 +243,9 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
             if len(ekf_process_noise_covariance) != 144:
                 d = np.asarray(ekf_process_noise_covariance).reshape((15, 15))
                 ekf_process_noise_covariance = d[0:12, 0:12]
-                d = np.asarray(ekf_initial_estimate_covariance).reshape((15, 15))
+                d = np.asarray(ekf_initial_estimate_covariance).reshape(
+                    (15, 15)
+                )
                 ekf_initial_estimate_covariance = d[0:12, 0:12]
             else:
                 ekf_process_noise_covariance = np.asarray(
@@ -226,49 +258,56 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
             # csv_active
             csv_output_activate = load_localisation["csv_output"]["activate"]
             csv_usbl = load_localisation["csv_output"]["usbl"]
-            csv_dr_auv_centre = load_localisation["csv_output"]["dead_reckoning"][
-                "auv_centre"
-            ]
+            csv_dr_auv_centre = load_localisation["csv_output"][
+                "dead_reckoning"
+            ]["auv_centre"]
             csv_dr_auv_dvl = load_localisation["csv_output"]["dead_reckoning"][
                 "auv_dvl"
             ]
-            csv_dr_camera_1 = load_localisation["csv_output"]["dead_reckoning"][
-                "camera_1"
-            ]
-            csv_dr_camera_2 = load_localisation["csv_output"]["dead_reckoning"][
-                "camera_2"
-            ]
-            csv_dr_camera_3 = load_localisation["csv_output"]["dead_reckoning"][
-                "camera_3"
-            ]
-            csv_dr_chemical = load_localisation["csv_output"]["dead_reckoning"][
-                "chemical"
-            ]
+            csv_dr_camera_1 = load_localisation["csv_output"][
+                "dead_reckoning"
+            ]["camera_1"]
+            csv_dr_camera_2 = load_localisation["csv_output"][
+                "dead_reckoning"
+            ]["camera_2"]
+            csv_dr_camera_3 = load_localisation["csv_output"][
+                "dead_reckoning"
+            ]["camera_3"]
+            csv_dr_chemical = load_localisation["csv_output"][
+                "dead_reckoning"
+            ]["chemical"]
 
-            csv_pf_auv_centre = load_localisation["csv_output"]["particle_filter"][
+            csv_pf_auv_centre = load_localisation["csv_output"][
+                "particle_filter"
+            ]["auv_centre"]
+            csv_pf_auv_dvl = load_localisation["csv_output"][
+                "particle_filter"
+            ]["auv_dvl"]
+            csv_pf_camera_1 = load_localisation["csv_output"][
+                "particle_filter"
+            ]["camera_1"]
+            csv_pf_camera_2 = load_localisation["csv_output"][
+                "particle_filter"
+            ]["camera_2"]
+            csv_pf_camera_3 = load_localisation["csv_output"][
+                "particle_filter"
+            ]["camera_3"]
+            csv_pf_chemical = load_localisation["csv_output"][
+                "particle_filter"
+            ]["chemical"]
+
+            csv_ekf_auv_centre = load_localisation["csv_output"]["ekf"][
                 "auv_centre"
             ]
-            csv_pf_auv_dvl = load_localisation["csv_output"]["particle_filter"][
-                "auv_dvl"
-            ]
-            csv_pf_camera_1 = load_localisation["csv_output"]["particle_filter"][
+            csv_ekf_camera_1 = load_localisation["csv_output"]["ekf"][
                 "camera_1"
             ]
-            csv_pf_camera_2 = load_localisation["csv_output"]["particle_filter"][
+            csv_ekf_camera_2 = load_localisation["csv_output"]["ekf"][
                 "camera_2"
             ]
-            csv_pf_camera_3 = load_localisation["csv_output"]["particle_filter"][
+            csv_ekf_camera_3 = load_localisation["csv_output"]["ekf"][
                 "camera_3"
             ]
-            csv_pf_chemical = load_localisation["csv_output"]["particle_filter"][
-                "chemical"
-            ]
-
-            csv_ekf_auv_centre = load_localisation["csv_output"]["ekf"]["auv_centre"]
-            csv_ekf_camera_1 = load_localisation["csv_output"]["ekf"]["camera_1"]
-            csv_ekf_camera_2 = load_localisation["csv_output"]["ekf"]["camera_2"]
-            csv_ekf_camera_3 = load_localisation["csv_output"]["ekf"]["camera_3"]
-            csv_ekf_chemical = load_localisation["csv_output"]["ekf"]["chemical"]
         else:
             csv_output_activate = False
             Console.warn(
@@ -281,15 +320,20 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
         if "spp_output" in load_localisation:
             # spp_active
             spp_output_activate = load_localisation["spp_output"]["activate"]
-            spp_ekf_auv_centre = load_localisation["spp_output"]["ekf"]["auv_centre"]
-            spp_ekf_camera_1 = load_localisation["spp_output"]["ekf"]["camera_1"]
-            spp_ekf_camera_2 = load_localisation["spp_output"]["ekf"]["camera_2"]
-            spp_ekf_camera_3 = load_localisation["spp_output"]["ekf"]["camera_3"]
-            spp_ekf_chemical = load_localisation["spp_output"]["ekf"]["chemical"]
+            spp_ekf_camera_1 = load_localisation["spp_output"]["ekf"][
+                "camera_1"
+            ]
+            spp_ekf_camera_2 = load_localisation["spp_output"]["ekf"][
+                "camera_2"
+            ]
+            spp_ekf_camera_3 = load_localisation["spp_output"]["ekf"][
+                "camera_3"
+            ]
 
             if spp_output_activate and not ekf_activate:
                 Console.warn(
-                    "SLAM++ will be disabled due to EKF being disabled. Enable EKF to make it work."
+                    "SLAM++ will be disabled due to EKF being disabled.",
+                    "Enable EKF to make it work.",
                 )
 
                 spp_output_activate = False
@@ -304,7 +348,7 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
 
         if "plot_output" in load_localisation:
             plot_output_activate = load_localisation["plot_output"]["activate"]
-            pdf_plot = load_localisation["plot_output"]["pdf_plot"]
+            # pdf_plot = load_localisation["plot_output"]["pdf_plot"]
             html_plot = load_localisation["plot_output"]["html_plot"]
 
     Console.info("Loading vehicle.yaml")
@@ -350,7 +394,9 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
                 vehicle.camera2.heave,
             ]
         else:
-            Console.quit("BioCam format is expected to have a grayscale camera.")
+            Console.quit(
+                "BioCam format is expected to have a grayscale camera."
+            )
 
     chemical_offset = [
         vehicle.chemical.surge,
@@ -383,12 +429,17 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
     # i here is the number of the data packet
     for i in range(len(parsed_json_data)):
         epoch_timestamp = parsed_json_data[i]["epoch_timestamp"]
-        if epoch_timestamp >= epoch_start_time and epoch_timestamp <= epoch_finish_time:
+        if (
+            epoch_timestamp >= epoch_start_time
+            and epoch_timestamp <= epoch_finish_time
+        ):
             if "velocity" in parsed_json_data[i]["category"]:
                 if "body" in parsed_json_data[i]["frame"]:
-                    # to check for corrupted data point which have inertial frame data values
+                    # to check for corrupted data point which have inertial
+                    # frame data values
                     if "epoch_timestamp_dvl" in parsed_json_data[i]:
-                        # confirm time stamps of dvl are aligned with main clock (within a second)
+                        # confirm time stamps of dvl are aligned with main
+                        # clock (within a second)
                         if (
                             abs(
                                 parsed_json_data[i]["epoch_timestamp"]
@@ -407,7 +458,9 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
 
             if "orientation" in parsed_json_data[i]["category"]:
                 orientation = Orientation()
-                orientation.from_json(parsed_json_data[i], sensors_std["orientation"])
+                orientation.from_json(
+                    parsed_json_data[i], sensors_std["orientation"]
+                )
                 orientation_list.append(orientation)
 
             if "depth" in parsed_json_data[i]["category"]:
@@ -464,19 +517,27 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
     elif renavpath.is_dir() and not force_overwite:
         # Check if dataset has already been processed
         Console.error(
-            "It looks like this dataset has already been processed for the specified time span."
+            "It looks like this dataset has already been processed for the",
+            "specified time span.",
         )
-        Console.error("The following directory already exist: {}".format(renavpath))
         Console.error(
-            "To overwrite the contents of this directory rerun auv_nav with the flag -F."
+            "The following directory already exist: {}".format(renavpath)
+        )
+        Console.error(
+            "To overwrite the contents of this directory rerun auv_nav with",
+            "the flag -F.",
         )
         Console.error("Example:   auv_nav process -F PATH")
         Console.quit("auv_nav process would overwrite json_renav files")
 
     Console.info("Parsing has found:")
-    Console.info("\t* Velocity_body: {} elements".format(len(velocity_body_list)))
     Console.info(
-        "\t* Velocity_inertial: {} elements".format(len(velocity_inertial_list))
+        "\t* Velocity_body: {} elements".format(len(velocity_body_list))
+    )
+    Console.info(
+        "\t* Velocity_inertial: {} elements".format(
+            len(velocity_inertial_list)
+        )
     )
     Console.info("\t* Orientation: {} elements".format(len(orientation_list)))
     Console.info("\t* Depth: {} elements".format(len(depth_list)))
@@ -526,13 +587,15 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
         t.start()
         threads.append(t)
 
-    # interpolate to find the appropriate depth to compute seafloor depth for each altitude measurement
+    # interpolate to find the appropriate depth to compute seafloor depth for
+    # each altitude measurement
     j = 0
     non_processed_altitude_index_list = []
     for i in range(len(altitude_list)):
         while (
             j < len(depth_list) - 1
-            and depth_list[j].epoch_timestamp < altitude_list[i].epoch_timestamp
+            and depth_list[j].epoch_timestamp
+            < altitude_list[i].epoch_timestamp
         ):
             j = j + 1
 
@@ -552,13 +615,13 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
 
     non_processed_altitude_index_list.reverse()
     for i in non_processed_altitude_index_list:
-        altitude_list[i].seafloor_depth = altitude_list[i+1].seafloor_depth
-
+        altitude_list[i].seafloor_depth = altitude_list[i + 1].seafloor_depth
 
     # perform usbl_filter
     if usbl_filter_activate:
-        usbl_list_no_dist_filter, usbl_list = usbl_filter(usbl_list,
-            depth_list, sigma_factor, max_auv_speed)
+        usbl_list_no_dist_filter, usbl_list = usbl_filter(
+            usbl_list, depth_list, sigma_factor, max_auv_speed
+        )
         if len(usbl_list) == 0:
             Console.warn("Filtering USBL measurements lead to an empty list. ")
             Console.warn(" * Is USBL reliable?")
@@ -583,7 +646,8 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
         start_interpolate_index += 1
 
     # if start_interpolate_index==0:
-    # do something? because time_orientation may be way before time_velocity_body
+    # do something? because time_orientation may be way before
+    # time_velocity_body
 
     if start_interpolate_index == 1:
         interpolate_remove_flag = True
@@ -591,8 +655,12 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
     # time_velocity_body)):
     for i in range(start_interpolate_index, len(orientation_list)):
 
-        # interpolate to find the appropriate dvl time for the orientation measurements
-        if orientation_list[i].epoch_timestamp > velocity_body_list[-1].epoch_timestamp:
+        # interpolate to find the appropriate dvl time for the orientation
+        # measurements
+        if (
+            orientation_list[i].epoch_timestamp
+            > velocity_body_list[-1].epoch_timestamp
+        ):
             break
 
         while (
@@ -603,7 +671,9 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
             j += 1
 
         dead_reckoning_dvl = SyncedOrientationBodyVelocity()
-        dead_reckoning_dvl.epoch_timestamp = orientation_list[i].epoch_timestamp
+        dead_reckoning_dvl.epoch_timestamp = orientation_list[
+            i
+        ].epoch_timestamp
         dead_reckoning_dvl.roll = orientation_list[i].roll
         dead_reckoning_dvl.pitch = orientation_list[i].pitch
         dead_reckoning_dvl.yaw = orientation_list[i].yaw
@@ -653,17 +723,20 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
             velocity_body_list[j + 1].z_velocity_std,
         )
 
-        linear_speeds = [dead_reckoning_dvl.x_velocity,
-                         dead_reckoning_dvl.y_velocity,
-                         dead_reckoning_dvl.z_velocity]
+        linear_speeds = [
+            dead_reckoning_dvl.x_velocity,
+            dead_reckoning_dvl.y_velocity,
+            dead_reckoning_dvl.z_velocity,
+        ]
         angular_speeds = compute_angular_speeds(orientation_list, i)
-        dvl_pos_on_vehicle = [vehicle.dvl.surge,
-                              vehicle.dvl.sway,
-                              vehicle.dvl.heave]
+        dvl_pos_on_vehicle = [
+            vehicle.dvl.surge,
+            vehicle.dvl.sway,
+            vehicle.dvl.heave,
+        ]
         [vx, vy, vz] = correct_lever_arm(
-            linear_speeds, 
-            angular_speeds, 
-            dvl_pos_on_vehicle)
+            linear_speeds, angular_speeds, dvl_pos_on_vehicle
+        )
         dead_reckoning_dvl.x_velocity = vx
         dead_reckoning_dvl.y_velocity = vy
         dead_reckoning_dvl.z_velocity = vz
@@ -681,7 +754,11 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
         dead_reckoning_dvl.east_velocity = east_velocity
         dead_reckoning_dvl.down_velocity = down_velocity
 
-        [north_velocity_std, east_velocity_std, down_velocity_std] = body_to_inertial(
+        [
+            north_velocity_std,
+            east_velocity_std,
+            down_velocity_std,
+        ] = body_to_inertial(
             orientation_list[i].roll,
             orientation_list[i].pitch,
             orientation_list[i].yaw,
@@ -696,7 +773,8 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
 
         while (
             n < len(altitude_list) - 1
-            and orientation_list[i].epoch_timestamp > altitude_list[n].epoch_timestamp
+            and orientation_list[i].epoch_timestamp
+            > altitude_list[n].epoch_timestamp
         ):
             n += 1
         dead_reckoning_dvl.altitude = interpolate(
@@ -709,7 +787,8 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
 
         while (
             k < len(depth_list) - 1
-            and depth_list[k].epoch_timestamp < orientation_list[i].epoch_timestamp
+            and depth_list[k].epoch_timestamp
+            < orientation_list[i].epoch_timestamp
         ):
             k += 1
         # interpolate to find the appropriate depth for dead_reckoning
@@ -750,7 +829,9 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
             )
 
     # offset sensor to plot origin/centre of vehicle
-    dead_reckoning_centre_list = copy.deepcopy(dead_reckoning_dvl_list)  # [:] #.copy()
+    dead_reckoning_centre_list = copy.deepcopy(
+        dead_reckoning_dvl_list
+    )  # [:] #.copy()
     for i in range(len(dead_reckoning_centre_list)):
         [x_offset, y_offset, a_offset] = body_to_inertial(
             dead_reckoning_centre_list[i].roll,
@@ -782,7 +863,8 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
         del dead_reckoning_dvl_list[0]
         interpolate_remove_flag = False  # reset flag
     Console.info(
-        "Complete interpolation and coordinate transfomations for velocity_body"
+        "Complete interpolation and coordinate transfomations for",
+        "velocity_body",
     )
 
     # perform interpolations of state data to velocity_inertial time stamps
@@ -821,7 +903,10 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
                     orientation_list[j].pitch,
                 )
 
-                if abs(orientation_list[j].yaw - orientation_list[j - 1].yaw) > 180:
+                if (
+                    abs(orientation_list[j].yaw - orientation_list[j - 1].yaw)
+                    > 180
+                ):
                     if orientation_list[j].yaw > orientation_list[j - 1].yaw:
                         velocity_inertial_list[i].yaw = interpolate(
                             velocity_inertial_list[i].epoch_timestamp,
@@ -891,13 +976,17 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
             del velocity_inertial_list[0]
             interpolate_remove_flag = False  # reset flag
         Console.info(
-            "Complete interpolation and coordinate transfomations for velocity_inertial"
+            "Complete interpolation and coordinate transfomations for",
+            "velocity_inertial",
         )
 
     # offset velocity DR by average usbl estimate
     # offset velocity body DR by average usbl estimate
     if len(usbl_list) > 0:
-        [northings_usbl_interpolated, eastings_usbl_interpolated] = usbl_offset(
+        [
+            northings_usbl_interpolated,
+            eastings_usbl_interpolated,
+        ] = usbl_offset(
             [i.epoch_timestamp for i in dead_reckoning_centre_list],
             [i.northings for i in dead_reckoning_centre_list],
             [i.eastings for i in dead_reckoning_centre_list],
@@ -906,8 +995,12 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
             [i.eastings for i in usbl_list],
         )
         for i in range(len(dead_reckoning_centre_list)):
-            dead_reckoning_centre_list[i].northings += northings_usbl_interpolated
-            dead_reckoning_centre_list[i].eastings += eastings_usbl_interpolated
+            dead_reckoning_centre_list[
+                i
+            ].northings += northings_usbl_interpolated
+            dead_reckoning_centre_list[
+                i
+            ].eastings += eastings_usbl_interpolated
             (
                 dead_reckoning_centre_list[i].latitude,
                 dead_reckoning_centre_list[i].longitude,
@@ -932,7 +1025,10 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
 
         # offset velocity inertial DR by average usbl estimate
         if len(velocity_inertial_list) > 0:
-            [northings_usbl_interpolated, eastings_usbl_interpolated] = usbl_offset(
+            [
+                northings_usbl_interpolated,
+                eastings_usbl_interpolated,
+            ] = usbl_offset(
                 [i.epoch_timestamp for i in velocity_inertial_list],
                 [i.northings for i in velocity_inertial_list],
                 [i.eastings for i in velocity_inertial_list],
@@ -941,8 +1037,12 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
                 [i.eastings for i in usbl_list],
             )
             for i in range(len(velocity_inertial_list)):
-                velocity_inertial_list[i].northings += northings_usbl_interpolated
-                velocity_inertial_list[i].eastings += eastings_usbl_interpolated
+                velocity_inertial_list[
+                    i
+                ].northings += northings_usbl_interpolated
+                velocity_inertial_list[
+                    i
+                ].eastings += eastings_usbl_interpolated
                 (
                     velocity_inertial_list[i].latitude,
                     velocity_inertial_list[i].longitude,
@@ -953,7 +1053,9 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
                     velocity_inertial_list[i].northings,
                 )
     else:
-        Console.warn("There are no USBL measurements. Starting DR at origin...")
+        Console.warn(
+            "There are no USBL measurements. Starting DR at origin..."
+        )
 
     # particle filter data fusion of usbl_data and dvl_imu_data
     if particle_filter_activate and len(usbl_list) > 0:
@@ -1012,7 +1114,11 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
             pf_fusion_centre_list[i].latitude = lat
             pf_fusion_centre_list[i].longitude = lon
 
-    origin_offsets = [vehicle.origin.surge, vehicle.origin.sway, vehicle.origin.heave]
+    origin_offsets = [
+        vehicle.origin.surge,
+        vehicle.origin.sway,
+        vehicle.origin.heave,
+    ]
     latlon_reference = [mission.origin.latitude, mission.origin.longitude]
 
     # perform interpolations of state data to camera{1/2/3} time stamps
@@ -1060,13 +1166,13 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
         camera1_pf_list = copy.deepcopy(camera1_list)
         camera2_pf_list = copy.deepcopy(camera2_list)
         camera3_pf_list = copy.deepcopy(camera3_list)
-        chemical_pf_list = copy.deepcopy(chemical_list)
+        # chemical_pf_list = copy.deepcopy(chemical_list)
 
     if ekf_activate:
         camera1_ekf_list = copy.deepcopy(camera1_list)
         camera2_ekf_list = copy.deepcopy(camera2_list)
         camera3_ekf_list = copy.deepcopy(camera3_list)
-        chemical_ekf_list = copy.deepcopy(chemical_list)
+        # chemical_ekf_list = copy.deepcopy(chemical_list)
 
     if len(pf_fusion_centre_list) > 1:
         if len(camera1_pf_list) > 1:
@@ -1142,31 +1248,35 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
         ekf_elapsed_time = ekf_end_time - ekf_start_time
         Console.info("EKF took {} mins".format(ekf_elapsed_time / 60))
         ekf_states = ekf.get_smoothed_result()
-        ekf_list = save_ekf_to_list(ekf_states, mission, vehicle, dead_reckoning_dvl_list)
-
+        ekf_list = save_ekf_to_list(
+            ekf_states, mission, vehicle, dead_reckoning_dvl_list
+        )
 
     if len(camera1_ekf_list) > 0:
         camera1_ekf_list = update_camera_list(
-            camera1_ekf_list, 
-            ekf_list, 
-            origin_offsets, 
-            camera1_offsets, 
-            latlon_reference)
+            camera1_ekf_list,
+            ekf_list,
+            origin_offsets,
+            camera1_offsets,
+            latlon_reference,
+        )
     if len(camera2_ekf_list) > 0:
         camera2_ekf_list = update_camera_list(
-            camera2_ekf_list, 
-            ekf_list, 
-            origin_offsets, 
-            camera2_offsets, 
-            latlon_reference)
+            camera2_ekf_list,
+            ekf_list,
+            origin_offsets,
+            camera2_offsets,
+            latlon_reference,
+        )
     if len(camera3_ekf_list) > 0:
         camera3_ekf_list = update_camera_list(
-            camera3_ekf_list, 
-            ekf_list, 
-            origin_offsets, 
-            camera3_offsets, 
-            latlon_reference)
-        
+            camera3_ekf_list,
+            ekf_list,
+            origin_offsets,
+            camera3_offsets,
+            latlon_reference,
+        )
+
     # perform interpolations of state data to chemical time stamps for both
     # DR and PF
     if len(chemical_list) > 1:
@@ -1203,7 +1313,8 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
                     print("Warning:", e)
 
             t = threading.Thread(
-                target=plot_orientation_vs_time, args=[orientation_list, plotlypath]
+                target=plot_orientation_vs_time,
+                args=[orientation_list, plotlypath],
             )
             t.start()
             threads.append(t)
@@ -1333,21 +1444,36 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
 
         t = threading.Thread(
             target=write_csv,
-            args=[drcsvpath, dead_reckoning_dvl_list, "auv_dr_dvl", csv_dr_auv_dvl],
+            args=[
+                drcsvpath,
+                dead_reckoning_dvl_list,
+                "auv_dr_dvl",
+                csv_dr_auv_dvl,
+            ],
         )
         t.start()
         threads.append(t)
 
         t = threading.Thread(
             target=other_data_csv,
-            args=[chemical_list, "auv_dr_chemical", drcsvpath, csv_dr_chemical],
+            args=[
+                chemical_list,
+                "auv_dr_chemical",
+                drcsvpath,
+                csv_dr_chemical,
+            ],
         )
         t.start()
         threads.append(t)
 
         t = threading.Thread(
             target=write_csv,
-            args=[pfcsvpath, pf_fusion_centre_list, "auv_pf_centre", csv_pf_auv_centre],
+            args=[
+                pfcsvpath,
+                pf_fusion_centre_list,
+                "auv_pf_centre",
+                csv_pf_auv_centre,
+            ],
         )
         t.start()
         threads.append(t)
@@ -1361,7 +1487,12 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
 
         t = threading.Thread(
             target=other_data_csv,
-            args=[chemical_list, "auv_pf_chemical", pfcsvpath, csv_pf_chemical],
+            args=[
+                chemical_list,
+                "auv_pf_chemical",
+                pfcsvpath,
+                csv_pf_chemical,
+            ],
         )
         t.start()
         threads.append(t)
@@ -1375,7 +1506,12 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
 
         t = threading.Thread(
             target=other_data_csv,
-            args=[chemical_list, "auv_ekf_chemical", ekfcsvpath, csv_pf_chemical],
+            args=[
+                chemical_list,
+                "auv_ekf_chemical",
+                ekfcsvpath,
+                csv_pf_chemical,
+            ],
         )
         t.start()
         threads.append(t)
@@ -1506,7 +1642,9 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
                         target=camera_csv,
                         args=[
                             camera3_pf_list,
-                            "auv_pf_" + mission.image.cameras[1].name + "_laser",
+                            "auv_pf_"
+                            + mission.image.cameras[1].name
+                            + "_laser",
                             pfcsvpath,
                             csv_pf_camera_3,
                         ],
@@ -1518,7 +1656,9 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
                         target=camera_csv,
                         args=[
                             camera3_ekf_list,
-                            "auv_ekf_" + mission.image.cameras[1].name + "_laser",
+                            "auv_ekf_"
+                            + mission.image.cameras[1].name
+                            + "_laser",
                             ekfcsvpath,
                             csv_ekf_camera_3,
                         ],
@@ -1553,12 +1693,19 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
         if ekf_activate:
             t = threading.Thread(
                 target=write_sidescan_csv,
-                args=[ekfcsvpath, ekf_list, "auv_ekf_centre_sss", csv_ekf_auv_centre],
+                args=[
+                    ekfcsvpath,
+                    ekf_list,
+                    "auv_ekf_centre_sss",
+                    csv_ekf_auv_centre,
+                ],
             )
             t.start()
             threads.append(t)
     if spp_output_activate and ekf_activate:
-        Console.info("Converting covariance matrices into information matrices...")
+        Console.info(
+            "Converting covariance matrices into information matrices..."
+        )
         for i in range(len(camera1_ekf_list)):
             camera1_ekf_list[i].get_info()
         for i in range(len(camera2_ekf_list)):
@@ -1574,7 +1721,9 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
             camera1_ekf_list[i].roll -= camera1_ekf_list[i + 1].roll
             camera1_ekf_list[i].pitch -= camera1_ekf_list[i + 1].pitch
             camera1_ekf_list[i].yaw -= camera1_ekf_list[i + 1].yaw
-            camera1_ekf_list[i].information = camera1_ekf_list[i + 1].information
+            camera1_ekf_list[i].information = camera1_ekf_list[
+                i + 1
+            ].information
         camera1_ekf_list = camera1_ekf_list[:-1]
 
         t = threading.Thread(

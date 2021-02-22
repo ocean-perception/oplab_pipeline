@@ -2,14 +2,13 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
 from oplab.console import Console
 from pathlib import Path
 import shutil
-from oplab.console import Console
 
 
 def check_exists(p):
@@ -35,7 +34,10 @@ def change_subfolder(path, prior, new):
         if not new_path.exists():
             dummy_path = Path(*parts[:-1])
             Console.info(
-                "The path {} does not exist. I am creating ", "it for you.".format(path)
+                "The path",
+                path,
+                "does not exist. I am creating ",
+                "it for you.",
             )
             dummy_path.mkdir(exist_ok=True, parents=True)
     elif new_path.is_file():

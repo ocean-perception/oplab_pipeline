@@ -2,22 +2,25 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
 import unittest
-from auv_nav.sensors import OutputFormat
-from auv_nav.sensors import BodyVelocity
-from auv_nav.sensors import InertialVelocity
-from auv_nav.sensors import Orientation
-from auv_nav.sensors import Depth
-from auv_nav.sensors import Altitude
-from auv_nav.sensors import Usbl
-from auv_nav.sensors import Camera
-from auv_nav.sensors import Tide
-from auv_nav.sensors import Other
-from auv_nav.sensors import SyncedOrientationBodyVelocity
+
+from auv_nav.sensors import (
+    Altitude,
+    BodyVelocity,
+    Camera,
+    Depth,
+    InertialVelocity,
+    Orientation,
+    Other,
+    OutputFormat,
+    SyncedOrientationBodyVelocity,
+    Tide,
+    Usbl,
+)
 
 
 class TestOutputFormat(unittest.TestCase):
@@ -44,8 +47,6 @@ class TestBodyVelocity(unittest.TestCase):
             "Vnorth0": [10.0],  # mm/s
             "Veast0": [10.0],
             "Vdown0": [10.0],
-            "Verr0": [0.01],
-            "Verr0": [0.01],
             "Verr0": [0.01],
         }
         self.bv.from_autosub(autosub_data, 0)

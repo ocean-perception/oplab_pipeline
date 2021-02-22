@@ -4,9 +4,10 @@ Copyright (c) 2020, University of Southampton
 All rights reserved.
 """
 
+import argparse
 from datetime import datetime
 from pathlib import Path
-import argparse
+
 import numpy as np
 import plotly.graph_objects as go
 from plyfile import PlyData
@@ -172,7 +173,9 @@ def plot_pointcloud_and_planes(pointclouds, planes, plot_path=None):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("ply_file", help="Path to a PLY file containing a point cloud")
+    parser.add_argument(
+        "ply_file", help="Path to a PLY file containing a point cloud"
+    )
     parser.add_argument(
         "-p",
         "--plane",

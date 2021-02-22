@@ -2,31 +2,25 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
-import copy
-import json
-import math
-import time
-from pathlib import Path
+from auv_nav.sensors import (
+    Altitude,
+    BodyVelocity,
+    Camera,
+    Depth,
+    InertialVelocity,
+    Orientation,
+    Other,
+    Usbl,
+)
 
-import numpy as np
-# Import librarys
-import yaml
-from auv_nav.parsers.parse_acfr_stereo_pose import AcfrStereoPoseFile
-from auv_nav.sensors import (Altitude, BodyVelocity, Camera, Depth,
-                             InertialVelocity, Orientation, Other,
-                             SyncedOrientationBodyVelocity, Usbl)
-from auv_nav.tools.body_to_inertial import body_to_inertial
-from auv_nav.tools.csv_tools import camera_csv, other_data_csv, write_csv
-from auv_nav.tools.interpolate import interpolate_camera
-from auv_nav.tools.latlon_wgs84 import metres_to_latlon
-from auv_nav.tools.time_conversions import (epoch_from_json, epoch_to_datetime,
-                                            string_to_epoch)
-from oplab import (Console, Mission, Vehicle, get_config_folder,
-                   get_processed_folder, valid_dive)
+from oplab import (
+    Console,
+    get_processed_folder,
+)
 
 
 class AcfrExporter:
@@ -83,7 +77,9 @@ class AcfrExporter:
         data = None
         if type(measurement) is BodyVelocity:
             if self.rdi_ready():
-                data = measurement.to_acfr(self.rdi_altitude, self.rdi_orientation)
+                data = measurement.to_acfr(
+                    self.rdi_altitude, self.rdi_orientation
+                )
                 self.rdi_orientation = None
                 self.rdi_altitude = None
         elif type(measurement) is InertialVelocity:

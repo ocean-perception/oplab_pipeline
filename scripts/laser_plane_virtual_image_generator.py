@@ -2,23 +2,29 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
-from oplab import StereoCamera
-import yaml
+from math import ceil, floor
 from pathlib import Path
-import numpy as np
+
 import cv2
-from math import floor, ceil
+import numpy as np
+import yaml
+from oplab import StereoCamera
+
+# RANSAC
+from ransac import plane_fitting_ransac
 
 
 def projectPoint(sc, point3d):
     p = np.array([point3d]).reshape(-1, 1, 3)
     z = np.zeros((1, 3), dtype=float)
 
-    left_image_points = cv2.projectPoints(p, z, z, sc.left.P[0:3, 0:3], sc.left.d)[0]
+    left_image_points = cv2.projectPoints(
+        p, z, z, sc.left.P[0:3, 0:3], sc.left.d
+    )[0]
 
     rvec, _ = cv2.Rodrigues(sc.R.T)
     tvec = sc.t
@@ -94,8 +100,12 @@ for alt in altitude:
     print("Altitude: ", alt)
     x_swath = 0.75 * alt
     x = np.linspace(-x_swath, x_swath, int(1.5 * sc.left.image_width))
-    limg = np.zeros((sc.left.image_height, sc.left.image_width), dtype=np.uint8)
-    rimg = np.zeros((sc.left.image_height, sc.left.image_width), dtype=np.uint8)
+    limg = np.zeros(
+        (sc.left.image_height, sc.left.image_width), dtype=np.uint8
+    )
+    rimg = np.zeros(
+        (sc.left.image_height, sc.left.image_width), dtype=np.uint8
+    )
     for i in range(len(x)):
         point3d = [x[i], -laser_plane[3], alt]
         xyzs.append(point3d)
@@ -121,11 +131,11 @@ for alt in altitude:
     cv2.imwrite(rout, rimg)
     count += 1
 
-# RANSAC
-from ransac import plane_fitting_ransac
 
 xyzs = np.array(xyzs)
-m, inliers = plane_fitting_ransac(xyzs, 0.01, 3, len(xyzs) * 0.8, 100, plot=False)
+m, inliers = plane_fitting_ransac(
+    xyzs, 0.01, 3, len(xyzs) * 0.8, 100, plot=False
+)
 scale = 1.0 / m[1]
 print(np.array(m) * scale)
 print("Inliers: ", len(inliers))

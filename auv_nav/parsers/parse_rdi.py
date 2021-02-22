@@ -2,20 +2,16 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
+import calendar
 import math
 from datetime import datetime
-import calendar
-from auv_nav.sensors import BodyVelocity
-from auv_nav.sensors import Orientation
-from auv_nav.sensors import Altitude
-from auv_nav.sensors import Category
-from oplab import Console
-from oplab import get_raw_folder
-from pathlib import Path
+
+from auv_nav.sensors import Altitude, BodyVelocity, Category, Orientation
+from oplab import Console, get_raw_folder
 
 
 def parse_rdi(mission, vehicle, category, ftype, outpath):
@@ -101,7 +97,12 @@ def parse_rdi(mission, vehicle, category, ftype, outpath):
                 second = int(date[10:12])
                 millisecond = float(date[12:14]) * 1e-2
                 date = datetime(
-                    int(year), int(month), int(day), int(hour), int(minute), int(second)
+                    int(year),
+                    int(month),
+                    int(day),
+                    int(hour),
+                    int(minute),
+                    int(second),
                 )
                 stamp = (
                     float(calendar.timegm(date.timetuple()))

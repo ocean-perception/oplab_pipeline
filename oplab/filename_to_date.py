@@ -2,12 +2,11 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
 from pathlib import Path
-import yaml
 from oplab import Console
 from datetime import datetime
 import calendar
@@ -28,7 +27,9 @@ def resolve(filename, folder):
 
 
 class FilenameToDate:
-    def __init__(self, stamp_format: str, filename=None, columns=None, path=None):
+    def __init__(
+        self, stamp_format: str, filename=None, columns=None, path=None
+    ):
         self.stamp_format = stamp_format
         self.df = None
         if path is not None:
@@ -43,7 +44,7 @@ class FilenameToDate:
     def __call__(self, filename: str):
         # Get the name without extension
         filename = Path(filename)
-        if self.stamp_format == 'm':
+        if self.stamp_format == "m":
             modification_time = os.stat(str(filename)).st_mtime
             return modification_time
         else:
