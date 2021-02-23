@@ -65,11 +65,11 @@ def attenuation_correct(
             ) * img_float32[:, :, i_channel]
     else:
         img_float32[:, :] = (
-            gain
+            gain[0]
             / (
-                atn_crr_params[:, :, 0]
-                * np.exp(atn_crr_params[:, :, 1] * altitude)
-                + atn_crr_params[:, :, 2]
+                atn_crr_params[0, :, :, 0]
+                * np.exp(atn_crr_params[0, :, :, 1] * altitude)
+                + atn_crr_params[0, :, :, 2]
             )
         ) * img_float32[:, :]
     return img_float32
