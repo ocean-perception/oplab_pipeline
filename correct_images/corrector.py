@@ -639,7 +639,7 @@ class Corrector:
                     desc="Computing altitude histogram",
                     total=len(hist_bins) - 1,
                 )
-            ) as _:
+            ):
                 joblib.Parallel(n_jobs=2, verbose=0)(
                     joblib.delayed(self.compute_distance_bin)(
                         idxs,
