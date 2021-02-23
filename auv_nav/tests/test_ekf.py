@@ -106,6 +106,7 @@ class TestEkf(unittest.TestCase):
             dr_list,
             usbl_list,
         )
+        ekf.run()
         ekf_states = ekf.get_result()
 
         m = [s.toSyncedOrientationBodyVelocity() for s in ekf_states]

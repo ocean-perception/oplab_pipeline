@@ -768,8 +768,9 @@ class ExtendedKalmanFilter(object):
         self.ekf.set_process_noise_covariance(self.process_noise_covariance)
 
         # Case when no empty list is provided
-        if len(timestamp_list) == 0:
-            timestamp_list = None
+        if timestamp_list is not None:
+            if len(timestamp_list) == 0:
+                timestamp_list = None
 
         timestamp_list_idx = 0
         if timestamp_list is not None:
