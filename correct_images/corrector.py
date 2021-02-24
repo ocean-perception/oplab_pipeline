@@ -513,14 +513,13 @@ class Corrector:
                 self.path_raw / i for i in dataframe["relative_path"].tolist()
             ]
 
-        self.altitude_list = distance_list.copy()
-
-        idx_cond1 = distance_list.index[distance_list > self.altitude_min]
-        idx_cond2 = distance_list.index[distance_list < self.altitude_max]
-        idx_cond = idx_cond1.union(idx_cond2).tolist()
-
-        self.altitude_list = self.altitude_list[idx_cond]
-        self.camera_image_list = [self.camera_image_list[i] for i in idx_cond]
+        altitude_list = distance_list.copy()
+        altitude_list = altitude_list[altitude_list > self.altitude_min]
+        altitude_list = altitude_list[altitude_list < self.altitude_max]
+        self.altitude_list = altitude_list
+        self.camera_image_list = [
+            self.camera_image_list[i] for i in altitude_list.index
+        ]
 
         Console.info(
             len(self.altitude_list),
