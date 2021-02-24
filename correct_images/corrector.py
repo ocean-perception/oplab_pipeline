@@ -676,6 +676,11 @@ class Corrector:
                 self.image_attenuation_parameters,
             )
 
+            corrections.save_attenuation_plots(
+                self.attenuation_parameters_folder,
+                attn=self.image_attenuation_parameters,
+            )
+
             # compute correction gains per channel
             target_altitude = distance_vector.mean()
             Console.info(
@@ -692,6 +697,13 @@ class Corrector:
             # Save correction gains
             np.save(self.correction_gains_filepath, self.correction_gains)
 
+            corrections.save_attenuation_plots(
+                self.attenuation_parameters_folder,
+                gains=self.correction_gains,
+            )
+
+            # Useful if fails, to reload precomputed numpyfiles.
+            # TODO offer as a new step.
             # self.image_attenuation_parameters = np.load(
             #    self.attenuation_params_filepath)
             # self.correction_gains = np.load(self.correction_gains_filepath)
@@ -742,15 +754,11 @@ class Corrector:
             # save parameters for process
             np.save(self.corrected_mean_filepath, image_corrected_mean)
             np.save(self.corrected_std_filepath, image_corrected_std)
-            imageio.imwrite(
-                Path(self.attenuation_parameters_folder)
-                / "image_corrected_mean.png",
-                image_corrected_mean,
-            )
-            imageio.imwrite(
-                Path(self.attenuation_parameters_folder)
-                / "image_corrected_std.png",
-                image_corrected_std,
+
+            corrections.save_attenuation_plots(
+                self.attenuation_parameters_folder,
+                img_mean=image_corrected_mean,
+                img_std=image_corrected_std,
             )
         else:
             Console.info(
@@ -770,6 +778,12 @@ class Corrector:
             imageio.imwrite(
                 Path(self.attenuation_parameters_folder) / "image_raw_std.png",
                 image_raw_std,
+            )
+
+            corrections.save_attenuation_plots(
+                self.attenuation_parameters_folder,
+                img_mean=image_corrected_mean,
+                img_std=image_corrected_std,
             )
 
         Console.info("Correction parameters saved...")
