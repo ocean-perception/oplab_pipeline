@@ -2,14 +2,14 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
+import matplotlib.pyplot as plt
 import numpy as np
+from mpl_toolkits.mplot3d import axes3d  # noqa
 from numpy.linalg import norm
 from scipy.optimize import least_squares
-from mpl_toolkits.mplot3d import axes3d
-import matplotlib.pyplot as plt
 
 
 def rotation_matrix(axis, theta):
@@ -81,11 +81,11 @@ class CircularCone:
     def distance(self, point):
         """Compute distance from point to modelled cone
 
-        The distance from a point :math:`p_i` to a cone with apex :math:`Ap` and 
-        basis :math:`[\\vec{u}, \\vec{n}_1, \\vec{n}_2]`, where :math:`\\vec{u}`
-        is the cone asis is defined by:
+        The distance from a point :math:`p_i` to a cone with apex :math:`Ap`
+        and basis :math:`[\\vec{u}, \\vec{n}_1, \\vec{n}_2]`, where
+        :math:`\\vec{u}` is the cone asis is defined by:
 
-        .. math:: 
+        .. math::
             (p_i - Ap) = \\begin{bmatrix} \\vec{u}, \\vec{n}_1, \\vec{n}_2
             \\end{bmatrix} \\begin{bmatrix} \\alpha \\\\ \\beta \\\\ \\gamma
             \\end{bmatrix}
@@ -152,7 +152,7 @@ class CircularCone:
         print("\t Half angle:", self.theta)
 
     def ray_intersection(self, ray_point, ray_vec):
-        # Source http://lousodrome.net/blog/light/2017/01/03/intersection-of-a-ray-and-a-cone/
+        # Source http://lousodrome.net/blog/light/2017/01/03/intersection-of-a-ray-and-a-cone/  # noqa
         cos2 = np.cos(self.theta) * np.cos(self.theta)
         co = ray_point - self.apex
 

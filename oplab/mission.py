@@ -2,14 +2,11 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
 import yaml
-import sys
-from oplab import get_config_folder
-from oplab import get_raw_folder
 from oplab.console import Console
 
 # Workaround to dump OrderedDict into YAML files
@@ -33,10 +30,13 @@ yaml.add_representer(OrderedDict, represent_ordereddict)
 
 def error_and_exit():
     Console.error(
-        "If you specified a origin frame, check that they match. Otherwise, stick to default frame names:"
+        "If you specified a origin frame, check that they match. Otherwise,",
+        "stick to default frame names:",
     )
     Console.error("sensors: dvl ins depth usbl")
-    Console.error("cameras: use the same name in mission.yaml and in vehicle.yaml")
+    Console.error(
+        "cameras: use the same name in mission.yaml and in vehicle.yaml"
+    )
     Console.quit("Inconsistency between mission.yaml and vehicle.yaml")
 
 
@@ -73,7 +73,9 @@ class CameraEntry:
             self.path = node["path"]
             if "origin" in node:
                 self.origin = node["origin"]
-                Console.info("Using camera " + self.name + " mounted at " + self.origin)
+                Console.info(
+                    "Using camera " + self.name + " mounted at " + self.origin
+                )
 
     def write(self, node):
         node["name"] = self.name
@@ -135,7 +137,8 @@ class ImageEntry(TimeZoneEntry):
             for camera in node["cameras"]:
                 self.cameras.append(CameraEntry(camera))
             if "origin" not in node["cameras"][0]:
-                # Assuming that the camera names in mission.yaml corresponds to the frame names in vehicle.yaml
+                # Assuming that the camera names in mission.yaml corresponds
+                # to the frame names in vehicle.yaml
                 for i, camera in enumerate(self.cameras):
                     camera.origin = camera.name
         else:
@@ -246,8 +249,7 @@ class DefaultEntry(TimeZoneEntry):
 
 
 class Mission:
-    """Mission class that parses and writes mission.yaml
-    """
+    """Mission class that parses and writes mission.yaml"""
 
     def __init__(self, filename=None):
         self.version = 0
@@ -258,6 +260,7 @@ class Mission:
         self.altitude = DefaultEntry()
         self.usbl = DefaultEntry()
         self.tide = DefaultEntry()
+        self.dead_reckoning = DefaultEntry()
         self.image = ImageEntry()
         self.filename = None
 
@@ -272,16 +275,23 @@ class Mission:
             vehicle_stream = vehicle_file.open("r")
             vehicle_data = yaml.safe_load(vehicle_stream)
         except FileNotFoundError:
-            Console.error("The file vehicle.yaml could not be found at the location:")
+            Console.error(
+                "The file vehicle.yaml could not be found at the location:"
+            )
             Console.error(vehicle_file)
             Console.error(
-                "In order to load a mission.yaml file, a corresponding vehicle.yaml files needs to be present in the same folder."
+                "In order to load a mission.yaml file, a corresponding \
+                vehicle.yaml files needs to be present in the same folder."
             )
             Console.quit("vehicle.yaml not provided")
         except PermissionError:
-            Console.error("The file vehicle.yaml could not be opened at the location:")
+            Console.error(
+                "The file vehicle.yaml could not be opened at the location:"
+            )
             Console.error(vehicle_file)
-            Console.error("Please make sure you have the correct access rights.")
+            Console.error(
+                "Please make sure you have the correct access rights."
+            )
             Console.quit("vehicle.yaml not provided")
 
         try:
@@ -298,7 +308,7 @@ class Mission:
                         Console.error(
                             "The velocity sensor mounted at "
                             + self.velocity.origin
-                            + " does not correspond to any frame in vehicle.yaml."
+                            + " does not correspond to any frame in vehicle.yaml."  # noqa
                         )
                         error_and_exit()
                 if "orientation" in data:
@@ -309,7 +319,7 @@ class Mission:
                         Console.error(
                             "The orientation sensor mounted at "
                             + self.orientation.origin
-                            + " does not correspond to any frame in vehicle.yaml."
+                            + " does not correspond to any frame in vehicle.yaml."  # noqa
                         )
                         error_and_exit()
                 if "depth" in data:
@@ -320,7 +330,7 @@ class Mission:
                         Console.error(
                             "The depth sensor mounted at "
                             + self.depth.origin
-                            + " does not correspond to any frame in vehicle.yaml."
+                            + " does not correspond to any frame in vehicle.yaml."  # noqa
                         )
                         error_and_exit()
                 if "altitude" in data:
@@ -331,7 +341,7 @@ class Mission:
                         Console.error(
                             "The altitude sensor mounted at "
                             + self.altitude.origin
-                            + " does not correspond to any frame in vehicle.yaml."
+                            + " does not correspond to any frame in vehicle.yaml."  # noqa
                         )
                         error_and_exit()
                 if "usbl" in data:
@@ -342,12 +352,15 @@ class Mission:
                         Console.error(
                             "The usbl sensor mounted at "
                             + self.usbl.origin
-                            + " does not correspond to any frame in vehicle.yaml."
+                            + " does not correspond to any frame in vehicle.yaml."  # noqa
                         )
                         error_and_exit()
 
                 if "tide" in data:
                     self.tide.load(data["tide"])
+
+                if "dead_reckoning" in data:
+                    self.dead_reckoning.load(data["dead_reckoning"])
 
                 if "image" in data:
                     self.image.load(data["image"], self.version)
@@ -356,18 +369,24 @@ class Mission:
                             Console.error(
                                 "The camera mounted at "
                                 + camera.origin
-                                + " does not correspond to any frame in vehicle.yaml."
+                                + " does not correspond to any frame in vehicle.yaml."  # noqa
                             )
                             error_and_exit()
 
         except FileNotFoundError:
-            Console.error("The file mission.yaml could not be found at the location:")
+            Console.error(
+                "The file mission.yaml could not be found at the location:"
+            )
             Console.error(filename)
             Console.quit("mission.yaml not provided")
         except PermissionError:
-            Console.error("The file mission.yaml could not be opened at the location:")
+            Console.error(
+                "The file mission.yaml could not be opened at the location:"
+            )
             Console.error(filename)
-            Console.error("Please make sure you have the correct access rights.")
+            Console.error(
+                "Please make sure you have the correct access rights."
+            )
             Console.quit("mission.yaml not provided")
 
     def write_metadata(self, node):
@@ -413,7 +432,15 @@ class Mission:
                 if not self.tide.empty():
                     mission_dict["tide"] = OrderedDict()
                     self.tide.write(mission_dict["tide"])
+                if not self.dead_reckoning.empty():
+                    mission_dict["dead_reckoning"] = OrderedDict()
+                    self.dead_reckoning.write(mission_dict["dead_reckoning"])
                 if not self.image.empty():
                     mission_dict["image"] = OrderedDict()
                     self.image.write(mission_dict["image"])
-                yaml.dump(mission_dict, f, allow_unicode=True, default_flow_style=False)
+                yaml.dump(
+                    mission_dict,
+                    f,
+                    allow_unicode=True,
+                    default_flow_style=False,
+                )

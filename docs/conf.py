@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.abspath(".."))
 
 project = "oplab_pipeline"
 copyright = "2020, University of Southampton"
-author = "Miquel Massot, Blair Thornton, Subhra Das, Adrian Bodenmann, Jenny Walker, Jin Lim, David Stanley"
+author = "Miquel Massot, Blair Thornton, Subhra Das, Adrian Bodenmann, Jenny Walker, Jin Lim, David Stanley"  # noqa
 
 
 # -- General configuration ---------------------------------------------------

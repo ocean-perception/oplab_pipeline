@@ -2,15 +2,16 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
-from oplab import Console
-from pathlib import Path
-import pandas as pd
 import time
+from pathlib import Path
+
 import numpy as np
+import pandas as pd
+from oplab import Console
 
 
 def write_csv(csv_filepath, data_list, csv_filename, csv_flag):
@@ -28,9 +29,10 @@ def write_csv(csv_filepath, data_list, csv_filename, csv_flag):
             "roll [deg],pitch [deg],heading [deg],altitude "
             "[m],latitude [deg],longitude [deg]"
             ",vehicle_std_x [m],vehicle_std_y [m],vehicle_std_z [m],"
-            "vehicle_std_roll [deg],vehicle_std_pitch [deg],vehicle_std_yaw [deg],"
-            "vehicle_std_vx [m/s],vehicle_std_vy [m/s],vehicle_std_vz [m/s],"
-            "vehicle_std_vroll [deg/s],vehicle_std_vpitch [deg/s],vehicle_std_vyaw [deg/s]\n"
+            "vehicle_std_roll [deg],vehicle_std_pitch [deg],"
+            "vehicle_std_yaw [deg],vehicle_std_vx [m/s],vehicle_std_vy [m/s],"
+            "vehicle_std_vz [m/s],vehicle_std_vroll [deg/s],"
+            "vehicle_std_vpitch [deg/s],vehicle_std_vyaw [deg/s]\n"
         )
         if len(data_list) > 0:
             with file.open("w") as fileout:
@@ -92,8 +94,10 @@ def write_csv(csv_filepath, data_list, csv_filename, csv_flag):
 
 def write_sidescan_csv(csv_filepath, data_list, csv_filename, csv_flag):
     """
-    Mission Date Time  NorthDeg  EastDeg HeadingDeg  RollDeg  PitchDeg Altitude Depth Speed
-    M150       20190910 093646 56.803696  -7.418816  74.891 -2.757 21.851 92.682 122.245 1.074
+    Mission Date Time  NorthDeg  EastDeg HeadingDeg  RollDeg  PitchDeg
+        Altitude Depth Speed
+    M150       20190910 093646 56.803696  -7.418816  74.891 -2.757 21.851
+        92.682 122.245 1.074
     """
     # check the relvant folders exist and if note create them
 
@@ -105,13 +109,15 @@ def write_sidescan_csv(csv_filepath, data_list, csv_filename, csv_flag):
         Console.info("Writing SSS outputs to {}.txt ...".format(csv_filename))
         file = csv_file / "{}.txt".format(csv_filename)
         str_to_write = ""
-        str_to_write += "#Mission Date Time NorthDeg EastDeg HeadingDeg RollDeg PitchDeg Altitude Depth Speed"
+        str_to_write += "#Mission Date Time NorthDeg EastDeg HeadingDeg \
+            RollDeg PitchDeg Altitude Depth Speed"
         if len(data_list) > 0:
             str_to_write += "\n"
             for i in range(len(data_list)):
                 try:
                     datetime_str = time.strftime(
-                        "%Y%m%d %H%M%S", time.gmtime(data_list[i].epoch_timestamp)
+                        "%Y%m%d %H%M%S",
+                        time.gmtime(data_list[i].epoch_timestamp),
                     )
 
                     str_to_write += (
@@ -222,10 +228,10 @@ def spp_csv(camera_list, camera_name, csv_filepath, csv_flag):
                         inf[60:72] = j
 
                         for i in range(6):
-                            # Of the remaining 6x12 elements, half have unwanted
-                            # secondary variables (the latter half of each
-                            # primary variables chain of elements) and can be
-                            # deleted. Duplicated elements (due to symmetry)
+                            # Of the remaining 6x12 elements, half have
+                            # unwanted secondary variables (the latter half of
+                            # each primary variables chain of elements) and can
+                            # be deleted. Duplicated elements (due to symmetry)
                             # can also be deleted.
                             inf += inf[i:6]
                             inf = inf[12:]
@@ -250,35 +256,35 @@ def camera_csv(camera_list, camera_name, csv_filepath, csv_flag):
 
         Console.info("Writing outputs to {}.csv ...".format(camera_name))
         file = csv_file / "{}.csv".format(camera_name)
-        covariance_file = csv_file / '{}_cov.csv'.format(camera_name)
+        covariance_file = csv_file / "{}_cov.csv".format(camera_name)
         str_to_write = (
             "relative_path,northing [m],easting [m],depth [m],"
             "roll [deg],pitch [deg],heading [deg],altitude "
             "[m],timestamp [s],latitude [deg],longitude [deg]"
             ",x_velocity [m/s],y_velocity [m/s],z_velocity [m/s]"
             ",vehicle_std_x [m],vehicle_std_y [m],vehicle_std_z [m],"
-            "vehicle_std_roll [deg],vehicle_std_pitch [deg],vehicle_std_yaw [deg],"
-            "vehicle_std_vx [m/s],vehicle_std_vy [m/s],vehicle_std_vz [m/s],"
-            "vehicle_std_vroll [deg/s],vehicle_std_vpitch [deg/s],vehicle_std_vyaw [deg/s]\n"
+            "vehicle_std_roll [deg],vehicle_std_pitch [deg],"
+            "vehicle_std_yaw [deg],vehicle_std_vx [m/s],vehicle_std_vy [m/s],"
+            "vehicle_std_vz [m/s],vehicle_std_vroll [deg/s],"
+            "vehicle_std_vpitch [deg/s],vehicle_std_vyaw [deg/s]\n"
         )
 
-        str_to_write_cov = 'relative_path'
-        cov = ['x', 'y', 'z',
-               'roll', 'pitch', 'yaw']
+        str_to_write_cov = "relative_path"
+        cov = ["x", "y", "z", "roll", "pitch", "yaw"]
         for a in cov:
             for b in cov:
-                str_to_write_cov += ', cov_'+a+'_'+b
-        str_to_write_cov += '\n'
+                str_to_write_cov += ", cov_" + a + "_" + b
+        str_to_write_cov += "\n"
 
         fileout = None
         fileout_cov = None
         if len(camera_list) > 0:
             fileout = file.open("w")
-            
+
             # write headers
             fileout.write(str_to_write)
             if camera_list[0].covariance is not None:
-                fileout_cov = covariance_file.open('w')
+                fileout_cov = covariance_file.open("w")
                 fileout_cov.write(str_to_write_cov)
 
             # Loop for each line in csv
@@ -344,12 +350,14 @@ def camera_csv(camera_list, camera_name, csv_filepath, csv_flag):
                                 c = camera_list[i].covariance[k1, k2]
                                 str_to_write_cov += "," + str(c)
                         str_to_write_cov += "\n"
-                        fileout_cov.write(str_to_write_cov)
+                        if camera_list[0].covariance is not None:
+                            fileout_cov.write(str_to_write_cov)
                     str_to_write += "\n"
                     fileout.write(str_to_write)
                 except IndexError:
                     Console.quit(
-                        "There is something wrong with camera filenames and indexing. Check camera_csv function."
+                        "There is something wrong with camera filenames and \
+                        indexing. Check camera_csv function."
                     )
         else:
             Console.warn("Empty data list {}".format(str(camera_name)))
@@ -385,10 +393,12 @@ def other_data_csv(data_list, data_name, csv_filepath, csv_flag):
             csv_row_data_list.append(csv_row_data)
         df = pd.DataFrame(csv_row_data_list)
         # , na_rep='-') https://www.youtube.com/watch?v=hmYdzvmcTD8
-        df.to_csv(csv_file / "{}.csv".format(data_name), header=True, index=False)
+        df.to_csv(
+            csv_file / "{}.csv".format(data_name), header=True, index=False
+        )
 
 
-def write_raw_sensor_csv(csv_filepath, data_list, csv_filename, mutex=None):
+def write_sensor_csv(csv_filepath, data_list, csv_filename, mutex=None):
     if len(data_list) > 0:
         # check the relvant folders exist and if note create them
         csv_file = Path(csv_filepath)

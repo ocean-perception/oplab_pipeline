@@ -2,17 +2,21 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
-from auv_nav.sensors import BodyVelocity, InertialVelocity
-from auv_nav.sensors import Orientation, Depth, Altitude
-from auv_nav.sensors import Category, PhinsHeaders
-from auv_nav.tools.time_conversions import date_time_to_epoch
-from auv_nav.tools.time_conversions import read_timezone
-from oplab import get_raw_folder
-from oplab import Console
+from auv_nav.sensors import (
+    Altitude,
+    BodyVelocity,
+    Category,
+    Depth,
+    InertialVelocity,
+    Orientation,
+    PhinsHeaders,
+)
+from auv_nav.tools.time_conversions import date_time_to_epoch, read_timezone
+from oplab import Console, get_raw_folder
 
 
 class PhinsTimestamp:
@@ -83,7 +87,10 @@ class PhinsParser:
             date, mission.velocity.timezone, mission.velocity.timeoffset
         )
         self.body_velocity = BodyVelocity(
-            velocity_std_factor, velocity_std_offset, self.headingoffset, self.timestamp
+            velocity_std_factor,
+            velocity_std_offset,
+            self.headingoffset,
+            self.timestamp,
         )
         self.inertial_velocity = InertialVelocity()
         self.orientation = Orientation(self.headingoffset)
@@ -108,7 +115,9 @@ class PhinsParser:
 
             # extract from $ to * as per phins manual
             string_to_check = ",".join(line)
-            string_to_check = string_to_check[1 : len(string_to_check)]
+            string_to_check = string_to_check[
+                1 : len(string_to_check)  # noqa E203
+            ]
             string_sum = 0
 
             for i in range(len(string_to_check)):
@@ -120,9 +129,12 @@ class PhinsParser:
             else:
                 Console.warn("Broken packet: " + str(line))
                 Console.warn(
-                    "Check sum calculated " + str(hex(string_sum).zfill(2).upper())
+                    "Check sum calculated "
+                    + str(hex(string_sum).zfill(2).upper())
                 )
-                Console.warn("Does not match that provided " + str(check_sum.upper()))
+                Console.warn(
+                    "Does not match that provided " + str(check_sum.upper())
+                )
                 Console.warn("Ignore and move on")
         return False
 
@@ -131,7 +143,9 @@ class PhinsParser:
         Console.info("... parsing phins standard data")
 
         data_list = []
-        path = get_raw_folder(self.outpath / ".." / self.filepath / self.filename)
+        path = get_raw_folder(
+            self.outpath / ".." / self.filepath / self.filename
+        )
         with path.open("r", encoding="utf-8", errors="ignore") as filein:
             for complete_line in filein.readlines():
                 line_and_md5 = complete_line.strip().split("*")
@@ -213,7 +227,9 @@ class PhinsParser:
 
         if self.category == Category.ALTITUDE:
             if header == PhinsHeaders.ALTITUDE:
-                self.altitude.from_phins(line, self.body_velocity.epoch_timestamp_dvl)
+                self.altitude.from_phins(
+                    line, self.body_velocity.epoch_timestamp_dvl
+                )
                 data = self.altitude.export(self.output_format)
             if header == PhinsHeaders.DVL:
                 self.body_velocity.from_phins(line)

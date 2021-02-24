@@ -2,13 +2,11 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
 import yaml
-from oplab import get_config_folder
-from oplab import get_raw_folder
 from oplab.console import Console
 
 # Workaround to dump OrderedDict into YAML files
@@ -69,15 +67,20 @@ class SensorOffset:
 
     def print(self, name):
         print(
-            "{}: XYZ ({:.2f}, {:.2f}, {:.2f}) RPY ({:.2f}, {:.2f}, {:.2f})".format(
-                name, self.surge, self.sway, self.heave, self.roll, self.pitch, self.yaw
+            "{}: XYZ ({:.2f}, {:.2f}, {:.2f}) RPY ({:.2f}, {:.2f}, {:.2f})".format(  # noqa
+                name,
+                self.surge,
+                self.sway,
+                self.heave,
+                self.roll,
+                self.pitch,
+                self.yaw,
             )
         )
 
 
 class Vehicle:
-    """Vehicle class that parses and writes vehicle.yaml
-    """
+    """Vehicle class that parses and writes vehicle.yaml"""
 
     def __init__(self, filename=None):
         self.origin = SensorOffset()
@@ -114,12 +117,16 @@ class Vehicle:
                         old_format = True
                 if "ins" in self.data:
                     if old_format:
-                        self.ins.load(self.data["ins"], mission_data["orientation"])
+                        self.ins.load(
+                            self.data["ins"], mission_data["orientation"]
+                        )
                     else:
                         self.ins.load(self.data["ins"])
                 if "dvl" in self.data:
                     if old_format:
-                        self.dvl.load(self.data["dvl"], mission_data["velocity"])
+                        self.dvl.load(
+                            self.data["dvl"], mission_data["velocity"]
+                        )
                     else:
                         self.dvl.load(self.data["dvl"])
                 if "depth" in self.data:
@@ -130,57 +137,73 @@ class Vehicle:
                     camera_name = mission.image.cameras[0].name
                     if camera_name not in self.data:
                         Console.error(
-                            "Could not find the position of the camera with name: ",
+                            "Could not find the position of the camera with",
+                            "name: ",
                             camera_name,
                         )
                         Console.error(
-                            "Please make sure that the name used in mission.yaml and \
-                            the frame name used in vehicle.yaml are the same."
+                            "Please make sure that the name used in",
+                            "mission.yaml and",
+                            "the frame name used in vehicle.yaml are the",
+                            "same.",
                         )
                         Console.quit(
-                            "Your vehicle.yaml or your mission.yaml are malformed."
+                            "Your vehicle.yaml or your mission.yaml are",
+                            " malformed.",
                         )
                     self.camera1.load(self.data[camera_name])
                 if len(mission.image.cameras) > 1:
                     camera_name = mission.image.cameras[1].name
                     if camera_name not in self.data:
                         Console.error(
-                            "Could not find the position of the camera with name: ",
+                            "Could not find the position of the camera with",
+                            "name: ",
                             camera_name,
                         )
                         Console.error(
-                            "Please make sure that the name used in mission.yaml and \
-                            the frame name used in vehicle.yaml are the same."
+                            "Please make sure that the name used in ",
+                            "mission.yaml and \
+                            the frame name used in vehicle.yaml are the same.",
                         )
                         Console.quit(
-                            "Your vehicle.yaml or your mission.yaml are malformed."
+                            "Your vehicle.yaml or your mission.yaml are",
+                            "malformed.",
                         )
                     self.camera2.load(self.data[camera_name])
                 if len(mission.image.cameras) > 2:
                     camera_name = mission.image.cameras[2].name
                     if camera_name not in self.data:
                         Console.error(
-                            "Could not find the position of the camera with name: ",
+                            "Could not find the position of the camera with",
+                            "name: ",
                             camera_name,
                         )
                         Console.error(
-                            "Please make sure that the name used in mission.yaml and \
-                            the frame name used in vehicle.yaml are the same."
+                            "Please make sure that the name used in ",
+                            "mission.yaml and \
+                            the frame name used in vehicle.yaml are the same.",
                         )
                         Console.quit(
-                            "Your vehicle.yaml or your mission.yaml are malformed."
+                            "Your vehicle.yaml or your mission.yaml are ",
+                            "malformed.",
                         )
                     self.camera3.load(self.data[camera_name])
                 if "chemical" in self.data:
                     self.chemical.load(self.data["chemical"])
         except FileNotFoundError:
-            Console.error("The file vehicle.yaml could not be found at the location:")
+            Console.error(
+                "The file vehicle.yaml could not be found at the location:"
+            )
             Console.error(filename)
             Console.quit("vehicle.yaml not provided")
         except PermissionError:
-            Console.error("The file vehicle.yaml could not be opened at the location:")
+            Console.error(
+                "The file vehicle.yaml could not be opened at the location:"
+            )
             Console.error(filename)
-            Console.error("Please make sure you have the correct access rights.")
+            Console.error(
+                "Please make sure you have the correct access rights."
+            )
             Console.quit("vehicle.yaml not provided")
 
     def write(self, filename):

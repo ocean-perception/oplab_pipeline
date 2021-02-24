@@ -2,32 +2,26 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
-# Script to parse NOC tide data generated with POLPRED Continental Shelf Extended Model (CSX)
+# Script to parse NOC tide data generated with POLPRED Continental Shelf
+# Extended Model (CSX)
 # Author: Jose Cappelletto
 # Date: 11/09/2019
-from auv_nav.sensors import Category
-from auv_nav.sensors import Tide
-from oplab import get_raw_folder
-from oplab import get_file_list
-from auv_nav.tools.time_conversions import date_time_to_epoch
-from auv_nav.tools.time_conversions import read_timezone
-from oplab import Console
+from auv_nav.sensors import Category, Tide
+from auv_nav.tools.time_conversions import date_time_to_epoch, read_timezone
+from oplab import Console, get_file_list, get_raw_folder
 
 
 def parse_NOC_polpred(mission, vehicle, category, ftype, outpath):
     # parser meta data
-    class_string = "measurement"
     sensor_string = "autosub"
     category = category
     output_format = ftype
 
     if category == Category.TIDE:
-
-        filename = mission.tide.filename
         filepath = mission.tide.filepath
         timezone = mission.tide.timezone
         timeoffset = mission.tide.timeoffset
@@ -58,7 +52,9 @@ def parse_NOC_polpred(mission, vehicle, category, ftype, outpath):
                     yyyy = int(line[6:10])
                     hour = int(line[12:14])
                     mins = int(line[15:17])
-                    secs = 0  # current models only provide resolution in minutes
+                    secs = (
+                        0  # current models only provide resolution in minutes
+                    )
                     msec = 0
                     epoch_time = date_time_to_epoch(
                         yyyy, mm, dd, hour, mins, secs, timezone_offset

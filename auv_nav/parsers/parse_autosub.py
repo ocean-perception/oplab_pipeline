@@ -2,16 +2,19 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
 import scipy.io as spio
-from auv_nav.sensors import BodyVelocity
-from auv_nav.sensors import Orientation, Depth, Altitude
-from auv_nav.sensors import Category
-from oplab import get_raw_folder
-from oplab import Console
+from auv_nav.sensors import (
+    Altitude,
+    BodyVelocity,
+    Category,
+    Depth,
+    Orientation,
+)
+from oplab import Console, get_raw_folder
 
 
 def loadmat(filename):
@@ -52,7 +55,6 @@ def _todict(matobj):
 
 def parse_autosub(mission, vehicle, category, ftype, outpath):
     # parser meta data
-    class_string = "measurement"
     sensor_string = "autosub"
     category = category
     output_format = ftype
@@ -82,34 +84,54 @@ def parse_autosub(mission, vehicle, category, ftype, outpath):
     path = get_raw_folder(outpath / ".." / filepath / filename)
 
     alr_log = loadmat(str(path))
-    alr_acdp = alr_log["missionData"]["ADCPbin00"]
+    alr_adcp = alr_log["missionData"]["ADCPbin00"]
     alr_ins = alr_log["missionData"]["INSAttitude"]
     alr_dep_ctl = alr_log["missionData"]["DepCtlNode"]
-    alr_acdp_log1 = alr_log["missionData"]["ADCPLog_1"]
+    alr_adcp_log1 = alr_log["missionData"]["ADCPLog_1"]
 
     data_list = []
     if category == Category.VELOCITY:
         Console.info("... parsing autosub velocity")
-        for i in range(len(alr_acdp["eTime"])):
-            body_velocity.from_autosub(alr_acdp, i)
+        previous_timestamp = 0
+        for i in range(len(alr_adcp["eTime"])):
+            body_velocity.from_autosub(alr_adcp, i)
             data = body_velocity.export(output_format)
-            data_list.append(data)
+            if body_velocity.epoch_timestamp > previous_timestamp:
+                data_list.append(data)
+            else:
+                data_list[-1] = data
+            previous_timestamp = body_velocity.epoch_timestamp
     if category == Category.ORIENTATION:
         Console.info("... parsing autosub orientation")
+        previous_timestamp = 0
         for i in range(len(alr_ins["eTime"])):
             orientation.from_autosub(alr_ins, i)
             data = orientation.export(output_format)
-            data_list.append(data)
+            if orientation.epoch_timestamp > previous_timestamp:
+                data_list.append(data)
+            else:
+                data_list[-1] = data
+            previous_timestamp = orientation.epoch_timestamp
     if category == Category.DEPTH:
         Console.info("... parsing autosub depth")
+        previous_timestamp = 0
         for i in range(len(alr_dep_ctl["eTime"])):
             depth.from_autosub(alr_dep_ctl, i)
             data = depth.export(output_format)
-            data_list.append(data)
+            if depth.epoch_timestamp > previous_timestamp:
+                data_list.append(data)
+            else:
+                data_list[-1] = data
+            previous_timestamp = depth.epoch_timestamp
     if category == Category.ALTITUDE:
         Console.info("... parsing autosub altitude")
-        for i in range(len(alr_acdp_log1["eTime"])):
-            altitude.from_autosub(alr_acdp_log1, i)
+        previous_timestamp = 0
+        for i in range(len(alr_adcp_log1["eTime"])):
+            altitude.from_autosub(alr_adcp_log1, i)
             data = altitude.export(output_format)
-            data_list.append(data)
+            if altitude.epoch_timestamp > previous_timestamp:
+                data_list.append(data)
+            else:
+                data_list[-1] = data
+            previous_timestamp = altitude.epoch_timestamp
     return data_list

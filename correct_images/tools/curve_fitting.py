@@ -1,5 +1,12 @@
+# -*- coding: utf-8 -*-
+"""
+Copyright (c) 2020, University of Southampton
+All rights reserved.
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
+"""
+
 import numpy as np
-from oplab import Console
 from numba import njit
 from scipy import optimize
 
@@ -50,7 +57,9 @@ def residual_exp_curve(params: np.ndarray, x: np.ndarray, y: np.ndarray):
 
 
 # compute attenuation correction parameters through regression
-def curve_fitting(altitudes: np.ndarray, intensities: np.ndarray) -> np.ndarray:
+def curve_fitting(
+    altitudes: np.ndarray, intensities: np.ndarray
+) -> np.ndarray:
     """Compute attenuation coefficients with respect to distance values
 
     Parameters
@@ -99,5 +108,7 @@ def curve_fitting(altitudes: np.ndarray, intensities: np.ndarray) -> np.ndarray:
         return tmp_params.x
     except (ValueError, UnboundLocalError) as e:
         print("ERROR: Value Error due to Overflow", a, b, c)
-        print('Parameters calculated are unoptimised because of Value Error', e)
+        print(
+            "Parameters calculated are unoptimised because of Value Error", e
+        )
         return init_params

@@ -2,19 +2,25 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
-from auv_nav.tools.body_to_inertial import body_to_inertial
-from auv_nav.tools.time_conversions import date_time_to_epoch
-from auv_nav.tools.time_conversions import read_timezone
-from auv_nav.tools.latlon_wgs84 import latlon_to_metres
-from auv_nav.tools.latlon_wgs84 import metres_to_latlon
-from oplab import Console
-from math import sqrt, atan2, pi, sin, cos
-import json as js
+import math
+from math import atan2, cos, pi, sin, sqrt
+
 import numpy as np
+from oplab import Console
+
+from auv_nav.tools.body_to_inertial import body_to_inertial
+from auv_nav.tools.latlon_wgs84 import latlon_to_metres, metres_to_latlon
+
+
+def float_or_none(val):
+    if val is not None:
+        return float(val)
+    else:
+        return None
 
 
 class PhinsHeaders:
@@ -202,7 +208,9 @@ class BodyVelocity(OutputFormat):
                 sensor_std["offset"] + sensor_std["factor"] * self.z_velocity
             )
         else:
-            Console.error("The STD model you entered for DVL is not supported.")
+            Console.error(
+                "The STD model you entered for DVL is not supported."
+            )
             Console.quit("STD model not supported.")
 
     def write_csv_header(self):
@@ -236,24 +244,24 @@ class BodyVelocity(OutputFormat):
 
     def _to_json(self):
         data = {
-            "epoch_timestamp": float(self.epoch_timestamp),
-            "epoch_timestamp_dvl": float(self.epoch_timestamp_dvl),
+            "epoch_timestamp": float_or_none(self.epoch_timestamp),
+            "epoch_timestamp_dvl": float_or_none(self.epoch_timestamp_dvl),
             "class": "measurement",
             "sensor": self.sensor_string,
             "frame": "body",
             "category": Category.VELOCITY,
             "data": [
                 {
-                    "x_velocity": float(self.x_velocity),
-                    "x_velocity_std": float(self.x_velocity_std),
+                    "x_velocity": float_or_none(self.x_velocity),
+                    "x_velocity_std": float_or_none(self.x_velocity_std),
                 },
                 {
-                    "y_velocity": float(self.y_velocity),
-                    "y_velocity_std": float(self.y_velocity_std),
+                    "y_velocity": float_or_none(self.y_velocity),
+                    "y_velocity_std": float_or_none(self.y_velocity_std),
                 },
                 {
-                    "z_velocity": float(self.z_velocity),
-                    "z_velocity_std": float(self.z_velocity_std),
+                    "z_velocity": float_or_none(self.z_velocity),
+                    "z_velocity_std": float_or_none(self.z_velocity_std),
                 },
             ],
         }
@@ -359,16 +367,18 @@ class InertialVelocity(OutputFormat):
             "category": Category.VELOCITY,
             "data": [
                 {
-                    "north_velocity": float(self.north_velocity),
-                    "north_velocity_std": float(self.north_velocity_std),
+                    "north_velocity": float_or_none(self.north_velocity),
+                    "north_velocity_std": float_or_none(
+                        self.north_velocity_std
+                    ),
                 },
                 {
-                    "east_velocity": float(self.east_velocity),
-                    "east_velocity_std": float(self.east_velocity_std),
+                    "east_velocity": float_or_none(self.east_velocity),
+                    "east_velocity_std": float_or_none(self.east_velocity_std),
                 },
                 {
-                    "down_velocity": float(self.down_velocity),
-                    "down_velocity_std": float(self.down_velocity_std),
+                    "down_velocity": float_or_none(self.down_velocity),
+                    "down_velocity_std": float_or_none(self.down_velocity_std),
                 },
             ],
         }
@@ -437,7 +447,12 @@ class Orientation(OutputFormat):
 
             # account for sensor rotational offset
             [roll_std, pitch_std, heading_std] = body_to_inertial(
-                0, 0, self.yaw_offset, self.roll_std, self.pitch_std, self.yaw_std
+                0,
+                0,
+                self.yaw_offset,
+                self.roll_std,
+                self.pitch_std,
+                self.yaw_std,
             )
 
     def from_json(self, json, sensor_std):
@@ -451,11 +466,19 @@ class Orientation(OutputFormat):
             self.pitch_std = json["data"][2]["pitch_std"]
             self.yaw_std = json["data"][0]["heading_std"]
         elif sensor_std["model"] == "linear":
-            self.roll_std = sensor_std["offset"] + sensor_std["factor"] * self.roll
-            self.pitch_std = sensor_std["offset"] + sensor_std["factor"] * self.pitch
-            self.yaw_std = sensor_std["offset"] + sensor_std["factor"] * self.yaw
+            self.roll_std = (
+                sensor_std["offset"] + sensor_std["factor"] * self.roll
+            )
+            self.pitch_std = (
+                sensor_std["offset"] + sensor_std["factor"] * self.pitch
+            )
+            self.yaw_std = (
+                sensor_std["offset"] + sensor_std["factor"] * self.yaw
+            )
         else:
-            Console.error("The STD model you entered for USBL is not supported.")
+            Console.error(
+                "The STD model you entered for USBL is not supported."
+            )
             Console.quit("STD model not supported.")
 
     def write_csv_header(self):
@@ -489,15 +512,24 @@ class Orientation(OutputFormat):
 
     def _to_json(self):
         data = {
-            "epoch_timestamp": float(self.epoch_timestamp),
+            "epoch_timestamp": float_or_none(self.epoch_timestamp),
             "class": "measurement",
             "sensor": self.sensor_string,
             "frame": "body",
             "category": Category.ORIENTATION,
             "data": [
-                {"heading": float(self.yaw), "heading_std": float(self.yaw_std)},
-                {"roll": float(self.roll), "roll_std": float(self.roll_std)},
-                {"pitch": float(self.pitch), "pitch_std": float(self.pitch_std)},
+                {
+                    "heading": float_or_none(self.yaw),
+                    "heading_std": float_or_none(self.yaw_std),
+                },
+                {
+                    "roll": float_or_none(self.roll),
+                    "roll_std": float_or_none(self.roll_std),
+                },
+                {
+                    "pitch": float_or_none(self.pitch),
+                    "pitch_std": float_or_none(self.pitch_std),
+                },
             ],
         }
         return data
@@ -578,9 +610,13 @@ class Depth(OutputFormat):
         if sensor_std["model"] == "sensor":
             self.depth_std = json["data"][0]["depth_std"]
         elif sensor_std["model"] == "linear":
-            self.depth_std = sensor_std["offset"] + sensor_std["factor"] * self.depth
+            self.depth_std = (
+                sensor_std["offset"] + sensor_std["factor"] * self.depth
+            )
         else:
-            Console.error("The STD model you entered for USBL is not supported.")
+            Console.error(
+                "The STD model you entered for USBL is not supported."
+            )
             Console.quit("STD model not supported.")
 
     def write_csv_header(self):
@@ -598,18 +634,29 @@ class Depth(OutputFormat):
 
     def _to_json(self):
         data = {
-            "epoch_timestamp": float(self.epoch_timestamp),
-            "epoch_timestamp_depth": float(self.depth_timestamp),
+            "epoch_timestamp": float_or_none(self.epoch_timestamp),
+            "epoch_timestamp_depth": float_or_none(self.depth_timestamp),
             "class": "measurement",
             "sensor": self.sensor_string,
             "frame": "inertial",
             "category": Category.DEPTH,
-            "data": [{"depth": float(self.depth), "depth_std": float(self.depth_std)}],
+            "data": [
+                {
+                    "depth": float_or_none(self.depth),
+                    "depth_std": float_or_none(self.depth_std),
+                }
+            ],
         }
         return data
 
     def to_acfr(self):
-        data = "PAROSCI: " + str(self.depth_timestamp) + " " + str(self.depth) + "\n"
+        data = (
+            "PAROSCI: "
+            + str(self.depth_timestamp)
+            + " "
+            + str(self.depth)
+            + "\n"
+        )
         return data
 
 
@@ -653,6 +700,7 @@ class Altitude(OutputFormat):
     def from_json(self, json):
         self.epoch_timestamp = json["epoch_timestamp"]
         self.altitude = json["data"][0]["altitude"]
+        self.altitude_std = json["data"][0]["altitude_std"]
 
     def write_csv_header(self):
         return "epoch_timestamp," + "altitude\n"
@@ -662,20 +710,22 @@ class Altitude(OutputFormat):
 
     def _to_json(self):
         data = {
-            "epoch_timestamp": float(self.epoch_timestamp),
-            "epoch_timestamp_dvl": float(self.altitude_timestamp),
+            "epoch_timestamp": float_or_none(self.epoch_timestamp),
+            "epoch_timestamp_dvl": float_or_none(self.altitude_timestamp),
             "class": "measurement",
             "sensor": self.sensor_string,
             "frame": "body",
             "category": Category.ALTITUDE,
             "data": [
                 {
-                    "altitude": float(self.altitude),
-                    "altitude_std": float(self.altitude_std),
+                    "altitude": float_or_none(self.altitude),
+                    "altitude_std": float_or_none(self.altitude_std),
                 },
                 {
-                    "sound_velocity": float(self.sound_velocity),
-                    "sound_velocity_correction": float(self.sound_velocity_correction),
+                    "sound_velocity": float_or_none(self.sound_velocity),
+                    "sound_velocity_correction": float_or_none(
+                        self.sound_velocity_correction
+                    ),
                 },
             ],
         }
@@ -778,7 +828,9 @@ class Usbl(OutputFormat):
         # latitude) and 111,111 * cos(latitude) meters in the x direction is
         # 1 degree (of longitude).
         self.latitude_std = self.depth / 111.111e3
-        self.longitude_std = self.latitude_std * cos(self.latitude * pi / 180.0)
+        self.longitude_std = self.latitude_std * cos(
+            self.latitude * pi / 180.0
+        )
 
     def from_json(self, json, sensor_std):
         self.epoch_timestamp = json["epoch_timestamp"]
@@ -797,16 +849,33 @@ class Usbl(OutputFormat):
             self.eastings_std = json["data_target"][3]["eastings_std"]
         elif sensor_std["model"] == "linear":
             self.northings_std = (
-                sensor_std["offset"] + sensor_std["factor"] * self.distance_to_ship
+                sensor_std["offset"]
+                + sensor_std["factor"] * self.distance_to_ship
             )
             self.eastings_std = (
-                sensor_std["offset"] + sensor_std["factor"] * self.distance_to_ship
+                sensor_std["offset"]
+                + sensor_std["factor"] * self.distance_to_ship
             )
-            self.latitude_std = self.eastings_std / 111.111e3
-            self.longitude_std = self.northings_std / 111.111e3
 
+            # determine range to input to uncertainty model
+            distance = math.sqrt(self.distance_to_ship ** 2 + self.depth ** 2)
+            distance_std = (
+                sensor_std["factor"] * distance + sensor_std["offset"]
+            )
+
+            # determine uncertainty in terms of latitude and longitude
+            latitude_offset, longitude_offset = metres_to_latlon(
+                abs(self.latitude),
+                abs(self.longitude),
+                distance_std,
+                distance_std,
+            )
+            self.latitude_std = abs(abs(self.latitude) - latitude_offset)
+            self.longitude_std = abs(abs(self.longitude) - longitude_offset)
         else:
-            Console.error("The STD model you entered for USBL is not supported.")
+            Console.error(
+                "The STD model you entered for USBL is not supported."
+            )
             Console.quit("STD model not supported.")
         try:
             self.latitude_ship = json["data_ship"][0]["latitude"]
@@ -815,7 +884,7 @@ class Usbl(OutputFormat):
             self.eastings_ship = json["data_ship"][1]["eastings"]
             self.heading_ship = json["data_ship"][2]["heading"]
         except Exception as exc:
-            Console.warn("Please parse again this dataset.")
+            Console.warn("Please parse again this dataset.", exc)
 
     def write_csv_header(self):
         return (
@@ -863,41 +932,44 @@ class Usbl(OutputFormat):
 
     def _to_json(self):
         data = {
-            "epoch_timestamp": float(self.epoch_timestamp),
+            "epoch_timestamp": float_or_none(self.epoch_timestamp),
             "class": "measurement",
             "sensor": self.sensor_string,
             "frame": "inertial",
             "category": Category.USBL,
             "data_ship": [
                 {
-                    "latitude": float(self.latitude_ship),
-                    "longitude": float(self.longitude_ship),
+                    "latitude": float_or_none(self.latitude_ship),
+                    "longitude": float_or_none(self.longitude_ship),
                 },
                 {
-                    "northings": float(self.northings_ship),
-                    "eastings": float(self.eastings_ship),
+                    "northings": float_or_none(self.northings_ship),
+                    "eastings": float_or_none(self.eastings_ship),
                 },
-                {"heading": float(self.heading_ship)},
+                {"heading": float_or_none(self.heading_ship)},
             ],
             "data_target": [
                 {
-                    "latitude": float(self.latitude),
-                    "latitude_std": float(self.latitude_std),
+                    "latitude": float_or_none(self.latitude),
+                    "latitude_std": float_or_none(self.latitude_std),
                 },
                 {
-                    "longitude": float(self.longitude),
-                    "longitude_std": float(self.longitude_std),
+                    "longitude": float_or_none(self.longitude),
+                    "longitude_std": float_or_none(self.longitude_std),
                 },
                 {
-                    "northings": float(self.northings),
-                    "northings_std": float(self.northings_std),
+                    "northings": float_or_none(self.northings),
+                    "northings_std": float_or_none(self.northings_std),
                 },
                 {
-                    "eastings": float(self.eastings),
-                    "eastings_std": float(self.eastings_std),
+                    "eastings": float_or_none(self.eastings),
+                    "eastings_std": float_or_none(self.eastings_std),
                 },
-                {"depth": float(self.depth), "depth_std": float(self.depth_std)},
-                {"distance_to_ship": float(self.distance_to_ship)},
+                {
+                    "depth": float_or_none(self.depth),
+                    "depth_std": float_or_none(self.depth_std),
+                },
+                {"distance_to_ship": float_or_none(self.distance_to_ship)},
             ],
         }
         return data
@@ -906,7 +978,9 @@ class Usbl(OutputFormat):
         distance_range = -1.0
         if self.distance_to_ship > self.depth and self.distance_to_ship > 0:
             try:
-                distance_range = sqrt(self.distance_to_ship ** 2 - self.depth ** 2)
+                distance_range = sqrt(
+                    self.distance_to_ship ** 2 - self.depth ** 2
+                )
             except ValueError:
                 print("Value error:")
                 print("Value distance_to_ship: " + str(self.distance_to_ship))
@@ -936,9 +1010,6 @@ class Usbl(OutputFormat):
         return data
 
 
-
-
-
 class Tide(OutputFormat):
     def __init__(self, height_std_factor=0.0001, ts=None):
         self.epoch_timestamp = None
@@ -962,9 +1033,13 @@ class Tide(OutputFormat):
         if sensor_std["model"] == "sensor":
             self.height_std = json["data"][0]["tide_std"]
         elif sensor_std["model"] == "linear":
-            self.height_std = sensor_std["offset"] + sensor_std["factor"] * self.height
+            self.height_std = (
+                sensor_std["offset"] + sensor_std["factor"] * self.height
+            )
         else:
-            Console.error("The STD model you entered for TIDE is not supported.")
+            Console.error(
+                "The STD model you entered for TIDE is not supported."
+            )
             Console.quit("STD model not supported.")
 
     def write_csv_header(self):
@@ -982,13 +1057,16 @@ class Tide(OutputFormat):
 
     def _to_json(self):
         data = {
-            "epoch_timestamp": float(self.epoch_timestamp),
+            "epoch_timestamp": float_or_none(self.epoch_timestamp),
             "class": "measurement",
             "sensor": self.sensor_string,
             "frame": "inertial",
             "category": Category.TIDE,
             "data": [
-                {"height": float(self.height), "height_std": float(self.height_std)}
+                {
+                    "height": float_or_none(self.height),
+                    "height_std": float_or_none(self.height_std),
+                }
             ],
         }
         return data
@@ -1065,31 +1143,86 @@ class SyncedOrientationBodyVelocity:
         self.covariance = None
 
     def __str__(self):
-        msg = 'SyncedOrientationBodyVelocity object:\n'
-        msg += '\tTimestamp: ' + str(self.epoch_timestamp) + '\n'
-        msg += '\tPosition: ('+ str(self.northings) +', '+ str(self.eastings) +', '+ str(self.depth) +')\n'
-        msg += '\tPos. std: ('+ str(self.northings_std) +', '+ str(self.eastings_std) +', '+ str(self.depth_std) +')\n'
-        msg += '\tOrientation: ('+ str(self.roll) +', '+ str(self.pitch) +', '+ str(self.yaw) +')\n'
-        msg += '\tOrient. std: ('+ str(self.roll_std) +', '+ str(self.pitch_std) +', '+ str(self.yaw_std) +')\n'
-        msg += '\tSpeeds: ('+ str(self.x_velocity) +', '+ str(self.y_velocity) +', '+ str(self.z_velocity) +')\n'
-        msg += '\tS. std: ('+ str(self.x_velocity_std) +', '+ str(self.y_velocity_std) +', '+ str(self.z_velocity_std) +')'
+        msg = "SyncedOrientationBodyVelocity object:\n"
+        msg += "\tTimestamp: " + str(self.epoch_timestamp) + "\n"
+        msg += (
+            "\tPosition: ("
+            + str(self.northings)
+            + ", "
+            + str(self.eastings)
+            + ", "
+            + str(self.depth)
+            + ")\n"
+        )
+        msg += (
+            "\tPos. std: ("
+            + str(self.northings_std)
+            + ", "
+            + str(self.eastings_std)
+            + ", "
+            + str(self.depth_std)
+            + ")\n"
+        )
+        msg += (
+            "\tOrientation: ("
+            + str(self.roll)
+            + ", "
+            + str(self.pitch)
+            + ", "
+            + str(self.yaw)
+            + ")\n"
+        )
+        msg += (
+            "\tOrient. std: ("
+            + str(self.roll_std)
+            + ", "
+            + str(self.pitch_std)
+            + ", "
+            + str(self.yaw_std)
+            + ")\n"
+        )
+        msg += (
+            "\tSpeeds: ("
+            + str(self.x_velocity)
+            + ", "
+            + str(self.y_velocity)
+            + ", "
+            + str(self.z_velocity)
+            + ")\n"
+        )
+        msg += (
+            "\tS. std: ("
+            + str(self.x_velocity_std)
+            + ", "
+            + str(self.y_velocity_std)
+            + ", "
+            + str(self.z_velocity_std)
+            + ")"
+        )
         return msg
 
     def __lt__(self, o):
         return self.epoch_timestamp < o.epoch_timestamp
+
 
 class Camera(SyncedOrientationBodyVelocity):
     def __init__(self, timestamp=None):
         super().__init__(self)
         self.filename = ""
         self.information = None
+        self.updated = False
 
-    def fromSyncedBodyVelocity(self, other, origin_offsets, sensor_offsets, latlon_reference):
+    def fromSyncedBodyVelocity(
+        self, other, origin_offsets, sensor_offsets, latlon_reference
+    ):
         [x_offset, y_offset, _] = body_to_inertial(
-            other.roll, other.pitch, other.yaw,
+            other.roll,
+            other.pitch,
+            other.yaw,
             origin_offsets[0] - sensor_offsets[0],
             origin_offsets[1] - sensor_offsets[1],
-            origin_offsets[2] - sensor_offsets[2])
+            origin_offsets[2] - sensor_offsets[2],
+        )
 
         self.epoch_timestamp = other.epoch_timestamp
         self.roll = other.roll
@@ -1128,11 +1261,13 @@ class Camera(SyncedOrientationBodyVelocity):
         latitude_reference, longitude_reference = latlon_reference
 
         [self.latitude, self.longitude] = metres_to_latlon(
-                latitude_reference,
-                longitude_reference,
-                other.eastings,
-                other.northings,
-            )
+            latitude_reference,
+            longitude_reference,
+            other.eastings,
+            other.northings,
+        )
+
+        self.updated = True
 
     def get_info(self):
         try:

@@ -2,8 +2,8 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
 # Scripts to parse acfr image acquisition data
@@ -11,20 +11,15 @@ See LICENSE.md file in the project root for full license information.
 # Author: Blair Thornton
 # Date: 31/08/2017
 
-import os
-from scipy.stats import linregress
 import glob
 from pathlib import Path
 
-# from datetime import datetime
 import numpy as np
 
-# from matplotlib import pyplot as plt
-
-# sys.path.append("..")
 from auv_nav.tools.time_conversions import date_time_to_epoch
-from oplab import get_raw_folder
-from oplab import Console
+from oplab import Console, get_raw_folder
+from scipy.stats import linregress
+
 
 stamp_pc1 = []
 stamp_pc2 = []
@@ -54,7 +49,9 @@ def time_from_string(
 
     if yyyy < 2000:
         return 0
-    epoch_time = date_time_to_epoch(yyyy, mm, dd, hour, mins, secs, timezone_offset)
+    epoch_time = date_time_to_epoch(
+        yyyy, mm, dd, hour, mins, secs, timezone_offset
+    )
     # dt_obj = datetime(yyyy,mm,dd,hour,mins,secs)
     # time_tuple = dt_obj.timetuple()
     # epoch_time = time.mktime(time_tuple)
@@ -129,7 +126,8 @@ def parse_biocam_images(mission, vehicle, category, ftype, outpath):
             print(
                 "Error: timezone",
                 timezone,
-                "in mission.cfg not recognised, please enter value from UTC in hours",
+                "in mission.cfg not recognised, please enter value from UTC",
+                "in hours",
             )
             return
 
@@ -151,10 +149,14 @@ def parse_biocam_images(mission, vehicle, category, ftype, outpath):
     camera2_list.extend(glob.glob(str(filepath2b), recursive=True))
 
     camera1_filename = [
-        line for line in camera1_list if ".txt" not in line and "._" not in line
+        line
+        for line in camera1_list
+        if ".txt" not in line and "._" not in line
     ]
     camera2_filename = [
-        line for line in camera2_list if ".txt" not in line and ".jpg" not in line
+        line
+        for line in camera2_list
+        if ".txt" not in line and ".jpg" not in line
     ]
     camera3_filename = [line for line in camera2_list if ".jpg" in line]
 
@@ -165,7 +167,11 @@ def parse_biocam_images(mission, vehicle, category, ftype, outpath):
 
     Console.info(
         "Found "
-        + str(len(camera2_filename) + len(camera1_filename) + len(camera3_filename))
+        + str(
+            len(camera2_filename)
+            + len(camera1_filename)
+            + len(camera3_filename)
+        )
         + " BioCam images!"
     )
 
@@ -190,7 +196,9 @@ def parse_biocam_images(mission, vehicle, category, ftype, outpath):
         for j in range(len(camera2_filename)):
             values.append(abs(float(stamp_pc1[i]) - float(stamp_pc2[j])))
 
-        (sync_difference, sync_pair) = min((v, k) for k, v in enumerate(values))
+        (sync_difference, sync_pair) = min(
+            (v, k) for k, v in enumerate(values)
+        )
 
         if sync_difference < tolerance:
             if ftype == "oplab":
@@ -214,7 +222,9 @@ def parse_biocam_images(mission, vehicle, category, ftype, outpath):
                             "epoch_timestamp": float(stamp_pc2[sync_pair]),
                             # Duplicate for timestamp prediction purposes
                             "epoch_timestamp_cpu": float(stamp_pc2[sync_pair]),
-                            "epoch_timestamp_cam": float(stamp_cam2[sync_pair]),
+                            "epoch_timestamp_cam": float(
+                                stamp_cam2[sync_pair]
+                            ),
                             "filename": str(camera2_relfilename[sync_pair]),
                         }
                     ],
@@ -312,7 +322,9 @@ def correct_timestamps(data_list):
         fit = linregress(x_data, y_data)
         m = fit.slope
         c = fit.intercept
-        max_diff = np.min([y_data[i] - m * x_data[i] - c for i in range(len(x_data))])
+        max_diff = np.min(
+            [y_data[i] - m * x_data[i] - c for i in range(len(x_data))]
+        )
         c = c + max_diff
         return m, c
 
@@ -351,13 +363,21 @@ def correct_timestamps(data_list):
     #    plt.show()
 
     Console.info(
-        "...... Divergence over time of cpu clock to cam1 clock:", m1 / 100, "%"
+        "...... Divergence over time of cpu clock to cam1 clock:",
+        m1 / 100,
+        "%",
     )
-    Console.info("...... Initial offset of cpu clock to cam1 clock:", line1[1][0], "s")
     Console.info(
-        "...... Divergence over time of cpu clock to cam2 clock:", m2 / 100, "%"
+        "...... Initial offset of cpu clock to cam1 clock:", line1[1][0], "s"
     )
-    Console.info("...... Initial offset of cpu clock to cam2 clock:", line2[1][0], "s")
+    Console.info(
+        "...... Divergence over time of cpu clock to cam2 clock:",
+        m2 / 100,
+        "%",
+    )
+    Console.info(
+        "...... Initial offset of cpu clock to cam2 clock:", line2[1][0], "s"
+    )
 
     i = 0
     j = 0

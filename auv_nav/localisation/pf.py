@@ -2,13 +2,12 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
 import math
 import numpy as np
-import time
 from numpy.random import randn
 from numpy.random import uniform
 import copy
@@ -90,7 +89,9 @@ class UsblObservationModel:
         self.z = value.depth
         # TODO: Could we use a 3D Gaussian instead of a 1D?
         sigma = math.sqrt(
-            value.northings_std ** 2 + value.eastings_std ** 2 + value.depth_std ** 2
+            value.northings_std ** 2
+            + value.eastings_std ** 2
+            + value.depth_std ** 2
         )
         self.std = self.usbl_noise_sigma_factor * sigma
 
@@ -123,7 +124,9 @@ class DeadReckoningMovementModel:
     changes over time.
     """
 
-    def __init__(self, sensors_std, dvl_noise_sigma_factor, imu_noise_sigma_factor):
+    def __init__(
+        self, sensors_std, dvl_noise_sigma_factor, imu_noise_sigma_factor
+    ):
         self.sensors_std = sensors_std
         self.dvl_noise_sigma_factor = dvl_noise_sigma_factor
         self.imu_noise_sigma_factor = imu_noise_sigma_factor
@@ -165,7 +168,9 @@ class DeadReckoningMovementModel:
             )
 
         # Propagate all states except for X and Y
-        p.state[Index.Z, 0] = linear_noise(Index.Z, depth_std_factor, depth_std_offset)
+        p.state[Index.Z, 0] = linear_noise(
+            Index.Z, depth_std_factor, depth_std_offset
+        )
         p.state[Index.ROLL, 0] = linear_noise(
             Index.ROLL, imu_noise_std_factor, imu_noise_std_offset, k_imu
         )
@@ -212,9 +217,13 @@ class DeadReckoningMovementModel:
 
 class ParticleFilter:
     def __init__(
-        self, num_particles, movement_model, observation_model, expected_iterations=0
+        self,
+        num_particles,
+        movement_model,
+        observation_model,
+        expected_iterations=0,
     ):
-        self.particles = [Particle()]*num_particles
+        self.particles = [Particle()] * num_particles
         self.particles_history = []
         self.iteration = 0
         self.iteration_step = int(float(expected_iterations) / 20.0)
@@ -225,7 +234,11 @@ class ParticleFilter:
         self.particles_history.append(self.particles)
 
     def __str__(self):
-        a = "Particle Filter with " + str(len(self.particles)) + " particles.\n"
+        a = (
+            "Particle Filter with "
+            + str(len(self.particles))
+            + " particles.\n"
+        )
         for i, p in enumerate(self.particles):
             a += " Particle " + str(i) + "\n"
             a += (
@@ -300,7 +313,9 @@ class ParticleFilter:
                 # target sum reached
                 cumulative_weight += self.particles[source_index].weight
             # copy particle (via assignment operator)
-            new_particles[dest_index] = copy.deepcopy(self.particles[source_index])
+            new_particles[dest_index] = copy.deepcopy(
+                self.particles[source_index]
+            )
         # Update the particle list
         self.particles = new_particles
 
@@ -454,17 +469,20 @@ def run_particle_filter(
     )
     Console.info(
         "\t* IMU noise std: f(x)={}x+{} deg".format(
-            sensors_std["orientation"]["factor"], sensors_std["orientation"]["offset"]
+            sensors_std["orientation"]["factor"],
+            sensors_std["orientation"]["offset"],
         )
     )
     Console.info(
         "\t* Depth noise std: f(x)={}x+{} meters".format(
-            sensors_std["position_z"]["factor"], sensors_std["position_z"]["offset"]
+            sensors_std["position_z"]["factor"],
+            sensors_std["position_z"]["offset"],
         )
     )
     Console.info(
         "\t* USBL noise std: f(x)={}x+{} meters".format(
-            sensors_std["position_xy"]["factor"], sensors_std["position_xy"]["offset"]
+            sensors_std["position_xy"]["factor"],
+            sensors_std["position_xy"]["offset"],
         )
     )
     Console.info("Running {} iterations...".format(len(dr_list)))
@@ -476,7 +494,9 @@ def run_particle_filter(
         sensors_std, dvl_noise_sigma_factor, imu_noise_sigma_factor
     )
 
-    pf = ParticleFilter(num_particles, mm, om, expected_iterations=len(dr_list))
+    pf = ParticleFilter(
+        num_particles, mm, om, expected_iterations=len(dr_list)
+    )
     pf.set_prior(prior)
 
     last_t = dr_list[dr_idx].epoch_timestamp

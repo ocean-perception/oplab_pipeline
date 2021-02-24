@@ -2,26 +2,31 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
-from oplab import Console
-from oplab import StereoCamera
-from auv_cal.camera_calibrator import CalibrationException
-from auv_cal.camera_calibrator import MonoCalibrator
-from auv_cal.camera_calibrator import ChessboardInfo
-from auv_cal.camera_calibrator import Patterns
-from auv_cal.camera_calibrator import StereoCalibrator
-from auv_cal.laser_calibrator import LaserCalibrator
-from oplab import check_dirs_exist
-from oplab import get_raw_folder
-from oplab import get_processed_folder
-from oplab import get_raw_folders
-from oplab import get_config_folder
-from oplab import valid_dive
-from pathlib import Path
-import yaml
 import json
+from pathlib import Path
+
+import yaml
+from oplab import (
+    Console,
+    StereoCamera,
+    check_dirs_exist,
+    get_config_folder,
+    get_processed_folder,
+    get_raw_folder,
+    get_raw_folders,
+)
+
+from auv_cal.camera_calibrator import (
+    CalibrationException,
+    ChessboardInfo,
+    MonoCalibrator,
+    Patterns,
+    StereoCalibrator,
+)
+from auv_cal.laser_calibrator import LaserCalibrator
 
 
 def collect_image_files(image_dirs, file_pattern):
@@ -37,7 +42,9 @@ def collect_image_files(image_dirs, file_pattern):
         if image_dirs.is_dir():
             images = list(image_dirs.glob(file_pattern))
         else:
-            Console.warn("Directory " "'{}'" " cannot be found".format(image_dirs))
+            Console.warn(
+                "Directory " "'{}'" " cannot be found".format(image_dirs)
+            )
     images.sort()
 
     resolved_images = []
@@ -52,20 +59,35 @@ def check_pattern(config):
         pattern = Patterns.Circles
     elif config["pattern"] == "ACircles" or config["pattern"] == "acircles":
         pattern = Patterns.ACircles
-    elif config["pattern"] == "Chessboard" or config["pattern"] == "chessboard":
+    elif (
+        config["pattern"] == "Chessboard" or config["pattern"] == "chessboard"
+    ):
         pattern = Patterns.Chessboard
     else:
         Console.quit(
-            "The available patterns are: Circles, Chessboard or ACircles. Please check you did not misspell the pattern type."
+            "The available patterns are: Circles, Chessboard or ACircles.",
+            "Please check you did not misspell the pattern type.",
         )
     return pattern
 
 
-def calibrate_mono(name, filepaths, extension, config, output_file, fo, foa, target_width=None, target_height=None):
+def calibrate_mono(
+    name,
+    filepaths,
+    extension,
+    config,
+    output_file,
+    fo,
+    foa,
+    target_width=None,
+    target_height=None,
+):
     if not check_dirs_exist(filepaths):
         filepaths = get_raw_folders(filepaths)
     Console.info(
-        "Looking for {} calibration images in {}".format(extension, str(filepaths))
+        "Looking for {} calibration images in {}".format(
+            extension, str(filepaths)
+        )
     )
     image_list = collect_image_files(filepaths, extension)
     Console.info("Found " + str(len(image_list)) + " images.")
@@ -73,7 +95,9 @@ def calibrate_mono(name, filepaths, extension, config, output_file, fo, foa, tar
         Console.quit("Too few images. Try to get more.")
 
     mc = MonoCalibrator(
-        boards=[ChessboardInfo(config["rows"], config["cols"], config["size"])],
+        boards=[
+            ChessboardInfo(config["rows"], config["cols"], config["size"])
+        ],
         pattern=check_pattern(config),
         invert=config["invert"],
         name=name,
@@ -85,7 +109,9 @@ def calibrate_mono(name, filepaths, extension, config, output_file, fo, foa, tar
         if foa or not image_list_file.exists():
             mc.cal(image_list)
             with image_list_file.open("w") as f:
-                Console.info("Writing JSON to " "'{}'" "".format(image_list_file))
+                Console.info(
+                    "Writing JSON to " "'{}'" "".format(image_list_file)
+                )
                 json.dump(mc.json, f)
         else:
             mc.cal_from_json(image_list_file, image_list)
@@ -111,13 +137,19 @@ def calibrate_stereo(
     fo,
     foa,
 ):
-    if not check_dirs_exist(left_filepaths) or not check_dirs_exist(right_filepaths):
+    if not check_dirs_exist(left_filepaths) or not check_dirs_exist(
+        right_filepaths
+    ):
         left_filepaths = get_raw_folders(left_filepaths)
         right_filepaths = get_raw_folders(right_filepaths)
-    Console.info("Looking for calibration images in {}".format(str(left_filepaths)))
+    Console.info(
+        "Looking for calibration images in {}".format(str(left_filepaths))
+    )
     left_image_list = collect_image_files(left_filepaths, left_extension)
     Console.info("Found " + str(len(left_image_list)) + " left images.")
-    Console.info("Looking for calibration images in {}".format(str(right_filepaths)))
+    Console.info(
+        "Looking for calibration images in {}".format(str(right_filepaths))
+    )
     right_image_list = collect_image_files(right_filepaths, right_extension)
     Console.info("Found " + str(len(right_image_list)) + " right images.")
     if len(left_image_list) < 8 or len(right_image_list) < 8:
@@ -130,35 +162,43 @@ def calibrate_stereo(
 
         model = StereoCamera(left=left_calib, right=right_calib)
         if model.different_aspect_ratio or model.different_resolution:
-            Console.warn("Stereo calibration: Calibrating two cameras with different resolution.")
+            Console.warn(
+                "Stereo calibration: Calibrating two cameras with different",
+                "resolution.",
+            )
             Console.info("  Camera:", left_name, "is", model.left.size)
             Console.info("  Camera:", right_name, "is", model.right.size)
-            right_calib = right_calib.parent / ('resized_' + right_calib.name)
+            right_calib = right_calib.parent / ("resized_" + right_calib.name)
             if not right_calib.with_suffix(".json").exists():
-                calibrate_mono(right_name,
-                               right_filepaths,
-                               right_extension,
-                               config,
-                               right_calib,
-                               fo,
-                               foa,
-                               target_width=model.left.image_width,
-                               target_height=model.left.image_height)
+                calibrate_mono(
+                    right_name,
+                    right_filepaths,
+                    right_extension,
+                    config,
+                    right_calib,
+                    fo,
+                    foa,
+                    target_width=model.left.image_width,
+                    target_height=model.left.image_height,
+                )
             model = StereoCamera(left=left_calib, right=right_calib)
             right_calib = right_calib.with_suffix(".json")
             with right_calib.open("r") as f:
                 right_json = json.load(f)
 
         sc = StereoCalibrator(
-            name=left_name+'-'+right_name,
+            name=left_name + "-" + right_name,
             stereo_camera_model=model,
-            boards=[ChessboardInfo(config["rows"], config["cols"], config["size"])],
+            boards=[
+                ChessboardInfo(config["rows"], config["cols"], config["size"])
+            ],
             pattern=check_pattern(config),
             invert=config["invert"],
         )
         # sc.cal(left_image_list, right_image_list)
         sc.cal_from_json(
-            left_json=left_json, right_json=right_json,
+            left_json=left_json,
+            right_json=right_json,
         )
         sc.report()
         Console.info("Writing calibration to " "'{}'" "".format(output_file))
@@ -183,12 +223,22 @@ def calibrate_laser(
     fo=False,
     foa=False,
 ):
-    Console.info("Looking for calibration images in {}".format(laser_cam_filepath))
-    laser_cam_image_list = collect_image_files(laser_cam_filepath, laser_cam_extension)
+    Console.info(
+        "Looking for calibration images in {}".format(laser_cam_filepath)
+    )
+    laser_cam_image_list = collect_image_files(
+        laser_cam_filepath, laser_cam_extension
+    )
     Console.info("Found " + str(len(laser_cam_image_list)) + " left images.")
-    Console.info("Looking for calibration images in {}".format(non_laser_cam_filepath))
-    non_laser_cam_image_list = collect_image_files(non_laser_cam_filepath, non_laser_cam_extension)
-    Console.info("Found " + str(len(non_laser_cam_image_list)) + " right images.")
+    Console.info(
+        "Looking for calibration images in {}".format(non_laser_cam_filepath)
+    )
+    non_laser_cam_image_list = collect_image_files(
+        non_laser_cam_filepath, non_laser_cam_extension
+    )
+    Console.info(
+        "Found " + str(len(non_laser_cam_image_list)) + " right images."
+    )
     if len(laser_cam_image_list) < 8 or len(non_laser_cam_image_list) < 8:
         Console.error("Too few images. Try to get more.")
         return
@@ -201,17 +251,22 @@ def calibrate_laser(
             else:
                 return default_value
 
-        lc = LaserCalibrator(stereo_camera_model=model,
-                             config=config, 
-                             overwrite=foa)
-        lc.cal(laser_cam_image_list[skip_first:], non_laser_cam_image_list[skip_first:])
+        lc = LaserCalibrator(
+            stereo_camera_model=model, config=config, overwrite=foa
+        )
+        lc.cal(
+            laser_cam_image_list[skip_first:],
+            non_laser_cam_image_list[skip_first:],
+        )
         Console.info("Writing calibration to " "'{}'" "".format(output_file))
         with output_file.open("w") as f:
             f.write(lc.yaml())
-        if not "two_lasers" in config:
+        if "two_lasers" not in config:
             return
         if config["two_lasers"]:
-            Console.info("Writing calibration to " "'{}'" "".format(output_file_b))
+            Console.info(
+                "Writing calibration to " "'{}'" "".format(output_file_b)
+            )
             with output_file_b.open("w") as f:
                 f.write(lc.yaml_b())
     except CalibrationException:
@@ -250,7 +305,9 @@ class Calibrator:
             )
         else:
             root = Path(__file__).parents[1]
-            default_file = root / "auv_cal/default_yaml" / "default_calibration.yaml"
+            default_file = (
+                root / "auv_cal/default_yaml" / "default_calibration.yaml"
+            )
             Console.warn(
                 "Cannot find {}, generating default from {}".format(
                     calibration_config_file, default_file
@@ -259,15 +316,23 @@ class Calibrator:
             # save localisation yaml to processed directory
             default_file.copy(calibration_config_file)
 
-            Console.warn("Edit the file at: \n\t" + str(calibration_config_file))
-            Console.warn("Try to use relative paths to the calibration datasets")
-            Console.quit("Modify the file calibration.yaml and run this code again.")
+            Console.warn(
+                "Edit the file at: \n\t" + str(calibration_config_file)
+            )
+            Console.warn(
+                "Try to use relative paths to the calibration datasets"
+            )
+            Console.quit(
+                "Modify the file calibration.yaml and run this code again."
+            )
 
         with calibration_config_file.open("r") as stream:
             self.calibration_config = yaml.safe_load(stream)
 
         # Create the calibration folder at the same level as the dives
-        self.output_path = get_processed_folder(self.filepath.parent) / "calibration"
+        self.output_path = (
+            get_processed_folder(self.filepath.parent) / "calibration"
+        )
         if not self.output_path.exists():
             self.output_path.mkdir(parents=True)
         if not self.configuration_path.exists():
@@ -277,22 +342,31 @@ class Calibrator:
         for c in self.calibration_config["cameras"]:
             cam_name = c["name"]
             # Find if the calibration file exists
-            calibration_file = self.output_path / str("mono_" + cam_name + ".yaml")
-            Console.info("Looking for a calibration file at " + str(calibration_file))
+            calibration_file = self.output_path / str(
+                "mono_" + cam_name + ".yaml"
+            )
+            Console.info(
+                "Looking for a calibration file at " + str(calibration_file)
+            )
             if calibration_file.exists() and not self.fo:
                 Console.quit(
                     "The camera "
                     + c["name"]
-                    + " has already been calibrated. If you want to overwrite the JSON, use the -F flag."
+                    + " has already been calibrated. If you want to overwrite "
+                    + "the JSON, use the -F flag."
                 )
-            Console.info("The camera is not calibrated, running mono calibration...")
+            Console.info(
+                "The camera is not calibrated, running mono calibration..."
+            )
             filepaths = build_filepath(
-                get_processed_folder(self.filepath), c["camera_calibration"]["path"]
+                get_processed_folder(self.filepath),
+                c["camera_calibration"]["path"],
             )
 
-            if not "glob_pattern" in c["camera_calibration"]:
+            if "glob_pattern" not in c["camera_calibration"]:
                 Console.error(
-                    "Could not find the key glob_pattern for the camera ", c["name"]
+                    "Could not find the key glob_pattern for the camera ",
+                    c["name"],
                 )
                 Console.quit("glob_pattern expected in calibration.yaml")
 
@@ -313,36 +387,44 @@ class Calibrator:
             calibration_file = self.output_path / str(
                 "stereo_" + c0["name"] + "_" + c1["name"] + ".yaml"
             )
-            Console.info("Looking for a calibration file at " + str(calibration_file))
+            Console.info(
+                "Looking for a calibration file at " + str(calibration_file)
+            )
             if calibration_file.exists() and not self.fo:
                 Console.quit(
                     "The stereo pair "
                     + c0["name"]
                     + "_"
                     + c1["name"]
-                    + " has already been calibrated. If you want to overwrite the calibration, use the -F flag."
+                    + " has already been calibrated. If you want to overwrite "
+                    + "the calibration, use the -F flag."
                 )
             Console.info(
-                "The stereo camera is not calibrated, running stereo calibration..."
+                "The stereo camera is not calibrated, running stereo",
+                "calibration...",
             )
 
             left_filepaths = build_filepath(
-                get_processed_folder(self.filepath), c0["camera_calibration"]["path"]
+                get_processed_folder(self.filepath),
+                c0["camera_calibration"]["path"],
             )
             right_filepaths = build_filepath(
-                get_processed_folder(self.filepath), c1["camera_calibration"]["path"]
+                get_processed_folder(self.filepath),
+                c1["camera_calibration"]["path"],
             )
             left_name = c0["name"]
-            if not "glob_pattern" in c0["camera_calibration"]:
+            if "glob_pattern" not in c0["camera_calibration"]:
                 Console.error(
-                    "Could not find the key glob_pattern for the camera ", c0["name"]
+                    "Could not find the key glob_pattern for the camera ",
+                    c0["name"],
                 )
                 Console.quit("glob_pattern expected in calibration.yaml")
             left_extension = str(c0["camera_calibration"]["glob_pattern"])
             right_name = c1["name"]
-            if not "glob_pattern" in c1["camera_calibration"]:
+            if "glob_pattern" not in c1["camera_calibration"]:
                 Console.error(
-                    "Could not find the key glob_pattern for the camera ", c1["name"]
+                    "Could not find the key glob_pattern for the camera ",
+                    c1["name"],
                 )
                 Console.quit("glob_pattern expected in calibration.yaml")
             right_extension = str(c1["camera_calibration"]["glob_pattern"])
@@ -369,7 +451,10 @@ class Calibrator:
                         + "..."
                     )
                 self.mono()
-            if left_calibration_file.exists() and right_calibration_file.exists():
+            if (
+                left_calibration_file.exists()
+                and right_calibration_file.exists()
+            ):
                 Console.info(
                     "Loading previous monocular calibrations at \
                                 \n\t * {}\n\t * {}".format(
@@ -397,21 +482,26 @@ class Calibrator:
             calibration_file = self.output_path / str(
                 "stereo_" + c0["name"] + "_" + c2["name"] + ".yaml"
             )
-            Console.info("Looking for a calibration file at " + str(calibration_file))
+            Console.info(
+                "Looking for a calibration file at " + str(calibration_file)
+            )
             if calibration_file.exists() and not self.fo:
                 Console.quit(
                     "The stereo pair "
                     + c0["name"]
                     + "_"
                     + c2["name"]
-                    + " has already been calibrated. If you want to overwrite the calibration, use the -F flag."
+                    + " has already been calibrated. If you want to overwrite "
+                    + "the calibration, use the -F flag."
                 )
             Console.info(
-                "The stereo camera is not calibrated, running stereo calibration..."
+                "The stereo camera is not calibrated, running stereo",
+                "calibration...",
             )
             left_name = c0["name"]
             left_filepaths = build_filepath(
-                self.filepath, c0["camera_calibration"]["path"]
+                get_processed_folder(self.filepath),
+                c0["camera_calibration"]["path"],
             )
             left_extension = str(c0["camera_calibration"]["glob_pattern"])
             right_name = c2["name"]
@@ -442,7 +532,10 @@ class Calibrator:
                         + "..."
                     )
                 self.mono()
-            if left_calibration_file.exists() and right_calibration_file.exists():
+            if (
+                left_calibration_file.exists()
+                and right_calibration_file.exists()
+            ):
                 Console.info(
                     "Loading previous monocular calibrations at \
                                 \n\t * {}\n\t * {}".format(
@@ -484,13 +577,15 @@ class Calibrator:
             )
 
     def laser(self):
-        if not "laser_calibration" in self.calibration_config["cameras"][0]:
+        if "laser_calibration" not in self.calibration_config["cameras"][0]:
             Console.quit(
-                'There is no field "laser_calibration" for the first camera in the calibration.yaml'
+                'There is no field "laser_calibration" for the first',
+                "camera in the calibration.yaml",
             )
-        if not "laser_calibration" in self.calibration_config["cameras"][1]:
+        if "laser_calibration" not in self.calibration_config["cameras"][1]:
             Console.quit(
-                'There is no field "laser_calibration" for the second camera in the calibration.yaml'
+                'There is no field "laser_calibration" for the second',
+                "camera in the calibration.yaml",
             )
         c0 = self.calibration_config["cameras"][0]
         c1 = self.calibration_config["cameras"][1]
@@ -501,16 +596,23 @@ class Calibrator:
 
     def laser_imp(self, c0, c1):
         main_camera_name = c1["name"]
-        calibration_file = self.output_path / ("laser_calibration_top_" + main_camera_name + ".yaml")
-        calibration_file_b = self.output_path / ("laser_calibration_bottom_" + main_camera_name + ".yaml")
-        Console.info("Looking for a calibration file at " + str(calibration_file))
+        calibration_file = self.output_path / (
+            "laser_calibration_top_" + main_camera_name + ".yaml"
+        )
+        calibration_file_b = self.output_path / (
+            "laser_calibration_bottom_" + main_camera_name + ".yaml"
+        )
+        Console.info(
+            "Looking for a calibration file at " + str(calibration_file)
+        )
         if calibration_file.exists() and not self.fo:
             Console.quit(
                 "The laser planes from cameras "
                 + c1["name"]
                 + " and "
                 + c0["name"]
-                + " have already been calibrated. If you want to overwite the calibration, use the -F flag."
+                + " have already been calibrated. If you want to overwite the "
+                + "calibration, use the -F flag."
             )
         Console.info(
             "The laser planes are not calibrated, running laser calibration..."
@@ -527,7 +629,7 @@ class Calibrator:
                 + "..."
             )
             self.stereo()
-            
+
         non_laser_cam_name = c0["name"]
         non_laser_cam_filepath = get_processed_folder(self.filepath) / str(
             c0["laser_calibration"]["path"]
@@ -562,7 +664,7 @@ class Calibrator:
             + " and "
             + str(laser_cam_filepath)
         )
-        if not "skip_first" in self.calibration_config:
+        if "skip_first" not in self.calibration_config:
             self.calibration_config["skip_first"] = 0
         calibrate_laser(
             laser_cam_name,

@@ -1,6 +1,6 @@
-from .corrector import Corrector
-from .parser import ColourCorrection
-from .parser import CameraConfig
-from .parser import CameraConfigs
-from .parser import OutputSettings
-from .parser import CorrectConfig
+from .corrector import Corrector  # noqa
+from .parser import ColourCorrection  # noqa
+from .parser import CameraConfig  # noqa
+from .parser import CameraConfigs  # noqa
+from .parser import OutputSettings  # noqa
+from .parser import CorrectConfig  # noqa

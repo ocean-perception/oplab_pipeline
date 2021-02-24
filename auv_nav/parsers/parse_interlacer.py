@@ -2,19 +2,22 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
 import json
 from array import array
 from operator import itemgetter
+
 from oplab import Console
 
 
 def sort_values(value, order_index=1):
     return zip(
-        *sorted([(i, e) for i, e in enumerate(value)], key=itemgetter(order_index))
+        *sorted(
+            [(i, e) for i, e in enumerate(value)], key=itemgetter(order_index)
+        )
     )
 
 
@@ -22,7 +25,6 @@ def sort_values(value, order_index=1):
 def parse_interlacer(outpath, filename):
     data = array("f")
     value = []
-    data_original = []
     data_ordered = []
 
     filepath = outpath / filename

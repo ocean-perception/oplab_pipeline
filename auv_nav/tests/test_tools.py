@@ -2,19 +2,20 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
-import unittest
-import os
 import math
-from auv_nav.tools.interpolate import interpolate
+import os
+import unittest
+from unittest.mock import patch
+
 from auv_nav.tools.body_to_inertial import body_to_inertial
-from oplab import Console
 from auv_nav.tools.displayable_path import DisplayablePath
-from auv_nav.tools.latlon_wgs84 import latlon_to_metres
-from auv_nav.tools.latlon_wgs84 import metres_to_latlon
+from auv_nav.tools.interpolate import interpolate
+from auv_nav.tools.latlon_wgs84 import latlon_to_metres, metres_to_latlon
+from oplab import Console
 
 
 class TestTools(unittest.TestCase):
@@ -34,17 +35,18 @@ class TestTools(unittest.TestCase):
         self.assertEqual(z, 0)
 
     def test_console(self):
-        Console.warn("This is a warning")
-        Console.error("This is an error message")
-        Console.info("This is an informative message")
-        Console.banner()
+        with patch.object(Console, "get_version", return_value="testing"):
+            Console.warn("This is a warning")
+            Console.error("This is an error message")
+            Console.info("This is an informative message")
+            Console.banner()
 
-        Console.get_username()
-        Console.get_hostname()
-        Console.get_date()
-        Console.get_version()
-        for i in range(1, 10):
-            Console.progress(i, 10)
+            Console.get_username()
+            Console.get_hostname()
+            Console.get_date()
+            Console.get_version()
+            for i in range(1, 10):
+                Console.progress(i, 10)
 
     def test_DisplayablePath(self):
         cwd = os.getcwd()
@@ -76,7 +78,7 @@ class TestTools(unittest.TestCase):
         self.assertAlmostEqual(lon, lon_p, places=2)
 
         # Sydney
-        lat_ref = -33.8559799094 
+        lat_ref = -33.8559799094
         lon_ref = 151.20666584
 
         # Tokyo

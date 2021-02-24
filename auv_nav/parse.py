@@ -2,47 +2,45 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
-import multiprocessing
 import json
+import multiprocessing
+from datetime import datetime
 from pathlib import Path
+
+from oplab import (
+    Console,
+    Mission,
+    Vehicle,
+    get_processed_folder,
+    get_raw_folder,
+)
+
+from auv_nav.parsers.parse_acfr_images import parse_acfr_images
+from auv_nav.parsers.parse_ae2000 import parse_ae2000
+from auv_nav.parsers.parse_autosub import parse_autosub
+from auv_nav.parsers.parse_biocam_images import (
+    correct_timestamps,
+    parse_biocam_images,
+)
+from auv_nav.parsers.parse_gaps import parse_gaps
+from auv_nav.parsers.parse_interlacer import parse_interlacer
+from auv_nav.parsers.parse_NOC_nmea import parse_NOC_nmea
+from auv_nav.parsers.parse_NOC_polpred import parse_NOC_polpred
 
 # sys.path.append("..")
 from auv_nav.parsers.parse_phins import parse_phins
-from auv_nav.parsers.parse_ae2000 import parse_ae2000
-from auv_nav.parsers.parse_NOC_nmea import parse_NOC_nmea
-from auv_nav.parsers.parse_NOC_polpred import parse_NOC_polpred
-from auv_nav.parsers.parse_autosub import parse_autosub
-from auv_nav.parsers.parse_gaps import parse_gaps
 from auv_nav.parsers.parse_rdi import parse_rdi
-from auv_nav.parsers.parse_usbl_dump import parse_usbl_dump
-from auv_nav.parsers.parse_acfr_images import parse_acfr_images
-from auv_nav.parsers.parse_biocam_images import parse_biocam_images
-from auv_nav.parsers.parse_biocam_images import correct_timestamps
 from auv_nav.parsers.parse_seaxerocks_images import parse_seaxerocks_images
-from auv_nav.parsers.parse_interlacer import parse_interlacer
+from auv_nav.parsers.parse_usbl_dump import parse_usbl_dump
 
 # from lib_sensors.parse_chemical import parse_chemical
 from auv_nav.plot.plot_parse_data import plot_parse_data
-from auv_nav.tools.time_conversions import epoch_to_day
-from oplab import get_config_folder, get_raw_folder
-from oplab import get_processed_folder
-from oplab import Console
-from oplab import Vehicle
-from oplab import Mission
-
-from auv_nav.tools.interpolate import interpolate
-from auv_nav.tools.interpolate import interpolate_sensor_list
-from auv_nav.tools.time_conversions import string_to_epoch
-from auv_nav.tools.time_conversions import epoch_from_json
-from auv_nav.tools.time_conversions import epoch_to_datetime
-
 from auv_nav.sensors import Category
-from datetime import datetime
-from pathlib import Path
+from auv_nav.tools.interpolate import interpolate
 
 
 def merge_json_files(json_file_list):
@@ -64,9 +62,12 @@ def merge_json_files(json_file_list):
             data_list.append(data[0])
         elif origin_lat != lat or origin_lon != lon:
             Console.error(
-                "The datasets you want to merge do not belong to the same origin."
+                "The datasets you want to merge do not belong to the same",
+                "origin.",
             )
-            Console.error("Change the origins to be identical and parse them again.")
+            Console.error(
+                "Change the origins to be identical and parse them again."
+            )
             Console.quit("Invalid origins for merging datasets.")
 
         # Get dive name
@@ -151,7 +152,8 @@ def parse(filepath, force_overwrite, merge):
             json.dump(data_list, fileout, indent=2)
         fileout.close()
 
-        # copy mission.yaml and vehicle.yaml to processed folder for process step
+        # copy mission.yaml and vehicle.yaml to processed folder for
+        # process step
         mission_processed = get_processed_folder(filepath[0]) / "mission.yaml"
         vehicle_processed = get_processed_folder(filepath[0]) / "vehicle.yaml"
         mission_merged = processed_path / foldername / "mission.yaml"
@@ -177,13 +179,16 @@ def parse_single(filepath, force_overwrite):
     filepath = get_raw_folder(filepath)
 
     if not force_overwrite:
-        existing_files = check_output_files_exist(get_processed_folder(filepath))
+        existing_files = check_output_files_exist(
+            get_processed_folder(filepath)
+        )
         if existing_files:
             msg = (
                 "It looks like this dataset has already been parsed.\n"
                 + "The following file(s) already exist:\n"
                 + existing_files
-                + "If you would like auv_nav to overwrite existing file, rerun it with the flag -F.\n"
+                + "If you would like auv_nav to overwrite existing file,"
+                + " rerun it with the flag -F.\n"
                 + "Example:   auv_nav parse -F PATH"
             )
             Console.warn(msg)
@@ -203,93 +208,6 @@ def parse_single(filepath, force_overwrite):
 
     Console.info("Loading vehicle.yaml at {0}".format(vehicle_file))
     vehicle = Vehicle(vehicle_file)
-
-    # std factors and offsets defaults
-    # Even if you provide std factors and offset or not, if the sensor
-    # has its own std measurements, that measurements will be used instead
-    std_factor_usbl = 0.01
-    std_offset_usbl = 10.0
-    std_factor_dvl = 0.001
-    std_offset_dvl = 0.002
-    std_factor_depth = 0
-    std_offset_depth = 0.01
-    std_factor_tide = 0
-    std_offset_tide = 0.01
-    std_factor_orientation = 0.0
-    std_offset_orientation = 0.003
-    std_factor_altitude = 0.0
-    std_offset_altitude = 0.01
-
-    if mission.usbl.std_factor == 0 and std_factor_usbl != 0:
-        Console.warn(
-            "USBL standard deviation factor not provided. Using default of {}".format(
-                std_factor_usbl
-            )
-        )
-        mission.usbl.std_factor = std_factor_usbl
-    if mission.usbl.std_offset == 0 and std_offset_usbl != 0:
-        Console.warn(
-            "USBL standard deviation offset not provided. Using default of {}".format(
-                std_offset_usbl
-            )
-        )
-        mission.usbl.std_offset = std_offset_usbl
-    if mission.velocity.std_factor == 0 and std_factor_dvl != 0:
-        Console.warn(
-            "DVL standard deviation factor not provided. Using default of {}".format(
-                std_factor_dvl
-            )
-        )
-        mission.velocity.std_factor = std_factor_dvl
-    if mission.velocity.std_offset == 0 and std_offset_dvl != 0:
-        Console.warn(
-            "DVL standard deviation offset not provided. Using default of {}".format(
-                std_offset_dvl
-            )
-        )
-        mission.velocity.std_offset = std_offset_dvl
-    if mission.depth.std_factor == 0 and std_factor_depth != 0:
-        Console.warn(
-            "Depth standard deviation factor not provided. Using default of {}".format(
-                std_factor_depth
-            )
-        )
-        mission.depth.std_factor = std_factor_depth
-    if mission.depth.std_offset == 0 and std_offset_depth != 0:
-        Console.warn(
-            "Depth standard deviation offset not provided. Using default of {}".format(
-                std_offset_depth
-            )
-        )
-        mission.depth.std_offset = std_offset_depth
-    if mission.orientation.std_factor == 0 and std_factor_orientation != 0:
-        Console.warn(
-            "Orientation standard deviation factor not provided. Using default of {}".format(
-                std_factor_orientation
-            )
-        )
-        mission.orientation.std_factor = std_factor_orientation
-    if mission.orientation.std_offset == 0 and std_offset_orientation != 0:
-        Console.warn(
-            "Orientation standard deviation offset not provided. Using default of {}".format(
-                std_offset_orientation
-            )
-        )
-        mission.orientation.std_offset = std_offset_orientation
-    if mission.altitude.std_factor == 0 and std_factor_altitude != 0:
-        Console.warn(
-            "Altitude standard deviation factor not provided. Using default of {}".format(
-                std_factor_altitude
-            )
-        )
-        mission.altitude.std_factor = std_factor_altitude
-    if mission.altitude.std_offset == 0 and std_offset_altitude != 0:
-        Console.warn(
-            "Altitude standard deviation offset not provided. Using default of {}".format(
-                std_offset_altitude
-            )
-        )
-        mission.altitude.std_offset = std_offset_altitude
 
     # copy mission.yaml and vehicle.yaml to processed folder for process step
     mission_processed = get_processed_folder(mission_file)
@@ -335,10 +253,14 @@ def parse_single(filepath, force_overwrite):
 
     # read in, parse data and write data
     if not mission.image.empty():
-        if mission.image.format == "acfr_standard" or mission.image.format == "unagi":
+        if (
+            mission.image.format == "acfr_standard"
+            or mission.image.format == "unagi"
+        ):
             pool_list.append(
                 pool.apply_async(
-                    parse_acfr_images, [mission, vehicle, "images", ftype, outpath]
+                    parse_acfr_images,
+                    [mission, vehicle, "images", ftype, outpath],
                 )
             )
         elif mission.image.format == "seaxerocks_3":
@@ -351,17 +273,22 @@ def parse_single(filepath, force_overwrite):
         elif mission.image.format == "biocam":
             pool_list.append(
                 pool.apply_async(
-                    parse_biocam_images, [mission, vehicle, "images", ftype, outpath]
+                    parse_biocam_images,
+                    [mission, vehicle, "images", ftype, outpath],
                 )
             )
         else:
             Console.quit(
-                "Mission image format {} not supported.".format(mission.image.format)
+                "Mission image format {} not supported.".format(
+                    mission.image.format
+                )
             )
     if not mission.usbl.empty():
         if mission.usbl.format == "gaps":
             pool_list.append(
-                pool.apply_async(parse_gaps, [mission, vehicle, "usbl", ftype, outpath])
+                pool.apply_async(
+                    parse_gaps, [mission, vehicle, "usbl", ftype, outpath]
+                )
             )
         elif mission.usbl.format == "usbl_dump":
             pool_list.append(
@@ -377,7 +304,9 @@ def parse_single(filepath, force_overwrite):
             )
         else:
             Console.quit(
-                "Mission usbl format {} not supported.".format(mission.usbl.format)
+                "Mission usbl format {} not supported.".format(
+                    mission.usbl.format
+                )
             )
 
     if not mission.velocity.empty():
@@ -390,13 +319,15 @@ def parse_single(filepath, force_overwrite):
         elif mission.velocity.format == "ae2000":
             pool_list.append(
                 pool.apply_async(
-                    parse_ae2000, [mission, vehicle, "velocity", ftype, outpath]
+                    parse_ae2000,
+                    [mission, vehicle, "velocity", ftype, outpath],
                 )
             )
         elif mission.velocity.format == "autosub":
             pool_list.append(
                 pool.apply_async(
-                    parse_autosub, [mission, vehicle, "velocity", ftype, outpath]
+                    parse_autosub,
+                    [mission, vehicle, "velocity", ftype, outpath],
                 )
             )
         elif mission.velocity.format == "rdi":
@@ -416,25 +347,29 @@ def parse_single(filepath, force_overwrite):
         if mission.orientation.format == "phins":
             pool_list.append(
                 pool.apply_async(
-                    parse_phins, [mission, vehicle, "orientation", ftype, outpath]
+                    parse_phins,
+                    [mission, vehicle, "orientation", ftype, outpath],
                 )
             )
         elif mission.orientation.format == "ae2000":
             pool_list.append(
                 pool.apply_async(
-                    parse_ae2000, [mission, vehicle, "orientation", ftype, outpath]
+                    parse_ae2000,
+                    [mission, vehicle, "orientation", ftype, outpath],
                 )
             )
         elif mission.orientation.format == "autosub":
             pool_list.append(
                 pool.apply_async(
-                    parse_autosub, [mission, vehicle, "orientation", ftype, outpath]
+                    parse_autosub,
+                    [mission, vehicle, "orientation", ftype, outpath],
                 )
             )
         elif mission.orientation.format == "rdi":
             pool_list.append(
                 pool.apply_async(
-                    parse_rdi, [mission, vehicle, "orientation", ftype, outpath]
+                    parse_rdi,
+                    [mission, vehicle, "orientation", ftype, outpath],
                 )
             )
         else:
@@ -471,7 +406,9 @@ def parse_single(filepath, force_overwrite):
             )
         else:
             Console.quit(
-                "Mission depth format {} not supported.".format(mission.depth.format)
+                "Mission depth format {} not supported.".format(
+                    mission.depth.format
+                )
             )
 
     if not mission.altitude.empty():
@@ -484,13 +421,15 @@ def parse_single(filepath, force_overwrite):
         elif mission.altitude.format == "ae2000":
             pool_list.append(
                 pool.apply_async(
-                    parse_ae2000, [mission, vehicle, "altitude", ftype, outpath]
+                    parse_ae2000,
+                    [mission, vehicle, "altitude", ftype, outpath],
                 )
             )
         elif mission.altitude.format == "autosub":
             pool_list.append(
                 pool.apply_async(
-                    parse_autosub, [mission, vehicle, "altitude", ftype, outpath]
+                    parse_autosub,
+                    [mission, vehicle, "altitude", ftype, outpath],
                 )
             )
         elif mission.altitude.format == "rdi":
@@ -508,10 +447,14 @@ def parse_single(filepath, force_overwrite):
 
     if not mission.tide.empty():
         if mission.tide.format == "NOC_polpred":
-            tide_list = parse_NOC_polpred(mission, vehicle, "tide", ftype, outpath)
+            tide_list = parse_NOC_polpred(
+                mission, vehicle, "tide", ftype, outpath
+            )
         else:
             Console.quit(
-                "Mission tide format {} not supported.".format(mission.tide.format)
+                "Mission tide format {} not supported.".format(
+                    mission.tide.format
+                )
             )
     else:
         tide_list = None
@@ -611,7 +554,9 @@ def parse_single(filepath, force_overwrite):
     Console.info("Interlacing data...")
     parse_interlacer(outpath, filename)
     Console.info(
-        "...done interlacing data. Output saved to {}".format(outpath / filename)
+        "...done interlacing data. Output saved to {}".format(
+            outpath / filename
+        )
     )
     plot_parse_data(outpath, ftype)
     Console.info("Complete parse data")
@@ -623,7 +568,9 @@ def check_output_files_exist(processed_dataset_folder):
     vehicle_file = processed_dataset_folder / "vehicle.yaml"
     nav_file = processed_dataset_folder / "nav" / "nav_standard.json"
     data_plot_file = processed_dataset_folder / "nav" / "json_data_info.html"
-    history_plot_file = processed_dataset_folder / "nav" / "timestamp_history.html"
+    history_plot_file = (
+        processed_dataset_folder / "nav" / "timestamp_history.html"
+    )
 
     existing_files = ""
     if mission_file.exists():

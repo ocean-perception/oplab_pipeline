@@ -45,8 +45,8 @@ laser_calibration:
     end_row_b: -1
     two_lasers: false
   filter:
-    max_range_m: 3.0
-    min_range_m: 20.0
+    min_range_m: 3.0
+    max_range_m: 20.0
     rss_bin_size_m: 0.5
     max_bin_elements: 300
   ransac:
@@ -54,8 +54,4 @@ laser_calibration:
     min_distance_threshold: 0.002
     sample_size_ratio: 0.8
     goal_inliers_ratio: 0.999
-    max_iterations: 5000
-  uncertainty_generation:
-    cloud_sample_size_ratio: 0.8
-    iterations: 50
-  
+    max_iterations: 5000  

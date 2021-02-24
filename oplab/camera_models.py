@@ -2,8 +2,8 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
 import numpy as np
@@ -13,7 +13,7 @@ from oplab.console import Console  # noqa
 
 
 class MonoCamera:
-    """Monocular camera using OpenCV functions and parameters. 
+    """Monocular camera using OpenCV functions and parameters.
     Reads and writes calibration.yaml files
     """
 
@@ -30,15 +30,20 @@ class MonoCamera:
             filename = Path(filename)
             fs = cv2.FileStorage(str(filename), cv2.FILE_STORAGE_READ)
             self.from_node(fs)
-    
+
     @property
     def aspect_ratio(self):
-        return float(self.image_width)/float(self.image_height)
+        return float(self.image_width) / float(self.image_height)
 
     @property
     def rectification_maps(self):
         mapx, mapy = cv2.initUndistortRectifyMap(
-            self.intrinsics, self.distortion, self.R, self.P, self.size, cv2.CV_32FC1
+            self.intrinsics,
+            self.distortion,
+            self.R,
+            self.P,
+            self.size,
+            cv2.CV_32FC1,
         )
         return mapx, mapy
 
@@ -150,7 +155,12 @@ class MonoCamera:
     def return_valid(self, p):
         px = p[0]
         py = p[1]
-        v = px > 0 and px < self.image_width and py > 0 and py < self.image_height
+        v = (
+            px > 0
+            and px < self.image_width
+            and py > 0
+            and py < self.image_height
+        )
         if v:
             return p
         else:
@@ -164,9 +174,13 @@ class MonoCamera:
         px = p[0]
         py = p[1]
         ztemp = np.array([0, 0, 0], dtype="float32")
-        p_unif = np.array([[[(px - cx) / fx, (py - cy) / fy, 1]]], dtype=np.float)
+        p_unif = np.array(
+            [[[(px - cx) / fx, (py - cy) / fy, 1]]], dtype=np.float
+        )
         out_p = []
-        out_p = cv2.projectPoints(p_unif, ztemp, ztemp, self.K, self.d)[0][0][0]
+        out_p = cv2.projectPoints(p_unif, ztemp, ztemp, self.K, self.d)[0][0][
+            0
+        ]
         return self.return_valid(out_p)
 
     def undistort_point(self, p):
@@ -196,7 +210,9 @@ class MonoCamera:
         p_und = self.undistort_point(p)
         if p_und is None:
             return None
-        p_unif = np.array([p_und[0], p_und[1], 1], dtype=np.float).reshape(3, 1)
+        p_unif = np.array([p_und[0], p_und[1], 1], dtype=np.float).reshape(
+            3, 1
+        )
         p_und_rec = self.R @ p_unif
         p_und_rec = p_und_rec[0:2, 0]
         return self.return_valid(p_und_rec)
@@ -226,14 +242,16 @@ class StereoCamera:
             self.left.from_node(fs.getNode("left"))
             self.right.from_node(fs.getNode("right"))
             self.from_node(fs.getNode("extrinsics"))
-        
+
         self.different_resolution = False
         self.different_aspect_ratio = False
-        if self.left.image_width != self.right.image_width \
-            or self.left.image_height != self.right.image_height:
+        if (
+            self.left.image_width != self.right.image_width
+            or self.left.image_height != self.right.image_height
+        ):
             self.different_resolution = True
         if self.left.aspect_ratio != self.right.aspect_ratio:
-            self.different_aspect_ratio =  True
+            self.different_aspect_ratio = True
 
     def from_node(self, fs):
         self.R = fs.getNode("rotation_matrix").mat()
@@ -245,9 +263,13 @@ class StereoCamera:
     def to_str(self):
         msg = "%YAML:1.0\n"
         msg += "left:\n"
-        msg += self.left.to_str(write_metadata=False, write_header=False, nest=True)
+        msg += self.left.to_str(
+            write_metadata=False, write_header=False, nest=True
+        )
         msg += "right:\n"
-        msg += self.right.to_str(write_metadata=False, write_header=False, nest=True)
+        msg += self.right.to_str(
+            write_metadata=False, write_header=False, nest=True
+        )
         msg += (
             "extrinsics:"
             + "  rotation_matrix:\n"
@@ -279,8 +301,8 @@ class StereoCamera:
         return msg
 
     def triangulate_point(self, left_uv, right_uv):
-        """ Point pair triangulation from
-        least squares solution. """
+        """Point pair triangulation from
+        least squares solution."""
         M = np.zeros((6, 6))
         M[:3, :4] = self.left.P
         M[3:, :4] = self.right.P
@@ -296,7 +318,7 @@ class StereoCamera:
         return self.triangulate_point(p1, p2)
 
     def project_point(self, point3d):
-        """ Projects a 3D point into the rectified frame
+        """Projects a 3D point into the rectified frame
         point3d a list of three elements [x, y, z]
         """
         X = np.ones((4, 1), dtype=np.float)
@@ -307,10 +329,13 @@ class StereoCamera:
         right_uv = self.right.P @ X
         right_uv /= right_uv[2]
         right_uv = right_uv[0:2, 0]
-        return (self.left.return_valid(left_uv), self.right.return_valid(right_uv))
+        return (
+            self.left.return_valid(left_uv),
+            self.right.return_valid(right_uv),
+        )
 
     def project_point_undistorted(self, point3d):
-        """ Projects a 3D point into the undistorted frame
+        """Projects a 3D point into the undistorted frame
         point3d a list of three elements [x, y, z]
         """
         p1, p2 = self.project_point(point3d)

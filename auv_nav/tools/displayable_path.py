@@ -2,8 +2,8 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
 from pathlib import Path
@@ -74,7 +74,7 @@ class DisplayablePath(object):
         if root is not None:
             paths = cls.make_tree(root, max_depth=max_depth)
         else:
-            paths = cls.make_tree(self.path, max_depth=max_depth)
+            paths = cls.make_tree(cls.path, max_depth=max_depth)
         for path in paths:
             if path.depth < max_depth:
                 print(path.displayable())
@@ -82,12 +82,6 @@ class DisplayablePath(object):
     @classmethod
     def _default_criteria(cls, path):
         return True
-
-    @property
-    def displayname(self):
-        if self.path.is_dir():
-            return self.path.name + "/"
-        return self.path.name
 
     def displayable(self):
         if self.parent is None:

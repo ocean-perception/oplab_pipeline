@@ -1,8 +1,16 @@
+# -*- coding: utf-8 -*-
+"""
+Copyright (c) 2020, University of Southampton
+All rights reserved.
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
+"""
+
 import numpy as np
 
 
 def gamma_correct(image, bitdepth=8):
-    """ performs gamma correction for images
+    """performs gamma correction for images
     Parameters
     -----------
     image : numpy.ndarray
@@ -16,11 +24,11 @@ def gamma_correct(image, bitdepth=8):
     numpy.ndarray
         Image
     """
-    image = np.divide(image, (2 ** bitdepth - 1))
+    ret_image = np.divide(image, (2 ** bitdepth - 1))
     if all(i < 0.0031308 for i in image.flatten()):
-        image = 12.92 * image
+        ret_image = 12.92 * ret_image
     else:
-        image = 1.055 * np.power(image, (1 / 1.5)) - 0.055
-    image = np.multiply(np.array(image), np.array(2 ** bitdepth - 1))
-    image = np.clip(image, 0, 2 ** bitdepth - 1)
-    return image
+        ret_image = 1.055 * np.power(ret_image, (1 / 1.5)) - 0.055
+    ret_image = np.multiply(np.array(ret_image), np.array(2 ** bitdepth - 1))
+    ret_image = np.clip(ret_image, 0, 2 ** bitdepth - 1)
+    return ret_image

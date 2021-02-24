@@ -2,15 +2,15 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
-from auv_nav.sensors import SyncedOrientationBodyVelocity, Usbl
-from auv_nav.tools.latlon_wgs84 import metres_to_latlon
-from auv_nav.tools.body_to_inertial import body_to_inertial
-from auv_nav.sensors import Camera
 import numpy as np
+from auv_nav.sensors import Camera, SyncedOrientationBodyVelocity, Usbl
+from auv_nav.tools.body_to_inertial import body_to_inertial
+from auv_nav.tools.latlon_wgs84 import metres_to_latlon
+from oplab import Console
 
 
 # Scripts to interpolate values
@@ -113,7 +113,7 @@ def interpolate_dvl(query_timestamp, data_1, data_2):
 
 def interpolate_camera(query_timestamp, camera_list, filename):
     """Interpolates a camera to the query timestamp given a camera list
-    to interpolate from, and assign the filename provided to that 
+    to interpolate from, and assign the filename provided to that
     timestamp
 
     Parameters
@@ -121,7 +121,7 @@ def interpolate_camera(query_timestamp, camera_list, filename):
     query_timestamp : float
         Query timestap
     camera_list : list(Camera)
-        Populated camera list. Will be used to find matching timestamps 
+        Populated camera list. Will be used to find matching timestamps
         to interpolate from
     filename : str
         Camera filename to assign to the queried timestamp
@@ -129,7 +129,7 @@ def interpolate_camera(query_timestamp, camera_list, filename):
     Returns
     -------
     Camera
-        Interpolated camera to the queried timestamp and with the 
+        Interpolated camera to the queried timestamp and with the
         filename provided
     """
 
@@ -160,7 +160,11 @@ def interpolate_camera(query_timestamp, camera_list, filename):
         c2.eastings,
     )
     c.depth = interpolate(
-        query_timestamp, c1.epoch_timestamp, c2.epoch_timestamp, c1.depth, c2.depth
+        query_timestamp,
+        c1.epoch_timestamp,
+        c2.epoch_timestamp,
+        c1.depth,
+        c2.depth,
     )
     c.latitude = interpolate(
         query_timestamp,
@@ -177,10 +181,18 @@ def interpolate_camera(query_timestamp, camera_list, filename):
         c2.longitude,
     )
     c.roll = interpolate(
-        query_timestamp, c1.epoch_timestamp, c2.epoch_timestamp, c1.roll, c2.roll
+        query_timestamp,
+        c1.epoch_timestamp,
+        c2.epoch_timestamp,
+        c1.roll,
+        c2.roll,
     )
     c.pitch = interpolate(
-        query_timestamp, c1.epoch_timestamp, c2.epoch_timestamp, c1.pitch, c2.pitch
+        query_timestamp,
+        c1.epoch_timestamp,
+        c2.epoch_timestamp,
+        c1.pitch,
+        c2.pitch,
     )
     c.yaw = interpolate(
         query_timestamp, c1.epoch_timestamp, c2.epoch_timestamp, c1.yaw, c2.yaw
@@ -269,13 +281,15 @@ def eigen_sorted(a):
 
 def interpolate_covariance(t, t0, t1, cov0, cov1):
     x = (t - t0) / (t1 - t0)
-    cov = (1 - x)*cov0 + x*cov1
+    cov = (1 - x) * cov0 + x * cov1
     return cov
 
 
 def interpolate_property(centre_list, i, sensor_list, j, prop_name):
-    if (centre_list[j - 1].__dict__[prop_name] is None 
-        or centre_list[j].__dict__[prop_name] is None):
+    if (
+        centre_list[j - 1].__dict__[prop_name] is None
+        or centre_list[j].__dict__[prop_name] is None
+    ):
         return None
     else:
         return interpolate(
@@ -283,7 +297,9 @@ def interpolate_property(centre_list, i, sensor_list, j, prop_name):
             centre_list[j - 1].epoch_timestamp,
             centre_list[j].epoch_timestamp,
             centre_list[j - 1].__dict__[prop_name],
-            centre_list[j].__dict__[prop_name])
+            centre_list[j].__dict__[prop_name],
+        )
+
 
 def interpolate_sensor_list(
     sensor_list,
@@ -303,7 +319,7 @@ def interpolate_sensor_list(
         sensor_list[0].epoch_timestamp > end_time
         or sensor_list[-1].epoch_timestamp < start_time
     ):
-        print(
+        Console.warn(
             "{} timestamps does not overlap with dead reckoning data, "
             "check timestamp_history.pdf via -v option.".format(sensor_name)
         )
@@ -315,18 +331,33 @@ def interpolate_sensor_list(
                 pass
             else:
                 if i > 0:
-                    print('WARNING! Deleted', i, 'entries from sensor', sensor_name,'. Reason: data before start of mission')
+                    Console.warn(
+                        "Deleted",
+                        i,
+                        "entries from sensor",
+                        sensor_name,
+                        ". Reason: data before start of mission",
+                    )
                     del sensor_list[:i]
                 break
         for i in range(len(sensor_list)):
             if j >= len(_centre_list) - 1:
                 ii = len(sensor_list) - i
                 if ii > 0:
-                    print('WARNING! Deleted', ii, 'entries from sensor', sensor_name,'. Reason: data after end of mission')
+                    Console.warn(
+                        "Deleted",
+                        ii,
+                        "entries from sensor",
+                        sensor_name,
+                        ". Reason: data after end of mission",
+                    )
                     del sensor_list[i:]
                 sensor_overlap_flag = 1
                 break
-            while _centre_list[j].epoch_timestamp < sensor_list[i].epoch_timestamp:
+            while (
+                _centre_list[j].epoch_timestamp
+                < sensor_list[i].epoch_timestamp
+            ):
                 if (
                     j + 1 > len(_centre_list) - 1
                     or _centre_list[j + 1].epoch_timestamp
@@ -335,7 +366,7 @@ def interpolate_sensor_list(
                     break
                 j += 1
             # if j>=1: ?
-            
+
             sensor_list[i].roll = interpolate(
                 sensor_list[i].epoch_timestamp,
                 _centre_list[j - 1].epoch_timestamp,
@@ -400,9 +431,6 @@ def interpolate_sensor_list(
                 _centre_list[j - 1].z_velocity,
                 _centre_list[j].z_velocity,
             )
-            # while n<len(time_altitude)-1 and time_altitude[n+1]<time_camera1[i]:
-            #     n += 1
-            # camera1_altitude.append(interpolate(time_camera1[i],time_altitude[n],time_altitude[n+1],altitude[n],altitude[n+1]))
             sensor_list[i].altitude = interpolate(
                 sensor_list[i].epoch_timestamp,
                 _centre_list[j - 1].epoch_timestamp,
@@ -460,25 +488,52 @@ def interpolate_sensor_list(
                 )
                 - z_offset
             )
-            [sensor_list[i].latitude, sensor_list[i].longitude] = metres_to_latlon(
+            [
+                sensor_list[i].latitude,
+                sensor_list[i].longitude,
+            ] = metres_to_latlon(
                 latitude_reference,
                 longitude_reference,
                 sensor_list[i].eastings,
                 sensor_list[i].northings,
             )
 
-            sensor_list[i].northings_std = interpolate_property(_centre_list, i, sensor_list, j, 'northings_std')
-            sensor_list[i].eastings_std = interpolate_property(_centre_list, i, sensor_list, j, 'eastings_std')
-            sensor_list[i].depth_std = interpolate_property(_centre_list, i, sensor_list, j, 'depth_std')
-            sensor_list[i].roll_std = interpolate_property(_centre_list, i, sensor_list, j, 'roll_std')
-            sensor_list[i].pitch_std = interpolate_property(_centre_list, i, sensor_list, j, 'pitch_std')
-            sensor_list[i].yaw_std = interpolate_property(_centre_list, i, sensor_list, j, 'yaw_std')
-            sensor_list[i].x_velocity_std = interpolate_property(_centre_list, i, sensor_list, j, 'x_velocity_std')
-            sensor_list[i].y_velocity_std = interpolate_property(_centre_list, i, sensor_list, j, 'y_velocity_std')
-            sensor_list[i].z_velocity_std = interpolate_property(_centre_list, i, sensor_list, j, 'z_velocity_std')
-            sensor_list[i].vroll_std = interpolate_property(_centre_list, i, sensor_list, j, 'vroll_std')
-            sensor_list[i].vpitch_std = interpolate_property(_centre_list, i, sensor_list, j, 'vpitch_std')
-            sensor_list[i].vyaw_std = interpolate_property(_centre_list, i, sensor_list, j, 'vyaw_std')
+            sensor_list[i].northings_std = interpolate_property(
+                _centre_list, i, sensor_list, j, "northings_std"
+            )
+            sensor_list[i].eastings_std = interpolate_property(
+                _centre_list, i, sensor_list, j, "eastings_std"
+            )
+            sensor_list[i].depth_std = interpolate_property(
+                _centre_list, i, sensor_list, j, "depth_std"
+            )
+            sensor_list[i].roll_std = interpolate_property(
+                _centre_list, i, sensor_list, j, "roll_std"
+            )
+            sensor_list[i].pitch_std = interpolate_property(
+                _centre_list, i, sensor_list, j, "pitch_std"
+            )
+            sensor_list[i].yaw_std = interpolate_property(
+                _centre_list, i, sensor_list, j, "yaw_std"
+            )
+            sensor_list[i].x_velocity_std = interpolate_property(
+                _centre_list, i, sensor_list, j, "x_velocity_std"
+            )
+            sensor_list[i].y_velocity_std = interpolate_property(
+                _centre_list, i, sensor_list, j, "y_velocity_std"
+            )
+            sensor_list[i].z_velocity_std = interpolate_property(
+                _centre_list, i, sensor_list, j, "z_velocity_std"
+            )
+            sensor_list[i].vroll_std = interpolate_property(
+                _centre_list, i, sensor_list, j, "vroll_std"
+            )
+            sensor_list[i].vpitch_std = interpolate_property(
+                _centre_list, i, sensor_list, j, "vpitch_std"
+            )
+            sensor_list[i].vyaw_std = interpolate_property(
+                _centre_list, i, sensor_list, j, "vyaw_std"
+            )
 
             if _centre_list[j].covariance is not None:
                 sensor_list[i].covariance = interpolate_covariance(
@@ -490,11 +545,11 @@ def interpolate_sensor_list(
                 )
 
         if sensor_overlap_flag == 1:
-            print(
+            Console.warn(
                 "Sensor data from {} spans further than dead reckoning data."
                 " Data outside DR is ignored.".format(sensor_name)
             )
-        print(
+        Console.info(
             "Complete interpolation and coordinate transfomations "
             "for {}".format(sensor_name)
         )

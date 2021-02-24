@@ -2,8 +2,8 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
 # Scripts to parse acfr image acquisition data
@@ -13,20 +13,14 @@ See LICENSE.md file in the project root for full license information.
 
 import os
 
-# from datetime import datetime
-
-# sys.path.append("..")
 from auv_nav.tools.time_conversions import date_time_to_epoch
-from oplab import get_raw_folder
-from oplab import Console
+from oplab import Console, get_raw_folder
 
 epoch_timestamp_camera1 = []
 epoch_timestamp_camera2 = []
 values = []
 data_list = []
 tolerance = 0.05  # 0.01 # stereo pair must be within 10ms of each other
-
-# http://www.json.org/
 
 
 def acfr_timestamp_from_filename(filename, timezone_offset, timeoffset):
@@ -46,7 +40,9 @@ def acfr_timestamp_from_filename(filename, timezone_offset, timeoffset):
     secs = int(time_string[4:6])
     msec = int(ms_time_string[0:3])
 
-    epoch_time = date_time_to_epoch(yyyy, mm, dd, hour, mins, secs, timezone_offset)
+    epoch_time = date_time_to_epoch(
+        yyyy, mm, dd, hour, mins, secs, timezone_offset
+    )
     # dt_obj = datetime(yyyy,mm,dd,hour,mins,secs)
     # time_tuple = dt_obj.timetuple()
     # epoch_time = time.mktime(time_tuple)
@@ -80,7 +76,8 @@ def parse_acfr_images(mission, vehicle, category, ftype, outpath):
             print(
                 "Error: timezone",
                 timezone,
-                "in mission.cfg not recognised, please enter value from UTC in hours",
+                "in mission.cfg not recognised, please enter value from UTC",
+                "in hours",
             )
             return
 
@@ -132,7 +129,9 @@ def parse_acfr_images(mission, vehicle, category, ftype, outpath):
                     - float(epoch_timestamp_camera2[j])
                 )
             )
-        (sync_difference, sync_pair) = min((v, k) for k, v in enumerate(values))
+        (sync_difference, sync_pair) = min(
+            (v, k) for k, v in enumerate(values)
+        )
         if sync_difference > tolerance:
             # Skip the pair
             continue
@@ -146,13 +145,19 @@ def parse_acfr_images(mission, vehicle, category, ftype, outpath):
                 "camera1": [
                     {
                         "epoch_timestamp": float(epoch_timestamp_camera1[i]),
-                        "filename": str(filepath) + "/" + str(camera1_filename[i]),
+                        "filename": str(filepath)
+                        + "/"
+                        + str(camera1_filename[i]),
                     }
                 ],
                 "camera2": [
                     {
-                        "epoch_timestamp": float(epoch_timestamp_camera2[sync_pair]),
-                        "filename": str(filepath) + "/" + str(camera2_filename[sync_pair]),
+                        "epoch_timestamp": float(
+                            epoch_timestamp_camera2[sync_pair]
+                        ),
+                        "filename": str(filepath)
+                        + "/"
+                        + str(camera2_filename[sync_pair]),
                     }
                 ],
             }

@@ -2,8 +2,8 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
 # Scripts to parse Jamstec USBL dump data.
@@ -13,16 +13,10 @@ See LICENSE.md file in the project root for full license information.
 
 import math
 
-# from datetime import datetime
+from auv_nav.tools.latlon_wgs84 import latlon_to_metres, metres_to_latlon
 
-# http://www.json.org/
-# sys.path.append("..")
-from auv_nav.tools.time_conversions import date_time_to_epoch
-from auv_nav.tools.time_conversions import read_timezone
-from auv_nav.tools.latlon_wgs84 import latlon_to_metres
-from auv_nav.tools.latlon_wgs84 import metres_to_latlon
-from oplab import get_raw_folder
-from oplab import Console
+from auv_nav.tools.time_conversions import date_time_to_epoch, read_timezone
+from oplab import Console, get_raw_folder
 
 
 def parse_usbl_dump(mission, vehicle, category, ftype, outpath):
@@ -97,7 +91,9 @@ def parse_usbl_dump(mission, vehicle, category, ftype, outpath):
                     latitude_minutes = float(latitude_list[1])
 
                     if latitude_full[1] != "N":
-                        latitude_degrees = latitude_degrees * -1  # southern hemisphere
+                        latitude_degrees = (
+                            latitude_degrees * -1
+                        )  # southern hemisphere
 
                     latitude = latitude_degrees + latitude_minutes / 60
 
@@ -119,7 +115,9 @@ def parse_usbl_dump(mission, vehicle, category, ftype, outpath):
                     distance_full = line_split[11].split("=")
                     distance = float(distance_full[1])
 
-                    distance_std = distance_std_factor * distance + distance_std_offset
+                    distance_std = (
+                        distance_std_factor * distance + distance_std_offset
+                    )
 
                     lateral_distance_full = line_split[9].split("=")
                     lateral_distance = float(lateral_distance_full[1])
@@ -143,7 +141,10 @@ def parse_usbl_dump(mission, vehicle, category, ftype, outpath):
                     heading_ship = 0
 
                     lateral_distance_target, bearing_target = latlon_to_metres(
-                        latitude, longitude, latitude_reference, longitude_reference
+                        latitude,
+                        longitude,
+                        latitude_reference,
+                        longitude_reference,
                     )
                     eastings_target = (
                         math.sin(bearing_target * math.pi / 180.0)

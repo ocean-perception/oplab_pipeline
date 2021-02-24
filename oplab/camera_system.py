@@ -2,8 +2,8 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
 import yaml
@@ -44,15 +44,19 @@ class CameraEntry:
             self.filename_to_date = node.get("filename_to_date", None)
             if self.timestamp_file is None and self.filename_to_date is None:
                 Console.error(
-                    "The camera ", self.name, " is missing its timestamp format"
+                    "The camera ",
+                    self.name,
+                    " is missing its timestamp format",
                 )
                 Console.error("You can provide it by means of filename:")
                 Console.error(
-                    "e.g. PR_20180811_153729_762_RC16.tif -> xxxYYYYMMDDxhhmmssxfffxxxxx.xxx"
+                    "e.g. PR_20180811_153729_762_RC16.tif ->",
+                    "xxxYYYYMMDDxhhmmssxfffxxxxx.xxx",
                 )
                 Console.error("or using a separate timestamp file:")
                 Console.error(
-                    "e.g. FileTime.csv, where separate columns z define the date."
+                    "e.g. FileTime.csv, where separate columns z define",
+                    "the date.",
                 )
                 Console.error("Find examples in default_yaml folder.")
                 Console.quit("Missing timestamp format for a camera.")
@@ -79,7 +83,6 @@ class CameraEntry:
         raw_dir = get_raw_folder(self.raw_folder)
 
         split_glob = str(self.path).split("*")
-        # print(len(split_glob))
         img_dir = ""
         if len(split_glob) == 2:
             pre_glob = split_glob[0] + "*"
@@ -94,7 +97,9 @@ class CameraEntry:
             glob_vec = raw_dir.glob(pre_glob)
             img_dirs = [k for k in glob_vec]
             img_dir = Path(str(img_dirs[0]))
-            Console.info("Looking for images with the pattern *", split_glob[2], "*")
+            Console.info(
+                "Looking for images with the pattern *", split_glob[2], "*"
+            )
             for i in img_dir.glob("*" + split_glob[2] + "*." + self.extension):
                 self._image_list.append(str(i))
         elif len(split_glob) == 1:
@@ -130,7 +135,11 @@ class CameraEntry:
         self._image_properties = []
 
         # read tiff
-        if self.extension == "tif" or self.extension == "jpg":
+        if (
+            self.extension == "tif"
+            or self.extension == "jpg"
+            or self.extension == "JPG"
+        ):
             image_matrix = imageio.imread(image_path)
             image_shape = image_matrix.shape
             self._image_properties.append(image_shape[0])
@@ -142,7 +151,7 @@ class CameraEntry:
 
         # read raw
         if self.extension == "raw":
-            # TODO: provide a raw reader and get these properties from the file.
+            # TODO: provide a raw reader and get these properties from the file
             self._image_properties = [1024, 1280, 1]
         return self._image_properties
 
@@ -153,10 +162,12 @@ class CameraSystem:
     """
 
     def __init__(self, filename=None, raw_folder=None):
-        """Constructor of camera system. If a filename is provided, the file will be parsed and its contents loaded into the class.
+        """Constructor of camera system. If a filename is provided, the file
+        will be parsed and its contents loaded into the class.
 
         Keyword Arguments:
-            filename {string} -- Path to the camera.yaml file describing the camera system (default: {None})
+            filename {string} -- Path to the camera.yaml file describing the
+            camera system (default: {None})
         """
         self.cameras = []
         self.camera_system = None
@@ -173,12 +184,18 @@ class CameraSystem:
             with filename.open("r") as stream:
                 data = yaml.safe_load(stream)
         except FileNotFoundError:
-            Console.error("The file camera.yaml could not be found at ", filename)
+            Console.error(
+                "The file camera.yaml could not be found at ", filename
+            )
             Console.quit("camera.yaml not provided")
         except PermissionError:
-            Console.error("The file camera.yaml could not be opened at ", filename)
+            Console.error(
+                "The file camera.yaml could not be opened at ", filename
+            )
             Console.error(filename)
-            Console.error("Please make sure you have the correct access rights.")
+            Console.error(
+                "Please make sure you have the correct access rights."
+            )
             Console.quit("camera.yaml not provided")
         self._parse(data)
 
@@ -199,7 +216,9 @@ class CameraSystem:
 
     def _parse(self, node):
         if "camera_system" not in node:
-            Console.error("The camera.yaml file is missing the camera_system entry.")
+            Console.error(
+                "The camera.yaml file is missing the camera_system entry."
+            )
             Console.quit("Wrong camera.yaml format or content.")
         self.camera_system = node["camera_system"]
 

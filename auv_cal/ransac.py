@@ -2,13 +2,13 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
 import random
 import numpy as np
-import math
+
 from oplab import Console
 
 
@@ -137,8 +137,12 @@ if __name__ == "__main__":
 
     # create random data
     xyzs = np.zeros((N_POINTS, 3))
-    xyzs[:, 0] = [np.random.uniform(2 * EXTENTS) - EXTENTS for i in range(N_POINTS)]
-    xyzs[:, 1] = [np.random.uniform(2 * EXTENTS) - EXTENTS for i in range(N_POINTS)]
+    xyzs[:, 0] = [
+        np.random.uniform(2 * EXTENTS) - EXTENTS for i in range(N_POINTS)
+    ]
+    xyzs[:, 1] = [
+        np.random.uniform(2 * EXTENTS) - EXTENTS for i in range(N_POINTS)
+    ]
     for i in range(N_POINTS):
         xyzs[i, 2] = (
             -TARGET_D - xyzs[i, 0] * TARGET_A - xyzs[i, 1] * TARGET_B

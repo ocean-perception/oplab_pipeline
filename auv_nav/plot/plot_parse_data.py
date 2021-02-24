@@ -2,22 +2,22 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
-import sys
 import json
+import sys
 import time
 
-from prettytable import PrettyTable, ALL
-import plotly.offline as py
 import plotly.graph_objs as go
-
-from auv_nav.tools.time_conversions import epoch_to_localtime
-from auv_nav.tools.time_conversions import epoch_to_utctime
-from auv_nav.tools.time_conversions import get_localtimezone
-
+import plotly.offline as py
+from auv_nav.tools.time_conversions import (
+    epoch_to_localtime,
+    epoch_to_utctime,
+    get_localtimezone,
+)
+from prettytable import ALL, PrettyTable
 
 """
 This looks at nav_standard.json file stored in the format of
@@ -98,16 +98,26 @@ def data2trace(i, j, t, plotlytable_info_list):
     # plotly plot
     # format is 'yyyy-mm-dd HH:MM:SS.ssssss'
     x_values = [
-        time.strftime("%Y-%m-%d %H:%M:%S", epoch_to_utctime(k["epoch_timestamp"]))
+        time.strftime(
+            "%Y-%m-%d %H:%M:%S", epoch_to_utctime(k["epoch_timestamp"])
+        )
         + ".{}".format(
-            ("{:.6f}".format(k["epoch_timestamp"] - int(k["epoch_timestamp"])))[2:9]
+            (
+                "{:.6f}".format(
+                    k["epoch_timestamp"] - int(k["epoch_timestamp"])
+                )
+            )[2:9]
         )
         for k in j
     ]
     text_list = [
-        time.strftime("%Y-%m-%d %H:%M:%S", epoch_to_utctime(k["epoch_timestamp"]))
+        time.strftime(
+            "%Y-%m-%d %H:%M:%S", epoch_to_utctime(k["epoch_timestamp"])
+        )
         + "(UTC) | "
-        + time.strftime("%Y-%m-%d %H:%M:%S", epoch_to_localtime(k["epoch_timestamp"]))
+        + time.strftime(
+            "%Y-%m-%d %H:%M:%S", epoch_to_localtime(k["epoch_timestamp"])
+        )
         + "(Local)"
         for k in j
     ]  # add utc time too.
@@ -168,7 +178,9 @@ def plot_parse_data(filepath, ftype="oplab"):
                                     j.append(i)
                             if flag_same_frame == 0:
                                 fdt_lst[ct_lst.index(i["category"])].append([])
-                                fdt_lst[ct_lst.index(i["category"])][-1].append(i)
+                                fdt_lst[ct_lst.index(i["category"])][
+                                    -1
+                                ].append(i)
                                 print(
                                     "Warning: %s"
                                     "s frame contains more than \
@@ -210,7 +222,9 @@ def plot_parse_data(filepath, ftype="oplab"):
                     pass
                 else:
                     #
-                    x, y, text_list, title = data2trace(i, j, t, plotlytable_info_list)
+                    x, y, text_list, title = data2trace(
+                        i, j, t, plotlytable_info_list
+                    )
                     titles.append(title)
                     epoch_timestamp_data_points.append(j)
                     trace_list.append(create_trace(x, y, text_list, title))
@@ -242,40 +256,60 @@ def plot_parse_data(filepath, ftype="oplab"):
         )
 
         layout_table = go.Layout(
-            title="Json Data Info Table<br>Start time is: %s (%s), %s (%s), %d (epoch)"
+            title="Json Data Info Table<br>Start time is: %s (%s), %s (%s), \
+                %d (epoch)"
             "<br>Finish time is: %s (%s), %s (%s), %d (epoch)"
             % (
-                time.strftime("%Y-%m-%d %H:%M:%S", epoch_to_localtime(start_time)),
+                time.strftime(
+                    "%Y-%m-%d %H:%M:%S", epoch_to_localtime(start_time)
+                ),
                 get_localtimezone(),
-                time.strftime("%Y-%m-%d %H:%M:%S", epoch_to_utctime(start_time)),
+                time.strftime(
+                    "%Y-%m-%d %H:%M:%S", epoch_to_utctime(start_time)
+                ),
                 "UTC",
                 start_time,
-                time.strftime("%Y-%m-%d %H:%M:%S", epoch_to_localtime(finish_time)),
+                time.strftime(
+                    "%Y-%m-%d %H:%M:%S", epoch_to_localtime(finish_time)
+                ),
                 get_localtimezone(),
-                time.strftime("%Y-%m-%d %H:%M:%S", epoch_to_utctime(finish_time)),
+                time.strftime(
+                    "%Y-%m-%d %H:%M:%S", epoch_to_utctime(finish_time)
+                ),
                 "UTC",
                 finish_time,
             )
         )
         table_fig = go.Figure(data=[table_trace], layout=layout_table)
         py.plot(
-            table_fig, filename=str(filepath / "json_data_info.html"), auto_open=False
+            table_fig,
+            filename=str(filepath / "json_data_info.html"),
+            auto_open=False,
         )
 
         layout = go.Layout(
             # width=950,
             # height=800,
-            title="Timestamp History Plot<br>Start time is: %s (%s), %s (%s), %d (epoch)"
+            title="Timestamp History Plot<br>Start time is: %s (%s), %s (%s), \
+                %d (epoch)"
             "<br>Finish time is: %s (%s), %s (%s), %d (epoch)"
             % (
-                time.strftime("%Y-%m-%d %H:%M:%S", epoch_to_localtime(start_time)),
+                time.strftime(
+                    "%Y-%m-%d %H:%M:%S", epoch_to_localtime(start_time)
+                ),
                 get_localtimezone(),
-                time.strftime("%Y-%m-%d %H:%M:%S", epoch_to_utctime(start_time)),
+                time.strftime(
+                    "%Y-%m-%d %H:%M:%S", epoch_to_utctime(start_time)
+                ),
                 "UTC",
                 start_time,
-                time.strftime("%Y-%m-%d %H:%M:%S", epoch_to_localtime(finish_time)),
+                time.strftime(
+                    "%Y-%m-%d %H:%M:%S", epoch_to_localtime(finish_time)
+                ),
                 get_localtimezone(),
-                time.strftime("%Y-%m-%d %H:%M:%S", epoch_to_utctime(finish_time)),
+                time.strftime(
+                    "%Y-%m-%d %H:%M:%S", epoch_to_utctime(finish_time)
+                ),
                 "UTC",
                 finish_time,
             ),
@@ -328,9 +362,11 @@ def plot_parse_data(filepath, ftype="oplab"):
                 rangeslider=dict(thickness=0.05),
                 type="date",
             ),
-            yaxis=dict(title="Category-Frame",),
+            yaxis=dict(
+                title="Category-Frame",
+            ),
             dragmode="pan",
-            margin=go.layout.Margin(l=150),
+            margin=go.layout.Margin(l=150), # noqa
         )
         config = {"scrollZoom": True}
         fig = go.Figure(data=list(reversed(trace_list)), layout=layout)
@@ -345,14 +381,22 @@ def plot_parse_data(filepath, ftype="oplab"):
             "Start time is: %s (%s), %s (%s), %d (epoch)\nFinish time is: "
             "%s (%s), %s (%s), %d (epoch)\n"
             % (
-                time.strftime("%Y-%m-%d %H:%M:%S", epoch_to_localtime(start_time)),
+                time.strftime(
+                    "%Y-%m-%d %H:%M:%S", epoch_to_localtime(start_time)
+                ),
                 get_localtimezone(),
-                time.strftime("%Y-%m-%d %H:%M:%S", epoch_to_utctime(start_time)),
+                time.strftime(
+                    "%Y-%m-%d %H:%M:%S", epoch_to_utctime(start_time)
+                ),
                 "UTC",
                 start_time,
-                time.strftime("%Y-%m-%d %H:%M:%S", epoch_to_localtime(finish_time)),
+                time.strftime(
+                    "%Y-%m-%d %H:%M:%S", epoch_to_localtime(finish_time)
+                ),
                 get_localtimezone(),
-                time.strftime("%Y-%m-%d %H:%M:%S", epoch_to_utctime(finish_time)),
+                time.strftime(
+                    "%Y-%m-%d %H:%M:%S", epoch_to_utctime(finish_time)
+                ),
                 "UTC",
                 finish_time,
             )

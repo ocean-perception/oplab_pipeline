@@ -2,17 +2,16 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
-from oplab import Console
-import plotly.graph_objs as go
-from plotly import subplots
-import plotly.offline as py
-
-import os
 import time
+
+import plotly.graph_objs as go
+import plotly.offline as py
+from oplab import Console
+from plotly import subplots
 
 
 def create_trace(x_list, y_list, trace_name, trace_color, visibility=True):
@@ -119,18 +118,30 @@ def plot_velocity_vs_time(
     dr_y_velocity = [i.y_velocity for i in dead_reckoning_dvl_list]
     dr_z_velocity = [i.z_velocity for i in dead_reckoning_dvl_list]
 
-    tr_dr_north = create_trace(dr_time, dr_north_velocity, "DVL north velocity", "red")
-    tr_dr_east = create_trace(dr_time, dr_east_velocity, "DVL east velocity", "red")
-    tr_dr_down = create_trace(dr_time, dr_down_velocity, "DVL down velocity", "red")
+    tr_dr_north = create_trace(
+        dr_time, dr_north_velocity, "DVL north velocity", "red"
+    )
+    tr_dr_east = create_trace(
+        dr_time, dr_east_velocity, "DVL east velocity", "red"
+    )
+    tr_dr_down = create_trace(
+        dr_time, dr_down_velocity, "DVL down velocity", "red"
+    )
     tr_dr_x = create_trace(dr_time, dr_x_velocity, "DVL x velocity", "red")
     tr_dr_y = create_trace(dr_time, dr_y_velocity, "DVL y velocity", "red")
     tr_dr_z = create_trace(dr_time, dr_z_velocity, "DVL z velocity", "red")
 
     if len(velocity_inertial_list) > 0:
         inertial_time = [i.epoch_timestamp for i in velocity_inertial_list]
-        inertial_north_velocity = [i.north_velocity for i in velocity_inertial_list]
-        inertial_east_velocity = [i.east_velocity for i in velocity_inertial_list]
-        inertial_down_velocity = [i.down_velocity for i in velocity_inertial_list]
+        inertial_north_velocity = [
+            i.north_velocity for i in velocity_inertial_list
+        ]
+        inertial_east_velocity = [
+            i.east_velocity for i in velocity_inertial_list
+        ]
+        inertial_down_velocity = [
+            i.down_velocity for i in velocity_inertial_list
+        ]
 
         tr_inertial_north = create_trace(
             inertial_time,
@@ -144,12 +155,13 @@ def plot_velocity_vs_time(
             "{} east velocity".format(velocity_inertial_sensor_name),
             "blue",
         )
-        tr_inertial_down = create_trace(
-            inertial_time,
-            inertial_down_velocity,
-            "{} down velocity".format(velocity_inertial_sensor_name),
-            "blue",
-        )
+        if inertial_down_velocity[0] is not None:
+            tr_inertial_down = create_trace(
+                inertial_time,
+                inertial_down_velocity,
+                "{} down velocity".format(velocity_inertial_sensor_name),
+                "blue",
+            )
 
     fig = subplots.make_subplots(
         rows=3,
@@ -166,9 +178,12 @@ def plot_velocity_vs_time(
     )
     fig.append_trace(tr_dr_north, 1, 1)
     if len(velocity_inertial_list) > 0:
-        fig.append_trace(tr_inertial_north, 1, 1)
-        fig.append_trace(tr_inertial_east, 2, 1)
-        fig.append_trace(tr_inertial_down, 3, 1)
+        if velocity_inertial_list[0].north_velocity is not None:
+            fig.append_trace(tr_inertial_north, 1, 1)
+        if velocity_inertial_list[0].east_velocity is not None:
+            fig.append_trace(tr_inertial_east, 2, 1)
+        if velocity_inertial_list[0].down_velocity is not None:
+            fig.append_trace(tr_inertial_down, 3, 1)
     fig.append_trace(tr_dr_east, 2, 1)
     fig.append_trace(tr_dr_down, 3, 1)
     fig.append_trace(tr_dr_x, 1, 2)
@@ -203,6 +218,7 @@ def plot_velocity_vs_time(
     )
 
     Console.info("... done plotting velocity_vs_time.")
+
 
 def plot_deadreckoning_vs_time(
     dead_reckoning_dvl_list,
@@ -239,15 +255,21 @@ def plot_deadreckoning_vs_time(
     depth = [i.depth for i in depth_list]
 
     # Northing vs time
-    tr_dr_northings = create_trace(dr_time, dr_northings, "Northing DVL", "red")
-    tr_usbl_northings = create_trace(usbl_time, usbl_northings, "Northing USBL", "blue")
+    tr_dr_northings = create_trace(
+        dr_time, dr_northings, "Northing DVL", "red"
+    )
+    tr_usbl_northings = create_trace(
+        usbl_time, usbl_northings, "Northing USBL", "blue"
+    )
     tr_drc_northings = create_trace(
         dr_centre_time, dr_centre_northings, "Northing Centre", "orange"
     )
 
     # Easting vs time
     tr_dr_eastings = create_trace(dr_time, dr_eastings, "Easting DVL", "red")
-    tr_usbl_eastings = create_trace(usbl_time, usbl_eastings, "Easting USBL", "blue")
+    tr_usbl_eastings = create_trace(
+        usbl_time, usbl_eastings, "Easting USBL", "blue"
+    )
     tr_drc_eastings = create_trace(
         dr_centre_time, dr_centre_eastings, "Easting Centre", "orange"
     )
@@ -332,10 +354,15 @@ def plot_deadreckoning_vs_time(
 
     Console.info("... done plotting deadreckoning_vs_time.")
 
+
 # pf uncertainty plotly
 # maybe make a slider plot for this, or a dot projection slider
 def plot_pf_uncertainty(
-    pf_fusion_dvl_list, pf_northings_std, pf_eastings_std, pf_yaw_std, plotlypath
+    pf_fusion_dvl_list,
+    pf_northings_std,
+    pf_eastings_std,
+    pf_yaw_std,
+    plotlypath,
 ):
     Console.info("Plotting pf_uncertainty...")
     pf_time = [i.epoch_timestamp for i in pf_fusion_dvl_list]
@@ -356,7 +383,8 @@ def plot_pf_uncertainty(
     )
     config = {"scrollZoom": True}
     fig = go.Figure(
-        data=[tr_pf_northings_std, tr_pf_eastings_std, tr_pf_yaw_std], layout=layout
+        data=[tr_pf_northings_std, tr_pf_eastings_std, tr_pf_yaw_std],
+        layout=layout,
     )
     py.plot(
         fig,
@@ -364,7 +392,7 @@ def plot_pf_uncertainty(
         filename=str(plotlypath / "pf_uncertainty.html"),
         auto_open=False,
     )
-    
+
     Console.info("... done plotting pf_uncertainty.")
 
 
@@ -416,19 +444,26 @@ def plot_uncertainty(
     tr_lon = create_trace(usbl_time, usbl_lon_std, "Lon std usbl", "green")
     tr_depth = create_trace(depth_time, depth_std, "Depth std", "blue")
 
-    tr_n = create_trace(usbl_time, usbl_northing_std, "northing std usbl", "red")
-    tr_e = create_trace(usbl_time, usbl_easting_std, "easting std usbl", "green")
+    tr_n = create_trace(
+        usbl_time, usbl_northing_std, "northing std usbl", "red"
+    )
+    tr_e = create_trace(
+        usbl_time, usbl_easting_std, "easting std usbl", "green"
+    )
 
     if len(velocity_inertial_list) > 0:
-        tr_iv_n = create_trace(
-            iv_time, iv_n_vel_std, "north velocity std inertial", "red"
-        )
-        tr_iv_e = create_trace(
-            iv_time, iv_e_vel_std, "east velocity std inertial", "green"
-        )
-        tr_iv_d = create_trace(
-            iv_time, iv_d_vel_std, "down velocity std inertial", "blue"
-        )
+        if iv_n_vel_std[0] is not None:
+            tr_iv_n = create_trace(
+                iv_time, iv_n_vel_std, "north velocity std inertial", "red"
+            )
+        if iv_e_vel_std[0] is not None:
+            tr_iv_e = create_trace(
+                iv_time, iv_e_vel_std, "east velocity std inertial", "green"
+            )
+        if iv_d_vel_std[0] is not None:
+            tr_iv_d = create_trace(
+                iv_time, iv_d_vel_std, "down velocity std inertial", "blue"
+            )
 
     fig = subplots.make_subplots(
         rows=2,
@@ -456,9 +491,12 @@ def plot_uncertainty(
     fig.append_trace(tr_depth, 2, 1)
 
     if len(velocity_inertial_list) > 0:
-        fig.append_trace(tr_iv_n, 2, 2)
-        fig.append_trace(tr_iv_e, 2, 2)
-        fig.append_trace(tr_iv_d, 2, 2)
+        if iv_n_vel_std[0] is not None:
+            fig.append_trace(tr_iv_n, 2, 2)
+        if iv_e_vel_std[0] is not None:
+            fig.append_trace(tr_iv_e, 2, 2)
+        if iv_d_vel_std[0] is not None:
+            fig.append_trace(tr_iv_d, 2, 2)
 
     fig.append_trace(tr_n, 2, 3)
     fig.append_trace(tr_e, 2, 3)
@@ -475,7 +513,9 @@ def plot_uncertainty(
     fig["layout"]["yaxis4"].update(title="Depth, m")
     fig["layout"]["yaxis5"].update(title="Velocity, m/s")
     fig["layout"]["yaxis6"].update(title="NorthEast, m")
-    fig["layout"].update(title="Uncertainty Plots", dragmode="pan", hovermode="closest")
+    fig["layout"].update(
+        title="Uncertainty Plots", dragmode="pan", hovermode="closest"
+    )
     config = {"scrollZoom": True}
     py.plot(
         fig,
@@ -483,7 +523,7 @@ def plot_uncertainty(
         filename=str(plotlypath / "uncertainties_plot.html"),
         auto_open=False,
     )
-    
+
     Console.info("... done plotting uncertainty.")
 
 
@@ -501,7 +541,8 @@ def plot_2d_deadreckoning(
     usbl_list,
     plotlypath,
 ):
-    # DR plotly slider *include toggle button that switches between lat long and north east
+    # DR plotly slider *include toggle button that switches between lat lon
+    # and north east
     Console.info("Plotting auv_path...")
 
     # might not be robust in the future
@@ -512,13 +553,20 @@ def plot_2d_deadreckoning(
     if len(camera1_list) > 1:
         plotly_list.append(["dr_camera1", camera1_list, "legendonly"])
     if len(dead_reckoning_centre_list) > 1:
-        plotly_list.append(["dr_centre", dead_reckoning_centre_list, "legendonly"])
+        plotly_list.append(
+            ["dr_centre", dead_reckoning_centre_list, "legendonly"]
+        )
     if len(dead_reckoning_dvl_list) > 1:
         plotly_list.append(["dr_dvl", dead_reckoning_dvl_list, True])
-    # if len(velocity_inertial_list) > 1:
-    #    plotly_list.append([velocity_inertial_sensor_name, velocity_inertial_list])
+
     if len(usbl_list_no_dist_filter) > 1:
-        plotly_list.append(["usbl_without_distance_filter", usbl_list_no_dist_filter, "legendonly"])
+        plotly_list.append(
+            [
+                "usbl_without_distance_filter",
+                usbl_list_no_dist_filter,
+                "legendonly",
+            ]
+        )
     if len(usbl_list) > 1:
         plotly_list.append(["usbl", usbl_list, True])
 
@@ -642,13 +690,18 @@ def plot_2d_deadreckoning(
                 # timestamp_index_tracker = 0
                 for j in range(len(pf_particles_list[i][0].timestamps)):
                     if (
-                        pf_particles_list[i][0].timestamps[j] - timestamp_value_tracker
+                        pf_particles_list[i][0].timestamps[j]
+                        - timestamp_value_tracker
                     ) > particles_time_interval:
                         for k in pf_particles_list[i]:
-                            pf_timestamps_interval.append(float(k.timestamps[j]))
+                            pf_timestamps_interval.append(
+                                float(k.timestamps[j])
+                            )
                             pf_eastings_interval.append(float(k.eastings[j]))
                             pf_northings_interval.append(float(k.northings[j]))
-                        timestamp_value_tracker = pf_particles_list[i][0].timestamps[j]
+                        timestamp_value_tracker = pf_particles_list[i][
+                            0
+                        ].timestamps[j]
             make_data(
                 figure,
                 "pf_dvl_distribution",
@@ -668,11 +721,6 @@ def plot_2d_deadreckoning(
                     mode="markers",
                     opacity=0.5,
                 )
-                # make_data(figure, 'PF_Propagation{}'.format(resampling_index),
-                #           [float(j.eastings[-1]) for j in i],
-                #           [float(j.northings[-1]) for j in i],
-                #           mode='markers',
-                #           opacity=0.5)
                 resampling_index += 1
 
     config = {"scrollZoom": True}
@@ -806,12 +854,13 @@ def plot_2d_deadreckoning(
         filename=str(plotlypath / "auv_path_slider.html"),
         auto_open=False,
     )
-    
+
     Console.info("... done plotting auv_path.")
 
 
 def plot_2d_localisation(dr_list, pf_list, ekf_list, eks_list, plotlypath):
-    # DR plotly slider *include toggle button that switches between lat long and north east
+    # DR plotly slider *include toggle button that switches between lat long
+    # and north east
     Console.info("Plotting auv_path (localisation)...")
 
     # might not be robust in the future
@@ -969,4 +1018,3 @@ def plot_2d_localisation(dr_list, pf_list, ekf_list, eks_list, plotlypath):
     )
 
     Console.info("... done plotting auv_path (localisation).")
-    

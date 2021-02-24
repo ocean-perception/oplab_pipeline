@@ -2,8 +2,8 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
 # Scripts to parse sexerocks image acquisition data
@@ -11,12 +11,9 @@ See LICENSE.md file in the project root for full license information.
 # Author: Blair Thornton
 # Date: 31/08/2017
 
-# sys.path.append("..")
-from auv_nav.tools.time_conversions import date_time_to_epoch
-from auv_nav.tools.time_conversions import epoch_to_day
-from oplab import get_raw_folder
-from oplab import Console
-from pathlib import Path
+
+from auv_nav.tools.time_conversions import date_time_to_epoch, epoch_to_day
+from oplab import Console, get_raw_folder
 
 
 def parse_seaxerocks_images(mission, vehicle, category, ftype, outpath):
@@ -115,18 +112,24 @@ def parse_seaxerocks_images(mission, vehicle, category, ftype, outpath):
             if date_string != "date":  # ignore header
                 stereo_index.append(index_string)
                 if len(date_string) != 8:
-                    Console.warn("Date string ({}) in FileTime.csv file has "
-                        "unexpected length. Expected length: 8."
-                        .format(date_string))
+                    Console.warn(
+                        "Date string ({}) in FileTime.csv file has "
+                        "unexpected length. Expected length: 8.".format(
+                            date_string
+                        )
+                    )
                 yyyy = int(date_string[0:4])
                 mm = int(date_string[4:6])
                 dd = int(date_string[6:8])
 
                 # read in time
                 if len(time_string) != 6:
-                    Console.warn("Time string ({}) in FileTime.csv file has "
-                        "unexpected length. Expected length: 6."
-                        .format(time_string))
+                    Console.warn(
+                        "Time string ({}) in FileTime.csv file has "
+                        "unexpected length. Expected length: 6.".format(
+                            time_string
+                        )
+                    )
                 hour = int(time_string[0:2])
                 mins = int(time_string[2:4])
                 secs = int(time_string[4:6])
@@ -220,14 +223,18 @@ def parse_seaxerocks_images(mission, vehicle, category, ftype, outpath):
                     {
                         "epoch_timestamp": float(epoch_timestamp_camera1[i]),
                         "serial": camera1_serial,
-                        "filename": str(camera1_filepath + "/" + camera1_filename[i]),
+                        "filename": str(
+                            camera1_filepath + "/" + camera1_filename[i]
+                        ),
                     }
                 ],
                 "camera2": [
                     {
                         "epoch_timestamp": float(epoch_timestamp_camera2[i]),
                         "serial": camera2_serial,
-                        "filename": str(camera2_filepath + "/" + camera2_filename[i]),
+                        "filename": str(
+                            camera2_filepath + "/" + camera2_filename[i]
+                        ),
                     }
                 ],
             }
@@ -283,7 +290,9 @@ def parse_seaxerocks_images(mission, vehicle, category, ftype, outpath):
     for i in range(len(camera3_list)):
         camera3_filename.append(
             "{}/image{}.{}".format(
-                camera3_list[i][s : s + 3], camera3_list[i], extension
+                camera3_list[i][s : (s + 3)],  # noqa: E203
+                camera3_list[i],
+                extension,
             )
         )
         camera3_index.append(camera3_list[i])
@@ -326,7 +335,7 @@ def determine_extension_and_images_per_folder(folder_path, image_list, label):
     """Determine filename extension and number of images per subfolder
 
     The number of images per subfolder dertermines how the subfolders are
-    named. The subfolder name is 3 letters long and either starts from the 
+    named. The subfolder name is 3 letters long and either starts from the
     first (index = 0) or the second (index = 1) digit of the image number.
 
     :param folder_path: Path where images are stored
@@ -393,5 +402,5 @@ def build_image_path(folder_path, image_number, s, extension):
     and the filename extension of the image
     """
     return folder_path / "{}/image{}.{}".format(
-        image_number[s : s + 3], image_number, extension
+        image_number[s : s + 3], image_number, extension  # noqa: E203
     )

@@ -2,18 +2,20 @@
 """
 Copyright (c) 2020, University of Southampton
 All rights reserved.
-Licensed under the BSD 3-Clause License. 
-See LICENSE.md file in the project root for full license information.  
+Licensed under the BSD 3-Clause License.
+See LICENSE.md file in the project root for full license information.
 """
 
-from auv_nav.parse import parse
-from auv_nav.process import process
-from auv_nav.convert import convert
-from oplab import Console
-
-import sys
 import argparse
 import os
+import sys
+
+from oplab import Console
+
+from auv_nav.export import export
+from auv_nav.import_data import import_data
+from auv_nav.parse import parse
+from auv_nav.process import process
 
 
 def main(args=None):
@@ -30,7 +32,7 @@ def main(args=None):
     """
 
     # enable VT100 Escape Sequence for WINDOWS 10 for Console outputs
-    # https://stackoverflow.com/questions/16755142/how-to-make-win32-console-recognize-ansi-vt100-escape-sequences
+    # https://stackoverflow.com/questions/16755142/how-to-make-win32-console-recognize-ansi-vt100-escape-sequences # noqa
     os.system("")
     Console.banner()
     Console.info("Running auv_nav version " + str(Console.get_version()))
@@ -70,7 +72,8 @@ def main(args=None):
         "--merge",
         dest="merge",
         action="store_true",
-        help="Merge multiple dives into a single JSON file. Requires more than one dive PATH.",
+        help="Merge multiple dives into a single JSON file. Requires more \
+        than one dive PATH.",
     )
     subparser_parse.set_defaults(func=call_parse_data)
 
@@ -127,23 +130,26 @@ def main(args=None):
     )
     subparser_process.set_defaults(func=call_process_data)
 
-    subparser_convert = subparsers.add_parser(
-        "convert",
-        help="Converts data from oplab nav_standard.json into your \
+    subparser_export = subparsers.add_parser(
+        "export",
+        help="exports data from oplab nav_standard.json into your \
         specified output format, or from ACFR to oplab. \
-        Type auv_nav convert -h for help on this \
+        Type auv_nav export -h for help on this \
         target.",
     )
-    subparser_convert.add_argument(
-        "path", default=".", help="Dive folder to convert from.",
+    subparser_export.add_argument(
+        "path",
+        default=".",
+        help="Dive folder to export.",
     )
-    subparser_convert.add_argument(
+    subparser_export.add_argument(
         "-i",
         "--input",
         dest="input",
-        help="Input pose file (e.g. stereo_pose_est.data) to import camera positions from.",
+        help="Input pose file (e.g. stereo_pose_est.data) to import camera \
+        positions from.",
     )
-    subparser_convert.add_argument(
+    subparser_export.add_argument(
         "-f",
         "--format",
         dest="format",
@@ -151,25 +157,53 @@ def main(args=None):
         help="Format in which \
         the data is output. Default: 'acfr'.",
     )
-    subparser_convert.add_argument(
+    subparser_export.add_argument(
         "-s",
         "--start",
         dest="start_datetime",
         default="",
         help="Start date & \
-        time in YYYYMMDDhhmmss from which data will be converted. If not set, \
+        time in YYYYMMDDhhmmss from which data will be exported. If not set, \
         start at beginning of dataset.",
     )
-    subparser_convert.add_argument(
+    subparser_export.add_argument(
         "-e",
         "--end",
         dest="end_datetime",
         default="",
         help="End date & time \
-        in YYYYMMDDhhmmss up to which data will be converted. If not set \
+        in YYYYMMDDhhmmss up to which data will be exported. If not set \
         process to end of dataset.",
     )
-    subparser_convert.set_defaults(func=call_convert_data)
+
+    subparser_import = subparsers.add_parser(
+        "import",
+        help="Imports data to oplab format. \
+        Type auv_nav export -h for help on this \
+        target.",
+    )
+    subparser_import.add_argument(
+        "path",
+        default=".",
+        help="Dive folder to import.",
+    )
+    subparser_import.add_argument(
+        "-f",
+        "--format",
+        dest="format",
+        default="acfr",
+        help="Input format. Example: 'hybis'.",
+    )
+    subparser_import.add_argument(
+        "-F",
+        "--Force",
+        dest="force",
+        action="store_true",
+        help="Force file \
+        overwite",
+    )
+
+    subparser_import.set_defaults(func=call_import_data)
 
     if len(sys.argv) == 1 and args is None:
         # Show help if no args provided
@@ -188,8 +222,18 @@ def call_process_data(args):
     process(args.path, args.force, args.start_datetime, args.end_datetime)
 
 
-def call_convert_data(args):
-    convert(args.path, args.input, args.format, args.start_datetime, args.end_datetime)
+def call_export_data(args):
+    export(
+        args.path,
+        args.input,
+        args.format,
+        args.start_datetime,
+        args.end_datetime,
+    )
+
+
+def call_import_data(args):
+    import_data(args.path, args.format, args.force)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,24 @@
+#YAML 1.0
+version: 1
+
+origin:
+  latitude: 26.674083
+  longitude: 127.868054
+  coordinate_reference_system: wgs84
+  date: 2018/11/19
+
+dead_reckoning:
+  format: hybis
+  filepath: "nav"
+  filename: "Hybis Dive_51.txt"
+  timezone: utc
+  timeoffset: 0.0
+
+image:
+  format: hybis
+  cameras:
+    - name: scorpio
+      type: rgb
+      path: image/scorpio
+  timezone: utc
+  timeoffset: 0.0
