@@ -528,92 +528,93 @@ class TestWriteMissionDY109(unittest.TestCase):
         vehicle_path_dy109 /= "default_yaml/as6/DY109/vehicle.yaml"
         shutil.copy(str(vehicle_path_dy109), str(vehicle_path))
         self.v1 = Vehicle(vehicle_path_dy109)
-        self.m1 = Mission()
+        with patch.object(Console, "get_version", return_value="testing"):
+            self.m1 = Mission()
 
-        self.m1.version = 1
+            self.m1.version = 1
 
-        self.m1.origin.latitude = 59.85643
-        self.m1.origin.longitude = -7.15903
-        self.m1.origin.crs = "wgs84"
-        self.m1.origin.date = "2019/09/21"
+            self.m1.origin.latitude = 59.85643
+            self.m1.origin.longitude = -7.15903
+            self.m1.origin.crs = "wgs84"
+            self.m1.origin.date = "2019/09/21"
 
-        self.m1.velocity.format = "autosub"
-        self.m1.velocity.filepath = "nav/"
-        self.m1.velocity.filename = "M155.mat"
-        self.m1.velocity.label = 0
-        self.m1.velocity.timezone = 0
-        self.m1.velocity.timeoffset = 0.0
-        self.m1.velocity.std_factor = 0.001
-        self.m1.velocity.std_offset = 0.2
-        self.m1.velocity._empty = False
+            self.m1.velocity.format = "autosub"
+            self.m1.velocity.filepath = "nav/"
+            self.m1.velocity.filename = "M155.mat"
+            self.m1.velocity.label = 0
+            self.m1.velocity.timezone = 0
+            self.m1.velocity.timeoffset = 0.0
+            self.m1.velocity.std_factor = 0.001
+            self.m1.velocity.std_offset = 0.2
+            self.m1.velocity._empty = False
 
-        self.m1.orientation.format = "autosub"
-        self.m1.orientation.filepath = "nav/"
-        self.m1.orientation.filename = "M155.mat"
-        self.m1.orientation.label = 0
-        self.m1.orientation.timezone = 0
-        self.m1.orientation.timeoffset = 0.0
-        self.m1.orientation.std_factor = 0.0
-        self.m1.orientation.std_offset = 0.003
-        self.m1.orientation._empty = False
+            self.m1.orientation.format = "autosub"
+            self.m1.orientation.filepath = "nav/"
+            self.m1.orientation.filename = "M155.mat"
+            self.m1.orientation.label = 0
+            self.m1.orientation.timezone = 0
+            self.m1.orientation.timeoffset = 0.0
+            self.m1.orientation.std_factor = 0.0
+            self.m1.orientation.std_offset = 0.003
+            self.m1.orientation._empty = False
 
-        self.m1.depth.format = "autosub"
-        self.m1.depth.filepath = "nav/"
-        self.m1.depth.filename = "M155.mat"
-        self.m1.depth.label = 0
-        self.m1.depth.timezone = 0
-        self.m1.depth.timeoffset = 0.0
-        self.m1.depth.std_factor = 0.001
-        self.m1.depth.std_offset = 0.0
-        self.m1.depth._empty = False
+            self.m1.depth.format = "autosub"
+            self.m1.depth.filepath = "nav/"
+            self.m1.depth.filename = "M155.mat"
+            self.m1.depth.label = 0
+            self.m1.depth.timezone = 0
+            self.m1.depth.timeoffset = 0.0
+            self.m1.depth.std_factor = 0.001
+            self.m1.depth.std_offset = 0.0
+            self.m1.depth._empty = False
 
-        self.m1.altitude.format = "autosub"
-        self.m1.altitude.filepath = "nav/"
-        self.m1.altitude.filename = "M155.mat"
-        self.m1.altitude.label = 0
-        self.m1.altitude.timezone = 0
-        self.m1.altitude.timeoffset = 0.0
-        self.m1.altitude.std_factor = 0.001
-        self.m1.altitude.std_offset = 0.3
-        self.m1.altitude._empty = False
+            self.m1.altitude.format = "autosub"
+            self.m1.altitude.filepath = "nav/"
+            self.m1.altitude.filename = "M155.mat"
+            self.m1.altitude.label = 0
+            self.m1.altitude.timezone = 0
+            self.m1.altitude.timeoffset = 0.0
+            self.m1.altitude.std_factor = 0.001
+            self.m1.altitude.std_offset = 0.3
+            self.m1.altitude._empty = False
 
-        self.m1.usbl.format = "NOC_nmea"
-        self.m1.usbl.filepath = "nav/usbl/"
-        self.m1.usbl.filename = ""
-        self.m1.usbl.label = 13
-        self.m1.usbl.timezone = 0
-        self.m1.usbl.timeoffset = 0.0
-        self.m1.usbl.std_factor = 0.01
-        self.m1.usbl.std_offset = 2.0
-        self.m1.usbl._empty = False
+            self.m1.usbl.format = "NOC_nmea"
+            self.m1.usbl.filepath = "nav/usbl/"
+            self.m1.usbl.filename = ""
+            self.m1.usbl.label = 13
+            self.m1.usbl.timezone = 0
+            self.m1.usbl.timeoffset = 0.0
+            self.m1.usbl.std_factor = 0.01
+            self.m1.usbl.std_offset = 2.0
+            self.m1.usbl._empty = False
 
-        self.m1.tide.format = "NOC_polpred"
-        self.m1.tide.filepath = "tide/"
-        self.m1.tide.filename = "dy_108_polpred_tide_10m.txt"
-        self.m1.tide.label = 0
-        self.m1.tide.timezone = 0
-        self.m1.tide.timeoffset = 0.0
-        self.m1.tide.std_factor = 0.0
-        self.m1.tide.std_offset = 0.0
-        self.m1.tide._empty = False
+            self.m1.tide.format = "NOC_polpred"
+            self.m1.tide.filepath = "tide/"
+            self.m1.tide.filename = "dy_108_polpred_tide_10m.txt"
+            self.m1.tide.label = 0
+            self.m1.tide.timezone = 0
+            self.m1.tide.timeoffset = 0.0
+            self.m1.tide.std_factor = 0.0
+            self.m1.tide.std_offset = 0.0
+            self.m1.tide._empty = False
 
-        self.m1.image.format = "biocam"
-        self.m1.image.cameras.append(CameraEntry())
-        self.m1.image.cameras[0].name = "cam61003146"
-        self.m1.image.cameras[0].origin = "cam61003146"
-        self.m1.image.cameras[0].type = "bayer_rggb"
-        self.m1.image.cameras[0].path = "image"
-        self.m1.image.cameras.append(CameraEntry())
-        self.m1.image.cameras[1].name = "cam61004444"
-        self.m1.image.cameras[1].origin = "cam61004444"
-        self.m1.image.cameras[1].type = "grayscale"
-        self.m1.image.cameras[1].path = "image"
-        self.m1.image.timezone = 0
-        self.m1.image.timeoffset = 0.0
-        self.m1.image._empty = False
+            self.m1.image.format = "biocam"
+            self.m1.image.cameras.append(CameraEntry())
+            self.m1.image.cameras[0].name = "cam61003146"
+            self.m1.image.cameras[0].origin = "cam61003146"
+            self.m1.image.cameras[0].type = "bayer_rggb"
+            self.m1.image.cameras[0].path = "image"
+            self.m1.image.cameras.append(CameraEntry())
+            self.m1.image.cameras[1].name = "cam61004444"
+            self.m1.image.cameras[1].origin = "cam61004444"
+            self.m1.image.cameras[1].type = "grayscale"
+            self.m1.image.cameras[1].path = "image"
+            self.m1.image.timezone = 0
+            self.m1.image.timeoffset = 0.0
+            self.m1.image._empty = False
 
-        self.m1.write(mission_path)
-        self.m2 = Mission(mission_path)
+            self.m1.write(mission_path)
+            self.m2 = Mission(mission_path)
 
     def test_WriteMission(self):
         self.assertEqual(self.m1.version, self.m2.version)
