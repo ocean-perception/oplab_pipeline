@@ -35,6 +35,9 @@ def git_command(args):
 
 
 def git_pep440_version():
+    # Is this called from Github Actions?
+    if "RELEASE_VERSION" in os.environ:
+        return os.environ["RELEASE_VERSION"]
     # Is Git installed?
     try:
         subprocess.call(["git", "--version"], stdout=subprocess.PIPE)
