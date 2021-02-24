@@ -165,9 +165,8 @@ def parse(filepath, force_overwrite, merge):
         Console.info("Interlacing merged data...")
         parse_interlacer(nav_folder, filename)
         Console.info(
-            "...done interlacing merged data. Output saved to {}".format(
-                nav_folder / filename
-            )
+            "...done interlacing merged data. Output saved to",
+            nav_folder / filename,
         )
         plot_parse_data(nav_folder)
         Console.info("Complete merging data")
@@ -203,10 +202,10 @@ def parse_single(filepath, force_overwrite):
     vehicle_file = filepath / "vehicle.yaml"
     mission_file = get_raw_folder(mission_file)
     vehicle_file = get_raw_folder(vehicle_file)
-    Console.info("Loading mission.yaml at {0}".format(mission_file))
+    Console.info("Loading mission.yaml at", mission_file)
     mission = Mission(mission_file)
 
-    Console.info("Loading vehicle.yaml at {0}".format(vehicle_file))
+    Console.info("Loading vehicle.yaml at", vehicle_file)
     vehicle = Vehicle(vehicle_file)
 
     # copy mission.yaml and vehicle.yaml to processed folder for process step
@@ -279,9 +278,7 @@ def parse_single(filepath, force_overwrite):
             )
         else:
             Console.quit(
-                "Mission image format {} not supported.".format(
-                    mission.image.format
-                )
+                "Mission image format", mission.image.format, "not supported."
             )
     if not mission.usbl.empty():
         if mission.usbl.format == "gaps":
@@ -304,9 +301,7 @@ def parse_single(filepath, force_overwrite):
             )
         else:
             Console.quit(
-                "Mission usbl format {} not supported.".format(
-                    mission.usbl.format
-                )
+                "Mission usbl format", mission.usbl.format, "not supported."
             )
 
     if not mission.velocity.empty():
@@ -338,9 +333,9 @@ def parse_single(filepath, force_overwrite):
             )
         else:
             Console.quit(
-                "Mission velocity format {} not supported.".format(
-                    mission.velocity.format
-                )
+                "Mission velocity format",
+                mission.velocity.format,
+                "not supported.",
             )
 
     if not mission.orientation.empty():
@@ -374,9 +369,9 @@ def parse_single(filepath, force_overwrite):
             )
         else:
             Console.quit(
-                "Mission orientation format {} not supported.".format(
-                    mission.orientation.format
-                )
+                "Mission orientation format",
+                mission.orientation.format,
+                "not supported.",
             )
 
     if not mission.depth.empty():
@@ -406,9 +401,7 @@ def parse_single(filepath, force_overwrite):
             )
         else:
             Console.quit(
-                "Mission depth format {} not supported.".format(
-                    mission.depth.format
-                )
+                "Mission depth format", mission.depth.format, "not supported."
             )
 
     if not mission.altitude.empty():
@@ -440,9 +433,9 @@ def parse_single(filepath, force_overwrite):
             )
         else:
             Console.quit(
-                "Mission altitude format {} not supported.".format(
-                    mission.altitude.format
-                )
+                "Mission altitude format",
+                mission.altitude.format,
+                "not supported.",
             )
 
     if not mission.tide.empty():
@@ -452,9 +445,7 @@ def parse_single(filepath, force_overwrite):
             )
         else:
             Console.quit(
-                "Mission tide format {} not supported.".format(
-                    mission.tide.format
-                )
+                "Mission tide format", mission.tide.format, "not supported."
             )
     else:
         tide_list = None
@@ -554,9 +545,7 @@ def parse_single(filepath, force_overwrite):
     Console.info("Interlacing data...")
     parse_interlacer(outpath, filename)
     Console.info(
-        "...done interlacing data. Output saved to {}".format(
-            outpath / filename
-        )
+        "...done interlacing data. Output saved to", outpath / filename
     )
     plot_parse_data(outpath, ftype)
     Console.info("Complete parse data")

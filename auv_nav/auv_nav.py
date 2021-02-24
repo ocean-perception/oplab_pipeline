@@ -7,10 +7,11 @@ See LICENSE.md file in the project root for full license information.
 """
 
 import argparse
+import time
 import os
 import sys
 
-from oplab import Console
+from oplab import Console, get_processed_folder
 
 from auv_nav.export import export
 from auv_nav.import_data import import_data
@@ -176,6 +177,8 @@ def main(args=None):
         process to end of dataset.",
     )
 
+    subparser_export.set_defaults(func=call_export_data)
+
     subparser_import = subparsers.add_parser(
         "import",
         help="Imports data to oplab format. \
@@ -215,14 +218,26 @@ def main(args=None):
 
 
 def call_parse_data(args):
+    Console.set_logging_file(
+        get_processed_folder(args.path[0])
+        / (str(time.time()) + "_auv_nav_parse.log")
+    )
     parse(args.path, args.force, args.merge)
 
 
 def call_process_data(args):
+    Console.set_logging_file(
+        get_processed_folder(args.path)
+        / (str(time.time()) + "_auv_nav_process.log")
+    )
     process(args.path, args.force, args.start_datetime, args.end_datetime)
 
 
 def call_export_data(args):
+    Console.set_logging_file(
+        get_processed_folder(args.path)
+        / (str(time.time()) + "_auv_nav_export.log")
+    )
     export(
         args.path,
         args.input,
@@ -233,6 +248,10 @@ def call_export_data(args):
 
 
 def call_import_data(args):
+    Console.set_logging_file(
+        get_processed_folder(args.path)
+        / (str(time.time()) + "_auv_nav_import.log")
+    )
     import_data(args.path, args.format, args.force)
 
 
