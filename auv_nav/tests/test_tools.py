@@ -9,6 +9,7 @@ See LICENSE.md file in the project root for full license information.
 import math
 import os
 import unittest
+from unittest.mock import patch
 
 from auv_nav.tools.body_to_inertial import body_to_inertial
 from auv_nav.tools.displayable_path import DisplayablePath
@@ -34,17 +35,18 @@ class TestTools(unittest.TestCase):
         self.assertEqual(z, 0)
 
     def test_console(self):
-        Console.warn("This is a warning")
-        Console.error("This is an error message")
-        Console.info("This is an informative message")
-        Console.banner()
+        with patch.object(Console, "get_version", return_value="testing"):
+            Console.warn("This is a warning")
+            Console.error("This is an error message")
+            Console.info("This is an informative message")
+            Console.banner()
 
-        Console.get_username()
-        Console.get_hostname()
-        Console.get_date()
-        Console.get_version()
-        for i in range(1, 10):
-            Console.progress(i, 10)
+            Console.get_username()
+            Console.get_hostname()
+            Console.get_date()
+            Console.get_version()
+            for i in range(1, 10):
+                Console.progress(i, 10)
 
     def test_DisplayablePath(self):
         cwd = os.getcwd()

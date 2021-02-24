@@ -112,7 +112,7 @@ class TestEkf(unittest.TestCase):
         m = [s.toSyncedOrientationBodyVelocity() for s in ekf_states]
         ls: SyncedOrientationBodyVelocity = m[-1]
 
-        std_th = 8.0  # STD threshold
+        std_th = 9.0  # STD threshold
 
         self.assertGreater(
             ls.northings, t_limit * c.x_velocity - std_th * c.x_velocity_std

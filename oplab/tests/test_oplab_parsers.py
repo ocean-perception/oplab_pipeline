@@ -1,10 +1,12 @@
-import unittest
-import tempfile
 import shutil
+import tempfile
+import unittest
 from pathlib import Path
-from oplab.mission import Mission
-from oplab.mission import CameraEntry
+from unittest.mock import patch
+
+from oplab.mission import CameraEntry, Mission
 from oplab.vehicle import Vehicle
+from oplab.console import Console
 
 
 def get_empty_test_directory():
@@ -25,7 +27,8 @@ class TestLoadMissionYK1723C(unittest.TestCase):
     def setUp(self):
         path = Path(__file__).parents[1]
         path /= "default_yaml/ae2000/YK17-23C/mission.yaml"
-        self.m = Mission(path)
+        with patch.object(Console, "get_version", return_value="testing"):
+            self.m = Mission(path)
 
     def test_LoadMission(self):
         self.assertEqual(self.m.version, 1)
@@ -122,7 +125,8 @@ class TestLoadMissionDY109(unittest.TestCase):
     def setUp(self):
         path = Path(__file__).parents[1]
         path /= "default_yaml/as6/DY109/mission.yaml"
-        self.m = Mission(path)
+        with patch.object(Console, "get_version", return_value="testing"):
+            self.m = Mission(path)
 
     def test_LoadMission(self):
         self.assertEqual(self.m.version, 1)
@@ -207,7 +211,8 @@ class TestLoadMissionSSK1701FileFormat0(unittest.TestCase):
         path /= (
             "default_yaml/ts1/SSK17-01/legacy_vehicle_format_0/mission.yaml"
         )
-        self.m = Mission(path)
+        with patch.object(Console, "get_version", return_value="testing"):
+            self.m = Mission(path)
 
     def test_LoadMission(self):
         self.assertEqual(self.m.version, 1)
