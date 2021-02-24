@@ -1,4 +1,4 @@
-![Build Status](https://github.com/ocean-perception/oplab_pipeline/actions/workflows/python-package.yml/badge.svg)
+[![Build Status](https://github.com/ocean-perception/oplab_pipeline/actions/workflows/python-package.yml/badge.svg)](https://github.com/ocean-perception/oplab_pipeline/actions/workflows/python-package.yml)
 [![Code Coverage](https://codecov.io/gh/ocean-perception/oplab_pipeline/branch/master/graph/badge.svg?token=PJBfl6qhp5)](https://codecov.io/gh/ocean-perception/oplab_pipeline) [![Documentation Status](https://readthedocs.org/projects/oplab-pipeline/badge/?version=latest)](https://oplab-pipeline.readthedocs.io/en/latest/?badge=latest)
 
 
