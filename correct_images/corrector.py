@@ -516,7 +516,7 @@ class Corrector:
         self.altitude_list = distance_list.copy()
 
         idx_cond1 = distance_list.index[distance_list > self.altitude_min]
-        idx_cond2 = distance_list.index[distance_list < self.altitude_min]
+        idx_cond2 = distance_list.index[distance_list < self.altitude_max]
         idx_cond = idx_cond1.union(idx_cond2).tolist()
 
         self.altitude_list = self.altitude_list[idx_cond]
