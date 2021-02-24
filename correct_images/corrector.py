@@ -901,7 +901,8 @@ class Corrector:
         # write a filelist.csv containing image filenames which are processed
         image_files = []
         for path in self.processed_image_list:
-            image_files.append(Path(path).name)
+            if path is not None:
+                image_files.append(Path(path).name)
         dataframe = pd.DataFrame(image_files)
         filelist_path = self.output_images_folder / "filelist.csv"
         dataframe.to_csv(filelist_path)
