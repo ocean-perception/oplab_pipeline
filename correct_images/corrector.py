@@ -513,14 +513,13 @@ class Corrector:
                 self.path_raw / i for i in dataframe["relative_path"].tolist()
             ]
 
-        self.altitude_list = distance_list.copy()
-
-        idx_cond1 = distance_list.index[distance_list > self.altitude_min]
-        idx_cond2 = distance_list.index[distance_list < self.altitude_min]
-        idx_cond = idx_cond1.union(idx_cond2).tolist()
-
-        self.altitude_list = self.altitude_list[idx_cond]
-        self.camera_image_list = [self.camera_image_list[i] for i in idx_cond]
+        altitude_list = distance_list.copy()
+        altitude_list = altitude_list[altitude_list > self.altitude_min]
+        altitude_list = altitude_list[altitude_list < self.altitude_max]
+        self.altitude_list = altitude_list
+        self.camera_image_list = [
+            self.camera_image_list[i] for i in altitude_list.index
+        ]
 
         Console.info(
             len(self.altitude_list),
@@ -639,7 +638,7 @@ class Corrector:
                     desc="Computing altitude histogram",
                     total=len(hist_bins) - 1,
                 )
-            ) as _:
+            ):
                 joblib.Parallel(n_jobs=2, verbose=0)(
                     joblib.delayed(self.compute_distance_bin)(
                         idxs,
@@ -676,6 +675,11 @@ class Corrector:
                 self.image_attenuation_parameters,
             )
 
+            corrections.save_attenuation_plots(
+                self.attenuation_parameters_folder,
+                attn=self.image_attenuation_parameters,
+            )
+
             # compute correction gains per channel
             target_altitude = distance_vector.mean()
             Console.info(
@@ -692,6 +696,13 @@ class Corrector:
             # Save correction gains
             np.save(self.correction_gains_filepath, self.correction_gains)
 
+            corrections.save_attenuation_plots(
+                self.attenuation_parameters_folder,
+                gains=self.correction_gains,
+            )
+
+            # Useful if fails, to reload precomputed numpyfiles.
+            # TODO offer as a new step.
             # self.image_attenuation_parameters = np.load(
             #    self.attenuation_params_filepath)
             # self.correction_gains = np.load(self.correction_gains_filepath)
@@ -742,15 +753,11 @@ class Corrector:
             # save parameters for process
             np.save(self.corrected_mean_filepath, image_corrected_mean)
             np.save(self.corrected_std_filepath, image_corrected_std)
-            imageio.imwrite(
-                Path(self.attenuation_parameters_folder)
-                / "image_corrected_mean.png",
-                image_corrected_mean,
-            )
-            imageio.imwrite(
-                Path(self.attenuation_parameters_folder)
-                / "image_corrected_std.png",
-                image_corrected_std,
+
+            corrections.save_attenuation_plots(
+                self.attenuation_parameters_folder,
+                img_mean=image_corrected_mean,
+                img_std=image_corrected_std,
             )
         else:
             Console.info(
@@ -770,6 +777,12 @@ class Corrector:
             imageio.imwrite(
                 Path(self.attenuation_parameters_folder) / "image_raw_std.png",
                 image_raw_std,
+            )
+
+            corrections.save_attenuation_plots(
+                self.attenuation_parameters_folder,
+                img_mean=image_corrected_mean,
+                img_std=image_corrected_std,
             )
 
         Console.info("Correction parameters saved...")
@@ -888,7 +901,8 @@ class Corrector:
         # write a filelist.csv containing image filenames which are processed
         image_files = []
         for path in self.processed_image_list:
-            image_files.append(Path(path).name)
+            if path is not None:
+                image_files.append(Path(path).name)
         dataframe = pd.DataFrame(image_files)
         filelist_path = self.output_images_folder / "filelist.csv"
         dataframe.to_csv(filelist_path)

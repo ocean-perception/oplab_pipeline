@@ -10,9 +10,10 @@ import getpass
 import datetime
 import pkg_resources
 import timeit
+import logging
 
-"""Utility class to print messages to the console
-"""
+
+logger = None  # Public logger
 
 
 class BColors:
@@ -59,6 +60,8 @@ class Console:
             + " ".join(map(str, args)),
             **kwargs
         )
+        if logger is not None:
+            logger.warn(" ".join(map(str, args)), **kwargs)
 
     @staticmethod
     def error(*args, **kwargs) -> None:
@@ -70,6 +73,8 @@ class Console:
             + " ".join(map(str, args)),
             **kwargs
         )
+        if logger is not None:
+            logger.error(" ".join(map(str, args)), **kwargs)
 
     @staticmethod
     def info(*args, **kwargs) -> None:
@@ -81,6 +86,8 @@ class Console:
             + " ".join(map(str, args)),
             **kwargs
         )
+        if logger is not None:
+            logger.info(" ".join(map(str, args)), **kwargs)
 
     @staticmethod
     def quit(*args, **kwargs) -> None:
@@ -95,6 +102,8 @@ class Console:
             + " ".join(map(str, args)),
             **kwargs
         )
+        if logger is not None:
+            logger.warn(" ".join(map(str, args)), **kwargs)
         quit()
 
     @staticmethod
@@ -234,3 +243,17 @@ class Console:
         # Print New Line on Complete
         if iteration >= total - 1:
             print()
+
+    @staticmethod
+    def set_logging_file(filename):
+        global logger
+        fh = logging.FileHandler(filename)
+        formatter = logging.Formatter(
+            fmt="%(asctime)s %(levelname)-8s %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
+        fh.setFormatter(formatter)
+        logger = logging.getLogger()
+        logger.setLevel(logging.DEBUG)
+        fh.setLevel(logging.DEBUG)  # or any level you want
+        logger.addHandler(fh)

@@ -82,6 +82,8 @@ class testCorrections(unittest.TestCase):
             images, distances, image_height, image_width, image_channels
         )
 
+        print(attenuation_parameters.shape)
+
         target_altitude = 2.0
         correction_gains = corrections.calculate_correction_gains(
             target_altitude,
@@ -98,13 +100,12 @@ class testCorrections(unittest.TestCase):
             img = self.rgb_images[k]
             dist = self.distance_matrices[k]
             corrected = img.copy()
-            for i in range(image_channels):
-                corrected[:, :, i] = corrections.attenuation_correct(
-                    img[:, :, i],
-                    dist,
-                    attenuation_parameters[i],
-                    correction_gains[i],
-                )
+            corrected = corrections.attenuation_correct(
+                img,
+                dist,
+                attenuation_parameters,
+                correction_gains,
+            )
             corrected_rgb[:, :, :, k] = corrected
         # TODO what do we test here?
 

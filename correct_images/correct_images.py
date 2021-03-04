@@ -10,6 +10,7 @@ See LICENSE.md file in the project root for full license information.
 import argparse
 import os
 import sys
+import time
 from pathlib import Path
 
 import imageio
@@ -19,6 +20,7 @@ from oplab import (
     Mission,
     get_config_folder,
     get_raw_folder,
+    get_processed_folder,
 )
 
 from correct_images import corrections
@@ -148,6 +150,12 @@ def call_parse(args):
     """
 
     path = Path(args.path).resolve()
+
+    Console.set_logging_file(
+        get_processed_folder(path)
+        / (str(time.time()) + "_correct_images_parse.log")
+    )
+
     correct_config, camerasystem = load_configuration_and_camera_system(path)
 
     for camera in camerasystem.cameras:
@@ -180,6 +188,12 @@ def call_process(args):
     """
 
     path = Path(args.path).resolve()
+
+    Console.set_logging_file(
+        get_processed_folder(path)
+        / (str(time.time()) + "_correct_images_process.log")
+    )
+
     correct_config, camerasystem = load_configuration_and_camera_system(path)
 
     for camera in camerasystem.cameras:
@@ -211,6 +225,12 @@ def call_correct(args):
 
 def call_rescale(args):
     path = Path(args.path).resolve()
+
+    Console.set_logging_file(
+        get_processed_folder(path)
+        / (str(time.time()) + "_correct_images_rescale.log")
+    )
+
     correct_config, camerasystem = load_configuration_and_camera_system(path)
 
     # install freeimage plugins if not installed

@@ -27,9 +27,9 @@ class TestLaserCalibration(unittest.TestCase):
     def test_opencv_to_ned(self):
         a = np.array([1, 2, 3])
         b = opencv_to_ned(a)
-        self.assertAlmostEqual(b[0], 2.0)
-        self.assertAlmostEqual(b[1], -1.0)
-        self.assertAlmostEqual(b[2], 3.0)
+        self.assertAlmostEqual(float(b[0]), -2.0)
+        self.assertAlmostEqual(float(b[1]), 1.0)
+        self.assertAlmostEqual(float(b[2]), 3.0)
 
     def assert_plane_normal(
         self, pitch, yaw, expected_normal, centroid=[0, 0, 0]

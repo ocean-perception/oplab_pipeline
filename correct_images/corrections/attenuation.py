@@ -13,6 +13,8 @@ from correct_images.tools.curve_fitting import curve_fitting
 from correct_images.tools.joblib_tqdm import tqdm_joblib
 from oplab import Console
 from tqdm import tqdm
+from pathlib import Path
+from matplotlib import pyplot as plt
 
 
 def attenuation_correct(
@@ -64,17 +66,14 @@ def attenuation_correct(
                 )
             ) * img_float32[:, :, i_channel]
     else:
-        for i_channel in range(atn_crr_params.shape[0]):
-            atn_crr_params_ch = atn_crr_params[i_channel]
-            gain_ch = gain[i_channel]
-            img_float32[:, :] = (
-                gain_ch
-                / (
-                    atn_crr_params_ch[:, :, 0]
-                    * np.exp(atn_crr_params_ch[:, :, 1] * altitude)
-                    + atn_crr_params_ch[:, :, 2]
-                )
-            ) * img_float32[:, :]
+        img_float32[:, :] = (
+            gain[0]
+            / (
+                atn_crr_params[0, :, :, 0]
+                * np.exp(atn_crr_params[0, :, :, 1] * altitude)
+                + atn_crr_params[0, :, :, 2]
+            )
+        ) * img_float32[:, :]
     return img_float32
 
 
@@ -187,3 +186,86 @@ def calculate_attenuation_parameters(
         image_attenuation_parameters[i_channel] = attenuation_parameters
 
     return image_attenuation_parameters
+
+
+def save_attenuation_plots(
+    output_dir, attn=None, gains=None, img_mean=None, img_std=None
+):
+    output_dir = Path(output_dir)
+
+    if gains is not None:
+        fig = plt.figure()
+        plt.imshow(gains[0, :, :])
+        plt.colorbar()
+        plt.title("Gain")
+        plt.savefig(output_dir / "gain.png", dpi=600)
+        plt.close(fig)
+
+    if attn is not None:
+        fig = plt.figure()
+        plt.imshow(attn[0, :, :, 0])
+        plt.colorbar()
+        plt.title("Attenuation coeff 0")
+        plt.savefig(output_dir / "attenuation_coeff_0.png", dpi=600)
+        plt.close(fig)
+
+        fig = plt.figure()
+        plt.imshow(attn[0, :, :, 1])
+        plt.colorbar()
+        plt.title("Attenuation coeff 1")
+        plt.savefig(output_dir / "attenuation_coeff_1.png", dpi=600)
+        plt.close(fig)
+
+        fig = plt.figure()
+        plt.imshow(attn[0, :, :, 2])
+        plt.colorbar()
+        plt.title("Attenuation coeff 2")
+        plt.savefig(output_dir / "attenuation_coeff_2.png", dpi=600)
+        plt.close(fig)
+
+    if img_mean is not None:
+        fig = plt.figure()
+        plt.imshow(img_mean[:, :, 0])
+        plt.colorbar()
+        plt.title("Mean 0")
+        plt.savefig(output_dir / "image_corrected_mean_0.png", dpi=600)
+        plt.close(fig)
+
+        if img_mean.shape[2] > 1:
+            fig = plt.figure()
+            plt.imshow(img_mean[:, :, 1])
+            plt.colorbar()
+            plt.title("Mean 1")
+            plt.savefig(output_dir / "image_corrected_mean_1.png", dpi=600)
+            plt.close(fig)
+
+        if img_mean.shape[2] > 2:
+            fig = plt.figure()
+            plt.imshow(img_mean[:, :, 2])
+            plt.colorbar()
+            plt.title("Mean 2")
+            plt.savefig(output_dir / "image_corrected_mean_2.png", dpi=600)
+            plt.close(fig)
+
+    if img_std is not None:
+        fig = plt.figure()
+        plt.imshow(img_std[:, :, 0])
+        plt.colorbar()
+        plt.title("Std 0")
+        plt.savefig(output_dir / "image_corrected_std_0.png", dpi=600)
+        plt.close(fig)
+
+        if img_std.shape[2] > 1:
+            fig = plt.figure()
+            plt.imshow(img_std[:, :, 0])
+            plt.colorbar()
+            plt.title("Std 1")
+            plt.savefig(output_dir / "image_corrected_std_1.png", dpi=600)
+            plt.close(fig)
+        if img_std.shape[2] > 2:
+            fig = plt.figure()
+            plt.imshow(img_std[:, :, 0])
+            plt.colorbar()
+            plt.title("Std 2")
+            plt.savefig(output_dir / "image_corrected_std_2.png", dpi=600)
+            plt.close(fig)

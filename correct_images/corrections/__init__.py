@@ -1,6 +1,7 @@
 from .attenuation import attenuation_correct  # noqa
 from .attenuation import calculate_correction_gains  # noqa
 from .attenuation import calculate_attenuation_parameters  # noqa
+from .attenuation import save_attenuation_plots  # noqa
 from .debayer import debayer  # noqa
 from .debayer import debayer_folder  # noqa
 from .gamma import gamma_correct  # noqa
