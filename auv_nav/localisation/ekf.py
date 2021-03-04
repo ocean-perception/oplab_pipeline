@@ -165,7 +165,7 @@ class Measurement(object):
         self.type = ""
 
         # The Mahalanobis distance threshold in number of sigmas
-        self.mahalanobis_threshold = 5.0
+        self.mahalanobis_threshold = 8.0
 
     def __str__(self):
         msg = (
