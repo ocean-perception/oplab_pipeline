@@ -125,7 +125,7 @@ def debayer_folder(
         image_list.append(single_image)
     Console.info("Found " + str(len(image_list)) + " image(s)...")
 
-    with tqdm_joblib(tqdm(desc="Debayering inages", total=len(image_list))):
+    with tqdm_joblib(tqdm.tqdm(desc="Debayering inages", total=len(image_list))):
         joblib.Parallel(n_jobs=-2, verbose=0)(
             [
                 joblib.delayed(debayer_image)(
