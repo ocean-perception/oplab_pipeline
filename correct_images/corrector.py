@@ -509,8 +509,20 @@ class Corrector:
                 measurements."
             )
             Console.info("Using image file paths from CSV instead.")
+
+            # Check images exist:
+            valid_idx = []
+            self.camera_image_list = []
+            for idx, entry in enumerate(dataframe["relative_path"]):
+                im_path = self.path_raw / entry
+                if im_path.exists():
+                    valid_idx.append(idx)
+            filtered_dataframe = dataframe.iloc[valid_idx]
+            filtered_dataframe.reset_index(drop=True)
+            distance_list = filtered_dataframe["altitude [m]"]
             self.camera_image_list = [
-                self.path_raw / i for i in dataframe["relative_path"].tolist()
+                self.path_raw / i
+                for i in filtered_dataframe["relative_path"].tolist()
             ]
 
         altitude_list = distance_list.copy()
@@ -797,6 +809,7 @@ class Corrector:
         max_bin_size_gb,
         distance_vector,
     ):
+        dimensions = [self.image_height, self.image_width, self.image_channels]
         tmp_idxs = np.where(idxs == idx_bin)[0]
         # print("In bin", idx_bin,"there are", len(tmp_idxs), "images")
         if len(tmp_idxs) > 0:
@@ -836,14 +849,14 @@ class Corrector:
                 )[0]
             elif self.smoothing == "mean_trimmed":
                 memmap_filename, memmap_handle = create_memmap(
-                    bin_images, loader=self.loader
+                    bin_images, dimensions, loader=self.loader
                 )
                 bin_images_sample = image_mean_std_trimmed(memmap_handle)
                 del memmap_handle
                 os.remove(memmap_filename)
             elif self.smoothing == "median":
                 memmap_filename, memmap_handle = create_memmap(
-                    bin_images, loader=self.loader
+                    bin_images, dimensions, loader=self.loader
                 )
                 # print("memmap_handle size", memmap_handle.shape)
                 bin_images_sample = median_array(memmap_handle)

@@ -13,10 +13,7 @@ import numpy as np
 import joblib
 
 
-def create_memmap(image_list, loader=default.loader):
-    tmp = loader(image_list[0])
-    dimensions = tmp.shape
-
+def create_memmap(image_list, dimensions, loader=default.loader):
     filename_map = "memmap_" + str(uuid.uuid4()) + ".map"
     list_shape = [len(image_list)] + list(dimensions)
     size = 1
