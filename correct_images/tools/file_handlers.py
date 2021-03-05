@@ -36,7 +36,7 @@ def trim_csv_files(image_files_paths, original_csv_path, trimmed_csv_path):
     dataframe = pd.read_csv(original_csv_path)
     image_path_list = dataframe["relative_path"]
     trimmed_path_list = [
-        path for path in image_path_list if Path(path).name in image_name_list
+        path for path in image_path_list if Path(path).stem in image_name_list
     ]
     trimmed_dataframe = dataframe.loc[
         dataframe["relative_path"].isin(trimmed_path_list)
@@ -54,6 +54,7 @@ def get_imagename_list(image_files_paths):
 
     with open(image_files_paths, "r") as image_file:
         image_name_list = image_file.read().splitlines()
+    image_name_list = [Path(x).stem for x in image_name_list]
     return image_name_list
 
 
