@@ -754,9 +754,8 @@ class ExtendedKalmanFilter(object):
         self.usbl_list = usbl_list
 
     def run(self, timestamp_list=None):
-        state0, dr_idx, usbl_idx = self.get_init_state(
-            self.dr_list, self.usbl_list
-        )
+        state0 = self.build_state(self.dr_list[0])
+        dr_idx, usbl_idx = 0, 0
         # Get first measurement (e.g. zero) as a start
         start_time = self.dr_list[0].epoch_timestamp
         current_time = start_time
@@ -826,6 +825,8 @@ class ExtendedKalmanFilter(object):
                 dr_idx += 1
             elif usbl_idx < len(self.usbl_list):
                 m.from_usbl(self.usbl_list[usbl_idx])
+                #self.ekf.print_state()
+                #print(m)
                 usbl_idx += 1
 
             last_update_delta = m.time - last_update_time
@@ -846,10 +847,10 @@ class ExtendedKalmanFilter(object):
     def get_smoothed_result(self):
         return self.ekf.get_smoothed_states()
 
-    def build_state(self, usbl, dr, init_dr):
-        # Guess origin from first USBL position
-        x = usbl.northings - dr.northings + init_dr.northings
-        y = usbl.eastings - dr.eastings + init_dr.eastings
+    def build_state(self, init_dr):
+        # Create a state from dead reckoning
+        x = init_dr.northings
+        y = init_dr.eastings
         z = init_dr.depth
         roll = init_dr.roll * math.pi / 180.0
         pitch = init_dr.pitch * math.pi / 180.0
@@ -860,108 +861,7 @@ class ExtendedKalmanFilter(object):
         state = np.array(
             [[x, y, z, roll, pitch, heading, vx, vy, vz, 0, 0, 0]]
         )
-        return state
-
-    def get_init_state(self, dr_list, usbl_list):
-        dr_index = 0
-        usbl_index = -1
-
-        state = np.array(
-            [
-                [
-                    dr_list[0].northings,
-                    dr_list[0].eastings,
-                    dr_list[0].depth,
-                    dr_list[0].roll,
-                    dr_list[0].pitch,
-                    dr_list[0].yaw,
-                    dr_list[0].x_velocity,
-                    dr_list[0].y_velocity,
-                    dr_list[0].z_velocity,
-                    0,
-                    0,
-                    0,
-                ]
-            ]
-        )
-
-        eastings_mean = 0.0
-        northings_mean = 0.0
-
-        if len(usbl_list) > 0:
-
-            # Interpolate DR to USBL updates
-            dr_eastings = []
-            dr_northings = []
-            for i in range(len(usbl_list)):
-                while (
-                    dr_index < len(dr_list) - 2
-                    and usbl_list[i].epoch_timestamp
-                    > dr_list[dr_index + 1].epoch_timestamp
-                ):
-                    dr_index += 1
-                dr_eastings.append(
-                    interpolate(
-                        usbl_list[i].epoch_timestamp,
-                        dr_list[dr_index].epoch_timestamp,
-                        dr_list[dr_index + 1].epoch_timestamp,
-                        dr_list[dr_index].eastings,
-                        dr_list[dr_index + 1].eastings,
-                    )
-                )
-                dr_northings.append(
-                    interpolate(
-                        usbl_list[i].epoch_timestamp,
-                        dr_list[dr_index].epoch_timestamp,
-                        dr_list[dr_index + 1].epoch_timestamp,
-                        dr_list[dr_index].northings,
-                        dr_list[dr_index + 1].northings,
-                    )
-                )
-            usbl_eastings = [i.eastings for i in usbl_list]
-            usbl_northings = [i.northings for i in usbl_list]
-            eastings_error = [
-                y - x for x, y in zip(dr_eastings, usbl_eastings)
-            ]
-            northings_error = [
-                y - x for x, y in zip(dr_northings, usbl_northings)
-            ]
-            eastings_mean = np.mean(eastings_error)
-            northings_mean = np.mean(northings_error)
-
-            dr_index = 0
-            usbl_index = 0
-            if (
-                usbl_list[usbl_index].epoch_timestamp
-                > dr_list[dr_index].epoch_timestamp
-            ):
-                while (
-                    dr_index < len(dr_list)
-                    and usbl_list[usbl_index].epoch_timestamp
-                    > dr_list[dr_index].epoch_timestamp
-                ):
-                    dr_index += 1
-            elif (
-                dr_list[dr_index].epoch_timestamp
-                > usbl_list[usbl_index].epoch_timestamp
-            ):
-                while (
-                    usbl_index < len(usbl_list)
-                    and dr_list[dr_index].epoch_timestamp
-                    > usbl_list[usbl_index].epoch_timestamp
-                ):
-                    usbl_index += 1
-
-            # Build state from first known USBL and DR, and use that
-            # displacement error at the start of DR.
-            state = self.build_state(
-                usbl_list[usbl_index], dr_list[dr_index], dr_list[0]
-            )
-        # Fix DR to index zero
-        dr_index = 0
-        state[0, Index.X] = state[0, Index.X] - northings_mean
-        state[0, Index.Y] = state[0, Index.Y] - eastings_mean
-        return state.T, dr_index, usbl_index
+        return state.T
 
 
 def save_ekf_to_list(ekf_states, mission, vehicle, dead_reckoning_dvl_list):
