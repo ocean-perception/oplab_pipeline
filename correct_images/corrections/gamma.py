@@ -9,7 +9,7 @@ See LICENSE.md file in the project root for full license information.
 import numpy as np
 
 
-def gamma_correct(image, bitdepth=8):
+def gamma_correct(image):
     """performs gamma correction for images
     Parameters
     -----------
@@ -24,11 +24,11 @@ def gamma_correct(image, bitdepth=8):
     numpy.ndarray
         Image
     """
-    ret_image = np.divide(image, (2 ** bitdepth - 1))
+    ret_image = image.copy() # np.divide(image, (2 ** bitdepth - 1))
     if all(i < 0.0031308 for i in image.flatten()):
         ret_image = 12.92 * ret_image
     else:
         ret_image = 1.055 * np.power(ret_image, (1 / 1.5)) - 0.055
-    ret_image = np.multiply(np.array(ret_image), np.array(2 ** bitdepth - 1))
-    ret_image = np.clip(ret_image, 0, 2 ** bitdepth - 1)
+    #ret_image = np.multiply(np.array(ret_image), np.array(2 ** bitdepth - 1))
+    #ret_image = np.clip(ret_image, 0, 2 ** bitdepth - 1)
     return ret_image

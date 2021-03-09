@@ -20,7 +20,7 @@ from ..loaders import default
 class RunningMeanStd:
     __slots__ = ["_mean", "mean2", "_std", "count", "clipping_max"]
 
-    def __init__(self, dimensions, clipping_max=250):
+    def __init__(self, dimensions, clipping_max=0.95):
         self._mean = np.zeros(dimensions, dtype=np.float32)
         self.mean2 = np.zeros(dimensions, dtype=np.float32)
         self._std = np.zeros(dimensions, dtype=np.float32)
@@ -49,7 +49,7 @@ class RunningMeanStd:
     def std(self):
         if self.count > 1:
             self._std = np.sqrt(self.mean2 / self.count)
-            self._std[self._std < 1] = 1.0
+            self._std[self._std < 1e-4] = 1e-4
             return self._std
         else:
             return None
@@ -103,7 +103,6 @@ def median_array(data: np.ndarray) -> np.ndarray:
         return median_array
 
 
-@njit
 def median_array_impl(data: np.ndarray) -> np.ndarray:
     [n, a, b] = data.shape
     median_array = np.zeros((a, b), dtype=np.float32)

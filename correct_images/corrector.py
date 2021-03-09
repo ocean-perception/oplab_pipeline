@@ -24,7 +24,7 @@ from oplab import (
 from tqdm import tqdm, trange
 
 from correct_images import corrections
-from correct_images.loaders import default, depth_map, xviii
+from correct_images.loaders import loader, depth_map
 from correct_images.tools.file_handlers import (
     trim_csv_files,
     write_output_image,
@@ -100,10 +100,7 @@ class Corrector:
             None  # To be overwritten on parse/process
         )
         self.user_specified_image_list_parse = None
-        self.user_specified_image_list_process = None
-
-        # Use default loader
-        self.loader = default.loader
+        self.user_specified_image_list_process = None      
 
         if self.correct_config is not None:
             """Load general configuration parameters"""
@@ -202,8 +199,13 @@ class Corrector:
                 )
 
             # Define image loader
+            # Use default loader
+            self.loader = loader.Loader()
+            self.loader.bit_depth = camera.bit_depth
             if self.camera.extension == "raw":
-                self.loader = xviii.loader
+                self.loader.set_loader('xviii')
+            else:
+                self.loader.set_loader('default')
 
     def parse(self):
         # Set the user specified list if any
@@ -832,7 +834,6 @@ class Corrector:
                     distance_vector.index.intersection(tmp_idxs)
                 ]
                 distance_bin_sample = distance_bin.mean()
-                # print("distance_bin_sample ", distance_bin_sample, "m")
                 bin_distances_sample = np.empty(
                     (self.image_height, self.image_width)
                 )
@@ -858,17 +859,14 @@ class Corrector:
                 memmap_filename, memmap_handle = create_memmap(
                     bin_images, dimensions, loader=self.loader
                 )
-                # print("memmap_handle size", memmap_handle.shape)
                 bin_images_sample = median_array(memmap_handle)
                 del memmap_handle
                 os.remove(memmap_filename)
 
-            # imageio.imwrite("bin_images_sample_"+str(idx_bin)+".png",
-            #                 bin_images_sample)
-            # imageio.imwrite("bin_distances_sample_"+str(idx_bin)+".png",
-            #                 bin_distances_sample)
-            # bin_images_sample_list.append(bin_images_sample)
-            # bin_distances_sample_list.append(bin_distances_sample)
+            imageio.imwrite(
+                Path(self.attenuation_parameters_folder)
+                / "bin_images_sample_"+str(idx_bin)+".png",
+                (bin_images_sample * (2**8 - 1)).astype(np.uint8))
 
             images_map[idx_bin] = bin_images_sample.reshape(
                 [self.image_height * self.image_width, self.image_channels]
@@ -932,6 +930,9 @@ class Corrector:
 
         # load image and convert to float
         image = self.loader(self.camera_image_list[idx])
+
+        #print('loader:', image.dtype, np.max(image), np.min(image))
+
         image_rgb = None
 
         # apply corrections
@@ -959,6 +960,8 @@ class Corrector:
                     self.correction_gains,
                 )
 
+                #print('attenuation_correct:', image.dtype, np.max(image), np.min(image))
+
             if distance_matrix is not None:
                 image = corrections.pixel_stat(
                     image,
@@ -967,6 +970,7 @@ class Corrector:
                     self.brightness,
                     self.contrast,
                 )
+                #print('pixel_stat:', image.dtype, np.max(image), np.min(image))
             else:
                 image = corrections.pixel_stat(
                     image,
@@ -978,6 +982,7 @@ class Corrector:
             if self._type != "grayscale" and self._type != "rgb":
                 # debayer images
                 image_rgb = corrections.debayer(image, self._type)
+                #print('debayer:', image_rgb.dtype, np.max(image_rgb), np.min(image_rgb))
             else:
                 image_rgb = image
 
@@ -1002,8 +1007,9 @@ class Corrector:
             image_rgb = corrections.gamma_correct(image_rgb)
 
         # apply scaling to 8 bit and format image to unit8
-        # image_rgb = corrections.bytescaling(image_rgb)
+        image_rgb *= (2 ** 8 - 1)
         image_rgb = image_rgb.clip(0, 255).astype(np.uint8)
+        #print('clip:', image_rgb.dtype, np.max(image_rgb), np.min(image_rgb))
 
         # write to output files
         image_filename = Path(self.camera_image_list[idx]).stem

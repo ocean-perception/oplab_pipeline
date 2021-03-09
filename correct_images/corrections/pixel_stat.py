@@ -15,7 +15,6 @@ def pixel_stat(
     bayer_img_std,
     target_mean,
     target_std,
-    dst_bit=8,
 ):
     """Generate target stats for images
 
@@ -31,8 +30,6 @@ def pixel_stat(
         desired mean in 0-100 scale
     target_std : float
         desired std in 0-100 scale
-    dst_bit : int
-        destination bit depth
 
     Returns
     -------
@@ -41,10 +38,10 @@ def pixel_stat(
     """
 
     # target_mean and target std should be given in 0 - 100 scale
-    target_mean_in_bitdeph = target_mean / 100.0 * (2.0 ** dst_bit - 1.0)
-    target_std_in_bitdeph = target_std / 100.0 * (2.0 ** dst_bit - 1.0)
+    target_mean_unitary = target_mean / 100.0 #* (2.0 ** dst_bit - 1.0)
+    target_std_unitary = target_std / 100.0 #* (2.0 ** dst_bit - 1.0)
     ret = (
         bayer_img - bayer_img_mean
-    ) / bayer_img_std * target_std_in_bitdeph + target_mean_in_bitdeph
-    ret = np.clip(ret, 0, 2 ** dst_bit - 1)
+    ) / bayer_img_std * target_std_unitary + target_mean_unitary
+    ret = np.clip(ret, 0, 1) #2 ** dst_bit - 1)
     return ret

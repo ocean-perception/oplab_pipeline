@@ -15,6 +15,9 @@ import joblib
 
 def create_memmap(image_list, dimensions, loader=default.loader):
     filename_map = "memmap_" + str(uuid.uuid4()) + ".map"
+    # If only 1 channel, do not create a 3D array
+    if dimensions[-1] == 1:
+        dimensions = dimensions[:-1]
     list_shape = [len(image_list)] + list(dimensions)
     size = 1
     for i in list_shape:
@@ -60,6 +63,8 @@ def memmap_loader(
     new_height=None,
 ):
     np_im = loader(image_list[idx]).astype(np.float32)
+
+    #print('memmap loader:', np.max(np_im), np.min(np_im))
 
     dimensions = np_im.shape
 

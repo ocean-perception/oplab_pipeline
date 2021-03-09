@@ -153,7 +153,7 @@ def call_parse(args):
 
     Console.set_logging_file(
         get_processed_folder(path)
-        / (str(time.time()) + "_correct_images_parse.log")
+        / ('log/' + str(time.time()) + "_correct_images_parse.log")
     )
 
     correct_config, camerasystem = load_configuration_and_camera_system(path)
@@ -191,7 +191,7 @@ def call_process(args):
 
     Console.set_logging_file(
         get_processed_folder(path)
-        / (str(time.time()) + "_correct_images_process.log")
+        / ('log/' + str(time.time()) + "_correct_images_process.log")
     )
 
     correct_config, camerasystem = load_configuration_and_camera_system(path)
@@ -228,7 +228,7 @@ def call_rescale(args):
 
     Console.set_logging_file(
         get_processed_folder(path)
-        / (str(time.time()) + "_correct_images_rescale.log")
+        / ('log/' + str(time.time()) + "_correct_images_rescale.log")
     )
 
     correct_config, camerasystem = load_configuration_and_camera_system(path)

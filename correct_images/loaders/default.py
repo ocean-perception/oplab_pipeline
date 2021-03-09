@@ -6,14 +6,14 @@ Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
 
-import cv2
+import imageio
 import numpy as np
 
 
 def loader(
-    image_filepath, image_width=None, image_height=None, src_bit=8, dst_bit=8
+    image_filepath, image_width=None, image_height=None, src_bit=8
 ):
-    """Default image loader using ImageIO
+    """Default image loader using imageio
 
     Parameters
     ----------
@@ -29,6 +29,6 @@ def loader(
     np.ndarray
         Loaded image in matrix form (numpy)
     """
-    image = cv2.imread(str(image_filepath), cv2.IMREAD_UNCHANGED)
-    image = image.astype(np.float32) * (2 ** (dst_bit - src_bit))
+    image = imageio.imread(str(image_filepath)).astype(np.float32)
+    image *= 2 ** (-src_bit)
     return image

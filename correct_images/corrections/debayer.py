@@ -39,7 +39,7 @@ def debayer(
     """
 
     # Make use of 16 bit debayering
-    image16_float = image.astype(np.float32) * (2 ** (16 - src_bit))
+    image16_float = image.astype(np.float32) * (2 ** 16 - 1)
     image16 = image16_float.astype(np.uint16)
 
     corrected_rgb_img = None
@@ -56,9 +56,9 @@ def debayer(
     else:
         Console.quit("Bayer pattern not supported (", pattern, ")")
 
-    # Scale down to 8 bits.
+    # Scale down to unitary
     corrected_rgb_img = corrected_rgb_img.astype(np.float32) * (
-        2 ** (dst_bit - 16)
+        2 ** (- 16)
     )
     return corrected_rgb_img
 
