@@ -865,7 +865,7 @@ class Corrector:
 
             imageio.imwrite(
                 Path(self.attenuation_parameters_folder)
-                / "bin_images_sample_"+str(idx_bin)+".png",
+                / ("bin_images_sample_"+str(idx_bin)+".png"),
                 (bin_images_sample * (2**8 - 1)).astype(np.uint8))
 
             images_map[idx_bin] = bin_images_sample.reshape(
