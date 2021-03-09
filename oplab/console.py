@@ -11,6 +11,7 @@ import datetime
 import pkg_resources
 import timeit
 import logging
+from pathlib import Path
 
 
 logger = None  # Public logger
@@ -247,6 +248,9 @@ class Console:
     @staticmethod
     def set_logging_file(filename):
         global logger
+        folder_path = Path(filename).parent
+        if not folder_path.exists():
+            folder_path.mkdir(parents=True)
         fh = logging.FileHandler(filename)
         formatter = logging.Formatter(
             fmt="%(asctime)s %(levelname)-8s %(message)s",

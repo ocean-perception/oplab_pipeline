@@ -220,7 +220,7 @@ def main(args=None):
 def call_parse_data(args):
     Console.set_logging_file(
         get_processed_folder(args.path[0])
-        / (str(time.time()) + "_auv_nav_parse.log")
+        / ('log/' + str(time.time()) + "_auv_nav_parse.log")
     )
     parse(args.path, args.force, args.merge)
 
@@ -228,7 +228,7 @@ def call_parse_data(args):
 def call_process_data(args):
     Console.set_logging_file(
         get_processed_folder(args.path)
-        / (str(time.time()) + "_auv_nav_process.log")
+        / ('log/' + str(time.time()) + "_auv_nav_process.log")
     )
     process(args.path, args.force, args.start_datetime, args.end_datetime)
 
@@ -236,7 +236,7 @@ def call_process_data(args):
 def call_export_data(args):
     Console.set_logging_file(
         get_processed_folder(args.path)
-        / (str(time.time()) + "_auv_nav_export.log")
+        / ('log/' + str(time.time()) + "_auv_nav_export.log")
     )
     export(
         args.path,
@@ -250,7 +250,7 @@ def call_export_data(args):
 def call_import_data(args):
     Console.set_logging_file(
         get_processed_folder(args.path)
-        / (str(time.time()) + "_auv_nav_import.log")
+        / ('log/' + str(time.time()) + "_auv_nav_import.log")
     )
     import_data(args.path, args.format, args.force)
 
