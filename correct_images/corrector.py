@@ -795,8 +795,8 @@ class Corrector:
 
             corrections.save_attenuation_plots(
                 self.attenuation_parameters_folder,
-                img_mean=image_corrected_mean,
-                img_std=image_corrected_std,
+                img_mean=image_raw_mean,
+                img_std=image_raw_std,
             )
 
         Console.info("Correction parameters saved...")
