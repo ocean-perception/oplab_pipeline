@@ -127,7 +127,7 @@ def get_angles(normal):
 
 
 def findLaserInImage(
-    img, min_green_ratio, k, num_columns, start_row=0, end_row=-1, prior=None
+    img, min_green_ratio, k, num_columns, start_row=0, end_row=-1, prior=None, debug=False
 ):
     """Find laser line projection in image
 
