@@ -349,36 +349,37 @@ class Calibrator:
                 "Looking for a calibration file at " + str(calibration_file)
             )
             if calibration_file.exists() and not self.fo:
-                Console.quit(
+                Console.warn(
                     "The camera "
                     + c["name"]
                     + " has already been calibrated. If you want to overwrite "
                     + "the JSON, use the -F flag."
                 )
-            Console.info(
-                "The camera is not calibrated, running mono calibration..."
-            )
-            filepaths = build_filepath(
-                get_processed_folder(self.filepath),
-                c["camera_calibration"]["path"],
-            )
-
-            if "glob_pattern" not in c["camera_calibration"]:
-                Console.error(
-                    "Could not find the key glob_pattern for the camera ",
-                    c["name"],
+            else:
+                Console.info(
+                    "The camera is not calibrated, running mono calibration..."
                 )
-                Console.quit("glob_pattern expected in calibration.yaml")
+                filepaths = build_filepath(
+                    get_processed_folder(self.filepath),
+                    c["camera_calibration"]["path"],
+                )
 
-            calibrate_mono(
-                cam_name,
-                filepaths,
-                str(c["camera_calibration"]["glob_pattern"]),
-                self.calibration_config["camera_calibration"],
-                calibration_file,
-                self.fo,
-                self.foa,
-            )
+                if "glob_pattern" not in c["camera_calibration"]:
+                    Console.error(
+                        "Could not find the key glob_pattern for the camera ",
+                        c["name"],
+                    )
+                    Console.quit("glob_pattern expected in calibration.yaml")
+
+                calibrate_mono(
+                    cam_name,
+                    filepaths,
+                    str(c["camera_calibration"]["glob_pattern"]),
+                    self.calibration_config["camera_calibration"],
+                    calibration_file,
+                    self.fo,
+                    self.foa,
+                )
 
     def stereo(self):
         if len(self.calibration_config["cameras"]) > 1:
