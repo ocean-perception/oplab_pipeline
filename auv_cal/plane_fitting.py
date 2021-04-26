@@ -8,6 +8,7 @@ See LICENSE.md file in the project root for full license information.
 
 import matplotlib.pyplot as plt
 import numpy as np
+from math import atan2, pi
 from numpy.linalg import norm
 from scipy.optimize import least_squares
 
@@ -104,6 +105,10 @@ class Plane:
             print("Fitted plane with:")
             print("\t Coefficients:", self.coeffs)
             print("\t With", len(inliers), "inliers")
+            pitch_offset_deg = atan2(self.coeffs[2], self.coeffs[0])*180/pi
+            print("\t Pitch offset from x-axis: ", pitch_offset_deg, "°")
+            yaw_offset_deg = atan2(self.coeffs[1], self.coeffs[0])*180/pi
+            print("\t Yaw offset from x-axis:   ", yaw_offset_deg , "°")
         return self.coeffs, inliers
 
     def fit_non_robust(self, points):
