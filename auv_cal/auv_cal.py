@@ -112,27 +112,30 @@ def main(args=None):
 
 
 def call_calibrate_mono(args):
+    time_string = time.strftime("%Y%m%d_%H%M%S", time.localtime())
     Console.set_logging_file(
         get_processed_folder(args.path)
-        / ('log/' + str(time.time()) + "_auv_cal_mono.log")
+        / ('log/' + time_string + "_auv_cal_mono.log")
     )
     c = Calibrator(args.path, args.force, args.force2)
     c.mono()
 
 
 def call_calibrate_stereo(args):
+    time_string = time.strftime("%Y%m%d_%H%M%S", time.localtime())
     Console.set_logging_file(
         get_processed_folder(args.path)
-        / ('log/' + str(time.time()) + "_auv_cal_stereo.log")
+        / ('log/' + time_string + "_auv_cal_stereo.log")
     )
     c = Calibrator(args.path, args.force, args.force2)
     c.stereo()
 
 
 def call_calibrate_laser(args):
+    time_string = time.strftime("%Y%m%d_%H%M%S", time.localtime())
     Console.set_logging_file(
         get_processed_folder(args.path)
-        / ('log/' + str(time.time()) + "_auv_cal_laser.log")
+        / ('log/' + time_string + "_auv_cal_laser.log")
     )
     c = Calibrator(args.path, args.force, args.force2)
     c.laser()
