@@ -127,7 +127,7 @@ def get_angles(normal):
 
 
 def findLaserInImage(
-    img, min_green_ratio, k, num_columns, start_row=0, end_row=-1, prior=None, debug=False
+    img, min_green_ratio, k, num_columns, start_row=0, end_row=-1, prior=None
 ):
     """Find laser line projection in image
 
@@ -424,8 +424,7 @@ def get_laser_pixels_in_image_pair(
                 k,
                 num_columns,
                 start_row=start_row_b,
-                end_row=end_row_b,
-                debug=True,
+                end_row=end_row_b
             )
             write_str += "bottom: \n- " + "- ".join(
                 [
@@ -670,10 +669,9 @@ class LaserCalibrator:
         self.uncertainty_planes = []
         self.in_front_or_behind = []
 
-
     def z_stratified_sampling(self, cloud):
         """Perform vertical (w.r.t. mapping device) stratified sampling
-        
+
         Stratify point cloud between min_z_m and max_z_m using number_of_bins
         bins and a maximum number of max_points_per_bin points per bin.
 
@@ -722,7 +720,6 @@ class LaserCalibrator:
                 Console.info(" * bin", i, ": 0")
 
         return output_cloud
-
 
     def pointcloud_from_peaks(self, pk1, pk2):
         """Triangulate a point cloud from two frames.
@@ -864,7 +861,7 @@ class LaserCalibrator:
         max_uncertainty_planes = 300
         tries = 0
         failed_distance = 0
-        failed_angle = 0 
+        failed_angle = 0
         while (
             planes_enclose_inliers is False
             and len(self.uncertainty_planes) < max_uncertainty_planes
@@ -887,7 +884,7 @@ class LaserCalibrator:
                 or p1p2_norm < min_dist
             ):
                 failed_distance += 1
-                if failed_distance %100000 is 0:
+                if failed_distance % 100000 == 0:
                     Console.info(
                         "Combinations rejected due to distance criterion",
                         "(Poisson disk sampling):", failed_distance, "times,",
@@ -901,7 +898,7 @@ class LaserCalibrator:
                 < min_sin_angle
             ):
                 failed_angle += 1
-                if failed_angle%100000 is 0:
+                if failed_angle % 100000 == 0:
                     print(
                         "Combinations rejected due to distance criterion",
                         "(Poisson disk sampling):", failed_distance, "times,",
