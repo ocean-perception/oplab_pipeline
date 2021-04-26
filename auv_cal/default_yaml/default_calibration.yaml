@@ -44,11 +44,11 @@ laser_calibration:
     start_row_b: 0
     end_row_b: -1
     two_lasers: false
-  filter:
-    min_range_m: 3.0
-    max_range_m: 20.0
-    rss_bin_size_m: 0.5
-    max_bin_elements: 300
+  stratify:
+    min_z_m: 1
+    max_z_m: 20
+    number_of_bins: 38
+    max_points_per_bin: 300
   ransac:
     max_cloud_size: 10000
     min_distance_threshold: 0.002

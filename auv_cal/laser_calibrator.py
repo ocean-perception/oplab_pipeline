@@ -617,8 +617,13 @@ class LaserCalibrator:
         self.config = config
         self.overwrite = overwrite
 
+        if config.get("filter") is not None:
+            Console.quit(
+                "The node 'filter' is no longer used in calibration.yaml. "
+                "'stratify' is used instead."
+            )
         detection = config.get("detection", {})
-        filtering = config.get("filter", {})
+        stratify = config.get("stratify", {})
         ransac = config.get("ransac", {})
         # uncertainty_generation = config.get("uncertainty_generation", {})
 
@@ -632,10 +637,10 @@ class LaserCalibrator:
         self.end_row_b = detection.get("end_row_b", -1)
         self.two_lasers = detection.get("two_lasers", False)
 
-        self.filter_max_range = filtering.get("max_range_m", 20.0)
-        self.filter_min_range = filtering.get("min_range_m", 3.0)
-        self.filter_rss_bin_size = filtering.get("rss_bin_size_m", 0.5)
-        self.filter_max_bin_elements = filtering.get("max_bin_elements", 300)
+        self.min_z_m = stratify.get("min_z_m", 1)
+        self.max_z_m = stratify.get("max_z_m", 20)
+        self.number_of_bins = stratify.get("number_of_bins", 5)
+        self.max_points_per_bin = stratify.get("max_bin_elements", 300)
 
         self.max_point_cloud_size = ransac.get("max_cloud_size", 10000)
         self.mdt = ransac.get("min_distance_threshold", 0.002)
@@ -665,10 +670,12 @@ class LaserCalibrator:
         self.uncertainty_planes = []
         self.in_front_or_behind = []
 
-    def range_stratified_sampling(self, cloud):
-        """Perform range stratified sampling following the parameters
-            filter_rss_bin_size and filter_max_bin_elements over
-            the range filter_min_range and filter_max_range
+
+    def z_stratified_sampling(self, cloud):
+        """Perform vertical (w.r.t. mapping device) stratified sampling
+        
+        Stratify point cloud between min_z_m and max_z_m using number_of_bins
+        bins and a maximum number of max_points_per_bin points per bin.
 
         Parameters
         ----------
@@ -681,42 +688,41 @@ class LaserCalibrator:
             Output list of points sampled
         """
 
-        num_bins = math.ceil(
-            (self.filter_max_range - self.filter_min_range)
-            / self.filter_rss_bin_size
-        )
-        bin_den = (self.filter_max_range - self.filter_min_range) / num_bins
+        Console.info("Stratify point cloud")
+        Console.info("min_z_m:            ", self.min_z_m)
+        Console.info("max_z_m:            ", self.max_z_m)
+        Console.info("number_of_bins:     ", self.number_of_bins)
+        Console.info("max_points_per_bin: ", self.max_points_per_bin)
 
-        max_bin_elements = self.filter_max_bin_elements
-        bins = [None] * num_bins
+        bin_size_m = (self.max_z_m - self.min_z_m)/self.number_of_bins
+        bins = [None]*self.number_of_bins
 
         # Shuffle the list in-place
         random.shuffle(cloud)
 
         output_cloud = []
         for p in cloud:
-            r = math.sqrt(p[0] * p[0] + p[1] * p[1] + p[2] * p[2])
-            if r < self.filter_max_range and r >= self.filter_min_range:
-                corresp_bin = math.floor((r - self.filter_min_range) / bin_den)
+            z = p[2]
+            if self.min_z_m <= z and z < self.max_z_m:
+                corresp_bin = math.floor((z - self.min_z_m)/bin_size_m)
                 if corresp_bin < len(bins):
                     if bins[corresp_bin] is None:
                         bins[corresp_bin] = [p]
                         output_cloud.append(p)
-                    elif len(bins[corresp_bin]) < max_bin_elements:
+                    elif len(bins[corresp_bin]) < self.max_points_per_bin:
                         bins[corresp_bin].append(p)
                         output_cloud.append(p)
                 else:
                     raise IndexError("List index corresp_bin out of range")
-        Console.info("filter_min_range: ", self.filter_min_range)
-        Console.info("filter_max_range: ", self.filter_max_range)
         Console.info("Summary for bins:")
-        for i in range(num_bins):
+        for i in range(self.number_of_bins):
             if bins[i] is not None:
                 Console.info(" * bin", i, ":", len(bins[i]))
             else:
                 Console.info(" * bin", i, ": 0")
 
         return output_cloud
+
 
     def pointcloud_from_peaks(self, pk1, pk2):
         """Triangulate a point cloud from two frames.
@@ -856,10 +862,14 @@ class LaserCalibrator:
         planes_enclose_inliers = False
         Console.info("Generating uncertainty planes...")
         max_uncertainty_planes = 300
+        tries = 0
+        failed_distance = 0
+        failed_angle = 0 
         while (
             planes_enclose_inliers is False
             and len(self.uncertainty_planes) < max_uncertainty_planes
         ):
+            tries += 1
             point_cloud_local = random.sample(self.inliers_cloud_list, 3)
 
             # Check if the points are sufficiently far apart and not aligned
@@ -876,6 +886,13 @@ class LaserCalibrator:
                 or p0p2_norm < min_dist
                 or p1p2_norm < min_dist
             ):
+                failed_distance += 1
+                if failed_distance %100000 is 0:
+                    Console.info(
+                        "Combinations rejected due to distance criterion",
+                        "(Poisson disk sampling):", failed_distance, "times,",
+                        "due to angle criterion:", failed_angle, "times"
+                    )
                 continue
 
             # Reject points that are too closely aligned
@@ -883,6 +900,13 @@ class LaserCalibrator:
                 abs(np.cross(p0p1, p0p2)) / (p0p1_norm * p0p2_norm)
                 < min_sin_angle
             ):
+                failed_angle += 1
+                if failed_angle%100000 is 0:
+                    print(
+                        "Combinations rejected due to distance criterion",
+                        "(Poisson disk sampling):", failed_distance, "times,",
+                        "due to angle criterion:", failed_angle, "times"
+                    )
                 continue
 
             # Compute plane through the 3 points and append to list
@@ -890,7 +914,13 @@ class LaserCalibrator:
             self.uncertainty_planes.append(
                 plane_through_3_points(point_cloud_local)
             )
-            Console.info("Number of planes: {}", len(self.uncertainty_planes))
+            Console.info(
+                "Number of planes: ", len(self.uncertainty_planes), ", "
+                "Number of tries so far: ", tries, ".",
+                "Combinations rejected due to distance criterion",
+                "(Poisson disk sampling):", failed_distance, "times,",
+                "due to angle criterion:", failed_angle, "times"
+            )
             planes_enclose_inliers = self._do_planes_enclose_inliers()
 
         Console.info(
@@ -1254,7 +1284,7 @@ class LaserCalibrator:
 
         rss_before = len(point_cloud_ned)
         # point_cloud_filt = self.filter_cloud(point_cloud_ned)
-        point_cloud_filt = self.range_stratified_sampling(point_cloud_ned)
+        point_cloud_filt = self.z_stratified_sampling(point_cloud_ned)
         rss_after = len(point_cloud_filt)
         Console.info(
             "Points after filtering: " + str(rss_after) + "/" + str(rss_before)
@@ -1276,9 +1306,7 @@ class LaserCalibrator:
             Console.info("Fitting a plane to second line...")
             rss_before = len(point_cloud_ned_b)
             # point_cloud_b_filt = self.filter_cloud(point_cloud_ned_b)
-            point_cloud_b_filt = self.range_stratified_sampling(
-                point_cloud_ned_b
-            )
+            point_cloud_b_filt = self.z_stratified_sampling(point_cloud_ned_b)
             rss_after = len(point_cloud_b_filt)
             Console.info(
                 "Points after filtering: "
