@@ -419,7 +419,7 @@ class Calibrator(object):
 
     def mk_object_points(self, boards):
         opts = []
-        for i, b in enumerate(boards):
+        for _, b in enumerate(boards):
             num_pts = b.n_cols * b.n_rows
             opts_loc = numpy.zeros((num_pts, 1, 3), numpy.float32)
 
@@ -629,7 +629,7 @@ class MonoCalibrator(Calibrator):
                 ):
                     lgray = cv2.imread(lf["file"])
                     print(
-                        "*** Added sample p_x = %.3f, p_y = %.3f,p_size = %.3f, skew = %.3f"  # noqa
+                        "*** Added sample p_x = %.3f, p_y = %.3f, p_size = %.3f, skew = %.3f"  # noqa
                         % tuple(params)
                     )
                     # lgray2 = lgray.copy()
@@ -823,23 +823,23 @@ class MonoCalibrator(Calibrator):
         self.calibrations[iteration] = calibration
 
         linear_error = []
-        rmse = 0
+        sq_err = 0
         for (params, gray) in self.db:
             error = self.linear_error_from_image(gray)
             print("Error is", error)
             if error is None:
                 continue
-            rmse += error
+            sq_err += error ** 2
             if error is not None:
                 linear_error.append(error)
             else:
                 linear_error.append(1e3)
         if len(linear_error) > 0:
-            rmse = math.sqrt((rmse ** 2) / len(linear_error))
+            rmse = math.sqrt(sq_err / len(linear_error))
+            print("RMSE: " + str(rmse))
         else:
             Console.warn("Linear error vector empty")
-        print(linear_error)
-        print("RSME: " + str(rmse))
+
         # print(self.intrinsics)
         # print(self.distortion)
         if (
