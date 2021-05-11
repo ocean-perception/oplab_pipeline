@@ -100,7 +100,7 @@ image:
 ```
 
 ## vehicle.yaml file format definition ##
-Currently only file format version 2 is supported. For examples check the subfolders of oplab/default_yaml/.
+Currently only file format version 2 is supported. For examples check the subfolders of auv_nav/default_yaml/.
 
 ### Version 0 ###
 - One node each for the "standard nodes" `origin`, `usbl`, `ins`, `dvl`, `depth`, `chemical` (optional).
