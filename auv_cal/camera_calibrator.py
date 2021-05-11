@@ -482,71 +482,6 @@ class Calibrator(object):
         print("R = ", numpy.ravel(r).tolist())
         print("P = ", numpy.ravel(p).tolist())
 
-    def lryaml(self, name, d, k, r, p, num_images, error):
-        calmessage = (
-            "%YAML:1.0\n"
-            + "image_width: "
-            + str(self.size[0])
-            + "\n"
-            + "image_height: "
-            + str(self.size[1])
-            + "\n"
-            + "camera_name: "
-            + name
-            + "\n"
-            + "camera_matrix: !!opencv-matrix\n"
-            + "  rows: 3\n"
-            + "  cols: 3\n"
-            + "  dt: d\n"
-            + "  data: ["
-            + ", ".join(["%8f" % i for i in k.reshape(1, 9)[0]])
-            + "]\n"
-            + "distortion_model: "
-            + ("rational_polynomial" if d.size > 5 else "plumb_bob")
-            + "\n"
-            + "distortion_coefficients: !!opencv-matrix\n"
-            + "  rows: 1\n"
-            + "  cols: 5\n"
-            + "  dt: d\n"
-            + "  data: ["
-            + ", ".join(["%8f" % d[i, 0] for i in range(d.shape[0])])
-            + "]\n"
-            + "rectification_matrix: !!opencv-matrix\n"
-            + "  rows: 3\n"
-            + "  cols: 3\n"
-            + "  dt: d\n"
-            + "  data: ["
-            + ", ".join(["%8f" % i for i in r.reshape(1, 9)[0]])
-            + "]\n"
-            + "projection_matrix: !!opencv-matrix\n"
-            + "  rows: 3\n"
-            + "  cols: 4\n"
-            + "  dt: d\n"
-            + "  data: ["
-            + ", ".join(["%8f" % i for i in p.reshape(1, 12)[0]])
-            + "]\n"
-            + 'date: "'
-            + Console.get_date()
-            + '" \n'
-            + 'user: "'
-            + Console.get_username()
-            + '" \n'
-            + 'host: "'
-            + Console.get_hostname()
-            + '" \n'
-            + 'version: "'
-            + Console.get_version()
-            + '" \n'
-            + "number_of_images: "
-            + str(num_images)
-            + "\n"
-            + "avg_reprojection_error: "
-            + str(error)
-            + "\n"
-            + ""
-        )
-        return calmessage
-
 
 def resize_with_padding(img, size):
     width, height = size
@@ -775,13 +710,27 @@ class MonoCalibrator(Calibrator):
 
     def cal_fromcorners(self, iteration=0):
         """
-        :param good: Good corner positions and boards
-        :type good: [(corners, ChessboardInfo)]
-        """
-        Console.info("Calibrating monocular...")
-        boards = [b for (_, b) in self.good_corners]
+        Compute intrinsic camera calibrtion parameters
 
-        Console.info("Got", len(boards), "detected calibration boards")
+        Given a set of chessboard corners / calibration dot locations (in
+        self.good_corners), this function computes the intrisic camera
+        calibrtion parameters. It detects calibration patterns with high
+        reprojection errors, eliminates these and calls itself again (i.e.
+        recursively) with the reduced set of calibration patterns until all
+        reprojection errors are within given bounds or the maximum number of
+        iterations has been reached.
+
+        :param iteration: Indicating number of (recursive) function call
+        :type iteration: int
+        """
+        if iteration == 0:
+            Console.info("Calibrating monocular...")
+
+        boards = [b for (_, b) in self.good_corners]
+        Console.info(
+            "Iteration", iteration, "using", len(boards),
+            "views of the calibration board"
+        )
 
         ipts = [points for (points, _) in self.good_corners]
         opts = self.mk_object_points(boards)
@@ -795,24 +744,30 @@ class MonoCalibrator(Calibrator):
             self.distortion = numpy.zeros((5, 1), numpy.float64)  # plumb bob
 
         self.num_images = len(self.good_corners)
-        self.avg_reprojection_error = cv2.calibrateCamera(
-            opts, ipts, self.size, self.intrinsics, self.distortion
-        )[0]
 
-        Console.info(
-            "Calibrate camera error: " + str(self.avg_reprojection_error)
+        [self.avg_reprojection_error, _, _, _, _, self.stdev_intrinsics, _,
+            per_view_errors] = (
+            cv2.calibrateCameraExtended(
+                opts, ipts, self.size, self.intrinsics, self.distortion
+            )
         )
+
+        Console.info("Per view reprojection error:\n" + str(per_view_errors))
+        Console.info(
+            "Average reprojection error: " + str(self.avg_reprojection_error)
+        )
+        Console.info("Stdev intrinsics: " + str(self.stdev_intrinsics[:, 0].T))
 
         # R is identity matrix for monocular calibration
         self.R = numpy.eye(3, dtype=numpy.float64)
         self.P = numpy.zeros((3, 4), dtype=numpy.float64)
-
         self.set_alpha(1.0)
 
         calibration = {
             "name": self.name,
             "distortion": self.distortion,
             "intrinsics": self.intrinsics,
+            "stdev_intrinsics": self.stdev_intrinsics,
             "R": self.R,
             "P": self.P,
             "num_images": self.num_images,
@@ -822,45 +777,33 @@ class MonoCalibrator(Calibrator):
         # Save all calibrations and pick the best
         self.calibrations[iteration] = calibration
 
-        linear_error = []
-        sq_err = 0
-        for (params, gray) in self.db:
-            error = self.linear_error_from_image(gray)
-            print("Error is", error)
-            if error is None:
-                continue
-            sq_err += error ** 2
-            if error is not None:
-                linear_error.append(error)
-            else:
-                linear_error.append(1e3)
-        if len(linear_error) > 0:
-            rmse = math.sqrt(sq_err / len(linear_error))
-            print("RMSE: " + str(rmse))
-        else:
-            Console.warn("Linear error vector empty")
-
-        # print(self.intrinsics)
-        # print(self.distortion)
-        if (
-            iteration < self.max_iterations - 1
-            and self.avg_reprojection_error > 0.5
-        ):
-            lin_error_mean = np.mean(np.array(linear_error))
-            lin_error_std = np.std(np.array(linear_error))
-            self.good_corners = [
-                c
-                for c, e in zip(self.good_corners, linear_error)
-                if e < lin_error_mean + 2 * lin_error_std
-            ]
+        reproj_err_std = np.std(per_view_errors)
+        acceptable_reproj_err = max(
+            self.avg_reprojection_error + 2 * reproj_err_std, 0.25
+        )
+        bad_corners = per_view_errors > acceptable_reproj_err
+        if sum(bad_corners) > 0:
             Console.info(
-                "Using "
-                + str(len(self.good_corners))
-                + " inlier files after filtering!"
+                "Number of views exceeding reprojection error threshold ("
+                + str(acceptable_reproj_err) + "): "
+                + str(sum(bad_corners)[0]) + " out of "
+                + str(len(per_view_errors)) + " calibration board views"
             )
-            self.cal_fromcorners(iteration=iteration + 1)
+            if iteration == self.max_iterations-1:
+                Console.info(
+                    "but maximum number of iterations has been reached"
+                )
+            else:
+                self.good_corners = [
+                    c
+                    for c, e in zip(self.good_corners, per_view_errors)
+                    if e <= acceptable_reproj_err
+                ]
+                self.cal_fromcorners(iteration=iteration + 1)
+        else:
+            Console.info("All reprojection errors below throshold.")
 
-        # Use best calibration
+        # Find best calibration
         min_reprojection_error = np.inf
         best_idx = None
         for i, cal in enumerate(self.calibrations):
@@ -871,8 +814,14 @@ class MonoCalibrator(Calibrator):
                 min_reprojection_error = cal["avg_reprojection_error"]
 
         if best_idx is not None:
+            # print(
+            #     "Calibration with 0-based index", best_idx, "out of",
+            #     len(self.calibrations),
+            #     "calibrations was chosen as best calibration"
+            # )  # Usually last one
             self.distortion = self.calibrations[best_idx]["distortion"]
             self.intrinsics = self.calibrations[best_idx]["intrinsics"]
+            self.stdev_intrinsics = self.calibrations[best_idx]["stdev_intrinsics"]
             self.R = self.calibrations[best_idx]["R"]
             self.P = self.calibrations[best_idx]["P"]
             self.num_images = self.calibrations[best_idx]["num_images"]
@@ -947,57 +896,88 @@ class MonoCalibrator(Calibrator):
         self.lrreport(self.distortion, self.intrinsics, self.R, self.P)
 
     def yaml(self):
-        return self.lryaml(
-            self.name,
-            self.distortion,
-            self.intrinsics,
-            self.R,
-            self.P,
-            self.num_images,
-            self.avg_reprojection_error,
+        name = self.name
+        d = self.distortion
+        k = self.intrinsics
+        stdev_intrisics = self.stdev_intrinsics
+        r = self.R
+        p = self.P
+        num_images = self.num_images
+        error = self.avg_reprojection_error
+
+        calmessage = (
+            "%YAML:1.0\n"
+            + "image_width: "
+            + str(self.size[0])
+            + "\n"
+            + "image_height: "
+            + str(self.size[1])
+            + "\n"
+            + "camera_name: "
+            + name
+            + "\n"
+            + "camera_matrix: !!opencv-matrix\n"
+            + "  rows: 3\n"
+            + "  cols: 3\n"
+            + "  dt: d\n"
+            + "  data: ["
+            + ", ".join(["%8f" % i for i in k.reshape(1, 9)[0]])
+            + "]\n"
+            + "distortion_model: "
+            + ("rational_polynomial" if d.size > 5 else "plumb_bob")
+            + "\n"
+            + "distortion_coefficients: !!opencv-matrix\n"
+            + "  rows: 1\n"
+            + "  cols: 5\n"
+            + "  dt: d\n"
+            + "  data: ["
+            + ", ".join(["%8f" % d[i, 0] for i in range(d.shape[0])])
+            + "]\n"
+            + "rectification_matrix: !!opencv-matrix\n"
+            + "  rows: 3\n"
+            + "  cols: 3\n"
+            + "  dt: d\n"
+            + "  data: ["
+            + ", ".join(["%8f" % i for i in r.reshape(1, 9)[0]])
+            + "]\n"
+            + "projection_matrix: !!opencv-matrix\n"
+            + "  rows: 3\n"
+            + "  cols: 4\n"
+            + "  dt: d\n"
+            + "  data: ["
+            + ", ".join(["%8f" % i for i in p.reshape(1, 12)[0]])
+            + "]\n"
+            + "stdev_intrinsics: !!opencv-matrix\n"
+            + "  rows: 1\n"
+            + "  cols: 9\n"
+            + "  dt: d\n"
+            + "  data: ["
+            + ", ".join(
+                ["%8f" % stdev_intrisics[i, 0]
+                for i in range(9)]  # Output elements 0 to 8 as 9 to 17 are 0
+                )
+            + "]\n"
+            + 'date: "'
+            + Console.get_date()
+            + '" \n'
+            + 'user: "'
+            + Console.get_username()
+            + '" \n'
+            + 'host: "'
+            + Console.get_hostname()
+            + '" \n'
+            + 'version: "'
+            + Console.get_version()
+            + '" \n'
+            + "number_of_images: "
+            + str(num_images)
+            + "\n"
+            + "avg_reprojection_error: "
+            + str(error)
+            + "\n"
+            + ""
         )
-
-    def linear_error_from_image(self, image):
-        """
-        Detect the checkerboard and compute the linear error.
-        Mainly for use in tests.
-        """
-        _, corners, board = self.get_corners(image)
-        if corners is None:
-            return None
-
-        undistorted = self.undistort_points(corners)
-        return self.linear_error(undistorted, board)
-
-    @staticmethod
-    def linear_error(corners, b):
-        """
-        Returns the linear error for a set of corners detected in the
-        unrectified image.
-        """
-
-        if corners is None:
-            return None
-
-        def pt2line(x0, y0, x1, y1, x2, y2):
-            """ point is (x0, y0), line is (x1, y1, x2, y2) """
-            return abs(
-                (x2 - x1) * (y1 - y0) - (x1 - x0) * (y2 - y1)
-            ) / math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
-
-        cc = b.n_cols
-        cr = b.n_rows
-        errors = []
-        for r in range(cr):
-            (x1, y1) = corners[(cc * r) + 0, 0]
-            (x2, y2) = corners[(cc * r) + cc - 1, 0]
-            for i in range(1, cc - 1):
-                (x0, y0) = corners[(cc * r) + i, 0]
-                errors.append(pt2line(x0, y0, x1, y1, x2, y2))
-        if errors:
-            return math.sqrt(sum([e ** 2 for e in errors]) / len(errors))
-        else:
-            return None
+        return calmessage
 
 
 def find_common_filenames(list1, list2):
