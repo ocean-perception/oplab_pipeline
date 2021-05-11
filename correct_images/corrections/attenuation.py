@@ -225,47 +225,55 @@ def save_attenuation_plots(
 
     if img_mean is not None:
         fig = plt.figure()
-        plt.imshow(img_mean[:, :, 0])
+        if len(img_mean.shape) == 3:
+            plt.imshow(img_mean[:, :, 0])
+        else:
+            plt.imshow(img_mean[:, :])
         plt.colorbar()
         plt.title("Mean 0")
         plt.savefig(output_dir / "image_corrected_mean_0.png", dpi=600)
         plt.close(fig)
 
-        if img_mean.shape[2] > 1:
-            fig = plt.figure()
-            plt.imshow(img_mean[:, :, 1])
-            plt.colorbar()
-            plt.title("Mean 1")
-            plt.savefig(output_dir / "image_corrected_mean_1.png", dpi=600)
-            plt.close(fig)
+        if len(img_mean.shape) == 3:
+            if img_mean.shape[2] > 1:
+                fig = plt.figure()
+                plt.imshow(img_mean[:, :, 1])
+                plt.colorbar()
+                plt.title("Mean 1")
+                plt.savefig(output_dir / "image_corrected_mean_1.png", dpi=600)
+                plt.close(fig)
 
-        if img_mean.shape[2] > 2:
-            fig = plt.figure()
-            plt.imshow(img_mean[:, :, 2])
-            plt.colorbar()
-            plt.title("Mean 2")
-            plt.savefig(output_dir / "image_corrected_mean_2.png", dpi=600)
-            plt.close(fig)
+            if img_mean.shape[2] > 2:
+                fig = plt.figure()
+                plt.imshow(img_mean[:, :, 2])
+                plt.colorbar()
+                plt.title("Mean 2")
+                plt.savefig(output_dir / "image_corrected_mean_2.png", dpi=600)
+                plt.close(fig)
 
     if img_std is not None:
         fig = plt.figure()
-        plt.imshow(img_std[:, :, 0])
+        if len(img_std.shape) == 3:
+            plt.imshow(img_std[:, :, 0])
+        else:
+            plt.imshow(img_std[:, :])
         plt.colorbar()
         plt.title("Std 0")
         plt.savefig(output_dir / "image_corrected_std_0.png", dpi=600)
         plt.close(fig)
 
-        if img_std.shape[2] > 1:
-            fig = plt.figure()
-            plt.imshow(img_std[:, :, 0])
-            plt.colorbar()
-            plt.title("Std 1")
-            plt.savefig(output_dir / "image_corrected_std_1.png", dpi=600)
-            plt.close(fig)
-        if img_std.shape[2] > 2:
-            fig = plt.figure()
-            plt.imshow(img_std[:, :, 0])
-            plt.colorbar()
-            plt.title("Std 2")
-            plt.savefig(output_dir / "image_corrected_std_2.png", dpi=600)
-            plt.close(fig)
+        if len(img_std.shape) == 3:
+            if img_std.shape[2] > 1:
+                fig = plt.figure()
+                plt.imshow(img_std[:, :, 0])
+                plt.colorbar()
+                plt.title("Std 1")
+                plt.savefig(output_dir / "image_corrected_std_1.png", dpi=600)
+                plt.close(fig)
+            if img_std.shape[2] > 2:
+                fig = plt.figure()
+                plt.imshow(img_std[:, :, 0])
+                plt.colorbar()
+                plt.title("Std 2")
+                plt.savefig(output_dir / "image_corrected_std_2.png", dpi=600)
+                plt.close(fig)
