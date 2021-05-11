@@ -76,7 +76,7 @@ def curve_fitting(
     """
     loss = "soft_l1"
     method = "trf"
-    bound_lower = [1, -np.inf, 0]
+    bound_lower = [0, -np.inf, -np.inf]
     bound_upper = [np.inf, 0, np.inf]
 
     n = len(intensities)
