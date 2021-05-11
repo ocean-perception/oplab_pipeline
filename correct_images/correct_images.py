@@ -72,8 +72,7 @@ def main(args=None):
     # subparser correct
     subparser_correct = subparsers.add_parser(
         "correct",
-        help="Correct images for attenuation / distortion / gamma and \
-            debayering",
+        help="Correct images for attenuation / distortion / gamma and debayering",  # noqa
     )
     subparser_correct.add_argument(
         "path", help="Path to raw directory till dive."
@@ -172,8 +171,8 @@ def call_parse(args):
                 corrector.parse()
 
     Console.info(
-        "Parse completed for all cameras. Please run process to develop \
-        corrected images..."
+        "Parse completed for all cameras. Please run process to develop ",
+        "corrected images...",
     )
 
 
@@ -291,8 +290,8 @@ def load_configuration_and_camera_system(path):
 
     if not temp_path.exists():
         Console.info(
-            "Not found camera.yaml file in /raw folder...Using default \
-            camera.yaml file..."
+            "Not found camera.yaml file in /raw folder...Using default ",
+            "camera.yaml file...",
         )
         # find out default yaml paths
         root = Path(__file__).resolve().parents[1]
