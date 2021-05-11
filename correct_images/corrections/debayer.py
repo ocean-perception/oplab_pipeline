@@ -21,7 +21,7 @@ from oplab import Console
 # convert bayer image to RGB based
 # on the bayer pattern for the camera
 def debayer(
-    image: np.ndarray, pattern: str, src_bit=8, dst_bit=8
+    image: np.ndarray, pattern: str, src_bit=16, dst_bit=16
 ) -> np.ndarray:
     """Perform debayering of input image
 
