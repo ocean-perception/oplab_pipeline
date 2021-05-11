@@ -140,9 +140,6 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
     localisation_file = filepath / "auv_nav.yaml"
     localisation_file = get_config_folder(localisation_file)
 
-    # copy the configuration file
-    mission_file.copy(mission_processed)  # TODO
-
     # check that it is a valid dive folder
     if not valid_dive(filepath):
         Console.error(
@@ -170,6 +167,10 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
         if not localisation_file.parent.exists():
             localisation_file.parent.mkdir(parents=True)
         default_localisation.copy(localisation_file)
+
+    # copy the configuration file
+    localisation_file_processed = get_processed_folder(localisation_file)
+    localisation_file.copy(localisation_file_processed) 
 
     # Default to no EKF and PF and SPP
     particle_filter_activate = False
