@@ -140,6 +140,9 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
     localisation_file = filepath / "auv_nav.yaml"
     localisation_file = get_config_folder(localisation_file)
 
+    # copy the configuration file
+    mission_file.copy(mission_processed)  # TODO
+
     # check that it is a valid dive folder
     if not valid_dive(filepath):
         Console.error(
