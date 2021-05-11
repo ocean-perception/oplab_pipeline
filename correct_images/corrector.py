@@ -364,8 +364,8 @@ class Corrector:
                         )
                     else:
                         Console.warn(
-                            "Code will overwrite existing parameters for \
-                            current configuration..."
+                            "Code will overwrite existing parameters for ",
+                            "current configuration...",
                         )
         elif self.correction_method == "manual_balance":
             sub_directory_name = "manually_corrected"
@@ -387,13 +387,13 @@ class Corrector:
             if len(file_list) > 0:
                 if not self.force:
                     Console.quit(
-                        "Corrected images exist for current configuration. \
-                        Run process with Force (-F flag)..."
+                        "Corrected images exist for current configuration. ",
+                        "Run process with Force (-F flag)...",
                     )
                 else:
                     Console.warn(
-                        "Code will overwrite existing corrected images for \
-                        current configuration..."
+                        "Code will overwrite existing corrected images for ",
+                        "current configuration...",
                     )
 
     def get_camera_idx(self):
@@ -419,15 +419,15 @@ class Corrector:
         if self.correction_method == "colour_correction":
             if self.distance_path == "json_renav_*":
                 Console.info(
-                    "Picking first JSON folder as the default path to auv_nav \
-                    csv files..."
+                    "Picking first JSON folder as the default path to auv_nav",
+                    " csv files...",
                 )
                 dir_ = self.path_processed
                 json_list = list(dir_.glob("json_*"))
                 if len(json_list) == 0:
                     Console.quit(
-                        "No navigation solution could be found. Please run \
-                        auv_nav parse and process first"
+                        "No navigation solution could be found. Please run ",
+                        "auv_nav parse and process first",
                     )
                 self.distance_path = json_list[0]
 
@@ -507,8 +507,8 @@ class Corrector:
 
         if len(distance_list) != len(self.camera_image_list):
             Console.warn(
-                "The number of images does not coincide with the altitude \
-                measurements."
+                "The number of images does not coincide with the altitude ",
+                "measurements.",
             )
             Console.info("Using image file paths from CSV instead.")
 
@@ -543,8 +543,8 @@ class Corrector:
         )
         if len(self.altitude_list) < 3:
             Console.quit(
-                "Insufficient number of images to compute attenuation \
-                parameters..."
+                "Insufficient number of images to compute attenuation ",
+                "parameters...",
             )
 
         if self.distance_metric == "depth_map":
@@ -563,8 +563,8 @@ class Corrector:
 
                 if len(self.camera_image_list) != len(self.depth_map_list):
                     Console.quit(
-                        "The number of images does not coincide with the \
-                        number of depth maps."
+                        "The number of images does not coincide with the ",
+                        "number of depth maps.",
                     )
 
     # compute correction parameters either for attenuation correction or
@@ -724,7 +724,7 @@ class Corrector:
             # apply gains to images
             Console.info("Applying attenuation corrections to images...")
 
-            temp = self.loader(self.camera_image_list[0])
+            temp = self.loader(self.camera_image_list[0])  ## bitdepth?
             runner = RunningMeanStd(temp.shape)
 
             for i in trange(len(self.camera_image_list)):
@@ -981,15 +981,14 @@ class Corrector:
                 )
             if self._type != "grayscale" and self._type != "rgb":
                 # debayer images
-                image_rgb = corrections.debayer(image, self._type)
-                #print('debayer:', image_rgb.dtype, np.max(image_rgb), np.min(image_rgb))
+                image_rgb = corrections.debayer(image, self._type, self.camera.bit_depth)
             else:
                 image_rgb = image
 
         elif self.correction_method == "manual_balance":
             if not self._type == "grayscale":
                 # debayer images
-                image_rgb = corrections.debayer(image, self._type)
+                image_rgb = corrections.debayer(image, self._type, self.camera.bit_depth)
             else:
                 image_rgb = image
             image_rgb = corrections.manual_balance(
