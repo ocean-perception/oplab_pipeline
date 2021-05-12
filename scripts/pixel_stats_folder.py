@@ -1,42 +1,33 @@
-# -*- coding: utf-8 -*-
-"""
-Copyright (c) 2020, University of Southampton
-All rights reserved.
-Licensed under the BSD 3-Clause License.
-See LICENSE.md file in the project root for full license information.
-"""
-
+import joblib
+from tqdm import tqdm
+import numpy as np
 import argparse
-import contextlib
+from pathlib import Path
+import imageio
+import uuid
+from numba import njit, prange
+from typing import Tuple
 import math
 import os
-import random
+import contextlib
+from joblib import Parallel, delayed
 import shutil
-import uuid
-from pathlib import Path
-from typing import Tuple
-
 import cv2
-import imageio
-import joblib
-import numpy as np
-from numba import njit, prange
-from tqdm import tqdm
+import random
+from matplotlib import pyplot as plt
 
 # Parameters
-brightness = 40.0  # over 100 of the entire image values
-contrast = 10.0  # over 100 of the entire image values
-max_space_gb = 60.0  # Max space to use in your hard drive
-scale_factor = 0.25
+brightness = 25.0  # over 100 of the entire image values
+contrast = 7.0  # over 100 of the entire image values
+max_space_gb = 400.0  # Max space to use in your hard drive
+scale_factor = 1.0
 use_random_sample = True
-
+src_bit = 8
 
 # Joblib and tqdm solution to progressbars
 @contextlib.contextmanager
 def tqdm_joblib(tqdm_object):
-    """Context manager to patch joblib to report into tqdm progress bar given
-    as argument
-    """
+    """Context manager to patch joblib to report into tqdm progress bar given as argument"""
 
     class TqdmBatchCompletionCallback(joblib.parallel.BatchCompletionCallBack):
         def __init__(self, *args, **kwargs):
@@ -55,42 +46,12 @@ def tqdm_joblib(tqdm_object):
         tqdm_object.close()
 
 
-def bytescaling(data: np.ndarray, cmin=None, cmax=None, high=255, low=0):
-    if data.dtype == np.uint8:
-        return data
-    if high > 255:
-        high = 255
-    if low < 0:
-        low = 0
-    if high < low:
-        raise ValueError("`high` should be greater than or equal to `low`.")
-    if cmin is None:
-        cmin = data.min()
-    if cmax is None:
-        cmax = data.max()
-    cscale = cmax - cmin
-    if cscale == 0:
-        cscale = 1
-    scale = float(high - low) / cscale
-    bytedata = (data - cmin) * scale + low
-    return (bytedata.clip(low, high) + 0.5).astype(np.uint8)
-
-
-@njit
-def np_clip(a, a_min, a_max, out=None):
-    if out is None:
-        out = np.empty_like(a)
-    out[:] = np.minimum(np.maximum(a, a_min), a_max)
-    return out
-
-
-@njit
-def pixel_stat(img, img_mean, img_std, target_mean, target_std, dst_bit=8):
-    target_mean = target_mean / 100.0 * 2 ** dst_bit
-    target_mean = target_std / 100.0 * 2 ** dst_bit
-    image = (((img - img_mean) / img_std) * target_std) + target_mean
-    image = np_clip(image, 0, 2 ** dst_bit - 1)
-    return image
+def pixel_stat(img, img_mean, img_std, target_mean, target_std):
+    target_mean_unitary = target_mean / 100.0
+    target_std_unitary = target_std / 100.0
+    ret = (img - img_mean) / img_std * target_std_unitary + target_mean_unitary
+    ret = np.clip(ret, 0, 1)
+    return ret
 
 
 @njit(parallel=True)
@@ -118,8 +79,11 @@ def mean_std_array(data: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     return mean_array, std_array
 
 
-def memmap_loader(image_list, memmap_handle, idx, new_width, new_height):
-    np_im = imageio.imread(image_list[idx])
+def memmap_loader(
+    image_list, memmap_handle, idx, new_width, new_height, src_bit=8
+):
+    np_im = imageio.imread(image_list[idx]).astype(np.float32)
+    np_im *= 2 ** (-src_bit)
     im2 = cv2.resize(np_im, (new_width, new_height), cv2.INTER_CUBIC)
     memmap_handle[idx, ...] = im2
 
@@ -131,8 +95,10 @@ def correct_image(
     contrast,
     image_name,
     output_folder,
+    src_bit=8,
 ):
-    image = imageio.imread(image_name)
+    image = imageio.imread(image_name).astype(np.float32)
+    image *= 2 ** (-src_bit)
     (image_height, image_width, image_channels) = image.shape
 
     output_image = np.empty((image_height, image_width, image_channels))
@@ -156,9 +122,10 @@ def correct_image(
             output_image[:, :] = intensities
 
     # apply scaling to 8 bit and format image to unit8
-    output_image_bt = bytescaling(output_image)
     filename = Path(output_folder) / image_name.name
-    imageio.imwrite(filename, output_image_bt)
+    output_image *= 2 ** (src_bit)
+    output_image = output_image.astype(np.uint8)
+    imageio.imwrite(filename, output_image)
 
 
 parser = argparse.ArgumentParser()
@@ -261,7 +228,7 @@ print(
     "Gb on the filesystem. Do not worry, it will be deleted later.",
 )
 image_memmap = np.memmap(
-    filename=filename_map, mode="w+", shape=tuple(list_shape), dtype=np.float
+    filename=filename_map, mode="w+", shape=tuple(list_shape), dtype=np.float32
 )
 with tqdm_joblib(
     tqdm(desc="Loading images to memmap", total=len(image_list_sampled))
@@ -275,6 +242,7 @@ with tqdm_joblib(
 
 print("Computing global mean and std...")
 for i in range(image_channels):
+    print("Working on channel", i)
     image_memmap_per_channel = None
     if image_channels == 1:
         image_memmap_per_channel = image_memmap
@@ -298,13 +266,40 @@ for i in range(image_channels):
         cv2.INTER_CUBIC,
     ).transpose(2, 1, 0)
 
-    image1 = bytescaling(image_raw_mean)
-    image2 = bytescaling(image_raw_std)
+    image_raw_mean_fig = image_raw_mean.transpose(1, 2, 0)
+    image_raw_std_fig = image_raw_std.transpose(1, 2, 0)
 
-    imageio.imwrite("mean.jpg", image1.transpose(1, 2, 0))
-    imageio.imwrite("std.jpg", image2.transpose(1, 2, 0))
+    fig = plt.figure()
+    if len(image_raw_mean_fig.shape) == 3:
+        plt.imshow(image_raw_mean_fig[:, :, i])
+    else:
+        plt.imshow(image_raw_mean_fig[:, :])
+    plt.colorbar()
+    plt.title("Mean " + str(i))
+    plt.savefig("image_raw_mean_" + str(i) + ".png", dpi=600)
+    plt.close(fig)
 
+    fig = plt.figure()
+    if len(image_raw_std_fig.shape) == 3:
+        plt.imshow(image_raw_std_fig[:, :, i])
+    else:
+        plt.imshow(image_raw_std_fig[:, :])
+    plt.colorbar()
+    plt.title("Std " + str(i))
+    plt.savefig("image_raw_std_" + str(i) + ".png", dpi=600)
+    plt.close(fig)
+
+np.save("image_raw_mean.np", image_raw_mean)
+np.save("image_raw_std.np", image_raw_std)
+
+image_memmap._mmap.close()
+del image_memmap
 os.remove(filename_map)
+
+print("Done computing parameters. Correcting now...")
+
+# image_raw_mean = np.load("image_raw_mean.np.npy")
+# image_raw_std = np.load("image_raw_std.np.npy")
 
 with tqdm_joblib(
     tqdm(desc="Correcting images", total=len(image_list))
@@ -317,6 +312,7 @@ with tqdm_joblib(
             contrast,
             image_list[idx],
             output_folder,
+            src_bit,
         )
         for idx in range(0, len(image_list))
     )
