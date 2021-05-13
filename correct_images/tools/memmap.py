@@ -28,12 +28,19 @@ def create_memmap(image_list, dimensions, loader=default.loader):
         shape=tuple(list_shape),
         dtype=np.float32,
     )
-    joblib.Parallel(n_jobs=-1, verbose=0)(
+    """
+    joblib.Parallel(n_jobs=1, verbose=0)(
         joblib.delayed(memmap_loader)(
             image_list, image_memmap, idx, loader, dimensions[1], dimensions[0]
         )
-        for idx in range(len(image_list))
     )
+    """
+
+    # The parent process/function is paralelised, so this one should not be!
+    for idx in range(len(image_list)):
+        memmap_loader(
+            image_list, image_memmap, idx, loader, dimensions[1], dimensions[0]
+        )
     return filename_map, image_memmap
 
 
@@ -63,8 +70,6 @@ def memmap_loader(
     new_height=None,
 ):
     np_im = loader(image_list[idx]).astype(np.float32)
-
-    #print('memmap loader:', np.max(np_im), np.min(np_im))
 
     dimensions = np_im.shape
 
