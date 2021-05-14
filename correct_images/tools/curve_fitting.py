@@ -10,6 +10,7 @@ import numpy as np
 from numba import njit
 from scipy import optimize
 import matplotlib.pyplot as plt
+from pathlib import Path
 
 
 @njit
@@ -96,7 +97,7 @@ def curve_fitting(
 
     loss = "soft_l1"
     method = "trf"
-    bound_lower = [1.0, -np.inf, 0]
+    bound_lower = [1e-6, -np.inf, 0]
     bound_upper = [np.inf, 0, c_upper_bound]
 
     n = len(intensities_filt)
@@ -114,7 +115,7 @@ def curve_fitting(
     if intensities_filt[idx_1] != 0:
         b = (np.log((int_0 - c) / (int_1 - c))) / (alt_0 - alt_1)
     a = (int_1 - c) / np.exp(b * alt_1)
-    print("a,b,c", a, b, c, int_0, int_1, alt_0, alt_1, intensities_filt.min())
+    #print("a,b,c", a, b, c, int_0, int_1, alt_0, alt_1, intensities_filt.min())
     if a <= 0 or b > 0 or np.isnan(a) or np.isnan(b):
         a = 1.01
         b = -0.01
@@ -122,8 +123,19 @@ def curve_fitting(
     init_params = np.array([a, b, c], dtype=np.float32)
 
     # for debug
-    fig = plt.figure()
-    plt.plot(altitudes_filt, intensities_filt, "c.")
+    save = False
+    """
+    i = 0
+    fn = None
+    while i < 100:
+        fn = Path("least_squares_good" + str(i) + ".png")
+        i += 1
+        if fn.exists():
+            continue
+        else:
+            save = True
+            break
+    """
 
     try:
         tmp_params = optimize.least_squares(
@@ -134,14 +146,16 @@ def curve_fitting(
             args=(altitudes_filt, intensities_filt),
             bounds=(bound_lower, bound_upper),
         )
-
-        xs = np.arange(2, 10, 0.1)
-        ys = exp_curve(xs, tmp_params.x[0], tmp_params.x[1], tmp_params.x[2])
-        plt.plot(xs, np.ones(xs.shape[0]) * tmp_params.x[2], "-y")
-        plt.plot(xs, ys, "-m")
-        plt.legend(["Intensities", "Exp curve", "C term"])
-        plt.savefig("least_squares_good.png", dpi=600)
-        plt.close(fig)
+        if save:
+            fig = plt.figure()
+            plt.plot(altitudes_filt, intensities_filt, "c.")
+            xs = np.arange(1, 5, 0.1)
+            ys = exp_curve(xs, tmp_params.x[0], tmp_params.x[1], tmp_params.x[2])
+            plt.plot(xs, np.ones(xs.shape[0]) * tmp_params.x[2], "-y")
+            plt.plot(xs, ys, "-m")
+            plt.legend(["Intensities", "Exp curve", "C term"])
+            plt.savefig(str(fn), dpi=600)
+            plt.close(fig)
 
         return tmp_params.x
     except (ValueError, UnboundLocalError) as e:
@@ -149,8 +163,4 @@ def curve_fitting(
         print(
             "Parameters calculated are unoptimised because of Value Error", e
         )
-
-        plt.savefig("least_squares_bad.png", dpi=600)
-        plt.close(fig)
-
         return init_params
