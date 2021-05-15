@@ -1035,18 +1035,14 @@ class Corrector:
                 )
             if self._type != "grayscale" and self._type != "rgb":
                 # debayer images
-                image_rgb = corrections.debayer(
-                    image, self._type, self.camera.bit_depth
-                )
+                image_rgb = corrections.debayer(image, self._type)
             else:
                 image_rgb = image
 
         elif self.correction_method == "manual_balance":
             if not self._type == "grayscale":
                 # debayer images
-                image_rgb = corrections.debayer(
-                    image, self._type, self.camera.bit_depth
-                )
+                image_rgb = corrections.debayer(image, self._type)
             else:
                 image_rgb = image
             image_rgb = corrections.manual_balance(

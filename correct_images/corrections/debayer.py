@@ -20,9 +20,7 @@ from oplab import Console
 
 # convert bayer image to RGB based
 # on the bayer pattern for the camera
-def debayer(
-    image: np.ndarray, pattern: str, src_bit=16, dst_bit=16
-) -> np.ndarray:
+def debayer(image: np.ndarray, pattern: str) -> np.ndarray:
     """Perform debayering of input image
 
     Parameters
@@ -40,7 +38,7 @@ def debayer(
 
     # Make use of 16 bit debayering
     image16_float = image.astype(np.float32) * (2 ** 16 - 1)
-    image16 = image16_float.astype(np.uint16)
+    image16 = image16_float.clip(0, 2 ** 16 - 1).astype(np.uint16)
 
     corrected_rgb_img = None
     if pattern == "rggb" or pattern == "RGGB":
@@ -57,9 +55,7 @@ def debayer(
         Console.quit("Bayer pattern not supported (", pattern, ")")
 
     # Scale down to unitary
-    corrected_rgb_img = corrected_rgb_img.astype(np.float32) * (
-        2 ** (- 16)
-    )
+    corrected_rgb_img = corrected_rgb_img.astype(np.float32) * (2 ** (-16))
     return corrected_rgb_img
 
 
@@ -125,7 +121,9 @@ def debayer_folder(
         image_list.append(single_image)
     Console.info("Found " + str(len(image_list)) + " image(s)...")
 
-    with tqdm_joblib(tqdm.tqdm(desc="Debayering inages", total=len(image_list))):
+    with tqdm_joblib(
+        tqdm.tqdm(desc="Debayering inages", total=len(image_list))
+    ):
         joblib.Parallel(n_jobs=-2, verbose=0)(
             [
                 joblib.delayed(debayer_image)(
