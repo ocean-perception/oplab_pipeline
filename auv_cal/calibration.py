@@ -261,9 +261,9 @@ def calibrate_laser(
         Console.info("Writing calibration to " "'{}'" "".format(output_file))
         with output_file.open("w") as f:
             f.write(lc.yaml())
-        if "two_lasers" not in config:
+        if "two_lasers" not in config["detection"]:
             return
-        if config["two_lasers"]:
+        if config["detection"]["two_lasers"]:
             Console.info(
                 "Writing calibration to " "'{}'" "".format(output_file_b)
             )
@@ -632,12 +632,12 @@ class Calibrator:
             self.stereo()
 
         non_laser_cam_name = c0["name"]
-        non_laser_cam_filepath = get_processed_folder(self.filepath) / str(
+        non_laser_cam_filepath = get_raw_folder(self.filepath) / str(
             c0["laser_calibration"]["path"]
         )
         non_laser_cam_extension = str(c0["laser_calibration"]["glob_pattern"])
         laser_cam_name = c1["name"]
-        laser_cam_filepath = get_processed_folder(self.filepath) / str(
+        laser_cam_filepath = get_raw_folder(self.filepath) / str(
             c1["laser_calibration"]["path"]
         )
         laser_cam_extension = str(c1["laser_calibration"]["glob_pattern"])
