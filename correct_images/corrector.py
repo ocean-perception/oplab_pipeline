@@ -525,20 +525,15 @@ class Corrector:
         filtered_dataframe = dataframe.iloc[valid_idx]
         filtered_dataframe.reset_index(drop=True)
         distance_list = filtered_dataframe["altitude [m]"].tolist()
-        self.camera_image_list = [
-            self.path_raw / i
-            for i in filtered_dataframe["relative_path"].tolist()
-        ]
-
-        altitude_list = distance_list.copy()
-        altitude_list = [x for x in altitude_list if x > self.altitude_min]
-        altitude_list = [x for x in altitude_list if x < self.altitude_max]
-        self.altitude_list = altitude_list
-        """
-        self.camera_image_list = [
-            self.camera_image_list[i] for i in altitude_list.index
-        ]
-        """
+        self.camera_image_list = []
+        self.altitude_list = []
+        for _, row in filtered_dataframe.iterrows():
+            alt = row["altitude [m]"]
+            if alt > self.altitude_min and alt < self.altitude_max:
+                self.camera_image_list.append(
+                    self.path_raw / row["relative_path"]
+                )
+                self.altitude_list.append(alt)
 
         Console.info(
             len(self.altitude_list),
@@ -752,7 +747,17 @@ class Corrector:
             Console.info("Applying attenuation corrections to images...")
 
             temp = self.loader(self.camera_image_list[0])  ## bitdepth?
-            runner = RunningMeanStd(temp.shape)
+            # runner = RunningMeanStd(temp.shape)
+
+            memmap_filename, memmap_handle = open_memmap(
+                shape=(
+                    len(self.camera_image_list),
+                    self.image_height,
+                    self.image_width,
+                    self.image_channels,
+                ),
+                dtype=np.float32,
+            )
 
             for i in trange(len(self.camera_image_list)):
                 # Load the image
@@ -780,14 +785,26 @@ class Corrector:
                     self.image_attenuation_parameters,
                     self.correction_gains,
                 )
-                runner.compute(corrected_img)
+                # runner.compute(corrected_img)
+                memmap_handle[i] = corrected_img.reshape(
+                    self.image_height, self.image_width, self.image_channels
+                )
 
+            """
             image_corrected_mean = runner.mean.reshape(
                 self.image_height, self.image_width, self.image_channels
             )
             image_corrected_std = runner.std.reshape(
                 self.image_height, self.image_width, self.image_channels
             )
+            """
+
+            Console.info("Computing trimmed mean and std to corrected images")
+            image_corrected_mean, image_corrected_std = image_mean_std_trimmed(
+                memmap_handle
+            )
+            del memmap_handle
+            os.remove(memmap_filename)
 
             # save parameters for process
             np.save(self.corrected_mean_filepath, image_corrected_mean)
@@ -887,7 +904,7 @@ class Corrector:
                     dimensions,
                     loader=self.loader,
                 )
-                bin_images_sample = image_mean_std_trimmed(memmap_handle)
+                bin_images_sample = image_mean_std_trimmed(memmap_handle)[0]
                 del memmap_handle
                 os.remove(memmap_filename)
             elif self.smoothing == "median":
@@ -952,7 +969,9 @@ class Corrector:
                 self.camera_params_file_path = camera_params_file_path
 
         Console.info(
-            "Processing images for color, distortion, gamma corrections..."
+            "Processing",
+            len(self.camera_image_list),
+            "images for color, distortion, gamma corrections...",
         )
 
         with tqdm_joblib(
@@ -984,10 +1003,8 @@ class Corrector:
 
         # load image and convert to float
         image = self.loader(self.camera_image_list[idx])
-
-        # print('loader:', image.dtype, np.max(image), np.min(image))
-
         image_rgb = None
+        # print("loader:", image.dtype, np.max(image), np.min(image))
 
         # apply corrections
         if self.correction_method == "colour_correction":
@@ -999,7 +1016,11 @@ class Corrector:
                     self.image_height,
                 )
             elif self.distance_metric == "altitude":
-                if idx not in self.altitude_list:
+                if idx > len(self.altitude_list) - 1:
+                    Console.quit(
+                        "The image index does not coincide with the",
+                        "available indices in the altitude vector",
+                    )
                     return None
                 distance = self.altitude_list[idx]
                 distance_matrix = np.empty(
@@ -1060,7 +1081,7 @@ class Corrector:
             image_rgb = corrections.gamma_correct(image_rgb)
 
         # apply scaling to 8 bit and format image to unit8
-        image_rgb *= 2 ** 8 - 1
+        image_rgb *= 255
         image_rgb = image_rgb.clip(0, 255).astype(np.uint8)
         # print('clip:', image_rgb.dtype, np.max(image_rgb), np.min(image_rgb))
 
