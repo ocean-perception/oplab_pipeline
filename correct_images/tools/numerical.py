@@ -130,10 +130,13 @@ def median_array_impl(data: np.ndarray) -> np.ndarray:
 @njit
 def mean_std_array(data: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     # print("mean_std_array", data.shape)
-    n = 1
-    a, b = data.shape[1], data.shape[2]
-    if len(data.shape) == 4:
-        n = data.shape[3]
+    n = data.shape[0]
+    a = 1
+    b = 1
+    if len(data.shape) > 1:
+        a = data.shape[1]
+    if len(data.shape) > 2:
+        b = data.shape[2]
 
     mean_array = np.zeros((a, b), dtype=np.float32)
     std_array = np.zeros((a, b), dtype=np.float32)
