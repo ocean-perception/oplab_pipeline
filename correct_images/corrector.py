@@ -23,6 +23,8 @@ from oplab import (
 )
 from tqdm import tqdm, trange
 from matplotlib import pyplot as plt
+import matplotlib 
+matplotlib.use('Agg')
 
 from correct_images import corrections
 from correct_images.loaders import loader, depth_map
@@ -653,22 +655,6 @@ class Corrector:
         if distance_vector is not None:
             idxs = np.digitize(distance_vector, hist_bins)
 
-            """
-            for idx_bin in range(1, hist_bins.size):
-                Console.info(
-                    "Computing distance bin",
-                    str(idx_bin) + "/" + str(hist_bins.size),
-                )
-                self.compute_distance_bin(
-                    idxs,
-                    idx_bin,
-                    images_map,
-                    distances_map,
-                    max_bin_size,
-                    max_bin_size_gb,
-                    distance_vector,
-                )
-            """
             with tqdm_joblib(
                 tqdm(
                     desc="Computing altitude histogram",
@@ -740,14 +726,14 @@ class Corrector:
             # Useful if fails, to reload precomputed numpyfiles.
             # TODO offer as a new step.
             # self.image_attenuation_parameters = np.load(
-            #    self.attenuation_params_filepath)
+            #   self.attenuation_params_filepath)
             # self.correction_gains = np.load(self.correction_gains_filepath)
 
             # apply gains to images
             Console.info("Applying attenuation corrections to images...")
 
             temp = self.loader(self.camera_image_list[0])  ## bitdepth?
-            # runner = RunningMeanStd(temp.shape)
+            runner = RunningMeanStd(temp.shape)
 
             memmap_filename, memmap_handle = open_memmap(
                 shape=(
@@ -785,26 +771,17 @@ class Corrector:
                     self.image_attenuation_parameters,
                     self.correction_gains,
                 )
-                # runner.compute(corrected_img)
+                runner.compute(corrected_img)
                 memmap_handle[i] = corrected_img.reshape(
                     self.image_height, self.image_width, self.image_channels
                 )
 
-            """
             image_corrected_mean = runner.mean.reshape(
                 self.image_height, self.image_width, self.image_channels
             )
             image_corrected_std = runner.std.reshape(
                 self.image_height, self.image_width, self.image_channels
             )
-            """
-
-            Console.info("Computing trimmed mean and std to corrected images")
-            image_corrected_mean, image_corrected_std = image_mean_std_trimmed(
-                memmap_handle
-            )
-            del memmap_handle
-            os.remove(memmap_filename)
 
             # save parameters for process
             np.save(self.corrected_mean_filepath, image_corrected_mean)
@@ -815,6 +792,7 @@ class Corrector:
                 img_mean=image_corrected_mean,
                 img_std=image_corrected_std,
             )
+
         else:
             Console.info(
                 "No altitude or depth maps available. \

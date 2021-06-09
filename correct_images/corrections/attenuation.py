@@ -195,6 +195,9 @@ def save_attenuation_plots(
 ):
     output_dir = Path(output_dir)
 
+    if not output_dir.exists():
+        output_dir.mkdir(parents=True)
+
     if gains is not None:
         fig = plt.figure()
         plt.imshow(gains[0, :, :])
