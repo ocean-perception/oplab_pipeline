@@ -152,7 +152,7 @@ def calculate_attenuation_parameters(
     required_bytes = (
         image_channels * image_height * image_width * 4 * len(images)
     )
-    num_jobs = int(available_bytes / required_bytes)
+    num_jobs = min(int(available_bytes / required_bytes), 4)
 
     # Keep one alive!
     cpus = psutil.cpu_count() - 1
@@ -165,6 +165,8 @@ def calculate_attenuation_parameters(
 
     if num_jobs < cpus - 1:
         Console.info("Assigning", num_jobs, "jobs to your CPU to save RAM")
+    else:
+        Console.info("Assigning", num_jobs, "jobs to your CPU")
 
     for i_channel in range(image_channels):
         with tqdm_joblib(
@@ -192,6 +194,9 @@ def save_attenuation_plots(
     output_dir, attn=None, gains=None, img_mean=None, img_std=None
 ):
     output_dir = Path(output_dir)
+
+    if not output_dir.exists():
+        output_dir.mkdir(parents=True)
 
     if gains is not None:
         fig = plt.figure()

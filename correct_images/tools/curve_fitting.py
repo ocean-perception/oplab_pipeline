@@ -9,6 +9,8 @@ See LICENSE.md file in the project root for full license information.
 import numpy as np
 from numba import njit
 from scipy import optimize
+import matplotlib.pyplot as plt
+from pathlib import Path
 
 
 @njit
@@ -74,37 +76,87 @@ def curve_fitting(
     numpy.ndarray
         parameters
     """
+    altitudes = altitudes[np.isfinite(altitudes)]
+    intensities = intensities[np.isfinite(intensities)]
+
+    altitudes_filt = []
+    intensities_filt = []
+    for x, y in zip(altitudes, intensities):
+        if x > 0 and y > 0:
+            altitudes_filt.append(x)
+            intensities_filt.append(y)
+
+    altitudes_filt = np.array(altitudes_filt)
+    intensities_filt = np.array(intensities_filt)
+
+    c_upper_bound = intensities_filt.min()
+    if c_upper_bound <= 0:
+        # c should be slightly greater than zero to avoid error
+        # 'Each lower bound must be strictly less than each upper bound.'
+        c_upper_bound = np.finfo(float).eps
+
     loss = "soft_l1"
     method = "trf"
-    bound_lower = [0, -np.inf, -np.inf]
-    bound_upper = [np.inf, 0, np.inf]
+    bound_lower = [1e-6, -np.inf, 0]
+    bound_upper = [np.inf, 0, c_upper_bound]
 
-    n = len(intensities)
+    n = len(intensities_filt)
     idx_0 = int(n * 0.3)
     idx_1 = int(n * 0.7)
 
+    int_0 = intensities_filt[idx_0]
+    int_1 = intensities_filt[idx_1]
+    alt_0 = altitudes_filt[idx_0]
+    alt_1 = altitudes_filt[idx_1]
+
     # Avoid zero divisions
-    b = 0
-    c = 0
-    if intensities[idx_1] != 0:
-        b = (np.log((intensities[idx_0] - c) / (intensities[idx_1] - c))) / (
-            altitudes[idx_0] - altitudes[idx_1]
-        )
-    a = (intensities[idx_1] - c) / np.exp(b * altitudes[idx_1])
-    if a < 1 or b > 0 or np.isnan(a) or np.isnan(b):
+    b = 0.0
+    c = intensities_filt.min() * 0.5
+    if intensities_filt[idx_1] != 0:
+        b = (np.log((int_0 - c) / (int_1 - c))) / (alt_0 - alt_1)
+    a = (int_1 - c) / np.exp(b * alt_1)
+    #print("a,b,c", a, b, c, int_0, int_1, alt_0, alt_1, intensities_filt.min())
+    if a <= 0 or b > 0 or np.isnan(a) or np.isnan(b):
         a = 1.01
         b = -0.01
 
     init_params = np.array([a, b, c], dtype=np.float32)
+
+    # for debug
+    save = False
+    """
+    i = 0
+    fn = None
+    while i < 100:
+        fn = Path("least_squares_good" + str(i) + ".png")
+        i += 1
+        if fn.exists():
+            continue
+        else:
+            save = True
+            break
+    """
+
     try:
         tmp_params = optimize.least_squares(
             residual_exp_curve,
             init_params,
             loss=loss,
             method=method,
-            args=(altitudes, intensities),
+            args=(altitudes_filt, intensities_filt),
             bounds=(bound_lower, bound_upper),
         )
+        if save:
+            fig = plt.figure()
+            plt.plot(altitudes_filt, intensities_filt, "c.")
+            xs = np.arange(1, 5, 0.1)
+            ys = exp_curve(xs, tmp_params.x[0], tmp_params.x[1], tmp_params.x[2])
+            plt.plot(xs, np.ones(xs.shape[0]) * tmp_params.x[2], "-y")
+            plt.plot(xs, ys, "-m")
+            plt.legend(["Intensities", "Exp curve", "C term"])
+            plt.savefig(str(fn), dpi=600)
+            plt.close(fig)
+
         return tmp_params.x
     except (ValueError, UnboundLocalError) as e:
         print("ERROR: Value Error due to Overflow", a, b, c)

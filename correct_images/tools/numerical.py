@@ -91,6 +91,7 @@ def running_mean_std(file_list, loader=default.loader):
 
 
 def median_array(data: np.ndarray) -> np.ndarray:
+    # print("median_array", data.shape)
     if len(data.shape) == 3:
         # Monochrome
         return median_array_impl(data)
@@ -104,7 +105,10 @@ def median_array(data: np.ndarray) -> np.ndarray:
 
 
 def median_array_impl(data: np.ndarray) -> np.ndarray:
-    [n, a, b] = data.shape
+    # print("median_array_impl", data.shape)
+    n = data.shape[0]
+    a = data.shape[1]
+    b = data.shape[2]
     median_array = np.zeros((a, b), dtype=np.float32)
     for i in range(a):
         for j in range(b):
@@ -124,26 +128,18 @@ def median_array_impl(data: np.ndarray) -> np.ndarray:
 
 
 @njit
-def mean_array(data: np.ndarray) -> np.ndarray:
-    [n, a, b] = data.shape
-    mean_array = np.zeros((a, b), dtype=np.float32)
-    for i in range(a):
-        for j in range(b):
-            mean = 0.0
-            for k in range(n):
-                count = k + 1
-                new_value = data[k, i, j]
-                delta = new_value - mean
-                mean += delta / count
-            mean_array[i, j] = mean
-    return mean_array
-
-
-@njit
 def mean_std_array(data: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    # print("mean_std_array", data.shape)
     n = data.shape[0]
     a = data.shape[1]
-    b = data.shape[2]
+    b = 1
+    print("Mean std array shape:", data.shape)
+    """
+    if len(data.shape) > 1:
+        a = data.shape[1]
+    if len(data.shape) > 2:
+        b = data.shape[2]
+    """
 
     mean_array = np.zeros((a, b), dtype=np.float32)
     std_array = np.zeros((a, b), dtype=np.float32)
@@ -156,7 +152,8 @@ def mean_std_array(data: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
             mean_sq = 0.0
             for k in range(n):
                 count = k + 1
-                new_value = data[k, i, j]
+                #new_value = data[k, i, j]
+                new_value = data[k, i]
                 delta = new_value - mean
                 mean += delta / count
                 delta2 = new_value - mean
@@ -207,10 +204,14 @@ def image_mean_std_trimmed(data, ratio_trimming=0.2, calculate_std=True):
     numpy.ndarray
         Trimmed mean and std
     """
-
-    [n, a, b] = data.shape
-    ret_mean = np.zeros((a, b), np.float32)
-    ret_std = np.zeros((a, b), np.float32)
+    n = data.shape[0]
+    a = data.shape[1]
+    b = data.shape[2]
+    c = 1
+    if len(data.shape) == 4:
+        c = data.shape[3]
+    ret_mean = np.zeros((a, b, c), np.float32)
+    ret_std = np.zeros((a, b, c), np.float32)
 
     effective_index = [list(range(0, n))]
 
@@ -219,26 +220,26 @@ def image_mean_std_trimmed(data, ratio_trimming=0.2, calculate_std=True):
         + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     )
 
-    if ratio_trimming <= 0:
-        ret_mean, ret_std = mean_std_array(data)
-        return ret_mean, ret_std
-
-    else:
-
-        for idx_a in trange(a, ascii=True, desc=message):
-            results = [None] * b
-            for idx_b in range(b):
-                results[idx_b] = calc_mean_and_std_trimmed(
-                    data[effective_index, idx_a, idx_b][0],
-                    ratio_trimming,
-                    calculate_std,
-                )
-            ret_mean[idx_a, :] = np.array(results)[:, 0]
-            ret_std[idx_a, :] = np.array(results)[:, 1]
-        if not calculate_std:
-            return ret_mean
-        else:
+    for ch in range(c):
+        if ratio_trimming <= 0:
+            ret_mean, ret_std = mean_std_array(data[:, :, :, ch])
             return ret_mean, ret_std
+
+        else:
+            for idx_a in trange(a, ascii=True, desc=message):
+                results = [None] * b
+                for idx_b in range(b):
+                    results[idx_b] = calc_mean_and_std_trimmed(
+                        data[effective_index, idx_a, idx_b, ch],
+                        ratio_trimming,
+                        calculate_std,
+                    )
+                ret_mean[idx_a, :, ch] = np.array(results)[:, 0]
+                ret_std[idx_a, :, ch] = np.array(results)[:, 1]
+    if not calculate_std:
+        return ret_mean
+    else:
+        return ret_mean, ret_std
 
 
 def calc_mean_and_std_trimmed(data, rate_trimming, calc_std=True):
@@ -266,7 +267,9 @@ def calc_mean_and_std_trimmed(data, rate_trimming, calc_std=True):
         sorted_values = np.sort(data)
         idx_left_limit = int(len(data) * rate_trimming / 2.0)
         idx_right_limit = int(len(data) * (1.0 - rate_trimming / 2.0))
-        mean, std = mean_std_array(
-            sorted_values[idx_left_limit:idx_right_limit]
-        )
+        mean = np.mean(sorted_values[idx_left_limit:idx_right_limit])
+        std = np.std(sorted_values[idx_left_limit:idx_right_limit])
+        #mean, std = mean_std_array(
+        #    sorted_values[idx_left_limit:idx_right_limit]
+        #)
     return np.array([mean, std])

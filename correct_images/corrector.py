@@ -22,6 +22,9 @@ from oplab import (
     get_raw_folder,
 )
 from tqdm import tqdm, trange
+from matplotlib import pyplot as plt
+import matplotlib 
+matplotlib.use('Agg')
 
 from correct_images import corrections
 from correct_images.loaders import loader, depth_map
@@ -100,7 +103,7 @@ class Corrector:
             None  # To be overwritten on parse/process
         )
         self.user_specified_image_list_parse = None
-        self.user_specified_image_list_process = None      
+        self.user_specified_image_list_process = None
 
         if self.correct_config is not None:
             """Load general configuration parameters"""
@@ -203,9 +206,9 @@ class Corrector:
             self.loader = loader.Loader()
             self.loader.bit_depth = camera.bit_depth
             if self.camera.extension == "raw":
-                self.loader.set_loader('xviii')
+                self.loader.set_loader("xviii")
             else:
-                self.loader.set_loader('default')
+                self.loader.set_loader("default")
 
     def parse(self):
         # Set the user specified list if any
@@ -503,37 +506,36 @@ class Corrector:
 
         # read dataframe for corresponding distance csv path
         dataframe = pd.read_csv(distance_csv_path)
-        distance_list = dataframe["altitude [m]"]
+        distance_list = dataframe["altitude [m]"].tolist()
 
+        """
         if len(distance_list) != len(self.camera_image_list):
             Console.warn(
-                "The number of images does not coincide with the altitude ",
+                "The number of images does not coincide with the altitude",
                 "measurements.",
             )
             Console.info("Using image file paths from CSV instead.")
+        """
 
-            # Check images exist:
-            valid_idx = []
-            self.camera_image_list = []
-            for idx, entry in enumerate(dataframe["relative_path"]):
-                im_path = self.path_raw / entry
-                if im_path.exists():
-                    valid_idx.append(idx)
-            filtered_dataframe = dataframe.iloc[valid_idx]
-            filtered_dataframe.reset_index(drop=True)
-            distance_list = filtered_dataframe["altitude [m]"]
-            self.camera_image_list = [
-                self.path_raw / i
-                for i in filtered_dataframe["relative_path"].tolist()
-            ]
-
-        altitude_list = distance_list.copy()
-        altitude_list = altitude_list[altitude_list > self.altitude_min]
-        altitude_list = altitude_list[altitude_list < self.altitude_max]
-        self.altitude_list = altitude_list
-        self.camera_image_list = [
-            self.camera_image_list[i] for i in altitude_list.index
-        ]
+        # Check images exist:
+        valid_idx = []
+        self.camera_image_list = []
+        for idx, entry in enumerate(dataframe["relative_path"]):
+            im_path = self.path_raw / entry
+            if im_path.exists():
+                valid_idx.append(idx)
+        filtered_dataframe = dataframe.iloc[valid_idx]
+        filtered_dataframe.reset_index(drop=True)
+        distance_list = filtered_dataframe["altitude [m]"].tolist()
+        self.camera_image_list = []
+        self.altitude_list = []
+        for _, row in filtered_dataframe.iterrows():
+            alt = row["altitude [m]"]
+            if alt > self.altitude_min and alt < self.altitude_max:
+                self.camera_image_list.append(
+                    self.path_raw / row["relative_path"]
+                )
+                self.altitude_list.append(alt)
 
         Console.info(
             len(self.altitude_list),
@@ -609,8 +611,10 @@ class Corrector:
         max_bin_size_gb = 50.0
         max_bin_size = int(max_bin_size_gb / image_size_gb)
 
-        bin_band = 0.1
-        hist_bins = np.arange(self.altitude_min, self.altitude_max, bin_band)
+        self.bin_band = 0.1
+        hist_bins = np.arange(
+            self.altitude_min, self.altitude_max, self.bin_band
+        )
 
         images_fn, images_map = open_memmap(
             shape=(
@@ -625,6 +629,10 @@ class Corrector:
             shape=(len(hist_bins), self.image_height * self.image_width),
             dtype=np.float32,
         )
+
+        # Fill with NaN not to use empty bins
+        # images_map.fill(np.nan)
+        # distances_map.fill(np.nan)
 
         distance_vector = None
 
@@ -642,7 +650,7 @@ class Corrector:
             Console.info(
                 "Computing altitude histogram with", hist_bins.size, " bins"
             )
-            distance_vector = self.altitude_list
+            distance_vector = np.array(self.altitude_list)
 
         if distance_vector is not None:
             idxs = np.digitize(distance_vector, hist_bins)
@@ -650,10 +658,10 @@ class Corrector:
             with tqdm_joblib(
                 tqdm(
                     desc="Computing altitude histogram",
-                    total=len(hist_bins) - 1,
+                    total=hist_bins.size - 1,
                 )
             ):
-                joblib.Parallel(n_jobs=2, verbose=0)(
+                joblib.Parallel(n_jobs=-2, verbose=0)(
                     joblib.delayed(self.compute_distance_bin)(
                         idxs,
                         idx_bin,
@@ -663,7 +671,7 @@ class Corrector:
                         max_bin_size_gb,
                         distance_vector,
                     )
-                    for idx_bin in range(1, len(hist_bins))
+                    for idx_bin in range(1, hist_bins.size)
                 )
 
             # calculate attenuation parameters per channel
@@ -718,7 +726,7 @@ class Corrector:
             # Useful if fails, to reload precomputed numpyfiles.
             # TODO offer as a new step.
             # self.image_attenuation_parameters = np.load(
-            #    self.attenuation_params_filepath)
+            #   self.attenuation_params_filepath)
             # self.correction_gains = np.load(self.correction_gains_filepath)
 
             # apply gains to images
@@ -727,6 +735,16 @@ class Corrector:
             temp = self.loader(self.camera_image_list[0])  ## bitdepth?
             runner = RunningMeanStd(temp.shape)
 
+            memmap_filename, memmap_handle = open_memmap(
+                shape=(
+                    len(self.camera_image_list),
+                    self.image_height,
+                    self.image_width,
+                    self.image_channels,
+                ),
+                dtype=np.float32,
+            )
+
             for i in trange(len(self.camera_image_list)):
                 # Load the image
                 img = self.loader(self.camera_image_list[i])
@@ -734,8 +752,6 @@ class Corrector:
                 # Load the distance matrix
                 if self.depth_map_list is None:
                     # Generate matrices on the fly
-                    if i not in distance_vector.index:
-                        continue
                     distance = distance_vector[i]
                     distance_mtx = np.empty(
                         (self.image_height, self.image_width)
@@ -756,6 +772,9 @@ class Corrector:
                     self.correction_gains,
                 )
                 runner.compute(corrected_img)
+                memmap_handle[i] = corrected_img.reshape(
+                    self.image_height, self.image_width, self.image_channels
+                )
 
             image_corrected_mean = runner.mean.reshape(
                 self.image_height, self.image_width, self.image_channels
@@ -773,6 +792,7 @@ class Corrector:
                 img_mean=image_corrected_mean,
                 img_std=image_corrected_std,
             )
+
         else:
             Console.info(
                 "No altitude or depth maps available. \
@@ -813,8 +833,8 @@ class Corrector:
     ):
         dimensions = [self.image_height, self.image_width, self.image_channels]
         tmp_idxs = np.where(idxs == idx_bin)[0]
-        # print("In bin", idx_bin,"there are", len(tmp_idxs), "images")
-        if len(tmp_idxs) > 0:
+        # Console.info("In bin", idx_bin, "there are", len(tmp_idxs), "images")
+        if len(tmp_idxs) > 2:
             bin_images = [self.camera_image_list[i] for i in tmp_idxs]
             bin_distances_sample = None
             bin_images_sample = None
@@ -830,10 +850,18 @@ class Corrector:
 
             if self.depth_map_list is None:
                 # Generate matrices on the fly
-                distance_bin = distance_vector[
-                    distance_vector.index.intersection(tmp_idxs)
-                ]
+                distance_bin = distance_vector[tmp_idxs]
                 distance_bin_sample = distance_bin.mean()
+                if distance_bin_sample <= 0 or np.isnan(distance_bin_sample):
+                    Console.warn(
+                        "The mean distance is equal or lower than zero!"
+                    )
+                    Console.warn("Printing the entire vector:", distance_bin)
+                    Console.warn("Printing the mean:", distance_bin_sample)
+                    distance_bin_sample = (
+                        self.altitude_min + self.bin_band * idx_bin
+                    )
+
                 bin_distances_sample = np.empty(
                     (self.image_height, self.image_width)
                 )
@@ -850,23 +878,44 @@ class Corrector:
                 )[0]
             elif self.smoothing == "mean_trimmed":
                 memmap_filename, memmap_handle = create_memmap(
-                    bin_images, dimensions, loader=self.loader
+                    bin_images,
+                    dimensions,
+                    loader=self.loader,
                 )
-                bin_images_sample = image_mean_std_trimmed(memmap_handle)
+                bin_images_sample = image_mean_std_trimmed(memmap_handle)[0]
                 del memmap_handle
                 os.remove(memmap_filename)
             elif self.smoothing == "median":
                 memmap_filename, memmap_handle = create_memmap(
-                    bin_images, dimensions, loader=self.loader
+                    bin_images,
+                    dimensions,
+                    loader=self.loader,
                 )
                 bin_images_sample = median_array(memmap_handle)
                 del memmap_handle
                 os.remove(memmap_filename)
 
-            imageio.imwrite(
+            fig = plt.figure()
+            plt.imshow(bin_images_sample)
+            plt.colorbar()
+            plt.title("Image bin " + str(idx_bin))
+            plt.savefig(
                 Path(self.attenuation_parameters_folder)
-                / ("bin_images_sample_"+str(idx_bin)+".png"),
-                (bin_images_sample * (2**8 - 1)).astype(np.uint8))
+                / ("bin_images_sample_" + str(idx_bin) + ".png"),
+                dpi=600,
+            )
+            plt.close(fig)
+
+            fig = plt.figure()
+            plt.imshow(bin_distances_sample)
+            plt.colorbar()
+            plt.title("Distance bin " + str(idx_bin))
+            plt.savefig(
+                Path(self.attenuation_parameters_folder)
+                / ("bin_distances_sample_" + str(idx_bin) + ".png"),
+                dpi=600,
+            )
+            plt.close(fig)
 
             images_map[idx_bin] = bin_images_sample.reshape(
                 [self.image_height * self.image_width, self.image_channels]
@@ -898,7 +947,9 @@ class Corrector:
                 self.camera_params_file_path = camera_params_file_path
 
         Console.info(
-            "Processing images for color, distortion, gamma corrections..."
+            "Processing",
+            len(self.camera_image_list),
+            "images for color, distortion, gamma corrections...",
         )
 
         with tqdm_joblib(
@@ -930,10 +981,8 @@ class Corrector:
 
         # load image and convert to float
         image = self.loader(self.camera_image_list[idx])
-
-        #print('loader:', image.dtype, np.max(image), np.min(image))
-
         image_rgb = None
+        # print("loader:", image.dtype, np.max(image), np.min(image))
 
         # apply corrections
         if self.correction_method == "colour_correction":
@@ -945,7 +994,11 @@ class Corrector:
                     self.image_height,
                 )
             elif self.distance_metric == "altitude":
-                if idx not in self.altitude_list:
+                if idx > len(self.altitude_list) - 1:
+                    Console.quit(
+                        "The image index does not coincide with the",
+                        "available indices in the altitude vector",
+                    )
                     return None
                 distance = self.altitude_list[idx]
                 distance_matrix = np.empty(
@@ -960,7 +1013,7 @@ class Corrector:
                     self.correction_gains,
                 )
 
-                #print('attenuation_correct:', image.dtype, np.max(image), np.min(image))
+                # print('attenuation_correct:', image.dtype, np.max(image), np.min(image))
 
             if distance_matrix is not None:
                 image = corrections.pixel_stat(
@@ -970,7 +1023,7 @@ class Corrector:
                     self.brightness,
                     self.contrast,
                 )
-                #print('pixel_stat:', image.dtype, np.max(image), np.min(image))
+                # print('pixel_stat:', image.dtype, np.max(image), np.min(image))
             else:
                 image = corrections.pixel_stat(
                     image,
@@ -981,14 +1034,14 @@ class Corrector:
                 )
             if self._type != "grayscale" and self._type != "rgb":
                 # debayer images
-                image_rgb = corrections.debayer(image, self._type, self.camera.bit_depth)
+                image_rgb = corrections.debayer(image, self._type)
             else:
                 image_rgb = image
 
         elif self.correction_method == "manual_balance":
             if not self._type == "grayscale":
                 # debayer images
-                image_rgb = corrections.debayer(image, self._type, self.camera.bit_depth)
+                image_rgb = corrections.debayer(image, self._type)
             else:
                 image_rgb = image
             image_rgb = corrections.manual_balance(
@@ -1006,9 +1059,9 @@ class Corrector:
             image_rgb = corrections.gamma_correct(image_rgb)
 
         # apply scaling to 8 bit and format image to unit8
-        image_rgb *= (2 ** 8 - 1)
+        image_rgb *= 255
         image_rgb = image_rgb.clip(0, 255).astype(np.uint8)
-        #print('clip:', image_rgb.dtype, np.max(image_rgb), np.min(image_rgb))
+        # print('clip:', image_rgb.dtype, np.max(image_rgb), np.min(image_rgb))
 
         # write to output files
         image_filename = Path(self.camera_image_list[idx]).stem
