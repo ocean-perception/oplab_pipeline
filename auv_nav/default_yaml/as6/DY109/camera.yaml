@@ -36,3 +36,15 @@ cameras:
     path: 'image/cam61004444'
     extension: tif
     filename_to_date: 'YYYYMMDDxhhmmssxfffuuuxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxx'
+  - name: cam61004444_laser_tif
+    type: grayscale
+    bit_depth: 16
+    path: 'image/cam61004444_laser'
+    extension: tif
+    filename_to_date: 'YYYYMMDDxhhmmssxfffuuuxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxx'
+  - name: cam61003146_laser_tif
+    type: grayscale
+    bit_depth: 16
+    path: 'image/cam61003146_laser'
+    extension: tif
+    filename_to_date: 'YYYYMMDDxhhmmssxfffuuuxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxx'
