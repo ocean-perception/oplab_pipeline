@@ -8,8 +8,10 @@ See LICENSE.md file in the project root for full license information.
 
 import math
 from math import atan2, cos, pi, sin, sqrt
+import datetime
 
 import numpy as np
+import pynmea2
 from oplab import Console
 
 from auv_nav.tools.body_to_inertial import body_to_inertial
@@ -164,6 +166,18 @@ class BodyVelocity(OutputFormat):
         self.y_velocity_std = self.get_std(vy)
         self.z_velocity_std = self.get_std(vz)
         self.epoch_timestamp_dvl = self.parse_dvl_time(line)
+
+    def from_ntnu_dvl(self, filename, line):
+        date_obj = datetime.datetime.strftime(filename, "%Y%m%d")
+        time_obj = datetime.datetime.strptime(line["time"], "%H:%M:%S.%f")
+        date_time_obj = datetime.datetime.combine(date_obj, time_obj)
+        self.epoch_timestamp = date_time_obj.timestamp()
+        self.x_velocity = float(line["u_dvl"])
+        self.y_velocity = float(line["v_dvl"])
+        self.z_velocity = float(line["z_dvl"])
+        self.x_velocity_std = self.get_std(self.x_velocity)
+        self.y_velocity_std = self.get_std(self.y_velocity)
+        self.z_velocity_std = self.get_std(self.z_velocity)
 
     def parse_dvl_time(self, line):
         epoch_time_dvl = None
@@ -415,6 +429,20 @@ class Orientation(OutputFormat):
             and self.epoch_timestamp is not None
         )
 
+    def from_eiva_navipac(self, line):
+        parts = line.split()
+        date_time_obj = datetime.datetime.strptime(
+            parts[2], "%Y:%m:%d:%H:%M:%S.%f"
+        )
+        self.epoch_timestamp = date_time_obj.timestamp()
+
+        nmea_string = parts[3].replace("\n", "")
+        msg = pynmea2.parse(nmea_string)
+
+        self.roll = msg.roll * 180.0 / pi
+        self.pitch = msg.pitch * 180.0 / pi
+        self.yaw = msg.heading * 180.0 / pi
+
     def from_autosub(self, data, i):
         self.epoch_timestamp = data["eTime"][i]
         self.roll = data["Roll"][i] * 180.0 / pi
@@ -575,6 +603,16 @@ class Depth(OutputFormat):
             and self.depth_timestamp is not None
         )
 
+    def from_eiva_navipac(self, line):
+        parts = line.split()
+        date_time_obj = datetime.datetime.strptime(
+            parts[2], "%Y:%m:%d:%H:%M:%S.%f"
+        )
+        self.epoch_timestamp = date_time_obj.timestamp()
+        self.depth_timestamp = self.epoch_timestamp
+        self.depth = float(parts[5])
+        self.depth_std = self.depth * self.depth_std_factor
+
     def from_autosub(self, data, i):
         self.epoch_timestamp = data["eTime"][i]
         self.depth_timestamp = self.epoch_timestamp
@@ -682,6 +720,19 @@ class Altitude(OutputFormat):
             and self.epoch_timestamp is not None
             and self.altitude_timestamp is not None
         )
+
+    def from_ntnu_dvl(self, filename, row):
+        date_obj = datetime.datetime.strftime(filename, "%Y%m%d")
+        time_obj = datetime.datetime.strptime(line["time"], "%H:%M:%S.%f")
+        date_time_obj = datetime.datetime.combine(date_obj, time_obj)
+        self.epoch_timestamp = date_time_obj.timestamp()
+        self.altitude_timestamp = self.epoch_timestamp
+        alt0 = float(row["dvl_alt0"])  # fore
+        alt1 = float(row["dvl_alt1"])  # left
+        alt2 = float(row["dvl_alt2"])  # right
+        alt3 = float(row["dvl_alt3"])  # aft
+        self.altitude = (alt1 + alt3) / 2.0
+        self.altitude_std = self.altitude * self.altitude_std_factor
 
     def from_autosub(self, data, i):
         self.epoch_timestamp = data["eTime"][i]
@@ -801,6 +852,39 @@ class Usbl(OutputFormat):
             and self.eastings is not None
             and self.northings is not None
             and self.epoch_timestamp is not None
+        )
+
+    def from_eiva_navipac(self, line):
+        parts = line.split()
+        date_time_obj = datetime.datetime.strptime(
+            parts[3], "%Y:%m:%d:%H:%M:%S.%f"
+        )
+        self.epoch_timestamp = date_time_obj.timestamp()
+        self.latitude = float(parts[7])
+        self.longitude = float(parts[8])
+        self.depth = -float(parts[6])
+
+        # calculate in meters from reference
+        lateral_distance, bearing = latlon_to_metres(
+            self.latitude,
+            self.longitude,
+            self.latitude_reference,
+            self.longitude_reference,
+        )
+        self.distance_to_ship = -1.0
+        self.eastings = sin(bearing * pi / 180.0) * lateral_distance
+        self.northings = cos(bearing * pi / 180.0) * lateral_distance
+        self.eastings_std = self.std_factor * self.depth + self.std_offset
+        self.northings_std = self.std_factor * self.depth + self.std_offset
+        self.depth_std = self.std_factor * self.depth + self.std_offset
+        # If your displacements aren't too great (less than a few kilometers)
+        # and you're not right at the poles, use the quick and dirty estimate
+        # that 111,111 meters (111.111 km) in the y direction is 1 degree (of
+        # latitude) and 111,111 * cos(latitude) meters in the x direction is
+        # 1 degree (of longitude).
+        self.latitude_std = self.depth / 111.111e3
+        self.longitude_std = self.latitude_std * cos(
+            self.latitude * pi / 180.0
         )
 
     def from_nmea(self, msg):
