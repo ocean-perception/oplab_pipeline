@@ -537,6 +537,19 @@ class Corrector:
                 )
                 self.altitude_list.append(alt)
 
+
+        if len(distance_list) == 0:
+            Console.error("No images exist / can be found!")
+            Console.error(
+                "Check the file", 
+                distance_csv_path, 
+                "and make sure that the 'relative_path' column points to",
+                "existing images relative to the raw mission folder (e.g.", 
+                self.path_raw, 
+                ")")
+            Console.error("You may need to reprocess the dive with auv_nav")
+            Console.quit("No images were found.")
+
         Console.info(
             len(self.altitude_list),
             "/",
