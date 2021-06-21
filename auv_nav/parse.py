@@ -309,7 +309,7 @@ def parse_single(filepath, force_overwrite):
                     parse_NOC_nmea, [mission, vehicle, "usbl", ftype, outpath]
                 )
             )
-        elif mission.usbl.format == "EIVA_navipac":
+        elif mission.usbl.format == "eiva_navipac":
             pool_list.append(
                 pool.apply_async(
                     parse_eiva_navipac,
