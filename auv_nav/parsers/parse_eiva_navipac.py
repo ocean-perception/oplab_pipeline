@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2020, University of Southampton
+Copyright (c) 2021, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -10,7 +10,7 @@ from oplab import Console, get_raw_folder
 from auv_nav.sensors import Category, Orientation, Depth, Usbl
 
 
-def parse_template(mission, vehicle, category, output_format, outpath):
+def parse_eiva_navipac(mission, vehicle, category, output_format, outpath):
     # Get your data from a file using mission paths, for example
     # Get your data from a file using mission paths, for example
     filepath = None
