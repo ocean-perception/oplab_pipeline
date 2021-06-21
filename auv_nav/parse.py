@@ -352,7 +352,7 @@ def parse_single(filepath, force_overwrite):
             pool_list.append(
                 pool.apply_async(
                     parse_ntnu_dvl,
-                    [mission, vehicle, "usbl", ftype, outpath],
+                    [mission, vehicle, "velocity", ftype, outpath],
                 )
             )
         else:
@@ -395,7 +395,7 @@ def parse_single(filepath, force_overwrite):
             pool_list.append(
                 pool.apply_async(
                     parse_eiva_navipac,
-                    [mission, vehicle, "usbl", ftype, outpath],
+                    [mission, vehicle, "orientation", ftype, outpath],
                 )
             )
         else:
@@ -434,7 +434,7 @@ def parse_single(filepath, force_overwrite):
             pool_list.append(
                 pool.apply_async(
                     parse_eiva_navipac,
-                    [mission, vehicle, "usbl", ftype, outpath],
+                    [mission, vehicle, "depth", ftype, outpath],
                 )
             )
         else:
@@ -473,7 +473,7 @@ def parse_single(filepath, force_overwrite):
             pool_list.append(
                 pool.apply_async(
                     parse_ntnu_dvl,
-                    [mission, vehicle, "usbl", ftype, outpath],
+                    [mission, vehicle, "altitude", ftype, outpath],
                 )
             )
         else:
