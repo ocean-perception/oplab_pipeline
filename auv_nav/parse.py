@@ -32,6 +32,7 @@ from auv_nav.parsers.parse_NOC_nmea import parse_NOC_nmea
 from auv_nav.parsers.parse_NOC_polpred import parse_NOC_polpred
 from auv_nav.parsers.parse_ntnu_dvl import parse_ntnu_dvl
 from auv_nav.parsers.parse_eiva_navipac import parse_eiva_navipac
+from auv_nav.parsers.parse_ntnu_stereo import parse_ntnu_stereo_images
 
 # sys.path.append("..")
 from auv_nav.parsers.parse_phins import parse_phins
@@ -275,6 +276,13 @@ def parse_single(filepath, force_overwrite):
             pool_list.append(
                 pool.apply_async(
                     parse_biocam_images,
+                    [mission, vehicle, "images", ftype, outpath],
+                )
+            )
+        elif mission.image.format == "ntnu_stereo":
+            pool_list.append(
+                pool.apply_async(
+                    parse_ntnu_stereo_images,
                     [mission, vehicle, "images", ftype, outpath],
                 )
             )
