@@ -18,14 +18,14 @@ def parse_eiva_navipac(mission, vehicle, category, output_format, outpath):
         filepath = mission.orientation.filepath
     elif category == Category.DEPTH:
         filepath = mission.depth.filepath
-    elif category == Category.ALTITUDE:
-        filepath = mission.velocity.filepath
+    elif category == Category.USBL:
+        filepath = mission.usbl.filepath
 
     log_file_path = get_raw_folder(outpath / ".." / filepath)
 
     depth_std_factor = mission.depth.std_factor
     orientation_std_offset = mission.orientation.std_offset
-    heading_offset = vehicle.imu.yaw
+    heading_offset = vehicle.ins.yaw
     usbl_id = mission.usbl.label
 
     latitude_reference = float(mission.origin.latitude)

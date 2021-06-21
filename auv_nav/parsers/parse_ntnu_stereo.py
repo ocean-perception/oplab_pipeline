@@ -31,6 +31,7 @@ Format: ending in R or L
 
 
 def timestamp_from_filename(filename, timezone_offset, timeoffset):
+    print(filename, len(filename), " == 23?")
     # read in date
     yyyy = 2000 + int(filename[0:2])
     mm = int(filename[2:4])
@@ -91,14 +92,10 @@ def parse_ntnu_stereo_images(mission, vehicle, category, ftype, outpath):
     all_list = os.listdir(str(filepath))
 
     camera1_filename = [
-        line
-        for line in all_list
-        if camera1_label in line and ".txt" not in line and "._" not in line
+        line for line in all_list if camera1_label in line and ".jpg" in line
     ]
     camera2_filename = [
-        line
-        for line in all_list
-        if camera2_label in line and ".txt" not in line and "._" not in line
+        line for line in all_list if camera2_label in line and ".jpg" in line
     ]
 
     data_list = []
