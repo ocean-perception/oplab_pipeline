@@ -107,7 +107,7 @@ def parse_ntnu_dvl(mission, vehicle, category, output_format, outpath):
         )
 
         if category == Category.VELOCITY:
-            Console.info("... parsing orientation")
+            Console.info("... parsing velocity")
             # For each row in the file
             for row in df.iterrows():
                 body_velocity.from_ntnu_dvl(str(log_file), row)

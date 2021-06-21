@@ -30,6 +30,8 @@ from auv_nav.parsers.parse_gaps import parse_gaps
 from auv_nav.parsers.parse_interlacer import parse_interlacer
 from auv_nav.parsers.parse_NOC_nmea import parse_NOC_nmea
 from auv_nav.parsers.parse_NOC_polpred import parse_NOC_polpred
+from auv_nav.parsers.parse_ntnu_dvl import parse_ntnu_dvl
+from auv_nav.parsers.parse_eiva_navipac import parse_eiva_navipac
 
 # sys.path.append("..")
 from auv_nav.parsers.parse_phins import parse_phins
@@ -299,6 +301,13 @@ def parse_single(filepath, force_overwrite):
                     parse_NOC_nmea, [mission, vehicle, "usbl", ftype, outpath]
                 )
             )
+        elif mission.usbl.format == "EIVA_navipac":
+            pool_list.append(
+                pool.apply_async(
+                    parse_eiva_navipac,
+                    [mission, vehicle, "usbl", ftype, outpath],
+                )
+            )
         else:
             Console.quit(
                 "Mission usbl format", mission.usbl.format, "not supported."
@@ -329,6 +338,13 @@ def parse_single(filepath, force_overwrite):
             pool_list.append(
                 pool.apply_async(
                     parse_rdi, [mission, vehicle, "velocity", ftype, outpath]
+                )
+            )
+        elif mission.usbl.format == "NTNU_dvl":
+            pool_list.append(
+                pool.apply_async(
+                    parse_ntnu_dvl,
+                    [mission, vehicle, "usbl", ftype, outpath],
                 )
             )
         else:
@@ -367,6 +383,13 @@ def parse_single(filepath, force_overwrite):
                     [mission, vehicle, "orientation", ftype, outpath],
                 )
             )
+        elif mission.usbl.format == "EIVA_navipac":
+            pool_list.append(
+                pool.apply_async(
+                    parse_eiva_navipac,
+                    [mission, vehicle, "usbl", ftype, outpath],
+                )
+            )
         else:
             Console.quit(
                 "Mission orientation format",
@@ -399,6 +422,13 @@ def parse_single(filepath, force_overwrite):
                     parse_gaps, [mission, vehicle, "depth", ftype, outpath]
                 )
             )
+        elif mission.usbl.format == "EIVA_navipac":
+            pool_list.append(
+                pool.apply_async(
+                    parse_eiva_navipac,
+                    [mission, vehicle, "usbl", ftype, outpath],
+                )
+            )
         else:
             Console.quit(
                 "Mission depth format", mission.depth.format, "not supported."
@@ -429,6 +459,13 @@ def parse_single(filepath, force_overwrite):
             pool_list.append(
                 pool.apply_async(
                     parse_rdi, [mission, vehicle, "altitude", ftype, outpath]
+                )
+            )
+        elif mission.usbl.format == "NTNU_dvl":
+            pool_list.append(
+                pool.apply_async(
+                    parse_ntnu_dvl,
+                    [mission, vehicle, "usbl", ftype, outpath],
                 )
             )
         else:
