@@ -168,7 +168,7 @@ class BodyVelocity(OutputFormat):
         self.epoch_timestamp_dvl = self.parse_dvl_time(line)
 
     def from_ntnu_dvl(self, filename, line):
-        date_obj = datetime.datetime.strptime(filename, "%Y%m%d")
+        date_obj = datetime.datetime.strptime(filename[0:8], "%Y%m%d")
         time_obj = datetime.datetime.strptime(line["time"], "%H:%M:%S.%f")
         date_time_obj = datetime.datetime.combine(date_obj, time_obj)
         self.epoch_timestamp = date_time_obj.timestamp()
@@ -722,7 +722,7 @@ class Altitude(OutputFormat):
         )
 
     def from_ntnu_dvl(self, filename, row):
-        date_obj = datetime.datetime.strptime(filename, "%Y%m%d")
+        date_obj = datetime.datetime.strptime(filename[0:8], "%Y%m%d")
         time_obj = datetime.datetime.strptime(row["time"], "%H:%M:%S.%f")
         date_time_obj = datetime.datetime.combine(date_obj, time_obj)
         self.epoch_timestamp = date_time_obj.timestamp()
