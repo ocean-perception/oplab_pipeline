@@ -31,10 +31,6 @@ def parse_eiva_navipac(mission, vehicle, category, output_format, outpath):
     latitude_reference = float(mission.origin.latitude)
     longitude_reference = float(mission.origin.longitude)
 
-    utm_x, utm_y, zone_number, zone_letter = utm.from_latlon(
-        latitude_reference, longitude_reference
-    )
-
     orientation = Orientation(heading_offset, orientation_std_offset)
     depth = Depth(depth_std_factor)
     usbl = Usbl(
