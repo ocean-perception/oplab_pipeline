@@ -168,6 +168,7 @@ class BodyVelocity(OutputFormat):
         self.epoch_timestamp_dvl = self.parse_dvl_time(line)
 
     def from_ntnu_dvl(self, filename, line):
+        self.sensor_string = "ntnu_dvl"
         date_obj = datetime.datetime.strptime(filename[0:8], "%Y%m%d")
         time_obj = datetime.datetime.strptime(line["time"], "%H:%M:%S.%f")
         date_time_obj = datetime.datetime.combine(date_obj, time_obj.time())
@@ -430,6 +431,7 @@ class Orientation(OutputFormat):
         )
 
     def from_eiva_navipac(self, line):
+        self.sensor_string = "eiva_navipac"
         parts = line.split()
         date_time_obj = datetime.datetime.strptime(
             parts[2], "%Y:%m:%d:%H:%M:%S.%f"
@@ -604,6 +606,7 @@ class Depth(OutputFormat):
         )
 
     def from_eiva_navipac(self, line):
+        self.sensor_string = "eiva_navipac"
         parts = line.split()
         date_time_obj = datetime.datetime.strptime(
             parts[4], "%Y:%m:%d:%H:%M:%S.%f"
@@ -722,6 +725,7 @@ class Altitude(OutputFormat):
         )
 
     def from_ntnu_dvl(self, filename, row):
+        self.sensor_string = "ntnu_dvl"
         date_obj = datetime.datetime.strptime(filename[0:8], "%Y%m%d")
         time_obj = datetime.datetime.strptime(row["time"], "%H:%M:%S.%f")
         date_time_obj = datetime.datetime.combine(date_obj, time_obj.time())
@@ -855,6 +859,7 @@ class Usbl(OutputFormat):
         )
 
     def from_eiva_navipac(self, line):
+        self.sensor_string = "eiva_navipac"
         parts = line.split()
         date_time_obj = datetime.datetime.strptime(
             parts[3], "%Y:%m:%d:%H:%M:%S.%f"
