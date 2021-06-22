@@ -10,7 +10,6 @@ import numpy as np
 from numba import njit
 from scipy import optimize
 import matplotlib.pyplot as plt
-from pathlib import Path
 
 
 @njit
@@ -115,7 +114,6 @@ def curve_fitting(
     if intensities_filt[idx_1] != 0:
         b = (np.log((int_0 - c) / (int_1 - c))) / (alt_0 - alt_1)
     a = (int_1 - c) / np.exp(b * alt_1)
-    #print("a,b,c", a, b, c, int_0, int_1, alt_0, alt_1, intensities_filt.min())
     if a <= 0 or b > 0 or np.isnan(a) or np.isnan(b):
         a = 1.01
         b = -0.01
@@ -147,10 +145,13 @@ def curve_fitting(
             bounds=(bound_lower, bound_upper),
         )
         if save:
+            fn = "Intensities_curve.png"
             fig = plt.figure()
             plt.plot(altitudes_filt, intensities_filt, "c.")
             xs = np.arange(1, 5, 0.1)
-            ys = exp_curve(xs, tmp_params.x[0], tmp_params.x[1], tmp_params.x[2])
+            ys = exp_curve(
+                xs, tmp_params.x[0], tmp_params.x[1], tmp_params.x[2]
+            )
             plt.plot(xs, np.ones(xs.shape[0]) * tmp_params.x[2], "-y")
             plt.plot(xs, ys, "-m")
             plt.legend(["Intensities", "Exp curve", "C term"])

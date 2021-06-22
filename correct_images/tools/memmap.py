@@ -10,7 +10,6 @@ import cv2
 from ..loaders import default
 import uuid
 import numpy as np
-import joblib
 
 
 def create_memmap(image_list, dimensions, loader=default.loader):

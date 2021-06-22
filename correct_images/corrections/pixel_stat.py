@@ -38,10 +38,10 @@ def pixel_stat(
     """
 
     # target_mean and target std should be given in 0 - 100 scale
-    target_mean_unitary = target_mean / 100.0 #* (2.0 ** dst_bit - 1.0)
-    target_std_unitary = target_std / 100.0 #* (2.0 ** dst_bit - 1.0)
+    target_mean_unitary = target_mean / 100.0  # * (2.0 ** dst_bit - 1.0)
+    target_std_unitary = target_std / 100.0  # * (2.0 ** dst_bit - 1.0)
     ret = (
         bayer_img - bayer_img_mean
     ) / bayer_img_std * target_std_unitary + target_mean_unitary
-    ret = np.clip(ret, 0, 1) #2 ** dst_bit - 1)
+    ret = np.clip(ret, 0, 1)  # 2 ** dst_bit - 1)
     return ret

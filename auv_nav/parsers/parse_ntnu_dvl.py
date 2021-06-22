@@ -8,7 +8,6 @@ See LICENSE.md file in the project root for full license information.
 
 from auv_nav.sensors import Category, BodyVelocity, Altitude
 from oplab import Console, get_raw_folder
-from pathlib import Path
 import pandas as pd
 
 header_list = [

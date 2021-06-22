@@ -825,8 +825,8 @@ class ExtendedKalmanFilter(object):
                 dr_idx += 1
             elif usbl_idx < len(self.usbl_list):
                 m.from_usbl(self.usbl_list[usbl_idx])
-                #self.ekf.print_state()
-                #print(m)
+                # self.ekf.print_state()
+                # print(m)
                 usbl_idx += 1
 
             last_update_delta = m.time - last_update_time

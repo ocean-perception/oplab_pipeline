@@ -152,7 +152,7 @@ def mean_std_array(data: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
             mean_sq = 0.0
             for k in range(n):
                 count = k + 1
-                #new_value = data[k, i, j]
+                # new_value = data[k, i, j]
                 new_value = data[k, i]
                 delta = new_value - mean
                 mean += delta / count
@@ -269,7 +269,7 @@ def calc_mean_and_std_trimmed(data, rate_trimming, calc_std=True):
         idx_right_limit = int(len(data) * (1.0 - rate_trimming / 2.0))
         mean = np.mean(sorted_values[idx_left_limit:idx_right_limit])
         std = np.std(sorted_values[idx_left_limit:idx_right_limit])
-        #mean, std = mean_std_array(
+        # mean, std = mean_std_array(
         #    sorted_values[idx_left_limit:idx_right_limit]
-        #)
+        # )
     return np.array([mean, std])

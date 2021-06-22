@@ -170,7 +170,7 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
 
     # copy the configuration file
     localisation_file_processed = get_processed_folder(localisation_file)
-    localisation_file.copy(localisation_file_processed) 
+    localisation_file.copy(localisation_file_processed)
 
     # Default to no EKF and PF and SPP
     particle_filter_activate = False

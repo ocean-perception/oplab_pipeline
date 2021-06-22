@@ -11,8 +11,6 @@ See LICENSE.md file in the project root for full license information.
 # Author: Blair Thornton
 # Date: 31/08/2017
 
-import os
-
 from auv_nav.tools.time_conversions import date_time_to_epoch
 from oplab import Console, get_raw_folder
 
@@ -88,11 +86,10 @@ def parse_ntnu_stereo_images(mission, vehicle, category, ftype, outpath):
     # determine file paths
 
     filepath = get_raw_folder(outpath / ".." / filepath)
-    all_list = os.listdir(str(filepath))
 
-    p = filepath.rglob('*' + camera1_label + ".jpg")
+    p = filepath.rglob("*" + camera1_label + ".jpg")
     camera1_filename = [x.name for x in p if x.is_file()]
-    p = filepath.rglob('*' + camera2_label + ".jpg")
+    p = filepath.rglob("*" + camera2_label + ".jpg")
     camera2_filename = [x.name for x in p if x.is_file()]
 
     data_list = []

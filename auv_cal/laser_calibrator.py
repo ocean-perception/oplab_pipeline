@@ -424,7 +424,7 @@ def get_laser_pixels_in_image_pair(
                 k,
                 num_columns,
                 start_row=start_row_b,
-                end_row=end_row_b
+                end_row=end_row_b,
             )
             write_str += "bottom: \n- " + "- ".join(
                 [
@@ -692,8 +692,8 @@ class LaserCalibrator:
         Console.info("number_of_bins:     ", self.number_of_bins)
         Console.info("max_points_per_bin: ", self.max_points_per_bin)
 
-        bin_size_m = (self.max_z_m - self.min_z_m)/self.number_of_bins
-        bins = [None]*self.number_of_bins
+        bin_size_m = (self.max_z_m - self.min_z_m) / self.number_of_bins
+        bins = [None] * self.number_of_bins
 
         # Shuffle the list in-place
         random.shuffle(cloud)
@@ -702,7 +702,7 @@ class LaserCalibrator:
         for p in cloud:
             z = p[2]
             if self.min_z_m <= z and z < self.max_z_m:
-                corresp_bin = math.floor((z - self.min_z_m)/bin_size_m)
+                corresp_bin = math.floor((z - self.min_z_m) / bin_size_m)
                 if corresp_bin < len(bins):
                     if bins[corresp_bin] is None:
                         bins[corresp_bin] = [p]
@@ -887,8 +887,12 @@ class LaserCalibrator:
                 if failed_distance % 100000 == 0:
                     Console.info(
                         "Combinations rejected due to distance criterion",
-                        "(Poisson disk sampling):", failed_distance, "times,",
-                        "due to angle criterion:", failed_angle, "times"
+                        "(Poisson disk sampling):",
+                        failed_distance,
+                        "times,",
+                        "due to angle criterion:",
+                        failed_angle,
+                        "times",
                     )
                 continue
 
@@ -901,8 +905,12 @@ class LaserCalibrator:
                 if failed_angle % 100000 == 0:
                     print(
                         "Combinations rejected due to distance criterion",
-                        "(Poisson disk sampling):", failed_distance, "times,",
-                        "due to angle criterion:", failed_angle, "times"
+                        "(Poisson disk sampling):",
+                        failed_distance,
+                        "times,",
+                        "due to angle criterion:",
+                        failed_angle,
+                        "times",
                     )
                 continue
 
@@ -912,11 +920,18 @@ class LaserCalibrator:
                 plane_through_3_points(point_cloud_local)
             )
             Console.info(
-                "Number of planes: ", len(self.uncertainty_planes), ", "
-                "Number of tries so far: ", tries, ".",
+                "Number of planes: ",
+                len(self.uncertainty_planes),
+                ", " "Number of tries so far: ",
+                tries,
+                ".",
                 "Combinations rejected due to distance criterion",
-                "(Poisson disk sampling):", failed_distance, "times,",
-                "due to angle criterion:", failed_angle, "times"
+                "(Poisson disk sampling):",
+                failed_distance,
+                "times,",
+                "due to angle criterion:",
+                failed_angle,
+                "times",
             )
             planes_enclose_inliers = self._do_planes_enclose_inliers()
 

@@ -13,8 +13,10 @@ from pathlib import Path
 
 import imageio
 import joblib
+import matplotlib
 import numpy as np
 import pandas as pd
+from matplotlib import pyplot as plt
 from oplab import (
     Console,
     get_config_folder,
@@ -22,27 +24,24 @@ from oplab import (
     get_raw_folder,
 )
 from tqdm import tqdm, trange
-from matplotlib import pyplot as plt
-import matplotlib 
-matplotlib.use('Agg')
 
 from correct_images import corrections
-from correct_images.loaders import loader, depth_map
+from correct_images.loaders import depth_map, loader
 from correct_images.tools.file_handlers import (
     trim_csv_files,
     write_output_image,
 )
 from correct_images.tools.joblib_tqdm import tqdm_joblib
-from correct_images.tools.memmap import (
-    create_memmap,
-    open_memmap,
-)
+from correct_images.tools.memmap import create_memmap, open_memmap
 from correct_images.tools.numerical import (
     RunningMeanStd,
     image_mean_std_trimmed,
     median_array,
     running_mean_std,
 )
+
+matplotlib.use("Agg")
+
 
 # -----------------------------------------
 
@@ -537,16 +536,16 @@ class Corrector:
                 )
                 self.altitude_list.append(alt)
 
-
         if len(distance_list) == 0:
             Console.error("No images exist / can be found!")
             Console.error(
-                "Check the file", 
-                distance_csv_path, 
+                "Check the file",
+                distance_csv_path,
                 "and make sure that the 'relative_path' column points to",
-                "existing images relative to the raw mission folder (e.g.", 
-                self.path_raw, 
-                ")")
+                "existing images relative to the raw mission folder (e.g.",
+                self.path_raw,
+                ")",
+            )
             Console.error("You may need to reprocess the dive with auv_nav")
             Console.quit("No images were found.")
 
@@ -745,7 +744,7 @@ class Corrector:
             # apply gains to images
             Console.info("Applying attenuation corrections to images...")
 
-            temp = self.loader(self.camera_image_list[0])  ## bitdepth?
+            temp = self.loader(self.camera_image_list[0])  # bitdepth?
             runner = RunningMeanStd(temp.shape)
 
             memmap_filename, memmap_handle = open_memmap(
@@ -1026,8 +1025,6 @@ class Corrector:
                     self.correction_gains,
                 )
 
-                # print('attenuation_correct:', image.dtype, np.max(image), np.min(image))
-
             if distance_matrix is not None:
                 image = corrections.pixel_stat(
                     image,
@@ -1036,7 +1033,6 @@ class Corrector:
                     self.brightness,
                     self.contrast,
                 )
-                # print('pixel_stat:', image.dtype, np.max(image), np.min(image))
             else:
                 image = corrections.pixel_stat(
                     image,

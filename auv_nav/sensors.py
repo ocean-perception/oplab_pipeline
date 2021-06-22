@@ -732,9 +732,9 @@ class Altitude(OutputFormat):
         date_time_obj = datetime.datetime.combine(date_obj, time_obj.time())
         self.epoch_timestamp = date_time_obj.timestamp()
         self.altitude_timestamp = self.epoch_timestamp
-        alt0 = float(row["dvl_alt0"])  # fore
+        # alt0 = float(row["dvl_alt0"])  # fore
         alt1 = float(row["dvl_alt1"])  # left
-        alt2 = float(row["dvl_alt2"])  # right
+        # alt2 = float(row["dvl_alt2"])  # right
         alt3 = float(row["dvl_alt3"])  # aft
         self.altitude = (alt1 + alt3) / 2.0
         self.altitude_std = self.altitude * self.altitude_std_factor

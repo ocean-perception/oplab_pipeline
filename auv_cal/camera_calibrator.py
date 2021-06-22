@@ -728,8 +728,11 @@ class MonoCalibrator(Calibrator):
 
         boards = [b for (_, b) in self.good_corners]
         Console.info(
-            "Iteration", iteration, "using", len(boards),
-            "views of the calibration board"
+            "Iteration",
+            iteration,
+            "using",
+            len(boards),
+            "views of the calibration board",
         )
 
         ipts = [points for (points, _) in self.good_corners]
@@ -745,11 +748,17 @@ class MonoCalibrator(Calibrator):
 
         self.num_images = len(self.good_corners)
 
-        [self.avg_reprojection_error, _, _, _, _, self.stdev_intrinsics, _,
-            per_view_errors] = (
-            cv2.calibrateCameraExtended(
-                opts, ipts, self.size, self.intrinsics, self.distortion
-            )
+        [
+            self.avg_reprojection_error,
+            _,
+            _,
+            _,
+            _,
+            self.stdev_intrinsics,
+            _,
+            per_view_errors,
+        ] = cv2.calibrateCameraExtended(
+            opts, ipts, self.size, self.intrinsics, self.distortion
         )
 
         Console.info("Per view reprojection error:\n" + str(per_view_errors))
@@ -785,11 +794,14 @@ class MonoCalibrator(Calibrator):
         if sum(bad_corners) > 0:
             Console.info(
                 "Number of views exceeding reprojection error threshold ("
-                + str(acceptable_reproj_err) + "): "
-                + str(sum(bad_corners)[0]) + " out of "
-                + str(len(per_view_errors)) + " calibration board views"
+                + str(acceptable_reproj_err)
+                + "): "
+                + str(sum(bad_corners)[0])
+                + " out of "
+                + str(len(per_view_errors))
+                + " calibration board views"
             )
-            if iteration == self.max_iterations-1:
+            if iteration == self.max_iterations - 1:
                 Console.info(
                     "but maximum number of iterations has been reached"
                 )
@@ -821,7 +833,9 @@ class MonoCalibrator(Calibrator):
             # )  # Usually last one
             self.distortion = self.calibrations[best_idx]["distortion"]
             self.intrinsics = self.calibrations[best_idx]["intrinsics"]
-            self.stdev_intrinsics = self.calibrations[best_idx]["stdev_intrinsics"]
+            self.stdev_intrinsics = self.calibrations[best_idx][
+                "stdev_intrinsics"
+            ]
             self.R = self.calibrations[best_idx]["R"]
             self.P = self.calibrations[best_idx]["P"]
             self.num_images = self.calibrations[best_idx]["num_images"]
@@ -951,11 +965,8 @@ class MonoCalibrator(Calibrator):
             + "  rows: 1\n"
             + "  cols: 9\n"
             + "  dt: d\n"
-            + "  data: ["
-            + ", ".join(
-                ["%8f" % stdev_intrisics[i, 0]
-                for i in range(9)]  # Output elements 0 to 8 as 9 to 17 are 0
-                )
+            + "  data: ["  # Output elements 0 to 8 as 9 to 17 are 0
+            + ", ".join(["%8f" % stdev_intrisics[i, 0] for i in range(9)])
             + "]\n"
             + 'date: "'
             + Console.get_date()
