@@ -439,9 +439,9 @@ class Orientation(OutputFormat):
         nmea_string = parts[3].replace("\n", "")
         msg = pynmea2.parse(nmea_string)
 
-        self.roll = msg.roll * 180.0 / pi
-        self.pitch = msg.pitch * 180.0 / pi
-        self.yaw = msg.heading * 180.0 / pi
+        self.roll = msg.roll / 180.0 * pi
+        self.pitch = msg.pitch / 180.0 * pi
+        self.yaw = msg.heading / 180.0 * pi
 
     def from_autosub(self, data, i):
         self.epoch_timestamp = data["eTime"][i]
@@ -606,7 +606,7 @@ class Depth(OutputFormat):
     def from_eiva_navipac(self, line):
         parts = line.split()
         date_time_obj = datetime.datetime.strptime(
-            parts[2], "%Y:%m:%d:%H:%M:%S.%f"
+            parts[4], "%Y:%m:%d:%H:%M:%S.%f"
         )
         self.epoch_timestamp = date_time_obj.timestamp()
         self.depth_timestamp = self.epoch_timestamp

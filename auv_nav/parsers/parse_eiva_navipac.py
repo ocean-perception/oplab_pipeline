@@ -58,7 +58,7 @@ def parse_eiva_navipac(mission, vehicle, category, output_format, outpath):
             elif category == Category.DEPTH:
                 Console.info("... parsing depth")
                 for line in filein.readlines():
-                    if line[0:14] == "D     " + str(usbl_id) + "  19  1":
+                    if line[0:14] == 'D     ' + str(usbl_id) +'  19  1':
                         depth.from_eiva_navipac(line)
                         data = depth.export(output_format)
                         data_list.append(data)
