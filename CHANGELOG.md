@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.9 (2021-06-22)
+ - Add NTNU ROV parser (incl. EIVA Navipac)
+
 ## 0.1.8 (2021-01-28)
  - Add GitHub Actions CI
  - correct_images now saves gains and attenuation parameter plots
