@@ -98,6 +98,8 @@ class TimeZoneEntry:
                 self.timezone = 0
             elif self.timezone == "jst" or self.timezone == "JST":
                 self.timezone = 9
+            elif self.timezone == "CET" or self.timezone == "cet":
+                self.timezone = 1
             else:
                 try:
                     self.timezone = float(self.timezone)

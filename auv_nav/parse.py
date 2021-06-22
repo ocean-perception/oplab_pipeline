@@ -30,6 +30,9 @@ from auv_nav.parsers.parse_gaps import parse_gaps
 from auv_nav.parsers.parse_interlacer import parse_interlacer
 from auv_nav.parsers.parse_NOC_nmea import parse_NOC_nmea
 from auv_nav.parsers.parse_NOC_polpred import parse_NOC_polpred
+from auv_nav.parsers.parse_ntnu_dvl import parse_ntnu_dvl
+from auv_nav.parsers.parse_eiva_navipac import parse_eiva_navipac
+from auv_nav.parsers.parse_ntnu_stereo import parse_ntnu_stereo_images
 
 # sys.path.append("..")
 from auv_nav.parsers.parse_phins import parse_phins
@@ -276,6 +279,13 @@ def parse_single(filepath, force_overwrite):
                     [mission, vehicle, "images", ftype, outpath],
                 )
             )
+        elif mission.image.format == "ntnu_stereo":
+            pool_list.append(
+                pool.apply_async(
+                    parse_ntnu_stereo_images,
+                    [mission, vehicle, "images", ftype, outpath],
+                )
+            )
         else:
             Console.quit(
                 "Mission image format", mission.image.format, "not supported."
@@ -297,6 +307,13 @@ def parse_single(filepath, force_overwrite):
             pool_list.append(
                 pool.apply_async(
                     parse_NOC_nmea, [mission, vehicle, "usbl", ftype, outpath]
+                )
+            )
+        elif mission.usbl.format == "eiva_navipac":
+            pool_list.append(
+                pool.apply_async(
+                    parse_eiva_navipac,
+                    [mission, vehicle, "usbl", ftype, outpath],
                 )
             )
         else:
@@ -329,6 +346,13 @@ def parse_single(filepath, force_overwrite):
             pool_list.append(
                 pool.apply_async(
                     parse_rdi, [mission, vehicle, "velocity", ftype, outpath]
+                )
+            )
+        elif mission.velocity.format == "ntnu_dvl":
+            pool_list.append(
+                pool.apply_async(
+                    parse_ntnu_dvl,
+                    [mission, vehicle, "velocity", ftype, outpath],
                 )
             )
         else:
@@ -367,6 +391,13 @@ def parse_single(filepath, force_overwrite):
                     [mission, vehicle, "orientation", ftype, outpath],
                 )
             )
+        elif mission.orientation.format == "eiva_navipac":
+            pool_list.append(
+                pool.apply_async(
+                    parse_eiva_navipac,
+                    [mission, vehicle, "orientation", ftype, outpath],
+                )
+            )
         else:
             Console.quit(
                 "Mission orientation format",
@@ -399,6 +430,13 @@ def parse_single(filepath, force_overwrite):
                     parse_gaps, [mission, vehicle, "depth", ftype, outpath]
                 )
             )
+        elif mission.depth.format == "eiva_navipac":
+            pool_list.append(
+                pool.apply_async(
+                    parse_eiva_navipac,
+                    [mission, vehicle, "depth", ftype, outpath],
+                )
+            )
         else:
             Console.quit(
                 "Mission depth format", mission.depth.format, "not supported."
@@ -429,6 +467,13 @@ def parse_single(filepath, force_overwrite):
             pool_list.append(
                 pool.apply_async(
                     parse_rdi, [mission, vehicle, "altitude", ftype, outpath]
+                )
+            )
+        elif mission.altitude.format == "ntnu_dvl":
+            pool_list.append(
+                pool.apply_async(
+                    parse_ntnu_dvl,
+                    [mission, vehicle, "altitude", ftype, outpath],
                 )
             )
         else:
@@ -484,6 +529,9 @@ def parse_single(filepath, force_overwrite):
         # If current retrieved data is DEPTH
         # and if TIDE data is available
         if len(results) < 1:
+            continue
+        if results[0] is None:
+            Console.warn("Some results are empty. Please check whether this is correct or not")
             continue
         if correcting_timestamps:
             if results[0]["category"] == "image":
