@@ -530,6 +530,9 @@ def parse_single(filepath, force_overwrite):
         # and if TIDE data is available
         if len(results) < 1:
             continue
+        if results[0] is None:
+            Console.warn("Some results are empty. Please check whether this is correct or not")
+            continue
         if correcting_timestamps:
             if results[0]["category"] == "image":
                 Console.info("Correction of BioCam cpu timestamps...")

@@ -173,6 +173,7 @@ class BodyVelocity(OutputFormat):
         time_obj = datetime.datetime.strptime(line["time"], "%H:%M:%S.%f")
         date_time_obj = datetime.datetime.combine(date_obj, time_obj.time())
         self.epoch_timestamp = date_time_obj.timestamp()
+        self.epoch_timestamp_dvl = self.epoch_timestamp
         self.x_velocity = float(line["u_dvl"])
         self.y_velocity = float(line["v_dvl"])
         self.z_velocity = float(line["z_dvl"])
