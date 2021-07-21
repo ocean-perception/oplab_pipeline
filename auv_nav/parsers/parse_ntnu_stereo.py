@@ -86,11 +86,12 @@ def parse_ntnu_stereo_images(mission, vehicle, category, ftype, outpath):
     # determine file paths
 
     filepath = get_raw_folder(outpath / ".." / filepath)
+    mission_path = get_raw_folder(outpath / "..")
 
     p = filepath.rglob("*" + camera1_label + ".jpg")
-    camera1_filename = [x.name for x in p if x.is_file()]
+    camera1_filename = [x.relative_to(mission_path).name for x in p if x.is_file()]
     p = filepath.rglob("*" + camera2_label + ".jpg")
-    camera2_filename = [x.name for x in p if x.is_file()]
+    camera2_filename = [x.relative_to(mission_path).name for x in p if x.is_file()]
 
     data_list = []
     if ftype == "acfr":
