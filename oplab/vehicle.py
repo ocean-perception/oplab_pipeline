@@ -135,6 +135,8 @@ class Vehicle:
                     self.usbl.load(self.data["usbl"])
                 if len(mission.image.cameras) > 0:
                     camera_name = mission.image.cameras[0].name
+                    if mission.image.cameras[0].origin is not None:
+                        camera_name = mission.image.cameras[0].origin
                     if camera_name not in self.data:
                         Console.error(
                             "Could not find the position of the camera with",
@@ -154,6 +156,8 @@ class Vehicle:
                     self.camera1.load(self.data[camera_name])
                 if len(mission.image.cameras) > 1:
                     camera_name = mission.image.cameras[1].name
+                    if mission.image.cameras[1].origin is not None:
+                        camera_name = mission.image.cameras[1].origin
                     if camera_name not in self.data:
                         Console.error(
                             "Could not find the position of the camera with",
@@ -172,6 +176,8 @@ class Vehicle:
                     self.camera2.load(self.data[camera_name])
                 if len(mission.image.cameras) > 2:
                     camera_name = mission.image.cameras[2].name
+                    if mission.image.cameras[2].origin is not None:
+                        camera_name = mission.image.cameras[2].origin
                     if camera_name not in self.data:
                         Console.error(
                             "Could not find the position of the camera with",

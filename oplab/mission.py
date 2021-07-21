@@ -71,6 +71,7 @@ class CameraEntry:
             self.name = node["name"]
             self.type = node["type"]
             self.path = node["path"]
+            self.origin = None
             if "origin" in node:
                 self.origin = node["origin"]
                 Console.info(
