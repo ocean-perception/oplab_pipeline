@@ -1,0 +1,49 @@
+#YAML 1.0
+origin: #centre of robot
+  x_offset: 0
+  y_offset: 0
+  z_offset: 0
+
+# distance with reference to origin/centre of robot
+usbl:
+  surge_m: 0.
+  sway_m: 0
+  heave_m: 0.0 # uncertain
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 0
+
+ins:
+  surge_m: 0.0 # uncertain
+  sway_m: 0
+  heave_m: 0
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 0.0
+
+dvl:
+  surge_m: 0.0
+  sway_m: 0
+  heave_m: 0.0
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 45.0
+
+depth:
+  surge_m: 0.
+  sway_m: 0
+  heave_m: 0
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 0
+
+# distance with reference to origin/centre of robot
+ntnu_stereo_left: #Camera
+  x_offset: 0.0
+  y_offset: 0.0
+  z_offset: 0.0
+
+ntnu_stereo_right: #Camera
+  x_offset: 0.0
+  y_offset: 0.0
+  z_offset: 0.0

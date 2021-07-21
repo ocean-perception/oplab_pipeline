@@ -1,0 +1,72 @@
+#YAML 1.0
+version: 1
+
+origin:
+  latitude: 63.61
+  longitude: 10.5
+  coordinate_reference_system: wgs84
+  date: 2021/04/21
+
+velocity:
+  format: ntnu_dvl
+  filepath: nav/ntnu_dvl/
+  timezone: cet
+  timeoffset: 0.0
+  std_factor: 0.001
+  std_offset: 0.2
+
+orientation:
+  format: eiva_navipac
+  filepath: nav/eiva_navipac/
+  timezone: cet
+  timeoffset: 0.0
+  std_factor: 0.0
+  std_offset: 0.003
+
+depth:
+  format: eiva_navipac
+  filepath: nav/eiva_navipac/
+  timezone: cet
+  timeoffset: 0.0
+  std_factor: 0.001
+  std_offset: 0.0
+
+altitude:
+  format: ntnu_dvl
+  filepath: nav/eiva_navipac/
+  timezone: cet
+  timeoffset: 0.0
+  std_factor: 0.001
+  std_offset: 0.3
+
+usbl:
+  format: eiva_navipac
+  filepath: nav/eiva_navipac/
+  timezone: cet
+  id: 3
+  timeoffset: 0.0
+  std_factor: 0.01
+  std_offset: 2.0
+
+#tide:
+#  format: NOC_polpred
+#  filepath: nav/tide/
+#  filename: dy_108_polpred_tide_60m.txt
+#  timezone: utc
+#  timeoffset: 0.0
+#  std_factor: 0.0
+#  std_offset: 0.0
+
+image:
+  format: ntnu_stereo
+  cameras:
+    - name: ntnu_stereo_left
+      type: rgb
+      bit_depth: 8
+      path: image
+    - name: ntnu_stereo_right
+      type: rgb
+      bit_depth: 8
+      path: image
+  timezone: cet
+  timeoffset: 0.0
