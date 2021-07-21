@@ -107,13 +107,18 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
 
     # camera1 placeholders
     camera1_list = []
+    camera1_ekf_list = []
     camera1_pf_list = []
     # camera2 placeholders
     camera2_list = []
+    camera2_ekf_list = []
     camera2_pf_list = []
     # camera3 placeholders
     camera3_list = []
+    camera3_ekf_list = []
     camera3_pf_list = []
+
+    ekf_list = []
 
     # placeholders for interpolated velocity body measurements based on
     # orientation and transformed coordinates

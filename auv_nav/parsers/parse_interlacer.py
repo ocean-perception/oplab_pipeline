@@ -34,7 +34,10 @@ def parse_interlacer(outpath, filename):
             data = json.load(json_file)
             for i in range(len(data)):
                 data_packet = data[i]
-                value.append(str(float(data_packet["epoch_timestamp"])))
+                if data_packet is not None:
+                    value.append(str(float(data_packet["epoch_timestamp"])))
+                #else:
+                #    print(data_packet, i)
 
     except ValueError:
         Console.quit("Error: no data in JSON file")

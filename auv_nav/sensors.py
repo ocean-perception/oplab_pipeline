@@ -97,6 +97,8 @@ class OutputFormat:
             elif format == self.ACFR:
                 data = self._to_acfr()
             self.clear()
+        if data is None:
+            Console.warn("WARNING: exporting non valid data!")
         return data
 
 
@@ -129,6 +131,7 @@ class BodyVelocity(OutputFormat):
         # The class is populated with just one line message.
         if (
             self.x_velocity is not None
+            and self.y_velocity is not None
             and self.epoch_timestamp is not None
             and self.epoch_timestamp_dvl is not None
         ):
@@ -174,12 +177,21 @@ class BodyVelocity(OutputFormat):
         date_time_obj = datetime.datetime.combine(date_obj, time_obj.time())
         self.epoch_timestamp = date_time_obj.timestamp()
         self.epoch_timestamp_dvl = self.epoch_timestamp
-        self.x_velocity = float(line["u_dvl"])
-        self.y_velocity = float(line["v_dvl"])
-        self.z_velocity = float(line["z_dvl"])
+        vx = float(line["u_dvl"])
+        vy = float(line["v_dvl"])
+        vz = float(line["z_dvl"])
+        [vx, vy, vz] = body_to_inertial(0, 0, self.yaw_offset, vx, vy, vz)
+        self.x_velocity = vx
+        self.y_velocity = vy
+        self.z_velocity = vz
         self.x_velocity_std = self.get_std(self.x_velocity)
         self.y_velocity_std = self.get_std(self.y_velocity)
         self.z_velocity_std = self.get_std(self.z_velocity)
+
+        if (self.x_velocity > 32 or self.x_velocity < -32) or (self.y_velocity > 32 or self.y_velocity < -32) or (self.z_velocity > 32 or self.z_velocity < -32):
+            self.x_velocity = None
+            self.y_velocity = None
+            self.z_velocity = None
 
     def parse_dvl_time(self, line):
         epoch_time_dvl = None
@@ -431,6 +443,26 @@ class Orientation(OutputFormat):
             and self.epoch_timestamp is not None
         )
 
+    def apply_offset(self):
+        if self.yaw is not None:
+            [self.roll, self.pitch, self.yaw] = body_to_inertial(
+                0, 0, self.yaw_offset, self.roll, self.pitch, self.yaw
+            )
+            if self.yaw > 360:
+                self.yaw = self.yaw - 360
+            if self.yaw < 0:
+                self.yaw = self.yaw + 360
+    def apply_std_offset(self):
+        # account for sensor rotational offset
+        [self.roll_std, self.pitch_std, self.heading_std] = body_to_inertial(
+            0,
+            0,
+            self.yaw_offset,
+            self.roll_std,
+            self.pitch_std,
+            self.yaw_std,
+        )
+
     def from_eiva_navipac(self, line):
         self.sensor_string = "eiva_navipac"
         parts = line.split()
@@ -442,9 +474,20 @@ class Orientation(OutputFormat):
         nmea_string = parts[3].replace("\n", "")
         msg = pynmea2.parse(nmea_string)
 
-        self.roll = msg.roll / 180.0 * pi
-        self.pitch = msg.pitch / 180.0 * pi
-        self.yaw = msg.heading / 180.0 * pi
+        if msg.roll is None or msg.pitch is None or msg.heading is None:
+            Console.warn("Dropping EIVA Navipac message", nmea_string)
+            return
+
+        try:
+            self.roll = float(msg.roll) #/ 180.0 * pi
+            self.pitch = float(msg.pitch) #/ 180.0 * pi
+            self.yaw = float(msg.heading) #/ 180.0 * pi
+            self.apply_offset()
+        except:
+            Console.warn("Invalid NMEA sentence from EIVA Navipac", nmea_string)
+            self.roll = None
+            self.pitch = None
+            self.yaw = None
 
     def from_autosub(self, data, i):
         self.epoch_timestamp = data["eTime"][i]
@@ -462,29 +505,14 @@ class Orientation(OutputFormat):
             self.roll = -1 * float(line[2])
             # phins +ve nose up so no need to change
             self.pitch = -1 * float(line[3])
-            if self.yaw is not None:
-                [self.roll, self.pitch, self.yaw] = body_to_inertial(
-                    0, 0, self.yaw_offset, self.roll, self.pitch, self.yaw
-                )
-                if self.yaw > 360:
-                    self.yaw = self.yaw - 360
-                if self.yaw < 0:
-                    self.yaw = self.yaw + 360
+            self.apply_offset()
 
         if line[1] == PhinsHeaders.ATTITUDE_STD:
             self.yaw_std = float(line[2])
             self.roll_std = float(line[3])
             self.pitch_std = float(line[4])
+            self.apply_std_offset()
 
-            # account for sensor rotational offset
-            [roll_std, pitch_std, heading_std] = body_to_inertial(
-                0,
-                0,
-                self.yaw_offset,
-                self.roll_std,
-                self.pitch_std,
-                self.yaw_std,
-            )
 
     def from_json(self, json, sensor_std):
         self.epoch_timestamp = json["epoch_timestamp"]

@@ -110,8 +110,10 @@ def parse_ntnu_dvl(mission, vehicle, category, output_format, outpath):
             # For each row in the file
             for index, row in df.iterrows():
                 body_velocity.from_ntnu_dvl(str(log_file.name), row)
-                data = body_velocity.export(output_format)
-                data_list.append(data)
+                if body_velocity.valid():
+                    # DVL provides -32 when no bottom lock
+                    data = body_velocity.export(output_format)
+                    data_list.append(data)
         elif category == Category.ALTITUDE:
             Console.info("... parsing altitude")
             # For each row in the file

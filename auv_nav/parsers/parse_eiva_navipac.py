@@ -53,6 +53,8 @@ def parse_eiva_navipac(mission, vehicle, category, output_format, outpath):
                 for line in filein.readlines():
                     if line.startswith("R132  4") and "$PRDID" in line:
                         orientation.from_eiva_navipac(line)
+                        if orientation.roll is None:
+                            continue
                         data = orientation.export(output_format)
                         data_list.append(data)
             elif category == Category.DEPTH:
