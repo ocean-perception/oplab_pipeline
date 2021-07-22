@@ -815,6 +815,12 @@ class Corrector:
             )
             np.save(self.raw_mean_filepath, image_raw_mean)
             np.save(self.raw_std_filepath, image_raw_std)
+
+            ch = image_raw_mean.shape[0]
+            if ch == 3:
+                image_raw_mean = image_raw_mean.reshape([1, 2, 0])
+                image_raw_std = image_raw_std.reshape([1, 2, 0])
+
             imageio.imwrite(
                 Path(self.attenuation_parameters_folder)
                 / "image_raw_mean.png",
