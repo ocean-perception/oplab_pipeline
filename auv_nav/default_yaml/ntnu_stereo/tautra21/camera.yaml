@@ -1,0 +1,14 @@
+camera_system: ntnu_stereo
+cameras:
+  - name: ntnu_stereo_left
+    type: rgb
+    bit_depth: 8
+    path: 'image/*/*L'
+    extension: jpg
+    filename_to_date: 'YYMMDDxhhmmssxfffx.xxx'
+  - name: ntnu_stereo_right
+    type: rgb
+    bit_depth: 8
+    path: 'image/*/*R'
+    extension: jpg
+    filename_to_date: 'YYMMDDxhhmmssxfffx.xxx'
