@@ -89,9 +89,11 @@ def parse_ntnu_stereo_images(mission, vehicle, category, ftype, outpath):
     mission_path = get_raw_folder(outpath / "..")
 
     p = filepath.rglob("*" + camera1_label + ".jpg")
-    camera1_filename = [x.relative_to(mission_path).name for x in p if x.is_file()]
+    camera1_relpath = [x.relative_to(mission_path) for x in p if x.is_file()]
+    camera1_filename = [x.name for x in camera1_relpath]
     p = filepath.rglob("*" + camera2_label + ".jpg")
-    camera2_filename = [x.relative_to(mission_path).name for x in p if x.is_file()]
+    camera2_relpath = [x.relative_to(mission_path) for x in p if x.is_file()]
+    camera2_filename = [x.name for x in camera2_relpath]
 
     data_list = []
     if ftype == "acfr":
@@ -136,9 +138,7 @@ def parse_ntnu_stereo_images(mission, vehicle, category, ftype, outpath):
                 "camera1": [
                     {
                         "epoch_timestamp": float(epoch_timestamp_camera1[i]),
-                        "filename": str(filepath)
-                        + "/"
-                        + str(camera1_filename[i]),
+                        "filename": str(camera1_relpath[i]),
                     }
                 ],
                 "camera2": [
@@ -146,9 +146,7 @@ def parse_ntnu_stereo_images(mission, vehicle, category, ftype, outpath):
                         "epoch_timestamp": float(
                             epoch_timestamp_camera2[sync_pair]
                         ),
-                        "filename": str(filepath)
-                        + "/"
-                        + str(camera2_filename[sync_pair]),
+                        "filename": str(camera2_relpath[sync_pair]),
                     }
                 ],
             }
