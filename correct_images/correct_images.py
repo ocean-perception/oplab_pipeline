@@ -300,6 +300,7 @@ def load_configuration_and_camera_system(path):
         sx3_camera_file = "auv_nav/default_yaml/ae2000/YK17-23C/camera.yaml"
         biocam_camera_file = "auv_nav/default_yaml/as6/DY109/camera.yaml"
         hybis_camera_file = "auv_nav/default_yaml/hybis/camera.yaml"
+        ntnu_camera_file = "auv_nav/default_yaml/ntnu_stereo/tautra21/camera.yaml"
 
         acfr_std_correct_config_file = (
             "correct_images/default_yaml/acfr/correct_images.yaml"
@@ -313,6 +314,11 @@ def load_configuration_and_camera_system(path):
         hybis_std_correct_config_file = (
             "correct_images/default_yaml/hybis/correct_images.yaml"
         )
+        ntnu_std_correct_config_file = (
+            "correct_images/default_yaml/ntnu_stereo/correct_images.yaml"
+        )
+
+        Console.info("Image format:", mission.image.format)
 
         if mission.image.format == "acfr_standard":
             camera_yaml_path = root / acfr_std_camera_file
@@ -334,6 +340,11 @@ def load_configuration_and_camera_system(path):
             default_file_path_correct_config = (
                 root / hybis_std_correct_config_file
             )
+        elif mission.image.format == "ntnu_stereo":
+            camera_yaml_path = root / ntnu_camera_file
+            default_file_path_correct_config = (
+                root / ntnu_std_correct_config_file
+            )
         else:
             Console.quit(
                 "Image system in camera.yaml does not match with mission.yaml",
@@ -342,6 +353,9 @@ def load_configuration_and_camera_system(path):
     else:
         Console.info("Found camera.yaml file in /raw folder...")
         camera_yaml_path = temp_path
+
+    Console.info("camera.yaml:", camera_yaml_path)
+    Console.info("raw folder:", path_raw_folder)
 
     # instantiate the camera system and setup cameras from mission and
     # config files / auv_nav
