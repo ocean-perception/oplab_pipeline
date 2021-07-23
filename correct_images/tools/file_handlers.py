@@ -124,5 +124,8 @@ def write_output_image(image, filename, dest_path, dest_format):
 
     file = filename + "." + dest_format
     file_path = dest_path / file
+    ch = image.shape[0]
+    if ch == 3:
+        image = image.transpose((1, 2, 0))
     imageio.imwrite(file_path, image)
     return file_path

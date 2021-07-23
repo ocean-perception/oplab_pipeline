@@ -666,7 +666,6 @@ class Corrector:
 
         if distance_vector is not None:
             idxs = np.digitize(distance_vector, hist_bins)
-
             with tqdm_joblib(
                 tqdm(
                     desc="Computing altitude histogram",
@@ -807,19 +806,23 @@ class Corrector:
 
         else:
             Console.info(
-                "No altitude or depth maps available. \
-                Computing raw mean and std."
+                "No altitude or depth maps available.",
+                "Computing raw mean and std."
             )
+
             image_raw_mean, image_raw_std = running_mean_std(
                 self.camera_image_list, self.loader
             )
             np.save(self.raw_mean_filepath, image_raw_mean)
             np.save(self.raw_std_filepath, image_raw_std)
+            
+            # image_raw_mean = np.load(self.raw_mean_filepath)
+            # image_raw_std = np.load(self.raw_std_filepath)
 
             ch = image_raw_mean.shape[0]
             if ch == 3:
-                image_raw_mean = image_raw_mean.reshape([1, 2, 0])
-                image_raw_std = image_raw_std.reshape([1, 2, 0])
+                image_raw_mean = image_raw_mean.transpose((1, 2, 0))
+                image_raw_std = image_raw_std.transpose((1, 2, 0))
 
             imageio.imwrite(
                 Path(self.attenuation_parameters_folder)
