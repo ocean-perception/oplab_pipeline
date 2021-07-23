@@ -30,13 +30,13 @@ classifiers = [
 ]
 
 def return_version():
+    """Append annotation to version string to indicate development versions.
+    
+       An empty (modulo comments and blank lines) commit_hash.txt is used
+       to indicate a release, in which case nothing is appended to version
+       string as defined above.
+    """
     version = ""
-
-    # Append annotation to version string to indicate development versions.
-    #
-    # An empty (modulo comments and blank lines) commit_hash.txt is used
-    # to indicate a release, in which case nothing is appended to version
-    # string as defined above.
     path_to_hashfile = os.path.join(os.path.dirname(__file__), "commit_hash.txt")
     if os.path.exists(path_to_hashfile):
         commit_version = ""
@@ -108,10 +108,6 @@ def run_setup():
         with open("commit_hash.txt", "w") as f:
             f.write(commit_hash_header + "\n")
             f.write(sha1 + "\n")
-    # Import oplab/version.py without importing oplab_pipeline
-    #version_specs = importlib.util.find_spec("oplab.version")
-    #version = importlib.util.module_from_spec(version_specs)
-    #version_specs.loader.exec_module(version)
     oplab_pipeline_version = return_version()
     setup(
         name="oplab_pipeline",
