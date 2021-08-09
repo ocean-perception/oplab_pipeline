@@ -6,15 +6,9 @@ Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
 
-from pathlib import Path
-
 import cv2
-import joblib
 import numpy as np
-import tqdm
-from correct_images.loaders import default, xviii
-from correct_images.tools.file_handlers import write_output_image
-from correct_images.tools.joblib_tqdm import tqdm_joblib
+
 from oplab import Console
 
 
@@ -57,78 +51,3 @@ def debayer(image: np.ndarray, pattern: str) -> np.ndarray:
     # Scale down to unitary
     corrected_rgb_img = corrected_rgb_img.astype(np.float32) * (2 ** (-16))
     return corrected_rgb_img
-
-
-def debayer_folder(
-    output_dir: Path,
-    filetype,
-    pattern,
-    output_format,
-    image=None,
-    image_dir=None,
-) -> None:
-    """Perform debayer of input bayer images without going through correction
-    pipeline
-
-    Parameters
-    -----------
-    output_dir : str
-        Output directory where to save the debayered images
-    filetype : str
-        Input filetype (e.g. extension)
-    pattern : str
-        Bayer pattern ('bggr', 'rggb',...)
-    output_format : str
-        Output format (e.g. extension)
-    image : str
-        Optional parameter. Whether to process just one image. Useful to debug
-        and check the patterns.
-    image_dir : str
-        Optional parameter. Folder with images to process.
-    """
-
-    def debayer_image(
-        image_path, _filetype, _pattern, _output_dir, _output_format
-    ):
-        Console.info("Debayering image {}".format(image_path.name))
-
-        # Define image loader
-        loader = default.loader
-        if _filetype == "raw":
-            loader = xviii.loader
-
-        img = loader(image_path)
-        img_rgb = debayer(img, _pattern)
-        img_rgb = img_rgb.astype(np.uint8)
-        image_name = str(image_path.stem)
-        write_output_image(img_rgb, image_name, _output_dir, _output_format)
-
-    output_dir = Path(output_dir)
-    image_list = []
-    if not output_dir.exists():
-        Console.info("Creating output dir {}".format(output_dir))
-        output_dir.mkdir(parents=True)
-    else:
-        Console.info("Using output dir {}".format(output_dir))
-    if not image:
-        image_dir = Path(image_dir)
-        Console.info(
-            "Debayering folder {} to {}".format(image_dir, output_dir)
-        )
-        image_list = list(image_dir.glob("*." + filetype))
-    else:
-        single_image = Path(image)
-        image_list.append(single_image)
-    Console.info("Found " + str(len(image_list)) + " image(s)...")
-
-    with tqdm_joblib(
-        tqdm.tqdm(desc="Debayering inages", total=len(image_list))
-    ):
-        joblib.Parallel(n_jobs=-2, verbose=0)(
-            [
-                joblib.delayed(debayer_image)(
-                    image_path, filetype, pattern, output_dir, output_format
-                )
-                for image_path in image_list
-            ]
-        )

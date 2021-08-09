@@ -6,15 +6,17 @@ Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
 
+from pathlib import Path
+
 import joblib
 import numpy as np
 import psutil
+from matplotlib import pyplot as plt
+from tqdm import tqdm
+
 from correct_images.tools.curve_fitting import curve_fitting
 from correct_images.tools.joblib_tqdm import tqdm_joblib
 from oplab import Console
-from tqdm import tqdm
-from pathlib import Path
-from matplotlib import pyplot as plt
 
 
 def attenuation_correct(

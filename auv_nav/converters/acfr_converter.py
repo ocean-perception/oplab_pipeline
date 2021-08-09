@@ -16,11 +16,7 @@ from auv_nav.sensors import (
     Other,
     Usbl,
 )
-
-from oplab import (
-    Console,
-    get_processed_folder,
-)
+from oplab import Console, get_processed_folder
 
 
 class AcfrExporter:

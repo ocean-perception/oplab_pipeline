@@ -15,11 +15,10 @@ import glob
 from pathlib import Path
 
 import numpy as np
+from scipy.stats import linregress
 
 from auv_nav.tools.time_conversions import date_time_to_epoch
 from oplab import Console, get_raw_folder
-from scipy.stats import linregress
-
 
 stamp_pc1 = []
 stamp_pc2 = []

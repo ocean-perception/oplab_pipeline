@@ -10,8 +10,9 @@ import time
 
 import plotly.graph_objs as go
 import plotly.offline as py
-from oplab import Console
 from plotly import subplots
+
+from oplab import Console
 
 
 def create_trace(x_list, y_list, trace_name, trace_color, visibility=True):

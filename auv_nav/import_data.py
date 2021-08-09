@@ -7,16 +7,13 @@ See LICENSE.md file in the project root for full license information.
 """
 from pathlib import Path
 
-from oplab import (
-    Console,
-    Mission,
-    Vehicle,
-    get_processed_folder,
-    get_raw_folder,
-)
-
 from auv_nav.converters import HybisImporter
 from auv_nav.tools.time_conversions import epoch_to_datetime
+
+# fmt: off
+from oplab import Console, Mission, Vehicle, get_processed_folder, get_raw_folder
+
+# fmt: on
 
 
 def import_data(filepath, ftype, force_overwite):

@@ -10,6 +10,7 @@ import math
 import random
 
 import numpy
+
 from auv_nav.localisation.particle import Particle
 from auv_nav.sensors import SyncedOrientationBodyVelocity
 from auv_nav.tools.body_to_inertial import body_to_inertial

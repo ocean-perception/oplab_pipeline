@@ -16,15 +16,8 @@ import numpy as np
 
 # Import libraries
 import yaml
-from oplab import (
-    Console,
-    Mission,
-    Vehicle,
-    get_config_folder,
-    get_processed_folder,
-    valid_dive,
-)
 
+# fmt: off
 from auv_nav.localisation.dead_reckoning import dead_reckoning
 from auv_nav.localisation.ekf import (
     ExtendedKalmanFilter,
@@ -62,10 +55,7 @@ from auv_nav.tools.csv_tools import (
     write_sensor_csv,
     write_sidescan_csv,
 )
-from auv_nav.tools.dvl_level_arm import (
-    compute_angular_speeds,
-    correct_lever_arm,
-)
+from auv_nav.tools.dvl_level_arm import compute_angular_speeds, correct_lever_arm
 from auv_nav.tools.interpolate import interpolate, interpolate_sensor_list
 from auv_nav.tools.latlon_wgs84 import metres_to_latlon
 from auv_nav.tools.time_conversions import (
@@ -73,6 +63,16 @@ from auv_nav.tools.time_conversions import (
     epoch_to_datetime,
     string_to_epoch,
 )
+from oplab import (
+    Console,
+    Mission,
+    Vehicle,
+    get_config_folder,
+    get_processed_folder,
+    valid_dive,
+)
+
+# fmt: on
 
 """
 Assumes filename_camera of 1, 2, and 3 contains the image number between the

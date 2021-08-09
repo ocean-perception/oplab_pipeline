@@ -14,7 +14,6 @@ See LICENSE.md file in the project root for full license information.
 import math
 
 from auv_nav.tools.latlon_wgs84 import latlon_to_metres, metres_to_latlon
-
 from auv_nav.tools.time_conversions import date_time_to_epoch, read_timezone
 from oplab import Console, get_raw_folder
 

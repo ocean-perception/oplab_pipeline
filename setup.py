@@ -6,13 +6,11 @@ Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
 
-import importlib
 import os
 import os.path
-from setuptools import setup
-from setuptools import find_packages
 import subprocess
 
+from setuptools import find_packages, setup
 
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
@@ -29,15 +27,18 @@ classifiers = [
     "Topic :: Software Development",
 ]
 
+
 def return_version():
     """Append annotation to version string to indicate development versions.
-    
-       An empty (modulo comments and blank lines) commit_hash.txt is used
-       to indicate a release, in which case nothing is appended to version
-       string as defined above.
+
+    An empty (modulo comments and blank lines) commit_hash.txt is used
+    to indicate a release, in which case nothing is appended to version
+    string as defined above.
     """
     version = ""
-    path_to_hashfile = os.path.join(os.path.dirname(__file__), "commit_hash.txt")
+    path_to_hashfile = os.path.join(
+        os.path.dirname(__file__), "commit_hash.txt"
+    )
     if os.path.exists(path_to_hashfile):
         commit_version = ""
         with open(path_to_hashfile, "r") as f:
@@ -125,7 +126,6 @@ def run_setup():
             "console_scripts": [
                 "auv_nav = auv_nav.auv_nav:main",
                 "auv_cal = auv_cal.auv_cal:main",
-                "debayer_folder = correct_images.debayer_folder:main",
                 "correct_images = correct_images.correct_images:main",
             ],
         },

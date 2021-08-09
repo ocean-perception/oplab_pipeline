@@ -11,6 +11,7 @@ from pathlib import Path
 
 import numpy as np
 import yaml
+
 from correct_images import corrections
 from correct_images.tools.numerical import mean_std
 
@@ -101,10 +102,7 @@ class testCorrections(unittest.TestCase):
             dist = self.distance_matrices[k]
             corrected = img.copy()
             corrected = corrections.attenuation_correct(
-                img,
-                dist,
-                attenuation_parameters,
-                correction_gains,
+                img, dist, attenuation_parameters, correction_gains,
             )
             corrected_rgb[:, :, :, k] = corrected
         # TODO what do we test here?

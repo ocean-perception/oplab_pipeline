@@ -6,8 +6,8 @@ Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
 
+from auv_nav.sensors import Category, Depth, Orientation, Usbl
 from oplab import Console, get_raw_folder
-from auv_nav.sensors import Category, Orientation, Depth, Usbl
 
 
 def parse_eiva_navipac(mission, vehicle, category, output_format, outpath):

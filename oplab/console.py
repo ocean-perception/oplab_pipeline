@@ -5,14 +5,14 @@ All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
-import socket
-import getpass
 import datetime
-import pkg_resources
-import timeit
+import getpass
 import logging
+import socket
+import timeit
 from pathlib import Path
 
+import pkg_resources
 
 logger = None  # Public logger
 

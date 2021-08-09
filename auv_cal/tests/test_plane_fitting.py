@@ -7,8 +7,10 @@ See LICENSE.md file in the project root for full license information.
 """
 
 import unittest
-import numpy as np
 from unittest.mock import patch
+
+import numpy as np
+
 from auv_cal.plane_fitting import Plane
 
 fit_points = np.array(

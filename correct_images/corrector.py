@@ -17,20 +17,12 @@ import matplotlib
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
-from oplab import (
-    Console,
-    get_config_folder,
-    get_processed_folder,
-    get_raw_folder,
-)
 from tqdm import tqdm, trange
 
+# fmt: off
 from correct_images import corrections
 from correct_images.loaders import depth_map, loader
-from correct_images.tools.file_handlers import (
-    trim_csv_files,
-    write_output_image,
-)
+from correct_images.tools.file_handlers import trim_csv_files, write_output_image
 from correct_images.tools.joblib_tqdm import tqdm_joblib
 from correct_images.tools.memmap import create_memmap, open_memmap
 from correct_images.tools.numerical import (
@@ -39,7 +31,9 @@ from correct_images.tools.numerical import (
     median_array,
     running_mean_std,
 )
+from oplab import Console, get_config_folder, get_processed_folder, get_raw_folder
 
+# fmt: on
 matplotlib.use("Agg")
 
 
@@ -686,14 +680,12 @@ class Corrector:
                 )
 
             # calculate attenuation parameters per channel
-            self.image_attenuation_parameters = (
-                corrections.calculate_attenuation_parameters(
-                    images_map,
-                    distances_map,
-                    self.image_height,
-                    self.image_width,
-                    self.image_channels,
-                )
+            self.image_attenuation_parameters = corrections.calculate_attenuation_parameters(
+                images_map,
+                distances_map,
+                self.image_height,
+                self.image_width,
+                self.image_channels,
             )
 
             # delete memmap handles
@@ -899,18 +891,14 @@ class Corrector:
                 )[0]
             elif self.smoothing == "mean_trimmed":
                 memmap_filename, memmap_handle = create_memmap(
-                    bin_images,
-                    dimensions,
-                    loader=self.loader,
+                    bin_images, dimensions, loader=self.loader,
                 )
                 bin_images_sample = image_mean_std_trimmed(memmap_handle)[0]
                 del memmap_handle
                 os.remove(memmap_filename)
             elif self.smoothing == "median":
                 memmap_filename, memmap_handle = create_memmap(
-                    bin_images,
-                    dimensions,
-                    loader=self.loader,
+                    bin_images, dimensions, loader=self.loader,
                 )
                 bin_images_sample = median_array(memmap_handle)
                 del memmap_handle

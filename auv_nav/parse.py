@@ -11,27 +11,17 @@ import multiprocessing
 from datetime import datetime
 from pathlib import Path
 
-from oplab import (
-    Console,
-    Mission,
-    Vehicle,
-    get_processed_folder,
-    get_raw_folder,
-)
-
+# fmt: off
 from auv_nav.parsers.parse_acfr_images import parse_acfr_images
 from auv_nav.parsers.parse_ae2000 import parse_ae2000
 from auv_nav.parsers.parse_autosub import parse_autosub
-from auv_nav.parsers.parse_biocam_images import (
-    correct_timestamps,
-    parse_biocam_images,
-)
+from auv_nav.parsers.parse_biocam_images import correct_timestamps, parse_biocam_images
+from auv_nav.parsers.parse_eiva_navipac import parse_eiva_navipac
 from auv_nav.parsers.parse_gaps import parse_gaps
 from auv_nav.parsers.parse_interlacer import parse_interlacer
 from auv_nav.parsers.parse_NOC_nmea import parse_NOC_nmea
 from auv_nav.parsers.parse_NOC_polpred import parse_NOC_polpred
 from auv_nav.parsers.parse_ntnu_dvl import parse_ntnu_dvl
-from auv_nav.parsers.parse_eiva_navipac import parse_eiva_navipac
 from auv_nav.parsers.parse_ntnu_stereo import parse_ntnu_stereo_images
 
 # sys.path.append("..")
@@ -44,6 +34,9 @@ from auv_nav.parsers.parse_usbl_dump import parse_usbl_dump
 from auv_nav.plot.plot_parse_data import plot_parse_data
 from auv_nav.sensors import Category
 from auv_nav.tools.interpolate import interpolate
+from oplab import Console, Mission, Vehicle, get_processed_folder, get_raw_folder
+
+# fmt: on
 
 
 def merge_json_files(json_file_list):
@@ -531,7 +524,9 @@ def parse_single(filepath, force_overwrite):
         if len(results) < 1:
             continue
         if results[0] is None:
-            Console.warn("Some results are empty. Please check whether this is correct or not")
+            Console.warn(
+                "Some results are empty. Please check whether this is correct or not"
+            )
             continue
         if correcting_timestamps:
             if results[0]["category"] == "image":

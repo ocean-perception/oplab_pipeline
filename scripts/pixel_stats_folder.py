@@ -1,19 +1,20 @@
-import joblib
-from tqdm import tqdm
-import numpy as np
 import argparse
-from pathlib import Path
-import imageio
-import uuid
-from numba import njit, prange
-from typing import Tuple
+import contextlib
 import math
 import os
-import contextlib
-import shutil
-import cv2
 import random
+import shutil
+import uuid
+from pathlib import Path
+from typing import Tuple
+
+import cv2
+import imageio
+import joblib
+import numpy as np
 from matplotlib import pyplot as plt
+from numba import njit, prange
+from tqdm import tqdm
 
 # Parameters
 brightness = 25.0  # over 100 of the entire image values
@@ -22,6 +23,7 @@ max_space_gb = 400.0  # Max space to use in your hard drive
 scale_factor = 1.0
 use_random_sample = True
 src_bit = 8
+
 
 # Joblib and tqdm solution to progressbars
 @contextlib.contextmanager

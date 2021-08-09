@@ -6,11 +6,12 @@ Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
 
-import yaml
-from oplab.console import Console
-
 # Workaround to dump OrderedDict into YAML files
 from collections import OrderedDict
+
+import yaml
+
+from oplab.console import Console
 
 
 def represent_ordereddict(dumper, data):

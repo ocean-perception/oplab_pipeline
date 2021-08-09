@@ -6,10 +6,12 @@ Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
 
-import cv2
-from ..loaders import default
 import uuid
+
+import cv2
 import numpy as np
+
+from ..loaders import default
 
 
 def create_memmap(image_list, dimensions, loader=default.loader):

@@ -6,16 +6,16 @@ Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
 
+import datetime
 import math
 from math import atan2, cos, pi, sin, sqrt
-import datetime
 
 import numpy as np
 import pynmea2
-from oplab import Console
 
 from auv_nav.tools.body_to_inertial import body_to_inertial
 from auv_nav.tools.latlon_wgs84 import latlon_to_metres, metres_to_latlon
+from oplab import Console
 
 
 def float_or_none(val):

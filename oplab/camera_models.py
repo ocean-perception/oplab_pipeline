@@ -6,9 +6,11 @@ Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
 
-import numpy as np
 from pathlib import Path
+
 import cv2
+import numpy as np
+
 from oplab.console import Console  # noqa
 
 

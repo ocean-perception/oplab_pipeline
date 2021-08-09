@@ -215,9 +215,8 @@ def image_mean_std_trimmed(data, ratio_trimming=0.2, calculate_std=True):
 
     effective_index = [list(range(0, n))]
 
-    message = (
-        "calculating mean and std of images "
-        + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    message = "calculating mean and std of images " + datetime.datetime.now().strftime(
+        "%Y-%m-%d %H:%M:%S"
     )
 
     for ch in range(c):

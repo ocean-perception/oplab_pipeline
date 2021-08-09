@@ -10,6 +10,7 @@ import copy
 import unittest
 
 import numpy as np
+
 from auv_nav.localisation.ekf import ExtendedKalmanFilter
 from auv_nav.sensors import SyncedOrientationBodyVelocity
 
@@ -52,10 +53,7 @@ class TestEkf(unittest.TestCase):
             "position_xy": {"factor": 1.0, "offset": 0.0},
             "speed": {"factor": 1.0, "offset": 0.0},
             "position_z": {"factor": 1.0, "offset": 0.0},
-            "orientation": {
-                "factor": 1.0,
-                "offset": 0.0,
-            },
+            "orientation": {"factor": 1.0, "offset": 0.0},
         }
 
     def test_ekf(self):

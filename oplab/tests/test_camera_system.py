@@ -1,8 +1,8 @@
 import unittest
-from unittest.mock import patch
 from pathlib import Path
-from oplab import CameraSystem
-from oplab import FilenameToDate
+from unittest.mock import patch
+
+from oplab import CameraSystem, FilenameToDate
 
 
 class TestFilenameToDate(unittest.TestCase):

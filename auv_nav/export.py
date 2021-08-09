@@ -8,13 +8,6 @@ See LICENSE.md file in the project root for full license information.
 
 import json
 from pathlib import Path
-from oplab import (
-    Console,
-    Mission,
-    Vehicle,
-    get_processed_folder,
-    valid_dive,
-)
 
 from auv_nav.converters import AcfrExporter
 from auv_nav.parsers.parse_acfr_stereo_pose import AcfrStereoPoseFile
@@ -33,6 +26,7 @@ from auv_nav.tools.time_conversions import (
     epoch_to_datetime,
     string_to_epoch,
 )
+from oplab import Console, Mission, Vehicle, get_processed_folder, valid_dive
 
 
 def export(filepath, input_file, ftype, start_datetime, finish_datetime):

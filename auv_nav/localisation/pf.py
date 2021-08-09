@@ -6,13 +6,14 @@ Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
 
-import math
-import numpy as np
-from numpy.random import randn
-from numpy.random import uniform
 import copy
-from auv_nav.tools.interpolate import interpolate
+import math
+
+import numpy as np
+from numpy.random import randn, uniform
+
 from auv_nav.sensors import SyncedOrientationBodyVelocity
+from auv_nav.tools.interpolate import interpolate
 from oplab import Console
 
 # Particle Filter implementation using classes

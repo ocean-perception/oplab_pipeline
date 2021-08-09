@@ -14,18 +14,18 @@ import time
 from pathlib import Path
 
 import imageio
+
+from correct_images import corrections
+from correct_images.corrector import Corrector
+from correct_images.parser import CorrectConfig
 from oplab import (
     CameraSystem,
     Console,
     Mission,
     get_config_folder,
-    get_raw_folder,
     get_processed_folder,
+    get_raw_folder,
 )
-
-from correct_images import corrections
-from correct_images.corrector import Corrector
-from correct_images.parser import CorrectConfig
 
 
 # Main function
@@ -40,34 +40,6 @@ def main(args=None):
 
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
-
-    # subparser debayer
-    subparser_debayer = subparsers.add_parser(
-        "debayer", help="Debayer without correction"
-    )
-    subparser_debayer.add_argument("path", help="Path to bayer images.")
-    subparser_debayer.add_argument(
-        "filetype", help="type of image: raw / tif / tiff"
-    )
-    subparser_debayer.add_argument(
-        "-p",
-        "--pattern",
-        default="GRBG",
-        help="Bayer pattern (GRBG for Unagi and SeaXerocks3, BGGR for BioCam)",
-    )
-    subparser_debayer.add_argument(
-        "-i", "--image", default=None, help="Single raw image to test."
-    )
-    subparser_debayer.add_argument(
-        "-o", "--output", default=".", help="Output folder."
-    )
-    subparser_debayer.add_argument(
-        "-o_format",
-        "--output_format",
-        default="png",
-        help="Output image format.",
-    )
-    subparser_debayer.set_defaults(func=call_debayer)
 
     # subparser correct
     subparser_correct = subparsers.add_parser(
@@ -152,7 +124,7 @@ def call_parse(args):
 
     Console.set_logging_file(
         get_processed_folder(path)
-        / ('log/' + str(time.time()) + "_correct_images_parse.log")
+        / ("log/" + str(time.time()) + "_correct_images_parse.log")
     )
 
     correct_config, camerasystem = load_configuration_and_camera_system(path)
@@ -190,7 +162,7 @@ def call_process(args):
 
     Console.set_logging_file(
         get_processed_folder(path)
-        / ('log/' + str(time.time()) + "_correct_images_process.log")
+        / ("log/" + str(time.time()) + "_correct_images_process.log")
     )
 
     correct_config, camerasystem = load_configuration_and_camera_system(path)
@@ -227,7 +199,7 @@ def call_rescale(args):
 
     Console.set_logging_file(
         get_processed_folder(path)
-        / ('log/' + str(time.time()) + "_correct_images_rescale.log")
+        / ("log/" + str(time.time()) + "_correct_images_rescale.log")
     )
 
     correct_config, camerasystem = load_configuration_and_camera_system(path)
@@ -241,19 +213,6 @@ def call_rescale(args):
     for camera in rescale_cameras:
         corrections.rescale_camera(path, camerasystem, camera)
     Console.info("Rescaling completed for all cameras ...")
-
-
-def call_debayer(args):
-    image_dir = args.path
-    filetype = args.filetype
-    pattern = args.pattern
-    image = args.image
-    output_dir = args.output
-    output_format = args.output_format
-    corrections.debayer_folder(
-        output_dir, filetype, pattern, output_format, image, image_dir
-    )
-    Console.info("Debayering finished")
 
 
 def load_configuration_and_camera_system(path):

@@ -9,15 +9,6 @@ import json
 from pathlib import Path
 
 import yaml
-from oplab import (
-    Console,
-    StereoCamera,
-    check_dirs_exist,
-    get_config_folder,
-    get_processed_folder,
-    get_raw_folder,
-    get_raw_folders,
-)
 
 from auv_cal.camera_calibrator import (
     CalibrationException,
@@ -27,6 +18,15 @@ from auv_cal.camera_calibrator import (
     StereoCalibrator,
 )
 from auv_cal.laser_calibrator import LaserCalibrator
+from oplab import (
+    Console,
+    StereoCamera,
+    check_dirs_exist,
+    get_config_folder,
+    get_processed_folder,
+    get_raw_folder,
+    get_raw_folders,
+)
 
 
 def collect_image_files(image_dirs, file_pattern):
@@ -197,8 +197,7 @@ def calibrate_stereo(
         )
         # sc.cal(left_image_list, right_image_list)
         sc.cal_from_json(
-            left_json=left_json,
-            right_json=right_json,
+            left_json=left_json, right_json=right_json,
         )
         sc.report()
         Console.info("Writing calibration to " "'{}'" "".format(output_file))
@@ -642,7 +641,9 @@ class Calibrator:
         )
         laser_cam_extension = str(c1["laser_calibration"]["glob_pattern"])
         if not non_laser_cam_filepath.exists():
-            non_laser_cam_filepath = get_processed_folder(non_laser_cam_filepath)
+            non_laser_cam_filepath = get_processed_folder(
+                non_laser_cam_filepath
+            )
             if not non_laser_cam_filepath.exists():
                 Console.quit(
                     "Could not find stereo image folders ("

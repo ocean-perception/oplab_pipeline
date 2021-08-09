@@ -10,11 +10,7 @@ import numpy as np
 
 
 def pixel_stat(
-    bayer_img,
-    bayer_img_mean,
-    bayer_img_std,
-    target_mean,
-    target_std,
+    bayer_img, bayer_img_mean, bayer_img_std, target_mean, target_std,
 ):
     """Generate target stats for images
 

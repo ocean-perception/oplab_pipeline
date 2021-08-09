@@ -6,12 +6,12 @@ Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
 
-import yaml
 from pathlib import Path
+
 import imageio
-from oplab import get_raw_folder
-from oplab import Console
-from oplab import FilenameToDate
+import yaml
+
+from oplab import Console, FilenameToDate, get_raw_folder
 
 
 class CameraEntry:

@@ -11,6 +11,7 @@ import math
 from typing import List
 
 import numpy as np
+
 from auv_nav.sensors import Camera, SyncedOrientationBodyVelocity
 from auv_nav.tools.body_to_inertial import body_to_inertial
 from auv_nav.tools.interpolate import interpolate

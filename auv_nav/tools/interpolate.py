@@ -7,6 +7,7 @@ See LICENSE.md file in the project root for full license information.
 """
 
 import numpy as np
+
 from auv_nav.sensors import Camera, SyncedOrientationBodyVelocity, Usbl
 from auv_nav.tools.body_to_inertial import body_to_inertial
 from auv_nav.tools.latlon_wgs84 import metres_to_latlon

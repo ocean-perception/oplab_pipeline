@@ -7,16 +7,15 @@ See LICENSE.md file in the project root for full license information.
 """
 
 import argparse
-import time
 import os
 import sys
-
-from oplab import Console, get_processed_folder
+import time
 
 from auv_nav.export import export
 from auv_nav.import_data import import_data
 from auv_nav.parse import parse
 from auv_nav.process import process
+from oplab import Console, get_processed_folder
 
 
 def main(args=None):
@@ -139,9 +138,7 @@ def main(args=None):
         target.",
     )
     subparser_export.add_argument(
-        "path",
-        default=".",
-        help="Dive folder to export.",
+        "path", default=".", help="Dive folder to export.",
     )
     subparser_export.add_argument(
         "-i",
@@ -186,9 +183,7 @@ def main(args=None):
         target.",
     )
     subparser_import.add_argument(
-        "path",
-        default=".",
-        help="Dive folder to import.",
+        "path", default=".", help="Dive folder to import.",
     )
     subparser_import.add_argument(
         "-f",
@@ -220,7 +215,7 @@ def main(args=None):
 def call_parse_data(args):
     Console.set_logging_file(
         get_processed_folder(args.path[0])
-        / ('log/' + str(time.time()) + "_auv_nav_parse.log")
+        / ("log/" + str(time.time()) + "_auv_nav_parse.log")
     )
     parse(args.path, args.force, args.merge)
 
@@ -228,7 +223,7 @@ def call_parse_data(args):
 def call_process_data(args):
     Console.set_logging_file(
         get_processed_folder(args.path)
-        / ('log/' + str(time.time()) + "_auv_nav_process.log")
+        / ("log/" + str(time.time()) + "_auv_nav_process.log")
     )
     process(args.path, args.force, args.start_datetime, args.end_datetime)
 
@@ -236,7 +231,7 @@ def call_process_data(args):
 def call_export_data(args):
     Console.set_logging_file(
         get_processed_folder(args.path)
-        / ('log/' + str(time.time()) + "_auv_nav_export.log")
+        / ("log/" + str(time.time()) + "_auv_nav_export.log")
     )
     export(
         args.path,
@@ -250,7 +245,7 @@ def call_export_data(args):
 def call_import_data(args):
     Console.set_logging_file(
         get_processed_folder(args.path)
-        / ('log/' + str(time.time()) + "_auv_nav_import.log")
+        / ("log/" + str(time.time()) + "_auv_nav_import.log")
     )
     import_data(args.path, args.format, args.force)
 

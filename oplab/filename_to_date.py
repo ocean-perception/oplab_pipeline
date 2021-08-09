@@ -6,13 +6,14 @@ Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
 
-from pathlib import Path
-from oplab import Console
-from datetime import datetime
 import calendar
-import pandas as pd
-from oplab import get_raw_folder
 import os
+from datetime import datetime
+from pathlib import Path
+
+import pandas as pd
+
+from oplab import Console, get_raw_folder
 
 
 def resolve(filename, folder):

@@ -4,9 +4,9 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from oplab.console import Console
 from oplab.mission import CameraEntry, Mission
 from oplab.vehicle import Vehicle
-from oplab.console import Console
 
 
 def get_empty_test_directory():

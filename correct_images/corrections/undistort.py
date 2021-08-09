@@ -6,8 +6,9 @@ Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
 
-from oplab import MonoCamera
 import cv2
+
+from oplab import MonoCamera
 
 
 # correct image for distortions using camera calibration parameters

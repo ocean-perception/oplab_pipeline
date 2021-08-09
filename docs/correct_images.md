@@ -162,35 +162,6 @@ Configuration fields :
                              Note : put the filelist.txt within `configuration` folder chain where `correct_images.yaml` is found.
                              Note : this list may be the same as that was used for `parse` or it can be different.
 
-
-### `correct_images debayer` usage: ###
-```
-correct_images debayer [-h] [-p PATTERN] [-i IMAGE] [-o OUTPUT] [-o_format OUTPUT_FORMAT] path filetype
-
-positional arguments:
-  path                  Path to bayer images.
-  filetype              type of image: raw / tif / tiff
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -p PATTERN, --pattern PATTERN
-                        Bayer pattern (GRBG for Unagi, BGGR for BioCam)
-  -i IMAGE, --image IMAGE
-                        Single raw image to test.
-  -o OUTPUT, --output OUTPUT
-                        Output folder.
-  -o_format OUTPUT_FORMAT, --output_format OUTPUT_FORMAT
-                        Output image format. 
-```
-
-debayer function is to debayer the raw input image files even without going through the correction pipeline.
-
-debayer function operates either in single file or bat-F, --Force  Force overwrite if processed images already exist.ch mode. in single file mode path should include filename for the input image. batch mode works on all the images inside the path provided.
-
-default bayer filter pattern used by code is `GRBG`.
-
-default value for output image format is `png`.
-
 ### `correct_images correct` usage: ###
 ```
 correct_images correct [-h] path

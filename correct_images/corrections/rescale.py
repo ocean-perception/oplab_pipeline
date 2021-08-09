@@ -12,9 +12,10 @@ from pathlib import Path
 import imageio
 import numpy as np
 import pandas as pd
-from oplab import Console, MonoCamera, get_processed_folder
 from PIL import Image
 from tqdm import trange
+
+from oplab import Console, MonoCamera, get_processed_folder
 
 
 def rescale(

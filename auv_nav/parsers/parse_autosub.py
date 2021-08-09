@@ -7,13 +7,11 @@ See LICENSE.md file in the project root for full license information.
 """
 
 import scipy.io as spio
-from auv_nav.sensors import (
-    Altitude,
-    BodyVelocity,
-    Category,
-    Depth,
-    Orientation,
-)
+
+# fmt: off
+from auv_nav.sensors import Altitude, BodyVelocity, Category, Depth, Orientation
+
+# fmt: on
 from oplab import Console, get_raw_folder
 
 

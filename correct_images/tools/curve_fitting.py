@@ -6,10 +6,10 @@ Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
 
+import matplotlib.pyplot as plt
 import numpy as np
 from numba import njit
 from scipy import optimize
-import matplotlib.pyplot as plt
 
 
 @njit

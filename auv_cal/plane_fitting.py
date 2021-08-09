@@ -6,9 +6,10 @@ Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
 
+from math import atan2, pi
+
 import matplotlib.pyplot as plt
 import numpy as np
-from math import atan2, pi
 from numpy.linalg import norm
 from scipy.optimize import least_squares
 

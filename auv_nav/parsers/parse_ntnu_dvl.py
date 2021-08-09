@@ -6,9 +6,10 @@ Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
 
-from auv_nav.sensors import Category, BodyVelocity, Altitude
-from oplab import Console, get_raw_folder
 import pandas as pd
+
+from auv_nav.sensors import Altitude, BodyVelocity, Category
+from oplab import Console, get_raw_folder
 
 header_list = [
     "time",
@@ -90,9 +91,7 @@ def parse_ntnu_dvl(mission, vehicle, category, output_format, outpath):
     velocity_std_offset = mission.velocity.std_offset
     heading_offset = vehicle.dvl.yaw
     body_velocity = BodyVelocity(
-        velocity_std_factor,
-        velocity_std_offset,
-        heading_offset,
+        velocity_std_factor, velocity_std_offset, heading_offset,
     )
     altitude = Altitude(altitude_std_factor=mission.altitude.std_factor)
 

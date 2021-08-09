@@ -6,13 +6,13 @@ Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
 
-import unittest
 import math
-import numpy as np
+import unittest
 from unittest.mock import patch
-from auv_cal.cone_fitting import CircularCone
-from auv_cal.cone_fitting import rotation_matrix
-from auv_cal.cone_fitting import build_matrix
+
+import numpy as np
+
+from auv_cal.cone_fitting import CircularCone, build_matrix, rotation_matrix
 
 cone_points = np.array(
     [

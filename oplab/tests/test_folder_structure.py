@@ -1,8 +1,7 @@
 import unittest
 from pathlib import Path
-from oplab import get_processed_folders
-from oplab import get_raw_folders
-from oplab import check_dirs_exist
+
+from oplab import check_dirs_exist, get_processed_folders, get_raw_folders
 
 
 class TestFolderStructure(unittest.TestCase):

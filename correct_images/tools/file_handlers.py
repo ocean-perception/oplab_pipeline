@@ -6,15 +6,17 @@ Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
 
+import uuid
+from pathlib import Path
+
+import imageio
+import joblib
 import numpy as np
 import pandas as pd
-from pathlib import Path
-from oplab import Console
-import uuid
 from tqdm import tqdm
+
 from correct_images.tools.joblib_tqdm import tqdm_joblib
-import joblib
-import imageio
+from oplab import Console
 
 
 # functions used to create a trimmed auv_ekf_<camera_name>.csv file based on

@@ -12,12 +12,13 @@ import time
 
 import plotly.graph_objs as go
 import plotly.offline as py
+from prettytable import ALL, PrettyTable
+
 from auv_nav.tools.time_conversions import (
     epoch_to_localtime,
     epoch_to_utctime,
     get_localtimezone,
 )
-from prettytable import ALL, PrettyTable
 
 """
 This looks at nav_standard.json file stored in the format of
@@ -362,11 +363,9 @@ def plot_parse_data(filepath, ftype="oplab"):
                 rangeslider=dict(thickness=0.05),
                 type="date",
             ),
-            yaxis=dict(
-                title="Category-Frame",
-            ),
+            yaxis=dict(title="Category-Frame",),
             dragmode="pan",
-            margin=go.layout.Margin(l=150), # noqa
+            margin=go.layout.Margin(l=150),  # noqa
         )
         config = {"scrollZoom": True}
         fig = go.Figure(data=list(reversed(trace_list)), layout=layout)

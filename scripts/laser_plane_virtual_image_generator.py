@@ -12,10 +12,11 @@ from pathlib import Path
 import cv2
 import numpy as np
 import yaml
-from oplab import StereoCamera
 
 # RANSAC
 from ransac import plane_fitting_ransac
+
+from oplab import StereoCamera
 
 
 def projectPoint(sc, point3d):

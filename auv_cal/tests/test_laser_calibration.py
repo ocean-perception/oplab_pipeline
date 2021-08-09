@@ -7,10 +7,10 @@ See LICENSE.md file in the project root for full license information.
 """
 
 import unittest
+
 import numpy as np
-from auv_cal.laser_calibrator import build_plane
-from auv_cal.laser_calibrator import opencv_to_ned
-from auv_cal.laser_calibrator import get_angles
+
+from auv_cal.laser_calibrator import build_plane, get_angles, opencv_to_ned
 from auv_cal.ransac import fit_plane
 
 

@@ -7,6 +7,7 @@ See LICENSE.md file in the project root for full license information.
 """
 
 import random
+
 import numpy as np
 
 from oplab import Console

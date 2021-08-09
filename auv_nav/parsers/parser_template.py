@@ -6,8 +6,8 @@ Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
 
-from oplab import Console
 from auv_nav.sensors import Category, Orientation
+from oplab import Console
 
 
 def parse_template(mission, vehicle, category, output_format, outpath):

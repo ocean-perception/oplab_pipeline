@@ -10,9 +10,7 @@ import imageio
 import numpy as np
 
 
-def loader(
-    image_filepath, image_width=None, image_height=None, src_bit=8
-):
+def loader(image_filepath, image_width=None, image_height=None, src_bit=8):
     """Default image loader using imageio
 
     Parameters

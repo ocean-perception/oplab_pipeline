@@ -65,9 +65,7 @@ def load_xviii_bayer_from_binary(binary_data, image_height, image_width):
     return bayer_img
 
 
-def loader(
-    raw_filename, image_width=1280, image_height=1024, src_bit=18
-):
+def loader(raw_filename, image_width=1280, image_height=1024, src_bit=18):
     """XVIII image loader
 
     Parameters
@@ -89,5 +87,5 @@ def loader(
         binary_data[:], image_height, image_width
     )
     # Scale down from 18 bits to unitary to process with OpenCV debayer
-    bayer_img *= 2 ** (- src_bit)
+    bayer_img *= 2 ** (-src_bit)
     return bayer_img
