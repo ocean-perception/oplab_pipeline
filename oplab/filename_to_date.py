@@ -13,7 +13,8 @@ from pathlib import Path
 
 import pandas as pd
 
-from oplab import Console, get_raw_folder
+from .console import Console
+from .folder_structure import get_raw_folder
 
 
 def resolve(filename, folder):

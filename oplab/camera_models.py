@@ -11,7 +11,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from oplab.console import Console  # noqa
+from .console import Console  # noqa
 
 
 class MonoCamera:

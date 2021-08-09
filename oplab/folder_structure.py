@@ -9,7 +9,7 @@ See LICENSE.md file in the project root for full license information.
 import shutil
 from pathlib import Path
 
-from oplab.console import Console
+from .console import Console
 
 
 def check_exists(p):

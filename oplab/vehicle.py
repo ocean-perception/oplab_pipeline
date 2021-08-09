@@ -11,7 +11,7 @@ from collections import OrderedDict
 
 import yaml
 
-from oplab.console import Console
+from .console import Console
 
 
 def represent_ordereddict(dumper, data):

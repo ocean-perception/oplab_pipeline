@@ -11,7 +11,9 @@ from pathlib import Path
 import imageio
 import yaml
 
-from oplab import Console, FilenameToDate, get_raw_folder
+from .console import Console
+from .filename_to_date import FilenameToDate
+from .folder_structure import get_raw_folder
 
 
 class CameraEntry:
