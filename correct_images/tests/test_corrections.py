@@ -23,7 +23,12 @@ class testCorrections(unittest.TestCase):
         with test_yaml_path.open("r") as stream:
             params = yaml.safe_load(stream)
 
-        self.image_bayer = np.array(params["Test_images"]["bayer"]["image_1"])
+        self.image_bayer = (
+            np.array(params["Test_images"]["bayer"]["image_1"]).astype(
+                np.float32
+            )
+            / 255.0
+        )
         self.bayer_pattern_choices = np.array(
             params["Test_images"]["bayer"]["pattern"]
         )
@@ -33,23 +38,41 @@ class testCorrections(unittest.TestCase):
         self.distance_matrices = []
 
         self.bw_images.append(
-            np.array(params["Test_images"]["Black_White"]["image_1"])
+            np.array(params["Test_images"]["Black_White"]["image_1"]).astype(
+                np.float32
+            )
+            / 255.0
         )
         self.bw_images.append(
-            np.array(params["Test_images"]["Black_White"]["image_2"])
+            np.array(params["Test_images"]["Black_White"]["image_2"]).astype(
+                np.float32
+            )
+            / 255.0
         )
         self.bw_images.append(
-            np.array(params["Test_images"]["Black_White"]["image_3"])
+            np.array(params["Test_images"]["Black_White"]["image_3"]).astype(
+                np.float32
+            )
+            / 255.0
         )
 
         self.rgb_images.append(
-            np.array(params["Test_images"]["RGB"]["image_1"])
+            np.array(params["Test_images"]["RGB"]["image_1"]).astype(
+                np.float32
+            )
+            / 255.0
         )
         self.rgb_images.append(
-            np.array(params["Test_images"]["RGB"]["image_2"])
+            np.array(params["Test_images"]["RGB"]["image_2"]).astype(
+                np.float32
+            )
+            / 255.0
         )
         self.rgb_images.append(
-            np.array(params["Test_images"]["RGB"]["image_3"])
+            np.array(params["Test_images"]["RGB"]["image_3"]).astype(
+                np.float32
+            )
+            / 255.0
         )
 
         self.distance_matrices.append(
@@ -114,25 +137,43 @@ class testCorrections(unittest.TestCase):
             image_rgb = corrections.debayer(self.image_bayer, bayer_pattern)
 
             if bayer_pattern == "grbg":
-                self.assertEqual(
-                    image_rgb[1, 1, 0], 75, "Red channel value is incorrect"
+                self.assertAlmostEqual(
+                    image_rgb[1, 1, 0],
+                    75 / 255.0,
+                    2,
+                    "Red channel value is incorrect",
                 )
-                self.assertEqual(
-                    image_rgb[1, 1, 1], 60, "Green channel value is incorrect"
+                self.assertAlmostEqual(
+                    image_rgb[1, 1, 1],
+                    60 / 255.0,
+                    2,
+                    "Green channel value is incorrect",
                 )
-                self.assertEqual(
-                    image_rgb[1, 1, 2], 120, "Blue channel value is incorrect"
+                self.assertAlmostEqual(
+                    image_rgb[1, 1, 2],
+                    120 / 255.0,
+                    2,
+                    "Blue channel value is incorrect",
                 )
 
             elif bayer_pattern == "rggb":
-                self.assertEqual(
-                    image_rgb[1, 1, 0], 150, "Red channel value is incorrect"
+                self.assertAlmostEqual(
+                    image_rgb[1, 1, 0],
+                    150 / 255.0,
+                    2,
+                    "Red channel value is incorrect",
                 )
-                self.assertEqual(
-                    image_rgb[1, 1, 1], 120, "Green channel value is incorrect"
+                self.assertAlmostEqual(
+                    image_rgb[1, 1, 1],
+                    120 / 255.0,
+                    2,
+                    "Green channel value is incorrect",
                 )
-                self.assertEqual(
-                    image_rgb[1, 1, 2], 60, "Blue channel value is incorrect"
+                self.assertAlmostEqual(
+                    image_rgb[1, 1, 2],
+                    60 / 255.0,
+                    2,
+                    "Blue channel value is incorrect",
                 )
 
     def test_gamma(self):

@@ -1,14 +1,13 @@
 # correct_images
 
-## correct_images has 4 commands: ##
+`correct_images` has 3 commands:
 - `parse`, which reads raw image files of filetypes `tif` and `raw` for Tuna Sand and Ae2000 dives respectively. Parse generates colour attenuation coefficients in the form of numpy arrays inside the parameters folder within the processed folder structure. the `parameters` folders are named after the corresponding camera systems to which the raw image files belong. Example `params_LC` for Tuna Sand dataset.
 - `process`, which generates corrected images using the attenuation parameters from parse. corrected images are saved inside `develop` folders named after the corresponding camera systems to which the raw image files belong.
-- `debayer`, which converts `raw` and `tif` bayer images to debayered `png` files using a particular bayer filter pattern.
 - `correct`, which runs parse followed by process in one go. This can be used for small datasets which are being processed for the first time.
 - `rescale`, which generates rescaled image for a target image scale with or without maintaining total number of pixels in original image
 
 ### correct_images `parse` usage: ###
-```
+```sh
 correct_images parse [-h] [-F] path
 
 positional arguments:
@@ -26,7 +25,7 @@ For parse the code looks for a configuration file `correct_images.yaml` inside t
 
 A. Example configuration for `colour_correction` : 
 
-```
+```yaml
 # Yaml 1.0
 version: 1
 
@@ -62,7 +61,7 @@ Configuration fields to generate `colour_correction` parameters :
 
 B. Example configuration for `manual_balance` :
 
-```
+```yaml
 # Yaml 1.0
 version: 1
 
@@ -82,7 +81,7 @@ Configuration fields to perform `manual_balance` :
 
 C. Example configuration for `parse` for setting up cameras :
 
-```
+```yaml
 cameras : 
   - camera_name : 'LC'
     image_file_list : 
@@ -97,7 +96,7 @@ Configuration fields :
 
 
 ### `correct_images process` usage: ###
-```
+```sh
 correct_images process [-h] [-F] path
 
 positional arguments:
@@ -120,8 +119,8 @@ The `process` workflow is illustrated below.
 
 A. Example configuration for `colour_correction` based processing :
 
-```
-cameras : 
+```yaml
+cameras :
   - camera_name : 'LC' #in line with vehicle.yaml
     ...
     colour_correction :
@@ -136,10 +135,9 @@ Configuration fields :
 
 B. Example configuration for `distortion correction` based processing:
 
-```
+```yaml
 output_settings :
   undistort : False
-
 ```
 Configuration fields :
 
@@ -147,10 +145,10 @@ Configuration fields :
 
 C. Example configuration for `process` for setting up cameras :
 
-```
-cameras : 
+```yaml
+cameras :
   - camera_name : 'LC'
-    image_file_list : 
+    image_file_list :
       ...
       process : 'none'
 ```
@@ -163,7 +161,7 @@ Configuration fields :
                              Note : this list may be the same as that was used for `parse` or it can be different.
 
 ### `correct_images correct` usage: ###
-```
+```sh
 correct_images correct [-h] path
 
 positional arguments:
@@ -176,7 +174,7 @@ optional arguments:
 Note : `correct` function may be used in case a small data set needs to be processed for the first time. `correct` function runs `parse` and `process` stages in one go. Hence all default settings will be assumed.
 
 ### `correct_images rescale` usage : ###
-```
+```sh
 correct_images rescale [-h] path
 
 positional arguments:
@@ -190,11 +188,11 @@ optional arguments:
 
 A. Example configuration for `rescale` :
 
-```
+```yaml
 rescale :
   - camera_name : 'LC'
     path : # path to images relative to processed folder
-    distance_path : # 
+    distance_path : #
     interpolate_method : 'bicubic' # bicubic, nearest_neighbour, bilinear, lanczos
     target_pixel_size : 1 # in centimeter
     maintain_pixels : 'Y'
@@ -212,32 +210,32 @@ Configuration fields :
 - `output_folder` : folder for saving the rescaled images. output folder will be created relative to the processed chain.
 
 Example of rescaled images :
-```
-Downscaled image with target pixel size of 1 cm from original pixel size of 1 mm. 
+
+Downscaled image with target pixel size of 1 cm from original pixel size of 1 mm.
 Original number of pixels are maintained. Hence, the image appears blurred.
-```
+
 ![](https://github.com/ocean-perception/oplab_pipeline/blob/develop/docs/images/PR_20180811_163514_163_LC16_down_maintain_yes.png)
-```
-Upscaled image with target pixel size of 0.3 mm from original pixel size of 1 mm. 
+
+Upscaled image with target pixel size of 0.3 mm from original pixel size of 1 mm.
 Original number of pixels are maintained. Hence, the image appears cropped from center.
-```
+
 ![](https://github.com/ocean-perception/oplab_pipeline/blob/develop/docs/images/PR_20180811_163514_163_LC16_up_maintain_yes.png)
 
 ## Output folder structures ##
-```
+
 Folder structure for parse output :
 `../processed/year/cruise/platform/dive/image/camera/attenuation_correction/params_$camera_name$/<parse_subfolder>` where `parse_subfolder` names can be : `altitude_corrected`, `depthmap_corrected`, `greyworld_corrected`
 
 Folder structure for process output : 
 `../processed/year/cruise/platform/dive/image/camera/attenuation_correction/developed_$camera_name$/<parse_subfolder>/<process_subfolder>` where `process_subfolder` names are : `m*_std*` corresponding to the `brightness` and `contrast` values provided in `correct_images.yaml`
-```
+
 
 ## Example of required `correct_images.yaml` File ##
 
 the correct_images.yaml file should be placed in the following path
 `../configuration/year/cruise/platform/dive/correct_images.yaml`
 
-```
+```yaml
 # Yaml 1.0
 version: 1
 

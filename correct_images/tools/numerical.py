@@ -133,13 +133,9 @@ def mean_std_array(data: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     n = data.shape[0]
     a = data.shape[1]
     b = 1
-    print("Mean std array shape:", data.shape)
-    """
-    if len(data.shape) > 1:
-        a = data.shape[1]
+
     if len(data.shape) > 2:
         b = data.shape[2]
-    """
 
     mean_array = np.zeros((a, b), dtype=np.float32)
     std_array = np.zeros((a, b), dtype=np.float32)
@@ -152,8 +148,8 @@ def mean_std_array(data: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
             mean_sq = 0.0
             for k in range(n):
                 count = k + 1
-                # new_value = data[k, i, j]
-                new_value = data[k, i]
+                new_value = data[k, i, j]
+                # new_value = data[k, i]
                 delta = new_value - mean
                 mean += delta / count
                 delta2 = new_value - mean
