@@ -24,3 +24,4 @@ setuptools~=42.0.2
 numba~=0.51.2
 geographiclib>=1.50
 psutil>=5.5.1
+pre-commit>=2.14.0
