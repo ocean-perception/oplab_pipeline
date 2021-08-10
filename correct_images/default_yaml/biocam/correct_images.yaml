@@ -1,7 +1,7 @@
 # Yaml 1.0
 version: 1
 
-method: 'colour_correction'
+method: 'colour_correction' # ['manual_balance', 'colour_correction']
 
 colour_correction :
   distance_metric : 'altitude' # ['none', 'altitude', 'depth_map'] assumes constant altitude, flat seafloor, 3d structure respectively. depth_map requires **** to have been run
@@ -33,8 +33,8 @@ cameras :
       brightness : 30 # % target across dataset
       contrast : 3 # % target accross dataset  
     manual_balance:
-      subtractors_rgb: [0, 0, 0] # -c values (zero capped)
-      colour_gain_matrix_rgb: [[1, 0, 0], [0, 1, 0], [0, 0, 1]] # diagonal terms corresponding to r gain, g gain, b gain
+      subtractors_rgb: [0] # monochrome camera -> single value (but still needs to be stored as list)
+      colour_gain_matrix_rgb: [[1]] # monochrome camera -> single value (but still needs to be stored as list of list)
     
 output_settings :
   undistort : False
@@ -48,3 +48,4 @@ rescale :
     target_pixel_size : 0.01 # in meters
     maintain_pixels : True
     output_folder : # output path relative to processed images
+
