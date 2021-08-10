@@ -1,0 +1,33 @@
+camera_system: biocam4000_15c
+cameras:
+  - name: cam61008031
+    type: grayscale
+    bit_depth: 16
+    path: image/cam61008031_strobe
+    extension: tif
+    filename_to_date: YYYYMMDDxhhmmssxfffuuuxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxx
+  - name: cam61008031
+    type: grayscale
+    bit_depth: 16
+    path: image/cam61008031_laser
+    extension: tif
+    filename_to_date: YYYYMMDDxhhmmssxfffuuuxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxx
+  - name: cam61008031
+    type: grayscale
+    bit_depth: 16
+    path: image/cam61008031_laser
+    extension: jpg
+    filename_to_date: YYYYMMDDxhhmmssxfffuuuxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxx
+  - name: cam61008269
+    type: rggb
+    bit_depth: 16
+    path: image/cam61008269_strobe
+    extension: tif
+    filename_to_date: YYYYMMDDxhhmmssxfffuuuxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxx
+  - name: cam61008269
+    type: rggb
+    bit_depth: 16
+    path: image/cam61008269_laser
+    extension: tif
+    filename_to_date: YYYYMMDDxhhmmssxfffuuuxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxx
+    
