@@ -631,7 +631,7 @@ class Calibrator:
             self.stereo()
 
         non_laser_cam_name = c0["name"]
-        non_laser_cam_filepath = get_processed_folder(self.filepath) / str(
+        non_laser_cam_filepath = get_raw_folder(self.filepath) / str(
             c0["laser_calibration"]["path"]
         )
         non_laser_cam_extension = str(c0["laser_calibration"]["glob_pattern"])
@@ -646,17 +646,19 @@ class Calibrator:
             )
             if not non_laser_cam_filepath.exists():
                 Console.quit(
-                    "Could not find stereo image folders ("
-                    + str(c0["laser_calibration"]["path"])
-                    + ") neither in processed nor in raw folder."
+                    "Could not find stereo image folder, neither in raw nor "
+                    + "in processed folder ("
+                    + str(non_laser_cam_filepath)
+                    + ")."
                 )
         if not laser_cam_filepath.exists():
-            laser_cam_filepath = get_raw_folder(laser_cam_filepath)
+            laser_cam_filepath = get_processed_folder(laser_cam_filepath)
             if not laser_cam_filepath.exists():
                 Console.quit(
-                    "Could not find stereo image folders ("
-                    + str(c1["laser_calibration"]["path"])
-                    + ") neither in processed nor in raw folder."
+                    "Could not find stereo image folder, neither in raw nor "
+                    + "in processed folder ("
+                    + str(laser_cam_filepath)
+                    + ")."
                 )
         non_laser_cam_filepath = non_laser_cam_filepath.resolve()
         laser_cam_filepath = laser_cam_filepath.resolve()
