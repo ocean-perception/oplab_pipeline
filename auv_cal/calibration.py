@@ -256,6 +256,7 @@ def calibrate_laser(
         lc.cal(
             laser_cam_image_list[skip_first:],
             non_laser_cam_image_list[skip_first:],
+            output_file.parent
         )
         Console.info("Writing calibration to " "'{}'" "".format(output_file))
         with output_file.open("w") as f:

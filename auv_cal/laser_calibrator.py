@@ -776,13 +776,15 @@ class LaserCalibrator:
             i += 1
         return cloud, count, count_inversed
 
-    def fit_and_save(self, cloud):
+    def fit_and_save(self, cloud, processed_folder):
         """Fit mean plane and uncertainty bounding planes to point cloud
 
         Parameters
         ----------
         cloud : ndarray of shape (nx3)
             Point cloud
+        processed_folder : Path
+            Path of the processed folder where outputs are written
 
         Returns
         -------
@@ -805,8 +807,8 @@ class LaserCalibrator:
         plot_pointcloud_and_planes(
             [np.array(cloud), np.array(self.inliers_cloud_list)],
             [np.array(mean_plane)],
-            filename,
-        )  # 'pointclouds_and_best_model.html')
+            str(processed_folder / filename)
+        )
 
         scale = 1.0 / mean_plane[0]
         mean_plane = np.array(mean_plane) * scale
@@ -950,7 +952,7 @@ class LaserCalibrator:
         plot_pointcloud_and_planes(
             self.triples + [np.array(cloud), inliers_cloud],
             self.uncertainty_planes,
-            filename,
+            str(processed_folder / filename)
         )
         # uncomment to save for debugging
         # np.save('inliers_cloud.npy', inliers_cloud)
@@ -969,7 +971,7 @@ class LaserCalibrator:
         plot_pointcloud_and_planes(
             self.triples + [np.array(cloud), inliers_cloud],
             self.uncertainty_planes,
-            filename,
+            str(processed_folder / filename)
         )
 
         yaml_msg = (
@@ -1089,7 +1091,7 @@ class LaserCalibrator:
             )
             return False
 
-    def cal(self, limages, rimages):
+    def cal(self, limages, rimages, processed_folder):
         """Main function that is called by the code using the LaserCalibrator
             class to trigger the computation of laser plane parameters
 
@@ -1099,6 +1101,8 @@ class LaserCalibrator:
             Paths of images from the first camera
         rimages : list of Path
             Paths of images from the second camera
+        processed_folder : Path
+            Path of the processed folder where outputs are written
 
         Returns
         -------
@@ -1149,11 +1153,8 @@ class LaserCalibrator:
                     limages_sync.append(limages[i])
                     rimages_sync.append(rimages[sync_pair])
 
-        processed_folder = get_processed_folder(limages[0].parent)
-
         limages_rs = []
         rimages_rs = []
-
         rs_size = 500
         if len(limages) > rs_size:
             f = lambda m, n: [  # noqa
@@ -1284,13 +1285,13 @@ class LaserCalibrator:
             )
 
         save_cloud(
-            processed_folder / ("../points_" + self.camera_name + ".ply"),
+            processed_folder / ("points_" + self.camera_name + ".ply"),
             point_cloud_ned,
         )
         if self.two_lasers:
             save_cloud(
                 processed_folder
-                / ("../points_b_" + self.camera_name + ".ply"),
+                / ("points_b_" + self.camera_name + ".ply"),
                 point_cloud_ned_b,
             )
 
@@ -1304,7 +1305,7 @@ class LaserCalibrator:
         rs_size = min(rss_after, self.max_point_cloud_size)
         point_cloud_rs = random.sample(point_cloud_filt, rs_size)
         save_cloud(
-            processed_folder / ("../points_rs_" + self.camera_name + ".ply"),
+            processed_folder / ("points_rs_" + self.camera_name + ".ply"),
             point_cloud_rs,
         )
         point_cloud_rs = np.array(point_cloud_rs)
@@ -1312,7 +1313,7 @@ class LaserCalibrator:
         point_cloud_filt = np.array(point_cloud_filt)
         point_cloud_filt = point_cloud_filt.reshape(-1, 3)
         # self.yaml_msg = self.fit_and_save(point_cloud_rs)
-        self.yaml_msg = self.fit_and_save(point_cloud_filt)
+        self.yaml_msg = self.fit_and_save(point_cloud_filt, processed_folder)
 
         if self.two_lasers:
             Console.info("Fitting a plane to second line...")
@@ -1330,7 +1331,7 @@ class LaserCalibrator:
             point_cloud_b_rs = random.sample(point_cloud_b_filt, rs_size)
             save_cloud(
                 processed_folder
-                / ("../points_b_rs_" + self.camera_name + ".ply"),
+                / ("points_b_rs_" + self.camera_name + ".ply"),
                 point_cloud_b_rs,
             )
             point_cloud_b_rs = np.array(point_cloud_b_rs)
@@ -1338,7 +1339,7 @@ class LaserCalibrator:
             point_cloud_b_filt = np.array(point_cloud_b_filt)
             point_cloud_b_filt = point_cloud_b_filt.reshape(-1, 3)
             # self.yaml_msg_b = self.fit_and_save(point_cloud_b_rs)
-            self.yaml_msg_b = self.fit_and_save(point_cloud_b_filt)
+            self.yaml_msg_b = self.fit_and_save(point_cloud_b_filt, processed_folder)
 
     def yaml(self):
         return self.yaml_msg
