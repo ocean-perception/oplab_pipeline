@@ -982,15 +982,13 @@ class LaserCalibrator:
             + str(mean_plane)
             + "\n"
         )
-        for i, up in enumerate(self.uncertainty_planes):
-            yaml_msg = (
-                yaml_msg
-                + "uncertainty_plane_"
-                + str(i).zfill(2)
-                + ": "
-                + str(up.tolist())
-                + "\n"
-            )
+
+        if (len(self.uncertainty_planes) > 0):
+            uncertainty_planes_str = "uncertainty_planes:\n"
+            for i, up in enumerate(self.uncertainty_planes):
+                uncertainty_planes_str += "  - " + str(up.tolist()) + "\n"
+            yaml_msg += uncertainty_planes_str
+
         yaml_msg += (
             'date: "'
             + Console.get_date()
