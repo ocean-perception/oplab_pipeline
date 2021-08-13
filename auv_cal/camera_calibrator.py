@@ -603,6 +603,14 @@ class MonoCalibrator(Calibrator):
 
         def get_image_corners(i):
             gray = cv2.imread(str(i))
+            
+            if gray is None:
+                print(
+                    str(i.name)
+                    + " could not be loaded. File might not be an image or "
+                    + "file might be corrupted. Skipping file."
+                )
+                return
 
             if self.resize:
                 gray = resize_with_padding(gray, self.size)
