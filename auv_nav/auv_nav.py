@@ -11,8 +11,7 @@ import os
 import sys
 import time
 
-from auv_nav.export import export
-from auv_nav.import_data import import_data
+from auv_nav.convert import acfr_to_oplab, hybis_to_oplab, oplab_to_acfr
 from auv_nav.parse import parse
 from auv_nav.process import process
 from oplab import Console, get_processed_folder
@@ -38,10 +37,10 @@ def main(args=None):
     Console.info("Running auv_nav version " + str(Console.get_version()))
 
     parser = argparse.ArgumentParser()
-    subparsers = parser.add_subparsers()
+    subparsers = parser.add_subparsers(dest="which",)
 
     """
-    Subparsers for the 3 targets 'parse', 'visualise' and 'process'
+    Subparsers for the 3 targets 'parse', 'convert' and 'process'
     double-dash arguments (optionally completed with a single-dash, single
     letter abbreviation) are optional. Arguments without the double-dash prefix
     are positional arguments and therefore required
@@ -76,19 +75,6 @@ def main(args=None):
         than one dive PATH.",
     )
     subparser_parse.set_defaults(func=call_parse_data)
-
-    #   subparser_visualise = subparsers.add_parser(
-    #       'visualise', help="Visualise data. Data needs to be saved in the \
-    #       intermediate data format generated using auv_nav.py parse. Type \
-    #       auv_nav visualise -h for help on this target.")
-    #   subparser_visualise.add_argument(
-    #       'path', help="Path of folder where the data to visualise is. The \
-    #       folder has to be generated using auv_nav parse.")
-    #   subparser_visualise.add_argument(
-    #       '-f', '--format', dest='format', default="oplab", help="Format in \
-    #       which the data to be visualised is stored. 'oplab' or 'acfr'. \
-    #       Default: 'oplab'.")
-    #   subparser_visualise.set_defaults(func=call_visualise_data)
 
     subparser_process = subparsers.add_parser(
         "process",
@@ -130,86 +116,127 @@ def main(args=None):
     )
     subparser_process.set_defaults(func=call_process_data)
 
-    subparser_export = subparsers.add_parser(
-        "export",
-        help="exports data from oplab nav_standard.json into your \
-        specified output format, or from ACFR to oplab. \
-        Type auv_nav export -h for help on this \
-        target.",
+    subparser_convert = subparsers.add_parser(
+        "convert", help="Converts data.",
     )
-    subparser_export.add_argument(
-        "path", default=".", help="Dive folder to export.",
-    )
-    subparser_export.add_argument(
-        "-i",
-        "--input",
-        dest="input",
-        help="Input pose file (e.g. stereo_pose_est.data) to import camera \
-        positions from.",
-    )
-    subparser_export.add_argument(
-        "-f",
-        "--format",
-        dest="format",
-        default="acfr",
-        help="Format in which \
-        the data is output. Default: 'acfr'.",
-    )
-    subparser_export.add_argument(
-        "-s",
-        "--start",
-        dest="start_datetime",
-        default="",
-        help="Start date & \
-        time in YYYYMMDDhhmmss from which data will be exported. If not set, \
-        start at beginning of dataset.",
-    )
-    subparser_export.add_argument(
-        "-e",
-        "--end",
-        dest="end_datetime",
-        default="",
-        help="End date & time \
-        in YYYYMMDDhhmmss up to which data will be exported. If not set \
-        process to end of dataset.",
-    )
+    subparser_convert.set_defaults(func=show_help)
 
-    subparser_export.set_defaults(func=call_export_data)
+    # CONVERT subparsers
+    subsubparsers = subparser_convert.add_subparsers(dest="which")
 
-    subparser_import = subparsers.add_parser(
-        "import",
-        help="Imports data to oplab format. \
-        Type auv_nav export -h for help on this \
-        target.",
+    # ACFR to OPLAB CSV
+    subparser_oplab_to_acfr = subsubparsers.add_parser(
+        "oplab_to_acfr",
+        help="Converts an already processed dive to ACFR format",
     )
-    subparser_import.add_argument(
-        "path", default=".", help="Dive folder to import.",
+    subparser_oplab_to_acfr.add_argument(
+        "-d", "--dive-folder", dest="dive_folder", help="Input dive path.",
     )
-    subparser_import.add_argument(
-        "-f",
-        "--format",
-        dest="format",
-        default="acfr",
-        help="Input format. Example: 'hybis'.",
+    subparser_oplab_to_acfr.add_argument(
+        "-o",
+        "--output-folder",
+        dest="output_folder",
+        help="Path where results will be written.",
     )
-    subparser_import.add_argument(
+    subparser_oplab_to_acfr.add_argument(
         "-F",
         "--Force",
         dest="force",
         action="store_true",
-        help="Force file \
-        overwite",
+        help="Force file overwite",
     )
+    subparser_oplab_to_acfr.set_defaults(func=oplab_to_acfr)
 
-    subparser_import.set_defaults(func=call_import_data)
+    # OPLAB to ACFR
+    subparser_acfr_to_oplab = subsubparsers.add_parser(
+        "acfr_to_oplab",
+        help="Converts a VehiclePosEst.data and/or a StereoPosEst.data to OPLAB csv format",
+    )
+    subparser_acfr_to_oplab.add_argument(
+        "--vehicle-pose",
+        dest="vehicle_pose",
+        help="vehicle_pose_est.data filepath.",
+    )
+    subparser_acfr_to_oplab.add_argument(
+        "--stereo-pose",
+        dest="stereo_pose",
+        help="stereo_pose_est.data filepath.",
+    )
+    subparser_acfr_to_oplab.add_argument(
+        "-o",
+        "--output-folder",
+        dest="output_folder",
+        help="Path where results will be written.",
+    )
+    subparser_acfr_to_oplab.add_argument(
+        "-d",
+        "--dive-folder",
+        dest="dive_folder",
+        help=(
+            "Optional path of an existing processed dive to interpolate laser",
+            "timestamps to ACFR navigation.",
+        ),
+    )
+    subparser_acfr_to_oplab.add_argument(
+        "-F",
+        "--Force",
+        dest="force",
+        action="store_true",
+        help="Force file overwite",
+    )
+    subparser_acfr_to_oplab.set_defaults(func=acfr_to_oplab)
+
+    # HYBIS to OPLAB CSV
+    subparser_hybis_to_oplab = subsubparsers.add_parser(
+        "hybis_to_oplab",
+        help="Converts an already processed dive to ACFR format",
+    )
+    subparser_hybis_to_oplab.add_argument(
+        "-i",
+        "--navigation-file",
+        dest="navigation_file",
+        help="Input navigation file.",
+    )
+    subparser_hybis_to_oplab.add_argument(
+        "-d", "--image-path", dest="image_path", help="Input image path.",
+    )
+    subparser_hybis_to_oplab.add_argument(
+        "-o",
+        "--output-folder",
+        dest="output_folder",
+        help="Path where results will be written.",
+    )
+    subparser_hybis_to_oplab.add_argument(
+        "--reference-lat",
+        dest="reference_lat",
+        help="Reference latitude for northing/easting.",
+    )
+    subparser_hybis_to_oplab.add_argument(
+        "--reference-lon",
+        dest="reference_lon",
+        help="Reference longitude for northing/easting.",
+    )
+    subparser_hybis_to_oplab.add_argument(
+        "-F",
+        "--Force",
+        dest="force",
+        action="store_true",
+        help="Force file overwite",
+    )
+    subparser_hybis_to_oplab.set_defaults(func=hybis_to_oplab)
 
     if len(sys.argv) == 1 and args is None:
         # Show help if no args provided
+        print("KKKKK")
         parser.print_help(sys.stderr)
         sys.exit(1)
 
-    args = parser.parse_args(args)
+    args = parser.parse_args()
     args.func(args)
+
+
+def show_help(args):
+    Console.info("Run with -h or --help to show the usage and help")
 
 
 def call_parse_data(args):
@@ -226,28 +253,6 @@ def call_process_data(args):
         / ("log/" + str(time.time()) + "_auv_nav_process.log")
     )
     process(args.path, args.force, args.start_datetime, args.end_datetime)
-
-
-def call_export_data(args):
-    Console.set_logging_file(
-        get_processed_folder(args.path)
-        / ("log/" + str(time.time()) + "_auv_nav_export.log")
-    )
-    export(
-        args.path,
-        args.input,
-        args.format,
-        args.start_datetime,
-        args.end_datetime,
-    )
-
-
-def call_import_data(args):
-    Console.set_logging_file(
-        get_processed_folder(args.path)
-        / ("log/" + str(time.time()) + "_auv_nav_import.log")
-    )
-    import_data(args.path, args.format, args.force)
 
 
 if __name__ == "__main__":

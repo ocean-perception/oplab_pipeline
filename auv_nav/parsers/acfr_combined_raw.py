@@ -19,7 +19,7 @@ from auv_nav.sensors import (
 from oplab import Console, get_processed_folder
 
 
-class AcfrExporter:
+class AcfrCombinedRawWriter:
     """
     This output format has four main sensor types:
     * RDI: mixed body velocity, orientation and altitude measurement

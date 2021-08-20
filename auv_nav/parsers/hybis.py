@@ -19,6 +19,8 @@ from oplab import Console, get_raw_folder
 
 
 class HyBisPos:
+    """ Class to parse and store HyBis position data. """
+
     def __init__(
         self,
         roll,
@@ -73,36 +75,15 @@ class HyBisPos:
         return epoch_time
 
 
-class HybisImporter:
-    def __init__(self, mission, filepath):
+class HybisParser:
+    """ Class to parse and write HyBis position data. """
 
-        if mission.dead_reckoning.empty():
-            Console.error(
-                "Hybis converter expects dead_reckoning in mission.yaml"
-            )
-            Console.quit("Invalid mission.yaml")
-
-        if mission.dead_reckoning.format != "hybis":
-            Console.error(
-                "Hybis converter expects dead_reckoning format to be: hybis"
-            )
-            Console.quit("Invalid mission.yaml")
-
-        if mission.image.format != "hybis":
-            Console.error(
-                "Hybis converter expects images format to be of type: hybis"
-            )
-            Console.quit("Invalid mission.yaml")
-
-        navigation_file = (
-            Path(mission.dead_reckoning.filepath)
-            / mission.dead_reckoning.filename
-        )
+    def __init__(
+        self, navigation_file, image_path, reference_lat, reference_lon
+    ):
         navigation_file = get_raw_folder(navigation_file)
-        image_path = Path(mission.image.cameras[0].path)
+        image_path = Path(image_path)
         image_path = get_raw_folder(image_path)
-        reference_lat = mission.origin.latitude
-        reference_lon = mission.origin.longitude
 
         # extract data from files
         df = pd.read_csv(navigation_file, skipinitialspace=True)
@@ -185,7 +166,7 @@ class HybisImporter:
             modification_time = os.stat(
                 str(image_path) + "/" + filename
             ).st_mtime
-            filename = mission.image.cameras[0].path + "/" + filename
+            filename = str(image_path) + "/" + filename
 
             i = 0
             while (

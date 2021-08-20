@@ -47,14 +47,7 @@ from auv_nav.sensors import (
     Usbl,
 )
 from auv_nav.tools.body_to_inertial import body_to_inertial
-from auv_nav.tools.csv_tools import (
-    camera_csv,
-    other_data_csv,
-    spp_csv,
-    write_csv,
-    write_sensor_csv,
-    write_sidescan_csv,
-)
+from auv_nav.tools.csv_tools import spp_csv, write_csv, write_sidescan_csv
 from auv_nav.tools.dvl_level_arm import compute_angular_speeds, correct_lever_arm
 from auv_nav.tools.interpolate import interpolate, interpolate_sensor_list
 from auv_nav.tools.latlon_wgs84 import metres_to_latlon
@@ -559,39 +552,45 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
     threads = []
     mutex = threading.Lock()
     t = threading.Thread(
-        target=write_sensor_csv,
-        args=[raw_sensor_path, velocity_body_list, "velocity_body", mutex],
+        target=write_csv,
+        args=[raw_sensor_path, velocity_body_list, "velocity_body"],
+        kwargs={"mutex": mutex},
     )
     t.start()
     threads.append(t)
     t = threading.Thread(
-        target=write_sensor_csv,
-        args=[raw_sensor_path, altitude_list, "altitude", mutex],
+        target=write_csv,
+        args=[raw_sensor_path, altitude_list, "altitude"],
+        kwargs={"mutex": mutex},
     )
     t.start()
     threads.append(t)
     t = threading.Thread(
-        target=write_sensor_csv,
-        args=[raw_sensor_path, orientation_list, "orientation", mutex],
+        target=write_csv,
+        args=[raw_sensor_path, orientation_list, "orientation"],
+        kwargs={"mutex": mutex},
     )
     t.start()
     threads.append(t)
     t = threading.Thread(
-        target=write_sensor_csv,
-        args=[raw_sensor_path, depth_list, "depth", mutex],
+        target=write_csv,
+        args=[raw_sensor_path, depth_list, "depth"],
+        kwargs={"mutex": mutex},
     )
     t.start()
     threads.append(t)
     t = threading.Thread(
-        target=write_sensor_csv,
-        args=[raw_sensor_path, usbl_list, "usbl", mutex],
+        target=write_csv,
+        args=[raw_sensor_path, usbl_list, "usbl"],
+        kwargs={"mutex": mutex},
     )
     t.start()
     threads.append(t)
     if len(camera3_list) > 0:
         t = threading.Thread(
-            target=write_sensor_csv,
-            args=[raw_sensor_path, camera3_list, "camera3", mutex],
+            target=write_csv,
+            args=[raw_sensor_path, camera3_list, "camera3"],
+            kwargs={"mutex": mutex},
         )
         t.start()
         threads.append(t)
@@ -1464,7 +1463,7 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
         threads.append(t)
 
         t = threading.Thread(
-            target=other_data_csv,
+            target=write_csv,
             args=[
                 chemical_list,
                 "auv_dr_chemical",
@@ -1495,7 +1494,7 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
         threads.append(t)
 
         t = threading.Thread(
-            target=other_data_csv,
+            target=write_csv,
             args=[
                 chemical_list,
                 "auv_pf_chemical",
@@ -1514,7 +1513,7 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
         threads.append(t)
 
         t = threading.Thread(
-            target=other_data_csv,
+            target=write_csv,
             args=[
                 chemical_list,
                 "auv_ekf_chemical",
@@ -1527,11 +1526,11 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
 
         if len(camera1_list) > 0:
             t = threading.Thread(
-                target=camera_csv,
+                target=write_csv,
                 args=[
+                    drcsvpath,
                     camera1_list,
                     "auv_dr_" + mission.image.cameras[0].name,
-                    drcsvpath,
                     csv_dr_camera_1,
                 ],
             )
@@ -1539,11 +1538,11 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
             threads.append(t)
             if particle_filter_activate:
                 t = threading.Thread(
-                    target=camera_csv,
+                    target=write_csv,
                     args=[
+                        pfcsvpath,
                         camera1_pf_list,
                         "auv_pf_" + mission.image.cameras[0].name,
-                        pfcsvpath,
                         csv_pf_camera_1,
                     ],
                 )
@@ -1551,11 +1550,11 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
                 threads.append(t)
             if ekf_activate:
                 t = threading.Thread(
-                    target=camera_csv,
+                    target=write_csv,
                     args=[
+                        ekfcsvpath,
                         camera1_ekf_list,
                         "auv_ekf_" + mission.image.cameras[0].name,
-                        ekfcsvpath,
                         csv_ekf_camera_1,
                     ],
                 )
@@ -1563,11 +1562,11 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
                 threads.append(t)
         if len(camera2_list) > 1:
             t = threading.Thread(
-                target=camera_csv,
+                target=write_csv,
                 args=[
+                    drcsvpath,
                     camera2_list,
                     "auv_dr_" + mission.image.cameras[1].name,
-                    drcsvpath,
                     csv_dr_camera_2,
                 ],
             )
@@ -1575,11 +1574,11 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
             threads.append(t)
             if particle_filter_activate:
                 t = threading.Thread(
-                    target=camera_csv,
+                    target=write_csv,
                     args=[
+                        pfcsvpath,
                         camera2_pf_list,
                         "auv_pf_" + mission.image.cameras[1].name,
-                        pfcsvpath,
                         csv_pf_camera_2,
                     ],
                 )
@@ -1587,11 +1586,11 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
                 threads.append(t)
             if ekf_activate:
                 t = threading.Thread(
-                    target=camera_csv,
+                    target=write_csv,
                     args=[
+                        ekfcsvpath,
                         camera2_ekf_list,
                         "auv_ekf_" + mission.image.cameras[1].name,
-                        ekfcsvpath,
                         csv_ekf_camera_2,
                     ],
                 )
@@ -1600,11 +1599,11 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
         if len(camera3_list) > 1:
             if len(mission.image.cameras) > 2:
                 t = threading.Thread(
-                    target=camera_csv,
+                    target=write_csv,
                     args=[
+                        drcsvpath,
                         camera3_list,
                         "auv_dr_" + mission.image.cameras[2].name,
-                        drcsvpath,
                         csv_dr_camera_3,
                     ],
                 )
@@ -1612,11 +1611,11 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
                 threads.append(t)
                 if particle_filter_activate:
                     t = threading.Thread(
-                        target=camera_csv,
+                        target=write_csv,
                         args=[
+                            pfcsvpath,
                             camera3_pf_list,
                             "auv_pf_" + mission.image.cameras[2].name,
-                            pfcsvpath,
                             csv_pf_camera_3,
                         ],
                     )
@@ -1624,11 +1623,11 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
                     threads.append(t)
                 if ekf_activate:
                     t = threading.Thread(
-                        target=camera_csv,
+                        target=write_csv,
                         args=[
+                            ekfcsvpath,
                             camera3_ekf_list,
                             "auv_ekf_" + mission.image.cameras[2].name,
-                            ekfcsvpath,
                             csv_ekf_camera_3,
                         ],
                     )
@@ -1636,11 +1635,11 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
                     threads.append(t)
             elif len(mission.image.cameras) == 2:
                 t = threading.Thread(
-                    target=camera_csv,
+                    target=write_csv,
                     args=[
+                        drcsvpath,
                         camera3_list,
                         "auv_dr_" + mission.image.cameras[1].name + "_laser",
-                        drcsvpath,
                         csv_dr_camera_3,
                     ],
                 )
@@ -1648,13 +1647,13 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
                 threads.append(t)
                 if particle_filter_activate:
                     t = threading.Thread(
-                        target=camera_csv,
+                        target=write_csv,
                         args=[
+                            pfcsvpath,
                             camera3_pf_list,
                             "auv_pf_"
                             + mission.image.cameras[1].name
                             + "_laser",
-                            pfcsvpath,
                             csv_pf_camera_3,
                         ],
                     )
@@ -1662,13 +1661,13 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
                     threads.append(t)
                 if ekf_activate:
                     t = threading.Thread(
-                        target=camera_csv,
+                        target=write_csv,
                         args=[
+                            ekfcsvpath,
                             camera3_ekf_list,
                             "auv_ekf_"
                             + mission.image.cameras[1].name
                             + "_laser",
-                            ekfcsvpath,
                             csv_ekf_camera_3,
                         ],
                     )

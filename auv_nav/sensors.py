@@ -8,6 +8,7 @@ See LICENSE.md file in the project root for full license information.
 
 import datetime
 import math
+import time
 from math import atan2, cos, pi, sin, sqrt
 
 import numpy as np
@@ -188,7 +189,11 @@ class BodyVelocity(OutputFormat):
         self.y_velocity_std = self.get_std(self.y_velocity)
         self.z_velocity_std = self.get_std(self.z_velocity)
 
-        if (self.x_velocity > 32 or self.x_velocity < -32) or (self.y_velocity > 32 or self.y_velocity < -32) or (self.z_velocity > 32 or self.z_velocity < -32):
+        if (
+            (self.x_velocity > 32 or self.x_velocity < -32)
+            or (self.y_velocity > 32 or self.y_velocity < -32)
+            or (self.z_velocity > 32 or self.z_velocity < -32)
+        ):
             self.x_velocity = None
             self.y_velocity = None
             self.z_velocity = None
@@ -241,7 +246,7 @@ class BodyVelocity(OutputFormat):
             )
             Console.quit("STD model not supported.")
 
-    def write_csv_header(self):
+    def get_csv_header(self):
         return (
             "epoch_timestamp,"
             + "x_velocity,"
@@ -252,7 +257,7 @@ class BodyVelocity(OutputFormat):
             + "z_velocity_std\n"
         )
 
-    def to_csv(self):
+    def to_csv_row(self):
         return (
             str(self.epoch_timestamp)
             + ","
@@ -452,15 +457,11 @@ class Orientation(OutputFormat):
                 self.yaw = self.yaw - 360
             if self.yaw < 0:
                 self.yaw = self.yaw + 360
+
     def apply_std_offset(self):
         # account for sensor rotational offset
         [self.roll_std, self.pitch_std, self.heading_std] = body_to_inertial(
-            0,
-            0,
-            self.yaw_offset,
-            self.roll_std,
-            self.pitch_std,
-            self.yaw_std,
+            0, 0, self.yaw_offset, self.roll_std, self.pitch_std, self.yaw_std,
         )
 
     def from_eiva_navipac(self, line):
@@ -479,12 +480,14 @@ class Orientation(OutputFormat):
             return
 
         try:
-            self.roll = float(msg.roll) #/ 180.0 * pi
-            self.pitch = float(msg.pitch) #/ 180.0 * pi
-            self.yaw = float(msg.heading) #/ 180.0 * pi
+            self.roll = float(msg.roll)  # / 180.0 * pi
+            self.pitch = float(msg.pitch)  # / 180.0 * pi
+            self.yaw = float(msg.heading)  # / 180.0 * pi
             self.apply_offset()
-        except:
-            Console.warn("Invalid NMEA sentence from EIVA Navipac", nmea_string)
+        except (ValueError, TypeError):
+            Console.warn(
+                "Invalid NMEA sentence from EIVA Navipac", nmea_string
+            )
             self.roll = None
             self.pitch = None
             self.yaw = None
@@ -513,7 +516,6 @@ class Orientation(OutputFormat):
             self.pitch_std = float(line[4])
             self.apply_std_offset()
 
-
     def from_json(self, json, sensor_std):
         self.epoch_timestamp = json["epoch_timestamp"]
         self.roll = json["data"][1]["roll"]
@@ -536,11 +538,11 @@ class Orientation(OutputFormat):
             )
         else:
             Console.error(
-                "The STD model you entered for USBL is not supported."
+                "The STD model you entered for Orientation is not supported."
             )
             Console.quit("STD model not supported.")
 
-    def write_csv_header(self):
+    def get_csv_header(self):
         return (
             "epoch_timestamp,"
             + "roll,"
@@ -551,7 +553,7 @@ class Orientation(OutputFormat):
             + "yaw_std\n"
         )
 
-    def to_csv(self):
+    def to_csv_row(self):
         return (
             str(self.epoch_timestamp)
             + ","
@@ -685,14 +687,14 @@ class Depth(OutputFormat):
             )
         else:
             Console.error(
-                "The STD model you entered for USBL is not supported."
+                "The STD model you entered for Depth is not supported."
             )
             Console.quit("STD model not supported.")
 
-    def write_csv_header(self):
+    def get_csv_header(self):
         return "epoch_timestamp," + "depth," + "depth_std\n"
 
-    def to_csv(self):
+    def to_csv_row(self):
         return (
             str(self.epoch_timestamp)
             + ","
@@ -786,10 +788,10 @@ class Altitude(OutputFormat):
         self.altitude = json["data"][0]["altitude"]
         self.altitude_std = json["data"][0]["altitude_std"]
 
-    def write_csv_header(self):
+    def get_csv_header(self):
         return "epoch_timestamp," + "altitude\n"
 
-    def to_csv(self):
+    def to_csv_row(self):
         return str(self.epoch_timestamp) + "," + str(self.altitude) + "\n"
 
     def _to_json(self):
@@ -1004,7 +1006,7 @@ class Usbl(OutputFormat):
         except Exception as exc:
             Console.warn("Please parse again this dataset.", exc)
 
-    def write_csv_header(self):
+    def get_csv_header(self):
         return (
             "epoch_timestamp,"
             + "latitude,"
@@ -1020,7 +1022,7 @@ class Usbl(OutputFormat):
             + "depth_std\n"
         )
 
-    def to_csv(self):
+    def to_csv_row(self):
         return (
             str(self.epoch_timestamp)
             + ","
@@ -1160,10 +1162,10 @@ class Tide(OutputFormat):
             )
             Console.quit("STD model not supported.")
 
-    def write_csv_header(self):
+    def get_csv_header(self):
         return "epoch_timestamp," + "height," + "height_std\n"
 
-    def to_csv(self):
+    def to_csv_row(self):
         return (
             str(self.epoch_timestamp)
             + ","
@@ -1212,6 +1214,42 @@ class Other:
     def from_json(self, json):
         self.epoch_timestamp = json["epoch_timestamp"]
         self.data = json["data"]
+
+    def get_csv_header(self):
+        str_to_write = (
+            "timestamp,northing [m],easting [m],depth [m],"
+            "roll [deg],pitch [deg],heading [deg],altitude "
+            "[m],latitude [deg],longitude [deg]"
+            ",data\n"
+        )
+        return str_to_write
+
+    def to_csv_row(self):
+        str_to_write = (
+            str(self.epoch_timestamp)
+            + ","
+            + str(self.northings)
+            + ","
+            + str(self.eastings)
+            + ","
+            + str(self.depth)
+            + ","
+            + str(self.roll)
+            + ","
+            + str(self.pitch)
+            + ","
+            + str(self.yaw)
+            + ","
+            + str(self.altitude)
+            + ","
+            + str(self.latitude)
+            + ","
+            + str(self.longitude)
+            + ","
+            + str(self.data)
+            + "\n"
+        )
+        return str_to_write
 
 
 class SyncedOrientationBodyVelocity:
@@ -1322,6 +1360,124 @@ class SyncedOrientationBodyVelocity:
     def __lt__(self, o):
         return self.epoch_timestamp < o.epoch_timestamp
 
+    def from_df(self, df_row):
+        self.epoch_timestamp = df_row["timestamp"]
+        self.northings = df_row["northing [m]"]
+        self.eastings = df_row["easting [m]"]
+        self.depth = df_row["depth [m]"]
+        self.roll = df_row["roll [deg]"]
+        self.pitch = df_row["pitch [deg]"]
+        self.yaw = df_row["heading [deg]"]
+        self.altitude = df_row["altitude [m]"]
+        self.latitude = df_row["latitude [deg]"]
+        self.longitude = df_row["longitude [deg]"]
+        self.northings_std = df_row["vehicle_std_x [m]"]
+        self.eastings_std = df_row["vehicle_std_y [m]"]
+        self.depth_std = df_row["vehicle_std_z [m]"]
+        self.roll_std = df_row["vehicle_std_roll [deg]"]
+        self.pitch_std = df_row["vehicle_std_pitch [deg]"]
+        self.yaw_std = df_row["vehicle_std_yaw [deg]"]
+        self.x_velocity_std = df_row["vehicle_std_vx [m/s]"]
+        self.y_velocity_std = df_row["vehicle_std_vy [m/s]"]
+        self.z_velocity_std = df_row["vehicle_std_vz [m/s]"]
+        self.vroll_std = df_row["vehicle_std_vroll [deg/s]"]
+        self.vpitch_std = df_row["vehicle_std_vpitch [deg/s]"]
+        self.vyaw_std = df_row["vehicle_std_vyaw [deg/s]"]
+
+    def get_csv_header(self):
+        str_to_write = (
+            "timestamp,northing [m],easting [m],depth [m],"
+            "roll [deg],pitch [deg],heading [deg],altitude "
+            "[m],latitude [deg],longitude [deg]"
+            ",vehicle_std_x [m],vehicle_std_y [m],vehicle_std_z [m],"
+            "vehicle_std_roll [deg],vehicle_std_pitch [deg],"
+            "vehicle_std_yaw [deg],vehicle_std_vx [m/s],vehicle_std_vy [m/s],"
+            "vehicle_std_vz [m/s],vehicle_std_vroll [deg/s],"
+            "vehicle_std_vpitch [deg/s],vehicle_std_vyaw [deg/s]\n"
+        )
+        return str_to_write
+
+    def get_sidescan_header(self):
+        str_to_write = "#Mission Date Time NorthDeg EastDeg HeadingDeg \
+            RollDeg PitchDeg Altitude Depth Speed\n"
+        return str_to_write
+
+    def to_sidescan_row(self):
+        datetime_str = time.strftime(
+            "%Y%m%d %H%M%S", time.gmtime(self.epoch_timestamp),
+        )
+        str_to_write = (
+            "M150 "
+            + datetime_str
+            + " "
+            + "{:.6f}".format(self.latitude)
+            + " "
+            + "{:.6f}".format(self.longitude)
+            + " "
+            + "{:.3f}".format(self.yaw)
+            + " "
+            + "{:.3f}".format(self.roll)
+            + " "
+            + "{:.3f}".format(self.pitch)
+            + " "
+            + "{:.3f}".format(self.altitude)
+            + " "
+            + "{:.3f}".format(self.depth)
+            + " "
+            + "{:.3f}".format(self.x_velocity)
+            + "\n"
+        )
+        return str_to_write
+
+    def to_csv_row(self):
+        str_to_write = (
+            str(self.epoch_timestamp)
+            + ","
+            + str(self.northings)
+            + ","
+            + str(self.eastings)
+            + ","
+            + str(self.depth)
+            + ","
+            + str(self.roll)
+            + ","
+            + str(self.pitch)
+            + ","
+            + str(self.yaw)
+            + ","
+            + str(self.altitude)
+            + ","
+            + str(self.latitude)
+            + ","
+            + str(self.longitude)
+            + ","
+            + str(self.northings_std)
+            + ","
+            + str(self.eastings_std)
+            + ","
+            + str(self.depth_std)
+            + ","
+            + str(self.roll_std)
+            + ","
+            + str(self.pitch_std)
+            + ","
+            + str(self.yaw_std)
+            + ","
+            + str(self.x_velocity_std)
+            + ","
+            + str(self.y_velocity_std)
+            + ","
+            + str(self.z_velocity_std)
+            + ","
+            + str(self.vroll_std)
+            + ","
+            + str(self.vpitch_std)
+            + ","
+            + str(self.vyaw_std)
+            + "\n"
+        )
+        return str_to_write
+
 
 class Camera(SyncedOrientationBodyVelocity):
     def __init__(self, timestamp=None):
@@ -1415,38 +1571,58 @@ class Camera(SyncedOrientationBodyVelocity):
         )
         return data
 
-    def write_csv_header(self):
+    def get_csv_header(self):
         return (
-            "Imagenumber,Northing [m],Easting [m],Depth [m],"
-            "Roll [deg],Pitch [deg],Heading [deg],Altitude "
-            "[m],Timestamp,Latitude [deg],Longitude [deg]"
-            ",x_velocity,y_velocity,z_velocity\n"
+            "relative_path,northing [m],easting [m],depth [m],"
+            "roll [deg],pitch [deg],heading [deg],altitude "
+            "[m],timestamp [s],latitude [deg],longitude [deg]"
+            ",x_velocity [m/s],y_velocity [m/s],z_velocity [m/s]"
+            ",vehicle_std_x [m],vehicle_std_y [m],vehicle_std_z [m],"
+            "vehicle_std_roll [deg],vehicle_std_pitch [deg],"
+            "vehicle_std_yaw [deg],vehicle_std_vx [m/s],vehicle_std_vy [m/s],"
+            "vehicle_std_vz [m/s],vehicle_std_vroll [deg/s],"
+            "vehicle_std_vpitch [deg/s],vehicle_std_vyaw [deg/s]\n"
         )
 
-    def write_csv_header_cov(self):
-        str_to_write_cov = ""
-        cov = [
-            "x",
-            "y",
-            "z",
-            "roll",
-            "pitch",
-            "yaw",
-            "vx",
-            "vy",
-            "vz",
-            "vroll",
-            "vpitch",
-            "vyaw",
-        ]
+    def get_csv_header_cov(self):
+        str_to_write_cov = "relative_path"
+        cov = ["x", "y", "z", "roll", "pitch", "yaw"]
         for a in cov:
             for b in cov:
                 str_to_write_cov += ", cov_" + a + "_" + b
         str_to_write_cov += "\n"
         return str_to_write_cov
 
-    def to_csv(self):
-        return (
+    def from_df(self, df_row):
+        self.filename = df_row["relative_path"]
+        self.northings = df_row["northing [m]"]
+        self.eastings = df_row["easting [m]"]
+        self.depth = df_row["depth [m]"]
+        self.roll = df_row["roll [deg]"]
+        self.pitch = df_row["pitch [deg]"]
+        self.yaw = df_row["heading [deg]"]
+        self.altitude = df_row["altitude [m]"]
+        self.epoch_timestamp = df_row["timestamp [s]"]
+        self.latitude = df_row["latitude [deg]"]
+        self.longitude = df_row["longitude [deg]"]
+        self.x_velocity = df_row["x_velocity [m/s]"]
+        self.y_velocity = df_row["y_velocity [m/s]"]
+        self.z_velocity = df_row["z_velocity [m/s]"]
+        self.northings_std = df_row["vehicle_std_x [m]"]
+        self.eastings_std = df_row["vehicle_std_y [m]"]
+        self.depth_std = df_row["vehicle_std_z [m]"]
+        self.roll_std = df_row["vehicle_std_roll [deg]"]
+        self.pitch_std = df_row["vehicle_std_pitch [deg]"]
+        self.yaw_std = df_row["vehicle_std_yaw [deg]"]
+        self.x_velocity_std = df_row["vehicle_std_vx [m/s]"]
+        self.y_velocity_std = df_row["vehicle_std_vy [m/s]"]
+        self.z_velocity_std = df_row["vehicle_std_vz [m/s]"]
+        self.vroll_std = df_row["vehicle_std_vroll [deg/s]"]
+        self.vpitch_std = df_row["vehicle_std_vpitch [deg/s]"]
+        self.vyaw_std = df_row["vehicle_std_vyaw [deg/s]"]
+
+    def to_csv_row(self):
+        str_to_write = (
             str(self.filename)
             + ","
             + str(self.northings)
@@ -1474,14 +1650,42 @@ class Camera(SyncedOrientationBodyVelocity):
             + str(self.y_velocity)
             + ","
             + str(self.z_velocity)
+            + ","
+            + str(self.northings_std)
+            + ","
+            + str(self.eastings_std)
+            + ","
+            + str(self.depth_std)
+            + ","
+            + str(self.roll_std)
+            + ","
+            + str(self.pitch_std)
+            + ","
+            + str(self.yaw_std)
+            + ","
+            + str(self.x_velocity_std)
+            + ","
+            + str(self.y_velocity_std)
+            + ","
+            + str(self.z_velocity_std)
+            + ","
+            + str(self.vroll_std)
+            + ","
+            + str(self.vpitch_std)
+            + ","
+            + str(self.vyaw_std)
             + "\n"
         )
+        return str_to_write
 
-    def to_csv_cov(self):
+    def to_csv_cov_row(self):
         if self.covariance is not None:
-            cov = self.covariance.flatten().tolist()
-            cov = [item for sublist in cov for item in sublist]
             str_to_write_cov = str(self.filename)
-            for c in cov:
-                str_to_write_cov += ", {:.6f}".format(c)
+            for k1 in range(6):
+                for k2 in range(6):
+                    c = self.covariance[k1, k2]
+                    str_to_write_cov += "," + str(c)
             str_to_write_cov += "\n"
+            return str_to_write_cov
+        else:
+            return ""
