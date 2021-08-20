@@ -227,7 +227,6 @@ def main(args=None):
 
     if len(sys.argv) == 1 and args is None:
         # Show help if no args provided
-        print("KKKKK")
         parser.print_help(sys.stderr)
         sys.exit(1)
 
