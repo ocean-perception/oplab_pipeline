@@ -12,7 +12,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from auv_nav.parsers.parse_acfr_stereo_pose import AcfrStereoPoseFile
+from auv_nav.parsers.acfr_stereo_pose import AcfrStereoPoseParser
 from auv_nav.parsers.parse_phins import PhinsTimestamp
 
 
@@ -121,7 +121,7 @@ class TestAcfrStereoPose(unittest.TestCase):
         self.filepath = filename
 
     def test_acfr_stereo_pose(self):
-        s = AcfrStereoPoseFile(self.filepath)
+        s = AcfrStereoPoseParser(self.filepath)
         self.assertAlmostEqual(s.origin_latitude, 59.8136000000000010)
         self.assertAlmostEqual(s.origin_longitude, -7.3532999999999999)
         self.assertEqual(s._entries[0].id, 1141)
