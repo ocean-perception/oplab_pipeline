@@ -11,6 +11,8 @@ import os
 import sys
 import time
 
+import argcomplete
+
 from auv_nav.convert import acfr_to_oplab, hybis_to_oplab, oplab_to_acfr
 from auv_nav.parse import parse
 from auv_nav.process import process
@@ -150,8 +152,10 @@ def main(args=None):
     # OPLAB to ACFR
     subparser_acfr_to_oplab = subsubparsers.add_parser(
         "acfr_to_oplab",
-        help="Converts a VehiclePosEst.data and/or a StereoPosEst.data to OPLAB csv format",
+        help="Converts a VehiclePosEst.data and/or a StereoPosEst.data to \
+            OPLAB csv format",
     )
+
     subparser_acfr_to_oplab.add_argument(
         "--vehicle-pose",
         dest="vehicle_pose",
@@ -172,10 +176,8 @@ def main(args=None):
         "-d",
         "--dive-folder",
         dest="dive_folder",
-        help=(
-            "Optional path of an existing processed dive to interpolate laser",
-            "timestamps to ACFR navigation.",
-        ),
+        help="Optional path of an existing processed dive to interpolate \
+            laser timestamps to ACFR navigation.",
     )
     subparser_acfr_to_oplab.add_argument(
         "-F",
@@ -189,7 +191,7 @@ def main(args=None):
     # HYBIS to OPLAB CSV
     subparser_hybis_to_oplab = subsubparsers.add_parser(
         "hybis_to_oplab",
-        help="Converts an already processed dive to ACFR format",
+        help="Converts a hybis navigation file to oplab CSV format",
     )
     subparser_hybis_to_oplab.add_argument(
         "-i",
@@ -230,6 +232,7 @@ def main(args=None):
         parser.print_help(sys.stderr)
         sys.exit(1)
 
+    argcomplete.autocomplete(parser)
     args = parser.parse_args()
     args.func(args)
 

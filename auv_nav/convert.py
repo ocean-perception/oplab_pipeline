@@ -34,6 +34,21 @@ from oplab import Console, Mission, Vehicle, get_processed_folder
 
 
 def hybis_to_oplab(args):
+    if args.navigation_file is None:
+        Console.error("Please provide a navigation file")
+        Console.quit("Missing comandline arguments")
+    if args.image_path is None:
+        Console.error("Please provide an image path")
+        Console.quit("Missing comandline arguments")
+    if args.reference_lat is None:
+        Console.error("Please provide a reference_lat")
+        Console.quit("Missing comandline arguments")
+    if args.reference_lon is None:
+        Console.error("Please provide a reference_lon")
+        Console.quit("Missing comandline arguments")
+    if args.output_folder is None:
+        Console.error("Please provide an output path")
+        Console.quit("Missing comandline arguments")
     parser = HybisParser(
         args.navigation_file,
         args.image_path,

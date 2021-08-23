@@ -143,6 +143,7 @@ def run_setup():
             "prettytable>=0.7.2",
             "PyYAML>=3.12",
             "argparse>=1.1",
+            "argcomplete>=1.12.3",
             "colour_demosaicing>=0.1.5",
             "opencv-python>=4.1.2",
             "imageio>=2.6.1",
