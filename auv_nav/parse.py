@@ -14,6 +14,7 @@ from pathlib import Path
 # fmt: off
 from auv_nav.parsers.parse_acfr_images import parse_acfr_images
 from auv_nav.parsers.parse_ae2000 import parse_ae2000
+from auv_nav.parsers.parse_alr import parse_alr
 from auv_nav.parsers.parse_autosub import parse_autosub
 from auv_nav.parsers.parse_biocam_images import correct_timestamps, parse_biocam_images
 from auv_nav.parsers.parse_eiva_navipac import parse_eiva_navipac
@@ -265,7 +266,8 @@ def parse_single(filepath, force_overwrite):
                     [mission, vehicle, "images", ftype, outpath],
                 )
             )
-        elif mission.image.format == "biocam":
+        elif (mission.image.format == "biocam" or
+              mission.image.format == "biocam4000_15c"):
             pool_list.append(
                 pool.apply_async(
                     parse_biocam_images,
@@ -328,6 +330,13 @@ def parse_single(filepath, force_overwrite):
                     [mission, vehicle, "velocity", ftype, outpath],
                 )
             )
+        elif mission.velocity.format == "alr":
+            pool_list.append(
+                pool.apply_async(
+                    parse_alr,
+                    [mission, vehicle, "velocity", ftype, outpath],
+                )
+            )
         elif mission.velocity.format == "autosub":
             pool_list.append(
                 pool.apply_async(
@@ -367,6 +376,13 @@ def parse_single(filepath, force_overwrite):
             pool_list.append(
                 pool.apply_async(
                     parse_ae2000,
+                    [mission, vehicle, "orientation", ftype, outpath],
+                )
+            )
+        elif mission.orientation.format == "alr":
+            pool_list.append(
+                pool.apply_async(
+                    parse_alr,
                     [mission, vehicle, "orientation", ftype, outpath],
                 )
             )
@@ -411,6 +427,12 @@ def parse_single(filepath, force_overwrite):
                     parse_ae2000, [mission, vehicle, "depth", ftype, outpath]
                 )
             )
+        elif mission.depth.format == "alr":
+            pool_list.append(
+                pool.apply_async(
+                    parse_alr, [mission, vehicle, "depth", ftype, outpath]
+                )
+            )
         elif mission.depth.format == "autosub":
             pool_list.append(
                 pool.apply_async(
@@ -446,6 +468,13 @@ def parse_single(filepath, force_overwrite):
             pool_list.append(
                 pool.apply_async(
                     parse_ae2000,
+                    [mission, vehicle, "altitude", ftype, outpath],
+                )
+            )
+        elif mission.altitude.format == "alr":
+            pool_list.append(
+                pool.apply_async(
+                    parse_alr,
                     [mission, vehicle, "altitude", ftype, outpath],
                 )
             )

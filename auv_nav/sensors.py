@@ -143,6 +143,16 @@ class BodyVelocity(OutputFormat):
     def get_std(self, value):
         return abs(value) * self.velocity_std_factor + self.velocity_std_offset
 
+    def from_alr(self, t, vx, vy, vz):
+        self.epoch_timestamp = t
+        self.epoch_timestamp_dvl = t
+        self.x_velocity = vx
+        self.y_velocity = vy
+        self.z_velocity = vz
+        self.x_velocity_std = self.get_std(self.x_velocity)
+        self.y_velocity_std = self.get_std(self.y_velocity)
+        self.z_velocity_std = self.get_std(self.z_velocity)
+
     def from_autosub(self, data, i):
         self.epoch_timestamp = data["eTime"][i]
         self.epoch_timestamp_dvl = data["eTime"][i]
@@ -492,6 +502,12 @@ class Orientation(OutputFormat):
             self.pitch = None
             self.yaw = None
 
+    def from_alr(self, t, roll_rad, pitch_rad, yaw_rad):
+        self.epoch_timestamp = t
+        self.roll = roll_rad* 180.0 / pi
+        self.pitch = pitch_rad * 180.0 / pi
+        self.yaw = yaw_rad * 180.0 / pi
+
     def from_autosub(self, data, i):
         self.epoch_timestamp = data["eTime"][i]
         self.roll = data["Roll"][i] * 180.0 / pi
@@ -647,6 +663,12 @@ class Depth(OutputFormat):
         self.depth = float(parts[5])
         self.depth_std = self.depth * self.depth_std_factor
 
+    def from_alr(self, t, d):
+        self.epoch_timestamp = t
+        self.depth_timestamp = self.epoch_timestamp
+        self.depth = d
+        self.depth_std = self.depth * self.depth_std_factor
+
     def from_autosub(self, data, i):
         self.epoch_timestamp = data["eTime"][i]
         self.depth_timestamp = self.epoch_timestamp
@@ -767,6 +789,12 @@ class Altitude(OutputFormat):
         # alt2 = float(row["dvl_alt2"])  # right
         alt3 = float(row["dvl_alt3"])  # aft
         self.altitude = (alt1 + alt3) / 2.0
+        self.altitude_std = self.altitude * self.altitude_std_factor
+
+    def from_alr(self, t, a):
+        self.epoch_timestamp = t
+        self.altitude_timestamp = self.epoch_timestamp
+        self.altitude = a
         self.altitude_std = self.altitude * self.altitude_std_factor
 
     def from_autosub(self, data, i):
