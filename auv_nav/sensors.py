@@ -1406,13 +1406,15 @@ class SyncedOrientationBodyVelocity:
         datetime_str = time.strftime(
             "%Y%m%d %H%M%S", time.gmtime(self.epoch_timestamp),
         )
+        lat = self.latitude if self.latitude is not None else 0.0
+        lon = self.longitude if self.latitude is not None else 0.0
         str_to_write = (
             "M150 "
             + datetime_str
             + " "
-            + "{:.6f}".format(self.latitude)
+            + "{:.6f}".format(lat)
             + " "
-            + "{:.6f}".format(self.longitude)
+            + "{:.6f}".format(lon)
             + " "
             + "{:.3f}".format(self.yaw)
             + " "
