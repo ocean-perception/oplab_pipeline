@@ -13,42 +13,7 @@ from auv_nav.sensors import Altitude, BodyVelocity, Category, Depth, Orientation
 
 # fmt: on
 from oplab import Console, get_raw_folder
-
-
-def loadmat(filename):
-    """
-    this function should be called instead of direct spio.loadmat
-    as it cures the problem of not properly recovering python dictionaries
-    from mat files. It calls the function check keys to cure all entries
-    which are still mat-objects
-    """
-    data = spio.loadmat(filename, struct_as_record=False, squeeze_me=True)
-    return _check_keys(data)
-
-
-def _check_keys(dict):
-    """
-    checks if entries in dictionary are mat-objects. If yes
-    todict is called to change them to nested dictionaries
-    """
-    for key in dict:
-        if isinstance(dict[key], spio.matlab.mio5_params.mat_struct):
-            dict[key] = _todict(dict[key])
-    return dict
-
-
-def _todict(matobj):
-    """
-    A recursive function which constructs from matobjects nested dictionaries
-    """
-    dict = {}
-    for strg in matobj._fieldnames:
-        elem = matobj.__dict__[strg]
-        if isinstance(elem, spio.matlab.mio5_params.mat_struct):
-            dict[strg] = _todict(elem)
-        else:
-            dict[strg] = elem
-    return dict
+from auv_nav.parsers.load_matlab_file import loadmat
 
 
 def parse_autosub(mission, vehicle, category, ftype, outpath):
@@ -81,18 +46,18 @@ def parse_autosub(mission, vehicle, category, ftype, outpath):
 
     path = get_raw_folder(outpath / ".." / filepath / filename)
 
-    alr_log = loadmat(str(path))
-    alr_adcp = alr_log["missionData"]["ADCPbin00"]
-    alr_ins = alr_log["missionData"]["INSAttitude"]
-    alr_dep_ctl = alr_log["missionData"]["DepCtlNode"]
-    alr_adcp_log1 = alr_log["missionData"]["ADCPLog_1"]
+    autosub_log = loadmat(str(path))
+    autosub_adcp = autosub_log["missionData"]["ADCPbin00"]
+    autosub_ins = autosub_log["missionData"]["INSAttitude"]
+    autosub_dep_ctl = autosub_log["missionData"]["DepCtlNode"]
+    autosub_adcp_log1 = autosub_log["missionData"]["ADCPLog_1"]
 
     data_list = []
     if category == Category.VELOCITY:
         Console.info("... parsing autosub velocity")
         previous_timestamp = 0
-        for i in range(len(alr_adcp["eTime"])):
-            body_velocity.from_autosub(alr_adcp, i)
+        for i in range(len(autosub_adcp["eTime"])):
+            body_velocity.from_autosub(autosub_adcp, i)
             data = body_velocity.export(output_format)
             if body_velocity.epoch_timestamp > previous_timestamp:
                 data_list.append(data)
@@ -102,8 +67,8 @@ def parse_autosub(mission, vehicle, category, ftype, outpath):
     if category == Category.ORIENTATION:
         Console.info("... parsing autosub orientation")
         previous_timestamp = 0
-        for i in range(len(alr_ins["eTime"])):
-            orientation.from_autosub(alr_ins, i)
+        for i in range(len(autosub_ins["eTime"])):
+            orientation.from_autosub(autosub_ins, i)
             data = orientation.export(output_format)
             if orientation.epoch_timestamp > previous_timestamp:
                 data_list.append(data)
@@ -113,8 +78,8 @@ def parse_autosub(mission, vehicle, category, ftype, outpath):
     if category == Category.DEPTH:
         Console.info("... parsing autosub depth")
         previous_timestamp = 0
-        for i in range(len(alr_dep_ctl["eTime"])):
-            depth.from_autosub(alr_dep_ctl, i)
+        for i in range(len(autosub_dep_ctl["eTime"])):
+            depth.from_autosub(autosub_dep_ctl, i)
             data = depth.export(output_format)
             if depth.epoch_timestamp > previous_timestamp:
                 data_list.append(data)
@@ -124,8 +89,8 @@ def parse_autosub(mission, vehicle, category, ftype, outpath):
     if category == Category.ALTITUDE:
         Console.info("... parsing autosub altitude")
         previous_timestamp = 0
-        for i in range(len(alr_adcp_log1["eTime"])):
-            altitude.from_autosub(alr_adcp_log1, i)
+        for i in range(len(autosub_adcp_log1["eTime"])):
+            altitude.from_autosub(autosub_adcp_log1, i)
             data = altitude.export(output_format)
             if altitude.epoch_timestamp > previous_timestamp:
                 data_list.append(data)
