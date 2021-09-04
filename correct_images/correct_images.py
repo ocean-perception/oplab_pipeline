@@ -122,9 +122,10 @@ def call_parse(args):
 
     path = Path(args.path).resolve()
 
+    time_string = time.strftime("%Y%m%d_%H%M%S", time.localtime())
     Console.set_logging_file(
         get_processed_folder(path)
-        / ("log/" + str(time.time()) + "_correct_images_parse.log")
+        / ("log/" + time_string + "_correct_images_parse.log")
     )
 
     correct_config, camerasystem = load_configuration_and_camera_system(path)
@@ -160,9 +161,10 @@ def call_process(args):
 
     path = Path(args.path).resolve()
 
+    time_string = time.strftime("%Y%m%d_%H%M%S", time.localtime())
     Console.set_logging_file(
         get_processed_folder(path)
-        / ("log/" + str(time.time()) + "_correct_images_process.log")
+        / ("log/" + time_string + "_correct_images_process.log")
     )
 
     correct_config, camerasystem = load_configuration_and_camera_system(path)
@@ -197,9 +199,10 @@ def call_correct(args):
 def call_rescale(args):
     path = Path(args.path).resolve()
 
+    time_string = time.strftime("%Y%m%d_%H%M%S", time.localtime())
     Console.set_logging_file(
         get_processed_folder(path)
-        / ("log/" + str(time.time()) + "_correct_images_rescale.log")
+        / ("log/" + time_string + "_correct_images_rescale.log")
     )
 
     correct_config, camerasystem = load_configuration_and_camera_system(path)

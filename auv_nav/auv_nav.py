@@ -16,7 +16,7 @@ import argcomplete
 from auv_nav.convert import acfr_to_oplab, hybis_to_oplab, oplab_to_acfr
 from auv_nav.parse import parse
 from auv_nav.process import process
-from oplab import Console, get_processed_folder
+from oplab import Console, get_processed_folder, get_config_folder
 
 
 def main(args=None):
@@ -242,18 +242,24 @@ def show_help(args):
 
 
 def call_parse_data(args):
+    time_string = time.strftime("%Y%m%d_%H%M%S", time.localtime())
     Console.set_logging_file(
         get_processed_folder(args.path[0])
-        / ("log/" + str(time.time()) + "_auv_nav_parse.log")
+        / ("log/" + time_string + "_auv_nav_parse.log")
     )
     parse(args.path, args.force, args.merge)
 
 
 def call_process_data(args):
+    time_string = time.strftime("%Y%m%d_%H%M%S", time.localtime())
     Console.set_logging_file(
         get_processed_folder(args.path)
-        / ("log/" + str(time.time()) + "_auv_nav_process.log")
+        / ("log/" + time_string + "_auv_nav_process.log")
     )
+    auv_nav_path = get_config_folder(args.path) / "auv_nav.yaml"
+    auv_nav_path_log = (get_processed_folder(args.path)
+                        / ("log/" + time_string + "_auv_nav.yaml"))
+    auv_nav_path.copy(auv_nav_path_log)
     process(args.path, args.force, args.start_datetime, args.end_datetime)
 
 
