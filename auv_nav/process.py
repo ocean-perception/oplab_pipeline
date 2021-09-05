@@ -32,7 +32,8 @@ from auv_nav.plot.plot_process_data import (
     plot_deadreckoning_vs_time,
     plot_orientation_vs_time,
     plot_pf_uncertainty,
-    plot_uncertainty,
+    plot_ekf_states_and_std_vs_time,
+    plot_sensor_uncertainty,
     plot_velocity_vs_time,
 )
 from auv_nav.sensors import (
@@ -1354,7 +1355,7 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
             t.start()
             threads.append(t)
             t = threading.Thread(
-                target=plot_uncertainty,
+                target=plot_sensor_uncertainty,
                 args=[
                     orientation_list,
                     velocity_body_list,
@@ -1375,6 +1376,16 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
                         pf_northings_std,
                         pf_eastings_std,
                         pf_yaw_std,
+                        plotlypath,
+                    ],
+                )
+                t.start()
+                threads.append(t)
+            if ekf_activate and "ekf_states" in locals():
+                t = threading.Thread(
+                    target=plot_ekf_states_and_std_vs_time,
+                    args=[
+                        ekf_states,
                         plotlypath,
                     ],
                 )

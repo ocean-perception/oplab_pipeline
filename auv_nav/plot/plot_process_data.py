@@ -7,23 +7,31 @@ See LICENSE.md file in the project root for full license information.
 """
 
 import time
+import math
 
 import plotly.graph_objs as go
 import plotly.offline as py
 from plotly import subplots
 
 from oplab import Console
+from auv_nav.localisation.ekf import Index
 
 
-def create_trace(x_list, y_list, trace_name, trace_color, visibility=True):
+def create_trace(x_list, y_list, trace_name, trace_color, visibility=True, fill="none", is_std_bound=False):
+    line = dict(width=0) if is_std_bound else dict(color=trace_color)
+    showlegend = False if is_std_bound else True
+    mode = "lines" if is_std_bound else "lines+markers"
     trace = go.Scattergl(
         x=[float(i) for i in x_list],
         y=[float(i) for i in y_list],
         visible=visibility,  # True | False | legendonly
         name=trace_name,
-        mode="lines+markers",
+        mode=mode,
         marker=dict(color=trace_color),
-        line=dict(color=trace_color),
+        line=line,
+        fillcolor='rgba(200, 200, 200, 1)',
+        fill=fill,
+        showlegend=showlegend
     )
     return trace
 
@@ -204,9 +212,8 @@ def plot_velocity_vs_time(
     fig["layout"]["yaxis5"].update(title="Velocity, m/s")
     fig["layout"]["yaxis6"].update(title="Velocity, m/s")
     fig["layout"].update(
-        title="Velocity vs Time Plots (Left column: Inertial \
-                                frame - north east down | Right column: Body \
-                                frame - x y z)",
+        title="Velocity vs Time Plots (Left column: Inertial frame - north "
+              "east down | Right column: Body frame - x y z)",
         dragmode="pan",
         hovermode="closest",
     )
@@ -397,7 +404,250 @@ def plot_pf_uncertainty(
     Console.info("... done plotting pf_uncertainty.")
 
 
-def plot_uncertainty(
+#  EKF uncertainty plotly
+#  ToDo: Plot angles as well
+def plot_ekf_states_and_std_vs_time(
+    ekf_states,
+    plotlypath,
+):
+    Console.info("Plotting EKF states with std vs. time...")
+    ekf_time = [i.time for i in ekf_states]
+    ekf_northings = [i.state[Index.X, 0] for i in ekf_states]
+    ekf_eastings = [i.state[Index.Y, 0] for i in ekf_states]
+    ekf_depths = [i.state[Index.Z, 0] for i in ekf_states]
+    ekf_northings_std = [
+        math.sqrt(i.covariance[Index.X, Index.X]) for i in ekf_states
+    ]
+    ekf_eastings_std = [
+        math.sqrt(i.covariance[Index.Y, Index.Y]) for i in ekf_states
+    ]
+    ekf_depths_std = [
+        math.sqrt(i.covariance[Index.Z, Index.Z]) for i in ekf_states
+    ]
+
+    ekf_surge_speeds = [i.state[Index.VX, 0] for i in ekf_states]
+    ekf_sway_speeds = [i.state[Index.VY, 0] for i in ekf_states]
+    ekf_down_speeds = [i.state[Index.VZ, 0] for i in ekf_states]
+    ekf_surge_speeds_std = [
+        math.sqrt(i.covariance[Index.VX, Index.VX]) for i in ekf_states
+    ]
+    ekf_sway_speeds_std = [
+        math.sqrt(i.covariance[Index.VY, Index.VY]) for i in ekf_states
+    ]
+    ekf_down_speeds_std = [
+        math.sqrt(i.covariance[Index.VZ, Index.VZ]) for i in ekf_states
+    ]
+
+    tr_ekf_northings = create_trace(
+        ekf_time, ekf_northings, "northings (m)", "red", fill="tonexty"
+    )
+    tr_ekf_northings_upper_bound = create_trace(
+        ekf_time,
+        [a_i + b_i for a_i, b_i in zip(ekf_northings, ekf_northings_std)],
+        "northing+sigma", "red", True, "tonexty", True
+    )
+    tr_ekf_northings_lower_bound = create_trace(
+        ekf_time,
+        [a_i - b_i for a_i, b_i in zip(ekf_northings, ekf_northings_std)],
+        "northing-sigma", "red", True, "tonexty", True
+    )
+
+    tr_ekf_eastings = create_trace(
+        ekf_time, ekf_eastings, "eastings (m)", "blue", fill="tonexty"
+    )
+    tr_ekf_eastings_lower_bound = create_trace(
+        ekf_time,
+        [a_i - b_i for a_i, b_i in zip(ekf_eastings, ekf_eastings_std)],
+        "easting-sigma", "blue", True, "tonexty", True
+    )
+    tr_ekf_eastings_upper_bound = create_trace(
+        ekf_time,
+        [a_i + b_i for a_i, b_i in zip(ekf_eastings, ekf_eastings_std)],
+        "easting+sigma", "blue", True, "tonexty", True
+    )
+
+    tr_ekf_depths = create_trace(
+        ekf_time, ekf_depths, "depth (m)", "green", fill="tonexty"
+    )
+    tr_ekf_depths_upper_bound = create_trace(
+        ekf_time,
+        [a_i + b_i for a_i, b_i in zip(ekf_depths, ekf_depths_std)],
+        "depth+sigma", "green", True, "tonexty", True
+    )
+    tr_ekf_depths_lower_bound = create_trace(
+        ekf_time,
+        [a_i - b_i for a_i, b_i in zip(ekf_depths, ekf_depths_std)],
+        "depth-sigma", "green", True, "tonexty", True
+    )
+
+    tr_ekf_northings_std = create_trace(
+        ekf_time, ekf_northings_std, "northings_std (m)", "red"
+    )
+    tr_ekf_eastings_std = create_trace(
+        ekf_time, ekf_eastings_std, "eastings_std (m)", "blue"
+    )
+    tr_ekf_depths_std = create_trace(
+        ekf_time, ekf_depths_std, "depths_std (m)", "green"
+    )
+
+    tr_ekf_surge_speeds = create_trace(
+        ekf_time, ekf_surge_speeds, "surge speeds (m/s)", "red", fill="tonexty"
+    )
+    tr_ekf_surge_speeds_upper_bound = create_trace(
+        ekf_time,
+        [a_i + b_i for a_i, b_i in zip(ekf_surge_speeds, ekf_surge_speeds_std)],
+        "surge_speed+sigma", "red", True, "tonexty", True
+    )
+    tr_ekf_surge_speeds_lower_bound = create_trace(
+        ekf_time,
+        [a_i - b_i for a_i, b_i in zip(ekf_surge_speeds, ekf_surge_speeds_std)],
+        "surge_speed-sigma", "red", True, "tonexty", True
+    )
+
+    tr_ekf_sway_speeds = create_trace(
+        ekf_time, ekf_sway_speeds, "sway speeds (m/s)", "blue", fill="tonexty"
+    )
+    tr_ekf_sway_speeds_upper_bound = create_trace(
+        ekf_time,
+        [a_i + b_i for a_i, b_i in zip(ekf_sway_speeds, ekf_sway_speeds_std)],
+        "sway_speed+sigma", "red", True, "tonexty", True
+    )
+    tr_ekf_sway_speeds_lower_bound = create_trace(
+        ekf_time,
+        [a_i - b_i for a_i, b_i in zip(ekf_sway_speeds, ekf_sway_speeds_std)],
+        "sway_speed-sigma", "red", True, "tonexty", True
+    )
+
+    tr_ekf_down_speeds = create_trace(
+        ekf_time, ekf_down_speeds, "vertical speeds (m/s)", "green", fill="tonexty"
+    )
+    tr_ekf_down_speeds_upper_bound = create_trace(
+        ekf_time,
+        [a_i + b_i for a_i, b_i in zip(ekf_down_speeds, ekf_down_speeds_std)],
+        "down_speed+sigma", "red", True, "tonexty", True
+    )
+    tr_ekf_down_speeds_lower_bound = create_trace(
+        ekf_time,
+        [a_i - b_i for a_i, b_i in zip(ekf_down_speeds, ekf_down_speeds_std)],
+        "down_speed-sigma", "red", True, "tonexty", True
+    )
+
+    tr_ekf_surge_speeds_std = create_trace(
+        ekf_time, ekf_surge_speeds_std, "surge_speeds_std (m/s)", "red"
+    )
+    tr_ekf_sway_speeds_std = create_trace(
+        ekf_time, ekf_sway_speeds_std, "sway_speeds_std (m/s)", "blue"
+    )
+    tr_ekf_down_speeds_std = create_trace(
+        ekf_time, ekf_down_speeds_std, "down_speeds_std (m/s)", "green"
+    )
+
+    fig1 = subplots.make_subplots(
+        rows=2,
+        cols=3,
+        subplot_titles=(
+            "Northing",
+            "Easting",
+            "Depth",
+            "Northing standard deviation",
+            "Easting standard deviation",
+            "Depth standard deviation",
+        ),
+        print_grid=False,
+    )
+    fig1.append_trace(tr_ekf_northings, 1, 1)
+    fig1.append_trace(tr_ekf_northings_upper_bound, 1, 1)
+    fig1.append_trace(tr_ekf_northings_lower_bound, 1, 1)
+    fig1.append_trace(tr_ekf_northings_std, 2, 1)
+    fig1.append_trace(tr_ekf_eastings, 1, 2)
+    fig1.append_trace(tr_ekf_eastings_upper_bound, 1, 2)
+    fig1.append_trace(tr_ekf_eastings_lower_bound, 1, 2)
+    fig1.append_trace(tr_ekf_eastings_std, 2, 2)
+    fig1.append_trace(tr_ekf_depths, 1, 3)
+    fig1.append_trace(tr_ekf_depths_upper_bound, 1, 3)
+    fig1.append_trace(tr_ekf_depths_lower_bound, 1, 3)
+    fig1.append_trace(tr_ekf_depths_std, 2, 3)
+    fig1["layout"]["xaxis1"].update(title="Epoch time, s", tickformat=".3f")
+    fig1["layout"]["xaxis2"].update(title="Epoch time, s", tickformat=".3f")
+    fig1["layout"]["xaxis3"].update(title="Epoch time, s", tickformat=".3f")
+    fig1["layout"]["xaxis4"].update(title="Epoch time, s", tickformat=".3f")
+    fig1["layout"]["xaxis5"].update(title="Epoch time, s", tickformat=".3f")
+    fig1["layout"]["xaxis6"].update(title="Epoch time, s", tickformat=".3f")
+    fig1["layout"]["yaxis1"].update(title="Northing, m")
+    fig1["layout"]["yaxis2"].update(title="Easting, m")
+    fig1["layout"]["yaxis3"].update(title="Depth, m", autorange="reversed")
+    fig1["layout"]["yaxis4"].update(title="Northing std, m")
+    fig1["layout"]["yaxis5"].update(title="Easting std, m")
+    fig1["layout"]["yaxis6"].update(title="Depth std, m")
+    fig1["layout"].update(
+        title="EKF positions / position uncertainties vs Time Plots",
+        dragmode="pan",
+        hovermode="closest",
+    )
+
+    config = {"scrollZoom": True}
+    py.plot(
+        fig1,
+        config=config,
+        filename=str(plotlypath / "ekf_positions_with_std_vs_time.html"),
+        auto_open=False,
+    )
+
+    fig2 = subplots.make_subplots(
+        rows=2,
+        cols=3,
+        subplot_titles=(
+            "Surge speed",
+            "Sway speed",
+            "Down speed",
+            "Surge speed standard deviation",
+            "Sway speed standard deviation",
+            "Down speed standard deviation",
+        ),
+        print_grid=False,
+    )
+    fig2.append_trace(tr_ekf_surge_speeds, 1, 1)
+    fig2.append_trace(tr_ekf_surge_speeds_upper_bound, 1, 1)
+    fig2.append_trace(tr_ekf_surge_speeds_lower_bound, 1, 1)
+    fig2.append_trace(tr_ekf_surge_speeds_std, 2, 1)
+    fig2.append_trace(tr_ekf_sway_speeds, 1, 2)
+    fig2.append_trace(tr_ekf_sway_speeds_upper_bound, 1, 2)
+    fig2.append_trace(tr_ekf_sway_speeds_lower_bound, 1, 2)
+    fig2.append_trace(tr_ekf_sway_speeds_std, 2, 2)
+    fig2.append_trace(tr_ekf_down_speeds, 1, 3)
+    fig2.append_trace(tr_ekf_down_speeds_upper_bound, 1, 3)
+    fig2.append_trace(tr_ekf_down_speeds_lower_bound, 1, 3)
+    fig2.append_trace(tr_ekf_down_speeds_std, 2, 3)
+    fig2["layout"]["xaxis1"].update(title="Epoch time, s", tickformat=".3f")
+    fig2["layout"]["xaxis2"].update(title="Epoch time, s", tickformat=".3f")
+    fig2["layout"]["xaxis3"].update(title="Epoch time, s", tickformat=".3f")
+    fig2["layout"]["xaxis4"].update(title="Epoch time, s", tickformat=".3f")
+    fig2["layout"]["xaxis5"].update(title="Epoch time, s", tickformat=".3f")
+    fig2["layout"]["xaxis6"].update(title="Epoch time, s", tickformat=".3f")
+    fig2["layout"]["yaxis1"].update(title="Surge speed, m/s")
+    fig2["layout"]["yaxis2"].update(title="Sway speed, m/s")
+    fig2["layout"]["yaxis3"].update(title="Down speed, m/s", autorange="reversed")
+    fig2["layout"]["yaxis4"].update(title="Surge speed std, m/s")
+    fig2["layout"]["yaxis5"].update(title="Sway speed std, m/s")
+    fig2["layout"]["yaxis6"].update(title="Down speed std, m/s")
+    fig2["layout"].update(
+        title="EKF speeds / speed uncertainties vs Time Plots",
+        dragmode="pan",
+        hovermode="closest",
+    )
+
+    config = {"scrollZoom": True}
+    py.plot(
+        fig2,
+        config=config,
+        filename=str(plotlypath / "ekf_speeds_with_std_vs_time.html"),
+        auto_open=False,
+    )
+
+    Console.info("... done plotting EKF states with std vs. time.")
+
+
+def plot_sensor_uncertainty(
     orientation_list,
     velocity_body_list,
     depth_list,
@@ -406,7 +656,7 @@ def plot_uncertainty(
     velocity_inertial_sensor_name,
     plotlypath,
 ):
-    Console.info("Plotting uncertainty...")
+    Console.info("Plotting sensor uncertainty...")
     # Uncertainty plotly --- https://plot.ly/python/line-charts/
     # filled-lines Something like that?
     ori_time = [i.epoch_timestamp for i in orientation_list]
@@ -521,11 +771,11 @@ def plot_uncertainty(
     py.plot(
         fig,
         config=config,
-        filename=str(plotlypath / "uncertainties_plot.html"),
+        filename=str(plotlypath / "sensor_uncertainties_plot.html"),
         auto_open=False,
     )
 
-    Console.info("... done plotting uncertainty.")
+    Console.info("... done plotting sensor uncertainty.")
 
 
 def plot_2d_deadreckoning(
