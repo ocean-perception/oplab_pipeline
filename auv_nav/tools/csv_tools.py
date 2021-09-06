@@ -54,11 +54,12 @@ def write_csv(
                         fileout_cov.write(str_to_write_cov)
                     fileout.write(str_to_write)
                 except IndexError:
-                    Console.quit(
-                        "There is something wrong with camera filenames and",
-                        "indexing while writing csv file for", csv_filename,
-                        ". Check camera_csv function."
+                    Console.error(
+                        "There is something wrong with camera filenames and \
+                        indexing for the file",
+                        csv_filename,
                     )
+                    Console.quit("Check write_csv function.")
             fileout.close()
             if fileout_cov is not None:
                 fileout_cov.close()
