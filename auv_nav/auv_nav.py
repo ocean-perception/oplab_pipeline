@@ -257,9 +257,10 @@ def call_process_data(args):
         / ("log/" + time_string + "_auv_nav_process.log")
     )
     auv_nav_path = get_config_folder(args.path) / "auv_nav.yaml"
-    auv_nav_path_log = (get_processed_folder(args.path)
-                        / ("log/" + time_string + "_auv_nav.yaml"))
-    auv_nav_path.copy(auv_nav_path_log)
+    if auv_nav_path.exists():
+        auv_nav_path_log = (get_processed_folder(args.path)
+                            / ("log/" + time_string + "_auv_nav.yaml"))
+        auv_nav_path.copy(auv_nav_path_log)
     process(args.path, args.force, args.start_datetime, args.end_datetime)
 
 
