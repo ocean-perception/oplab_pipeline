@@ -174,6 +174,7 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
     # Default to no EKF and PF and SPP
     particle_filter_activate = False
     ekf_activate = False
+    mahalanobis_distance_threshold = 3.0
     spp_output_activate = False
 
     with localisation_file.open("r") as stream:
@@ -237,6 +238,9 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
             sensors_std["orientation"]["model"] = "sensor"
         if "ekf" in load_localisation:
             ekf_activate = load_localisation["ekf"]["activate"]
+            if "mahalanobis_distance_threshold" in load_localisation["ekf"]:
+                mahalanobis_distance_threshold = \
+                    load_localisation["ekf"]["mahalanobis_distance_threshold"]
             ekf_process_noise_covariance = load_localisation["ekf"][
                 "process_noise_covariance"
             ]
@@ -1251,6 +1255,7 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
             sensors_std,
             dead_reckoning_dvl_list,
             usbl_list,
+            mahalanobis_distance_threshold,
         )
         ekf.run(ekf_timestamps)
         ekf_end_time = time.time()

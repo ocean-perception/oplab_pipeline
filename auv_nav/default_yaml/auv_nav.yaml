@@ -34,6 +34,8 @@ usbl_filter:
 
 ekf:
   activate: True
+  mahalanobis_distance_threshold: 3.0  # Mahalanobis Distance threshold in number of sigmas. Default: 3.0
+
   # [ADVANCED] The process noise covariance matrix can be difficult to tune, and can vary for each application, so it is
   # exposed as a configuration parameter. This matrix represents the noise we add to the total error after each
   # prediction step. The better the omnidirectional motion model matches your system, the smaller these values can be.

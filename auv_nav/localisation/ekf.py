@@ -327,7 +327,7 @@ class EkfImpl(object):
         self.state = np.array([])
         self.initialized = False
         self.last_update_time = 0.0
-        self.mahalanobis_threshold = 8.0  # In number of sigmas
+        self.mahalanobis_threshold = 3.0  # In number of sigmas
         self.nb_exceeded_mahalanobis = 0
         self.predicted_state = np.array([])
         self.process_noise_covariance = np.array([])
@@ -337,6 +337,9 @@ class EkfImpl(object):
         self.smoothed_states_vector = []
         self.measurements = {}
         self.verbose = False  # Set to `True` for verbose output to CLI and log
+
+    def set_mahalanobis_distance_threshold(self, threshold):
+        self.mahalanobis_threshold = threshold
 
     def get_states(self):
         return self.states_vector
@@ -371,6 +374,16 @@ class EkfImpl(object):
 
     def clamp_rotation(self, rotation):
         # rotation = (rotation % 2*math.pi)
+        if abs(rotation) > 3 * math.pi:
+            Console.quit("Absolute value of angle (", rotation, ") > 3*pi. "
+                "This is not supposed to happen. This tends to happen when "
+                "there has not been any update for several iterations due to "
+                "the Mahalanobis Distance threshold being exceeded "
+                "repeatedly. Check the covariance matrices and the sensor "
+                "uncertainties used for the EKF (probably need to bigger), "
+                "or, as a workaround, use a larger Mahalanobis Distance "
+                "threshold."
+            )
         while rotation > math.pi:
             rotation -= 2 * math.pi
         while rotation < -math.pi:
@@ -764,6 +777,7 @@ class ExtendedKalmanFilter(object):
         "sensors_std",
         "dr_list",
         "usbl_list",
+        "mahalanobis_distance_threshold",
     ]
 
     def __init__(
@@ -773,6 +787,7 @@ class ExtendedKalmanFilter(object):
         sensors_std,
         dr_list,
         usbl_list,
+        mahalanobis_distance_threshold,
     ):
         """
         Get the first USBL, DVL and Orientation reading for EKF initialization
@@ -783,6 +798,7 @@ class ExtendedKalmanFilter(object):
         self.sensors_std = sensors_std
         self.dr_list = dr_list
         self.usbl_list = usbl_list
+        self.mahalanobis_distance_threshold = mahalanobis_distance_threshold
 
     def run(self, timestamp_list=None):
         state0 = self.build_state(self.dr_list[0])
@@ -796,6 +812,9 @@ class ExtendedKalmanFilter(object):
         self.ekf.set_last_update_time(current_time)
         self.ekf.set_covariance(self.initial_estimate_covariance)
         self.ekf.set_process_noise_covariance(self.process_noise_covariance)
+        self.ekf.set_mahalanobis_distance_threshold(
+            self.mahalanobis_distance_threshold
+        )
 
         # Case when no empty list is provided
         if timestamp_list is not None:

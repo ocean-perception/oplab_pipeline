@@ -96,6 +96,7 @@ class TestEkf(unittest.TestCase):
             t += dt
 
         usbl_list = []
+        mahalanobis_distance_threshold = 3.0
 
         ekf = ExtendedKalmanFilter(
             self.initial_estimate_covariance,
@@ -103,6 +104,7 @@ class TestEkf(unittest.TestCase):
             self.sensors_std,
             dr_list,
             usbl_list,
+            mahalanobis_distance_threshold,
         )
         ekf.run()
         ekf_states = ekf.get_result()
