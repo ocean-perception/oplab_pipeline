@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2020, University of Southampton
+Copyright (c) 2021, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -146,7 +146,6 @@ class Measurement(object):
         "update_vector",
         "time",
         "type",
-        "mahalanobis_threshold",
     ]
 
     def __init__(self, sensors_std):
@@ -164,9 +163,6 @@ class Measurement(object):
 
         # Measurement type string
         self.type = ""
-
-        # The Mahalanobis distance threshold in number of sigmas
-        self.mahalanobis_threshold = 8.0
 
     def __str__(self):
         msg = (
@@ -314,6 +310,8 @@ class EkfImpl(object):
         "state",
         "initialized",
         "last_update_time",
+        "mahalanobis_threshold",
+        "nb_exceeded_mahalanobis",
         "predicted_state",
         "process_noise_covariance",
         "transfer_function",
@@ -321,6 +319,7 @@ class EkfImpl(object):
         "states_vector",
         "smoothed_states_vector",
         "measurements",
+        "verbose",
     ]
 
     def __init__(self):
@@ -328,6 +327,8 @@ class EkfImpl(object):
         self.state = np.array([])
         self.initialized = False
         self.last_update_time = 0.0
+        self.mahalanobis_threshold = 8.0  # In number of sigmas
+        self.nb_exceeded_mahalanobis = 0
         self.predicted_state = np.array([])
         self.process_noise_covariance = np.array([])
         self.transfer_function = np.array([])
@@ -335,6 +336,7 @@ class EkfImpl(object):
         self.states_vector = []
         self.smoothed_states_vector = []
         self.measurements = {}
+        self.verbose = False  # Set to `True` for verbose output to CLI and log
 
     def get_states(self):
         return self.states_vector
@@ -375,17 +377,43 @@ class EkfImpl(object):
             rotation += 2 * math.pi
         return rotation
 
-    def check_mahalanobis_distance(self, innovation, innovation_cov, nsigmas):
+    def check_mahalanobis_distance(
+            self,
+            innovation,
+            innovation_cov,
+            measurement_time,
+            indices
+    ):
         # print('innovation:', innovation.shape)
-        # print('innovation:', innovation)
+        # Console.info('innovation:', str(innovation.T).replace('\n', ''))
         # print('innovation_cov:', innovation_cov.shape)
         # print('innovation_cov:', innovation_cov)
-        sq_mahalanobis = np.dot(innovation.T, innovation_cov @ innovation)
-        threshold = nsigmas * nsigmas
-        if sq_mahalanobis >= threshold:
-            # print("Mahalanobis distance too large ("
-            #      + str(float(np.sqrt(sq_mahalanobis)))
-            #      + "). Correction step will not be applied.")
+        mahalanobis_distance2 = np.asscalar(
+            np.dot(innovation.T, innovation_cov @ innovation)
+        )
+
+        if mahalanobis_distance2 >= self.mahalanobis_threshold**2:
+            if self.verbose:
+                self.nb_exceeded_mahalanobis += 1
+                ici = innovation_cov @ innovation
+                summands = []
+                for i in range(len(innovation)):
+                    summands.append(np.asscalar(innovation[i] * ici[i]))
+                Console.warn(
+                    "Mahalanobis dist > threshold ({} time(s) so far in this "
+                    "dataset) for measurement at t={} of variable(s) with "
+                    "index(es): {}\nInnovation:\n{}\nMahalanobis distance: {} "
+                    "(squared: {})\nsummands:\n{}".format(
+                        self.nb_exceeded_mahalanobis, measurement_time,
+                        indices, str(innovation.T).replace('\n', ''),
+                        math.sqrt(mahalanobis_distance2),
+                        mahalanobis_distance2,
+                        str(summands).replace('\n', '')
+                    )
+                )
+                # Console.warn("innovation_cov:\n{}".format(
+                #    str(innovation_cov).replace('\n', '').replace(']', ']\n'))
+                # )
             return False
         else:
             return True
@@ -397,11 +425,11 @@ class EkfImpl(object):
         self.state = f @ self.state
 
         # (2) Project the error forward: P = J * P * J' + Q
-        # print('0:', delta, self.covariance[Index.X, Index.X])
+        # Console.info('0:', delta, self.covariance[Index.X, Index.X])
         self.covariance = A @ self.covariance @ A.T
-        # print('1:', delta, self.covariance[Index.X, Index.X])
+        # Console.info('1:', delta, self.covariance[Index.X, Index.X])
         self.covariance += abs(delta) * self.process_noise_covariance
-        # print('2:', timestamp, self.covariance[Index.X, Index.X])
+        # Console.info('2:', timestamp, self.covariance[Index.X, Index.X])
 
         # print('Prediction {0}'.format(str(self.state.T)))
         self.last_update_time = timestamp
@@ -472,7 +500,9 @@ class EkfImpl(object):
         # print('z:', meas_subset)
         # print('R:', meas_cov_subset)
         # print('R2:', measurement.covariance)
-        # print('covariance:\n', self.covariance)
+        # Console.info('covariance:\n',
+        #            str(self.covariance).replace('\n', '').replace(']', ']\n')
+        #              )
 
         # (1) Compute the Kalman gain: K = (PH') / (HPH' + R)
         pht = self.covariance @ state_to_meas_subset.T
@@ -494,7 +524,7 @@ class EkfImpl(object):
 
         # (2) Check mahalanobis distance
         valid = self.check_mahalanobis_distance(
-            innovation_subset, hphr_inv, measurement.mahalanobis_threshold
+            innovation_subset, hphr_inv, measurement.time, update_indices
         )
         if valid:
             # (3) Apply the gain
