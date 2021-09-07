@@ -416,26 +416,26 @@ def plot_ekf_states_and_std_vs_time(
     ekf_eastings = [i.state[Index.Y, 0] for i in ekf_states]
     ekf_depths = [i.state[Index.Z, 0] for i in ekf_states]
     ekf_northings_std = [
-        math.sqrt(i.covariance[Index.X, Index.X]) for i in ekf_states
+        math.sqrt(max(0, i.covariance[Index.X, Index.X])) for i in ekf_states
     ]
     ekf_eastings_std = [
-        math.sqrt(i.covariance[Index.Y, Index.Y]) for i in ekf_states
+        math.sqrt(max(0, i.covariance[Index.Y, Index.Y])) for i in ekf_states
     ]
     ekf_depths_std = [
-        math.sqrt(i.covariance[Index.Z, Index.Z]) for i in ekf_states
+        math.sqrt(max(0, i.covariance[Index.Z, Index.Z])) for i in ekf_states
     ]
 
     ekf_surge_speeds = [i.state[Index.VX, 0] for i in ekf_states]
     ekf_sway_speeds = [i.state[Index.VY, 0] for i in ekf_states]
     ekf_down_speeds = [i.state[Index.VZ, 0] for i in ekf_states]
     ekf_surge_speeds_std = [
-        math.sqrt(i.covariance[Index.VX, Index.VX]) for i in ekf_states
+        math.sqrt(max(0, i.covariance[Index.VX, Index.VX])) for i in ekf_states
     ]
     ekf_sway_speeds_std = [
-        math.sqrt(i.covariance[Index.VY, Index.VY]) for i in ekf_states
+        math.sqrt(max(0, i.covariance[Index.VY, Index.VY])) for i in ekf_states
     ]
     ekf_down_speeds_std = [
-        math.sqrt(i.covariance[Index.VZ, Index.VZ]) for i in ekf_states
+        math.sqrt(max(0, i.covariance[Index.VZ, Index.VZ])) for i in ekf_states
     ]
 
     tr_ekf_northings = create_trace(
