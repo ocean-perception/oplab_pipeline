@@ -187,6 +187,7 @@ class Measurement(object):
         warn_if_zero(self.covariance[Index.Z, Index.Z], "Z Covariance")
         # print('Depth cov:', self.covariance[Index.Z, Index.Z])
         self.update_vector[Index.Z] = 1
+        self.type = "depth"
 
     def from_dvl(self, value):
         # Vinnay's dvl_noise model:
@@ -224,6 +225,7 @@ class Measurement(object):
         self.update_vector[Index.VX] = 1
         self.update_vector[Index.VY] = 1
         self.update_vector[Index.VZ] = 1
+        self.type = "DVL"
 
     def from_usbl(self, value):
         usbl_noise_std_offset = self.sensors_std["position_xy"]["offset"]
@@ -296,6 +298,7 @@ class Measurement(object):
         self.update_vector[Index.ROLL] = 1
         self.update_vector[Index.PITCH] = 1
         self.update_vector[Index.YAW] = 1
+        self.type = "orientation"
 
     def from_synced_orientation_body_velocity(self, value):
         self.from_orientation(value)
@@ -375,7 +378,8 @@ class EkfImpl(object):
     def clamp_rotation(self, rotation):
         # rotation = (rotation % 2*math.pi)
         if abs(rotation) > 3 * math.pi:
-            Console.quit("Absolute value of angle (", rotation, ") > 3*pi. "
+            Console.quit(
+                "Absolute value of angle (", rotation, ") > 3*pi. "
                 "This is not supposed to happen. This tends to happen when "
                 "there has not been any update for several iterations due to "
                 "the Mahalanobis Distance threshold being exceeded "
@@ -772,39 +776,56 @@ class EkfImpl(object):
 class ExtendedKalmanFilter(object):
     __slots__ = [
         "ekf",
+        "initial_state",
+        "end_time",
         "initial_estimate_covariance",
         "process_noise_covariance",
         "sensors_std",
-        "dr_list",
         "usbl_list",
+        "depth_list",
+        "orientation_list",
+        "velocity_body_list",
         "mahalanobis_distance_threshold",
     ]
 
     def __init__(
         self,
+        initial_state,
+        end_time,
         initial_estimate_covariance,
         process_noise_covariance,
         sensors_std,
-        dr_list,
         usbl_list,
+        depth_list,
+        orientation_list,
+        velocity_body_list,
         mahalanobis_distance_threshold,
     ):
         """
         Get the first USBL, DVL and Orientation reading for EKF initialization
         """
 
+        self.initial_state = initial_state
+        self.end_time = end_time
         self.initial_estimate_covariance = initial_estimate_covariance
         self.process_noise_covariance = process_noise_covariance
         self.sensors_std = sensors_std
-        self.dr_list = dr_list
         self.usbl_list = usbl_list
+        self.depth_list = depth_list
+        self.orientation_list = orientation_list
+        self.velocity_body_list = velocity_body_list
         self.mahalanobis_distance_threshold = mahalanobis_distance_threshold
 
     def run(self, timestamp_list=None):
-        state0 = self.build_state(self.dr_list[0])
-        dr_idx, usbl_idx = 0, 0
-        # Get first measurement (e.g. zero) as a start
-        start_time = self.dr_list[0].epoch_timestamp
+        apply_smoother = True
+
+        state0 = self.build_state(self.initial_state)
+        usbl_idx = 0
+        depth_idx = 0
+        orientation_idx = 0
+        velocity_idx = 0
+        timestamp_list_idx = 0
+        start_time = self.initial_state.epoch_timestamp
         current_time = start_time
 
         self.ekf = EkfImpl()
@@ -816,79 +837,120 @@ class ExtendedKalmanFilter(object):
             self.mahalanobis_distance_threshold
         )
 
-        # Case when no empty list is provided
-        if timestamp_list is not None:
-            if len(timestamp_list) == 0:
-                timestamp_list = None
+        # Advance to the first element after current_time in each list
 
-        timestamp_list_idx = 0
-        if timestamp_list is not None:
-            # Advance until the time in the list is greather than current_time
-            while timestamp_list[timestamp_list_idx] < current_time:
+        if self.usbl_list:
+            # returns False if it is None as well as if it is an empty list
+            while usbl_idx < len(self.usbl_list) and self.usbl_list[usbl_idx].epoch_timestamp <= current_time:
+                # The usbl_filter() in process.py already eliminates all
+                # measurements before the start of DR, but it is safer to check
+                # it here
+                usbl_idx += 1
+
+        if self.depth_list:
+            while depth_idx < len(self.depth_list) and self.depth_list[depth_idx].epoch_timestamp <= current_time:
+                depth_idx += 1
+
+        if self.orientation_list:
+            while (
+                orientation_idx < len(self.orientation_list)
+                and self.orientation_list[orientation_idx].epoch_timestamp <= current_time
+            ):
+                orientation_idx += 1
+
+        if self.velocity_body_list:
+            while (
+                velocity_idx < len(self.velocity_body_list)
+                and self.velocity_body_list[velocity_idx].epoch_timestamp <= current_time
+            ):
+                velocity_idx += 1
+
+        if timestamp_list:
+            while timestamp_list_idx < len(timestamp_list) and timestamp_list[timestamp_list_idx] <= current_time:
                 timestamp_list_idx += 1
-
-        next_prediction_time = None
 
         # print('-------------------------------')
         # print("Running EKF...")
         # self.ekf.print_state()
         # print('-------------------------------')
-        while dr_idx < len(self.dr_list):
+
+        # Compute number of timestamps to process in order to be able to
+        # indicate the progress
+        sum_start_indexes = usbl_idx + depth_idx + orientation_idx + velocity_idx + timestamp_list_idx
+        aggregated_timestamps = [i.epoch_timestamp for i in self.usbl_list]
+        aggregated_timestamps.extend([i.epoch_timestamp for i in self.depth_list])
+        aggregated_timestamps.extend([i.epoch_timestamp for i in self.orientation_list])
+        aggregated_timestamps.extend([i.epoch_timestamp for i in self.velocity_body_list])
+        aggregated_timestamps.extend([i for i in timestamp_list])
+        number_timestamps_to_process = len(aggregated_timestamps) - sum_start_indexes
+        if apply_smoother:
+            number_timestamps_to_process *= 2
+
+        current_stamp = 0
+        while current_stamp < self.end_time:
             # Show progress
-            if timestamp_list is None:
-                Console.progress(dr_idx, len(self.dr_list) * 2)
-            else:
-                Console.progress(timestamp_list_idx, len(timestamp_list) * 2)
+            sum_indexes = usbl_idx + depth_idx + orientation_idx + velocity_idx + timestamp_list_idx
+            Console.progress(sum_indexes - sum_start_indexes, number_timestamps_to_process)
 
-            dr_stamp = self.dr_list[dr_idx].epoch_timestamp
-            if usbl_idx < len(self.usbl_list) and len(self.usbl_list) > 0:
+            usbl_stamp = depth_stamp = orientation_stamp = velocity_stamp = list_stamp = None
+
+            if self.usbl_list and usbl_idx < len(self.usbl_list):
+                # `if self.usbl_list` returns False if it is None as well as if
+                # it is an empty list
                 usbl_stamp = self.usbl_list[usbl_idx].epoch_timestamp
+
+            if self.depth_list and depth_idx < len(self.depth_list):
+                depth_stamp = self.depth_list[depth_idx].epoch_timestamp
+
+            if self.orientation_list and orientation_idx < len(self.orientation_list):
+                orientation_stamp = self.orientation_list[orientation_idx].epoch_timestamp
+
+            if self.velocity_body_list and velocity_idx < len(self.velocity_body_list):
+                velocity_stamp = self.velocity_body_list[velocity_idx].epoch_timestamp
+
+            if timestamp_list and timestamp_list_idx < len(timestamp_list):
+                list_stamp = timestamp_list[timestamp_list_idx]
+
+            next_stamps = [usbl_stamp, depth_stamp, orientation_stamp, velocity_stamp, list_stamp]
+            valid_stamps = [i for i in next_stamps if i is not None]
+            if valid_stamps:
+                current_stamp = min(valid_stamps)
             else:
-                # Fake a posterior USBL measurement to force EKF to read DR
-                usbl_stamp = dr_stamp + 1
+                break
 
-            last_update_time = self.ekf.get_last_update_time()
+            self.ekf.predict(
+                current_stamp,
+                current_stamp - self.ekf.get_last_update_time(),
+            )
 
-            if timestamp_list is not None:
-                if len(timestamp_list) > timestamp_list_idx:
-                    next_prediction_time = timestamp_list[timestamp_list_idx]
-                else:
-                    # Fake a posterior time to force EKF to use DR
-                    next_prediction_time = dr_stamp + 1
-
-                if (
-                    next_prediction_time < dr_stamp
-                    and next_prediction_time < usbl_stamp
-                ):
-                    self.ekf.predict(
-                        next_prediction_time,
-                        next_prediction_time - last_update_time,
-                    )
-                    timestamp_list_idx += 1
-                    # Iterate again
-                    continue
-
-            m = Measurement(self.sensors_std)
-
-            if dr_stamp < usbl_stamp:
-                m.from_synced_orientation_body_velocity(self.dr_list[dr_idx])
-                dr_idx += 1
-            elif usbl_idx < len(self.usbl_list):
+            if usbl_stamp == current_stamp:
+                m = Measurement(self.sensors_std)
                 m.from_usbl(self.usbl_list[usbl_idx])
-                # self.ekf.print_state()
-                # print(m)
+                self.ekf.correct(m)
                 usbl_idx += 1
 
-            last_update_delta = m.time - last_update_time
+            if depth_stamp == current_stamp:
+                m = Measurement(self.sensors_std)
+                m.from_depth(self.depth_list[depth_idx])
+                self.ekf.correct(m)
+                depth_idx += 1
 
-            if last_update_delta >= 0:
-                # print('Predict')
-                self.ekf.predict(m.time, last_update_delta)
-                # self.ekf.print_state()
-            # print('Correct')
-            self.ekf.correct(m)
-            # self.ekf.print_state()
-        self.ekf.smooth(enable=True)
+            if orientation_stamp == current_stamp:
+                m = Measurement(self.sensors_std)
+                m.from_orientation(self.orientation_list[orientation_idx])
+                self.ekf.correct(m)
+                orientation_idx += 1
+
+            if velocity_stamp == current_stamp:
+                m = Measurement(self.sensors_std)
+                m.from_dvl(self.velocity_body_list[velocity_idx])
+                self.ekf.correct(m)
+                velocity_idx += 1
+
+            if list_stamp == current_stamp:
+                timestamp_list_idx += 1
+
+        self.ekf.smooth(enable=apply_smoother)
         self.ekf.print_report()
 
     def get_result(self):

@@ -1250,11 +1250,15 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
         Console.info("Running EKF...")
         ekf_start_time = time.time()
         ekf = ExtendedKalmanFilter(
+            dead_reckoning_dvl_list[0],  # initial_state
+            dead_reckoning_dvl_list[-1].epoch_timestamp,  # end_time
             ekf_initial_estimate_covariance,
             ekf_process_noise_covariance,
             sensors_std,
-            dead_reckoning_dvl_list,
             usbl_list,
+            depth_list,
+            orientation_list,
+            velocity_body_list,
             mahalanobis_distance_threshold,
         )
         ekf.run(ekf_timestamps)
