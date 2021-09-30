@@ -241,15 +241,14 @@ class BodyVelocity(OutputFormat):
             self.y_velocity_std = json["data"][1]["y_velocity_std"]
             self.z_velocity_std = json["data"][2]["z_velocity_std"]
         elif sensor_std["model"] == "linear":
-            self.x_velocity_std = (
-                sensor_std["offset"] + sensor_std["factor"] * self.x_velocity
-            )
-            self.y_velocity_std = (
-                sensor_std["offset"] + sensor_std["factor"] * self.y_velocity
-            )
-            self.z_velocity_std = (
-                sensor_std["offset"] + sensor_std["factor"] * self.z_velocity
-            )
+            if "offset_x" in sensor_std:
+                self.x_velocity_std = sensor_std["offset_x"] + sensor_std["factor_x"] * self.x_velocity
+                self.y_velocity_std = sensor_std["offset_y"] + sensor_std["factor_y"] * self.y_velocity
+                self.z_velocity_std = sensor_std["offset_z"] + sensor_std["factor_z"] * self.z_velocity
+            else:
+                self.x_velocity_std = sensor_std["offset"] + sensor_std["factor"] * self.x_velocity
+                self.y_velocity_std = sensor_std["offset"] + sensor_std["factor"] * self.y_velocity
+                self.z_velocity_std = sensor_std["offset"] + sensor_std["factor"] * self.z_velocity
         else:
             Console.error(
                 "The STD model you entered for DVL is not supported."
@@ -504,7 +503,7 @@ class Orientation(OutputFormat):
 
     def from_alr(self, t, roll_rad, pitch_rad, yaw_rad):
         self.epoch_timestamp = t
-        self.roll = roll_rad* 180.0 / pi
+        self.roll = roll_rad * 180.0 / pi
         self.pitch = pitch_rad * 180.0 / pi
         self.yaw = yaw_rad * 180.0 / pi
 

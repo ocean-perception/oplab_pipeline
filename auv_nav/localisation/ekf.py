@@ -193,8 +193,20 @@ class Measurement(object):
         # Vinnay's dvl_noise model:
         # velocity_std = (-0.0125*((velocity)**2)+0.2*(velocity)+0.2125)/100)
         # assuming noise of x_velocity = y_velocity = z_velocity
-        velocity_std_factor = self.sensors_std["speed"]["factor"]
-        velocity_std_offset = self.sensors_std["speed"]["offset"]
+        if "factor_x" in self.sensors_std["speed"]:
+            velocity_std_factor_x = self.sensors_std["speed"]["factor_x"]
+            velocity_std_offset_x = self.sensors_std["speed"]["offset_x"]
+            velocity_std_factor_y = self.sensors_std["speed"]["factor_y"]
+            velocity_std_offset_y = self.sensors_std["speed"]["offset_y"]
+            velocity_std_factor_z = self.sensors_std["speed"]["factor_z"]
+            velocity_std_offset_z = self.sensors_std["speed"]["offset_z"]
+        else:
+            velocity_std_factor_x = self.sensors_std["speed"]["factor"]
+            velocity_std_offset_x = self.sensors_std["speed"]["offset"]
+            velocity_std_factor_y = self.sensors_std["speed"]["factor"]
+            velocity_std_offset_y = self.sensors_std["speed"]["offset"]
+            velocity_std_factor_z = self.sensors_std["speed"]["factor"]
+            velocity_std_offset_z = self.sensors_std["speed"]["offset"]
 
         self.time = value.epoch_timestamp
         self.measurement[Index.VX] = value.x_velocity
@@ -207,16 +219,16 @@ class Measurement(object):
             self.covariance[Index.VZ, Index.VZ] = value.z_velocity_std ** 2
         else:
             self.covariance[Index.VX, Index.VX] = (
-                abs(value.x_velocity) * velocity_std_factor
-                + velocity_std_offset
+                abs(value.x_velocity) * velocity_std_factor_x
+                + velocity_std_offset_x
             ) ** 2
             self.covariance[Index.VY, Index.VY] = (
-                abs(value.y_velocity) * velocity_std_factor
-                + velocity_std_offset
+                abs(value.y_velocity) * velocity_std_factor_y
+                + velocity_std_offset_y
             ) ** 2
             self.covariance[Index.VZ, Index.VZ] = (
-                abs(value.z_velocity) * velocity_std_factor
-                + velocity_std_offset  # hack here
+                abs(value.z_velocity) * velocity_std_factor_z
+                + velocity_std_offset_z  # hack here
             ) ** 2
         warn_if_zero(self.covariance[Index.VX, Index.VX], "VX Covariance")
         warn_if_zero(self.covariance[Index.VY, Index.VY], "VY Covariance")

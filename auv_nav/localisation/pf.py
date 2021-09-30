@@ -154,8 +154,20 @@ class DeadReckoningMovementModel:
         """
         depth_std_factor = self.sensors_std["position_z"]["factor"]
         depth_std_offset = self.sensors_std["position_z"]["offset"]
-        velocity_std_factor = self.sensors_std["speed"]["factor"]
-        velocity_std_offset = self.sensors_std["speed"]["offset"]
+        if "factor_x" in self.sensors_std["speed"]:
+            velocity_std_factor_x = self.sensors_std["speed"]["factor_x"]
+            velocity_std_offset_x = self.sensors_std["speed"]["offset_x"]
+            velocity_std_factor_y = self.sensors_std["speed"]["factor_y"]
+            velocity_std_offset_y = self.sensors_std["speed"]["offset_y"]
+            velocity_std_factor_z = self.sensors_std["speed"]["factor_z"]
+            velocity_std_offset_z = self.sensors_std["speed"]["offset_z"]
+        else:
+            velocity_std_factor_x = self.sensors_std["speed"]["factor"]
+            velocity_std_offset_x = self.sensors_std["speed"]["offset"]
+            velocity_std_factor_y = self.sensors_std["speed"]["factor"]
+            velocity_std_offset_y = self.sensors_std["speed"]["offset"]
+            velocity_std_factor_z = self.sensors_std["speed"]["factor"]
+            velocity_std_offset_z = self.sensors_std["speed"]["offset"]
         imu_noise_std_offset = self.sensors_std["orientation"]["offset"]
         imu_noise_std_factor = self.sensors_std["orientation"]["factor"]
 
@@ -182,13 +194,13 @@ class DeadReckoningMovementModel:
             Index.YAW, imu_noise_std_factor, imu_noise_std_offset, k_imu
         )
         p.state[Index.VX, 0] = linear_noise(
-            Index.VX, velocity_std_factor, velocity_std_offset, k_dvl
+            Index.VX, velocity_std_factor_x, velocity_std_offset_x, k_dvl
         )
         p.state[Index.VY, 0] = linear_noise(
-            Index.VY, velocity_std_factor, velocity_std_offset, k_dvl
+            Index.VY, velocity_std_factor_y, velocity_std_offset_y, k_dvl
         )
         p.state[Index.VZ, 0] = linear_noise(
-            Index.VZ, velocity_std_factor, velocity_std_offset, k_dvl
+            Index.VZ, velocity_std_factor_z, velocity_std_offset_z, k_dvl
         )
 
         cr = math.cos(p.state[Index.ROLL, 0])
