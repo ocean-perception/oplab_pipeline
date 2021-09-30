@@ -77,6 +77,9 @@ class TestEkf(unittest.TestCase):
         c.z_velocity_std = 0.05  # m/s
 
         dr_list = []
+        depth_list = []
+        orientation_list = []
+        velocity_list = []
         t = 0.0
         dt = 0.1
         t_limit = 60.1
@@ -93,17 +96,24 @@ class TestEkf(unittest.TestCase):
 
             m.epoch_timestamp = t
             dr_list.append(m)
+            depth_list.append(m)
+            orientation_list.append(m)
+            velocity_list.append(m)
             t += dt
 
         usbl_list = []
         mahalanobis_distance_threshold = 3.0
 
         ekf = ExtendedKalmanFilter(
+            dr_list[0],
+            dr_list[-1].epoch_timestamp,
             self.initial_estimate_covariance,
             self.process_noise_covariance,
             self.sensors_std,
-            dr_list,
             usbl_list,
+            depth_list,
+            orientation_list,
+            velocity_list,
             mahalanobis_distance_threshold,
         )
         ekf.run()
