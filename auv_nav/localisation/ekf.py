@@ -810,15 +810,17 @@ class ExtendedKalmanFilter(object):
         self.initial_estimate_covariance = initial_estimate_covariance
         self.process_noise_covariance = process_noise_covariance
         self.sensors_std = sensors_std
-        self.usbl_list = usbl_list
-        self.depth_list = depth_list
-        self.orientation_list = orientation_list
-        self.velocity_body_list = velocity_body_list
+        self.usbl_list = usbl_list if usbl_list is not None else []
+        self.depth_list = depth_list if depth_list is not None else []
+        self.orientation_list = orientation_list if orientation_list is not None else []
+        self.velocity_body_list = velocity_body_list if velocity_body_list is not None else []
         self.mahalanobis_distance_threshold = mahalanobis_distance_threshold
 
-    def run(self, timestamp_list=None):
+    def run(self, timestamp_list=[]):
         apply_smoother = True
 
+        if timestamp_list is None:
+            timestamp_list = []
         state0 = self.build_state(self.initial_state)
         usbl_idx = 0
         depth_idx = 0
@@ -833,49 +835,31 @@ class ExtendedKalmanFilter(object):
         self.ekf.set_last_update_time(current_time)
         self.ekf.set_covariance(self.initial_estimate_covariance)
         self.ekf.set_process_noise_covariance(self.process_noise_covariance)
-        self.ekf.set_mahalanobis_distance_threshold(
-            self.mahalanobis_distance_threshold
-        )
+        self.ekf.set_mahalanobis_distance_threshold(self.mahalanobis_distance_threshold)
 
         # Advance to the first element after current_time in each list
+        while usbl_idx < len(self.usbl_list) and self.usbl_list[usbl_idx].epoch_timestamp <= current_time:
+            usbl_idx += 1
 
-        if self.usbl_list:
-            # returns False if it is None as well as if it is an empty list
-            while usbl_idx < len(self.usbl_list) and self.usbl_list[usbl_idx].epoch_timestamp <= current_time:
-                # The usbl_filter() in process.py already eliminates all
-                # measurements before the start of DR, but it is safer to check
-                # it here
-                usbl_idx += 1
+        while depth_idx < len(self.depth_list) and self.depth_list[depth_idx].epoch_timestamp <= current_time:
+            depth_idx += 1
 
-        if self.depth_list:
-            while depth_idx < len(self.depth_list) and self.depth_list[depth_idx].epoch_timestamp <= current_time:
-                depth_idx += 1
+        while (
+            orientation_idx < len(self.orientation_list)
+            and self.orientation_list[orientation_idx].epoch_timestamp <= current_time
+        ):
+            orientation_idx += 1
 
-        if self.orientation_list:
-            while (
-                orientation_idx < len(self.orientation_list)
-                and self.orientation_list[orientation_idx].epoch_timestamp <= current_time
-            ):
-                orientation_idx += 1
+        while (
+            velocity_idx < len(self.velocity_body_list)
+            and self.velocity_body_list[velocity_idx].epoch_timestamp <= current_time
+        ):
+            velocity_idx += 1
 
-        if self.velocity_body_list:
-            while (
-                velocity_idx < len(self.velocity_body_list)
-                and self.velocity_body_list[velocity_idx].epoch_timestamp <= current_time
-            ):
-                velocity_idx += 1
+        while timestamp_list_idx < len(timestamp_list) and timestamp_list[timestamp_list_idx] <= current_time:
+            timestamp_list_idx += 1
 
-        if timestamp_list:
-            while timestamp_list_idx < len(timestamp_list) and timestamp_list[timestamp_list_idx] <= current_time:
-                timestamp_list_idx += 1
-
-        # print('-------------------------------')
-        # print("Running EKF...")
-        # self.ekf.print_state()
-        # print('-------------------------------')
-
-        # Compute number of timestamps to process in order to be able to
-        # indicate the progress
+        # Compute number of timestamps to process in order to be able to indicate the progress
         sum_start_indexes = usbl_idx + depth_idx + orientation_idx + velocity_idx + timestamp_list_idx
         aggregated_timestamps = [i.epoch_timestamp for i in self.usbl_list]
         aggregated_timestamps.extend([i.epoch_timestamp for i in self.depth_list])
@@ -892,23 +876,22 @@ class ExtendedKalmanFilter(object):
             sum_indexes = usbl_idx + depth_idx + orientation_idx + velocity_idx + timestamp_list_idx
             Console.progress(sum_indexes - sum_start_indexes, number_timestamps_to_process)
 
+            # Find next timestamp to predict to
             usbl_stamp = depth_stamp = orientation_stamp = velocity_stamp = list_stamp = None
 
-            if self.usbl_list and usbl_idx < len(self.usbl_list):
-                # `if self.usbl_list` returns False if it is None as well as if
-                # it is an empty list
+            if usbl_idx < len(self.usbl_list):
                 usbl_stamp = self.usbl_list[usbl_idx].epoch_timestamp
 
-            if self.depth_list and depth_idx < len(self.depth_list):
+            if depth_idx < len(self.depth_list):
                 depth_stamp = self.depth_list[depth_idx].epoch_timestamp
 
-            if self.orientation_list and orientation_idx < len(self.orientation_list):
+            if orientation_idx < len(self.orientation_list):
                 orientation_stamp = self.orientation_list[orientation_idx].epoch_timestamp
 
-            if self.velocity_body_list and velocity_idx < len(self.velocity_body_list):
+            if velocity_idx < len(self.velocity_body_list):
                 velocity_stamp = self.velocity_body_list[velocity_idx].epoch_timestamp
 
-            if timestamp_list and timestamp_list_idx < len(timestamp_list):
+            if timestamp_list_idx < len(timestamp_list):
                 list_stamp = timestamp_list[timestamp_list_idx]
 
             next_stamps = [usbl_stamp, depth_stamp, orientation_stamp, velocity_stamp, list_stamp]
@@ -916,13 +899,15 @@ class ExtendedKalmanFilter(object):
             if valid_stamps:
                 current_stamp = min(valid_stamps)
             else:
-                break
+                break  # If there is no timestep left to predict to, we are done
 
             self.ekf.predict(
                 current_stamp,
                 current_stamp - self.ekf.get_last_update_time(),
             )
 
+            # Check if the current timestamp is from a (or multiple) measurement(s).
+            # If so, update (correct), before moving on to next timestamp.
             if usbl_stamp == current_stamp:
                 m = Measurement(self.sensors_std)
                 m.from_usbl(self.usbl_list[usbl_idx])
