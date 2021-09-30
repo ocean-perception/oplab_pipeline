@@ -390,11 +390,12 @@ class EkfImpl(object):
     def clamp_rotation(self, rotation):
         # rotation = (rotation % 2*math.pi)
         if abs(rotation) > 3 * math.pi:
-            Console.quit(
+            Console.warn(
                 "Absolute value of angle (", rotation, ") > 3*pi. "
                 "This is not supposed to happen. This tends to happen when "
-                "there has not been any update for several iterations due to "
-                "the Mahalanobis Distance threshold being exceeded "
+                "there are no sensor readings for long periods of time, "
+                "either because there aren't any in this span of time, or due "
+                "to the Mahalanobis Distance threshold being exceeded "
                 "repeatedly. Check the covariance matrices and the sensor "
                 "uncertainties used for the EKF (probably need to bigger), "
                 "or, as a workaround, use a larger Mahalanobis Distance "
