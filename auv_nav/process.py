@@ -591,14 +591,6 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
     )
     t.start()
     threads.append(t)
-    if len(camera3_list) > 0:
-        t = threading.Thread(
-            target=write_csv,
-            args=[raw_sensor_path, camera3_list, "camera3"],
-            kwargs={"mutex": mutex},
-        )
-        t.start()
-        threads.append(t)
 
     # interpolate to find the appropriate depth to compute seafloor depth for
     # each altitude measurement
