@@ -334,7 +334,6 @@ class EkfImpl(object):
         "states_vector",
         "smoothed_states_vector",
         "measurements",
-        "verbose",
     ]
 
     def __init__(self):
@@ -351,7 +350,6 @@ class EkfImpl(object):
         self.states_vector = []
         self.smoothed_states_vector = []
         self.measurements = {}
-        self.verbose = False  # Set to `True` for verbose output to CLI and log
 
     def set_mahalanobis_distance_threshold(self, threshold):
         self.mahalanobis_threshold = threshold
@@ -423,27 +421,26 @@ class EkfImpl(object):
         )
 
         if mahalanobis_distance2 >= self.mahalanobis_threshold**2:
-            if self.verbose:
-                self.nb_exceeded_mahalanobis += 1
-                ici = innovation_cov @ innovation
-                summands = []
-                for i in range(len(innovation)):
-                    summands.append(np.asscalar(innovation[i] * ici[i]))
-                Console.warn(
-                    "Mahalanobis dist > threshold ({} time(s) so far in this "
-                    "dataset) for measurement at t={} of variable(s) with "
-                    "index(es): {}\nInnovation:\n{}\nMahalanobis distance: {} "
-                    "(squared: {})\nsummands:\n{}".format(
-                        self.nb_exceeded_mahalanobis, measurement_time,
-                        indices, str(innovation.T).replace('\n', ''),
-                        math.sqrt(mahalanobis_distance2),
-                        mahalanobis_distance2,
-                        str(summands).replace('\n', '')
-                    )
+            self.nb_exceeded_mahalanobis += 1
+            ici = innovation_cov @ innovation
+            summands = []
+            for i in range(len(innovation)):
+                summands.append(np.asscalar(innovation[i] * ici[i]))
+            Console.warn_verbose(
+                "Mahalanobis dist > threshold ({} time(s) so far in this "
+                "dataset) for measurement at t={} of variable(s) with "
+                "index(es): {}\nInnovation:\n{}\nMahalanobis distance: {} "
+                "(squared: {})\nsummands:\n{}".format(
+                    self.nb_exceeded_mahalanobis, measurement_time,
+                    indices, str(innovation.T).replace('\n', ''),
+                    math.sqrt(mahalanobis_distance2),
+                    mahalanobis_distance2,
+                    str(summands).replace('\n', '')
                 )
-                # Console.warn("innovation_cov:\n{}".format(
-                #    str(innovation_cov).replace('\n', '').replace(']', ']\n'))
-                # )
+            )
+            # Console.warn("innovation_cov:\n{}".format(
+            #    str(innovation_cov).replace('\n', '').replace(']', ']\n'))
+            # )
             return False
         else:
             return True

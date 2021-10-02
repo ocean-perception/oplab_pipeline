@@ -15,6 +15,7 @@ from pathlib import Path
 import pkg_resources
 
 logger = None  # Public logger
+verbose = False
 
 
 class BColors:
@@ -52,6 +53,11 @@ class Console:
     """Console utility functions"""
 
     @staticmethod
+    def set_verbosity(verbosity) -> None:
+        global verbose
+        verbose = verbosity
+
+    @staticmethod
     def warn(*args, **kwargs) -> None:
         """Print a warning message"""
         print(
@@ -63,10 +69,24 @@ class Console:
         )
         if logger is not None:
             logger.warn(" ".join(map(str, args)), **kwargs)
+            
+    @staticmethod
+    def warn_verbose(*args, **kwargs) -> None:
+        """Print a warning message if in verbose mode. Log in either case."""
+        if verbose:
+            print(
+                BColors.WARNING
+                + "WARN ▸ "
+                + BColors.ENDC
+                + " ".join(map(str, args)),
+                **kwargs
+            )
+        if logger is not None:
+            logger.warn(" ".join(map(str, args)), **kwargs)
 
     @staticmethod
     def error(*args, **kwargs) -> None:
-        """Print and error message"""
+        """Print an error message"""
         print(
             BColors.FAIL
             + "ERROR ▸ "
@@ -79,7 +99,7 @@ class Console:
 
     @staticmethod
     def info(*args, **kwargs) -> None:
-        """Print and information message"""
+        """Print an information message"""
         print(
             BColors.OKBLUE
             + "INFO ▸ "
@@ -87,6 +107,20 @@ class Console:
             + " ".join(map(str, args)),
             **kwargs
         )
+        if logger is not None:
+            logger.info(" ".join(map(str, args)), **kwargs)
+
+    @staticmethod
+    def info_verbose(*args, **kwargs) -> None:
+        """Print an information message if in verbose mode. Log in either case."""
+        if verbose:
+            print(
+                BColors.OKBLUE
+                + "INFO ▸ "
+                + BColors.ENDC
+                + " ".join(map(str, args)),
+                **kwargs
+            )
         if logger is not None:
             logger.info(" ".join(map(str, args)), **kwargs)
 

@@ -116,6 +116,13 @@ def main(args=None):
         in YYYYMMDDhhmmss up to which data will be processed. If not set \
         process to end of dataset.",
     )
+    subparser_process.add_argument(
+        "-v",
+        "--verbose",
+        dest="verbose",
+        action="store_true",
+        help="Enable verbose output to terminal",
+    )
     subparser_process.set_defaults(func=call_process_data)
 
     subparser_convert = subparsers.add_parser(
@@ -252,6 +259,8 @@ def call_parse_data(args):
 
 def call_process_data(args):
     time_string = time.strftime("%Y%m%d_%H%M%S", time.localtime())
+
+    Console.set_verbosity(args.verbose)
     Console.set_logging_file(
         get_processed_folder(args.path)
         / ("log/" + time_string + "_auv_nav_process.log")
