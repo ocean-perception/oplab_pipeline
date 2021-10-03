@@ -115,6 +115,7 @@ class TestEkf(unittest.TestCase):
             orientation_list,
             velocity_list,
             mahalanobis_distance_threshold,
+            True,
         )
         ekf.run()
         ekf_states = ekf.get_result()
