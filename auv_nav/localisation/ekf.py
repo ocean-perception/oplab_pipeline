@@ -805,6 +805,7 @@ class ExtendedKalmanFilter(object):
         "orientation_list",
         "velocity_body_list",
         "mahalanobis_distance_threshold",
+        "activate_smoother"
     ]
 
     def __init__(
@@ -819,6 +820,7 @@ class ExtendedKalmanFilter(object):
         orientation_list,
         velocity_body_list,
         mahalanobis_distance_threshold,
+        activate_smoother,
     ):
         """
         Get the first USBL, DVL and Orientation reading for EKF initialization
@@ -834,9 +836,10 @@ class ExtendedKalmanFilter(object):
         self.orientation_list = orientation_list if orientation_list is not None else []
         self.velocity_body_list = velocity_body_list if velocity_body_list is not None else []
         self.mahalanobis_distance_threshold = mahalanobis_distance_threshold
+        self.activate_smoother = activate_smoother
 
     def run(self, timestamp_list=[]):
-        apply_smoother = True
+        activate_smoother = True
 
         if timestamp_list is None:
             timestamp_list = []
@@ -886,7 +889,7 @@ class ExtendedKalmanFilter(object):
         aggregated_timestamps.extend([i.epoch_timestamp for i in self.velocity_body_list])
         aggregated_timestamps.extend([i for i in timestamp_list])
         number_timestamps_to_process = len(aggregated_timestamps) - sum_start_indexes
-        if apply_smoother:
+        if activate_smoother:
             number_timestamps_to_process *= 2
 
         current_stamp = 0
@@ -954,7 +957,7 @@ class ExtendedKalmanFilter(object):
             if list_stamp == current_stamp:
                 timestamp_list_idx += 1
 
-        self.ekf.smooth(enable=apply_smoother)
+        self.ekf.smooth(enable=activate_smoother)
         self.ekf.print_report()
 
     def get_result(self):

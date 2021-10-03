@@ -175,6 +175,7 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
     # Default to no EKF and PF and SPP
     particle_filter_activate = False
     ekf_activate = False
+    activate_smoother = True  # Apply smoothing. Only has appliles of ekf is enabled
     mahalanobis_distance_threshold = 3.0
     spp_output_activate = False
 
@@ -239,6 +240,8 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
             sensors_std["orientation"]["model"] = "sensor"
         if "ekf" in load_localisation:
             ekf_activate = load_localisation["ekf"]["activate"]
+            if "activate_smoother" in load_localisation["ekf"]:
+                activate_smoother = load_localisation["ekf"]["activate_smoother"]
             if "mahalanobis_distance_threshold" in load_localisation["ekf"]:
                 mahalanobis_distance_threshold = \
                     load_localisation["ekf"]["mahalanobis_distance_threshold"]
@@ -1240,7 +1243,7 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
         # orientation_list, list of Orientation()
         # depth_list, list of Depth()
         # usbl_list, list of Usbl()
-        Console.info("Running EKF...")
+        Console.info("Running EKF (" + ("with" if activate_smoother else "without") + " smoother)...")
         ekf_start_time = time.time()
         ekf = ExtendedKalmanFilter(
             dead_reckoning_dvl_list[0],  # initial_state
@@ -1253,6 +1256,7 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
             orientation_list,
             velocity_body_list,
             mahalanobis_distance_threshold,
+            activate_smoother,
         )
         ekf.run(ekf_timestamps)
         ekf_end_time = time.time()
