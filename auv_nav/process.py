@@ -33,6 +33,7 @@ from auv_nav.plot.plot_process_data import (
     plot_orientation_vs_time,
     plot_pf_uncertainty,
     plot_ekf_states_and_std_vs_time,
+    plot_ekf_rejected_measurements,
     plot_sensor_uncertainty,
     plot_velocity_vs_time,
 )
@@ -1387,6 +1388,15 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
                     target=plot_ekf_states_and_std_vs_time,
                     args=[
                         ekf_states,
+                        plotlypath,
+                    ],
+                )
+                t.start()
+                threads.append(t)
+                t = threading.Thread(
+                    target=plot_ekf_rejected_measurements,
+                    args=[
+                        ekf.get_rejected_measurements(),
                         plotlypath,
                     ],
                 )

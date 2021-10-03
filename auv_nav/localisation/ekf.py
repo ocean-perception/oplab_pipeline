@@ -334,6 +334,7 @@ class EkfImpl(object):
         "states_vector",
         "smoothed_states_vector",
         "measurements",
+        "rejected_measurements",
     ]
 
     def __init__(self):
@@ -350,6 +351,7 @@ class EkfImpl(object):
         self.states_vector = []
         self.smoothed_states_vector = []
         self.measurements = {}
+        self.rejected_measurements = {}
 
     def set_mahalanobis_distance_threshold(self, threshold):
         self.mahalanobis_threshold = threshold
@@ -359,6 +361,9 @@ class EkfImpl(object):
 
     def get_smoothed_states(self):
         return self.smoothed_states_vector
+
+    def get_rejected_measurements(self):
+        return self.rejected_measurements
 
     def get_last_update_time(self):
         return self.last_update_time
@@ -570,6 +575,10 @@ class EkfImpl(object):
             # (5) Update the state for posterior smoothing
             if len(self.states_vector) > 0:
                 self.states_vector[-1].set(self.state, self.covariance)
+        else:
+            if measurement.type not in self.rejected_measurements:
+                self.rejected_measurements[measurement.type] = []
+            self.rejected_measurements[measurement.type].append(measurement.time)
 
         if measurement.type not in self.measurements:
             self.measurements[measurement.type] = MeasurementReport()
@@ -953,6 +962,9 @@ class ExtendedKalmanFilter(object):
 
     def get_smoothed_result(self):
         return self.ekf.get_smoothed_states()
+
+    def get_rejected_measurements(self):
+        return self.ekf.get_rejected_measurements()
 
     def build_state(self, init_dr):
         # Create a state from dead reckoning

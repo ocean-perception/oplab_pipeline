@@ -15,6 +15,7 @@ from plotly import subplots
 
 from oplab import Console
 from auv_nav.localisation.ekf import Index
+from auv_nav.tools.time_conversions import epoch_to_utctime
 
 
 def create_trace(x_list, y_list, trace_name, trace_color, visibility=True, fill="none", is_std_bound=False):
@@ -32,6 +33,18 @@ def create_trace(x_list, y_list, trace_name, trace_color, visibility=True, fill=
         fillcolor='rgba(200, 200, 200, 1)',
         fill=fill,
         showlegend=showlegend
+    )
+    return trace
+
+
+def create_trace_2(x_list, y_list, text_list, trace_name):
+    trace = go.Scattergl(
+        x=[float(i) for i in x_list],
+        y=y_list,
+        text=text_list,
+        name=trace_name,
+        mode="markers",
+        hoverinfo="text",
     )
     return trace
 
@@ -645,6 +658,36 @@ def plot_ekf_states_and_std_vs_time(
     )
 
     Console.info("... done plotting EKF states with std vs. time.")
+
+
+def plot_ekf_rejected_measurements(rejected_measurements, plotlypath):
+    Console.info("Plotting measurements rejected in EKF...")
+
+    trace_list = []
+    for key in rejected_measurements.keys():
+        x_values = rejected_measurements.get(key)
+        y_values = [key] * len(x_values)
+        text_list = [
+            str(t) + " (epoch) | " + time.strftime("%Y-%m-%d %H:%M:%S", epoch_to_utctime(t)) + " (UTC)"
+            for t in x_values
+        ]
+        trace_list.append(create_trace_2(x_values, y_values, text_list, key))
+
+    config = {"scrollZoom": True}
+    fig = go.Figure(data=list(trace_list))
+    fig.update_layout(
+        title="Timestamps of sensor measurements rejected in the EKF due to exceeding the Mahalanobis distance "
+              "threshold",
+        xaxis=dict(exponentformat='none', title="Epoch time, s")
+    )
+    py.plot(
+        fig,
+        config=config,
+        filename=str(plotlypath / "ekf_rejected_measurements.html"),
+        auto_open=False,
+    )
+
+    Console.info("... done plotting measurements rejected in EKF.")
 
 
 def plot_sensor_uncertainty(
