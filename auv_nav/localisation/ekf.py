@@ -839,8 +839,6 @@ class ExtendedKalmanFilter(object):
         self.activate_smoother = activate_smoother
 
     def run(self, timestamp_list=[]):
-        activate_smoother = True
-
         if timestamp_list is None:
             timestamp_list = []
         state0 = self.build_state(self.initial_state)
@@ -889,7 +887,7 @@ class ExtendedKalmanFilter(object):
         aggregated_timestamps.extend([i.epoch_timestamp for i in self.velocity_body_list])
         aggregated_timestamps.extend([i for i in timestamp_list])
         number_timestamps_to_process = len(aggregated_timestamps) - sum_start_indexes
-        if activate_smoother:
+        if self.activate_smoother:
             number_timestamps_to_process *= 2
 
         current_stamp = 0
@@ -957,7 +955,7 @@ class ExtendedKalmanFilter(object):
             if list_stamp == current_stamp:
                 timestamp_list_idx += 1
 
-        self.ekf.smooth(enable=activate_smoother)
+        self.ekf.smooth(enable=self.activate_smoother)
         self.ekf.print_report()
 
     def get_result(self):
