@@ -155,6 +155,7 @@ def run_setup():
             "numba>=0.51.2",
             "geographiclib>=1.50",
             "psutil>=5.8.0",
+            "scikit_image>=0.18.3",
         ],
     )
 
