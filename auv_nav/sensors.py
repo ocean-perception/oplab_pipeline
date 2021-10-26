@@ -18,6 +18,26 @@ from auv_nav.tools.body_to_inertial import body_to_inertial
 from auv_nav.tools.latlon_wgs84 import latlon_to_metres, metres_to_latlon
 from oplab import Console
 
+from auv_nav.tools.transformations import euler_from_quaternion
+
+
+def ros_stamp_to_epoch(stamp):
+    """Converts a ROS timestamp to an epoch time.
+
+    Parameters
+    ----------
+    stamp : dict
+        ROS timestamp.
+
+    Returns
+    -------
+    float
+        Epoch time
+    """
+    secs = float(stamp.secs)
+    nsecs = float(stamp.nsecs)
+    return secs + nsecs * 1e-9
+
 
 def float_or_none(val):
     if val is not None:
@@ -48,6 +68,7 @@ class Category:
     ALTITUDE = "altitude"
     USBL = "usbl"
     TIDE = "tide"
+    IMAGES = "images"
 
 
 class OutputFormat:
@@ -62,6 +83,7 @@ class OutputFormat:
     def __init__(self):
         # Nothing to do
         self.epoch_timestamp = None
+        self.category = "unknown"
 
     def __lt__(self, o):
         return self.epoch_timestamp < o.epoch_timestamp
@@ -99,7 +121,7 @@ class OutputFormat:
                 data = self._to_acfr()
             self.clear()
         if data is None:
-            Console.warn("WARNING: exporting non valid data!")
+            Console.warn("WARNING: exporting non valid data from", self.category, "!")
         return data
 
 
@@ -112,12 +134,19 @@ class BodyVelocity(OutputFormat):
         timestamp=None,
     ):
         self.epoch_timestamp = None
+        self.epoch_timestamp_dvl = None
+        self.x_velocity = None
+        self.y_velocity = None
+        self.z_velocity = None
+        self.x_velocity_std = None
+        self.y_velocity_std = None
+        self.z_velocity_std = None
         self.timestamp = timestamp
         self.velocity_std_factor = velocity_std_factor
         self.velocity_std_offset = velocity_std_offset
         self.yaw_offset = heading_offset
         self.sensor_string = "unknown"
-        self.clear()
+        self.category = Category.VELOCITY
 
     def clear(self):
         self.epoch_timestamp_dvl = None
@@ -130,15 +159,12 @@ class BodyVelocity(OutputFormat):
 
     def valid(self):
         # The class is populated with just one line message.
-        if (
+        return (
             self.x_velocity is not None
             and self.y_velocity is not None
             and self.epoch_timestamp is not None
             and self.epoch_timestamp_dvl is not None
-        ):
-            return True
-        else:
-            return False
+        )
 
     def get_std(self, value):
         return abs(value) * self.velocity_std_factor + self.velocity_std_offset
@@ -208,6 +234,74 @@ class BodyVelocity(OutputFormat):
             self.y_velocity = None
             self.z_velocity = None
 
+    def from_ros_teledyne_explorer_dvl_data(self, msg):
+        """Parse ROS topic / from DVL data in Turbot AUV"""
+        self.epoch_timestamp = ros_stamp_to_epoch(msg.header.stamp)
+        self.epoch_timestamp_dvl = self.epoch_timestamp
+
+        vx = None
+        vy = None
+        vz = None
+        verr = None
+
+        valid = False
+
+        if msg.bi_status == "A":
+            vx = msg.bi_x_axis_mms * 0.001
+            vy = msg.bi_y_axis_mms * 0.001
+            vz = msg.bi_z_axis_mms * 0.001
+            verr = abs(msg.bi_error_mms * 0.001)
+            valid = True
+        elif msg.wi_status == "A":
+            vx = msg.wi_x_axis_mms * 0.001
+            vy = msg.wi_y_axis_mms * 0.001
+            vz = msg.wi_z_axis_mms * 0.001
+            verr = abs(msg.wi_error_mms * 0.001)
+            valid = True
+
+        # account for sensor rotational offset
+        if valid:
+            [self.x_velocity, self.y_velocity, self.z_velocity,] = body_to_inertial(
+                0,
+                0,
+                self.yaw_offset,
+                vx,
+                vy,
+                vz,
+            )
+            [
+                self.x_velocity_std,
+                self.y_velocity_std,
+                self.z_velocity_std,
+            ] = body_to_inertial(
+                0,
+                0,
+                self.yaw_offset,
+                verr,
+                verr,
+                verr,
+            )
+
+        # Check if data is valid
+
+        bottom_valid = (
+            msg.bi_status == "A"
+            and msg.bi_x_axis_mms > -32768
+            and msg.bi_y_axis_mms > -32768
+            and msg.bi_z_axis_mms > -32768
+        )
+        water_valid = (
+            msg.wi_status == "A"
+            and msg.wi_x_axis_mms > -32768
+            and msg.wi_y_axis_mms > -32768
+            and msg.wi_z_axis_mms > -32768
+        )
+
+        if not (bottom_valid or water_valid):
+            self.x_velocity = None
+            self.y_velocity = None
+            self.z_velocity = None
+
     def parse_dvl_time(self, line):
         epoch_time_dvl = None
         velocity_time = str(line[6])
@@ -250,9 +344,7 @@ class BodyVelocity(OutputFormat):
                 self.y_velocity_std = sensor_std["offset"] + sensor_std["factor"] * self.y_velocity
                 self.z_velocity_std = sensor_std["offset"] + sensor_std["factor"] * self.z_velocity
         else:
-            Console.error(
-                "The STD model you entered for DVL is not supported."
-            )
+            Console.error("The STD model you entered for DVL is not supported.")
             Console.quit("STD model not supported.")
 
     def get_csv_header(self):
@@ -342,6 +434,7 @@ class InertialVelocity(OutputFormat):
     def __init__(self):
         self.epoch_timestamp = None
         self.sensor_string = "unknown"
+        self.category = Category.VELOCITY
         self.clear()
 
     def clear(self):
@@ -367,14 +460,11 @@ class InertialVelocity(OutputFormat):
         self.longitude = None
 
     def valid(self):
-        if (
+        return (
             self.north_velocity is not None
             and self.north_velocity_std is not None
             and self.epoch_timestamp is not None
-        ):
-            return True
-        else:
-            return False
+        )
 
     def from_phins(self, line):
         self.sensor_string = "phins"
@@ -410,9 +500,7 @@ class InertialVelocity(OutputFormat):
             "data": [
                 {
                     "north_velocity": float_or_none(self.north_velocity),
-                    "north_velocity_std": float_or_none(
-                        self.north_velocity_std
-                    ),
+                    "north_velocity_std": float_or_none(self.north_velocity_std),
                 },
                 {
                     "east_velocity": float_or_none(self.east_velocity),
@@ -439,6 +527,7 @@ class Orientation(OutputFormat):
         self.roll_std = None
         self.pitch_std = None
         self.yaw_std = None
+        self.category = Category.ORIENTATION
         if orientation_std_offset is not None:
             self.roll_std = orientation_std_offset
             self.pitch_std = orientation_std_offset
@@ -470,15 +559,18 @@ class Orientation(OutputFormat):
     def apply_std_offset(self):
         # account for sensor rotational offset
         [self.roll_std, self.pitch_std, self.heading_std] = body_to_inertial(
-            0, 0, self.yaw_offset, self.roll_std, self.pitch_std, self.yaw_std,
+            0,
+            0,
+            self.yaw_offset,
+            self.roll_std,
+            self.pitch_std,
+            self.yaw_std,
         )
 
     def from_eiva_navipac(self, line):
         self.sensor_string = "eiva_navipac"
         parts = line.split()
-        date_time_obj = datetime.datetime.strptime(
-            parts[2], "%Y:%m:%d:%H:%M:%S.%f"
-        )
+        date_time_obj = datetime.datetime.strptime(parts[2], "%Y:%m:%d:%H:%M:%S.%f")
         self.epoch_timestamp = date_time_obj.timestamp()
 
         nmea_string = parts[3].replace("\n", "")
@@ -494,9 +586,7 @@ class Orientation(OutputFormat):
             self.yaw = float(msg.heading)  # / 180.0 * pi
             self.apply_offset()
         except (ValueError, TypeError):
-            Console.warn(
-                "Invalid NMEA sentence from EIVA Navipac", nmea_string
-            )
+            Console.warn("Invalid NMEA sentence from EIVA Navipac", nmea_string)
             self.roll = None
             self.pitch = None
             self.yaw = None
@@ -531,6 +621,29 @@ class Orientation(OutputFormat):
             self.pitch_std = float(line[4])
             self.apply_std_offset()
 
+    def from_ros_imu(self, msg):
+        """Parse ROS message /turbot/navigator/imu_raw
+
+        Parameters
+        ----------
+        msg : dict
+            Message dict
+        """
+        q = [
+            msg.orientation.x,
+            msg.orientation.y,
+            msg.orientation.z,
+            msg.orientation.w,
+        ]
+        r, p, y = euler_from_quaternion(q)
+        self.epoch_timestamp = ros_stamp_to_epoch(msg.header.stamp)
+        self.roll = np.degrees(r)
+        self.pitch = np.degrees(p)
+        self.yaw = np.degrees(y)
+        self.roll_std = np.degrees(msg.orientation_covariance[0])
+        self.pitch_std = np.degrees(msg.orientation_covariance[4])
+        self.yaw_std = np.degrees(msg.orientation_covariance[8])
+
     def from_json(self, json, sensor_std):
         self.epoch_timestamp = json["epoch_timestamp"]
         self.roll = json["data"][1]["roll"]
@@ -542,19 +655,11 @@ class Orientation(OutputFormat):
             self.pitch_std = json["data"][2]["pitch_std"]
             self.yaw_std = json["data"][0]["heading_std"]
         elif sensor_std["model"] == "linear":
-            self.roll_std = (
-                sensor_std["offset"] + sensor_std["factor"] * self.roll
-            )
-            self.pitch_std = (
-                sensor_std["offset"] + sensor_std["factor"] * self.pitch
-            )
-            self.yaw_std = (
-                sensor_std["offset"] + sensor_std["factor"] * self.yaw
-            )
+            self.roll_std = sensor_std["offset"] + sensor_std["factor"] * self.roll
+            self.pitch_std = sensor_std["offset"] + sensor_std["factor"] * self.pitch
+            self.yaw_std = sensor_std["offset"] + sensor_std["factor"] * self.yaw
         else:
-            Console.error(
-                "The STD model you entered for Orientation is not supported."
-            )
+            Console.error("The STD model you entered for Orientation is not supported.")
             Console.quit("STD model not supported.")
 
     def get_csv_header(self):
@@ -637,6 +742,7 @@ class Depth(OutputFormat):
         self.ts = ts
         self.depth_std_factor = depth_std_factor
         self.sensor_string = "unknown"
+        self.category = Category.DEPTH
         self.clear()
 
     def clear(self):
@@ -651,12 +757,16 @@ class Depth(OutputFormat):
             and self.depth_timestamp is not None
         )
 
+    def from_ros_pose_with_covariance_stamped(self, msg):
+        self.epoch_timestamp = ros_stamp_to_epoch(msg.header.stamp)
+        self.depth_timestamp = self.epoch_timestamp
+        self.depth = msg.pose.pose.position.z
+        self.depth_std = msg.pose.covariance[14]
+
     def from_eiva_navipac(self, line):
         self.sensor_string = "eiva_navipac"
         parts = line.split()
-        date_time_obj = datetime.datetime.strptime(
-            parts[4], "%Y:%m:%d:%H:%M:%S.%f"
-        )
+        date_time_obj = datetime.datetime.strptime(parts[4], "%Y:%m:%d:%H:%M:%S.%f")
         self.epoch_timestamp = date_time_obj.timestamp()
         self.depth_timestamp = self.epoch_timestamp
         self.depth = float(parts[5])
@@ -703,13 +813,9 @@ class Depth(OutputFormat):
         if sensor_std["model"] == "sensor":
             self.depth_std = json["data"][0]["depth_std"]
         elif sensor_std["model"] == "linear":
-            self.depth_std = (
-                sensor_std["offset"] + sensor_std["factor"] * self.depth
-            )
+            self.depth_std = sensor_std["offset"] + sensor_std["factor"] * self.depth
         else:
-            Console.error(
-                "The STD model you entered for Depth is not supported."
-            )
+            Console.error("The STD model you entered for Depth is not supported.")
             Console.quit("STD model not supported.")
 
     def get_csv_header(self):
@@ -743,13 +849,7 @@ class Depth(OutputFormat):
         return data
 
     def to_acfr(self):
-        data = (
-            "PAROSCI: "
-            + str(self.depth_timestamp)
-            + " "
-            + str(self.depth)
-            + "\n"
-        )
+        data = "PAROSCI: " + str(self.depth_timestamp) + " " + str(self.depth) + "\n"
         return data
 
 
@@ -758,6 +858,7 @@ class Altitude(OutputFormat):
         self.epoch_timestamp = None
         self.altitude_std_factor = altitude_std_factor
         self.sensor_string = "unknown"
+        self.category = Category.ALTITUDE
         self.clear()
 
     def clear(self):
@@ -775,6 +876,16 @@ class Altitude(OutputFormat):
             and self.epoch_timestamp is not None
             and self.altitude_timestamp is not None
         )
+
+    def from_ros_teledyne_explorer_dvl_data(self, msg):
+        """Parse ROS topic / from DVL data in Turbot AUV"""
+        if msg.bi_status != "A":
+            # If status is "V" is NOT valid
+            pass
+        self.epoch_timestamp = ros_stamp_to_epoch(msg.header.stamp)
+        self.altitude_timestamp = self.epoch_timestamp
+        self.altitude = msg.bd_range
+        self.altitude_std = self.altitude * self.altitude_std_factor
 
     def from_ntnu_dvl(self, filename, row):
         self.sensor_string = "ntnu_dvl"
@@ -890,6 +1001,7 @@ class Usbl(OutputFormat):
         self.lateral_distace = None
         self.distance = None
         self.bearing = None
+        self.category = Category.USBL
 
         if std_factor is not None:
             self.std_factor = std_factor
@@ -916,12 +1028,35 @@ class Usbl(OutputFormat):
             and self.epoch_timestamp is not None
         )
 
+    def from_ros_pose_with_covariance_stamped(self, msg):
+        self.epoch_timestamp = ros_stamp_to_epoch(msg.header.stamp)
+
+        self.northings = msg.pose.pose.position.x
+        self.eastings = msg.pose.pose.position.y
+        self.depth = msg.pose.pose.position.z
+        self.northings_std = msg.pose.covariance[0]
+        self.eastings_std = msg.pose.covariance[7]
+        self.depth_std = msg.pose.covariance[14]
+
+        # Convert to lat lon from the reference
+        self.latitude, self.longitude = metres_to_latlon(
+            self.latitude_reference,
+            self.longitude_reference,
+            self.eastings,
+            self.northings,
+        )
+        # Transform STD in meters to degrees
+        self.latitude_std, self.longitude_std = metres_to_latlon(
+            self.latitude_reference,
+            self.longitude_reference,
+            self.eastings_std,
+            self.northings_std,
+        )
+
     def from_eiva_navipac(self, line):
         self.sensor_string = "eiva_navipac"
         parts = line.split()
-        date_time_obj = datetime.datetime.strptime(
-            parts[3], "%Y:%m:%d:%H:%M:%S.%f"
-        )
+        date_time_obj = datetime.datetime.strptime(parts[3], "%Y:%m:%d:%H:%M:%S.%f")
         self.epoch_timestamp = date_time_obj.timestamp()
         self.latitude = float(parts[7])
         self.longitude = float(parts[8])
@@ -946,9 +1081,7 @@ class Usbl(OutputFormat):
         # latitude) and 111,111 * cos(latitude) meters in the x direction is
         # 1 degree (of longitude).
         self.latitude_std = self.depth / 111.111e3
-        self.longitude_std = self.latitude_std * cos(
-            self.latitude * pi / 180.0
-        )
+        self.longitude_std = self.latitude_std * cos(self.latitude * pi / 180.0)
 
     def from_nmea(self, msg):
         self.epoch_timestamp = msg.timestamp
@@ -975,9 +1108,13 @@ class Usbl(OutputFormat):
         # latitude) and 111,111 * cos(latitude) meters in the x direction is
         # 1 degree (of longitude).
         self.latitude_std = self.depth / 111.111e3
-        self.longitude_std = self.latitude_std * cos(
-            self.latitude * pi / 180.0
-        )
+        self.longitude_std = self.latitude_std * cos(self.latitude * pi / 180.0)
+
+    def from_ros_gps_navsatfix(self, msg):
+        # /turbot/navigator/gps_raw
+        self.epoch_timestamp = ros_stamp_to_epoch(msg.header.stamp)
+        self.latitude = msg.latitude
+        self.longitude = msg.longitude
 
     def from_json(self, json, sensor_std):
         self.epoch_timestamp = json["epoch_timestamp"]
@@ -996,19 +1133,15 @@ class Usbl(OutputFormat):
             self.eastings_std = json["data_target"][3]["eastings_std"]
         elif sensor_std["model"] == "linear":
             self.northings_std = (
-                sensor_std["offset"]
-                + sensor_std["factor"] * self.distance_to_ship
+                sensor_std["offset"] + sensor_std["factor"] * self.distance_to_ship
             )
             self.eastings_std = (
-                sensor_std["offset"]
-                + sensor_std["factor"] * self.distance_to_ship
+                sensor_std["offset"] + sensor_std["factor"] * self.distance_to_ship
             )
 
             # determine range to input to uncertainty model
             distance = math.sqrt(self.distance_to_ship ** 2 + self.depth ** 2)
-            distance_std = (
-                sensor_std["factor"] * distance + sensor_std["offset"]
-            )
+            distance_std = sensor_std["factor"] * distance + sensor_std["offset"]
 
             # determine uncertainty in terms of latitude and longitude
             latitude_offset, longitude_offset = metres_to_latlon(
@@ -1020,9 +1153,7 @@ class Usbl(OutputFormat):
             self.latitude_std = abs(abs(self.latitude) - latitude_offset)
             self.longitude_std = abs(abs(self.longitude) - longitude_offset)
         else:
-            Console.error(
-                "The STD model you entered for USBL is not supported."
-            )
+            Console.error("The STD model you entered for USBL is not supported.")
             Console.quit("STD model not supported.")
         try:
             self.latitude_ship = json["data_ship"][0]["latitude"]
@@ -1125,9 +1256,7 @@ class Usbl(OutputFormat):
         distance_range = -1.0
         if self.distance_to_ship > self.depth and self.distance_to_ship > 0:
             try:
-                distance_range = sqrt(
-                    self.distance_to_ship ** 2 - self.depth ** 2
-                )
+                distance_range = sqrt(self.distance_to_ship ** 2 - self.depth ** 2)
             except ValueError:
                 print("Value error:")
                 print("Value distance_to_ship: " + str(self.distance_to_ship))
@@ -1180,13 +1309,9 @@ class Tide(OutputFormat):
         if sensor_std["model"] == "sensor":
             self.height_std = json["data"][0]["tide_std"]
         elif sensor_std["model"] == "linear":
-            self.height_std = (
-                sensor_std["offset"] + sensor_std["factor"] * self.height
-            )
+            self.height_std = sensor_std["offset"] + sensor_std["factor"] * self.height
         else:
-            Console.error(
-                "The STD model you entered for TIDE is not supported."
-            )
+            Console.error("The STD model you entered for TIDE is not supported.")
             Console.quit("STD model not supported.")
 
     def get_csv_header(self):
@@ -1431,7 +1556,8 @@ class SyncedOrientationBodyVelocity:
 
     def to_sidescan_row(self):
         datetime_str = time.strftime(
-            "%Y%m%d %H%M%S", time.gmtime(self.epoch_timestamp),
+            "%Y%m%d %H%M%S",
+            time.gmtime(self.epoch_timestamp),
         )
         lat = self.latitude if self.latitude is not None else 0.0
         lon = self.longitude if self.latitude is not None else 0.0

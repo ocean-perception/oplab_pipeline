@@ -24,6 +24,8 @@ from auv_nav.parsers.parse_NOC_nmea import parse_NOC_nmea
 from auv_nav.parsers.parse_NOC_polpred import parse_NOC_polpred
 from auv_nav.parsers.parse_ntnu_dvl import parse_ntnu_dvl
 from auv_nav.parsers.parse_ntnu_stereo import parse_ntnu_stereo_images
+from auv_nav.parsers.parse_rosbag import parse_rosbag
+from auv_nav.parsers.parse_rosbag import parse_rosbag_extracted_images
 
 # sys.path.append("..")
 from auv_nav.parsers.parse_phins import parse_phins
@@ -62,9 +64,7 @@ def merge_json_files(json_file_list):
                 "The datasets you want to merge do not belong to the same",
                 "origin.",
             )
-            Console.error(
-                "Change the origins to be identical and parse them again."
-            )
+            Console.error("Change the origins to be identical and parse them again.")
             Console.quit("Invalid origins for merging datasets.")
 
         # Get dive name
@@ -175,9 +175,7 @@ def parse_single(filepath, force_overwrite):
     filepath = get_raw_folder(filepath)
 
     if not force_overwrite:
-        existing_files = check_output_files_exist(
-            get_processed_folder(filepath)
-        )
+        existing_files = check_output_files_exist(get_processed_folder(filepath))
         if existing_files:
             msg = (
                 "It looks like this dataset has already been parsed.\n"
@@ -249,10 +247,7 @@ def parse_single(filepath, force_overwrite):
 
     # read in, parse data and write data
     if not mission.image.empty():
-        if (
-            mission.image.format == "acfr_standard"
-            or mission.image.format == "unagi"
-        ):
+        if mission.image.format == "acfr_standard" or mission.image.format == "unagi":
             pool_list.append(
                 pool.apply_async(
                     parse_acfr_images,
@@ -266,8 +261,9 @@ def parse_single(filepath, force_overwrite):
                     [mission, vehicle, "images", ftype, outpath],
                 )
             )
-        elif (mission.image.format == "biocam" or
-              mission.image.format == "biocam4000_15c"):
+        elif (
+            mission.image.format == "biocam" or mission.image.format == "biocam4000_15c"
+        ):
             pool_list.append(
                 pool.apply_async(
                     parse_biocam_images,
@@ -281,16 +277,19 @@ def parse_single(filepath, force_overwrite):
                     [mission, vehicle, "images", ftype, outpath],
                 )
             )
-        else:
-            Console.quit(
-                "Mission image format", mission.image.format, "not supported."
+        elif mission.image.format == "rosbag_extracted_images":
+            pool_list.append(
+                pool.apply_async(
+                    parse_rosbag_extracted_images,
+                    [mission, vehicle, "images", ftype, outpath],
+                )
             )
+        else:
+            Console.quit("Mission image format", mission.image.format, "not supported.")
     if not mission.usbl.empty():
         if mission.usbl.format == "gaps":
             pool_list.append(
-                pool.apply_async(
-                    parse_gaps, [mission, vehicle, "usbl", ftype, outpath]
-                )
+                pool.apply_async(parse_gaps, [mission, vehicle, "usbl", ftype, outpath])
             )
         elif mission.usbl.format == "usbl_dump":
             pool_list.append(
@@ -311,10 +310,15 @@ def parse_single(filepath, force_overwrite):
                     [mission, vehicle, "usbl", ftype, outpath],
                 )
             )
-        else:
-            Console.quit(
-                "Mission usbl format", mission.usbl.format, "not supported."
+        elif mission.usbl.format == "rosbag":
+            pool_list.append(
+                pool.apply_async(
+                    parse_rosbag,
+                    [mission, vehicle, "usbl", ftype, outpath],
+                )
             )
+        else:
+            Console.quit("Mission usbl format", mission.usbl.format, "not supported.")
 
     if not mission.velocity.empty():
         if mission.velocity.format == "phins":
@@ -354,6 +358,13 @@ def parse_single(filepath, force_overwrite):
             pool_list.append(
                 pool.apply_async(
                     parse_ntnu_dvl,
+                    [mission, vehicle, "velocity", ftype, outpath],
+                )
+            )
+        elif mission.usbl.format == "rosbag":
+            pool_list.append(
+                pool.apply_async(
+                    parse_rosbag,
                     [mission, vehicle, "velocity", ftype, outpath],
                 )
             )
@@ -407,6 +418,13 @@ def parse_single(filepath, force_overwrite):
                     [mission, vehicle, "orientation", ftype, outpath],
                 )
             )
+        elif mission.usbl.format == "rosbag":
+            pool_list.append(
+                pool.apply_async(
+                    parse_rosbag,
+                    [mission, vehicle, "orientation", ftype, outpath],
+                )
+            )
         else:
             Console.quit(
                 "Mission orientation format",
@@ -429,9 +447,7 @@ def parse_single(filepath, force_overwrite):
             )
         elif mission.depth.format == "alr":
             pool_list.append(
-                pool.apply_async(
-                    parse_alr, [mission, vehicle, "depth", ftype, outpath]
-                )
+                pool.apply_async(parse_alr, [mission, vehicle, "depth", ftype, outpath])
             )
         elif mission.depth.format == "autosub":
             pool_list.append(
@@ -452,10 +468,15 @@ def parse_single(filepath, force_overwrite):
                     [mission, vehicle, "depth", ftype, outpath],
                 )
             )
-        else:
-            Console.quit(
-                "Mission depth format", mission.depth.format, "not supported."
+        elif mission.usbl.format == "rosbag":
+            pool_list.append(
+                pool.apply_async(
+                    parse_rosbag,
+                    [mission, vehicle, "depth", ftype, outpath],
+                )
             )
+        else:
+            Console.quit("Mission depth format", mission.depth.format, "not supported.")
 
     if not mission.altitude.empty():
         if mission.altitude.format == "phins":
@@ -498,6 +519,13 @@ def parse_single(filepath, force_overwrite):
                     [mission, vehicle, "altitude", ftype, outpath],
                 )
             )
+        elif mission.usbl.format == "rosbag":
+            pool_list.append(
+                pool.apply_async(
+                    parse_rosbag,
+                    [mission, vehicle, "altitude", ftype, outpath],
+                )
+            )
         else:
             Console.quit(
                 "Mission altitude format",
@@ -507,13 +535,9 @@ def parse_single(filepath, force_overwrite):
 
     if not mission.tide.empty():
         if mission.tide.format == "NOC_polpred":
-            tide_list = parse_NOC_polpred(
-                mission, vehicle, "tide", ftype, outpath
-            )
+            tide_list = parse_NOC_polpred(mission, vehicle, "tide", ftype, outpath)
         else:
-            Console.quit(
-                "Mission tide format", mission.tide.format, "not supported."
-            )
+            Console.quit("Mission tide format", mission.tide.format, "not supported.")
     else:
         tide_list = None
 
@@ -616,9 +640,7 @@ def parse_single(filepath, force_overwrite):
     # interlace the data based on timestamps
     Console.info("Interlacing data...")
     parse_interlacer(outpath, filename)
-    Console.info(
-        "...done interlacing data. Output saved to", outpath / filename
-    )
+    Console.info("...done interlacing data. Output saved to", outpath / filename)
     plot_parse_data(outpath, ftype)
     Console.info("Complete parse data")
 
@@ -629,9 +651,7 @@ def check_output_files_exist(processed_dataset_folder):
     vehicle_file = processed_dataset_folder / "vehicle.yaml"
     nav_file = processed_dataset_folder / "nav" / "nav_standard.json"
     data_plot_file = processed_dataset_folder / "nav" / "json_data_info.html"
-    history_plot_file = (
-        processed_dataset_folder / "nav" / "timestamp_history.html"
-    )
+    history_plot_file = processed_dataset_folder / "nav" / "timestamp_history.html"
 
     existing_files = ""
     if mission_file.exists():
