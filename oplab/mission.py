@@ -35,9 +35,7 @@ def error_and_exit():
         "stick to default frame names:",
     )
     Console.error("sensors: dvl ins depth usbl")
-    Console.error(
-        "cameras: use the same name in mission.yaml and in vehicle.yaml"
-    )
+    Console.error("cameras: use the same name in mission.yaml and in vehicle.yaml")
     Console.quit("Inconsistency between mission.yaml and vehicle.yaml")
 
 
@@ -75,9 +73,7 @@ class CameraEntry:
             self.origin = None
             if "origin" in node:
                 self.origin = node["origin"]
-                Console.info(
-                    "Using camera " + self.name + " mounted at " + self.origin
-                )
+                Console.info("Using camera " + self.name + " mounted at " + self.origin)
 
     def write(self, node):
         node["name"] = self.name
@@ -196,6 +192,7 @@ class DefaultEntry(TimeZoneEntry):
         self.std_factor = 0.0
         self.std_offset = 0.0
         self._empty = True
+        self.topic = None
 
     def empty(self):
         return self._empty
@@ -218,12 +215,16 @@ class DefaultEntry(TimeZoneEntry):
             self.std_offset = node["std_offset"]
         if "origin" in node:
             self.origin = node["origin"]
+        if "topic" in node:
+            self.topic = node["topic"]
 
     def write(self, node):
         super().write(node)
         node["format"] = self.format
         if "origin" in node:
             node["origin"] = self.origin
+        if "topic" in node:
+            node["topic"] = self.topic
         node["filepath"] = self.filepath
         node["filename"] = self.filename
         node["label"] = self.label
@@ -279,9 +280,7 @@ class Mission:
             vehicle_stream = vehicle_file.open("r")
             vehicle_data = yaml.safe_load(vehicle_stream)
         except FileNotFoundError:
-            Console.error(
-                "The file vehicle.yaml could not be found at the location:"
-            )
+            Console.error("The file vehicle.yaml could not be found at the location:")
             Console.error(vehicle_file)
             Console.error(
                 "In order to load a mission.yaml file, a corresponding \
@@ -289,13 +288,9 @@ class Mission:
             )
             Console.quit("vehicle.yaml not provided")
         except PermissionError:
-            Console.error(
-                "The file vehicle.yaml could not be opened at the location:"
-            )
+            Console.error("The file vehicle.yaml could not be opened at the location:")
             Console.error(vehicle_file)
-            Console.error(
-                "Please make sure you have the correct access rights."
-            )
+            Console.error("Please make sure you have the correct access rights.")
             Console.quit("vehicle.yaml not provided")
 
         try:
@@ -378,19 +373,13 @@ class Mission:
                             error_and_exit()
 
         except FileNotFoundError:
-            Console.error(
-                "The file mission.yaml could not be found at the location:"
-            )
+            Console.error("The file mission.yaml could not be found at the location:")
             Console.error(filename)
             Console.quit("mission.yaml not provided")
         except PermissionError:
-            Console.error(
-                "The file mission.yaml could not be opened at the location:"
-            )
+            Console.error("The file mission.yaml could not be opened at the location:")
             Console.error(filename)
-            Console.error(
-                "Please make sure you have the correct access rights."
-            )
+            Console.error("Please make sure you have the correct access rights.")
             Console.quit("mission.yaml not provided")
 
     def write_metadata(self, node):
@@ -443,8 +432,5 @@ class Mission:
                     mission_dict["image"] = OrderedDict()
                     self.image.write(mission_dict["image"])
                 yaml.dump(
-                    mission_dict,
-                    f,
-                    allow_unicode=True,
-                    default_flow_style=False,
+                    mission_dict, f, allow_unicode=True, default_flow_style=False,
                 )

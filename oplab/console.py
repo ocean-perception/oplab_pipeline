@@ -61,24 +61,18 @@ class Console:
     def warn(*args, **kwargs) -> None:
         """Print a warning message"""
         print(
-            BColors.WARNING
-            + "WARN ▸ "
-            + BColors.ENDC
-            + " ".join(map(str, args)),
+            BColors.WARNING + "WARN ▸ " + BColors.ENDC + " ".join(map(str, args)),
             **kwargs
         )
         if logger is not None:
             logger.warn(" ".join(map(str, args)), **kwargs)
-            
+
     @staticmethod
     def warn_verbose(*args, **kwargs) -> None:
         """Print a warning message if in verbose mode. Log in either case."""
         if verbose:
             print(
-                BColors.WARNING
-                + "WARN ▸ "
-                + BColors.ENDC
-                + " ".join(map(str, args)),
+                BColors.WARNING + "WARN ▸ " + BColors.ENDC + " ".join(map(str, args)),
                 **kwargs
             )
         if logger is not None:
@@ -88,10 +82,7 @@ class Console:
     def error(*args, **kwargs) -> None:
         """Print an error message"""
         print(
-            BColors.FAIL
-            + "ERROR ▸ "
-            + BColors.ENDC
-            + " ".join(map(str, args)),
+            BColors.FAIL + "ERROR ▸ " + BColors.ENDC + " ".join(map(str, args)),
             **kwargs
         )
         if logger is not None:
@@ -101,10 +92,7 @@ class Console:
     def info(*args, **kwargs) -> None:
         """Print an information message"""
         print(
-            BColors.OKBLUE
-            + "INFO ▸ "
-            + BColors.ENDC
-            + " ".join(map(str, args)),
+            BColors.OKBLUE + "INFO ▸ " + BColors.ENDC + " ".join(map(str, args)),
             **kwargs
         )
         if logger is not None:
@@ -115,10 +103,7 @@ class Console:
         """Print an information message if in verbose mode. Log in either case."""
         if verbose:
             print(
-                BColors.OKBLUE
-                + "INFO ▸ "
-                + BColors.ENDC
-                + " ".join(map(str, args)),
+                BColors.OKBLUE + "INFO ▸ " + BColors.ENDC + " ".join(map(str, args)),
                 **kwargs
             )
         if logger is not None:
@@ -145,9 +130,7 @@ class Console:
     def banner() -> None:
         """Displays Ocean Perception banner and copyright"""
         print(" ")
-        print(
-            BColors.OKBLUE + "     ● ● " + BColors.ENDC + " Ocean Perception"
-        )
+        print(BColors.OKBLUE + "     ● ● " + BColors.ENDC + " Ocean Perception")
         print(
             BColors.OKBLUE
             + "     ● "
@@ -287,8 +270,7 @@ class Console:
             folder_path.mkdir(parents=True)
         fh = logging.FileHandler(filename)
         formatter = logging.Formatter(
-            fmt="%(asctime)s %(levelname)-8s %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S",
+            fmt="%(asctime)s %(levelname)-8s %(message)s", datefmt="%Y-%m-%d %H:%M:%S",
         )
         fh.setFormatter(formatter)
         logger = logging.getLogger()

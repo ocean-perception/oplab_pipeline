@@ -12,15 +12,14 @@ import cv2
 import imageio
 import joblib
 import numpy as np
-from matplotlib import pyplot as plt
 from numba import njit, prange
 from tqdm import tqdm
 
 # Parameters
 brightness = 25.0  # over 100 of the entire image values
 contrast = 7.0  # over 100 of the entire image values
-max_space_gb = 400.0  # Max space to use in your hard drive
-scale_factor = 1.0
+max_space_gb = 200.0  # Max space to use in your hard drive
+scale_factor = 0.5
 use_random_sample = True
 src_bit = 8
 
@@ -80,9 +79,7 @@ def mean_std_array(data: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     return mean_array, std_array
 
 
-def memmap_loader(
-    image_list, memmap_handle, idx, new_width, new_height, src_bit=8
-):
+def memmap_loader(image_list, memmap_handle, idx, new_width, new_height, src_bit=8):
     np_im = imageio.imread(image_list[idx]).astype(np.float32)
     np_im *= 2 ** (-src_bit)
     im2 = cv2.resize(np_im, (new_width, new_height), cv2.INTER_CUBIC)
@@ -111,11 +108,7 @@ def correct_image(
         else:
             intensities = image[:, :]
         intensities = pixel_stat(
-            intensities,
-            image_raw_mean[i],
-            image_raw_std[i],
-            brightness,
-            contrast,
+            intensities, image_raw_mean[i], image_raw_std[i], brightness, contrast,
         )
         if image_channels == 3:
             output_image[:, :, i] = intensities
@@ -132,9 +125,7 @@ def correct_image(
 parser = argparse.ArgumentParser()
 parser.add_argument("path", help="Path to images.")
 parser.add_argument("extension", help="extension of images (e.g. jpg, png)")
-parser.add_argument(
-    "output_folder", help="Output folder to write processed images"
-)
+parser.add_argument("output_folder", help="Output folder to write processed images")
 args = parser.parse_args()
 
 output_folder = Path(args.output_folder)
@@ -162,9 +153,7 @@ image_width = int(scale_factor * float(orig_image_width))
 
 print("Scaling to", image_width, "x", image_height)
 
-image_raw_mean = np.empty(
-    (image_channels, orig_image_height, orig_image_width)
-)
+image_raw_mean = np.empty((image_channels, orig_image_height, orig_image_width))
 image_raw_std = np.empty((image_channels, orig_image_height, orig_image_width))
 
 image_raw_mean_scaled = np.empty((image_channels, image_height, image_width))
@@ -177,14 +166,11 @@ free = free // (2 ** 30)
 print("Free disk space: ", free, "Gb")
 if free < max_space_gb:
     print(
-        "Free disk space is below",
-        max_space_gb,
-        "Gb. you might have problems.",
+        "Free disk space is below", max_space_gb, "Gb. you might have problems.",
     )
 
 num_images_to_compute_mean = int(
-    max_space_gb
-    / (image_height * image_width * image_channels * 8 / (1024 ** 3))
+    max_space_gb / (image_height * image_width * image_channels * 8 / (1024 ** 3))
 )
 
 print(
@@ -207,9 +193,7 @@ else:
             image_list_sampled.append(image_list[i])
             i += increment
     else:
-        image_list_sampled = random.sample(
-            image_list, num_images_to_compute_mean
-        )
+        image_list_sampled = random.sample(image_list, num_images_to_compute_mean)
 
 filename_map = "memmap_" + str(uuid.uuid4()) + ".map"
 list_shape = [
@@ -228,6 +212,7 @@ print(
     size * 8 / (1024 ** 3),
     "Gb on the filesystem. Do not worry, it will be deleted later.",
 )
+
 image_memmap = np.memmap(
     filename=filename_map, mode="w+", shape=tuple(list_shape), dtype=np.float32
 )
@@ -257,16 +242,13 @@ for i in range(image_channels):
     image_raw_std_scaled_t = image_raw_std_scaled.transpose(1, 2, 0)
 
     image_raw_mean = cv2.resize(
-        image_raw_mean_scaled_t,
-        (orig_image_height, orig_image_width),
-        cv2.INTER_CUBIC,
+        image_raw_mean_scaled_t, (orig_image_height, orig_image_width), cv2.INTER_CUBIC,
     ).transpose(2, 1, 0)
     image_raw_std = cv2.resize(
-        image_raw_std_scaled_t,
-        (orig_image_height, orig_image_width),
-        cv2.INTER_CUBIC,
+        image_raw_std_scaled_t, (orig_image_height, orig_image_width), cv2.INTER_CUBIC,
     ).transpose(2, 1, 0)
 
+    """
     image_raw_mean_fig = image_raw_mean.transpose(1, 2, 0)
     image_raw_std_fig = image_raw_std.transpose(1, 2, 0)
 
@@ -289,6 +271,7 @@ for i in range(image_channels):
     plt.title("Std " + str(i))
     plt.savefig("image_raw_std_" + str(i) + ".png", dpi=600)
     plt.close(fig)
+    """
 
 np.save("image_raw_mean.np", image_raw_mean)
 np.save("image_raw_std.np", image_raw_std)
@@ -302,9 +285,7 @@ print("Done computing parameters. Correcting now...")
 # image_raw_mean = np.load("image_raw_mean.np.npy")
 # image_raw_std = np.load("image_raw_std.np.npy")
 
-with tqdm_joblib(
-    tqdm(desc="Correcting images", total=len(image_list))
-) as progress_bar:
+with tqdm_joblib(tqdm(desc="Correcting images", total=len(image_list))) as progress_bar:
     joblib.Parallel(n_jobs=-2, verbose=0)(
         joblib.delayed(correct_image)(
             image_raw_mean,

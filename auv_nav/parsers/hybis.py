@@ -19,7 +19,7 @@ from oplab import Console, get_raw_folder
 
 
 class HyBisPos:
-    """ Class to parse and store HyBis position data. """
+    """Class to parse and store HyBis position data."""
 
     def __init__(
         self,
@@ -76,11 +76,9 @@ class HyBisPos:
 
 
 class HybisParser:
-    """ Class to parse and write HyBis position data. """
+    """Class to parse and write HyBis position data."""
 
-    def __init__(
-        self, navigation_file, image_path, reference_lat, reference_lon
-    ):
+    def __init__(self, navigation_file, image_path, reference_lat, reference_lon):
         navigation_file = get_raw_folder(navigation_file)
         image_path = Path(image_path)
         image_path = get_raw_folder(image_path)
@@ -163,9 +161,7 @@ class HybisParser:
         Console.info("Found " + str(len(image_list)) + " images!")
         Console.info("Interpolating...")
         for k, filename in enumerate(image_list):
-            modification_time = os.stat(
-                str(image_path) + "/" + filename
-            ).st_mtime
+            modification_time = os.stat(str(image_path) + "/" + filename).st_mtime
             filename = str(image_path) + "/" + filename
 
             i = 0

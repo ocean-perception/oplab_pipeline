@@ -6,19 +6,27 @@ Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
 
-import time
 import math
+import time
 
 import plotly.graph_objs as go
 import plotly.offline as py
 from plotly import subplots
 
-from oplab import Console
 from auv_nav.localisation.ekf import Index
 from auv_nav.tools.time_conversions import epoch_to_utctime
+from oplab import Console
 
 
-def create_trace(x_list, y_list, trace_name, trace_color, visibility=True, fill="none", is_std_bound=False):
+def create_trace(
+    x_list,
+    y_list,
+    trace_name,
+    trace_color,
+    visibility=True,
+    fill="none",
+    is_std_bound=False,
+):
     line = dict(width=0) if is_std_bound else dict(color=trace_color)
     showlegend = False if is_std_bound else True
     mode = "lines" if is_std_bound else "lines+markers"
@@ -30,9 +38,9 @@ def create_trace(x_list, y_list, trace_name, trace_color, visibility=True, fill=
         mode=mode,
         marker=dict(color=trace_color),
         line=line,
-        fillcolor='rgba(200, 200, 200, 1)',
+        fillcolor="rgba(200, 200, 200, 1)",
         fill=fill,
-        showlegend=showlegend
+        showlegend=showlegend,
     )
     return trace
 
@@ -140,30 +148,18 @@ def plot_velocity_vs_time(
     dr_y_velocity = [i.y_velocity for i in dead_reckoning_dvl_list]
     dr_z_velocity = [i.z_velocity for i in dead_reckoning_dvl_list]
 
-    tr_dr_north = create_trace(
-        dr_time, dr_north_velocity, "DVL north velocity", "red"
-    )
-    tr_dr_east = create_trace(
-        dr_time, dr_east_velocity, "DVL east velocity", "red"
-    )
-    tr_dr_down = create_trace(
-        dr_time, dr_down_velocity, "DVL down velocity", "red"
-    )
+    tr_dr_north = create_trace(dr_time, dr_north_velocity, "DVL north velocity", "red")
+    tr_dr_east = create_trace(dr_time, dr_east_velocity, "DVL east velocity", "red")
+    tr_dr_down = create_trace(dr_time, dr_down_velocity, "DVL down velocity", "red")
     tr_dr_x = create_trace(dr_time, dr_x_velocity, "DVL x velocity", "red")
     tr_dr_y = create_trace(dr_time, dr_y_velocity, "DVL y velocity", "red")
     tr_dr_z = create_trace(dr_time, dr_z_velocity, "DVL z velocity", "red")
 
     if len(velocity_inertial_list) > 0:
         inertial_time = [i.epoch_timestamp for i in velocity_inertial_list]
-        inertial_north_velocity = [
-            i.north_velocity for i in velocity_inertial_list
-        ]
-        inertial_east_velocity = [
-            i.east_velocity for i in velocity_inertial_list
-        ]
-        inertial_down_velocity = [
-            i.down_velocity for i in velocity_inertial_list
-        ]
+        inertial_north_velocity = [i.north_velocity for i in velocity_inertial_list]
+        inertial_east_velocity = [i.east_velocity for i in velocity_inertial_list]
+        inertial_down_velocity = [i.down_velocity for i in velocity_inertial_list]
 
         tr_inertial_north = create_trace(
             inertial_time,
@@ -226,7 +222,7 @@ def plot_velocity_vs_time(
     fig["layout"]["yaxis6"].update(title="Velocity, m/s")
     fig["layout"].update(
         title="Velocity vs Time Plots (Left column: Inertial frame - north "
-              "east down | Right column: Body frame - x y z)",
+        "east down | Right column: Body frame - x y z)",
         dragmode="pan",
         hovermode="closest",
     )
@@ -276,21 +272,15 @@ def plot_deadreckoning_vs_time(
     depth = [i.depth for i in depth_list]
 
     # Northing vs time
-    tr_dr_northings = create_trace(
-        dr_time, dr_northings, "Northing DVL", "red"
-    )
-    tr_usbl_northings = create_trace(
-        usbl_time, usbl_northings, "Northing USBL", "blue"
-    )
+    tr_dr_northings = create_trace(dr_time, dr_northings, "Northing DVL", "red")
+    tr_usbl_northings = create_trace(usbl_time, usbl_northings, "Northing USBL", "blue")
     tr_drc_northings = create_trace(
         dr_centre_time, dr_centre_northings, "Northing Centre", "orange"
     )
 
     # Easting vs time
     tr_dr_eastings = create_trace(dr_time, dr_eastings, "Easting DVL", "red")
-    tr_usbl_eastings = create_trace(
-        usbl_time, usbl_eastings, "Easting USBL", "blue"
-    )
+    tr_usbl_eastings = create_trace(usbl_time, usbl_eastings, "Easting USBL", "blue")
     tr_drc_eastings = create_trace(
         dr_centre_time, dr_centre_eastings, "Easting Centre", "orange"
     )
@@ -379,11 +369,7 @@ def plot_deadreckoning_vs_time(
 # pf uncertainty plotly
 # maybe make a slider plot for this, or a dot projection slider
 def plot_pf_uncertainty(
-    pf_fusion_dvl_list,
-    pf_northings_std,
-    pf_eastings_std,
-    pf_yaw_std,
-    plotlypath,
+    pf_fusion_dvl_list, pf_northings_std, pf_eastings_std, pf_yaw_std, plotlypath,
 ):
     Console.info("Plotting pf_uncertainty...")
     pf_time = [i.epoch_timestamp for i in pf_fusion_dvl_list]
@@ -404,8 +390,7 @@ def plot_pf_uncertainty(
     )
     config = {"scrollZoom": True}
     fig = go.Figure(
-        data=[tr_pf_northings_std, tr_pf_eastings_std, tr_pf_yaw_std],
-        layout=layout,
+        data=[tr_pf_northings_std, tr_pf_eastings_std, tr_pf_yaw_std], layout=layout,
     )
     py.plot(
         fig,
@@ -420,8 +405,7 @@ def plot_pf_uncertainty(
 #  EKF uncertainty plotly
 #  ToDo: Plot angles as well
 def plot_ekf_states_and_std_vs_time(
-    ekf_states,
-    plotlypath,
+    ekf_states, plotlypath,
 ):
     Console.info("Plotting EKF states with std vs. time...")
     ekf_time = [i.time for i in ekf_states]
@@ -457,12 +441,20 @@ def plot_ekf_states_and_std_vs_time(
     tr_ekf_northings_upper_bound = create_trace(
         ekf_time,
         [a_i + b_i for a_i, b_i in zip(ekf_northings, ekf_northings_std)],
-        "northing+sigma", "red", True, "tonexty", True
+        "northing+sigma",
+        "red",
+        True,
+        "tonexty",
+        True,
     )
     tr_ekf_northings_lower_bound = create_trace(
         ekf_time,
         [a_i - b_i for a_i, b_i in zip(ekf_northings, ekf_northings_std)],
-        "northing-sigma", "red", True, "tonexty", True
+        "northing-sigma",
+        "red",
+        True,
+        "tonexty",
+        True,
     )
 
     tr_ekf_eastings = create_trace(
@@ -471,12 +463,20 @@ def plot_ekf_states_and_std_vs_time(
     tr_ekf_eastings_lower_bound = create_trace(
         ekf_time,
         [a_i - b_i for a_i, b_i in zip(ekf_eastings, ekf_eastings_std)],
-        "easting-sigma", "blue", True, "tonexty", True
+        "easting-sigma",
+        "blue",
+        True,
+        "tonexty",
+        True,
     )
     tr_ekf_eastings_upper_bound = create_trace(
         ekf_time,
         [a_i + b_i for a_i, b_i in zip(ekf_eastings, ekf_eastings_std)],
-        "easting+sigma", "blue", True, "tonexty", True
+        "easting+sigma",
+        "blue",
+        True,
+        "tonexty",
+        True,
     )
 
     tr_ekf_depths = create_trace(
@@ -485,12 +485,20 @@ def plot_ekf_states_and_std_vs_time(
     tr_ekf_depths_upper_bound = create_trace(
         ekf_time,
         [a_i + b_i for a_i, b_i in zip(ekf_depths, ekf_depths_std)],
-        "depth+sigma", "green", True, "tonexty", True
+        "depth+sigma",
+        "green",
+        True,
+        "tonexty",
+        True,
     )
     tr_ekf_depths_lower_bound = create_trace(
         ekf_time,
         [a_i - b_i for a_i, b_i in zip(ekf_depths, ekf_depths_std)],
-        "depth-sigma", "green", True, "tonexty", True
+        "depth-sigma",
+        "green",
+        True,
+        "tonexty",
+        True,
     )
 
     tr_ekf_northings_std = create_trace(
@@ -509,12 +517,20 @@ def plot_ekf_states_and_std_vs_time(
     tr_ekf_surge_speeds_upper_bound = create_trace(
         ekf_time,
         [a_i + b_i for a_i, b_i in zip(ekf_surge_speeds, ekf_surge_speeds_std)],
-        "surge_speed+sigma", "red", True, "tonexty", True
+        "surge_speed+sigma",
+        "red",
+        True,
+        "tonexty",
+        True,
     )
     tr_ekf_surge_speeds_lower_bound = create_trace(
         ekf_time,
         [a_i - b_i for a_i, b_i in zip(ekf_surge_speeds, ekf_surge_speeds_std)],
-        "surge_speed-sigma", "red", True, "tonexty", True
+        "surge_speed-sigma",
+        "red",
+        True,
+        "tonexty",
+        True,
     )
 
     tr_ekf_sway_speeds = create_trace(
@@ -523,26 +539,42 @@ def plot_ekf_states_and_std_vs_time(
     tr_ekf_sway_speeds_upper_bound = create_trace(
         ekf_time,
         [a_i + b_i for a_i, b_i in zip(ekf_sway_speeds, ekf_sway_speeds_std)],
-        "sway_speed+sigma", "red", True, "tonexty", True
+        "sway_speed+sigma",
+        "red",
+        True,
+        "tonexty",
+        True,
     )
     tr_ekf_sway_speeds_lower_bound = create_trace(
         ekf_time,
         [a_i - b_i for a_i, b_i in zip(ekf_sway_speeds, ekf_sway_speeds_std)],
-        "sway_speed-sigma", "red", True, "tonexty", True
+        "sway_speed-sigma",
+        "red",
+        True,
+        "tonexty",
+        True,
     )
 
     tr_ekf_down_speeds = create_trace(
-        ekf_time, ekf_down_speeds, "vertical speeds (m/s)", "green", fill="tonexty"
+        ekf_time, ekf_down_speeds, "vertical speeds (m/s)", "green", fill="tonexty",
     )
     tr_ekf_down_speeds_upper_bound = create_trace(
         ekf_time,
         [a_i + b_i for a_i, b_i in zip(ekf_down_speeds, ekf_down_speeds_std)],
-        "down_speed+sigma", "red", True, "tonexty", True
+        "down_speed+sigma",
+        "red",
+        True,
+        "tonexty",
+        True,
     )
     tr_ekf_down_speeds_lower_bound = create_trace(
         ekf_time,
         [a_i - b_i for a_i, b_i in zip(ekf_down_speeds, ekf_down_speeds_std)],
-        "down_speed-sigma", "red", True, "tonexty", True
+        "down_speed-sigma",
+        "red",
+        True,
+        "tonexty",
+        True,
     )
 
     tr_ekf_surge_speeds_std = create_trace(
@@ -668,7 +700,10 @@ def plot_ekf_rejected_measurements(rejected_measurements, plotlypath):
         x_values = rejected_measurements.get(key)
         y_values = [key] * len(x_values)
         text_list = [
-            str(t) + " (epoch) | " + time.strftime("%Y-%m-%d %H:%M:%S", epoch_to_utctime(t)) + " (UTC)"
+            str(t)
+            + " (epoch) | "
+            + time.strftime("%Y-%m-%d %H:%M:%S", epoch_to_utctime(t))
+            + " (UTC)"
             for t in x_values
         ]
         trace_list.append(create_trace_2(x_values, y_values, text_list, key))
@@ -677,8 +712,8 @@ def plot_ekf_rejected_measurements(rejected_measurements, plotlypath):
     fig = go.Figure(data=list(trace_list))
     fig.update_layout(
         title="Timestamps of sensor measurements rejected in the EKF due to exceeding the Mahalanobis distance "
-              "threshold",
-        xaxis=dict(exponentformat='none', title="Epoch time, s")
+        "threshold",
+        xaxis=dict(exponentformat="none", title="Epoch time, s"),
     )
     py.plot(
         fig,
@@ -738,12 +773,8 @@ def plot_sensor_uncertainty(
     tr_lon = create_trace(usbl_time, usbl_lon_std, "Lon std usbl", "green")
     tr_depth = create_trace(depth_time, depth_std, "Depth std", "blue")
 
-    tr_n = create_trace(
-        usbl_time, usbl_northing_std, "northing std usbl", "red"
-    )
-    tr_e = create_trace(
-        usbl_time, usbl_easting_std, "easting std usbl", "green"
-    )
+    tr_n = create_trace(usbl_time, usbl_northing_std, "northing std usbl", "red")
+    tr_e = create_trace(usbl_time, usbl_easting_std, "easting std usbl", "green")
 
     if len(velocity_inertial_list) > 0:
         if iv_n_vel_std[0] is not None:
@@ -807,9 +838,7 @@ def plot_sensor_uncertainty(
     fig["layout"]["yaxis4"].update(title="Depth, m")
     fig["layout"]["yaxis5"].update(title="Velocity, m/s")
     fig["layout"]["yaxis6"].update(title="NorthEast, m")
-    fig["layout"].update(
-        title="Uncertainty Plots", dragmode="pan", hovermode="closest"
-    )
+    fig["layout"].update(title="Uncertainty Plots", dragmode="pan", hovermode="closest")
     config = {"scrollZoom": True}
     py.plot(
         fig,
@@ -847,19 +876,13 @@ def plot_2d_deadreckoning(
     if len(camera1_list) > 1:
         plotly_list.append(["dr_camera1", camera1_list, "legendonly"])
     if len(dead_reckoning_centre_list) > 1:
-        plotly_list.append(
-            ["dr_centre", dead_reckoning_centre_list, "legendonly"]
-        )
+        plotly_list.append(["dr_centre", dead_reckoning_centre_list, "legendonly"])
     if len(dead_reckoning_dvl_list) > 1:
         plotly_list.append(["dr_dvl", dead_reckoning_dvl_list, True])
 
     if len(usbl_list_no_dist_filter) > 1:
         plotly_list.append(
-            [
-                "usbl_without_distance_filter",
-                usbl_list_no_dist_filter,
-                "legendonly",
-            ]
+            ["usbl_without_distance_filter", usbl_list_no_dist_filter, "legendonly"]
         )
     if len(usbl_list) > 1:
         plotly_list.append(["usbl", usbl_list, True])
@@ -984,18 +1007,13 @@ def plot_2d_deadreckoning(
                 # timestamp_index_tracker = 0
                 for j in range(len(pf_particles_list[i][0].timestamps)):
                     if (
-                        pf_particles_list[i][0].timestamps[j]
-                        - timestamp_value_tracker
+                        pf_particles_list[i][0].timestamps[j] - timestamp_value_tracker
                     ) > particles_time_interval:
                         for k in pf_particles_list[i]:
-                            pf_timestamps_interval.append(
-                                float(k.timestamps[j])
-                            )
+                            pf_timestamps_interval.append(float(k.timestamps[j]))
                             pf_eastings_interval.append(float(k.eastings[j]))
                             pf_northings_interval.append(float(k.northings[j]))
-                        timestamp_value_tracker = pf_particles_list[i][
-                            0
-                        ].timestamps[j]
+                        timestamp_value_tracker = pf_particles_list[i][0].timestamps[j]
             make_data(
                 figure,
                 "pf_dvl_distribution",

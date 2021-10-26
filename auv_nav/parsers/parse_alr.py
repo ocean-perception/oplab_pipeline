@@ -6,17 +6,11 @@ Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
 
-from auv_nav.sensors import (
-    Altitude,
-    BodyVelocity,
-    Category,
-    Depth,
-    Orientation,
-)
-from oplab import Console, get_raw_folder
-from auv_nav.parsers.load_matlab_file import loadmat
 from math import isnan
 
+from auv_nav.parsers.load_matlab_file import loadmat
+from auv_nav.sensors import Altitude, BodyVelocity, Category, Depth, Orientation
+from oplab import Console, get_raw_folder
 
 
 def parse_alr(mission, vehicle, category, ftype, outpath):

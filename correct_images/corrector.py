@@ -41,9 +41,7 @@ matplotlib.use("Agg")
 
 
 class Corrector:
-    def __init__(
-        self, force=False, camera=None, correct_config=None, path=None
-    ):
+    def __init__(self, force=False, camera=None, correct_config=None, path=None):
         """Constructor for the Corrector class
 
         Parameters
@@ -92,9 +90,7 @@ class Corrector:
             self.path_config = get_config_folder(path)
         self.force = force
 
-        self.user_specified_image_list = (
-            None  # To be overwritten on parse/process
-        )
+        self.user_specified_image_list = None  # To be overwritten on parse/process
         self.user_specified_image_list_parse = None
         self.user_specified_image_list_process = None
 
@@ -105,19 +101,11 @@ class Corrector:
                 self.distance_metric = (
                     self.correct_config.color_correction.distance_metric
                 )
-                self.distance_path = (
-                    self.correct_config.color_correction.metric_path
-                )
-                self.altitude_max = (
-                    self.correct_config.color_correction.altitude_max
-                )
-                self.altitude_min = (
-                    self.correct_config.color_correction.altitude_min
-                )
+                self.distance_path = self.correct_config.color_correction.metric_path
+                self.altitude_max = self.correct_config.color_correction.altitude_max
+                self.altitude_min = self.correct_config.color_correction.altitude_min
                 self.smoothing = self.correct_config.color_correction.smoothing
-                self.window_size = (
-                    self.correct_config.color_correction.window_size
-                )
+                self.window_size = self.correct_config.color_correction.window_size
                 self.outlier_rejection = (
                     self.correct_config.color_correction.outlier_reject
                 )
@@ -174,24 +162,20 @@ class Corrector:
                     / "attenuation_parameters.npy"
                 )
                 self.correction_gains_filepath = (
-                    Path(self.attenuation_parameters_folder)
-                    / "correction_gains.npy"
+                    Path(self.attenuation_parameters_folder) / "correction_gains.npy"
                 )
                 self.corrected_mean_filepath = (
                     Path(self.attenuation_parameters_folder)
                     / "image_corrected_mean.npy"
                 )
                 self.corrected_std_filepath = (
-                    Path(self.attenuation_parameters_folder)
-                    / "image_corrected_std.npy"
+                    Path(self.attenuation_parameters_folder) / "image_corrected_std.npy"
                 )
                 self.raw_mean_filepath = (
-                    Path(self.attenuation_parameters_folder)
-                    / "image_raw_mean.npy"
+                    Path(self.attenuation_parameters_folder) / "image_raw_mean.npy"
                 )
                 self.raw_std_filepath = (
-                    Path(self.attenuation_parameters_folder)
-                    / "image_raw_std.npy"
+                    Path(self.attenuation_parameters_folder) / "image_raw_std.npy"
                 )
 
             # Define image loader
@@ -269,20 +253,14 @@ class Corrector:
                         "Code does not find image_corrected_std.npy...",
                         "Please run parse before process...",
                     )
-            if (
-                self.raw_mean_filepath.exists()
-                and self.distance_metric == "none"
-            ):
+            if self.raw_mean_filepath.exists() and self.distance_metric == "none":
                 self.image_raw_mean = np.load(self.raw_mean_filepath).squeeze()
             elif self.distance_metric == "none":
                 Console.quit(
                     "Code does not find image_raw_mean.npy...",
                     "Please run parse before process...",
                 )
-            if (
-                self.raw_std_filepath.exists()
-                and self.distance_metric == "none"
-            ):
+            if self.raw_std_filepath.exists() and self.distance_metric == "none":
                 self.image_raw_std = np.load(self.raw_std_filepath).squeeze()
             elif self.distance_metric == "none":
                 Console.quit(
@@ -319,9 +297,7 @@ class Corrector:
 
         # create path for output images
         output_images_folder_name = "developed_" + self.camera.name
-        self.output_images_folder = (
-            self.output_dir_path / output_images_folder_name
-        )
+        self.output_images_folder = self.output_dir_path / output_images_folder_name
         if not self.output_images_folder.exists():
             self.output_images_folder.mkdir(parents=True)
 
@@ -337,10 +313,7 @@ class Corrector:
                 sub_directory_name = "depth_map_corrected"
 
             output_folder_name = (
-                "m"
-                + str(int(self.brightness))
-                + "_std"
-                + str(int(self.contrast))
+                "m" + str(int(self.brightness)) + "_std" + str(int(self.contrast))
             )
 
             # appending params path with sub directory and output folder
@@ -441,13 +414,9 @@ class Corrector:
                 self.camera_image_list = self.camera.image_list
             # get imagelist from user provided filelist
             else:
-                path_file_list = (
-                    Path(self.path_config) / self.user_specified_image_list
-                )
+                path_file_list = Path(self.path_config) / self.user_specified_image_list
                 trimmed_csv_file = "trimmed_csv_" + self.camera.name + ".csv"
-                self.trimmed_csv_path = (
-                    Path(self.path_config) / trimmed_csv_file
-                )
+                self.trimmed_csv_path = Path(self.path_config) / trimmed_csv_file
 
                 if not self.altitude_csv_path.exists():
                     message = "Path to " + metric_file + " does not exist..."
@@ -455,9 +424,7 @@ class Corrector:
                 else:
                     # create trimmed csv based on user's  list of images
                     trim_csv_files(
-                        path_file_list,
-                        self.altitude_csv_path,
-                        self.trimmed_csv_path,
+                        path_file_list, self.altitude_csv_path, self.trimmed_csv_path,
                     )
 
                 # read trimmed csv filepath
@@ -493,9 +460,7 @@ class Corrector:
 
         # Check if file exists
         if not distance_csv_path.exists():
-            Console.quit(
-                "The navigation CSV file is not present. Run auv_nav first."
-            )
+            Console.quit("The navigation CSV file is not present. Run auv_nav first.")
 
         # read dataframe for corresponding distance csv path
         dataframe = pd.read_csv(distance_csv_path)
@@ -525,9 +490,7 @@ class Corrector:
         for _, row in filtered_dataframe.iterrows():
             alt = row["altitude [m]"]
             if alt > self.altitude_min and alt < self.altitude_max:
-                self.camera_image_list.append(
-                    self.path_raw / row["relative_path"]
-                )
+                self.camera_image_list.append(self.path_raw / row["relative_path"])
                 self.altitude_list.append(alt)
 
         if len(distance_list) == 0:
@@ -618,9 +581,7 @@ class Corrector:
         max_bin_size = int(max_bin_size_gb / image_size_gb)
 
         self.bin_band = 0.1
-        hist_bins = np.arange(
-            self.altitude_min, self.altitude_max, self.bin_band
-        )
+        hist_bins = np.arange(self.altitude_min, self.altitude_max, self.bin_band)
 
         images_fn, images_map = open_memmap(
             shape=(
@@ -643,28 +604,19 @@ class Corrector:
         distance_vector = None
 
         if self.depth_map_list is not None:
-            Console.info(
-                "Computing depth map histogram with", hist_bins.size, " bins"
-            )
+            Console.info("Computing depth map histogram with", hist_bins.size, " bins")
             distance_vector = np.zeros((len(self.depth_map_list), 1))
             for i, dm_file in enumerate(self.depth_map_list):
-                dm_np = depth_map.loader(
-                    dm_file, self.image_width, self.image_height
-                )
+                dm_np = depth_map.loader(dm_file, self.image_width, self.image_height)
                 distance_vector[i] = dm_np.mean(axis=1)
         elif self.altitude_list is not None:
-            Console.info(
-                "Computing altitude histogram with", hist_bins.size, " bins"
-            )
+            Console.info("Computing altitude histogram with", hist_bins.size, " bins")
             distance_vector = np.array(self.altitude_list)
 
         if distance_vector is not None:
             idxs = np.digitize(distance_vector, hist_bins)
             with tqdm_joblib(
-                tqdm(
-                    desc="Computing altitude histogram",
-                    total=hist_bins.size - 1,
-                )
+                tqdm(desc="Computing altitude histogram", total=hist_bins.size - 1,)
             ):
                 joblib.Parallel(n_jobs=-2, verbose=0)(
                     joblib.delayed(self.compute_distance_bin)(
@@ -696,8 +648,7 @@ class Corrector:
 
             # Save attenuation parameter results.
             np.save(
-                self.attenuation_params_filepath,
-                self.image_attenuation_parameters,
+                self.attenuation_params_filepath, self.image_attenuation_parameters,
             )
 
             corrections.save_attenuation_plots(
@@ -708,8 +659,7 @@ class Corrector:
             # compute correction gains per channel
             target_altitude = distance_vector.mean()
             Console.info(
-                "Computing correction gains for target altitude",
-                target_altitude,
+                "Computing correction gains for target altitude", target_altitude,
             )
             self.correction_gains = corrections.calculate_correction_gains(
                 target_altitude,
@@ -722,8 +672,7 @@ class Corrector:
             np.save(self.correction_gains_filepath, self.correction_gains)
 
             corrections.save_attenuation_plots(
-                self.attenuation_parameters_folder,
-                gains=self.correction_gains,
+                self.attenuation_parameters_folder, gains=self.correction_gains,
             )
 
             # Useful if fails, to reload precomputed numpyfiles.
@@ -756,15 +705,11 @@ class Corrector:
                 if self.depth_map_list is None:
                     # Generate matrices on the fly
                     distance = distance_vector[i]
-                    distance_mtx = np.empty(
-                        (self.image_height, self.image_width)
-                    )
+                    distance_mtx = np.empty((self.image_height, self.image_width))
                     distance_mtx.fill(distance)
                 else:
                     distance_mtx = depth_map.loader(
-                        self.depth_map_list[i],
-                        self.image_width,
-                        self.image_height,
+                        self.depth_map_list[i], self.image_width, self.image_height,
                     )
 
                 # Correct the image
@@ -798,8 +743,7 @@ class Corrector:
 
         else:
             Console.info(
-                "No altitude or depth maps available.",
-                "Computing raw mean and std."
+                "No altitude or depth maps available.", "Computing raw mean and std.",
             )
 
             image_raw_mean, image_raw_std = running_mean_std(
@@ -807,7 +751,7 @@ class Corrector:
             )
             np.save(self.raw_mean_filepath, image_raw_mean)
             np.save(self.raw_std_filepath, image_raw_std)
-            
+
             # image_raw_mean = np.load(self.raw_mean_filepath)
             # image_raw_std = np.load(self.raw_std_filepath)
 
@@ -817,8 +761,7 @@ class Corrector:
                 image_raw_std = image_raw_std.transpose((1, 2, 0))
 
             imageio.imwrite(
-                Path(self.attenuation_parameters_folder)
-                / "image_raw_mean.png",
+                Path(self.attenuation_parameters_folder) / "image_raw_mean.png",
                 image_raw_mean,
             )
             imageio.imwrite(
@@ -855,9 +798,7 @@ class Corrector:
             # Random sample if memmap has to be created
             if self.smoothing != "mean" and len(bin_images) > max_bin_size:
                 Console.info(
-                    "Random sampling altitude bin to fit in",
-                    max_bin_size_gb,
-                    "Gb",
+                    "Random sampling altitude bin to fit in", max_bin_size_gb, "Gb",
                 )
                 bin_images = random.sample(bin_images, max_bin_size)
 
@@ -866,18 +807,12 @@ class Corrector:
                 distance_bin = distance_vector[tmp_idxs]
                 distance_bin_sample = distance_bin.mean()
                 if distance_bin_sample <= 0 or np.isnan(distance_bin_sample):
-                    Console.warn(
-                        "The mean distance is equal or lower than zero!"
-                    )
+                    Console.warn("The mean distance is equal or lower than zero!")
                     Console.warn("Printing the entire vector:", distance_bin)
                     Console.warn("Printing the mean:", distance_bin_sample)
-                    distance_bin_sample = (
-                        self.altitude_min + self.bin_band * idx_bin
-                    )
+                    distance_bin_sample = self.altitude_min + self.bin_band * idx_bin
 
-                bin_distances_sample = np.empty(
-                    (self.image_height, self.image_width)
-                )
+                bin_distances_sample = np.empty((self.image_height, self.image_width))
                 bin_distances_sample.fill(distance_bin_sample)
             else:
                 bin_distances = [self.depth_map_list[i] for i in tmp_idxs]
@@ -886,9 +821,7 @@ class Corrector:
                 )[0]
 
             if self.smoothing == "mean":
-                bin_images_sample = running_mean_std(
-                    bin_images, loader=self.loader
-                )[0]
+                bin_images_sample = running_mean_std(bin_images, loader=self.loader)[0]
             elif self.smoothing == "mean_trimmed":
                 memmap_filename, memmap_handle = create_memmap(
                     bin_images, dimensions, loader=self.loader,
@@ -940,13 +873,9 @@ class Corrector:
 
         # check for calibration file if distortion correction needed
         if self.undistort:
-            camera_params_folder = (
-                Path(self.path_processed).parents[0] / "calibration"
-            )
+            camera_params_folder = Path(self.path_processed).parents[0] / "calibration"
             camera_params_filename = "mono" + self.camera_name + ".yaml"
-            camera_params_file_path = (
-                camera_params_folder / camera_params_filename
-            )
+            camera_params_file_path = camera_params_folder / camera_params_filename
 
             if not camera_params_file_path.exists():
                 Console.info("Calibration file not found...")
@@ -998,9 +927,7 @@ class Corrector:
             distance_matrix = None
             if self.distance_metric == "depth_map":
                 distance_matrix = depth_map.loader(
-                    self.depth_map_list[idx],
-                    self.image_width,
-                    self.image_height,
+                    self.depth_map_list[idx], self.image_width, self.image_height,
                 )
             elif self.distance_metric == "altitude":
                 if idx > len(self.altitude_list) - 1:
@@ -1010,9 +937,7 @@ class Corrector:
                     )
                     return None
                 distance = self.altitude_list[idx]
-                distance_matrix = np.empty(
-                    (self.image_height, self.image_width)
-                )
+                distance_matrix = np.empty((self.image_height, self.image_width))
                 distance_matrix.fill(distance)
             if distance_matrix is not None:
                 image = corrections.attenuation_correct(
@@ -1072,8 +997,5 @@ class Corrector:
         # write to output files
         image_filename = Path(self.camera_image_list[idx]).stem
         return write_output_image(
-            image_rgb,
-            image_filename,
-            self.output_images_folder,
-            self.output_format,
+            image_rgb, image_filename, self.output_images_folder, self.output_format,
         )

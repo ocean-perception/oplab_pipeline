@@ -99,26 +99,16 @@ def data2trace(i, j, t, plotlytable_info_list):
     # plotly plot
     # format is 'yyyy-mm-dd HH:MM:SS.ssssss'
     x_values = [
-        time.strftime(
-            "%Y-%m-%d %H:%M:%S", epoch_to_utctime(k["epoch_timestamp"])
-        )
+        time.strftime("%Y-%m-%d %H:%M:%S", epoch_to_utctime(k["epoch_timestamp"]))
         + ".{}".format(
-            (
-                "{:.6f}".format(
-                    k["epoch_timestamp"] - int(k["epoch_timestamp"])
-                )
-            )[2:9]
+            ("{:.6f}".format(k["epoch_timestamp"] - int(k["epoch_timestamp"])))[2:9]
         )
         for k in j
     ]
     text_list = [
-        time.strftime(
-            "%Y-%m-%d %H:%M:%S", epoch_to_utctime(k["epoch_timestamp"])
-        )
+        time.strftime("%Y-%m-%d %H:%M:%S", epoch_to_utctime(k["epoch_timestamp"]))
         + "(UTC) | "
-        + time.strftime(
-            "%Y-%m-%d %H:%M:%S", epoch_to_localtime(k["epoch_timestamp"])
-        )
+        + time.strftime("%Y-%m-%d %H:%M:%S", epoch_to_localtime(k["epoch_timestamp"]))
         + "(Local)"
         for k in j
     ]  # add utc time too.
@@ -153,6 +143,9 @@ def plot_parse_data(filepath, ftype="oplab"):
             start_time = data_in[1]["epoch_timestamp"]
             finish_time = data_in[-1]["epoch_timestamp"]
             for i in data_in:
+                print(i)
+                if i is None:
+                    continue
                 if i["category"] == "origin":
                     continue
                 # to find out how many categories are there
@@ -179,9 +172,7 @@ def plot_parse_data(filepath, ftype="oplab"):
                                     j.append(i)
                             if flag_same_frame == 0:
                                 fdt_lst[ct_lst.index(i["category"])].append([])
-                                fdt_lst[ct_lst.index(i["category"])][
-                                    -1
-                                ].append(i)
+                                fdt_lst[ct_lst.index(i["category"])][-1].append(i)
                                 print(
                                     "Warning: %s"
                                     "s frame contains more than \
@@ -223,9 +214,7 @@ def plot_parse_data(filepath, ftype="oplab"):
                     pass
                 else:
                     #
-                    x, y, text_list, title = data2trace(
-                        i, j, t, plotlytable_info_list
-                    )
+                    x, y, text_list, title = data2trace(i, j, t, plotlytable_info_list)
                     titles.append(title)
                     epoch_timestamp_data_points.append(j)
                     trace_list.append(create_trace(x, y, text_list, title))
@@ -261,31 +250,21 @@ def plot_parse_data(filepath, ftype="oplab"):
                 %d (epoch)"
             "<br>Finish time is: %s (%s), %s (%s), %d (epoch)"
             % (
-                time.strftime(
-                    "%Y-%m-%d %H:%M:%S", epoch_to_localtime(start_time)
-                ),
+                time.strftime("%Y-%m-%d %H:%M:%S", epoch_to_localtime(start_time)),
                 get_localtimezone(),
-                time.strftime(
-                    "%Y-%m-%d %H:%M:%S", epoch_to_utctime(start_time)
-                ),
+                time.strftime("%Y-%m-%d %H:%M:%S", epoch_to_utctime(start_time)),
                 "UTC",
                 start_time,
-                time.strftime(
-                    "%Y-%m-%d %H:%M:%S", epoch_to_localtime(finish_time)
-                ),
+                time.strftime("%Y-%m-%d %H:%M:%S", epoch_to_localtime(finish_time)),
                 get_localtimezone(),
-                time.strftime(
-                    "%Y-%m-%d %H:%M:%S", epoch_to_utctime(finish_time)
-                ),
+                time.strftime("%Y-%m-%d %H:%M:%S", epoch_to_utctime(finish_time)),
                 "UTC",
                 finish_time,
             )
         )
         table_fig = go.Figure(data=[table_trace], layout=layout_table)
         py.plot(
-            table_fig,
-            filename=str(filepath / "json_data_info.html"),
-            auto_open=False,
+            table_fig, filename=str(filepath / "json_data_info.html"), auto_open=False,
         )
 
         layout = go.Layout(
@@ -295,22 +274,14 @@ def plot_parse_data(filepath, ftype="oplab"):
                 %d (epoch)"
             "<br>Finish time is: %s (%s), %s (%s), %d (epoch)"
             % (
-                time.strftime(
-                    "%Y-%m-%d %H:%M:%S", epoch_to_localtime(start_time)
-                ),
+                time.strftime("%Y-%m-%d %H:%M:%S", epoch_to_localtime(start_time)),
                 get_localtimezone(),
-                time.strftime(
-                    "%Y-%m-%d %H:%M:%S", epoch_to_utctime(start_time)
-                ),
+                time.strftime("%Y-%m-%d %H:%M:%S", epoch_to_utctime(start_time)),
                 "UTC",
                 start_time,
-                time.strftime(
-                    "%Y-%m-%d %H:%M:%S", epoch_to_localtime(finish_time)
-                ),
+                time.strftime("%Y-%m-%d %H:%M:%S", epoch_to_localtime(finish_time)),
                 get_localtimezone(),
-                time.strftime(
-                    "%Y-%m-%d %H:%M:%S", epoch_to_utctime(finish_time)
-                ),
+                time.strftime("%Y-%m-%d %H:%M:%S", epoch_to_utctime(finish_time)),
                 "UTC",
                 finish_time,
             ),
@@ -380,22 +351,14 @@ def plot_parse_data(filepath, ftype="oplab"):
             "Start time is: %s (%s), %s (%s), %d (epoch)\nFinish time is: "
             "%s (%s), %s (%s), %d (epoch)\n"
             % (
-                time.strftime(
-                    "%Y-%m-%d %H:%M:%S", epoch_to_localtime(start_time)
-                ),
+                time.strftime("%Y-%m-%d %H:%M:%S", epoch_to_localtime(start_time)),
                 get_localtimezone(),
-                time.strftime(
-                    "%Y-%m-%d %H:%M:%S", epoch_to_utctime(start_time)
-                ),
+                time.strftime("%Y-%m-%d %H:%M:%S", epoch_to_utctime(start_time)),
                 "UTC",
                 start_time,
-                time.strftime(
-                    "%Y-%m-%d %H:%M:%S", epoch_to_localtime(finish_time)
-                ),
+                time.strftime("%Y-%m-%d %H:%M:%S", epoch_to_localtime(finish_time)),
                 get_localtimezone(),
-                time.strftime(
-                    "%Y-%m-%d %H:%M:%S", epoch_to_utctime(finish_time)
-                ),
+                time.strftime("%Y-%m-%d %H:%M:%S", epoch_to_utctime(finish_time)),
                 "UTC",
                 finish_time,
             )

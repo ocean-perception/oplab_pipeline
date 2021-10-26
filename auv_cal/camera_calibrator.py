@@ -51,12 +51,12 @@ class ChessboardInfo(object):
 
 
 def lmin(seq1, seq2):
-    """ Pairwise minimum of two sequences """
+    """Pairwise minimum of two sequences"""
     return [min(a, b) for (a, b) in zip(seq1, seq2)]
 
 
 def lmax(seq1, seq2):
-    """ Pairwise maximum of two sequences """
+    """Pairwise maximum of two sequences"""
     return [max(a, b) for (a, b) in zip(seq1, seq2)]
 
 
@@ -111,9 +111,7 @@ def _get_skew(corners, board):
             numpy.dot(ab, cb) / (numpy.linalg.norm(ab) * numpy.linalg.norm(cb))
         )
 
-    skew = min(
-        1.0, 2.0 * abs((math.pi / 2.0) - angle(up_left, up_right, down_right))
-    )
+    skew = min(1.0, 2.0 * abs((math.pi / 2.0) - angle(up_left, up_right, down_right)))
     return skew
 
 
@@ -124,9 +122,7 @@ def _get_area(corners, board):
     and the area computed as
     |p X q|/2; see http://mathworld.wolfram.com/Quadrilateral.html.
     """
-    (up_left, up_right, down_right, down_left) = _get_outside_corners(
-        corners, board
-    )
+    (up_left, up_right, down_right, down_left) = _get_outside_corners(corners, board)
     a = up_right - up_left
     b = down_right - up_right
     c = down_left - down_right
@@ -175,9 +171,7 @@ def _get_corners(img, board, refine=True, checkerboard_flags=0):
         if corners[0, 0, 1] > corners[-1, 0, 1]:
             corners = numpy.copy(numpy.flipud(corners))
     else:
-        direction_corners = (corners[-1] - corners[0]) >= numpy.array(
-            [[0.0, 0.0]]
-        )
+        direction_corners = (corners[-1] - corners[0]) >= numpy.array([[0.0, 0.0]])
 
         if not numpy.all(direction_corners):
             if not numpy.any(direction_corners):
@@ -201,17 +195,14 @@ def _get_corners(img, board, refine=True, checkerboard_flags=0):
             for col in range(board.n_cols - 1):
                 index = row * board.n_rows + col
                 min_distance = min(
-                    min_distance,
-                    _pdist(corners[index, 0], corners[index + 1, 0]),
+                    min_distance, _pdist(corners[index, 0], corners[index + 1, 0]),
                 )
         for row in range(board.n_rows - 1):
             for col in range(board.n_cols):
                 index = row * board.n_rows + col
                 min_distance = min(
                     min_distance,
-                    _pdist(
-                        corners[index, 0], corners[index + board.n_cols, 0]
-                    ),
+                    _pdist(corners[index, 0], corners[index + board.n_cols, 0]),
                 )
         radius = int(math.ceil(min_distance * 0.5))
         cv2.cornerSubPix(
@@ -227,9 +218,7 @@ def _get_corners(img, board, refine=True, checkerboard_flags=0):
 
 def _is_sharp(img, corners, board):
     # Crop image
-    up_left, up_right, down_right, down_left = _get_outside_corners(
-        corners, board
-    )
+    up_left, up_right, down_right, down_left = _get_outside_corners(corners, board)
     x1 = up_left[0]
     x2 = up_right[0]
     x3 = down_right[0]
@@ -282,10 +271,7 @@ def _get_circles(img, board, pattern, invert=False):
     detector = cv2.SimpleBlobDetector_create(params)
 
     (ok, corners) = cv2.findCirclesGrid(
-        mono_arr,
-        (board.n_cols, board.n_rows),
-        flags=flag,
-        blobDetector=detector,
+        mono_arr, (board.n_cols, board.n_rows), flags=flag, blobDetector=detector,
     )
 
     # In symmetric case, findCirclesGrid does not detect the target if it's
@@ -320,18 +306,14 @@ class Calibrator(object):
         if pattern == Patterns.Chessboard:
             # Make sure n_cols > n_rows to agree with OpenCV CB detector output
             self._boards = [
-                ChessboardInfo(
-                    max(i.n_cols, i.n_rows), min(i.n_cols, i.n_rows), i.dim
-                )
+                ChessboardInfo(max(i.n_cols, i.n_rows), min(i.n_cols, i.n_rows), i.dim)
                 for i in boards
             ]
         elif pattern == Patterns.ACircles:
             # 7x4 and 4x7 are actually different patterns. Assume square-ish
             # pattern, so n_rows > n_cols.
             self._boards = [
-                ChessboardInfo(
-                    min(i.n_cols, i.n_rows), max(i.n_cols, i.n_rows), i.dim
-                )
+                ChessboardInfo(min(i.n_cols, i.n_rows), max(i.n_cols, i.n_rows), i.dim)
                 for i in boards
             ]
         elif pattern == Patterns.Circles:
@@ -372,12 +354,8 @@ class Calibrator(object):
         # For X and Y, we "shrink" the image all around by approx. half the
         # board size. Otherwise large boards are penalized because you can't
         # get much X/Y variation.
-        p_x = min(
-            1.0, max(0.0, (numpy.mean(Xs) - border / 2) / (width - border))
-        )
-        p_y = min(
-            1.0, max(0.0, (numpy.mean(Ys) - border / 2) / (height - border))
-        )
+        p_x = min(1.0, max(0.0, (numpy.mean(Xs) - border / 2) / (width - border)))
+        p_y = min(1.0, max(0.0, (numpy.mean(Ys) - border / 2) / (height - border)))
         p_size = math.sqrt(area / (width * height))
         skew = _get_skew(corners, board)
         params = [p_x, p_y, p_size, skew]
@@ -394,14 +372,10 @@ class Calibrator(object):
         num_corners = len(corners)
         corner_deltas = (corners - last_frame_corners).reshape(num_corners, 2)
         # Average distance travelled overall for all corners
-        average_motion = numpy.average(
-            numpy.linalg.norm(corner_deltas, axis=1)
-        )
+        average_motion = numpy.average(numpy.linalg.norm(corner_deltas, axis=1))
         return average_motion <= self.max_chessboard_speed
 
-    def is_good_sample(
-        self, params, corners, last_frame_corners=None, threshold=0.12
-    ):
+    def is_good_sample(self, params, corners, last_frame_corners=None, threshold=0.12):
         """
         Returns true if the checkerboard detection described by params should
         be added to the database.
@@ -427,9 +401,7 @@ class Calibrator(object):
             for i in range(b.n_rows):
                 for j in range(b.n_cols):
                     if self.pattern == Patterns.ACircles:
-                        opts_loc[j + i * b.n_cols, 0, 0] = (
-                            2 * j + i % 2
-                        ) * b.dim
+                        opts_loc[j + i * b.n_cols, 0, 0] = (2 * j + i % 2) * b.dim
                         opts_loc[j + i * b.n_cols, 0, 1] = i * b.dim
                     else:
                         opts_loc[j + i * b.n_cols, 0, 0] = j * b.dim
@@ -450,9 +422,7 @@ class Calibrator(object):
 
         for b in self._boards:
             if self.pattern == Patterns.Chessboard:
-                (ok, corners) = _get_corners(
-                    img, b, refine, self.checkerboard_flags
-                )
+                (ok, corners) = _get_corners(img, b, refine, self.checkerboard_flags)
             else:
                 (ok, corners) = _get_circles(img, b, self.pattern, self.invert)
 
@@ -560,9 +530,7 @@ class MonoCalibrator(Calibrator):
                 lboard.fromlist(lf["board"])
                 lcorners = np.array(lf["corners"], dtype=np.float32)
                 params = self.get_parameters(lcorners, lboard, lf["size"])
-                if self.is_good_sample(
-                    params, lcorners, self.last_frame_corners
-                ):
+                if self.is_good_sample(params, lcorners, self.last_frame_corners):
                     lgray = cv2.imread(lf["file"])
                     print(
                         "*** Added sample p_x = %.3f, p_y = %.3f, p_size = %.3f, skew = %.3f"  # noqa
@@ -603,7 +571,7 @@ class MonoCalibrator(Calibrator):
 
         def get_image_corners(i):
             gray = cv2.imread(str(i))
-            
+
             if gray is None:
                 print(
                     str(i.name)
@@ -632,16 +600,10 @@ class MonoCalibrator(Calibrator):
                     # cv2.imshow("Monocular calibration", img)
                     # cv2.waitKey(3)
                     name = Path(i).stem
-                    filename = Path(
-                        "/tmp/" + self.name + "/" + name + "_corners.png"
-                    )
+                    filename = Path("/tmp/" + self.name + "/" + name + "_corners.png")
                     if self.resize:
                         filename = Path(
-                            "/tmp/"
-                            + self.name
-                            + "/resized_"
-                            + name
-                            + "_corners.png"
+                            "/tmp/" + self.name + "/resized_" + name + "_corners.png"
                         )
                     if not filename.parents[0].exists():
                         filename.parents[0].mkdir(parents=True)
@@ -675,9 +637,7 @@ class MonoCalibrator(Calibrator):
                             "size": self.size,
                         }
                     )
-                    if self.is_good_sample(
-                        params, corners, self.last_frame_corners
-                    ):
+                    if self.is_good_sample(params, corners, self.last_frame_corners):
                         print(
                             "*** Added sample p_x = %.3f, p_y = %.3f, p_size = %.3f, skew = %.3f"  # noqa
                             % tuple(params)
@@ -687,10 +647,7 @@ class MonoCalibrator(Calibrator):
                         self.good_corners.append(i[1])
                         good_corners_names.append(str(i[2]))
                         all_detections = cv2.drawChessboardCorners(
-                            all_detections,
-                            (board.n_cols, board.n_rows),
-                            corners,
-                            True,
+                            all_detections, (board.n_cols, board.n_rows), corners, True,
                         )
 
                         if name == "":
@@ -708,9 +665,7 @@ class MonoCalibrator(Calibrator):
         print("Using " + str(len(self.good_corners)) + " inlier files!")
         filename = Path("/tmp/" + self.name + "/" + name + "_inliers.txt")
         if self.resize:
-            filename = Path(
-                "/tmp/" + self.name + "/resized_" + name + "_inliers.txt"
-            )
+            filename = Path("/tmp/" + self.name + "/resized_" + name + "_inliers.txt")
         if not filename.parents[0].exists():
             filename.parents[0].mkdir(parents=True)
         with filename.open("w") as f:
@@ -749,9 +704,7 @@ class MonoCalibrator(Calibrator):
 
         self.intrinsics = numpy.zeros((3, 3), numpy.float64)
         if self.calib_flags & cv2.CALIB_RATIONAL_MODEL:
-            self.distortion = numpy.zeros(
-                (8, 1), numpy.float64
-            )  # rational polynomial
+            self.distortion = numpy.zeros((8, 1), numpy.float64)  # rational polynomial
         else:
             self.distortion = numpy.zeros((5, 1), numpy.float64)  # plumb bob
 
@@ -771,9 +724,7 @@ class MonoCalibrator(Calibrator):
         )
 
         Console.info("Per view reprojection error:\n" + str(per_view_errors))
-        Console.info(
-            "Average reprojection error: " + str(self.avg_reprojection_error)
-        )
+        Console.info("Average reprojection error: " + str(self.avg_reprojection_error))
         Console.info("Stdev intrinsics: " + str(self.stdev_intrinsics[:, 0].T))
 
         # R is identity matrix for monocular calibration
@@ -811,9 +762,7 @@ class MonoCalibrator(Calibrator):
                 + " calibration board views"
             )
             if iteration == self.max_iterations - 1:
-                Console.info(
-                    "but maximum number of iterations has been reached"
-                )
+                Console.info("but maximum number of iterations has been reached")
             else:
                 self.good_corners = [
                     c
@@ -842,9 +791,7 @@ class MonoCalibrator(Calibrator):
             # )  # Usually last one
             self.distortion = self.calibrations[best_idx]["distortion"]
             self.intrinsics = self.calibrations[best_idx]["intrinsics"]
-            self.stdev_intrinsics = self.calibrations[best_idx][
-                "stdev_intrinsics"
-            ]
+            self.stdev_intrinsics = self.calibrations[best_idx]["stdev_intrinsics"]
             self.R = self.calibrations[best_idx]["R"]
             self.P = self.calibrations[best_idx]["P"]
             self.num_images = self.calibrations[best_idx]["num_images"]
@@ -886,12 +833,7 @@ class MonoCalibrator(Calibrator):
             for i in range(3):
                 self.P[j, i] = ncm[j, i]
         self.mapx, self.mapy = cv2.initUndistortRectifyMap(
-            self.intrinsics,
-            self.distortion,
-            self.R,
-            ncm,
-            self.size,
-            cv2.CV_32FC1,
+            self.intrinsics, self.distortion, self.R, ncm, self.size, cv2.CV_32FC1,
         )
 
     def remap(self, src):
@@ -1050,9 +992,7 @@ def find_common_filenames(list1, list2):
             for j in range(len(rf)):
                 values.append(abs(stamp_pc1[i] - stamp_pc2[j]))
 
-            (sync_difference, sync_pair) = min(
-                (v, k) for k, v in enumerate(values)
-            )
+            (sync_difference, sync_pair) = min((v, k) for k, v in enumerate(values))
             if sync_difference < tolerance:
                 # Console.info(lf[i] + ' syncs with ' + rf[sync_pair] + ' with dif ' + str(sync_difference)) # noqa
                 result.append((list1[i], list2[sync_pair]))
@@ -1073,9 +1013,7 @@ def find_common_filenames(list1, list2):
             for j in range(len(rf)):
                 values.append(abs(stamp_cam1[i] - stamp_cam2[j]))
 
-            (sync_difference, sync_pair) = min(
-                (v, k) for k, v in enumerate(values)
-            )
+            (sync_difference, sync_pair) = min((v, k) for k, v in enumerate(values))
             if sync_difference < tolerance:
                 # print(lf[i] + ' syncs with ' + rf[sync_pair] + ' with dif ' + str(sync_difference)) # noqa
                 result.append((list1[i], list2[sync_pair]))
@@ -1198,9 +1136,7 @@ class StereoCalibrator(Calibrator):
         Find chessboards in images, and runs the OpenCV calibration solver.
         """
 
-        self.resize_right = self.test_same_image_size(
-            limages_list[0], rimages_list[0]
-        )
+        self.resize_right = self.test_same_image_size(limages_list[0], rimages_list[0])
         self.collect_corners(limages_list, rimages_list)
         self.cal_fromcorners()
         self.calibrated = True
@@ -1240,16 +1176,10 @@ class StereoCalibrator(Calibrator):
                     Console.info("Writing debug images to /tmp/")
                     if self.debug:
                         limg = cv2.drawChessboardCorners(
-                            lgray,
-                            (lboard.n_cols, lboard.n_rows),
-                            lcorners,
-                            lok,
+                            lgray, (lboard.n_cols, lboard.n_rows), lcorners, lok,
                         )
                         rimg = cv2.drawChessboardCorners(
-                            rgray,
-                            (rboard.n_cols, rboard.n_rows),
-                            rcorners,
-                            rok,
+                            rgray, (rboard.n_cols, rboard.n_rows), rcorners, rok,
                         )
                         lname = Path(i).stem
                         rname = Path(j).stem
@@ -1299,9 +1229,7 @@ class StereoCalibrator(Calibrator):
         self.R = numpy.eye(3, dtype=numpy.float64)
 
         Console.info(
-            "Calibrating stereo with "
-            + str(len(self.good_corners))
-            + " image pairs..."
+            "Calibrating stereo with " + str(len(self.good_corners)) + " image pairs..."
         )
         if len(self.good_corners) < 8:
             Console.quit("Too few stereo calibration images!")
@@ -1362,10 +1290,7 @@ class StereoCalibrator(Calibrator):
             else:
                 epipolar_error.append(1e3)
 
-        if (
-            iteration < self.max_iterations - 1
-            and self.avg_reprojection_error > 0.6
-        ):
+        if iteration < self.max_iterations - 1 and self.avg_reprojection_error > 0.6:
             epi_error_mean = np.mean(np.array(epipolar_error))
             epi_error_std = np.std(np.array(epipolar_error))
             self.good_corners = [
@@ -1420,9 +1345,7 @@ class StereoCalibrator(Calibrator):
                 total_height = lh + rh
                 # create a new array with a size large enough to contain all
                 # the images
-                final_image = np.zeros(
-                    (total_height, max_width, 3), dtype=np.uint8
-                )
+                final_image = np.zeros((total_height, max_width, 3), dtype=np.uint8)
                 final_image[:lh, :lw, :] = limg
                 final_image[lh : lh + rh, :rw, :] = rimg  # noqa
 
@@ -1519,9 +1442,7 @@ class StereoCalibrator(Calibrator):
             "    rows: 3\n"
             "    cols: 3\n"
             "    dt: d\n"
-            "    data: ["
-            + ", ".join(["%8f" % i for i in k1.reshape(1, 9)[0]])
-            + "]\n"
+            "    data: [" + ", ".join(["%8f" % i for i in k1.reshape(1, 9)[0]]) + "]\n"
             "  distortion_model: "
             + ("rational_polynomial" if d1.size > 5 else "plumb_bob")
             + "\n"
@@ -1536,16 +1457,12 @@ class StereoCalibrator(Calibrator):
             "    rows: 3\n"
             "    cols: 3\n"
             "    dt: d\n"
-            "    data: ["
-            + ", ".join(["%8f" % i for i in r1.reshape(1, 9)[0]])
-            + "]\n"
+            "    data: [" + ", ".join(["%8f" % i for i in r1.reshape(1, 9)[0]]) + "]\n"
             "  projection_matrix: !!opencv-matrix\n"
             "    rows: 3\n"
             "    cols: 4\n"
             "    dt: d\n"
-            "    data: ["
-            + ", ".join(["%8f" % i for i in p1.reshape(1, 12)[0]])
-            + "]\n"
+            "    data: [" + ", ".join(["%8f" % i for i in p1.reshape(1, 12)[0]]) + "]\n"
             "right:\n"
             "  image_width: " + str(self.r.size[0]) + "\n"
             "  image_height: " + str(self.r.size[1]) + "\n"
@@ -1554,9 +1471,7 @@ class StereoCalibrator(Calibrator):
             "    rows: 3\n"
             "    cols: 3\n"
             "    dt: d\n"
-            "    data: ["
-            + ", ".join(["%8f" % i for i in k2.reshape(1, 9)[0]])
-            + "]\n"
+            "    data: [" + ", ".join(["%8f" % i for i in k2.reshape(1, 9)[0]]) + "]\n"
             "  distortion_model: "
             + ("rational_polynomial" if d2.size > 5 else "plumb_bob")
             + "\n"
@@ -1571,16 +1486,12 @@ class StereoCalibrator(Calibrator):
             "    rows: 3\n"
             "    cols: 3\n"
             "    dt: d\n"
-            "    data: ["
-            + ", ".join(["%8f" % i for i in r2.reshape(1, 9)[0]])
-            + "]\n"
+            "    data: [" + ", ".join(["%8f" % i for i in r2.reshape(1, 9)[0]]) + "]\n"
             "  projection_matrix: !!opencv-matrix\n"
             "    rows: 3\n"
             "    cols: 4\n"
             "    dt: d\n"
-            "    data: ["
-            + ", ".join(["%8f" % i for i in p2.reshape(1, 12)[0]])
-            + "]\n"
+            "    data: [" + ", ".join(["%8f" % i for i in p2.reshape(1, 12)[0]]) + "]\n"
             "extrinsics:\n"
             "  rotation_matrix: !!opencv-matrix\n"
             "    rows: 3\n"

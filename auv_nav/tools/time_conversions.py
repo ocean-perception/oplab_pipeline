@@ -8,9 +8,11 @@ See LICENSE.md file in the project root for full license information.
 
 import calendar
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
-from pytz import reference
+import pytz
+
+from oplab.console import Console
 
 
 def date_time_to_epoch(yyyy, mm, dd, hh, mm1, ss, timezone_offset_to_utc=0):
@@ -31,9 +33,14 @@ def epoch_to_utctime(epochtime):
     return utctime
 
 
+# def epoch_to_datetime(epoch_timestamp):
+#     return datetime.datetime.fromtimestamp(epoch_timestamp)
+
+
 def get_localtimezone():
-    localtimezone = reference.LocalTimezone().tzname(datetime.now())  # string
-    return localtimezone
+    localtimezone = datetime.now(timezone.utc).astimezone().tzinfo
+    # and convert tostring
+    return str(localtimezone)
 
 
 def epoch_to_day(epoch):
@@ -67,12 +74,14 @@ def epoch_to_datetime(epoch_timestamp):
 def read_timezone(timezone):
     if isinstance(timezone, str):
         if timezone == "utc" or timezone == "UTC":
-            timezone_offset = 0.0
+            timezone_offset_h = 0.0
+        elif timezone == "cet" or timezone == "CET":
+            timezone_offset_h = 0.0
         elif timezone == "jst" or timezone == "JST":
-            timezone_offset = 9.0
+            timezone_offset_h = 9.0
     else:
         try:
-            timezone_offset = float(timezone)
+            timezone_offset_h = float(timezone)
         except ValueError:
             print(
                 "Error: timezone",
@@ -81,4 +90,30 @@ def read_timezone(timezone):
                   recognised, please enter value from UTC in hours",
             )
             return
-    return timezone_offset
+    return timezone_offset_h
+
+
+def datetime_tz_to_epoch(naive_datetime, timezone_str):
+    """Converts a timezoned datetime to UTC epoch
+
+    Parameters
+    ----------
+    naive_datetime : datetime
+        Datetime object with no timezone information
+    timezone_str : str
+        Timezone string
+
+    Returns
+    -------
+    float
+        Epoch time in UTC
+    """
+    if timezone_str not in pytz.all_timezones:
+        Console.error("Valid timezones are:")
+        Console.error(pytz.common_timezones)
+        Console.quit("Timezone not recognised")
+    local_time = pytz.timezone(timezone_str)
+    local_datetime = local_time.localize(naive_datetime, is_dst=None)
+    utc = pytz.timezone("UTC")
+    utc_datetime = local_datetime.astimezone(utc)
+    return utc_datetime.timestamp()

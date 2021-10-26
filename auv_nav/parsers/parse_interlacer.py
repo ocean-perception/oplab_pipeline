@@ -15,9 +15,7 @@ from oplab import Console
 
 def sort_values(value, order_index=1):
     return zip(
-        *sorted(
-            [(i, e) for i, e in enumerate(value)], key=itemgetter(order_index)
-        )
+        *sorted([(i, e) for i, e in enumerate(value)], key=itemgetter(order_index))
     )
 
 
@@ -32,12 +30,8 @@ def parse_interlacer(outpath, filename):
     try:
         with filepath.open("r") as json_file:
             data = json.load(json_file)
-            for i in range(len(data)):
-                data_packet = data[i]
-                if data_packet is not None:
-                    value.append(str(float(data_packet["epoch_timestamp"])))
-                #else:
-                #    print(data_packet, i)
+            for i, data_packet in enumerate(data):
+                value.append(str(float(data_packet["epoch_timestamp"])))
 
     except ValueError:
         Console.quit("Error: no data in JSON file")

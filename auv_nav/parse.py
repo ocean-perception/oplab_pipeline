@@ -24,12 +24,11 @@ from auv_nav.parsers.parse_NOC_nmea import parse_NOC_nmea
 from auv_nav.parsers.parse_NOC_polpred import parse_NOC_polpred
 from auv_nav.parsers.parse_ntnu_dvl import parse_ntnu_dvl
 from auv_nav.parsers.parse_ntnu_stereo import parse_ntnu_stereo_images
-from auv_nav.parsers.parse_rosbag import parse_rosbag
-from auv_nav.parsers.parse_rosbag import parse_rosbag_extracted_images
 
 # sys.path.append("..")
 from auv_nav.parsers.parse_phins import parse_phins
 from auv_nav.parsers.parse_rdi import parse_rdi
+from auv_nav.parsers.parse_rosbag import parse_rosbag, parse_rosbag_extracted_images
 from auv_nav.parsers.parse_seaxerocks_images import parse_seaxerocks_images
 from auv_nav.parsers.parse_usbl_dump import parse_usbl_dump
 
@@ -61,8 +60,7 @@ def merge_json_files(json_file_list):
             data_list.append(data[0])
         elif origin_lat != lat or origin_lon != lon:
             Console.error(
-                "The datasets you want to merge do not belong to the same",
-                "origin.",
+                "The datasets you want to merge do not belong to the same", "origin.",
             )
             Console.error("Change the origins to be identical and parse them again.")
             Console.quit("Invalid origins for merging datasets.")
@@ -162,8 +160,7 @@ def parse(filepath, force_overwrite, merge):
         Console.info("Interlacing merged data...")
         parse_interlacer(nav_folder, filename)
         Console.info(
-            "...done interlacing merged data. Output saved to",
-            nav_folder / filename,
+            "...done interlacing merged data. Output saved to", nav_folder / filename,
         )
         plot_parse_data(nav_folder)
         Console.info("Complete merging data")
@@ -250,8 +247,7 @@ def parse_single(filepath, force_overwrite):
         if mission.image.format == "acfr_standard" or mission.image.format == "unagi":
             pool_list.append(
                 pool.apply_async(
-                    parse_acfr_images,
-                    [mission, vehicle, "images", ftype, outpath],
+                    parse_acfr_images, [mission, vehicle, "images", ftype, outpath],
                 )
             )
         elif mission.image.format == "seaxerocks_3":
@@ -266,8 +262,7 @@ def parse_single(filepath, force_overwrite):
         ):
             pool_list.append(
                 pool.apply_async(
-                    parse_biocam_images,
-                    [mission, vehicle, "images", ftype, outpath],
+                    parse_biocam_images, [mission, vehicle, "images", ftype, outpath],
                 )
             )
         elif mission.image.format == "ntnu_stereo":
@@ -306,15 +301,13 @@ def parse_single(filepath, force_overwrite):
         elif mission.usbl.format == "eiva_navipac":
             pool_list.append(
                 pool.apply_async(
-                    parse_eiva_navipac,
-                    [mission, vehicle, "usbl", ftype, outpath],
+                    parse_eiva_navipac, [mission, vehicle, "usbl", ftype, outpath],
                 )
             )
         elif mission.usbl.format == "rosbag":
             pool_list.append(
                 pool.apply_async(
-                    parse_rosbag,
-                    [mission, vehicle, "usbl", ftype, outpath],
+                    parse_rosbag, [mission, vehicle, "usbl", ftype, outpath],
                 )
             )
         else:
@@ -330,22 +323,19 @@ def parse_single(filepath, force_overwrite):
         elif mission.velocity.format == "ae2000":
             pool_list.append(
                 pool.apply_async(
-                    parse_ae2000,
-                    [mission, vehicle, "velocity", ftype, outpath],
+                    parse_ae2000, [mission, vehicle, "velocity", ftype, outpath],
                 )
             )
         elif mission.velocity.format == "alr":
             pool_list.append(
                 pool.apply_async(
-                    parse_alr,
-                    [mission, vehicle, "velocity", ftype, outpath],
+                    parse_alr, [mission, vehicle, "velocity", ftype, outpath],
                 )
             )
         elif mission.velocity.format == "autosub":
             pool_list.append(
                 pool.apply_async(
-                    parse_autosub,
-                    [mission, vehicle, "velocity", ftype, outpath],
+                    parse_autosub, [mission, vehicle, "velocity", ftype, outpath],
                 )
             )
         elif mission.velocity.format == "rdi":
@@ -357,58 +347,49 @@ def parse_single(filepath, force_overwrite):
         elif mission.velocity.format == "ntnu_dvl":
             pool_list.append(
                 pool.apply_async(
-                    parse_ntnu_dvl,
-                    [mission, vehicle, "velocity", ftype, outpath],
+                    parse_ntnu_dvl, [mission, vehicle, "velocity", ftype, outpath],
                 )
             )
         elif mission.usbl.format == "rosbag":
             pool_list.append(
                 pool.apply_async(
-                    parse_rosbag,
-                    [mission, vehicle, "velocity", ftype, outpath],
+                    parse_rosbag, [mission, vehicle, "velocity", ftype, outpath],
                 )
             )
         else:
             Console.quit(
-                "Mission velocity format",
-                mission.velocity.format,
-                "not supported.",
+                "Mission velocity format", mission.velocity.format, "not supported.",
             )
 
     if not mission.orientation.empty():
         if mission.orientation.format == "phins":
             pool_list.append(
                 pool.apply_async(
-                    parse_phins,
-                    [mission, vehicle, "orientation", ftype, outpath],
+                    parse_phins, [mission, vehicle, "orientation", ftype, outpath],
                 )
             )
         elif mission.orientation.format == "ae2000":
             pool_list.append(
                 pool.apply_async(
-                    parse_ae2000,
-                    [mission, vehicle, "orientation", ftype, outpath],
+                    parse_ae2000, [mission, vehicle, "orientation", ftype, outpath],
                 )
             )
         elif mission.orientation.format == "alr":
             pool_list.append(
                 pool.apply_async(
-                    parse_alr,
-                    [mission, vehicle, "orientation", ftype, outpath],
+                    parse_alr, [mission, vehicle, "orientation", ftype, outpath],
                 )
             )
         elif mission.orientation.format == "autosub":
             pool_list.append(
                 pool.apply_async(
-                    parse_autosub,
-                    [mission, vehicle, "orientation", ftype, outpath],
+                    parse_autosub, [mission, vehicle, "orientation", ftype, outpath],
                 )
             )
         elif mission.orientation.format == "rdi":
             pool_list.append(
                 pool.apply_async(
-                    parse_rdi,
-                    [mission, vehicle, "orientation", ftype, outpath],
+                    parse_rdi, [mission, vehicle, "orientation", ftype, outpath],
                 )
             )
         elif mission.orientation.format == "eiva_navipac":
@@ -421,8 +402,7 @@ def parse_single(filepath, force_overwrite):
         elif mission.usbl.format == "rosbag":
             pool_list.append(
                 pool.apply_async(
-                    parse_rosbag,
-                    [mission, vehicle, "orientation", ftype, outpath],
+                    parse_rosbag, [mission, vehicle, "orientation", ftype, outpath],
                 )
             )
         else:
@@ -464,15 +444,13 @@ def parse_single(filepath, force_overwrite):
         elif mission.depth.format == "eiva_navipac":
             pool_list.append(
                 pool.apply_async(
-                    parse_eiva_navipac,
-                    [mission, vehicle, "depth", ftype, outpath],
+                    parse_eiva_navipac, [mission, vehicle, "depth", ftype, outpath],
                 )
             )
         elif mission.usbl.format == "rosbag":
             pool_list.append(
                 pool.apply_async(
-                    parse_rosbag,
-                    [mission, vehicle, "depth", ftype, outpath],
+                    parse_rosbag, [mission, vehicle, "depth", ftype, outpath],
                 )
             )
         else:
@@ -488,22 +466,19 @@ def parse_single(filepath, force_overwrite):
         elif mission.altitude.format == "ae2000":
             pool_list.append(
                 pool.apply_async(
-                    parse_ae2000,
-                    [mission, vehicle, "altitude", ftype, outpath],
+                    parse_ae2000, [mission, vehicle, "altitude", ftype, outpath],
                 )
             )
         elif mission.altitude.format == "alr":
             pool_list.append(
                 pool.apply_async(
-                    parse_alr,
-                    [mission, vehicle, "altitude", ftype, outpath],
+                    parse_alr, [mission, vehicle, "altitude", ftype, outpath],
                 )
             )
         elif mission.altitude.format == "autosub":
             pool_list.append(
                 pool.apply_async(
-                    parse_autosub,
-                    [mission, vehicle, "altitude", ftype, outpath],
+                    parse_autosub, [mission, vehicle, "altitude", ftype, outpath],
                 )
             )
         elif mission.altitude.format == "rdi":
@@ -515,22 +490,18 @@ def parse_single(filepath, force_overwrite):
         elif mission.altitude.format == "ntnu_dvl":
             pool_list.append(
                 pool.apply_async(
-                    parse_ntnu_dvl,
-                    [mission, vehicle, "altitude", ftype, outpath],
+                    parse_ntnu_dvl, [mission, vehicle, "altitude", ftype, outpath],
                 )
             )
         elif mission.usbl.format == "rosbag":
             pool_list.append(
                 pool.apply_async(
-                    parse_rosbag,
-                    [mission, vehicle, "altitude", ftype, outpath],
+                    parse_rosbag, [mission, vehicle, "altitude", ftype, outpath],
                 )
             )
         else:
             Console.quit(
-                "Mission altitude format",
-                mission.altitude.format,
-                "not supported.",
+                "Mission altitude format", mission.altitude.format, "not supported.",
             )
 
     if not mission.tide.empty():

@@ -16,9 +16,8 @@ import pynmea2
 
 from auv_nav.tools.body_to_inertial import body_to_inertial
 from auv_nav.tools.latlon_wgs84 import latlon_to_metres, metres_to_latlon
-from oplab import Console
-
 from auv_nav.tools.transformations import euler_from_quaternion
+from oplab import Console
 
 
 def ros_stamp_to_epoch(stamp):
@@ -261,26 +260,14 @@ class BodyVelocity(OutputFormat):
 
         # account for sensor rotational offset
         if valid:
-            [self.x_velocity, self.y_velocity, self.z_velocity,] = body_to_inertial(
-                0,
-                0,
-                self.yaw_offset,
-                vx,
-                vy,
-                vz,
+            [self.x_velocity, self.y_velocity, self.z_velocity] = body_to_inertial(
+                0, 0, self.yaw_offset, vx, vy, vz,
             )
             [
                 self.x_velocity_std,
                 self.y_velocity_std,
                 self.z_velocity_std,
-            ] = body_to_inertial(
-                0,
-                0,
-                self.yaw_offset,
-                verr,
-                verr,
-                verr,
-            )
+            ] = body_to_inertial(0, 0, self.yaw_offset, verr, verr, verr,)
 
         # Check if data is valid
 
@@ -336,13 +323,25 @@ class BodyVelocity(OutputFormat):
             self.z_velocity_std = json["data"][2]["z_velocity_std"]
         elif sensor_std["model"] == "linear":
             if "offset_x" in sensor_std:
-                self.x_velocity_std = sensor_std["offset_x"] + sensor_std["factor_x"] * self.x_velocity
-                self.y_velocity_std = sensor_std["offset_y"] + sensor_std["factor_y"] * self.y_velocity
-                self.z_velocity_std = sensor_std["offset_z"] + sensor_std["factor_z"] * self.z_velocity
+                self.x_velocity_std = (
+                    sensor_std["offset_x"] + sensor_std["factor_x"] * self.x_velocity
+                )
+                self.y_velocity_std = (
+                    sensor_std["offset_y"] + sensor_std["factor_y"] * self.y_velocity
+                )
+                self.z_velocity_std = (
+                    sensor_std["offset_z"] + sensor_std["factor_z"] * self.z_velocity
+                )
             else:
-                self.x_velocity_std = sensor_std["offset"] + sensor_std["factor"] * self.x_velocity
-                self.y_velocity_std = sensor_std["offset"] + sensor_std["factor"] * self.y_velocity
-                self.z_velocity_std = sensor_std["offset"] + sensor_std["factor"] * self.z_velocity
+                self.x_velocity_std = (
+                    sensor_std["offset"] + sensor_std["factor"] * self.x_velocity
+                )
+                self.y_velocity_std = (
+                    sensor_std["offset"] + sensor_std["factor"] * self.y_velocity
+                )
+                self.z_velocity_std = (
+                    sensor_std["offset"] + sensor_std["factor"] * self.z_velocity
+                )
         else:
             Console.error("The STD model you entered for DVL is not supported.")
             Console.quit("STD model not supported.")
@@ -559,12 +558,7 @@ class Orientation(OutputFormat):
     def apply_std_offset(self):
         # account for sensor rotational offset
         [self.roll_std, self.pitch_std, self.heading_std] = body_to_inertial(
-            0,
-            0,
-            self.yaw_offset,
-            self.roll_std,
-            self.pitch_std,
-            self.yaw_std,
+            0, 0, self.yaw_offset, self.roll_std, self.pitch_std, self.yaw_std,
         )
 
     def from_eiva_navipac(self, line):
@@ -1145,10 +1139,7 @@ class Usbl(OutputFormat):
 
             # determine uncertainty in terms of latitude and longitude
             latitude_offset, longitude_offset = metres_to_latlon(
-                abs(self.latitude),
-                abs(self.longitude),
-                distance_std,
-                distance_std,
+                abs(self.latitude), abs(self.longitude), distance_std, distance_std,
             )
             self.latitude_std = abs(abs(self.latitude) - latitude_offset)
             self.longitude_std = abs(abs(self.longitude) - longitude_offset)
@@ -1556,8 +1547,7 @@ class SyncedOrientationBodyVelocity:
 
     def to_sidescan_row(self):
         datetime_str = time.strftime(
-            "%Y%m%d %H%M%S",
-            time.gmtime(self.epoch_timestamp),
+            "%Y%m%d %H%M%S", time.gmtime(self.epoch_timestamp),
         )
         lat = self.latitude if self.latitude is not None else 0.0
         lon = self.longitude if self.latitude is not None else 0.0
@@ -1690,10 +1680,7 @@ class Camera(SyncedOrientationBodyVelocity):
         latitude_reference, longitude_reference = latlon_reference
 
         [self.latitude, self.longitude] = metres_to_latlon(
-            latitude_reference,
-            longitude_reference,
-            other.eastings,
-            other.northings,
+            latitude_reference, longitude_reference, other.eastings, other.northings,
         )
 
         self.updated = True

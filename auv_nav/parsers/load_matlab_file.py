@@ -9,6 +9,7 @@ See LICENSE.md file in the project root for full license information.
 
 import scipy.io as spio
 
+
 def loadmat(filename):
     """
     this function should be called instead of direct spio.loadmat

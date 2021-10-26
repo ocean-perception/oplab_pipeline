@@ -39,18 +39,15 @@ def usbl_offset(
             if start_usbl + 1 >= len(time_usbl):
                 break
             if (
-                time_dead_reckoning[start_dead_reckoning]
-                - time_usbl[start_usbl + 1]
+                time_dead_reckoning[start_dead_reckoning] - time_usbl[start_usbl + 1]
                 > 0
             ):
                 start_usbl = start_usbl + 1
             else:
                 if (
-                    time_dead_reckoning[start_dead_reckoning]
-                    - time_usbl[start_usbl]
+                    time_dead_reckoning[start_dead_reckoning] - time_usbl[start_usbl]
                     < threshold
-                    and time_usbl[start_usbl + 1] - time_usbl[start_usbl]
-                    < threshold
+                    and time_usbl[start_usbl + 1] - time_usbl[start_usbl] < threshold
                 ):
                     start_usbl += 1
                     exit_flag = True
@@ -59,20 +56,14 @@ def usbl_offset(
     else:
         # print('usbl starts after dead_reckoning')
         while exit_flag is False:
-            if (
-                time_dead_reckoning[start_dead_reckoning]
-                - time_usbl[start_usbl]
-                < 0
-            ):
+            if time_dead_reckoning[start_dead_reckoning] - time_usbl[start_usbl] < 0:
                 start_dead_reckoning = start_dead_reckoning + 1
 
             else:
                 if (
-                    time_dead_reckoning[start_dead_reckoning]
-                    - time_usbl[start_usbl]
+                    time_dead_reckoning[start_dead_reckoning] - time_usbl[start_usbl]
                     < threshold
-                    and time_usbl[start_usbl + 1] - time_usbl[start_usbl]
-                    < threshold
+                    and time_usbl[start_usbl + 1] - time_usbl[start_usbl] < threshold
                 ):
                     start_usbl += 1
                     exit_flag = True
@@ -86,10 +77,7 @@ def usbl_offset(
         if start_dead_reckoning + 1 >= len(time_dead_reckoning):
             break
         try:
-            while (
-                time_dead_reckoning[start_dead_reckoning + 1]
-                < time_usbl[j_usbl]
-            ):
+            while time_dead_reckoning[start_dead_reckoning + 1] < time_usbl[j_usbl]:
                 start_dead_reckoning += 1
         except IndexError:
             break
@@ -114,8 +102,7 @@ def usbl_offset(
 
     northings_offset = sum(
         northings_usbl[
-            start_usbl : start_usbl  # noqa
-            + len(northings_dead_reckoning_interpolated)
+            start_usbl : start_usbl + len(northings_dead_reckoning_interpolated)  # noqa
         ]
     ) / len(
         northings_usbl[
@@ -136,8 +123,7 @@ def usbl_offset(
         ]
     ) / len(
         eastings_usbl[
-            start_usbl : start_usbl  # noqa
-            + len(eastings_dead_reckoning_interpolated)
+            start_usbl : start_usbl + len(eastings_dead_reckoning_interpolated)  # noqa
         ]
     ) - sum(
         eastings_dead_reckoning_interpolated

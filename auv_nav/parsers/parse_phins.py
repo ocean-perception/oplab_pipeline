@@ -115,9 +115,7 @@ class PhinsParser:
 
             # extract from $ to * as per phins manual
             string_to_check = ",".join(line)
-            string_to_check = string_to_check[
-                1 : len(string_to_check)  # noqa E203
-            ]
+            string_to_check = string_to_check[1 : len(string_to_check)]  # noqa E203
             string_sum = 0
 
             for i in range(len(string_to_check)):
@@ -129,12 +127,9 @@ class PhinsParser:
             else:
                 Console.warn("Broken packet: " + str(line))
                 Console.warn(
-                    "Check sum calculated "
-                    + str(hex(string_sum).zfill(2).upper())
+                    "Check sum calculated " + str(hex(string_sum).zfill(2).upper())
                 )
-                Console.warn(
-                    "Does not match that provided " + str(check_sum.upper())
-                )
+                Console.warn("Does not match that provided " + str(check_sum.upper()))
                 Console.warn("Ignore and move on")
         return False
 
@@ -143,9 +138,7 @@ class PhinsParser:
         Console.info("... parsing phins standard data")
 
         data_list = []
-        path = get_raw_folder(
-            self.outpath / ".." / self.filepath / self.filename
-        )
+        path = get_raw_folder(self.outpath / ".." / self.filepath / self.filename)
         with path.open("r", encoding="utf-8", errors="ignore") as filein:
             for complete_line in filein.readlines():
                 line_and_md5 = complete_line.strip().split("*")
@@ -227,9 +220,7 @@ class PhinsParser:
 
         if self.category == Category.ALTITUDE:
             if header == PhinsHeaders.ALTITUDE:
-                self.altitude.from_phins(
-                    line, self.body_velocity.epoch_timestamp_dvl
-                )
+                self.altitude.from_phins(line, self.body_velocity.epoch_timestamp_dvl)
                 data = self.altitude.export(self.output_format)
             if header == PhinsHeaders.DVL:
                 self.body_velocity.from_phins(line)

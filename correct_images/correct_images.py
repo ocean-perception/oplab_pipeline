@@ -34,9 +34,7 @@ def main(args=None):
     # https://stackoverflow.com/questions/16755142/how-to-make-win32-console-recognize-ansi-vt100-escape-sequences # noqa
     os.system("")
     Console.banner()
-    Console.info(
-        "Running correct_images version " + str(Console.get_version())
-    )
+    Console.info("Running correct_images version " + str(Console.get_version()))
 
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
@@ -46,9 +44,7 @@ def main(args=None):
         "correct",
         help="Correct images for attenuation / distortion / gamma and debayering",  # noqa
     )
-    subparser_correct.add_argument(
-        "path", help="Path to raw directory till dive."
-    )
+    subparser_correct.add_argument("path", help="Path to raw directory till dive.")
     subparser_correct.add_argument(
         "-F",
         "--Force",
@@ -62,9 +58,7 @@ def main(args=None):
     subparser_parse = subparsers.add_parser(
         "parse", help="Compute the correction parameters"
     )
-    subparser_parse.add_argument(
-        "path", help="Path to raw directory till dive."
-    )
+    subparser_parse.add_argument("path", help="Path to raw directory till dive.")
     subparser_parse.add_argument(
         "-F",
         "--Force",
@@ -78,9 +72,7 @@ def main(args=None):
     subparser_process = subparsers.add_parser(
         "process", help="Process image correction"
     )
-    subparser_process.add_argument(
-        "path", help="Path to raw directory till dive."
-    )
+    subparser_process.add_argument("path", help="Path to raw directory till dive.")
     subparser_process.add_argument(
         "-F",
         "--Force",
@@ -134,9 +126,7 @@ def call_parse(args):
         Console.info("Parsing for camera", camera.name)
 
         if len(camera.image_list) == 0:
-            Console.info(
-                "No images found for the camera at the path provided..."
-            )
+            Console.info("No images found for the camera at the path provided...")
             continue
         else:
             corrector = Corrector(args.force, camera, correct_config, path)
@@ -173,9 +163,7 @@ def call_process(args):
         Console.info("Processing for camera", camera.name)
 
         if len(camera.image_list) == 0:
-            Console.info(
-                "No images found for the camera at the path provided..."
-            )
+            Console.info("No images found for the camera at the path provided...")
             continue
         else:
             corrector = Corrector(args.force, camera, correct_config, path)
@@ -288,19 +276,13 @@ def load_configuration_and_camera_system(path):
 
         if mission.image.format == "acfr_standard":
             camera_yaml_path = root / acfr_std_camera_file
-            default_file_path_correct_config = (
-                root / acfr_std_correct_config_file
-            )
+            default_file_path_correct_config = root / acfr_std_correct_config_file
         elif mission.image.format == "seaxerocks_3":
             camera_yaml_path = root / sx3_camera_file
-            default_file_path_correct_config = (
-                root / sx3_std_correct_config_file
-            )
+            default_file_path_correct_config = root / sx3_std_correct_config_file
         elif mission.image.format == "biocam":
             camera_yaml_path = root / biocam_camera_file
-            default_file_path_correct_config = (
-                root / biocam_std_correct_config_file
-            )
+            default_file_path_correct_config = root / biocam_std_correct_config_file
         elif mission.image.format == "biocam4000_15c":
             camera_yaml_path = root / biocam4000_15c_camera_file
             default_file_path_correct_config = (
@@ -308,14 +290,10 @@ def load_configuration_and_camera_system(path):
             )
         elif mission.image.format == "hybis":
             camera_yaml_path = root / hybis_camera_file
-            default_file_path_correct_config = (
-                root / hybis_std_correct_config_file
-            )
+            default_file_path_correct_config = root / hybis_std_correct_config_file
         elif mission.image.format == "ntnu_stereo":
             camera_yaml_path = root / ntnu_camera_file
-            default_file_path_correct_config = (
-                root / ntnu_std_correct_config_file
-            )
+            default_file_path_correct_config = root / ntnu_std_correct_config_file
         else:
             Console.quit(
                 "Image system in camera.yaml does not match with mission.yaml",
@@ -341,8 +319,7 @@ def load_configuration_and_camera_system(path):
     path_correct_images = path_config_folder / "correct_images.yaml"
     if path_correct_images.exists():
         Console.info(
-            "Configuration file correct_images.yaml file found at",
-            path_correct_images,
+            "Configuration file correct_images.yaml file found at", path_correct_images,
         )
     else:
         default_file_path_correct_config.copy(path_correct_images)
