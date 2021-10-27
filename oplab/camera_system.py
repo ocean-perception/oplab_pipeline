@@ -143,6 +143,8 @@ class CameraEntry:
             self.extension == "tif"
             or self.extension == "jpg"
             or self.extension == "JPG"
+            or self.extension == "png"
+            or self.extension == "PNG"
         ):
             image_matrix = imageio.imread(image_path)
             image_shape = image_matrix.shape
@@ -152,11 +154,12 @@ class CameraEntry:
                 self._image_properties.append(image_shape[2])
             else:
                 self._image_properties.append(1)
-
         # read raw
-        if self.extension == "raw":
+        elif self.extension == "raw":
             # TODO: provide a raw reader and get these properties from the file
             self._image_properties = [1024, 1280, 1]
+        else:
+            Console.quit("Extension", self.extension, "not supported")
         return self._image_properties
 
 

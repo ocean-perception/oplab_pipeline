@@ -1,0 +1,60 @@
+#YAML 1.0
+version: 1
+
+origin:
+  latitude: 39.1546
+  longitude: 2.9449
+  coordinate_reference_system: wgs84
+  date: 2021/09/15
+
+velocity:
+  format: rosbag
+  filepath: nav/bagfiles/
+  filename: topics_2021-09-15-18-18-44_0.bag
+  topic: /turbot/teledyne_explorer_dvl/data
+  timezone: cet
+  timeoffset: 0.0
+
+orientation:
+  format: rosbag
+  filepath: nav/bagfiles/
+  filename: topics_2021-09-15-18-18-44_0.bag
+  topic: /turbot/navigator/imu_raw
+  timezone: cet
+  timeoffset: 0.0
+
+depth:
+  format: rosbag
+  filepath: nav/bagfiles/
+  filename: topics_2021-09-15-18-18-44_0.bag
+  topic: /turbot/adis_imu/depth
+  timezone: cet
+  timeoffset: 0.0
+
+altitude:
+  format: rosbag
+  filepath: nav/bagfiles/
+  filename: topics_2021-09-15-18-18-44_0.bag
+  topic: /turbot/teledyne_explorer_dvl/data
+  timezone: cet
+  timeoffset: 0.0
+
+usbl:
+  format: rosbag
+  filepath: nav/bagfiles/
+  filename: topics_2021-09-15-18-18-44_0.bag
+  topic: /turbot/modem_delayed
+  timezone: cet
+  timeoffset: 0.0
+
+image:
+  format: rosbag_extracted_images
+  cameras:
+    - name: chameleon_left
+      type: bayer_rggb
+      path: images/left/
+    - name: chameleon_right
+      type: bayer_rggb
+      path: images/right/
+  timezone: cet
+  timeoffset: 0.0

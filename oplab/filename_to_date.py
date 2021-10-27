@@ -29,9 +29,7 @@ def resolve(filename, folder):
 
 
 class FilenameToDate:
-    def __init__(
-        self, stamp_format: str, filename=None, columns=None, path=None
-    ):
+    def __init__(self, stamp_format: str, filename=None, columns=None, path=None):
         self.stamp_format = stamp_format
         self.df = None
         if path is not None:
@@ -65,6 +63,7 @@ class FilenameToDate:
         msecond = ""
         usecond = ""
         index = ""
+        epoch = ""
         for n, f in zip(filename, stamp_format):
             if f == "Y":
                 year += n
@@ -84,7 +83,9 @@ class FilenameToDate:
                 usecond += n
             if f == "i":
                 index += n
-        if not index:
+            if f == "e":
+                epoch += f
+        if not index and epoch == "":
             assert len(year) == 4, "Year in filename should have a length of 4"
             assert (
                 len(month) == 2
@@ -127,6 +128,9 @@ class FilenameToDate:
             )
             stamp = float(calendar.timegm(date.timetuple()))
             return stamp + microsecond * 1e-6
+        elif epoch != "":
+            stamp = float(epoch)
+            return stamp
         else:
             if self.df is None:
                 Console.error(

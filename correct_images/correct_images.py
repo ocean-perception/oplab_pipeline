@@ -252,6 +252,9 @@ def load_configuration_and_camera_system(path):
         biocam4000_15c_camera_file = "auv_nav/default_yaml/alr/jc220/camera.yaml"
         hybis_camera_file = "auv_nav/default_yaml/hybis/camera.yaml"
         ntnu_camera_file = "auv_nav/default_yaml/ntnu_stereo/tautra21/camera.yaml"
+        rosbag_extracted_camera_file = (
+            "auv_nav/default_yaml/rosbag/grassmap/camera.yaml"
+        )
 
         acfr_std_correct_config_file = (
             "correct_images/default_yaml/acfr/correct_images.yaml"
@@ -270,6 +273,9 @@ def load_configuration_and_camera_system(path):
         )
         ntnu_std_correct_config_file = (
             "correct_images/default_yaml/ntnu_stereo/correct_images.yaml"
+        )
+        rosbag_extracted_images_std_correct_config_file = (
+            "correct_images/default_yaml/rosbag_extracted_images/correct_images.yaml"
         )
 
         Console.info("Image format:", mission.image.format)
@@ -294,6 +300,11 @@ def load_configuration_and_camera_system(path):
         elif mission.image.format == "ntnu_stereo":
             camera_yaml_path = root / ntnu_camera_file
             default_file_path_correct_config = root / ntnu_std_correct_config_file
+        elif mission.image.format == "rosbag_extracted_images":
+            camera_yaml_path = root / rosbag_extracted_camera_file
+            default_file_path_correct_config = (
+                root / rosbag_extracted_images_std_correct_config_file
+            )
         else:
             Console.quit(
                 "Image system in camera.yaml does not match with mission.yaml",
