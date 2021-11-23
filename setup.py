@@ -112,7 +112,8 @@ def run_setup():
         description="Toolchain for AUV dive processing, camera calibration and image correction",  # noqa
         long_description=long_description,
         url="https://github.com/ocean-perception/oplab_pipeline",
-        packages=find_packages(),
+        packages=find_packages(where="src"),
+        package_dir={"": "src"},
         classifiers=classifiers,
         license="BSD",
         entry_points={  # Optional
@@ -122,6 +123,13 @@ def run_setup():
                 "correct_images = correct_images.correct_images:main",
             ],
         },
+        scripts=[
+            "src/scripts/debayer_folder.py",
+            "src/scripts/extract_rosbag_images.py",
+            "src/scripts/merge_dataset_csv.py",
+            "src/scripts/pixel_stats_folder.py",
+            "src/scripts/auv_cd.sh",
+        ],
         include_package_data=True,
         package_data={
             "": [
@@ -155,7 +163,7 @@ def run_setup():
             "numba>=0.51.2",
             "geographiclib>=1.50",
             "psutil>=5.8.0",
-            "scikit_image>=0.18.3",
+            "scikit_image>=0.17",
         ],
     )
 
