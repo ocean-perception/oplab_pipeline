@@ -159,7 +159,6 @@ def run_setup():
             "pytz>=2019.3",
             "scipy>=1.4.1",
             "tqdm>=4.40.2",
-            "setuptools>=42.0.2",
             "numba>=0.51.2",
             "geographiclib>=1.50",
             "psutil>=5.8.0",

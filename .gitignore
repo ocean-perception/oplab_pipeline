@@ -3,7 +3,7 @@ build/
 dist/
 docs/_build/
 *.egg-info/
-oplab/commit_hash.txt
+commit_hash.txt
 .venv/
 .idea/
 .vscode/
