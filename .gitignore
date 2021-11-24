@@ -8,3 +8,7 @@ commit_hash.txt
 .idea/
 .vscode/
 *.code-workspace
+
+# due to using tox and pytest
+.tox
+.cache
