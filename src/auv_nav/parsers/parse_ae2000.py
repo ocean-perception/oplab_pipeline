@@ -259,7 +259,7 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
                     "frame": frame_string,
                     "category": category,
                     "data": [
-                        {"heading": float(heading), "heading_std": float(heading_std),},
+                        {"heading": float(heading), "heading_std": float(heading_std)},
                         {"roll": float(roll), "roll_std": float(roll_std)},
                         {"pitch": float(pitch), "pitch_std": float(pitch_std)},
                     ],

@@ -474,7 +474,7 @@ def interpolate_sensor_list(
                 )
                 - z_offset
             )
-            [sensor_list[i].latitude, sensor_list[i].longitude,] = metres_to_latlon(
+            [sensor_list[i].latitude, sensor_list[i].longitude] = metres_to_latlon(
                 latitude_reference,
                 longitude_reference,
                 sensor_list[i].eastings,

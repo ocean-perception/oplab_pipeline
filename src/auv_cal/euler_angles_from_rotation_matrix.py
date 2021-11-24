@@ -49,7 +49,7 @@ if __name__ == "__main__":
 
         def test2(self):
             R = NP.array(
-                [[0.5, -0.1464, 0.8536], [0.5, 0.8536, -0.1464], [-1.0, 0.5, 0.5],]
+                [[0.5, -0.1464, 0.8536], [0.5, 0.8536, -0.1464], [-1.0, 0.5, 0.5]]
             )
             psi, theta, phi = euler_angles_from_rotation_matrix(R)
             self.assertTrue(isclose(theta, math.pi / 2.0))
@@ -58,7 +58,7 @@ if __name__ == "__main__":
 
         def test3(self):
             R = NP.array(
-                [[0.5, -0.1464, 0.8536], [0.5, 0.8536, -0.1464], [1.0, 0.5, 0.5],]
+                [[0.5, -0.1464, 0.8536], [0.5, 0.8536, -0.1464], [1.0, 0.5, 0.5]]
             )
             psi, theta, phi = euler_angles_from_rotation_matrix(R)
             self.assertTrue(isclose(theta, -math.pi / 2.0))
