@@ -36,9 +36,7 @@ def return_version():
     string as defined above.
     """
     version = ""
-    path_to_hashfile = os.path.join(
-        os.path.dirname(__file__), "commit_hash.txt"
-    )
+    path_to_hashfile = os.path.join(os.path.dirname(__file__), "commit_hash.txt")
     if os.path.exists(path_to_hashfile):
         commit_version = ""
         with open(path_to_hashfile, "r") as f:
@@ -77,9 +75,7 @@ def git_pep440_version():
     version_full = git_command(["describe", "--tags", "--dirty=.dirty"])
     version_tag = git_command(["describe", "--tags", "--abbrev=0"])
     version_tail = version_full[len(version_tag) :]  # noqa
-    return version_tag + version_tail.replace("-", ".dev", 1).replace(
-        "-", "+", 1
-    )
+    return version_tag + version_tail.replace("-", ".dev", 1).replace("-", "+", 1)
 
 
 def run_setup():
@@ -87,9 +83,7 @@ def run_setup():
     # load long description from README.md
     readme_file = "README.md"
     if os.path.exists(readme_file):
-        long_description = open(
-            readme_file, encoding="utf-8", errors="ignore"
-        ).read()
+        long_description = open(readme_file, encoding="utf-8", errors="ignore").read()
     else:
         print("Could not find readme file to extract long_description.")
         long_description = ""
@@ -118,8 +112,8 @@ def run_setup():
         description="Toolchain for AUV dive processing, camera calibration and image correction",  # noqa
         long_description=long_description,
         url="https://github.com/ocean-perception/oplab_pipeline",
-        bugtrack_url="http://github.com/ocean-perception/oplab_pipeline/issues",  # noqa
-        packages=find_packages(),
+        packages=find_packages(where="src"),
+        package_dir={"": "src"},
         classifiers=classifiers,
         license="BSD",
         entry_points={  # Optional
@@ -129,6 +123,13 @@ def run_setup():
                 "correct_images = correct_images.correct_images:main",
             ],
         },
+        scripts=[
+            "src/scripts/debayer_folder.py",
+            "src/scripts/extract_rosbag_images.py",
+            "src/scripts/merge_dataset_csv.py",
+            "src/scripts/pixel_stats_folder.py",
+            "src/scripts/auv_cd.sh",
+        ],
         include_package_data=True,
         package_data={
             "": [
@@ -162,6 +163,7 @@ def run_setup():
             "numba>=0.51.2",
             "geographiclib>=1.50",
             "psutil>=5.8.0",
+            "scikit_image>=0.17",
         ],
     )
 
