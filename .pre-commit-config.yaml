@@ -1,11 +1,4 @@
 repos:
-- repo: https://github.com/jazzband/pip-tools
-  rev: 6.3.0
-  hooks:
-  - id: pip-compile
-    files: ^requirements/production\.(in|txt)$
-    args: [--upgrade, --generate-hashes]
-    stages: [push]
 - repo: https://github.com/pycqa/isort
   rev: 5.3.2
   hooks:
