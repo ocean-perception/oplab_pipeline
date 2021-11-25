@@ -6,11 +6,16 @@ Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
 
+import sys
+
 from pathlib import Path
+from typing import List
 
 import numpy as np
+import pandas as pd
 
 from oplab import Console
+from auv_nav.sensors import Camera
 
 
 def write_csv(csv_filepath, data_list, csv_filename, csv_flag=True, mutex=None):
@@ -63,6 +68,79 @@ def write_csv(csv_filepath, data_list, csv_filename, csv_flag=True, mutex=None):
                 fileout_cov.close()
         else:
             Console.warn("Empty data list {}".format(str(csv_filename)))
+
+
+def load_states(
+    path: Path,
+    start_image_identifier: str,
+    end_image_identifier: str
+) -> List[Camera]:
+    """Loads states from csv between 2 timestamps
+
+    Args:
+        path (Union[str, Path]): Path of states csv file
+        start_image_identifier (str): Identifier (path) from which onwards states are loaded
+        end_image_identifier (str): Identifier (path) up to which states are loaded
+
+    Returns:
+        List[Camera]
+    """
+    poses = pd.read_csv(path)
+
+    path_covriance = path.parent / (path.stem + "_cov" + path.suffix)
+    covariances = pd.read_csv(path_covriance)
+    covariances.columns = covariances.columns.str.replace(' ', '')
+    headers = list(covariances.columns.values)
+    headers = [s.strip() for s in headers]  # Strip whitespace in comma-space (instead of just comma)-separtated columns
+    expected_headers = [
+        'relative_path',
+        'cov_x_x', 'cov_x_y', 'cov_x_z', 'cov_x_roll', 'cov_x_pitch', 'cov_x_yaw',
+        'cov_y_x', 'cov_y_y', 'cov_y_z', 'cov_y_roll', 'cov_y_pitch', 'cov_y_yaw',
+        'cov_z_x', 'cov_z_y', 'cov_z_z', 'cov_z_roll', 'cov_z_pitch', 'cov_z_yaw',
+        'cov_roll_x', 'cov_roll_y', 'cov_roll_z', 'cov_roll_roll', 'cov_roll_pitch', 'cov_roll_yaw',
+        'cov_pitch_x', 'cov_pitch_y', 'cov_pitch_z', 'cov_pitch_roll', 'cov_pitch_pitch', 'cov_pitch_yaw',
+        'cov_yaw_x', 'cov_yaw_y', 'cov_yaw_z', 'cov_yaw_roll', 'cov_yaw_pitch', 'cov_yaw_yaw'
+    ]
+    if len(headers) < 37 or headers[0:37] != expected_headers:
+        Console.quit("Unexpected headers in covariance file", path)
+
+    covariances.rename(columns={'relative_path': 'relative_path_cov'}, inplace=True)  # prevent same names after merging
+    pd_states = pd.concat([poses, covariances], axis=1)
+    use = False
+    states = []
+    try:
+        for index, row in pd_states.iterrows():
+            if row["relative_path"] == start_image_identifier:
+                use = True
+            if use:
+                if row["relative_path"] != row["relative_path_cov"]:
+                    Console.error(
+                        "Different relative paths (" + row["relative_path"] + " and " + row["relative_path_cov"]
+                        + ") in corresponding lines in states and covariance csv"
+                    )
+                s = Camera()
+                s.filename = row["relative_path"]
+                s.northings = row["northing [m]"]
+                s.eastings = row["easting [m]"]
+                s.depth = row["depth [m]"]
+                s.roll = row["roll [deg]"]
+                s.pitch = row["pitch [deg]"]
+                s.yaw = row["heading [deg]"]
+                s.x_velocity = row["x_velocity [m/s]"]
+                s.y_velocity = row["y_velocity [m/s]"]
+                s.z_velocity = row["z_velocity [m/s]"]
+                s.epoch_timestamp = row["timestamp [s]"]
+                s.covariance = np.asarray(row['cov_x_x':'cov_yaw_yaw']).reshape((6, 6))
+                states.append(s)
+            if row["relative_path"] == end_image_identifier:
+                break
+    except KeyError as err:
+        Console.error(
+            "In", __file__, "line", sys._getframe().f_lineno,
+            ": KeyError when parsing ", path, ": Key", err, "not found."
+        )
+
+    return states
 
 
 def write_sidescan_csv(csv_filepath, data_list, csv_filename, csv_flag):

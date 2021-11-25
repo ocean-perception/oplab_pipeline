@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2020, University of Southampton
+Copyright (c) 2021, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -12,10 +12,13 @@ import time
 import plotly.graph_objs as go
 import plotly.offline as py
 from plotly import subplots
+from pathlib import Path
+from typing import Optional, List
 
-from auv_nav.localisation.ekf import Index
-from auv_nav.tools.time_conversions import epoch_to_utctime
 from oplab import Console
+from auv_nav.localisation.ekf import Index, EkfState
+from auv_nav.tools.time_conversions import epoch_to_utctime
+from auv_nav.sensors import SyncedOrientationBodyVelocity, Camera
 
 
 def create_trace(
@@ -26,10 +29,12 @@ def create_trace(
     visibility=True,
     fill="none",
     is_std_bound=False,
+    is_2nd_line=False
 ):
-    line = dict(width=0) if is_std_bound else dict(color=trace_color)
+    dash = "dash" if is_2nd_line else "solid"
+    line = dict(width=0) if is_std_bound else dict(color=trace_color, dash=dash)
     showlegend = False if is_std_bound else True
-    mode = "lines" if is_std_bound else "lines+markers"
+    mode = "lines" if is_std_bound or is_2nd_line else "lines+markers"
     trace = go.Scattergl(
         x=[float(i) for i in x_list],
         y=[float(i) for i in y_list],
@@ -115,7 +120,7 @@ def plot_orientation_vs_time(orientation_list, plotlypath):
     layout = go.Layout(
         title="Orientation vs Time",
         hovermode="closest",
-        xaxis=dict(title="Epoch time, s", tickformat=".3f"),
+        xaxis=dict(title="Epoch time, s", tickformat=".f"),
         yaxis=dict(title="Degrees"),
         dragmode="pan",
     )
@@ -403,114 +408,397 @@ def plot_pf_uncertainty(
 
 
 #  EKF uncertainty plotly
-#  ToDo: Plot angles as well
 def plot_ekf_states_and_std_vs_time(
-    ekf_states, plotlypath,
+    ekf_states: List[EkfState],
+    output_folder: Path,
 ):
     Console.info("Plotting EKF states with std vs. time...")
     ekf_time = [i.time for i in ekf_states]
     ekf_northings = [i.state[Index.X, 0] for i in ekf_states]
-    ekf_eastings = [i.state[Index.Y, 0] for i in ekf_states]
-    ekf_depths = [i.state[Index.Z, 0] for i in ekf_states]
-    ekf_northings_std = [
-        math.sqrt(max(0, i.covariance[Index.X, Index.X])) for i in ekf_states
-    ]
-    ekf_eastings_std = [
-        math.sqrt(max(0, i.covariance[Index.Y, Index.Y])) for i in ekf_states
-    ]
-    ekf_depths_std = [
-        math.sqrt(max(0, i.covariance[Index.Z, Index.Z])) for i in ekf_states
-    ]
+    ekf_eastings  = [i.state[Index.Y, 0] for i in ekf_states]
+    ekf_depths    = [i.state[Index.Z, 0] for i in ekf_states]
+    ekf_northing_stds = [i.northing_std() for i in ekf_states]
+    ekf_easting_stds  = [i.easting_std()  for i in ekf_states]
+    ekf_depth_stds    = [i.depth_std()    for i in ekf_states]
 
-    ekf_surge_speeds = [i.state[Index.VX, 0] for i in ekf_states]
-    ekf_sway_speeds = [i.state[Index.VY, 0] for i in ekf_states]
-    ekf_down_speeds = [i.state[Index.VZ, 0] for i in ekf_states]
-    ekf_surge_speeds_std = [
-        math.sqrt(max(0, i.covariance[Index.VX, Index.VX])) for i in ekf_states
-    ]
-    ekf_sway_speeds_std = [
-        math.sqrt(max(0, i.covariance[Index.VY, Index.VY])) for i in ekf_states
-    ]
-    ekf_down_speeds_std = [
-        math.sqrt(max(0, i.covariance[Index.VZ, Index.VZ])) for i in ekf_states
-    ]
+    ekf_roll_deg  = [180 / math.pi * i.state[Index.ROLL, 0]  for i in ekf_states]
+    ekf_pitch_deg = [180 / math.pi * i.state[Index.PITCH, 0] for i in ekf_states]
+    ekf_yaw_deg   = [180 / math.pi * i.state[Index.YAW, 0]   for i in ekf_states]
+    ekf_roll_std_deg  = [i.roll_std_deg()  for i in ekf_states]
+    ekf_pitch_std_deg = [i.pitch_std_deg() for i in ekf_states]
+    ekf_yaw_std_deg   = [i.yaw_std_deg()   for i in ekf_states]
 
-    tr_ekf_northings = create_trace(
-        ekf_time, ekf_northings, "northings (m)", "red", fill="tonexty"
-    )
-    tr_ekf_northings_upper_bound = create_trace(
+    ekf_surge_velocities = [i.state[Index.VX, 0] for i in ekf_states]
+    ekf_sway_velocities  = [i.state[Index.VY, 0] for i in ekf_states]
+    ekf_heave_velocities = [i.state[Index.VZ, 0] for i in ekf_states]
+    ekf_surge_velocities_std = [i.surge_velocity_std() for i in ekf_states]
+    ekf_sway_velocities_std  = [i.sway_velocity_std()  for i in ekf_states]
+    ekf_heave_velocities_std = [i.heave_velocity_std() for i in ekf_states]
+
+    plot_position_with_std_vs_time(
+        output_folder,
         ekf_time,
-        [a_i + b_i for a_i, b_i in zip(ekf_northings, ekf_northings_std)],
-        "northing+sigma",
-        "red",
-        True,
-        "tonexty",
-        True,
-    )
-    tr_ekf_northings_lower_bound = create_trace(
-        ekf_time,
-        [a_i - b_i for a_i, b_i in zip(ekf_northings, ekf_northings_std)],
-        "northing-sigma",
-        "red",
-        True,
-        "tonexty",
-        True,
+        ekf_northings,
+        ekf_eastings,
+        ekf_depths,
+        ekf_northing_stds,
+        ekf_easting_stds,
+        ekf_depth_stds,
     )
 
-    tr_ekf_eastings = create_trace(
-        ekf_time, ekf_eastings, "eastings (m)", "blue", fill="tonexty"
-    )
-    tr_ekf_eastings_lower_bound = create_trace(
+    plot_orientation_with_std_vs_time(
+        output_folder,
         ekf_time,
-        [a_i - b_i for a_i, b_i in zip(ekf_eastings, ekf_eastings_std)],
-        "easting-sigma",
-        "blue",
-        True,
-        "tonexty",
-        True,
-    )
-    tr_ekf_eastings_upper_bound = create_trace(
-        ekf_time,
-        [a_i + b_i for a_i, b_i in zip(ekf_eastings, ekf_eastings_std)],
-        "easting+sigma",
-        "blue",
-        True,
-        "tonexty",
-        True,
+        ekf_roll_deg,
+        ekf_pitch_deg,
+        ekf_yaw_deg,
+        ekf_roll_std_deg,
+        ekf_pitch_std_deg,
+        ekf_yaw_std_deg,
     )
 
-    tr_ekf_depths = create_trace(
-        ekf_time, ekf_depths, "depth (m)", "green", fill="tonexty"
-    )
-    tr_ekf_depths_upper_bound = create_trace(
+    plot_velocity_with_std_vs_time(
+        output_folder,
         ekf_time,
-        [a_i + b_i for a_i, b_i in zip(ekf_depths, ekf_depths_std)],
-        "depth+sigma",
-        "green",
-        True,
-        "tonexty",
-        True,
-    )
-    tr_ekf_depths_lower_bound = create_trace(
-        ekf_time,
-        [a_i - b_i for a_i, b_i in zip(ekf_depths, ekf_depths_std)],
-        "depth-sigma",
-        "green",
-        True,
-        "tonexty",
-        True,
+        ekf_surge_velocities,
+        ekf_sway_velocities,
+        ekf_heave_velocities,
+        ekf_surge_velocities_std,
+        ekf_sway_velocities_std,
+        ekf_heave_velocities_std,
     )
 
-    tr_ekf_northings_std = create_trace(
-        ekf_time, ekf_northings_std, "northings_std (m)", "red"
-    )
-    tr_ekf_eastings_std = create_trace(
-        ekf_time, ekf_eastings_std, "eastings_std (m)", "blue"
-    )
-    tr_ekf_depths_std = create_trace(
-        ekf_time, ekf_depths_std, "depths_std (m)", "green"
+    Console.info("... done plotting EKF states with std vs. time.")
+
+
+def plot_cameras_vs_time(
+    cameras: List[Camera],
+    output_folder: Path
+):
+    Console.info("Plotting camerass vs. time...")
+    timestamps = [i.epoch_timestamp for i in cameras]
+
+    northings = [i.northings for i in cameras]
+    eastings  = [i.eastings  for i in cameras]
+    depths    = [i.depth     for i in cameras]
+    northing_stds = [math.sqrt(max(0, i.covariance[0, 0])) for i in cameras]
+    easting_stds  = [math.sqrt(max(0, i.covariance[1, 1])) for i in cameras]
+    depth_stds    = [math.sqrt(max(0, i.covariance[2, 2])) for i in cameras]
+
+    roll_deg  = [i.roll  for i in cameras]
+    pitch_deg = [i.pitch for i in cameras]
+    yaw_deg   = [i.yaw   for i in cameras]
+    roll_stds_deg  = [180 / math.pi * math.sqrt(max(0, i.covariance[3, 3])) for i in cameras]
+    pitch_stds_deg = [180 / math.pi * math.sqrt(max(0, i.covariance[4, 4])) for i in cameras]
+    yaw_stds_deg   = [180 / math.pi * math.sqrt(max(0, i.covariance[5, 5])) for i in cameras]
+
+    plot_position_with_std_vs_time(
+        output_folder,
+        timestamps,
+        northings,
+        eastings,
+        depths,
+        northing_stds,
+        easting_stds,
+        depth_stds,
     )
 
+    plot_orientation_with_std_vs_time(
+        output_folder,
+        timestamps,
+        roll_deg,
+        pitch_deg,
+        yaw_deg,
+        roll_stds_deg,
+        pitch_stds_deg,
+        yaw_stds_deg,
+    )
+    Console.info("... done plotting cameras vs. time.")
+
+
+def plot_synced_states_and_ekf_list_and_std_from_ekf_vs_time(
+    states: List[SyncedOrientationBodyVelocity],
+    ekf_list: List[Camera],
+    output_folder: Path
+):
+    Console.info("Plotting synced states and std from list of covariances vs. time...")
+    states_timestamps = [i.epoch_timestamp for i in states]
+    ekf_timestamps = [i.epoch_timestamp for i in ekf_list]
+    assert(len(states_timestamps) == len(ekf_timestamps))
+    for st, et in zip(states_timestamps, ekf_timestamps):
+        assert(abs(st - et) < 0.01)
+
+    northings     = [i.northings for i in states]
+    eastings      = [i.eastings  for i in states]
+    depths        = [i.depth     for i in states]
+    ekf_northing_stds = [i.northings_std for i in ekf_list]
+    ekf_easting_stds  = [i.eastings_std  for i in ekf_list]
+    ekf_depth_stds    = [i.depth_std     for i in ekf_list]
+    ekf_northings = [i.northings for i in ekf_list]
+    ekf_eastings  = [i.eastings  for i in ekf_list]
+    ekf_depths    = [i.depth     for i in ekf_list]
+
+    roll_deg  = [i.roll  for i in states]
+    pitch_deg = [i.pitch for i in states]
+    yaw_deg   = [i.yaw   for i in states]
+    ekf_roll_stds_deg  = [i.roll_std  for i in ekf_list]
+    ekf_pitch_stds_deg = [i.pitch_std for i in ekf_list]
+    ekf_yaw_stds_deg   = [i.yaw_std   for i in ekf_list]
+    ekf_roll_deg  = [i.roll  for i in ekf_list]
+    ekf_pitch_deg = [i.pitch for i in ekf_list]
+    ekf_yaw_deg   = [i.yaw   for i in ekf_list]
+
+    plot_position_with_std_vs_time(
+        output_folder,
+        states_timestamps,
+        northings,
+        eastings,
+        depths,
+        ekf_northing_stds,
+        ekf_easting_stds,
+        ekf_depth_stds,
+        ekf_northings,
+        ekf_eastings,
+        ekf_depths,
+    )
+
+    plot_orientation_with_std_vs_time(
+        output_folder,
+        states_timestamps,
+        roll_deg,
+        pitch_deg,
+        yaw_deg,
+        ekf_roll_stds_deg,
+        ekf_pitch_stds_deg,
+        ekf_yaw_stds_deg,
+        ekf_roll_deg,
+        ekf_pitch_deg,
+        ekf_yaw_deg,
+    )
+    Console.info("... done plotting synced states and std from list of covariances vs. time.")
+
+
+def plot_position_with_std_vs_time(
+    output_folder: Path,
+    timestamps: List[float],
+    northings: List[float],
+    eastings: List[float],
+    depths: List[float],
+    northings_std: List[float],
+    eastings_std: List[float],
+    depths_std: List[float],
+    northings_2: Optional[List[float]] = None,
+    eastings_2: Optional[List[float]] = None,
+    depths_2: Optional[List[float]] = None,
+):
+    assert(len(timestamps) == len(northings) == len(eastings) == len(depths))
+    assert(len(timestamps) == len(northings_std) == len(eastings_std) == len(depths_std))
+    if northings_2:
+        assert(len(timestamps) == len(northings_2) == len(eastings_2) == len(depths_2))
+
+    northings_plus_sigma  = [a_i + b_i for a_i, b_i in zip(northings, northings_std)]
+    northings_minus_sigma = [a_i - b_i for a_i, b_i in zip(northings, northings_std)]
+    eastings_plus_sigma   = [a_i - b_i for a_i, b_i in zip(eastings, eastings_std)]
+    eastings_minus_sigma  = [a_i + b_i for a_i, b_i in zip(eastings, eastings_std)]
+    depths_plus_sigma     = [a_i + b_i for a_i, b_i in zip(depths, depths_std)]
+    depths_minus_sigma    = [a_i - b_i for a_i, b_i in zip(depths, depths_std)]
+
+    tr_northings             = create_trace(timestamps, northings,             "northings (m)",  "red", fill="tonexty")
+    tr_northings_upper_bound = create_trace(timestamps, northings_plus_sigma,  "northing+sigma", "red", True, "tonexty", True)
+    tr_northings_lower_bound = create_trace(timestamps, northings_minus_sigma, "northing-sigma", "red", True, "tonexty", True)
+    if northings_2:
+        tr_northings_2 = create_trace(timestamps, northings_2, "northings_2", "red", is_2nd_line=True)
+
+    tr_eastings             = create_trace(timestamps, eastings,             "eastings (m)",  "green", fill="tonexty")
+    tr_eastings_lower_bound = create_trace(timestamps, eastings_plus_sigma,  "easting-sigma", "green", True, "tonexty", True)
+    tr_eastings_upper_bound = create_trace(timestamps, eastings_minus_sigma, "easting+sigma", "green", True, "tonexty", True)
+    if eastings_2:
+        tr_eastings_2 = create_trace(timestamps, eastings_2, "eastings_2", "green", is_2nd_line=True)
+
+    tr_depths             = create_trace(timestamps, depths,             "depth (m)",   "blue", fill="tonexty")
+    tr_depths_upper_bound = create_trace(timestamps, depths_plus_sigma,  "depth+sigma", "blue", True, "tonexty", True)
+    tr_depths_lower_bound = create_trace(timestamps, depths_minus_sigma, "depth-sigma", "blue", True, "tonexty", True)
+    if depths_2:
+        tr_depths_2 = create_trace(timestamps, depths_2, "depths_2", "blue", is_2nd_line=True)
+
+    tr_northings_std = create_trace(timestamps, northings_std, "northings_std (m)", "red")
+    tr_eastings_std  = create_trace(timestamps, eastings_std,  "eastings_std (m)", "green")
+    tr_depths_std    = create_trace(timestamps, depths_std,    "depths_std (m)", "blue")
+
+    fig = subplots.make_subplots(
+        rows=2,
+        cols=3,
+        subplot_titles=(
+            "Northing",
+            "Easting",
+            "Depth",
+            "Northing standard deviation",
+            "Easting standard deviation",
+            "Depth standard deviation",
+        ),
+        print_grid=False,
+    )
+    fig.append_trace(tr_northings, 1, 1)
+    fig.append_trace(tr_northings_upper_bound, 1, 1)
+    fig.append_trace(tr_northings_lower_bound, 1, 1)
+    if northings_2:
+        fig.append_trace(tr_northings_2, 1, 1)
+    fig.append_trace(tr_northings_std, 2, 1)
+    fig.append_trace(tr_eastings, 1, 2)
+    fig.append_trace(tr_eastings_upper_bound, 1, 2)
+    fig.append_trace(tr_eastings_lower_bound, 1, 2)
+    if eastings_2:
+        fig.append_trace(tr_eastings_2, 1, 2)
+    fig.append_trace(tr_eastings_std, 2, 2)
+    fig.append_trace(tr_depths, 1, 3)
+    fig.append_trace(tr_depths_upper_bound, 1, 3)
+    fig.append_trace(tr_depths_lower_bound, 1, 3)
+    if depths_2:
+        fig.append_trace(tr_depths_2, 1, 3)
+    fig.append_trace(tr_depths_std, 2, 3)
+    fig["layout"]["xaxis1"].update(title="Epoch time, s", tickformat=".f")
+    fig["layout"]["xaxis2"].update(title="Epoch time, s", tickformat=".f")
+    fig["layout"]["xaxis3"].update(title="Epoch time, s", tickformat=".f")
+    fig["layout"]["xaxis4"].update(title="Epoch time, s", tickformat=".f")
+    fig["layout"]["xaxis5"].update(title="Epoch time, s", tickformat=".f")
+    fig["layout"]["xaxis6"].update(title="Epoch time, s", tickformat=".f")
+    fig["layout"]["yaxis1"].update(title="Northing, m")
+    fig["layout"]["yaxis2"].update(title="Easting, m")
+    fig["layout"]["yaxis3"].update(title="Depth, m", autorange="reversed")
+    fig["layout"]["yaxis4"].update(title="Northing std, m")
+    fig["layout"]["yaxis5"].update(title="Easting std, m")
+    fig["layout"]["yaxis6"].update(title="Depth std, m")
+    fig["layout"].update(
+        title="EKF positions / position uncertainties vs Time Plots",
+        dragmode="pan",
+        hovermode="closest",
+    )
+
+    config = {"scrollZoom": True}
+    output_folder.mkdir(parents=True, exist_ok=True)
+    py.plot(
+        fig,
+        config=config,
+        filename=str(output_folder / "positions_with_std_vs_time.html"),
+        auto_open=False,
+    )
+
+
+def plot_orientation_with_std_vs_time(
+    output_folder: Path,
+    timestamps: List[float],
+    roll_deg: List[float],
+    pitch_deg: List[float],
+    yaw_deg: List[float],
+    roll_stds_deg: List[float],
+    pitch_stds_deg: List[float],
+    yaw_stds_deg: List[float],
+    roll_deg_2: Optional[List[float]] = None,
+    pitch_deg_2: Optional[List[float]] = None,
+    yaw_deg_2: Optional[List[float]] = None,
+):
+    assert(len(timestamps) == len(roll_deg) == len(pitch_deg) == len(pitch_deg))
+    assert(len(timestamps) == len(roll_stds_deg) == len(pitch_stds_deg) == len(yaw_stds_deg))
+    if roll_deg_2:
+        assert(len(timestamps) == len(roll_deg_2) == len(pitch_deg_2) == len(yaw_deg_2))
+
+    roll_plus_sigma   = [a_i + b_i for a_i, b_i in zip(roll_deg, roll_stds_deg)]
+    roll_minus_sigma  = [a_i - b_i for a_i, b_i in zip(roll_deg, roll_stds_deg)]
+    pitch_plus_sigma  = [a_i + b_i for a_i, b_i in zip(pitch_deg, pitch_stds_deg)]
+    pitch_minus_sigma = [a_i - b_i for a_i, b_i in zip(pitch_deg, pitch_stds_deg)]
+    yaw_plus_sigma    = [a_i + b_i for a_i, b_i in zip(yaw_deg, yaw_stds_deg)]
+    yaw_minus_sigma   = [a_i - b_i for a_i, b_i in zip(yaw_deg, yaw_stds_deg)]
+
+    tr_roll             = create_trace(timestamps, roll_deg, "roll [deg]", "red", fill="tonexty")
+    tr_roll_std_uppper  = create_trace(timestamps, roll_plus_sigma, "roll+sigma", "red", True, "tonexty", True)
+    tr_roll_std_lower   = create_trace(timestamps, roll_minus_sigma, "roll+sigma", "red", True, "tonexty", True)
+    tr_roll_std         = create_trace(timestamps, roll_stds_deg, "roll_std [deg]", "red")
+    if roll_deg_2:
+        tr_roll_2       = create_trace(timestamps, roll_deg_2, "roll_2 [deg]", "red", fill="tonexty", is_2nd_line=True)
+
+    tr_pitch            = create_trace(timestamps, pitch_deg, "pitch [deg]", "green", fill="tonexty")
+    tr_pitch_std_uppper = create_trace(timestamps, pitch_plus_sigma, "pitch+sigma", "green", True, "tonexty", True)
+    tr_pitch_std_lower  = create_trace(timestamps, pitch_minus_sigma, "pitch+sigma", "green", True, "tonexty", True)
+    tr_pitch_std        = create_trace(timestamps, pitch_stds_deg, "pitch_std [deg]", "green")
+    if pitch_deg_2:
+        tr_pitch_2      = create_trace(timestamps, pitch_deg_2, "pitch_2 [deg]", "green", fill="tonexty", is_2nd_line=True)
+
+    tr_yaw              = create_trace(timestamps, yaw_deg, "yaw [deg]", "blue", fill="tonexty")
+    tr_yaw_std_uppper   = create_trace(timestamps, yaw_plus_sigma, "yaw+sigma", "blue", True, "tonexty", True)
+    tr_yaw_std_lower    = create_trace(timestamps, yaw_minus_sigma, "yaw+sigma", "blue", True, "tonexty", True)
+    tr_yaw_std          = create_trace(timestamps, yaw_stds_deg, "yaw_std [deg]", "blue")
+    if yaw_deg_2:
+        tr_yaw_2        = create_trace(timestamps, yaw_deg_2, "yaw_2 [deg]", "blue", fill="tonexty", is_2nd_line=True)
+
+    fig = subplots.make_subplots(
+        rows=2,
+        cols=3,
+        subplot_titles=(
+            "Roll",
+            "Pitch",
+            "Yaw",
+            "Roll standard deviation",
+            "Pitch standard deviation",
+            "Yaw standard deviation",
+        ),
+        print_grid=False,
+    )
+    fig.append_trace(tr_roll, 1, 1)
+    fig.append_trace(tr_roll_std_uppper, 1, 1)
+    fig.append_trace(tr_roll_std_lower, 1, 1)
+    fig.append_trace(tr_roll_std, 2, 1)
+    if roll_deg_2:
+        fig.append_trace(tr_roll_2, 1, 1)
+    fig.append_trace(tr_pitch, 1, 2)
+    fig.append_trace(tr_pitch_std_uppper, 1, 2)
+    fig.append_trace(tr_pitch_std_lower, 1, 2)
+    fig.append_trace(tr_pitch_std, 2, 2)
+    if pitch_deg_2:
+        fig.append_trace(tr_pitch_2, 1, 2)
+    fig.append_trace(tr_yaw, 1, 3)
+    fig.append_trace(tr_yaw_std_uppper, 1, 3)
+    fig.append_trace(tr_yaw_std_lower, 1, 3)
+    fig.append_trace(tr_yaw_std, 2, 3)
+    if yaw_deg_2:
+        fig.append_trace(tr_yaw_2, 1, 3)
+    fig["layout"]["xaxis1"].update(title="Epoch time, s", tickformat=".f")
+    fig["layout"]["xaxis2"].update(title="Epoch time, s", tickformat=".f")
+    fig["layout"]["xaxis3"].update(title="Epoch time, s", tickformat=".f")
+    fig["layout"]["xaxis4"].update(title="Epoch time, s", tickformat=".f")
+    fig["layout"]["xaxis5"].update(title="Epoch time, s", tickformat=".f")
+    fig["layout"]["xaxis6"].update(title="Epoch time, s", tickformat=".f")
+    fig["layout"]["yaxis1"].update(title="Roll, deg")
+    fig["layout"]["yaxis2"].update(title="Pitch, deg")
+    fig["layout"]["yaxis3"].update(title="Yaw, deg")
+    fig["layout"]["yaxis4"].update(title="Roll std, deg")
+    fig["layout"]["yaxis5"].update(title="Pitch std, deg")
+    fig["layout"]["yaxis6"].update(title="Yaw std, deg")
+    fig["layout"].update(
+        title="Orientation / orientation uncertainties vs. Time Plots",
+        dragmode="pan",
+        hovermode="closest",
+    )
+
+    config = {"scrollZoom": True}
+    output_folder.mkdir(parents=True, exist_ok=True)
+    py.plot(
+        fig,
+        config=config,
+        filename=str(output_folder / "orientation_with_std_vs_time.html"),
+        auto_open=False,
+    )
+
+
+def plot_velocity_with_std_vs_time(
+    output_folder: Path,
+    ekf_time: List[float],
+    ekf_surge_speeds: List[float],
+    ekf_sway_speeds: List[float],
+    ekf_down_speeds: List[float],
+    ekf_surge_speeds_std: List[float],
+    ekf_sway_speeds_std: List[float],
+    ekf_down_speeds_std: List[float],
+):
     tr_ekf_surge_speeds = create_trace(
         ekf_time, ekf_surge_speeds, "surge speeds (m/s)", "red", fill="tonexty"
     )
@@ -534,7 +822,7 @@ def plot_ekf_states_and_std_vs_time(
     )
 
     tr_ekf_sway_speeds = create_trace(
-        ekf_time, ekf_sway_speeds, "sway speeds (m/s)", "blue", fill="tonexty"
+        ekf_time, ekf_sway_speeds, "sway speeds (m/s)", "green", fill="tonexty"
     )
     tr_ekf_sway_speeds_upper_bound = create_trace(
         ekf_time,
@@ -556,7 +844,7 @@ def plot_ekf_states_and_std_vs_time(
     )
 
     tr_ekf_down_speeds = create_trace(
-        ekf_time, ekf_down_speeds, "vertical speeds (m/s)", "green", fill="tonexty",
+        ekf_time, ekf_down_speeds, "vertical speeds (m/s)", "blue", fill="tonexty"
     )
     tr_ekf_down_speeds_upper_bound = create_trace(
         ekf_time,
@@ -581,61 +869,10 @@ def plot_ekf_states_and_std_vs_time(
         ekf_time, ekf_surge_speeds_std, "surge_speeds_std (m/s)", "red"
     )
     tr_ekf_sway_speeds_std = create_trace(
-        ekf_time, ekf_sway_speeds_std, "sway_speeds_std (m/s)", "blue"
+        ekf_time, ekf_sway_speeds_std, "sway_speeds_std (m/s)", "green"
     )
     tr_ekf_down_speeds_std = create_trace(
-        ekf_time, ekf_down_speeds_std, "down_speeds_std (m/s)", "green"
-    )
-
-    fig1 = subplots.make_subplots(
-        rows=2,
-        cols=3,
-        subplot_titles=(
-            "Northing",
-            "Easting",
-            "Depth",
-            "Northing standard deviation",
-            "Easting standard deviation",
-            "Depth standard deviation",
-        ),
-        print_grid=False,
-    )
-    fig1.append_trace(tr_ekf_northings, 1, 1)
-    fig1.append_trace(tr_ekf_northings_upper_bound, 1, 1)
-    fig1.append_trace(tr_ekf_northings_lower_bound, 1, 1)
-    fig1.append_trace(tr_ekf_northings_std, 2, 1)
-    fig1.append_trace(tr_ekf_eastings, 1, 2)
-    fig1.append_trace(tr_ekf_eastings_upper_bound, 1, 2)
-    fig1.append_trace(tr_ekf_eastings_lower_bound, 1, 2)
-    fig1.append_trace(tr_ekf_eastings_std, 2, 2)
-    fig1.append_trace(tr_ekf_depths, 1, 3)
-    fig1.append_trace(tr_ekf_depths_upper_bound, 1, 3)
-    fig1.append_trace(tr_ekf_depths_lower_bound, 1, 3)
-    fig1.append_trace(tr_ekf_depths_std, 2, 3)
-    fig1["layout"]["xaxis1"].update(title="Epoch time, s", tickformat=".3f")
-    fig1["layout"]["xaxis2"].update(title="Epoch time, s", tickformat=".3f")
-    fig1["layout"]["xaxis3"].update(title="Epoch time, s", tickformat=".3f")
-    fig1["layout"]["xaxis4"].update(title="Epoch time, s", tickformat=".3f")
-    fig1["layout"]["xaxis5"].update(title="Epoch time, s", tickformat=".3f")
-    fig1["layout"]["xaxis6"].update(title="Epoch time, s", tickformat=".3f")
-    fig1["layout"]["yaxis1"].update(title="Northing, m")
-    fig1["layout"]["yaxis2"].update(title="Easting, m")
-    fig1["layout"]["yaxis3"].update(title="Depth, m", autorange="reversed")
-    fig1["layout"]["yaxis4"].update(title="Northing std, m")
-    fig1["layout"]["yaxis5"].update(title="Easting std, m")
-    fig1["layout"]["yaxis6"].update(title="Depth std, m")
-    fig1["layout"].update(
-        title="EKF positions / position uncertainties vs Time Plots",
-        dragmode="pan",
-        hovermode="closest",
-    )
-
-    config = {"scrollZoom": True}
-    py.plot(
-        fig1,
-        config=config,
-        filename=str(plotlypath / "ekf_positions_with_std_vs_time.html"),
-        auto_open=False,
+        ekf_time, ekf_down_speeds_std, "down_speeds_std (m/s)", "blue"
     )
 
     fig2 = subplots.make_subplots(
@@ -663,12 +900,12 @@ def plot_ekf_states_and_std_vs_time(
     fig2.append_trace(tr_ekf_down_speeds_upper_bound, 1, 3)
     fig2.append_trace(tr_ekf_down_speeds_lower_bound, 1, 3)
     fig2.append_trace(tr_ekf_down_speeds_std, 2, 3)
-    fig2["layout"]["xaxis1"].update(title="Epoch time, s", tickformat=".3f")
-    fig2["layout"]["xaxis2"].update(title="Epoch time, s", tickformat=".3f")
-    fig2["layout"]["xaxis3"].update(title="Epoch time, s", tickformat=".3f")
-    fig2["layout"]["xaxis4"].update(title="Epoch time, s", tickformat=".3f")
-    fig2["layout"]["xaxis5"].update(title="Epoch time, s", tickformat=".3f")
-    fig2["layout"]["xaxis6"].update(title="Epoch time, s", tickformat=".3f")
+    fig2["layout"]["xaxis1"].update(title="Epoch time, s", tickformat=".f")
+    fig2["layout"]["xaxis2"].update(title="Epoch time, s", tickformat=".f")
+    fig2["layout"]["xaxis3"].update(title="Epoch time, s", tickformat=".f")
+    fig2["layout"]["xaxis4"].update(title="Epoch time, s", tickformat=".f")
+    fig2["layout"]["xaxis5"].update(title="Epoch time, s", tickformat=".f")
+    fig2["layout"]["xaxis6"].update(title="Epoch time, s", tickformat=".f")
     fig2["layout"]["yaxis1"].update(title="Surge speed, m/s")
     fig2["layout"]["yaxis2"].update(title="Sway speed, m/s")
     fig2["layout"]["yaxis3"].update(title="Down speed, m/s", autorange="reversed")
@@ -682,14 +919,13 @@ def plot_ekf_states_and_std_vs_time(
     )
 
     config = {"scrollZoom": True}
+    output_folder.mkdir(parents=True, exist_ok=True)
     py.plot(
         fig2,
         config=config,
-        filename=str(plotlypath / "ekf_speeds_with_std_vs_time.html"),
+        filename=str(output_folder / "velocities_with_std_vs_time.html"),
         auto_open=False,
     )
-
-    Console.info("... done plotting EKF states with std vs. time.")
 
 
 def plot_ekf_rejected_measurements(rejected_measurements, plotlypath):

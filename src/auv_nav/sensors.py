@@ -7,7 +7,6 @@ See LICENSE.md file in the project root for full license information.
 """
 
 import datetime
-import math
 import time
 from math import atan2, cos, pi, sin, sqrt
 
@@ -1134,7 +1133,7 @@ class Usbl(OutputFormat):
             )
 
             # determine range to input to uncertainty model
-            distance = math.sqrt(self.distance_to_ship ** 2 + self.depth ** 2)
+            distance = sqrt(self.distance_to_ship ** 2 + self.depth ** 2)
             distance_std = sensor_std["factor"] * distance + sensor_std["offset"]
 
             # determine uncertainty in terms of latitude and longitude
@@ -1396,7 +1395,7 @@ class Other:
 
 
 class SyncedOrientationBodyVelocity:
-    def __init__(self, timestamp=None):
+    def __init__(self):
         self.epoch_timestamp = None
         # from orientation
         self.roll = None
@@ -1405,8 +1404,6 @@ class SyncedOrientationBodyVelocity:
         self.roll_std = None
         self.pitch_std = None
         self.yaw_std = None
-        # orientation speed
-        # from orientation
         self.vroll = None
         self.vpitch = None
         self.vyaw = None
@@ -1625,8 +1622,8 @@ class SyncedOrientationBodyVelocity:
 
 
 class Camera(SyncedOrientationBodyVelocity):
-    def __init__(self, timestamp=None):
-        super().__init__(self)
+    def __init__(self):
+        super().__init__()
         self.filename = ""
         self.information = None
         self.updated = False
