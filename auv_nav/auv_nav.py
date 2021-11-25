@@ -123,6 +123,25 @@ def main(args=None):
         action="store_true",
         help="Enable verbose output to terminal",
     )
+    subparser_process.add_argument(
+        "-r",
+        "--relative_pose_uncertainty",
+        dest="relative_pose_uncertainty",
+        action="store_true",
+        help="Enable relative_pose_uncertainty",
+    )
+    subparser_process.add_argument(
+        "--start_image_identifier",
+        dest="start_image_identifier",
+        default=None,
+        help="Identifier (path) from which onwards states are loaded. Required if relative_pose_uncertainty is True."
+    )
+    subparser_process.add_argument(
+        "--end_image_identifier",
+        dest="end_image_identifier",
+        default=None,
+        help="Identifier (path) up to which states are loaded. Required if relative_pose_uncertainty is True."
+    )
     subparser_process.set_defaults(func=call_process_data)
 
     subparser_convert = subparsers.add_parser(
@@ -270,7 +289,7 @@ def call_process_data(args):
         auv_nav_path_log = (get_processed_folder(args.path)
                             / ("log/" + time_string + "_auv_nav.yaml"))
         auv_nav_path.copy(auv_nav_path_log)
-    process(args.path, args.force, args.start_datetime, args.end_datetime)
+    process(args.path, args.force, args.start_datetime, args.end_datetime, args.relative_pose_uncertainty, args.start_image_identifier, args.end_image_identifier)
 
 
 if __name__ == "__main__":

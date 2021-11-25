@@ -33,6 +33,8 @@ from auv_nav.plot.plot_process_data import (
     plot_orientation_vs_time,
     plot_pf_uncertainty,
     plot_ekf_states_and_std_vs_time,
+    plot_cameras_vs_time,
+    plot_synced_states_and_ekf_list_and_std_from_ekf_vs_time,
     plot_ekf_rejected_measurements,
     plot_sensor_uncertainty,
     plot_velocity_vs_time,
@@ -49,7 +51,7 @@ from auv_nav.sensors import (
     Usbl,
 )
 from auv_nav.tools.body_to_inertial import body_to_inertial
-from auv_nav.tools.csv_tools import spp_csv, write_csv, write_sidescan_csv
+from auv_nav.tools.csv_tools import spp_csv, write_csv, write_sidescan_csv, load_states
 from auv_nav.tools.dvl_level_arm import compute_angular_speeds, correct_lever_arm
 from auv_nav.tools.interpolate import interpolate, interpolate_sensor_list
 from auv_nav.tools.latlon_wgs84 import metres_to_latlon
@@ -79,7 +81,21 @@ csv files and, if plot is True, save plots
 """
 
 
-def process(filepath, force_overwite, start_datetime, finish_datetime):
+def process(
+        filepath,
+        force_overwite,
+        start_datetime,
+        finish_datetime,
+        compute_relative_pose_uncertainty=False,
+        start_image_identifier=None,
+        end_image_identifier=None
+):
+    if compute_relative_pose_uncertainty and (start_image_identifier is None or end_image_identifier is None):
+        Console.quit(
+            "start_image_identifier and end_image_identifier need to provided when compute_relative_pose_uncertainty "
+            "is enabled."
+        )
+
     # placeholders
     interpolate_remove_flag = False
 
@@ -102,14 +118,17 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
 
     # camera1 placeholders
     camera1_list = []
+    camera1_dr_list = []
     camera1_ekf_list = []
     camera1_pf_list = []
     # camera2 placeholders
     camera2_list = []
+    camera2_dr_list = []
     camera2_ekf_list = []
     camera2_pf_list = []
     # camera3 placeholders
     camera3_list = []
+    camera3_dr_list = []
     camera3_ekf_list = []
     camera3_pf_list = []
 
@@ -508,6 +527,22 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
                 chemical.from_json(parsed_json_data[i])
                 chemical_list.append(chemical)
 
+    camera1_dr_list = copy.deepcopy(camera1_list)
+    camera2_dr_list = copy.deepcopy(camera2_list)
+    camera3_dr_list = copy.deepcopy(camera3_list)
+
+    if particle_filter_activate:
+        camera1_pf_list = copy.deepcopy(camera1_list)
+        camera2_pf_list = copy.deepcopy(camera2_list)
+        camera3_pf_list = copy.deepcopy(camera3_list)
+        # chemical_pf_list = copy.deepcopy(chemical_list)
+
+    if ekf_activate:
+        camera1_ekf_list = copy.deepcopy(camera1_list)
+        camera2_ekf_list = copy.deepcopy(camera2_list)
+        camera3_ekf_list = copy.deepcopy(camera3_list)
+        # chemical_ekf_list = copy.deepcopy(chemical_list)
+
     # make path for processed outputs
     json_filename = (
         "json_renav_"
@@ -525,7 +560,7 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
             renavpath.mkdir()
         except Exception as e:
             print("Warning:", e)
-    elif renavpath.is_dir() and not force_overwite:
+    elif renavpath.is_dir() and not force_overwite and not compute_relative_pose_uncertainty:
         # Check if dataset has already been processed
         Console.error(
             "It looks like this dataset has already been processed for the",
@@ -872,7 +907,7 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
         del dead_reckoning_dvl_list[0]
         interpolate_remove_flag = False  # reset flag
     Console.info(
-        "Complete interpolation and coordinate transfomations for",
+        "Completed interpolation and coordinate transfomations for",
         "velocity_body",
     )
 
@@ -985,7 +1020,7 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
             del velocity_inertial_list[0]
             interpolate_remove_flag = False  # reset flag
         Console.info(
-            "Complete interpolation and coordinate transfomations for",
+            "Completed interpolation and coordinate transfomations for",
             "velocity_inertial",
         )
 
@@ -1130,30 +1165,28 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
     ]
     latlon_reference = [mission.origin.latitude, mission.origin.longitude]
 
-    # perform interpolations of state data to camera{1/2/3} time stamps
-    # for both DR and PF
-    if len(camera1_list) > 1:
+    if len(camera1_dr_list) > 1:
         interpolate_sensor_list(
-            camera1_list,
+            camera1_dr_list,
             mission.image.cameras[0].name,
             camera1_offsets,
             origin_offsets,
             latlon_reference,
             dead_reckoning_centre_list,
         )
-    if len(camera2_list) > 1:
+    if len(camera2_dr_list) > 1:
         interpolate_sensor_list(
-            camera2_list,
+            camera2_dr_list,
             mission.image.cameras[1].name,
             camera2_offsets,
             origin_offsets,
             latlon_reference,
             dead_reckoning_centre_list,
         )
-    if len(camera3_list) > 1:
+    if len(camera3_dr_list) > 1:
         if len(mission.image.cameras) > 2:
             interpolate_sensor_list(
-                camera3_list,
+                camera3_dr_list,
                 mission.image.cameras[2].name,
                 camera3_offsets,
                 origin_offsets,
@@ -1162,26 +1195,13 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
             )
         elif len(mission.image.cameras) == 2:  # Biocam
             interpolate_sensor_list(
-                camera3_list,
+                camera3_dr_list,
                 mission.image.cameras[1].name + "_laser",
                 camera3_offsets,
                 origin_offsets,
                 latlon_reference,
                 dead_reckoning_centre_list,
             )
-
-    # Copy lists from already interpolated data
-    if particle_filter_activate:
-        camera1_pf_list = copy.deepcopy(camera1_list)
-        camera2_pf_list = copy.deepcopy(camera2_list)
-        camera3_pf_list = copy.deepcopy(camera3_list)
-        # chemical_pf_list = copy.deepcopy(chemical_list)
-
-    if ekf_activate:
-        camera1_ekf_list = copy.deepcopy(camera1_list)
-        camera2_ekf_list = copy.deepcopy(camera2_list)
-        camera3_ekf_list = copy.deepcopy(camera3_list)
-        # chemical_ekf_list = copy.deepcopy(chemical_list)
 
     if len(pf_fusion_centre_list) > 1:
         if len(camera1_pf_list) > 1:
@@ -1222,32 +1242,78 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
                     pf_fusion_centre_list,
                 )
 
-    # Aggregate timestamps to run EKF only once
-    ekf_timestamps = []
+    ekf_initial_state = dead_reckoning_dvl_list[0]
+    ekf_end_time = dead_reckoning_dvl_list[-1].epoch_timestamp
 
-    if len(camera1_ekf_list) > 0:
-        camera1_timestamp_list = [x.epoch_timestamp for x in camera1_ekf_list]
-        ekf_timestamps += camera1_timestamp_list
-    if len(camera2_ekf_list) > 0:
-        camera2_timestamp_list = [x.epoch_timestamp for x in camera2_ekf_list]
-        ekf_timestamps += camera2_timestamp_list
-    if len(camera3_ekf_list) > 0:
-        camera3_timestamp_list = [x.epoch_timestamp for x in camera3_ekf_list]
-        ekf_timestamps += camera3_timestamp_list
+    if compute_relative_pose_uncertainty:
+        ekf_activate = True
+        activate_smoother = False
 
-    # Sort timestamps and remove duplicates in place
-    ekf_timestamps = sorted(set(ekf_timestamps))
+        ## Load previously computed states and covariances
+        ekf_state_file_path = renavpath / "csv" / "ekf" / ("auv_ekf_" + mission.image.cameras[2].name + ".csv")
+        laser_camera_states = load_states(ekf_state_file_path, start_image_identifier, end_image_identifier)
 
-    if ekf_activate and len(usbl_list) > 0:
+        if not laser_camera_states:
+            Console.quit("The pose of the indicated image was not found in the file provided. Please check your input.")
+
+        ## Initialise starting state for EKF
+        ekf_initial_state = copy.deepcopy(laser_camera_states[0])
+        # laser_camera_states are at the position of the camera but we need to indicate the world coordinates of the DVL
+        # to the EKF
+        dx = camera3_offsets[0] - vehicle.dvl.surge
+        dy = camera3_offsets[1] - vehicle.dvl.sway
+        dz = camera3_offsets[2] - vehicle.dvl.heave
+        [n_offset, e_offset, d_offset] = body_to_inertial(
+            ekf_initial_state.roll, ekf_initial_state.pitch, ekf_initial_state.yaw, dx, dy, dz
+        )
+        ekf_initial_state.northings -= n_offset
+        ekf_initial_state.eastings  -= e_offset
+        ekf_initial_state.depth     -= d_offset
+
+        ekf_initial_estimate_covariance[0:6, 0:6] = 0  # Initialise starting covariance for EKF (set it to 0)
+        ekf_end_time = laser_camera_states[-1].epoch_timestamp
+
+        ## Initialise camera list (i.e. timestamps) for which the EKF will compute the states
+        camera3_ekf_list_cropped = []
+        use_camera = False
+        for i in camera3_ekf_list:
+            if i.filename == start_image_identifier:
+                use_camera = True
+            if use_camera:
+                camera3_ekf_list_cropped.append(i)
+            if i.filename == end_image_identifier:
+                break
+        if len(camera3_ekf_list_cropped) == 0:
+            Console.quit(
+                "camera3_ekf_list_cropped is empty. Check the start_image_identifier and start_image_identifier you "
+                "indicated"
+            )
+
+    if ekf_activate:
         # velocity_body_list, list of BodyVelocity()
         # orientation_list, list of Orientation()
         # depth_list, list of Depth()
         # usbl_list, list of Usbl()
         Console.info("Running EKF (" + ("with" if activate_smoother else "without") + " smoother)...")
         ekf_start_time = time.time()
+
+        # Aggregate timestamps to run EKF only once
+        ekf_timestamps = []
+        if len(camera1_ekf_list) > 0:
+            camera1_timestamp_list = [x.epoch_timestamp for x in camera1_ekf_list]
+            ekf_timestamps += camera1_timestamp_list
+        if len(camera2_ekf_list) > 0:
+            camera2_timestamp_list = [x.epoch_timestamp for x in camera2_ekf_list]
+            ekf_timestamps += camera2_timestamp_list
+        if len(camera3_ekf_list) > 0:
+            camera3_timestamp_list = [x.epoch_timestamp for x in camera3_ekf_list]
+            ekf_timestamps += camera3_timestamp_list
+        # Sort timestamps and remove duplicates in place
+        ekf_timestamps = sorted(set(ekf_timestamps))
+
         ekf = ExtendedKalmanFilter(
-            dead_reckoning_dvl_list[0],  # initial_state
-            dead_reckoning_dvl_list[-1].epoch_timestamp,  # end_time
+            ekf_initial_state,
+            ekf_end_time,
             ekf_initial_estimate_covariance,
             ekf_process_noise_covariance,
             sensors_std,
@@ -1266,6 +1332,67 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
         ekf_list = save_ekf_to_list(
             ekf_states, mission, vehicle, dead_reckoning_dvl_list
         )
+
+    if compute_relative_pose_uncertainty:
+        camera3_ekf_list_cropped = update_camera_list(
+            camera3_ekf_list_cropped,
+            ekf_list,
+            origin_offsets,
+            camera3_offsets,
+            latlon_reference,
+        )
+        assert(len(camera3_ekf_list_cropped) == len(laser_camera_states))
+
+        ### Compute uncertainties with poses
+        ## Compute uncertainties by subtracting original states (-> uncertainties are summed)
+        for i in range(1, len(laser_camera_states)):
+            laser_camera_states[i].covariance += laser_camera_states[0].covariance
+        laser_camera_states[0].covariance[:, :] = 0
+
+        ### Plot uncertainties
+        plots_folder = renavpath / "interactive_plots"
+
+        ## Plot uncertainties based on subtracting positions
+        args = [laser_camera_states, plots_folder / "based_on_subtraction"]
+        t = threading.Thread(target=plot_cameras_vs_time, args=args)
+        t.start()
+        threads.append(t)
+
+        ## Plot uncertainties based on EKF propagation
+        args = [laser_camera_states, camera3_ekf_list_cropped, plots_folder / "based_on_ekf_propagation"]
+        t = threading.Thread(target=plot_synced_states_and_ekf_list_and_std_from_ekf_vs_time, args=args)
+        t.start()
+        threads.append(t)
+
+        ### Write out poses with uncertainties to new file
+        ekf_csv_folder = renavpath / "csv" / "ekf"
+        if len(mission.image.cameras) > 2:
+            filename_cov_from_ekf      = "auv_ekf_cov_based_on_ekf_propagation_" + mission.image.cameras[2].name
+            filename_cov_from_subtract = "auv_ekf_cov_based_on_subtraction_"     + mission.image.cameras[2].name
+        elif len(mission.image.cameras) == 2:
+            filename_cov_from_ekf  = "auv_ekf_cov_based_on_ekf_propagation_" + mission.image.cameras[1].name + "_laser"
+            filename_cov_from_subtract = "auv_ekf_cov_based_on_subtraction_" + mission.image.cameras[1].name + "_laser"
+
+        ## Write out uncertainties based on subtracting positions
+        args = [ekf_csv_folder, laser_camera_states, filename_cov_from_subtract]
+        t = threading.Thread(target=write_csv, args=args)
+        t.start()
+        threads.append(t)
+
+        ## Write out uncertainties based on EKF propagation to csv file
+        # Note:
+        # Here we are using the the new poses, whereas we only want to use the new covariances but the original poses.
+        # But when using the data in laser_bathymetry, the original pose file can be used witht this covariance file.
+        args = [ekf_csv_folder, camera3_ekf_list_cropped, filename_cov_from_ekf]
+        t = threading.Thread(target=write_csv, args=args)
+        t.start()
+        threads.append(t)
+
+        Console.info("Waiting for all threads to finish")
+        for t in threads:
+            t.join()
+        Console.info("DONE")
+        Console.quit("Finished writing out relative uncertainties and quitting (this is not a failure)")
 
     if len(camera1_ekf_list) > 0:
         camera1_ekf_list = update_camera_list(
@@ -1392,7 +1519,7 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
                     target=plot_ekf_states_and_std_vs_time,
                     args=[
                         ekf_states,
-                        plotlypath,
+                        plotlypath / "ekf",
                     ],
                 )
                 t.start()
@@ -1409,7 +1536,7 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
             t = threading.Thread(
                 target=plot_2d_deadreckoning,
                 args=[
-                    camera1_list,
+                    camera1_dr_list,
                     dead_reckoning_centre_list,
                     dead_reckoning_dvl_list,
                     pf_fusion_centre_list,
@@ -1550,12 +1677,12 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
         t.start()
         threads.append(t)
 
-        if len(camera1_list) > 0:
+        if len(camera1_dr_list) > 0:
             t = threading.Thread(
                 target=write_csv,
                 args=[
                     drcsvpath,
-                    camera1_list,
+                    camera1_dr_list,
                     "auv_dr_" + mission.image.cameras[0].name,
                     csv_dr_camera_1,
                 ],
@@ -1586,12 +1713,12 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
                 )
                 t.start()
                 threads.append(t)
-        if len(camera2_list) > 1:
+        if len(camera2_dr_list) > 1:
             t = threading.Thread(
                 target=write_csv,
                 args=[
                     drcsvpath,
-                    camera2_list,
+                    camera2_dr_list,
                     "auv_dr_" + mission.image.cameras[1].name,
                     csv_dr_camera_2,
                 ],
@@ -1622,13 +1749,13 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
                 )
                 t.start()
                 threads.append(t)
-        if len(camera3_list) > 1:
+        if len(camera3_dr_list) > 1:
             if len(mission.image.cameras) > 2:
                 t = threading.Thread(
                     target=write_csv,
                     args=[
                         drcsvpath,
-                        camera3_list,
+                        camera3_dr_list,
                         "auv_dr_" + mission.image.cameras[2].name,
                         csv_dr_camera_3,
                     ],
@@ -1664,7 +1791,7 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
                     target=write_csv,
                     args=[
                         drcsvpath,
-                        camera3_list,
+                        camera3_dr_list,
                         "auv_dr_" + mission.image.cameras[1].name + "_laser",
                         csv_dr_camera_3,
                     ],
@@ -1744,7 +1871,7 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
             camera1_ekf_list[i].get_info()
         for i in range(len(camera2_ekf_list)):
             camera2_ekf_list[i].get_info()
-        if len(camera3_list) > 1:
+        if len(camera3_ekf_list) > 1:
             for i in range(len(camera3_ekf_list)):
                 camera3_ekf_list[i].get_info()
         Console.info("Converting poses into sequential-relative poses...")
@@ -1782,7 +1909,7 @@ def process(filepath, force_overwite, start_datetime, finish_datetime):
         )
         t.start()
         threads.append(t)
-        if len(camera3_list) > 1:
+        if len(camera3_ekf_list) > 1:
             if len(mission.image.cameras) > 2:
                 t = threading.Thread(
                     target=spp_csv,
