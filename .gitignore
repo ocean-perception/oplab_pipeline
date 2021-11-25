@@ -3,11 +3,13 @@ build/
 dist/
 docs/_build/
 *.egg-info/
-commit_hash.txt
+
 .venv/
 .idea/
 .vscode/
 *.code-workspace
+
+.oplab_pipeline_commit_hash
 
 # due to using tox and pytest
 .tox
