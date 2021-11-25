@@ -25,7 +25,7 @@ data_list = []
 def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
     # parser meta data
     class_string = "measurement"
-    sensor_string = "ae20000"
+    sensor_string = "ae2000"
 
     # read in date from filename
     timezone = mission.velocity.timezone
