@@ -16,7 +16,7 @@ from auv_nav.sensors import Camera, SyncedOrientationBodyVelocity
 from auv_nav.tools.body_to_inertial import body_to_inertial
 from auv_nav.tools.interpolate import interpolate
 from auv_nav.tools.latlon_wgs84 import metres_to_latlon
-from oplab import Console
+from oplab import Console, Mission, Vehicle
 
 
 class Index:
@@ -73,7 +73,10 @@ class EkfState(object):
     def get_time(self):
         return self.time
 
-    def fromSyncedOrientationBodyVelocity(self, b):
+    def fromSyncedOrientationBodyVelocity(
+        self,
+        b: SyncedOrientationBodyVelocity
+    ) -> None:
         self.time = b.epoch_timestamp
         self.state[Index.X, 0] = b.northings
         self.state[Index.Y, 0] = b.eastings
@@ -95,42 +98,66 @@ class EkfState(object):
         b.northings = self.state[Index.X, 0]
         b.eastings = self.state[Index.Y, 0]
         b.depth = self.state[Index.Z, 0]
-        b.northings_std = np.sqrt(abs(self.covariance[Index.X, Index.X]))
-        b.eastings_std = np.sqrt(abs(self.covariance[Index.Y, Index.Y]))
-        b.depth_std = np.sqrt(abs(self.covariance[Index.Z, Index.Z]))
+        b.northings_std = self.northing_std()
+        b.eastings_std = self.easting_std()
+        b.depth_std = self.depth_std()
         b.roll = self.state[Index.ROLL, 0] * 180.0 / math.pi
         b.pitch = self.state[Index.PITCH, 0] * 180.0 / math.pi
         b.yaw = self.state[Index.YAW, 0] * 180.0 / math.pi
-        b.roll_std = np.sqrt(
-            abs(self.covariance[Index.ROLL, Index.ROLL]) * 180.0 / math.pi
-        )
-        b.pitch_std = np.sqrt(
-            abs(self.covariance[Index.PITCH, Index.PITCH]) * 180.0 / math.pi
-        )
-        b.yaw_std = np.sqrt(
-            abs(self.covariance[Index.YAW, Index.YAW]) * 180.0 / math.pi
-        )
+        b.roll_std = self.roll_std_deg()
+        b.pitch_std = self.pitch_std_deg()
+        b.yaw_std = self.yaw_std_deg()
         b.vroll = self.state[Index.VROLL, 0] * 180.0 / math.pi
         b.vpitch = self.state[Index.VPITCH, 0] * 180.0 / math.pi
         b.vyaw = self.state[Index.VYAW, 0] * 180.0 / math.pi
-        b.vroll_std = np.sqrt(
-            abs(self.covariance[Index.VROLL, Index.VROLL]) * 180.0 / math.pi
-        )
-        b.vpitch_std = np.sqrt(
-            abs(self.covariance[Index.VPITCH, Index.VPITCH]) * 180.0 / math.pi
-        )
-        b.vyaw_std = np.sqrt(
-            abs(self.covariance[Index.VYAW, Index.VYAW]) * 180.0 / math.pi
-        )
+        b.vroll_std = self.roll_velocity_std_deg_p_s()
+        b.vpitch_std = self.pitch_velocity_std_deg_p_s()
+        b.vyaw_std = self.yaw_velocity_std_deg_p_s()
         b.x_velocity = self.state[Index.VX, 0]
         b.y_velocity = self.state[Index.VY, 0]
         b.z_velocity = self.state[Index.VZ, 0]
-        b.x_velocity_std = np.sqrt(abs(self.covariance[Index.VX, Index.VX]))
-        b.y_velocity_std = np.sqrt(abs(self.covariance[Index.VY, Index.VY]))
-        b.z_velocity_std = np.sqrt(abs(self.covariance[Index.VZ, Index.VZ]))
+        b.x_velocity_std = self.surge_velocity_std()
+        b.y_velocity_std = self.sway_velocity_std()
+        b.z_velocity_std = self.heave_velocity_std()
 
         b.covariance = self.covariance
         return b
+
+    def northing_std(self) -> float:
+        return math.sqrt(max(0, self.covariance[Index.X, Index.X]))
+
+    def easting_std(self) -> float:
+        return math.sqrt(max(0, self.covariance[Index.Y, Index.Y]))
+
+    def depth_std(self) -> float:
+        return math.sqrt(max(0, self.covariance[Index.Z, Index.Z]))
+
+    def roll_std_deg(self) -> float:
+        return 180 / math.pi * math.sqrt(max(0, self.covariance[Index.ROLL, Index.ROLL]))
+
+    def pitch_std_deg(self) -> float:
+        return 180 / math.pi * math.sqrt(max(0, self.covariance[Index.PITCH, Index.PITCH]))
+
+    def yaw_std_deg(self) -> float:
+        return 180 / math.pi * math.sqrt(max(0, self.covariance[Index.YAW, Index.YAW]))
+
+    def surge_velocity_std(self) -> float:
+        return math.sqrt(max(0, self.covariance[Index.VX, Index.VX]))
+
+    def sway_velocity_std(self) -> float:
+        return math.sqrt(max(0, self.covariance[Index.VY, Index.VY]))
+
+    def heave_velocity_std(self) -> float:
+        return math.sqrt(max(0, self.covariance[Index.VZ, Index.VZ]))
+
+    def roll_velocity_std_deg_p_s(self) -> float:
+        return 180 / math.pi * math.sqrt(max(0, self.covariance[Index.VROLL, Index.VROLL]))
+
+    def pitch_velocity_std_deg_p_s(self) -> float:
+        return 180 / math.pi * math.sqrt(max(0, self.covariance[Index.VPITCH, Index.VPITCH]))
+
+    def yaw_velocity_std_deg_p_s(self) -> float:
+        return 180 / math.pi * math.sqrt(max(0, self.covariance[Index.VYAW, Index.VYAW]))
 
 
 def warn_if_zero(val, name):
@@ -348,18 +375,25 @@ class EkfImpl(object):
         self.process_noise_covariance = np.array([])
         self.transfer_function = np.array([])
         self.transfer_function_jacobian = np.array([])
-        self.states_vector = []
-        self.smoothed_states_vector = []
+        self.states_vector : List[EkfState] = []
+        self.smoothed_states_vector : List[EkfState] = []
         self.measurements = {}
         self.rejected_measurements = {}
+
+    def set_initial_state(self, timestamp, state, covariance):
+        self.set_last_update_time(timestamp)
+        self.set_state(state)
+        self.set_covariance(covariance)
+        s = EkfState(timestamp, state, covariance)
+        self.states_vector.append(s)
 
     def set_mahalanobis_distance_threshold(self, threshold):
         self.mahalanobis_threshold = threshold
 
-    def get_states(self):
+    def get_states(self) -> List[EkfState]:
         return self.states_vector
 
-    def get_smoothed_states(self):
+    def get_smoothed_states(self) -> List[EkfState]:
         return self.smoothed_states_vector
 
     def get_rejected_measurements(self):
@@ -851,9 +885,7 @@ class ExtendedKalmanFilter(object):
         current_time = start_time
 
         self.ekf = EkfImpl()
-        self.ekf.set_state(state0)
-        self.ekf.set_last_update_time(current_time)
-        self.ekf.set_covariance(self.initial_estimate_covariance)
+        self.ekf.set_initial_state(current_time, state0, self.initial_estimate_covariance)
         self.ekf.set_process_noise_covariance(self.process_noise_covariance)
         self.ekf.set_mahalanobis_distance_threshold(self.mahalanobis_distance_threshold)
 
@@ -984,7 +1016,12 @@ class ExtendedKalmanFilter(object):
         return state.T
 
 
-def save_ekf_to_list(ekf_states, mission, vehicle, dead_reckoning_dvl_list):
+def save_ekf_to_list(
+    ekf_states: List[EkfState],
+    mission: Mission,
+    vehicle: Vehicle,
+    dead_reckoning_dvl_list: List[SyncedOrientationBodyVelocity]
+) -> List[SyncedOrientationBodyVelocity]:
     ekf_list = []
     dr_idx = 1
     for s in ekf_states:
@@ -1032,10 +1069,10 @@ def save_ekf_to_list(ekf_states, mission, vehicle, dead_reckoning_dvl_list):
 def update_camera_list(
     camera_list: List[Camera],
     ekf_list: List[SyncedOrientationBodyVelocity],
-    origin_offsets,
-    camera1_offsets,
-    latlon_reference,
-):
+    origin_offsets: List[float],
+    camera1_offsets: List[float],
+    latlon_reference: List[float],
+) -> List[Camera]:
     ekf_idx = 0
     c_idx = 0
     while c_idx < len(camera_list) and ekf_idx < len(ekf_list):
