@@ -23,6 +23,7 @@ User's Guide
    auv_nav
    correct_images
    example
+   docker_and_singularity
 
 API Reference
 -------------

@@ -6,93 +6,17 @@ auv_nav has 3 commands:
 - `process`, which outputs previously parsed data in a format that the 3D mapping pipeline can read
 - `convert`, which converts previously parsed data to ACFR format at this moment.
 
-`auv_nav parse` usage:
-```
-auv_nav parse [-h] [-F] path
-
-positional arguments:
-  path                  Folderpath where the (raw) input data is. Needs to be
-                        a subfolder of 'raw' and contain the mission.yaml
-                        configuration file.
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -F, --Force           Force file overwrite
-```
-The algorithm replicated the same folder structure as the input data, but instead of using a subfolder of 'raw', a folder 'processed' is created (if doesn't already exist), with the same succession of subfolders as there are in 'raw'. The mission.yaml and the vehicle.yaml files are copied to this folder. The interlaced data is written in oplab format to a file called 'nav_standard.json' in a subfolder called 'nav'.
-
-
-`auv_nav process` usage:
-```
-auv_nav process [-h] [-F] [-s START_DATETIME] [-e END_DATETIME] path
-
-positional arguments:
-  path                  Path to folder where the data to process is. The
-                        folder has to be generated using auv_nav parse.
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -F, --Force           Force file overwrite
-  -s START_DATETIME, --start START_DATETIME
-                        Start date & time in YYYYMMDDhhmmss from which data
-                        will be processed. If not set, start at beginning of
-                        dataset.
-  -e END_DATETIME, --end END_DATETIME
-                        End date & time in YYYYMMDDhhmmss up to which data
-                        will be processed. If not set process to end of
-                        dataset.
-```
-
-`auv_nav export` usage:
-```
-auv_nav export [-h] [-f FORMAT] [-s START_DATETIME] [-e END_DATETIME] path
-
-positional arguments:
-  path                  Path to folder where the data to export is. The
-                        folder has to be generated using auv_nav parse.
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -f FORMAT, --format FORMAT
-                        Format in which the data is exported. Default: 'acfr'.
-  -s START_DATETIME, --start START_DATETIME
-                        Start date & time in YYYYMMDDhhmmss from which data
-                        will be processed. If not set, start at beginning of
-                        dataset.
-  -e END_DATETIME, --end END_DATETIME
-                        End date & time in YYYYMMDDhhmmss up to which data
-                        will be processed. If not set process to end of
-                        dataset.
-```
-The algorithm will read in the nav_standard.json file obtained after the parsing and will write the required formats and outputs. At v0.1.6 the following output formats are available:
-* acfr: The AFCR format uses a 'dRAWLOGS_cv' folder name and outputs its navigation solution to a file called 'combined.RAW.auv' as well as to a 'mission.cfg' to the processing folder root.
-
-`auv_nav import` usage:
-```
-auv_nav import [-h] [-f FORMAT] path
-
-positional arguments:
-  path                  Path to folder where the data to import is.
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -f FORMAT, --format FORMAT
-                        Format in which the data is. For example: 'hybis'.
-```
-The algorithm will import a dive using the format provided and generate the same outputs as `auv_nav process` would. 
-At version v0.1.7 only `hybis` format is supported.
-
-## Inputs and outputs of `auv_nav` ##
-When running `auv_nav`, the user indicates the path of the dive folder. Typically `auv_nav` is run from the dive folder, in which case the (relative) path is ".". This folder must be a subfolder (can be nested in multiple levels of subfolders) of a folder called eihter "raw", "processed" or "configuration". `auv_nav` automatically reads and writes files in the corresponding subfolders of these 3 folders, i.e. reads raw inputs from the subfolder of "raw", configurations from the corresponding subfolder in the "configuration" folder and writes the outputs to the corresponding subfolder in "processed". When writing files, missing subfolders are automatically created. If one or several of the output files already exist, `auv_nav` aborts unless overwriting is enabled with the command line key `-F` or `--Force`.
+## Parse (`auv_nav parse`)
+This command reads raw data from multiple sensors and writes it in chornological order to a text file in an intermediate oplab data format.
 
 ### Input files read by `auv_nav parse` ###
-All input files are read from the dive subfolder of the "raw" folder 
+All input files are read from the dive subfolder of the "raw" folder
 - vehicle.yaml
 - mission.yaml
 - All files referenced in mission.yaml (e.g. DVL, INS, USBL, depth sensor logs, image timestamp files, usually saved in subfolders of the dive folder)
 
 ### Output files written by `auv_nav parse` ###
-All ouput files are written to the dive subfolder of the "processed" folder 
+All ouput files are written to the dive subfolder of the "processed" folder
 - mission.yaml (This is a copy of the mission.yaml file from the input folder, with metadata about program version, the date and time, host computer name and username appended.)
 - vehicle.yaml (Same as above.)
 
@@ -101,10 +25,23 @@ And if output format "oplab" is selected (this is the default):
     - nav_standard.json
     - json_data_info.html
     - timestamp_history.html
- 
-If output format "acfr" is selected:
-- mission.cfg
-- A sublfolder "dRAWLOGS_cv" with a file named combined.RAW.auv
+
+### Usage:
+```
+auv_nav parse [-h] [-F] [--merge] path [path ...]
+
+positional arguments:
+  path         Folderpath where the (raw) input data is. Needs to be a subfolder of 'raw' and contain the mission.yaml
+               configuration file.
+
+optional arguments:
+  -h, --help   show this help message and exit
+  -F, --Force  Force file overwite
+  --merge      Merge multiple dives into a single JSON file. Requires more than one dive PATH.
+```
+
+## Process (`auv_nav process`) 
+This command expects a parsed dive with an intermediate file `nav_standard.json` present and runs all localisation filters specified in the configuration file `auv_nav.yaml`, or uses the defaults if this file is not present. 
 
 ### Input files read by `auv_nav process` ###
 The following files from the dive subfolder in the "processed" folder:
@@ -117,6 +54,80 @@ The following file from the dive subfolder in the "configuration" folder:
 
 ### Output files written by `auv_nav process` ###
 A subfolder starting with "json_renav_" followed by start and end date and time (e.g. json_renav_20180802_154058_20180803_210450) containing csv and html files is written to the dive subfolder in the "processed" folder.
+
+### Input files read by `auv_nav process` ###
+The following files from the dive subfolder in the "processed" folder:
+- nav/nav_standard.json (generated by `auv_nav parse` when run in "oplab" mode).
+- vehicle.yaml (copied there by `auv_nav parse`)
+- mission.yaml (copied there by `auv_nav parse`)
+
+The following file from the dive subfolder in the "configuration" folder:
+- auv_nav.yaml (if it does not exist, a default auv_nav.yaml file is generated, which the user needs to edit as required) 
+
+### Output files written by `auv_nav process` ###
+A subfolder starting with "json_renav_" followed by start and end date and time (e.g. json_renav_20180802_154058_20180803_210450) containing csv and html files is written to the dive subfolder in the "processed" folder.
+
+### Usage:
+```
+auv_nav process [-h] [-F] [-s START_DATETIME] [-e END_DATETIME] [-v] path
+
+positional arguments:
+  path                  Path to folder where the data to process is. The folder has to be generated using auv_nav
+                        parse.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -F, --Force           Force file overwite
+  -s START_DATETIME, --start START_DATETIME
+                        Start date & time in YYYYMMDDhhmmss from which data will be processed. If not set, start at
+                        beginning of dataset.
+  -e END_DATETIME, --end END_DATETIME
+                        End date & time in YYYYMMDDhhmmss up to which data will be processed. If not set process to
+                        end of dataset.
+  -v, --verbose         Enable verbose output to terminal
+```
+The algorithm replicated the same folder structure as the input data, but instead of using a subfolder of 'raw', a folder 'processed' is created (if doesn't already exist), with the same succession of subfolders as there are in 'raw'. The mission.yaml and the vehicle.yaml files are copied to this folder. The interlaced data is written in oplab format to a file called 'nav_standard.json' in a subfolder called 'nav'.
+
+## Convert (`auv_nav convert`)
+The algorithm will read in the nav_standard.json file obtained after the parsing and will write the required formats and outputs.
+
+At v0.1.10 the following conversions are available:
+ * oplab_to_acfr: Converts a processed dive to ACFR navigation formats by saving a dRAWLOGS_cv folder with its navigation solutions called combined.RAW.auv, mission.cfg and stereo_pose.est.
+ * acfr_to_oplab
+ * hybis_to_oplab
+
+
+At v0.1.6 the following output formats are available:
+* acfr: The AFCR format uses a 'dRAWLOGS_cv' folder name and outputs its navigation solution to a file called 'combined.RAW.auv' as well as to a 'mission.cfg' to the processing folder root.
+
+
+If output format "acfr" is selected:
+- mission.cfg
+- A sublfolder "dRAWLOGS_cv" with a file named combined.RAW.auv
+
+
+
+`auv_nav convert` usage:
+```
+auv_nav convert [-h] {oplab_to_acfr,acfr_to_oplab,hybis_to_oplab} ...
+
+positional arguments:
+  {oplab_to_acfr,acfr_to_oplab,hybis_to_oplab}
+    oplab_to_acfr       Converts an already processed dive to ACFR format
+    acfr_to_oplab       Converts a VehiclePosEst.data and/or a StereoPosEst.data to OPLAB csv format
+    hybis_to_oplab      Converts a hybis navigation file to oplab CSV format
+
+optional arguments:
+  -h, --help            show this help message and exit
+```
+
+The algorithm will read in the nav_standard.json file obtained after the parsing and will write the required formats and outputs. At v0.1.6 the following output formats are available:
+* acfr: The AFCR format uses a 'dRAWLOGS_cv' folder name and outputs its navigation solution to a file called 'combined.RAW.auv' as well as to a 'mission.cfg' to the processing folder root.
+* hybis: Given a Hybis navigation file and their image folder, it generates the required CSV files for correct_images or other software. It does not generate any intermediate json file.
+
+
+## Inputs and outputs of `auv_nav` ##
+When running `auv_nav`, the user indicates the path of the dive folder. Typically `auv_nav` is run from the dive folder, in which case the (relative) path is ".". This folder must be a subfolder (can be nested in multiple levels of subfolders) of a folder called eihter "raw", "processed" or "configuration". `auv_nav` automatically reads and writes files in the corresponding subfolders of these 3 folders, i.e. reads raw inputs from the subfolder of "raw", configurations from the corresponding subfolder in the "configuration" folder and writes the outputs to the corresponding subfolder in "processed". When writing files, missing subfolders are automatically created. If one or several of the output files already exist, `auv_nav` aborts unless overwriting is enabled with the command line key `-F` or `--Force`.
 
 
 ## Examples ##
