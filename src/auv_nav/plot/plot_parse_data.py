@@ -143,7 +143,6 @@ def plot_parse_data(filepath, ftype="oplab"):
             start_time = data_in[1]["epoch_timestamp"]
             finish_time = data_in[-1]["epoch_timestamp"]
             for i in data_in:
-                print(i)
                 if i is None:
                     continue
                 if i["category"] == "origin":
