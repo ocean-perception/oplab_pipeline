@@ -48,6 +48,14 @@ From: python:3.9-slim-bullseye
     echo " - singularity exec oplab_pipeline.sif auv_cal ARGS"
     echo " - singularity exec oplab_pipeline.sif correct_images ARGS"
     echo ""
+    echo "NOTE: if running on your own machine, the flag"
+    echo "      -B /run/shm:/run/shm"
+    echo "      is required to share the shared memory between the container"
+    echo "      and the host. Example:"
+    echo " - singularity exec -B /run/shm:/run/shm oplab_pipeline.sif auv_nav ARGS"
+    echo " - singularity exec -B /run/shm:/run/shm oplab_pipeline.sif auv_cal ARGS"
+    echo " - singularity exec -B /run/shm:/run/shm oplab_pipeline.sif correct_images ARGS"
+    echo ""
     echo "For more information, check https://oplab-pipeline.readthedocs.io/"
 
 %environment
