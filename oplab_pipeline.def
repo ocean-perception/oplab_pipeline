@@ -1,0 +1,56 @@
+Bootstrap: docker
+From: python:3.9-slim-bullseye
+
+%labels
+    Author miquel.massot-campos@soton.ac.uk
+    Version v0.0.1
+
+%help
+    This is a singularity container for oplab_pipeline (auv_nav, auv_cal and correct_images)
+
+%files
+    # Copy the oplab_pipeline folder to the container
+    . /opt/oplab_pipeline_git
+
+%post -c /bin/bash
+    # Install system libraries and non-python dependencies
+    apt-get update && apt-get -y install python3-opencv llvm procps
+    # Upgrade pip, setuptools and prepare the environment
+    python -m pip install --no-cache-dir --upgrade pip setuptools virtualenv
+    # Create the virtual environment
+    cd /opt
+    python -m venv oplab_pipeline_env
+    # Activate the virtual environment
+    . oplab_pipeline_env/bin/activate
+    # Install the python dependencies
+    python -m pip install --no-cache-dir -r requirements.txt
+    python -m pip install --extra-index-url https://rospypi.github.io/simple/ rosbag
+    python -m pip install roslz4 --extra-index-url https://rospypi.github.io/simple/
+    # Change folder to the copied git folder
+    cd /opt/oplab_pipeline_git
+    # Install the python package
+    python -m pip install --no-cache-dir .
+
+%runscript
+    echo ""
+    echo " \033[94m     ● ● \033[0m Ocean Perception"
+    echo " \033[94m     ● \033[93m▲ \033[0m University of Southampton"
+    echo ""
+    echo " Copyright (C) 2020 University of Southampton   "
+    echo " This program comes with ABSOLUTELY NO WARRANTY."
+    echo " This is free software, and you are welcome to  "
+    echo " redistribute it.                               "
+    echo ""
+
+    echo "This is an oplab_pipeline SIF image container"
+    echo "Run the pipeline using the following command:"
+    echo " - singularity exec oplab_pipeline.sif auv_nav ARGS"
+    echo " - singularity exec oplab_pipeline.sif auv_cal ARGS"
+    echo " - singularity exec oplab_pipeline.sif correct_images ARGS"
+    echo ""
+    echo "For more information, check https://oplab-pipeline.readthedocs.io/"
+
+%environment
+    export PATH=/opt/oplab_pipeline_env/bin:$PATH
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
