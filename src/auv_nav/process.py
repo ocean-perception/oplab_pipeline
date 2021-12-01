@@ -279,6 +279,8 @@ def process(
                 ekf_initial_estimate_covariance = np.asarray(
                     ekf_initial_estimate_covariance
                 ).reshape((12, 12))
+            ekf_initial_estimate_covariance = ekf_initial_estimate_covariance.astype(float)
+            ekf_process_noise_covariance = ekf_process_noise_covariance.astype(float)
         if "csv_output" in load_localisation:
             # csv_active
             csv_output_activate = load_localisation["csv_output"]["activate"]

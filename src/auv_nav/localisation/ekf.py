@@ -124,40 +124,40 @@ class EkfState(object):
         return b
 
     def northing_std(self) -> float:
-        return math.sqrt(max(0, self.covariance[Index.X, Index.X]))
+        return math.sqrt(max(0.0, self.covariance[Index.X, Index.X]))
 
     def easting_std(self) -> float:
-        return math.sqrt(max(0, self.covariance[Index.Y, Index.Y]))
+        return math.sqrt(max(0.0, self.covariance[Index.Y, Index.Y]))
 
     def depth_std(self) -> float:
-        return math.sqrt(max(0, self.covariance[Index.Z, Index.Z]))
+        return math.sqrt(max(0.0, self.covariance[Index.Z, Index.Z]))
 
     def roll_std_deg(self) -> float:
-        return 180 / math.pi * math.sqrt(max(0, self.covariance[Index.ROLL, Index.ROLL]))
+        return 180 / math.pi * math.sqrt(max(0.0, self.covariance[Index.ROLL, Index.ROLL]))
 
     def pitch_std_deg(self) -> float:
-        return 180 / math.pi * math.sqrt(max(0, self.covariance[Index.PITCH, Index.PITCH]))
+        return 180 / math.pi * math.sqrt(max(0.0, self.covariance[Index.PITCH, Index.PITCH]))
 
     def yaw_std_deg(self) -> float:
-        return 180 / math.pi * math.sqrt(max(0, self.covariance[Index.YAW, Index.YAW]))
+        return 180 / math.pi * math.sqrt(max(0.0, self.covariance[Index.YAW, Index.YAW]))
 
     def surge_velocity_std(self) -> float:
-        return math.sqrt(max(0, self.covariance[Index.VX, Index.VX]))
+        return math.sqrt(max(0.0, self.covariance[Index.VX, Index.VX]))
 
     def sway_velocity_std(self) -> float:
-        return math.sqrt(max(0, self.covariance[Index.VY, Index.VY]))
+        return math.sqrt(max(0.0, self.covariance[Index.VY, Index.VY]))
 
     def heave_velocity_std(self) -> float:
-        return math.sqrt(max(0, self.covariance[Index.VZ, Index.VZ]))
+        return math.sqrt(max(0.0, self.covariance[Index.VZ, Index.VZ]))
 
     def roll_velocity_std_deg_p_s(self) -> float:
-        return 180 / math.pi * math.sqrt(max(0, self.covariance[Index.VROLL, Index.VROLL]))
+        return 180 / math.pi * math.sqrt(max(0.0, self.covariance[Index.VROLL, Index.VROLL]))
 
     def pitch_velocity_std_deg_p_s(self) -> float:
-        return 180 / math.pi * math.sqrt(max(0, self.covariance[Index.VPITCH, Index.VPITCH]))
+        return 180 / math.pi * math.sqrt(max(0.0, self.covariance[Index.VPITCH, Index.VPITCH]))
 
     def yaw_velocity_std_deg_p_s(self) -> float:
-        return 180 / math.pi * math.sqrt(max(0, self.covariance[Index.VYAW, Index.VYAW]))
+        return 180 / math.pi * math.sqrt(max(0.0, self.covariance[Index.VYAW, Index.VYAW]))
 
 
 def warn_if_zero(val, name):
