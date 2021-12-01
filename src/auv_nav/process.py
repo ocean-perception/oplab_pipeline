@@ -29,16 +29,14 @@ from auv_nav.localisation.usbl_filter import usbl_filter
 from auv_nav.localisation.usbl_offset import usbl_offset
 from auv_nav.plot.plot_process_data import (
     plot_2d_deadreckoning,
+    plot_cameras_vs_time,
     plot_deadreckoning_vs_time,
     plot_ekf_rejected_measurements,
     plot_ekf_states_and_std_vs_time,
     plot_orientation_vs_time,
     plot_pf_uncertainty,
-    plot_ekf_states_and_std_vs_time,
-    plot_cameras_vs_time,
-    plot_synced_states_and_ekf_list_and_std_from_ekf_vs_time,
-    plot_ekf_rejected_measurements,
     plot_sensor_uncertainty,
+    plot_synced_states_and_ekf_list_and_std_from_ekf_vs_time,
     plot_velocity_vs_time,
 )
 from auv_nav.sensors import (
@@ -53,7 +51,7 @@ from auv_nav.sensors import (
     Usbl,
 )
 from auv_nav.tools.body_to_inertial import body_to_inertial
-from auv_nav.tools.csv_tools import spp_csv, write_csv, write_sidescan_csv, load_states
+from auv_nav.tools.csv_tools import load_states, spp_csv, write_csv, write_sidescan_csv
 from auv_nav.tools.dvl_level_arm import compute_angular_speeds, correct_lever_arm
 from auv_nav.tools.interpolate import interpolate, interpolate_sensor_list
 from auv_nav.tools.latlon_wgs84 import metres_to_latlon
@@ -84,15 +82,17 @@ csv files and, if plot is True, save plots
 
 
 def process(
-        filepath,
-        force_overwite,
-        start_datetime,
-        finish_datetime,
-        compute_relative_pose_uncertainty=False,
-        start_image_identifier=None,
-        end_image_identifier=None
+    filepath,
+    force_overwite,
+    start_datetime,
+    finish_datetime,
+    compute_relative_pose_uncertainty=False,
+    start_image_identifier=None,
+    end_image_identifier=None,
 ):
-    if compute_relative_pose_uncertainty and (start_image_identifier is None or end_image_identifier is None):
+    if compute_relative_pose_uncertainty and (
+        start_image_identifier is None or end_image_identifier is None
+    ):
         Console.quit(
             "start_image_identifier and end_image_identifier need to provided when compute_relative_pose_uncertainty "
             "is enabled."
@@ -279,7 +279,9 @@ def process(
                 ekf_initial_estimate_covariance = np.asarray(
                     ekf_initial_estimate_covariance
                 ).reshape((12, 12))
-            ekf_initial_estimate_covariance = ekf_initial_estimate_covariance.astype(float)
+            ekf_initial_estimate_covariance = ekf_initial_estimate_covariance.astype(
+                float
+            )
             ekf_process_noise_covariance = ekf_process_noise_covariance.astype(float)
         if "csv_output" in load_localisation:
             # csv_active
@@ -538,7 +540,11 @@ def process(
             renavpath.mkdir()
         except Exception as e:
             print("Warning:", e)
-    elif renavpath.is_dir() and not force_overwite and not compute_relative_pose_uncertainty:
+    elif (
+        renavpath.is_dir()
+        and not force_overwite
+        and not compute_relative_pose_uncertainty
+    ):
         # Check if dataset has already been processed
         Console.error(
             "It looks like this dataset has already been processed for the",
@@ -865,8 +871,7 @@ def process(
         del dead_reckoning_dvl_list[0]
         interpolate_remove_flag = False  # reset flag
     Console.info(
-        "Completed interpolation and coordinate transfomations for",
-        "velocity_body",
+        "Completed interpolation and coordinate transfomations for", "velocity_body",
     )
 
     # perform interpolations of state data to velocity_inertial time stamps
@@ -879,7 +884,6 @@ def process(
         k = 0
 
         for i in range(len(velocity_inertial_list)):
-
             while (
                 j < len(orientation_list) - 1
                 and orientation_list[j].epoch_timestamp
@@ -1188,14 +1192,23 @@ def process(
         ekf_activate = True
         activate_smoother = False
 
-        ## Load previously computed states and covariances
-        ekf_state_file_path = renavpath / "csv" / "ekf" / ("auv_ekf_" + mission.image.cameras[2].name + ".csv")
-        laser_camera_states = load_states(ekf_state_file_path, start_image_identifier, end_image_identifier)
+        # Load previously computed states and covariances
+        ekf_state_file_path = (
+            renavpath
+            / "csv"
+            / "ekf"
+            / ("auv_ekf_" + mission.image.cameras[2].name + ".csv")
+        )
+        laser_camera_states = load_states(
+            ekf_state_file_path, start_image_identifier, end_image_identifier
+        )
 
         if not laser_camera_states:
-            Console.quit("The pose of the indicated image was not found in the file provided. Please check your input.")
+            Console.quit(
+                "The pose of the indicated image was not found in the file provided. Please check your input."
+            )
 
-        ## Initialise starting state for EKF
+        # Initialise starting state for EKF
         ekf_initial_state = copy.deepcopy(laser_camera_states[0])
         # laser_camera_states are at the position of the camera but we need to indicate the world coordinates of the DVL
         # to the EKF
@@ -1203,16 +1216,23 @@ def process(
         dy = camera3_offsets[1] - vehicle.dvl.sway
         dz = camera3_offsets[2] - vehicle.dvl.heave
         [n_offset, e_offset, d_offset] = body_to_inertial(
-            ekf_initial_state.roll, ekf_initial_state.pitch, ekf_initial_state.yaw, dx, dy, dz
+            ekf_initial_state.roll,
+            ekf_initial_state.pitch,
+            ekf_initial_state.yaw,
+            dx,
+            dy,
+            dz,
         )
         ekf_initial_state.northings -= n_offset
-        ekf_initial_state.eastings  -= e_offset
-        ekf_initial_state.depth     -= d_offset
+        ekf_initial_state.eastings -= e_offset
+        ekf_initial_state.depth -= d_offset
 
-        ekf_initial_estimate_covariance[0:6, 0:6] = 0  # Initialise starting covariance for EKF (set it to 0)
+        ekf_initial_estimate_covariance[
+            0:6, 0:6
+        ] = 0  # Initialise starting covariance for EKF (set it to 0)
         ekf_end_time = laser_camera_states[-1].epoch_timestamp
 
-        ## Initialise camera list (i.e. timestamps) for which the EKF will compute the states
+        # Initialise camera list (i.e. timestamps) for which the EKF will compute the states
         camera3_ekf_list_cropped = []
         use_camera = False
         for i in camera3_ekf_list:
@@ -1224,8 +1244,9 @@ def process(
                 break
         if len(camera3_ekf_list_cropped) == 0:
             Console.quit(
-                "camera3_ekf_list_cropped is empty. Check the start_image_identifier and start_image_identifier you "
-                "indicated"
+                "camera3_ekf_list_cropped is empty. Check the",
+                "start_image_identifier and start_image_identifier you ",
+                "indicated",
             )
 
     if ekf_activate:
@@ -1242,13 +1263,13 @@ def process(
 
         # Aggregate timestamps to run EKF only once
         ekf_timestamps = []
-        if len(camera1_ekf_list) > 0:
+        if camera1_ekf_list:
             camera1_timestamp_list = [x.epoch_timestamp for x in camera1_ekf_list]
             ekf_timestamps += camera1_timestamp_list
-        if len(camera2_ekf_list) > 0:
+        if camera2_ekf_list:
             camera2_timestamp_list = [x.epoch_timestamp for x in camera2_ekf_list]
             ekf_timestamps += camera2_timestamp_list
-        if len(camera3_ekf_list) > 0:
+        if camera3_ekf_list:
             camera3_timestamp_list = [x.epoch_timestamp for x in camera3_ekf_list]
             ekf_timestamps += camera3_timestamp_list
         # Sort timestamps and remove duplicates in place
@@ -1284,45 +1305,63 @@ def process(
             camera3_offsets,
             latlon_reference,
         )
-        assert(len(camera3_ekf_list_cropped) == len(laser_camera_states))
+        assert len(camera3_ekf_list_cropped) == len(laser_camera_states)
 
-        ### Compute uncertainties with poses
-        ## Compute uncertainties by subtracting original states (-> uncertainties are summed)
+        # Compute uncertainties with poses
+        # Compute uncertainties by subtracting original states (-> uncertainties are summed)
         for i in range(1, len(laser_camera_states)):
             laser_camera_states[i].covariance += laser_camera_states[0].covariance
         laser_camera_states[0].covariance[:, :] = 0
 
-        ### Plot uncertainties
+        # Plot uncertainties
         plots_folder = renavpath / "interactive_plots"
 
-        ## Plot uncertainties based on subtracting positions
+        # Plot uncertainties based on subtracting positions
         args = [laser_camera_states, plots_folder / "based_on_subtraction"]
         t = threading.Thread(target=plot_cameras_vs_time, args=args)
         t.start()
         threads.append(t)
 
-        ## Plot uncertainties based on EKF propagation
-        args = [laser_camera_states, camera3_ekf_list_cropped, plots_folder / "based_on_ekf_propagation"]
-        t = threading.Thread(target=plot_synced_states_and_ekf_list_and_std_from_ekf_vs_time, args=args)
+        # Plot uncertainties based on EKF propagation
+        args = [
+            laser_camera_states,
+            camera3_ekf_list_cropped,
+            plots_folder / "based_on_ekf_propagation",
+        ]
+        t = threading.Thread(
+            target=plot_synced_states_and_ekf_list_and_std_from_ekf_vs_time, args=args
+        )
         t.start()
         threads.append(t)
 
-        ### Write out poses with uncertainties to new file
+        # Write out poses with uncertainties to new file
         ekf_csv_folder = renavpath / "csv" / "ekf"
         if len(mission.image.cameras) > 2:
-            filename_cov_from_ekf      = "auv_ekf_cov_based_on_ekf_propagation_" + mission.image.cameras[2].name
-            filename_cov_from_subtract = "auv_ekf_cov_based_on_subtraction_"     + mission.image.cameras[2].name
+            filename_cov_from_ekf = (
+                "auv_ekf_cov_based_on_ekf_propagation_" + mission.image.cameras[2].name
+            )
+            filename_cov_from_subtract = (
+                "auv_ekf_cov_based_on_subtraction_" + mission.image.cameras[2].name
+            )
         elif len(mission.image.cameras) == 2:
-            filename_cov_from_ekf  = "auv_ekf_cov_based_on_ekf_propagation_" + mission.image.cameras[1].name + "_laser"
-            filename_cov_from_subtract = "auv_ekf_cov_based_on_subtraction_" + mission.image.cameras[1].name + "_laser"
+            filename_cov_from_ekf = (
+                "auv_ekf_cov_based_on_ekf_propagation_"
+                + mission.image.cameras[1].name
+                + "_laser"
+            )
+            filename_cov_from_subtract = (
+                "auv_ekf_cov_based_on_subtraction_"
+                + mission.image.cameras[1].name
+                + "_laser"
+            )
 
-        ## Write out uncertainties based on subtracting positions
+        # Write out uncertainties based on subtracting positions
         args = [ekf_csv_folder, laser_camera_states, filename_cov_from_subtract]
         t = threading.Thread(target=write_csv, args=args)
         t.start()
         threads.append(t)
 
-        ## Write out uncertainties based on EKF propagation to csv file
+        # Write out uncertainties based on EKF propagation to csv file
         # Note:
         # Here we are using the the new poses, whereas we only want to use the new covariances but the original poses.
         # But when using the data in laser_bathymetry, the original pose file can be used witht this covariance file.
@@ -1335,7 +1374,9 @@ def process(
         for t in threads:
             t.join()
         Console.info("DONE")
-        Console.quit("Finished writing out relative uncertainties and quitting (this is not a failure)")
+        Console.quit(
+            "Finished writing out relative uncertainties and quitting (this is not a failure)"
+        )
 
     if len(camera1_ekf_list) > 0:
         camera1_ekf_list = update_camera_list(
@@ -1459,10 +1500,7 @@ def process(
             if ekf_activate and "ekf_states" in locals():
                 t = threading.Thread(
                     target=plot_ekf_states_and_std_vs_time,
-                    args=[
-                        ekf_states,
-                        plotlypath / "ekf",
-                    ],
+                    args=[ekf_states, plotlypath / "ekf"],
                 )
                 t.start()
                 threads.append(t)
