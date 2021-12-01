@@ -11,7 +11,7 @@ This assumes you have installed Singularity previously. If you havent, follow [t
 sudo singularity build oplab_pipeline.sif oplab_pipeline.def
 ```
 
-# 3. Run the SIF image.
+## 2. Run the SIF image.
 The previous instruction will have saved a file `oplab_pipeline.sif` in this same directory. This is your containerised image file. You can use this SIF file in any Linux computer with Singularity installed. To see the help, run
 
 ```sh
