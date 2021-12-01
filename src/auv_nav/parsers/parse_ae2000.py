@@ -88,10 +88,15 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
 
     # list of time value in the first column (starting from 2nd row,
     # not considering first row)
-    time_column = df.iloc[:, 0]
+    datetime_column = df.iloc[:, 1]
     # length of this should match every other column
-    for row_index in range(len(time_column)):
-        timestamp = time_column[row_index].split(":")
+    for row_index in range(len(datetime_column)):
+        datetime = datetime_column[row_index].split(" ")
+        date = datetime[0].split("/")
+        yyyy = int(date[0])
+        mm = int(date[1])
+        dd = int(date[2])
+        timestamp = datetime[1].split(":")
         if len(timestamp) < 3:
             continue
         hour = int(timestamp[0])
