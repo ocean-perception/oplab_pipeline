@@ -34,6 +34,7 @@ usbl_filter:
 
 ekf:
   activate: True
+  activate_smoother: True
   mahalanobis_distance_threshold: 3.0  # Mahalanobis Distance threshold in number of sigmas. Default: 3.0
 
   # [ADVANCED] The process noise covariance matrix can be difficult to tune, and can vary for each application, so it is
