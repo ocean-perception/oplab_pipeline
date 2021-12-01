@@ -11,6 +11,8 @@ docs/_build/
 
 .oplab_pipeline_commit_hash
 
+*.sif
+
 # due to using tox and pytest
 .tox
 .cache
