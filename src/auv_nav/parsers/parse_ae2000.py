@@ -183,47 +183,6 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
                 }
                 data_list.append(data)
 
-                """
-                frame_string = "inertial"
-                # phins convention is west +ve so a minus should be necessary
-                east_velocity = float(df["vye"][row_index])
-                north_velocity = float(df["vxe"][row_index])
-                down_velocity = None
-
-                east_velocity_std = (
-                    abs(east_velocity) * mission.velocity.std_factor
-                    + mission.velocity.std_offset
-                )
-                north_velocity_std = (
-                    abs(north_velocity) * mission.velocity.std_factor
-                    + mission.velocity.std_offset
-                )
-                down_velocity_std = None
-                # write out in the required format interlace at end
-                data = {
-                    "epoch_timestamp": float(epoch_timestamp),
-                    "class": class_string,
-                    "sensor": sensor_string,
-                    "frame": frame_string,
-                    "category": category,
-                    "data": [
-                        {
-                            "north_velocity": float(north_velocity),
-                            "north_velocity_std": float(north_velocity_std),
-                        },
-                        {
-                            "east_velocity": float(east_velocity),
-                            "east_velocity_std": float(east_velocity_std),
-                        },
-                        {
-                            "down_velocity": down_velocity,
-                            "down_velocity_std": down_velocity_std,
-                        },
-                    ],
-                }
-                data_list.append(data)
-                """
-
             if category == "orientation":
                 frame_string = "body"
 
@@ -385,11 +344,6 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
                 # DVL convention is bottom to top +ve
                 zz_velocity = float(df["dvl_heaveVelBottom"][row_index]) / 1000.0
 
-                # account for sensor offset
-                # [xx_velocity,yy_velocity,zz_velocity] = body_to_inertial(0, 0, headingoffset, xx_velocity, yy_velocity, zz_velocity) # noqa
-                # yy_velocity=-1*yy_velocity
-                # zz_velocity=-1*zz_velocity
-
                 roll = float(df["roll"][row_index])
                 pitch = float(df["pitch"][row_index])
                 heading = float(df["yaw"][row_index])
@@ -449,8 +403,7 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
                 if heading < 0:
                     heading = heading + 360
 
-                    # print(data)
-                    # write out in the required format interlace at end
+                # write out in the required format interlace at end
                 data = (
                     "PHINS_COMPASS: "
                     + str(float(epoch_timestamp))
