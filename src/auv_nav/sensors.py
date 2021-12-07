@@ -1500,6 +1500,24 @@ class SyncedOrientationBodyVelocity:
     def __lt__(self, o):
         return self.epoch_timestamp < o.epoch_timestamp
 
+    def northing_std_from_cov(self) -> float:
+        return sqrt(max(0, self.covariance[0, 0]))
+
+    def easting_std_from_cov(self) -> float:
+        return sqrt(max(0, self.covariance[1, 1]))
+
+    def depth_std_from_cov(self) -> float:
+        return sqrt(max(0, self.covariance[2, 2]))
+
+    def roll_std_from_cov_deg(self) -> float:
+        return 180 / pi * sqrt(max(0, self.covariance[3, 3]))
+
+    def pitch_std_from_cov_deg(self) -> float:
+        return 180 / pi * sqrt(max(0, self.covariance[4, 4]))
+
+    def yaw_std_from_cov_deg(self) -> float:
+        return 180 / pi * sqrt(max(0, self.covariance[5, 5]))
+
     def from_df(self, df_row):
         self.epoch_timestamp = df_row["timestamp"]
         self.northings = df_row["northing [m]"]
