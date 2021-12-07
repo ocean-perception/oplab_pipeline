@@ -107,6 +107,7 @@ def load_states(
     covariances.rename(columns={'relative_path': 'relative_path_cov'}, inplace=True)  # prevent same names after merging
     pd_states = pd.concat([poses, covariances], axis=1)
     use = False
+    found_end_imge_identifier = False
     states = []
     try:
         for index, row in pd_states.iterrows():
@@ -133,11 +134,19 @@ def load_states(
                 s.covariance = np.asarray(row['cov_x_x':'cov_yaw_yaw']).reshape((6, 6))
                 states.append(s)
             if row["relative_path"] == end_image_identifier:
+                found_end_imge_identifier = True
                 break
     except KeyError as err:
         Console.error(
             "In", __file__, "line", sys._getframe().f_lineno,
             ": KeyError when parsing ", path, ": Key", err, "not found."
+        )
+
+    if use is False:
+        Console.error("Did not find start image identifier (" + start_image_identifier + "). Check your input.")
+    elif found_end_imge_identifier is False:
+        Console.warn(
+            "Did not find end image identifier (" + end_image_identifier + "). Returning all states until end of file."
         )
 
     return states
