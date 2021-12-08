@@ -8,6 +8,7 @@ See LICENSE.md file in the project root for full license information.
 
 import math
 import time
+import threading
 
 import plotly.graph_objs as go
 import plotly.offline as py
@@ -435,7 +436,8 @@ def plot_ekf_states_and_std_vs_time(
     ekf_sway_velocities_std  = [i.sway_velocity_std()  for i in ekf_states]
     ekf_heave_velocities_std = [i.heave_velocity_std() for i in ekf_states]
 
-    plot_position_with_std_vs_time(
+    threads = []
+    args = [
         output_folder,
         ekf_time,
         ekf_northings,
@@ -444,9 +446,12 @@ def plot_ekf_states_and_std_vs_time(
         ekf_northing_stds,
         ekf_easting_stds,
         ekf_depth_stds,
-    )
+    ]
+    t = threading.Thread(target=plot_position_with_std_vs_time, args=args)
+    t.start()
+    threads.append(t)
 
-    plot_orientation_with_std_vs_time(
+    args = [
         output_folder,
         ekf_time,
         ekf_roll_deg,
@@ -455,9 +460,12 @@ def plot_ekf_states_and_std_vs_time(
         ekf_roll_std_deg,
         ekf_pitch_std_deg,
         ekf_yaw_std_deg,
-    )
+    ]
+    t = threading.Thread(target=plot_orientation_with_std_vs_time, args=args)
+    t.start()
+    threads.append(t)
 
-    plot_velocity_with_std_vs_time(
+    args = [
         output_folder,
         ekf_time,
         ekf_surge_velocities,
@@ -466,7 +474,13 @@ def plot_ekf_states_and_std_vs_time(
         ekf_surge_velocities_std,
         ekf_sway_velocities_std,
         ekf_heave_velocities_std,
-    )
+    ]
+    t = threading.Thread(target=plot_velocity_with_std_vs_time, args=args)
+    t.start()
+    threads.append(t)
+
+    for t in threads:
+        t.join()
 
     Console.info("... done plotting EKF states with std vs. time.")
 
@@ -492,7 +506,8 @@ def plot_cameras_vs_time(
     pitch_stds_deg = [180 / math.pi * math.sqrt(max(0, i.covariance[4, 4])) for i in cameras]
     yaw_stds_deg   = [180 / math.pi * math.sqrt(max(0, i.covariance[5, 5])) for i in cameras]
 
-    plot_position_with_std_vs_time(
+    threads = []
+    args = [
         output_folder,
         timestamps,
         northings,
@@ -501,9 +516,12 @@ def plot_cameras_vs_time(
         northing_stds,
         easting_stds,
         depth_stds,
-    )
+    ]
+    t = threading.Thread(target=plot_position_with_std_vs_time, args=args)
+    t.start()
+    threads.append(t)
 
-    plot_orientation_with_std_vs_time(
+    args = [
         output_folder,
         timestamps,
         roll_deg,
@@ -512,7 +530,14 @@ def plot_cameras_vs_time(
         roll_stds_deg,
         pitch_stds_deg,
         yaw_stds_deg,
-    )
+    ]
+    t = threading.Thread(target=plot_orientation_with_std_vs_time, args=args)
+    t.start()
+    threads.append(t)
+
+    for t in threads:
+        t.join()
+
     Console.info("... done plotting cameras vs. time.")
 
 
@@ -554,7 +579,8 @@ def plot_synced_states_and_ekf_list_and_std_from_ekf_vs_time(
     ekf_pitch_deg = [i.pitch for i in ekf_list]
     ekf_yaw_deg   = [i.yaw   for i in ekf_list]
 
-    plot_position_with_std_vs_time(
+    threads = []
+    args = [
         output_folder,
         states_timestamps,
         northings,
@@ -569,9 +595,12 @@ def plot_synced_states_and_ekf_list_and_std_from_ekf_vs_time(
         states_northing_stds,
         states_easting_stds,
         states_depth_stds,
-    )
+    ]
+    t = threading.Thread(target=plot_position_with_std_vs_time, args=args)
+    t.start()
+    threads.append(t)
 
-    plot_orientation_with_std_vs_time(
+    args = [
         output_folder,
         states_timestamps,
         roll_deg,
@@ -586,7 +615,14 @@ def plot_synced_states_and_ekf_list_and_std_from_ekf_vs_time(
         states_roll_stds_deg,
         states_pitch_stds_deg,
         states_yaw_stds_deg,
-    )
+    ]
+    t = threading.Thread(target=plot_orientation_with_std_vs_time, args=args)
+    t.start()
+    threads.append(t)
+
+    for t in threads:
+        t.join()
+
     Console.info("... done plotting synced states and std from list of covariances vs. time.")
 
 
