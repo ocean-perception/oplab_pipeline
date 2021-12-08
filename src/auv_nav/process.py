@@ -1190,7 +1190,6 @@ def process(
 
     if compute_relative_pose_uncertainty:
         ekf_activate = True
-        activate_smoother = False
 
         # Load previously computed states and covariances
         ekf_state_file_path = (
