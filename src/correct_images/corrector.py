@@ -484,11 +484,12 @@ class Corrector:
                 valid_idx.append(idx)
         filtered_dataframe = dataframe.iloc[valid_idx]
         filtered_dataframe.reset_index(drop=True)
+        filtered_dataframe=filtered_dataframe[~filtered_dataframe["altitude [m]"].str.contains("None")]    # drop rows with None altitude
         distance_list = filtered_dataframe["altitude [m]"].tolist()
         self.camera_image_list = []
         self.altitude_list = []
         for _, row in filtered_dataframe.iterrows():
-            alt = row["altitude [m]"]
+            alt = float(row["altitude [m]"])
             if alt > self.altitude_min and alt < self.altitude_max:
                 self.camera_image_list.append(self.path_raw / row["relative_path"])
                 self.altitude_list.append(alt)
