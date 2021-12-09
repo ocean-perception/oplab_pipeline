@@ -181,7 +181,7 @@ class FilenameToDate:
                 else:
                     Console.error("There should only be one Index column")
                     Console.quit("Invalid timestamp format")
-        last_idx = int(df["index"].tail(1))
+        last_idx = int(df.shape[0])
         Console.info("Found", last_idx, "timestamp records in", filename)
 
         for index, row in df.iterrows():
