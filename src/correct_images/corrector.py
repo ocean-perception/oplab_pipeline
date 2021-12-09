@@ -484,6 +484,8 @@ class Corrector:
                 valid_idx.append(idx)
         filtered_dataframe = dataframe.iloc[valid_idx]
         filtered_dataframe.reset_index(drop=True)
+        # Warning: if the column does not contain any 'None' entry, it will be parsed as float, and the .str() accesor will fail
+        filtered_dataframe["altitude [m]"] = filtered_dataframe["altitude [m]"].astype('string')
         filtered_dataframe=filtered_dataframe[~filtered_dataframe["altitude [m]"].str.contains("None")]    # drop rows with None altitude
         distance_list = filtered_dataframe["altitude [m]"].tolist()
         self.camera_image_list = []

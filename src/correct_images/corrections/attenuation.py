@@ -147,7 +147,7 @@ def calculate_attenuation_parameters(
     mem = psutil.virtual_memory()
     available_bytes = mem.available  # in bytes
     required_bytes = image_channels * image_height * image_width * 4 * len(images)
-    num_jobs = min(int(available_bytes / required_bytes), 4)
+    num_jobs = min(int(available_bytes / required_bytes), 8)
 
     # Keep one alive!
     cpus = psutil.cpu_count() - 1
