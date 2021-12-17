@@ -13,23 +13,25 @@ From: python:3.9-slim-bullseye
     . /opt/oplab_pipeline_git
 
 %post -c /bin/bash
+    apt-get update && apt-get -y install python3-opencv llvm procps gnupg2 ffmpeg
+    sh -c 'echo "deb http://packages.ros.org/ros/ubuntu buster main" > /etc/apt/sources.list.d/ros-latest.list'
+    apt-key adv --keyserver hkp://ha.pool.sks-keyservers.net:80 --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
     # Install system libraries and non-python dependencies
-    apt-get update && apt-get -y install python3-opencv llvm procps
+    apt-get update && apt-get -y install ros-noetic-ros-core python3-cv-bridge \
+        libsm6 libxext6 && rm -rf /var/lib/apt/lists/*
     # Upgrade pip, setuptools and prepare the environment
     python -m pip install --no-cache-dir --upgrade pip setuptools virtualenv
-    # Create the virtual environment
-    cd /opt
-    python -m venv oplab_pipeline_env
-    # Activate the virtual environment
-    . oplab_pipeline_env/bin/activate
-    # Install the python dependencies
-    python -m pip install --no-cache-dir -r requirements.txt
-    python -m pip install --extra-index-url https://rospypi.github.io/simple/ rosbag
-    python -m pip install roslz4 --extra-index-url https://rospypi.github.io/simple/
-    # Change folder to the copied git folder
-    cd /opt/oplab_pipeline_git
-    # Install the python package
-    python -m pip install --no-cache-dir .
+    # Create the virtual environment and activate the virtual environment
+    cd /opt \
+        && python -m venv oplab_pipeline_env \
+        && source oplab_pipeline_env/bin/activate \
+        && source /opt/ros/noetic/setup.bash
+    # Install the python dependencies, change folder to the copied git folder and install the python package
+    cd /opt/oplab_pipeline_git \
+        && python -m pip install --no-cache-dir -r requirements.txt \
+        && python -m pip install --extra-index-url https://rospypi.github.io/simple/ rosbag \
+        && python -m pip install --extra-index-url https://rospypi.github.io/simple/ roslz4 \
+        && python -m pip install --no-cache-dir .
 
 %runscript
     echo ""
