@@ -7,18 +7,25 @@ See LICENSE.md file in the project root for full license information.
 """
 
 import os
+from pathlib import Path
 
-from auv_nav.sensors import Altitude, BodyVelocity, Category, Depth, Orientation, Usbl
+from auv_nav.sensors import (
+    Altitude,
+    BodyVelocity,
+    Camera,
+    Category,
+    Depth,
+    Orientation,
+    Usbl,
+)
+from auv_nav.tools.time_conversions import read_timezone
 from oplab import Console
 from oplab.folder_structure import get_raw_folder
 
 # fmt: off
-
 ROSBAG_IS_AVAILABLE = False
-
 try:
     import rosbag
-
     ROSBAG_IS_AVAILABLE = True
 except ImportError:
     Console.warn("rosbag is not available")
@@ -27,19 +34,18 @@ except ImportError:
         "pip install --extra-index-url",
         "https://rospypi.github.io/simple/ rosbag",
     )
-
 # fmt: on
 
 
 def rosbag_topic_worker(
-    bagfile, wanted_topic, data_object, data_method, data_list, output_format
+    bagfile_list, wanted_topic, data_object, data_list, output_format, output_dir
 ):
     """Process a topic from a rosbag calling a method from an object
 
     Parameters
     ----------
-    bag : rosbag
-        python rosbag object
+    bagfile_list : list
+        list of paths to rosbags
     wanted_topic : str
         Wanted topic
     data_object : object
@@ -50,6 +56,8 @@ def rosbag_topic_worker(
         List of data output
     output_format : str
         Output format
+    output_dir: str
+        Output directory
 
     Returns
     -------
@@ -58,14 +66,19 @@ def rosbag_topic_worker(
     """
     if wanted_topic is None:
         Console.quit("data_method for bagfile is not specified for topic", wanted_topic)
-    bag = rosbag.Bag(bagfile, "r")
-    for topic, msg, _ in bag.read_messages(topics=[wanted_topic]):
-        if topic == wanted_topic:
-            func = getattr(data_object, data_method)
-            func(msg)
-            if data_object.valid():
-                data = data_object.export(output_format)
-                data_list.append(data)
+    for bagfile in bagfile_list:
+        bag = rosbag.Bag(bagfile, "r")
+        for topic, msg, _ in bag.read_messages(topics=[wanted_topic]):
+            if topic == wanted_topic:
+                func = getattr(data_object, "from_ros")
+                type_str = str(type(msg))
+                # rosbag library does not store a clean message type,
+                # so we need to make it ourselves from a dirty string
+                msg_type = type_str.split(".")[1][1:-2].replace("__", "/")
+                func(msg, msg_type, output_dir)
+                if data_object.valid():
+                    data = data_object.export(output_format)
+                    data_list.append(data)
     return data_list
 
 
@@ -91,11 +104,7 @@ def parse_rosbag(mission, vehicle, category, output_format, outpath):
         Measurement data list
     """
     if not ROSBAG_IS_AVAILABLE:
-        Console.error("Rosbag is not available. Please install it by calling")
-        Console.error(
-            "pip install --extra-index-url https://rospypi.github.io/simple/ rosbag"
-        )
-        Console.quit("Parser rosbag not available")
+        Console.quit("rosbag is not available and required to parse ROS bagfiles.")
 
     # Get your data from a file using mission paths, for example
     depth_std_factor = mission.depth.std_factor
@@ -124,6 +133,8 @@ def parse_rosbag(mission, vehicle, category, output_format, outpath):
         latitude_reference=origin_latitude,
         longitude_reference=origin_longitude,
     )
+    camera = Camera()
+    camera.sensor_string = mission.image.cameras[0].name
 
     body_velocity.sensor_string = "rosbag"
     orientation.sensor_string = "rosbag"
@@ -131,9 +142,29 @@ def parse_rosbag(mission, vehicle, category, output_format, outpath):
     altitude.sensor_string = "rosbag"
     usbl.sensor_string = "rosbag"
 
+    # Adjust timezone offsets
+    body_velocity.tz_offset_s = (
+        read_timezone(mission.velocity.timezone) * 60 + mission.velocity.timeoffset
+    )
+    orientation.tz_offset_s = (
+        read_timezone(mission.orientation.timezone) * 60
+        + mission.orientation.timeoffset
+    )
+    depth.tz_offset_s = (
+        read_timezone(mission.depth.timezone) * 60 + mission.depth.timeoffset
+    )
+    altitude.tz_offset_s = (
+        read_timezone(mission.altitude.timezone) * 60 + mission.altitude.timeoffset
+    )
+    usbl.tz_offset_s = (
+        read_timezone(mission.usbl.timezone) * 60 + mission.usbl.timeoffset
+    )
+    camera.tz_offset_s = (
+        read_timezone(mission.image.timezone) * 60 + mission.image.timeoffset
+    )
+
     data_list = []
 
-    method = None
     bagfile = None
     wanted_topic = None
     data_object = None
@@ -141,64 +172,55 @@ def parse_rosbag(mission, vehicle, category, output_format, outpath):
 
     if category == Category.ORIENTATION:
         Console.info("... parsing orientation")
-        filepath = mission.orientation.filepath
+        filepath = get_raw_folder(mission.orientation.filepath)
         bagfile = mission.orientation.filename
+        bagfile_list = list(filepath.glob(bagfile))
         wanted_topic = mission.orientation.topic
         data_object = orientation
-        if wanted_topic == "/turbot/navigator/imu_raw":
-            method = "from_ros_imu"
-        else:
-            Console.quit("Unknown ORIENTATION topic", wanted_topic)
     elif category == Category.VELOCITY:
         Console.info("... parsing velocity")
-        filepath = mission.velocity.filepath
+        filepath = get_raw_folder(mission.velocity.filepath)
         bagfile = mission.velocity.filename
+        bagfile_list = list(filepath.glob(bagfile))
         wanted_topic = mission.velocity.topic
         data_object = body_velocity
-        if wanted_topic == "/turbot/teledyne_explorer_dvl/data":
-            method = "from_ros_teledyne_explorer_dvl_data"
-        else:
-            Console.quit("Unknown VELOCITY topic", wanted_topic)
     elif category == Category.DEPTH:
         Console.info("... parsing depth")
-        filepath = mission.depth.filepath
+        filepath = get_raw_folder(mission.depth.filepath)
         bagfile = mission.depth.filename
+        bagfile_list = list(filepath.glob(bagfile))
         wanted_topic = mission.depth.topic
         data_object = depth
-        if wanted_topic == "/turbot/adis_imu/depth":
-            method = "from_ros_pose_with_covariance_stamped"
-        else:
-            Console.quit("Unknown DEPTH topic", wanted_topic)
     elif category == Category.ALTITUDE:
         Console.info("... parsing altitude")
-        filepath = mission.altitude.filepath
+        filepath = get_raw_folder(mission.altitude.filepath)
         bagfile = mission.altitude.filename
+        bagfile_list = list(filepath.glob(bagfile))
         wanted_topic = mission.altitude.topic
         data_object = altitude
-        if wanted_topic == "/turbot/teledyne_explorer_dvl/data":
-            method = "from_ros_teledyne_explorer_dvl_data"
-        else:
-            Console.quit("Unknown ALTITUDE topic", wanted_topic)
     elif category == Category.USBL:
         Console.info("... parsing position")
-        filepath = mission.usbl.filepath
+        filepath = get_raw_folder(mission.usbl.filepath)
         bagfile = mission.usbl.filename
+        bagfile_list = list(filepath.glob(bagfile))
         wanted_topic = mission.usbl.topic
         data_object = usbl
-        if wanted_topic == "/turbot/modem_delayed":
-            method = "from_ros_pose_with_covariance_stamped"
-        else:
-            Console.quit("Unknown POSITION topic", wanted_topic)
+    elif category == Category.IMAGES:
+        Console.info("... parsing images")
+        filepath = get_raw_folder(mission.image.cameras[0].path)
+        bagfile = "*.bag"
+        bagfile_list = list(filepath.glob(bagfile))
+        wanted_topic = mission.image.cameras[0].topic
+        data_object = camera
     else:
-        Console.quit("Unknown category", category)
+        Console.quit("Unknown category for ROS parser", category)
 
     bagfile = get_raw_folder(outpath / ".." / filepath / bagfile)
+    outpath = Path(outpath).parent
     data_list = rosbag_topic_worker(
-        bagfile, wanted_topic, data_object, method, data_list, output_format,
+        bagfile_list, wanted_topic, data_object, data_list, output_format, outpath
     )
-
     Console.info("... parsed " + str(len(data_list)) + " " + category + " entries")
-
     return data_list
 
 
