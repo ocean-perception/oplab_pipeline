@@ -134,13 +134,13 @@ def main(args=None):
         "--start_image_identifier",
         dest="start_image_identifier",
         default=None,
-        help="Identifier (path) from which onwards states are loaded. Required if relative_pose_uncertainty is True."
+        help="Identifier (path) from which onwards states are loaded. Required if relative_pose_uncertainty is True.",
     )
     subparser_process.add_argument(
         "--end_image_identifier",
         dest="end_image_identifier",
         default=None,
-        help="Identifier (path) up to which states are loaded. Required if relative_pose_uncertainty is True."
+        help="Identifier (path) up to which states are loaded. Required if relative_pose_uncertainty is True.",
     )
     subparser_process.set_defaults(func=call_process_data)
 
@@ -270,7 +270,15 @@ def call_process_data(args):
             "log/" + time_string + "_auv_nav.yaml"
         )
         auv_nav_path.copy(auv_nav_path_log)
-    process(args.path, args.force, args.start_datetime, args.end_datetime, args.relative_pose_uncertainty, args.start_image_identifier, args.end_image_identifier)
+    process(
+        args.path,
+        args.force,
+        args.start_datetime,
+        args.end_datetime,
+        args.relative_pose_uncertainty,
+        args.start_image_identifier,
+        args.end_image_identifier,
+    )
 
 
 if __name__ == "__main__":
