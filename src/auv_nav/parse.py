@@ -279,6 +279,12 @@ def parse_single(filepath, force_overwrite):
                     [mission, vehicle, "images", ftype, outpath],
                 )
             )
+        elif mission.image.format == "rosbag":
+            pool_list.append(
+                pool.apply_async(
+                    parse_rosbag, [mission, vehicle, "images", ftype, outpath],
+                )
+            )
         else:
             Console.quit("Mission image format", mission.image.format, "not supported.")
     if not mission.usbl.empty():

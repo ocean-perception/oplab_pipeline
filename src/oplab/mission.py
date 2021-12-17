@@ -74,6 +74,9 @@ class CameraEntry:
             if "origin" in node:
                 self.origin = node["origin"]
                 Console.info("Using camera " + self.name + " mounted at " + self.origin)
+            self.topic = None
+            if "topic" in node:
+                self.topic = node["topic"]
 
     def write(self, node):
         node["name"] = self.name
