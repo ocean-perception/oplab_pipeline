@@ -522,6 +522,7 @@ def process(
         camera1_ekf_list = copy.deepcopy(camera1_list)
         camera2_ekf_list = copy.deepcopy(camera2_list)
         camera3_ekf_list = copy.deepcopy(camera3_list)
+        camera3_ekf_list_at_dvl = copy.deepcopy(camera3_list)
         # chemical_ekf_list = copy.deepcopy(chemical_list)
 
     # make path for processed outputs
@@ -1197,7 +1198,7 @@ def process(
             renavpath
             / "csv"
             / "ekf"
-            / ("auv_ekf_" + mission.image.cameras[2].name + ".csv")
+            / ("auv_ekf_" + mission.image.cameras[2].name + "_at_dvl.csv")
         )
         laser_camera_states = load_states(
             ekf_state_file_path, start_image_identifier, end_image_identifier
@@ -1210,22 +1211,6 @@ def process(
 
         # Initialise starting state for EKF
         ekf_initial_state = copy.deepcopy(laser_camera_states[0])
-        # laser_camera_states are at the position of the camera but we need to indicate the world coordinates of the DVL
-        # to the EKF
-        dx = camera3_offsets[0] - vehicle.dvl.surge
-        dy = camera3_offsets[1] - vehicle.dvl.sway
-        dz = camera3_offsets[2] - vehicle.dvl.heave
-        [n_offset, e_offset, d_offset] = body_to_inertial(
-            ekf_initial_state.roll,
-            ekf_initial_state.pitch,
-            ekf_initial_state.yaw,
-            dx,
-            dy,
-            dz,
-        )
-        ekf_initial_state.northings -= n_offset
-        ekf_initial_state.eastings -= e_offset
-        ekf_initial_state.depth -= d_offset
 
         ekf_initial_estimate_covariance[
             0:6, 0:6
@@ -1296,13 +1281,16 @@ def process(
         ekf_list = save_ekf_to_list(
             ekf_states, mission, vehicle, dead_reckoning_dvl_list
         )
+        ekf_list_dvl = save_ekf_to_list(
+            ekf_states, mission, vehicle, dead_reckoning_dvl_list, False
+        )
 
     if compute_relative_pose_uncertainty:
         camera3_ekf_list_cropped = update_camera_list(
             camera3_ekf_list_cropped,
             ekf_list,
-            origin_offsets,
-            camera3_offsets,
+            [0, 0, 0],
+            [0, 0, 0],
             latlon_reference,
         )
         assert len(camera3_ekf_list_cropped) == len(laser_camera_states)
@@ -1317,7 +1305,7 @@ def process(
         plots_folder = renavpath / "interactive_plots"
 
         # Plot uncertainties based on subtracting positions
-        args = [laser_camera_states, plots_folder / "based_on_subtraction"]
+        args = [laser_camera_states, plots_folder / "based_on_subtraction_at_dvl"]
         t = threading.Thread(target=plot_cameras_vs_time, args=args)
         t.start()
         threads.append(t)
@@ -1326,7 +1314,7 @@ def process(
         args = [
             laser_camera_states,
             camera3_ekf_list_cropped,
-            plots_folder / "based_on_ekf_propagation",
+            plots_folder / "based_on_ekf_propagation_at_dvl",
         ]
         t = threading.Thread(
             target=plot_synced_states_and_ekf_list_and_std_from_ekf_vs_time, args=args
@@ -1338,21 +1326,21 @@ def process(
         ekf_csv_folder = renavpath / "csv" / "ekf"
         if len(mission.image.cameras) > 2:
             filename_cov_from_ekf = (
-                "auv_ekf_cov_based_on_ekf_propagation_" + mission.image.cameras[2].name
+                "auv_ekf_cov_based_on_ekf_propagation_" + mission.image.cameras[2].name + "_at_dvl"
             )
             filename_cov_from_subtract = (
-                "auv_ekf_cov_based_on_subtraction_" + mission.image.cameras[2].name
+                "auv_ekf_cov_based_on_subtraction_" + mission.image.cameras[2].name + "_at_dvl"
             )
         elif len(mission.image.cameras) == 2:
             filename_cov_from_ekf = (
                 "auv_ekf_cov_based_on_ekf_propagation_"
                 + mission.image.cameras[1].name
-                + "_laser"
+                + "_laser_at_dvl"
             )
             filename_cov_from_subtract = (
                 "auv_ekf_cov_based_on_subtraction_"
                 + mission.image.cameras[1].name
-                + "_laser"
+                + "_laser_at_dvl"
             )
 
         # Write out uncertainties based on subtracting positions
@@ -1400,6 +1388,13 @@ def process(
             ekf_list,
             origin_offsets,
             camera3_offsets,
+            latlon_reference,
+        )
+        camera3_ekf_list_at_dvl = update_camera_list(
+            camera3_ekf_list_at_dvl,
+            ekf_list_dvl,
+            [0, 0, 0],
+            [0, 0, 0],
             latlon_reference,
         )
 
@@ -1743,6 +1738,17 @@ def process(
                     )
                     t.start()
                     threads.append(t)
+                    t = threading.Thread(
+                        target=write_csv,
+                        args=[
+                            ekfcsvpath,
+                            camera3_ekf_list_at_dvl,
+                            "auv_ekf_" + mission.image.cameras[2].name + "_at_dvl",
+                            csv_ekf_camera_3,
+                        ],
+                    )
+                    t.start()
+                    threads.append(t)
             elif len(mission.image.cameras) == 2:
                 t = threading.Thread(
                     target=write_csv,
@@ -1774,6 +1780,17 @@ def process(
                             ekfcsvpath,
                             camera3_ekf_list,
                             "auv_ekf_" + mission.image.cameras[1].name + "_laser",
+                            csv_ekf_camera_3,
+                        ],
+                    )
+                    t.start()
+                    threads.append(t)
+                    t = threading.Thread(
+                        target=write_csv,
+                        args=[
+                            ekfcsvpath,
+                            camera3_ekf_list_at_dvl,
+                            "auv_ekf_" + mission.image.cameras[1].name + "_laser_at_dvl",
                             csv_ekf_camera_3,
                         ],
                     )
