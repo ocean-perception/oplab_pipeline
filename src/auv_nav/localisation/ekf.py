@@ -8,7 +8,7 @@ See LICENSE.md file in the project root for full license information.
 
 import copy
 import math
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 
@@ -1037,24 +1037,26 @@ def save_ekf_to_list(
     mission: Mission,
     vehicle: Vehicle,
     dead_reckoning_dvl_list: List[SyncedOrientationBodyVelocity],
+    shift_to_origin: Optional[bool] = True
 ) -> List[SyncedOrientationBodyVelocity]:
     ekf_list = []
     dr_idx = 1
     for s in ekf_states:
         b = s.toSyncedOrientationBodyVelocity()
 
-        # Offset the measurements from the DVL to the robot origin
-        [x_offset, y_offset, z_offset] = body_to_inertial(
-            b.roll,
-            b.pitch,
-            b.yaw,
-            vehicle.origin.surge - vehicle.dvl.surge,
-            vehicle.origin.sway - vehicle.dvl.sway,
-            vehicle.origin.heave - vehicle.dvl.heave,
-        )
-        b.northings += x_offset
-        b.eastings += y_offset
-        b.depth += z_offset
+        if shift_to_origin:
+            # Offset the measurements from the DVL to the robot origin
+            [x_offset, y_offset, z_offset] = body_to_inertial(
+                b.roll,
+                b.pitch,
+                b.yaw,
+                vehicle.origin.surge - vehicle.dvl.surge,
+                vehicle.origin.sway - vehicle.dvl.sway,
+                vehicle.origin.heave - vehicle.dvl.heave,
+            )
+            b.northings += x_offset
+            b.eastings += y_offset
+            b.depth += z_offset
 
         # Transform to lat lon using origins
         b.latitude, b.longitude = metres_to_latlon(
