@@ -28,12 +28,7 @@ try:
     import rosbag
     ROSBAG_IS_AVAILABLE = True
 except ImportError:
-    Console.warn("rosbag is not available")
-    Console.warn("install it with:")
-    Console.warn(
-        "pip install --extra-index-url",
-        "https://rospypi.github.io/simple/ rosbag",
-    )
+    pass
 # fmt: on
 
 
@@ -104,6 +99,11 @@ def parse_rosbag(mission, vehicle, category, output_format, outpath):
         Measurement data list
     """
     if not ROSBAG_IS_AVAILABLE:
+        Console.error("rosbag is not available")
+        Console.error("install it with:")
+        Console.error(
+            "pip install --extra-index-url", "https://rospypi.github.io/simple/ rosbag",
+        )
         Console.quit("rosbag is not available and required to parse ROS bagfiles.")
 
     # Get your data from a file using mission paths, for example
