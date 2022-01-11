@@ -1,4 +1,4 @@
-from correct_images.loaders import default, xviii
+from correct_images.loaders import default, rosbag, xviii
 from oplab import Console
 
 
@@ -14,6 +14,8 @@ class Loader:
             self._loader = xviii.loader
         elif loader_name == "default":
             self._loader = default.loader
+        elif loader_name == "rosbag":
+            self._loader = rosbag.loader
         else:
             Console.quit("The loader type", loader_name, "is not implemented.")
         Console.info("Loader set to", loader_name)
