@@ -238,7 +238,7 @@ class BodyVelocity(OutputFormat):
         if not self.valid():
             return
         [self.x_velocity, self.y_velocity, self.z_velocity] = body_to_inertial(
-            0, 0, self.yaw_offset, self.x_velocity, self.y_velocity, self.z_velocity
+            0, 0, self.yaw_offset, self.x_velocity, self.y_velocity, self.z_velocity,
         )
         [
             self.x_velocity_std,
@@ -668,6 +668,7 @@ class Orientation(OutputFormat):
             self.yaw_std = np.degrees(np.sqrt(msg.orientation_covariance[8]))
         else:
             Console.quit("Orientation ROS parser for", msg_type, "not supported.")
+        self.apply_offset()
         self.apply_std_offset()
 
     def from_json(self, json, sensor_std):
