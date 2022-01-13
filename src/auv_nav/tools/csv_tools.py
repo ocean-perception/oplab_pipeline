@@ -66,6 +66,7 @@ def write_csv(csv_filepath, data_list, csv_filename, csv_flag=True, mutex=None):
             fileout.close()
             if fileout_cov is not None:
                 fileout_cov.close()
+            Console.info("... done writing {}.csv.".format(csv_filename))
         else:
             Console.warn("Empty data list {}".format(str(csv_filename)))
 
@@ -169,6 +170,7 @@ def write_sidescan_csv(csv_filepath, data_list, csv_filename, csv_flag):
                         fileout.write(str_to_write)
                     except IndexError:
                         break
+            Console.info("... done writing SSS outputs to {}.txt.".format(csv_filename))
         else:
             Console.warn("Empty data list {}".format(str(csv_filename)))
 
@@ -266,5 +268,6 @@ def spp_csv(camera_list, camera_name, csv_filepath, csv_flag):
                     break
             with file.open("w") as fileout:
                 fileout.write(str_to_write)
+            Console.info("... done writing {}.txt.".format(camera_name))
         else:
             Console.warn("Empty data list {}".format(str(camera_name)))
