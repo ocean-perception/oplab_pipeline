@@ -1584,7 +1584,7 @@ def process(
 
         t = threading.Thread(
             target=write_csv,
-            args=[chemical_list, "auv_dr_chemical", drcsvpath, csv_dr_chemical],
+            args=[drcsvpath, chemical_list, "auv_dr_chemical", csv_dr_chemical],
         )
         t.start()
         threads.append(t)
@@ -1610,7 +1610,7 @@ def process(
 
         t = threading.Thread(
             target=write_csv,
-            args=[chemical_list, "auv_pf_chemical", pfcsvpath, csv_pf_chemical],
+            args=[pfcsvpath, chemical_list, "auv_pf_chemical", csv_pf_chemical],
         )
         t.start()
         threads.append(t)
@@ -1624,7 +1624,7 @@ def process(
 
         t = threading.Thread(
             target=write_csv,
-            args=[chemical_list, "auv_ekf_chemical", ekfcsvpath, csv_pf_chemical],
+            args=[ekfcsvpath, chemical_list, "auv_ekf_chemical", csv_pf_chemical],
         )
         t.start()
         threads.append(t)
