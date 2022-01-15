@@ -9,16 +9,28 @@ See LICENSE.md file in the project root for full license information.
 import sys
 
 from pathlib import Path
-from typing import List
+from typing import Union, Optional, List
+from threading import Lock
 
 import numpy as np
 import pandas as pd
 
 from oplab import Console
-from auv_nav.sensors import Camera
+from auv_nav.sensors import (
+    BodyVelocity, Orientation, Depth, Altitude, Usbl, Tide, Other, Camera, SyncedOrientationBodyVelocity
+)
 
 
-def write_csv(csv_filepath, data_list, csv_filename, csv_flag=True, mutex=None):
+def write_csv(
+    csv_filepath: Path,
+    data_list: Union[
+        List[BodyVelocity], List[Orientation], List[Depth], List[Altitude], List[Usbl], List[Tide], List[Other],
+        List[Camera], List[SyncedOrientationBodyVelocity]
+    ],
+    csv_filename: str,
+    csv_flag: Optional[bool] = True,
+    mutex: Optional[Lock] = None
+):
     if csv_flag is True and len(data_list) > 1:
         csv_file = Path(csv_filepath)
 
