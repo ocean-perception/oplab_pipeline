@@ -87,6 +87,12 @@ def parse_ntnu_dvl(mission, vehicle, category, output_format, outpath):
     filepath = mission.velocity.filepath
     log_file_path = get_raw_folder(outpath / ".." / filepath)
 
+    category_str = None
+    if category == Category.VELOCITY:
+        category_str = "velocity"
+    elif category == Category.ALTITUDE:
+        category_str = "altitude"
+
     velocity_std_factor = mission.velocity.std_factor
     velocity_std_offset = mission.velocity.std_offset
     heading_offset = vehicle.dvl.yaw
@@ -96,6 +102,9 @@ def parse_ntnu_dvl(mission, vehicle, category, output_format, outpath):
     altitude = Altitude(altitude_std_factor=mission.altitude.std_factor)
 
     data_list = []
+
+    num_entries = 0
+    num_valid_entries = 0
 
     # For each log file
     for log_file in log_file_path.glob("*.log"):
@@ -107,17 +116,22 @@ def parse_ntnu_dvl(mission, vehicle, category, output_format, outpath):
             # For each row in the file
             for index, row in df.iterrows():
                 body_velocity.from_ntnu_dvl(str(log_file.name), row)
+                num_entries += 1
                 if body_velocity.valid():
                     # DVL provides -32 when no bottom lock
                     data = body_velocity.export(output_format)
+                    num_valid_entries += 1
                     data_list.append(data)
         elif category == Category.ALTITUDE:
             Console.info("... parsing altitude")
             # For each row in the file
             for index, row in df.iterrows():
+                num_entries += 1
                 altitude.from_ntnu_dvl(str(log_file.name), row)
-                data = altitude.export(output_format)
-                data_list.append(data)
+                if altitude.valid():
+                    num_valid_entries += 1
+                    data = altitude.export(output_format)
+                    data_list.append(data)
 
         elif category == Category.ORIENTATION:
             Console.quit("NTNU DVL parser has no ORIENTATION available")
@@ -127,5 +141,14 @@ def parse_ntnu_dvl(mission, vehicle, category, output_format, outpath):
             Console.quit("NTNU DVL parser has no USBL available")
         else:
             Console.quit("NTNU DVL parser has no category", category, "available")
+
+    Console.info(
+        "... parsed",
+        num_entries,
+        "entries, of which",
+        num_valid_entries,
+        "are valid for category",
+        category_str,
+    )
 
     return data_list
