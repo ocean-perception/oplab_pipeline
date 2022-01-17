@@ -228,7 +228,7 @@ def oplab_to_acfr(args):
     vpw.write(dr_list)
     Console.info("Vehicle pose written to", vf)
 
-    if len(mission.image.cameras) == 0:
+    if not mission.image.cameras:
         Console.warn("No cameras found in the mission file.")
         return
     if len(mission.image.cameras) == 1:

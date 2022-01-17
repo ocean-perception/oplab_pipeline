@@ -9,16 +9,28 @@ See LICENSE.md file in the project root for full license information.
 import sys
 
 from pathlib import Path
-from typing import List
+from typing import Union, Optional, List
+from threading import Lock
 
 import numpy as np
 import pandas as pd
 
 from oplab import Console
-from auv_nav.sensors import Camera
+from auv_nav.sensors import (
+    BodyVelocity, Orientation, Depth, Altitude, Usbl, Tide, Other, Camera, SyncedOrientationBodyVelocity
+)
 
 
-def write_csv(csv_filepath, data_list, csv_filename, csv_flag=True, mutex=None):
+def write_csv(
+    csv_filepath: Path,
+    data_list: Union[
+        List[BodyVelocity], List[Orientation], List[Depth], List[Altitude], List[Usbl], List[Tide], List[Other],
+        List[Camera], List[SyncedOrientationBodyVelocity]
+    ],
+    csv_filename: str,
+    csv_flag: Optional[bool] = True,
+    mutex: Optional[Lock] = None
+):
     if csv_flag is True and len(data_list) > 1:
         csv_file = Path(csv_filepath)
 
@@ -66,6 +78,7 @@ def write_csv(csv_filepath, data_list, csv_filename, csv_flag=True, mutex=None):
             fileout.close()
             if fileout_cov is not None:
                 fileout_cov.close()
+            Console.info("... done writing {}.csv.".format(csv_filename))
         else:
             Console.warn("Empty data list {}".format(str(csv_filename)))
 
@@ -169,6 +182,7 @@ def write_sidescan_csv(csv_filepath, data_list, csv_filename, csv_flag):
                         fileout.write(str_to_write)
                     except IndexError:
                         break
+            Console.info("... done writing SSS outputs to {}.txt.".format(csv_filename))
         else:
             Console.warn("Empty data list {}".format(str(csv_filename)))
 
@@ -266,5 +280,6 @@ def spp_csv(camera_list, camera_name, csv_filepath, csv_flag):
                     break
             with file.open("w") as fileout:
                 fileout.write(str_to_write)
+            Console.info("... done writing {}.txt.".format(camera_name))
         else:
             Console.warn("Empty data list {}".format(str(camera_name)))
