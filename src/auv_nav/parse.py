@@ -97,7 +97,6 @@ def parse(filepath, force_overwrite, merge):
         parse_single(p, force_overwrite)
 
     if merge and len(filepath) > 1:
-
         Console.info("Merging the dives...")
 
         # Generate a merged output

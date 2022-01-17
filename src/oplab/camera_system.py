@@ -15,6 +15,39 @@ from .console import Console
 from .filename_to_date import FilenameToDate
 from .folder_structure import get_raw_folder
 
+# fmt: off
+ROSBAG_IS_AVAILABLE = False
+try:
+    import rosbag
+    from cv_bridge import CvBridge
+    ROSBAG_IS_AVAILABLE = True
+except ImportError:
+    pass
+# fmt: on
+
+
+def rosbag_image_loader(img_topic, bagfile):
+    """Load an image from a ROS bagfile"""
+    if not ROSBAG_IS_AVAILABLE:
+        raise ImportError("ROS bagfile support is not available.")
+    bridge = CvBridge()
+    with rosbag.Bag(str(bagfile)) as bag:
+        for topic, msg, t in bag.read_messages(topics=[str(img_topic)]):
+            if topic == str(img_topic):
+                return bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
+    return None
+
+
+def get_image_size(image_matrix):
+    image_properties = [None, None, None]
+    image_properties[0] = image_matrix.shape[0]
+    image_properties[1] = image_matrix.shape[1]
+    if len(image_matrix.shape) == 3:
+        image_properties[2] = image_matrix.shape[2]
+    else:
+        image_properties[2] = 1
+    return image_properties
+
 
 class CameraEntry:
     """
@@ -31,6 +64,8 @@ class CameraEntry:
     def __init__(self, node=None, raw_folder=None):
         self._image_list = []
         self._stamp_list = []
+        self.bagfile_list = []
+        self.topic = None
         self._image_properties = []
         self.raw_folder = Path.cwd()
         if raw_folder is not None:
@@ -45,6 +80,8 @@ class CameraEntry:
             self.timestamp_file = node.get("timestamp_file", None)
             self.columns = node.get("columns", None)
             self.filename_to_date = node.get("filename_to_date", None)
+            if self.extension == "bag":
+                return
             if self.timestamp_file is None and self.filename_to_date is None:
                 Console.error(
                     "The camera ", self.name, " is missing its timestamp format",
@@ -78,7 +115,7 @@ class CameraEntry:
         Returns:
             list: a list of image paths
         """
-        if len(self._image_list) > 0:
+        if self._image_list:
             return self._image_list
         raw_dir = get_raw_folder(self.raw_folder)
 
@@ -134,7 +171,7 @@ class CameraEntry:
         return self._stamp_list
 
     @property
-    def image_properties(self):
+    def image_properties(self, image_topic=None):
         imagelist = self.image_list
         image_path = imagelist[0]
 
@@ -147,17 +184,17 @@ class CameraEntry:
             or self.extension == "PNG"
         ):
             image_matrix = imageio.imread(image_path)
-            image_shape = image_matrix.shape
-            self._image_properties.append(image_shape[0])
-            self._image_properties.append(image_shape[1])
-            if len(image_shape) == 3:
-                self._image_properties.append(image_shape[2])
-            else:
-                self._image_properties.append(1)
+            self._image_properties = get_image_size(image_matrix)
         # read raw
         elif self.extension == "raw":
             # TODO: provide a raw reader and get these properties from the file
             self._image_properties = [1024, 1280, 1]
+        elif self.extension == "bag":
+            for image_path in imagelist:
+                image_matrix = rosbag_image_loader(self.topic, image_path)
+                if image_matrix is not None:
+                    self._image_properties = get_image_size(image_matrix)
+                    break
         else:
             Console.quit("Extension", self.extension, "not supported")
         return self._image_properties
