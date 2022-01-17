@@ -198,13 +198,16 @@ class AcfrVehiclePoseParser:
 
 class AcfrVehiclePoseWriter:
     def __init__(self, filename, origin_latitude, origin_longitude):
-        self.filename = filename
+        self.filename = Path(filename)
         self.origin_latitude = origin_latitude
         self.origin_longitude = origin_longitude
 
     def write(self, dr_list):
         """Writes a DR list to an ACFR vehicle pose file"""
-        with open(self.filename, "w") as f:
+        if not self.filename.exists():
+            self.filename.parent.mkdir(parents=True, exist_ok=True)
+            self.filename.touch()
+        with self.filename.open("w") as f:
             f.write(header)
             f.write("ORIGIN_LATITUDE  " + str(self.origin_latitude) + "\n")
             f.write("ORIGIN_LONGITUDE " + str(self.origin_longitude) + "\n")

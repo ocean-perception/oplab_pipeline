@@ -272,6 +272,8 @@ class AcfrStereoPoseWriter:
             f.write("ORIGIN_LATITUDE  " + str(self.origin_latitude) + "\n")
             f.write("ORIGIN_LONGITUDE " + str(self.origin_longitude) + "\n")
             for i, (c1, c2) in enumerate(zip(cam1_list, cam2_list)):
+                c1.filename = Path(c1.filename).name
+                c2.filename = Path(c2.filename).name
                 f.write(
                     str(i)
                     + " \t"

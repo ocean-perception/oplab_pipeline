@@ -14,11 +14,15 @@ def parse_eiva_navipac(mission, vehicle, category, output_format, outpath):
     # Get your data from a file using mission paths, for example
     # Get your data from a file using mission paths, for example
     filepath = None
+    category_str = None
     if category == Category.ORIENTATION:
+        category_str = "orientation"
         filepath = mission.orientation.filepath
     elif category == Category.DEPTH:
+        category_str = "depth"
         filepath = mission.depth.filepath
     elif category == Category.USBL:
+        category_str = "usbl"
         filepath = mission.usbl.filepath
 
     log_file_path = get_raw_folder(outpath / ".." / filepath)
@@ -42,6 +46,9 @@ def parse_eiva_navipac(mission, vehicle, category, output_format, outpath):
 
     data_list = []
 
+    num_entries = 0
+    num_valid_entries = 0
+
     # For each log file
     for log_file in log_file_path.glob("*_G.NPD"):
         # Open the log file
@@ -53,29 +60,48 @@ def parse_eiva_navipac(mission, vehicle, category, output_format, outpath):
                 for line in filein.readlines():
                     if line.startswith("R132  4") and "$PRDID" in line:
                         orientation.from_eiva_navipac(line)
+                        num_entries += 1
                         if orientation.roll is None:
                             continue
-                        data = orientation.export(output_format)
-                        data_list.append(data)
+                        if orientation.valid():
+                            num_valid_entries += 1
+                            data = orientation.export(output_format)
+                            data_list.append(data)
             elif category == Category.DEPTH:
                 Console.info("... parsing depth")
                 for line in filein.readlines():
                     if line[0:14] == "D     " + str(usbl_id) + "  19  1":
                         depth.from_eiva_navipac(line)
-                        data = depth.export(output_format)
-                        data_list.append(data)
+                        num_entries += 1
+                        if depth.valid():
+                            num_valid_entries += 1
+                            data = depth.export(output_format)
+                            data_list.append(data)
             elif category == Category.USBL:
                 Console.info("... parsing USBL")
                 for line in filein.readlines():
                     if line.startswith("P  D") and int(line[6:10]) == usbl_id:
+                        num_entries += 1
                         usbl.from_eiva_navipac(line)
-                        data = usbl.export(output_format)
-                        data_list.append(data)
+                        if usbl.valid():
+                            num_valid_entries += 1
+                            data = usbl.export(output_format)
+                            data_list.append(data)
             elif category == Category.ALTITUDE:
                 Console.quit("EIVA Navipac parser has no ALTITUDE available")
             elif category == Category.VELOCITY:
                 Console.quit("EIVA Navipac parser has no VELOCITY available")
             else:
-                Console.quit("NTNU DVL parser has no category", category, "available")
+                Console.quit(
+                    "EIVA Navipac parser has no category", category, "available"
+                )
+    Console.info(
+        "Processed",
+        num_entries,
+        "entries , of which",
+        num_valid_entries,
+        "are valid for category",
+        category_str,
+    )
 
     return data_list
