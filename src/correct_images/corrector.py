@@ -456,7 +456,7 @@ class Corrector:
         if self.user_specified_image_list == "none":
             distance_csv_path = Path(self.altitude_csv_path)
         else:
-            distance_csv_path = Path(self.path_config) / self.trimmed_csv_path
+            distance_csv_path = Path(self.path_config) / self.trimmed_csv_path # TODO: should be in processed
 
         # Check if file exists
         if not distance_csv_path.exists():
@@ -679,7 +679,7 @@ class Corrector:
             )
 
             # Useful if fails, to reload precomputed numpyfiles.
-            # TODO offer as a new step.
+            # TODO: offer as a new step.
             # self.image_attenuation_parameters = np.load(
             #   self.attenuation_params_filepath)
             # self.correction_gains = np.load(self.correction_gains_filepath)
