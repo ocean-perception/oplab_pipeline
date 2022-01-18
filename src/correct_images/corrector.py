@@ -99,6 +99,12 @@ class Corrector:
             """Load general configuration parameters"""
             self.correction_method = self.correct_config.method
             if self.correction_method == "colour_correction":
+                if self.correct_config.color_correction is None:
+                    Console.error(
+                        "No color correction parameters found in the config file"
+                    )
+                    Console.error("Please populate the color_correction section")
+                    Console.quit("Malformed correct_images.yaml file")
                 self.distance_metric = (
                     self.correct_config.color_correction.distance_metric
                 )

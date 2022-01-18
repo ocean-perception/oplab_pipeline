@@ -229,6 +229,11 @@ def call_rescale(args):
     # install freeimage plugins if not installed
     imageio.plugins.freeimage.download()
 
+    if correct_config.camerarescale is None:
+        Console.error("Camera rescale configuration not found")
+        Console.error("Please populate the correct_images.yaml file with a rescale configuration")
+        Console.quit("Malformed correct_images.yaml file")
+
     # obtain parameters for rescale from correct_config
     rescale_cameras = correct_config.camerarescale.rescale_cameras
 
