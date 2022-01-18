@@ -129,23 +129,54 @@ def call_parse(args):
         path = path_list[0]
         Console.info("Single path provided, normal single dive mode...")
     else:
-        Console.warn("Multiple paths provided. Checking...")
+        Console.warn("Multiple paths provided [", len(path_list), "]. Checking each path...")
         for path in path_list:
             # chec if path is valid
             if not path.exists():
-                Console.error("Path", path, "does not exist!")
+                Console.error("Path", path, "does not exist! Exiting...")
                 sys.exit(1)
             else:
                 Console.info("\t", path, " [OK]")
-        
-        Console.error("Multiple paths provided, not supported yet...")
-        return
+        Console.error("Multiple paths provided. WORK IN PROGRESS, NOT FULLY IMPLEMENTED YET...")
 
-    
+#########################################################################################
+# correct_images_yamls = [get_config(x) for x in dives]
+# ret = check_same_cameras(correct_images_yamls)
+# if not ret:
+#     quit()
 
+    Console.warn("Populating list of correct_images.yaml files for each dive")
+    # Populating the configuration and camerasystem lists for each dive path
+    correct_config_list, camerasystem_list = zip(*[load_configuration_and_camera_system(path) for path in path_list])
+    # Let's check that both lists have the same length and are not empty
+    if len(correct_config_list) != len(camerasystem_list):
+        Console.error("Number of [camerasystem] and [configuration] differ!")
+        sys.exit(1)
+    if len(correct_config_list) == 0:
+        Console.error("No valid camerasystem/configuration found!")
+        sys.exit(1)
 
+    # When in multidive mode, check if all camerasystem are the same. For this we test camera_system.camera_system
+    if len(camerasystem_list) > 1: # this test is still valid for single dive mode, so we could remove this if
+        camera_system = camerasystem_list[0]
+        for cs in camerasystem_list: # the first entry will be repeated, no problem with that
+            if not camera_system.camera_system == cs.camera_system:
+                Console.error("Camera systems differ!")
+                Console.error("\tFirst camera system (reference) ", camera_system.camera_system)
+                Console.error("\tWrong camera system (current)   ", cs.camera_system)
+                sys.exit(1)
+        Console.warn("Camera systems are the same for all dives.")  # so far so good
 
-    correct_config, camerasystem = load_configuration_and_camera_system(path)
+#########################################################################################
+# cameras = get_cameras(correct_images_yaml[0])
+# for camera in cameras:
+#    c = Corrector(camera)
+#    for d in dives:
+#        c.parse(d)
+
+    #correct_config , camerasystem = load_configuration_and_camera_system(path)
+#    correct_config = correct_config_list[0]
+    camerasystem = camerasystem_list[0]     # we peek at the first entry, so we can use it for all dives
 
     for camera in camerasystem.cameras:
         Console.info("Parsing for camera", camera.name)
@@ -167,18 +198,6 @@ def call_parse(args):
         "corrected images...",
     )
 
-# Proposed approach (discussed Jan 17th)
-# correct_images_yamls = [get_config(x) for x in dives]
-# ret = check_same_cameras(correct_images_yamls)
-# if not ret:
-#     quit()
-
-# cameras = get_cameras(correct_images_yaml[0])
-
-# for camera in cameras:
-#    c = Corrector(camera)
-#    for d in dives:
-#        c.parse(d)
 
 def call_process(args):
     """Perform processing on source images using correction parameters
