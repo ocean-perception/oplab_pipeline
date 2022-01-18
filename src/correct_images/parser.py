@@ -303,19 +303,19 @@ class CorrectConfig:
         #   .window_size 
 
         if self.method != other.method:
-            Console.warn("Method does not match:", self.method, " / " other.method)")
+            Console.warn("Method does not match:", self.method, " / ", other.method)
             return False
 
         if self.color_correction.distance_metric != other.color_correction.distance_metric:
-            Console.warn("Distance metric does not match:", self.color_correction.distance_metric, " / " other.color_correction.distance_metric)
+            Console.warn("Distance metric does not match:", self.color_correction.distance_metric, " / ", other.color_correction.distance_metric)
             return False
 
         if self.color_correction.smoothing != other.color_correction.smoothing:
-            Console.warn("Smoothing does not match:", self.color_correction.smoothing, " / " other.color_correction.smoothing)
+            Console.warn("Smoothing does not match:", self.color_correction.smoothing, " / ", other.color_correction.smoothing)
             return False
 
         if self.color_correction.window_size != other.color_correction.window_size:
-            Console.warn("Window size does not match:", self.color_correction.window_size, " / " other.color_correction.window_size)
+            Console.warn("Window size does not match:", self.color_correction.window_size, " / ", other.color_correction.window_size)
             return False
 
         return True

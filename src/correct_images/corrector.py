@@ -224,7 +224,10 @@ class Corrector:
         else:
             self.loader.set_loader("default")
 
-    def parse(self):
+    def parse(self, path_list, correct_config_list):
+
+
+
         # Set the user specified list if any
         self.user_specified_image_list = self.user_specified_image_list_parse
 
