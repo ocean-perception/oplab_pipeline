@@ -276,7 +276,7 @@ class Corrector:
 
         # Create output directories depending on the correction method
         parameters_folder_str = "params_"
-        developed_folder_str = "developed_"
+        developed_folder_str = "corrected_"
 
         subfolder_name = None
         if self.correction_method == "colour_correction":
@@ -290,15 +290,15 @@ class Corrector:
                 parameters_folder_str += "dm"
                 developed_folder_str += "dm"
             subfolder_name = (
-                "m" + str(int(self.brightness)) + "_std" + str(int(self.contrast))
+                "mean_" + str(int(self.brightness)) + "_std_" + str(int(self.contrast))
             )
         elif self.correction_method == "manual_balance":
             parameters_folder_str += "man"
             developed_folder_str += "man"
-            subfolder_name = ("g_"
+            subfolder_name = ("gain_"
                 + str(self.color_gain_matrix_rgb[0]) + "_"
                 + str(self.color_gain_matrix_rgb[4]) + "_"
-                + str(self.color_gain_matrix_rgb[8]) + "_s_"
+                + str(self.color_gain_matrix_rgb[8]) + "_sub_"
                 + str(self.subtractors_rgb[0]) + "_"
                 + str(self.subtractors_rgb[1]) + "_"
                 + str(self.subtractors_rgb[2])
