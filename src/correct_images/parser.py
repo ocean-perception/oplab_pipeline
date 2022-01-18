@@ -280,3 +280,42 @@ class CorrectConfig:
         self.output_settings = OutputSettings(node)
         node = data["rescale"]
         self.camerarescale = CameraRescale(node)
+
+    def is_equivalent(self, other):
+        """is_equivalent checks if two objects are equivalent
+
+        Parameters
+        ----------
+        other : CorrectConfig Object
+            object to be compared to
+
+        Returns
+        -------
+        bool
+            True if objects are equivalent, False otherwise
+        """
+
+        # Objects are considering equivalent if these properties match
+        # .method
+        # .colour_correction:
+        #   .distance_metric
+        #   .smoothing
+        #   .window_size 
+
+        if self.method != other.method:
+            Console.warn("Method does not match:", self.method, " / " other.method)")
+            return False
+
+        if self.color_correction.distance_metric != other.color_correction.distance_metric:
+            Console.warn("Distance metric does not match:", self.color_correction.distance_metric, " / " other.color_correction.distance_metric)
+            return False
+
+        if self.color_correction.smoothing != other.color_correction.smoothing:
+            Console.warn("Smoothing does not match:", self.color_correction.smoothing, " / " other.color_correction.smoothing)
+            return False
+
+        if self.color_correction.window_size != other.color_correction.window_size:
+            Console.warn("Window size does not match:", self.color_correction.window_size, " / " other.color_correction.window_size)
+            return False
+
+        return True

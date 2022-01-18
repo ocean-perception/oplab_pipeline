@@ -424,7 +424,8 @@ class Corrector:
         """Generate list of source images"""
 
         # Copy the images list from the camera
-        self.camera_image_list = self.camera.image_list
+        self.camera_image_list = self.camera.image_list # TODO: join with existing list
+        # TODO: JOIN at the very end of the current method
 
         # If using colour_correction, we need to read in the navigation
         if self.correction_method == "colour_correction":
@@ -760,8 +761,8 @@ class Corrector:
             )
 
             # save parameters for process
-            np.save(self.corrected_mean_filepath, image_corrected_mean)
-            np.save(self.corrected_std_filepath, image_corrected_std)
+            np.save(self.corrected_mean_filepath, image_corrected_mean) # TODO: make member
+            np.save(self.corrected_std_filepath, image_corrected_std)   # TODO: make member
 
             corrections.save_attenuation_plots(
                 self.attenuation_parameters_folder,
