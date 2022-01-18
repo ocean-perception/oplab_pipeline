@@ -8,7 +8,6 @@ See LICENSE.md file in the project root for full license information.
 
 import os
 import random
-from datetime import datetime
 from pathlib import Path
 
 import imageio
@@ -66,10 +65,9 @@ class Corrector:
 
         # Members for folder paths
         self.output_dir_path = None
-        self.bayer_numpy_dir_path = None
         self.attenuation_parameters_folder = None
-        self.memmap_folder = None
         self.output_images_folder = None
+        self.suffix = None
 
         # Placeholders for process
         self.image_attenuation_parameters = None
@@ -157,26 +155,13 @@ class Corrector:
 
             # Define basic filepaths
             if self.correction_method == "colour_correction":
-                self.attenuation_params_filepath = (
-                    Path(self.attenuation_parameters_folder)
-                    / "attenuation_parameters.npy"
-                )
-                self.correction_gains_filepath = (
-                    Path(self.attenuation_parameters_folder) / "correction_gains.npy"
-                )
-                self.corrected_mean_filepath = (
-                    Path(self.attenuation_parameters_folder)
-                    / "image_corrected_mean.npy"
-                )
-                self.corrected_std_filepath = (
-                    Path(self.attenuation_parameters_folder) / "image_corrected_std.npy"
-                )
-                self.raw_mean_filepath = (
-                    Path(self.attenuation_parameters_folder) / "image_raw_mean.npy"
-                )
-                self.raw_std_filepath = (
-                    Path(self.attenuation_parameters_folder) / "image_raw_std.npy"
-                )
+                p = Path(self.attenuation_parameters_folder)
+                self.attenuation_params_filepath = (p / "attenuation_parameters.npy")
+                self.correction_gains_filepath = (p / "correction_gains.npy")
+                self.corrected_mean_filepath = (p / "image_corrected_mean.npy")
+                self.corrected_std_filepath = (p / "image_corrected_std.npy")
+                self.raw_mean_filepath = (p / "image_raw_mean.npy")
+                self.raw_std_filepath = (p / "image_raw_std.npy")
 
             # Define image loader
             # Use default loader
@@ -277,82 +262,68 @@ class Corrector:
     # numpy files, correction parameters and corrected output images
     def create_output_directories(self):
         """Handle the creation of output directories for each camera"""
+        self.output_dir_path = self.path_processed / "images"
+        self.output_dir_path /= self.camera_name
 
-        # create output directory path
-        image_path = Path(self.camera.image_list[0]).resolve()
-        image_parent_path = image_path.parent
-        output_dir_path = get_processed_folder(image_parent_path)
-        self.output_dir_path = output_dir_path / "attenuation_correction"
-        if not self.output_dir_path.exists():
-            self.output_dir_path.mkdir(parents=True)
+        # Create output directories depending on the correction method
+        parameters_folder_str = "params_"
+        developed_folder_str = "developed_"
 
-        if self.correction_method == "colour_correction":
-            # create path for parameters files
-            attenuation_parameters_folder_name = "params_" + self.camera.name
-            self.attenuation_parameters_folder = (
-                self.output_dir_path / attenuation_parameters_folder_name
-            )
-            if not self.attenuation_parameters_folder.exists():
-                self.attenuation_parameters_folder.mkdir(parents=True)
-
-        # create path for output images
-        output_images_folder_name = "developed_" + self.camera.name
-        self.output_images_folder = self.output_dir_path / output_images_folder_name
-        if not self.output_images_folder.exists():
-            self.output_images_folder.mkdir(parents=True)
-
-        # create folder name for  parameters based on correction method
-        sub_directory_name = "unknown_sub_directory_name"
-        output_folder_name = "unknown_output_folder_name"
+        subfolder_name = None
         if self.correction_method == "colour_correction":
             if self.distance_metric == "none":
-                sub_directory_name = "greyworld_corrected"
+                parameters_folder_str += "ps"
+                developed_folder_str += "ps"
             elif self.distance_metric == "altitude":
-                sub_directory_name = "altitude_corrected"
+                parameters_folder_str += "alt"
+                developed_folder_str += "alt"
             elif self.distance_metric == "depth_map":
-                sub_directory_name = "depth_map_corrected"
-
-            output_folder_name = (
+                parameters_folder_str += "dm"
+                developed_folder_str += "dm"
+            subfolder_name = (
                 "m" + str(int(self.brightness)) + "_std" + str(int(self.contrast))
             )
-
-            # appending params path with sub directory and output folder
-            self.attenuation_parameters_folder = (
-                self.attenuation_parameters_folder / sub_directory_name
-            )
-            if not self.attenuation_parameters_folder.exists():
-                self.attenuation_parameters_folder.mkdir(parents=True)
-            else:
-                dir_temp = self.attenuation_parameters_folder
-                file_list = list(dir_temp.glob("*.npy"))
-                if len(file_list) > 0:
-                    if not self.force:
-                        Console.quit(
-                            "Parameters exist for current configuration.",
-                            "Run parse with Force (-F flag)...",
-                        )
-                    else:
-                        Console.warn(
-                            "Code will overwrite existing parameters for ",
-                            "current configuration...",
-                        )
         elif self.correction_method == "manual_balance":
-            sub_directory_name = "manually_corrected"
-            temp1 = str(datetime.now())
-            temp2 = temp1.split(":")
-            temp3 = temp2[0].split(" ")
-            temp4 = temp3[1] + temp2[1]
-            output_folder_name = "developed_" + temp4
+            parameters_folder_str += "man"
+            developed_folder_str += "man"
+            subfolder_name = ("g_"
+                + str(self.color_gain_matrix_rgb[0]) + "_"
+                + str(self.color_gain_matrix_rgb[4]) + "_"
+                + str(self.color_gain_matrix_rgb[8]) + "_s_"
+                + str(self.subtractors_rgb[0]) + "_"
+                + str(self.subtractors_rgb[1]) + "_"
+                + str(self.subtractors_rgb[2])
+            )
 
-        # appending developed images path with sub directory and output folder
-        self.output_images_folder = (
-            self.output_images_folder / sub_directory_name / output_folder_name
-        )
+        # Accept suffixes for the output directories
+        if self.suffix:
+            parameters_folder_str += "_" + self.suffix
+            developed_folder_str += "_" + self.suffix
+
+        self.attenuation_parameters_folder = self.output_dir_path / parameters_folder_str
+        self.output_images_folder = self.output_dir_path / developed_folder_str
+        self.output_images_folder /= subfolder_name
+
+        if not self.attenuation_parameters_folder.exists():
+            self.attenuation_parameters_folder.mkdir(parents=True)
+        else:
+            file_list = list(self.attenuation_parameters_folder.glob("*.npy"))
+            if len(file_list) > 0:
+                if not self.force:
+                    Console.quit(
+                        "Parameters exist for current configuration.",
+                        "Run parse with Force (-F flag)...",
+                    )
+                else:
+                    Console.warn(
+                        "Code will overwrite existing parameters for ",
+                        "current configuration...",
+                    )
+
         if not self.output_images_folder.exists():
             self.output_images_folder.mkdir(parents=True)
         else:
-            dir_temp = self.output_images_folder
-            file_list = list(dir_temp.glob("*.*"))
+            file_list = list(self.output_images_folder.glob("*.*"))
             if len(file_list) > 0:
                 if not self.force:
                     Console.quit(
@@ -364,6 +335,7 @@ class Corrector:
                         "Code will overwrite existing corrected images for ",
                         "current configuration...",
                     )
+
 
     def get_camera_idx(self):
         idx = [
