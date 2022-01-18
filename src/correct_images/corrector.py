@@ -265,7 +265,7 @@ class Corrector:
     # numpy files, correction parameters and corrected output images
     def create_output_directories(self):
         """Handle the creation of output directories for each camera"""
-        self.output_dir_path = self.path_processed / "images"
+        self.output_dir_path = self.path_processed / "image"
         self.output_dir_path /= self.camera_name
 
         # Create output directories depending on the correction method
