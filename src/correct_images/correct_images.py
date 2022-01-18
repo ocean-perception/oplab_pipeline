@@ -124,22 +124,26 @@ def call_parse(args):
     """
 
     # Now args.path is a list of paths (str / os.PathLike objects)
-    # We need to convert it to a list of Path objects
     path_list = [Path(path).resolve() for path in args.path]
-    # then we print the list content
-    Console.info("Paths to be parsed:", path_list)
-    # Also, if the number of paths is 1, we can use the single path
-    # as a Path object
     if len(path_list) == 1:
         path = path_list[0]
-        Console.warn("Single path provided, using as root path...")
+        Console.info("Single path provided, normal single dive mode...")
     else:
-        path = path_list[0]
-        Console.warn("Multiple paths provided. Using first path as root path...")
+        Console.warn("Multiple paths provided. Checking...")
+        for path in path_list:
+            # chec if path is valid
+            if not path.exists():
+                Console.error("Path", path, "does not exist!")
+                sys.exit(1)
+            else:
+                Console.info("\t", path, " [OK]")
+        
+        Console.error("Multiple paths provided, not supported yet...")
+        return
 
-    # Check if we have a multi-dive setup
-    # TODO: process on a per-dive basis
-    # Check for every item of the dive_path list if it is a dive folder
+    
+
+
 
     correct_config, camerasystem = load_configuration_and_camera_system(path)
 
