@@ -174,7 +174,7 @@ def call_parse(args):
                 Console.error("\tFirst correct_config (reference) ", correct_config)
                 Console.error("\tWrong correct_config (current)   ", cc)
                 sys.exit(1)
-        Console.warn("Correct_configs are the same for all dives.")
+        Console.warn("Correct_configs are equivalent for all dives.")
 
 #########################################################################################
     camerasystem = camerasystem_list[0]     # we peek at the first entry and use it as template for all dives
