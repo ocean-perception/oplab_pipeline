@@ -176,11 +176,12 @@ def call_parse(args):
 
     #correct_config , camerasystem = load_configuration_and_camera_system(path)
 #    correct_config = correct_config_list[0]
-    camerasystem = camerasystem_list[0]     # we peek at the first entry, so we can use it for all dives
+    camerasystem = camerasystem_list[0]     # we peek at the first entry and use it as template for all dives
 
     for camera in camerasystem.cameras:
         Console.info("Parsing for camera", camera.name)
-
+        # Create a Corrector object for each camera
+        corrector = Corrector(args.force, camera, correct_config=None)
         if len(camera.image_list) == 0:
             Console.info("No images found for the camera at the path provided...")
             continue
@@ -189,7 +190,8 @@ def call_parse(args):
             # for every single dive
             # WARNING this is not a good idea as we are not checking if the corrector is already created
             # WARNING we are assuming that each dive has the same camera configuration
-            corrector = Corrector(args.force, camera, correct_config, path)
+            # corrector = Corrector(args.force, camera, correct_config, path)
+            corrector.load_configuration(correct_config=correct_config) # per dive configuration
             if corrector.camera_found:
                 corrector.parse()
 
