@@ -293,12 +293,13 @@ def load_configuration_and_camera_system(path):
     mission = Mission(path_mission)
 
     # resolve path to camera.yaml file
-    temp_path = path_raw_folder / "camera.yaml"
+    camera_yaml_raw_path = path_raw_folder / "camera.yaml"
+    camera_yaml_config_path = path_config_folder / "camera.yaml"
 
     default_file_path_correct_config = None
     camera_yaml_path = None
 
-    if not temp_path.exists():
+    if not camera_yaml_raw_path.exists() and not camera_yaml_config_path.exists():
         Console.info(
             "Not found camera.yaml file in /raw folder...Using default ",
             "camera.yaml file...",
@@ -312,9 +313,7 @@ def load_configuration_and_camera_system(path):
         biocam4000_15c_camera_file = "auv_nav/default_yaml/alr/jc220/camera.yaml"
         hybis_camera_file = "auv_nav/default_yaml/hybis/camera.yaml"
         ntnu_camera_file = "auv_nav/default_yaml/ntnu_stereo/tautra21/camera.yaml"
-        rosbag_extracted_camera_file = (
-            "auv_nav/default_yaml/rosbag/grassmap/camera.yaml"
-        )
+        rosbag_camera_file = "auv_nav/default_yaml/rosbag/grassmap/camera.yaml"
 
         acfr_std_correct_config_file = (
             "correct_images/default_yaml/acfr/correct_images.yaml"
@@ -334,8 +333,8 @@ def load_configuration_and_camera_system(path):
         ntnu_std_correct_config_file = (
             "correct_images/default_yaml/ntnu_stereo/correct_images.yaml"
         )
-        rosbag_extracted_images_std_correct_config_file = (
-            "correct_images/default_yaml/rosbag_extracted_images/correct_images.yaml"
+        rosbag_std_correct_config_file = (
+            "correct_images/default_yaml/rosbag/correct_images.yaml"
         )
 
         Console.info("Image format:", mission.image.format)
@@ -360,30 +359,40 @@ def load_configuration_and_camera_system(path):
         elif mission.image.format == "ntnu_stereo":
             camera_yaml_path = root / ntnu_camera_file
             default_file_path_correct_config = root / ntnu_std_correct_config_file
-        elif mission.image.format == "rosbag_extracted_images":
-            camera_yaml_path = root / rosbag_extracted_camera_file
-            default_file_path_correct_config = (
-                root / rosbag_extracted_images_std_correct_config_file
-            )
+        elif mission.image.format == "rosbag":
+            camera_yaml_path = root / rosbag_camera_file
+            default_file_path_correct_config = root / rosbag_std_correct_config_file
+            camera_yaml_path.copy(camera_yaml_config_path)
+            Console.info("Copied camera.yaml file to config folder. Please edit it.")
+            Console.info("The file is located at", camera_yaml_config_path)
         else:
             Console.quit(
                 "Image system in camera.yaml does not match with mission.yaml",
                 "Provide correct camera.yaml in /raw folder... ",
             )
+    elif camera_yaml_raw_path.exists() and not camera_yaml_config_path.exists():
+        Console.info("Found camera.yaml file in /raw folder")
+        camera_yaml_path = camera_yaml_raw_path
+    elif not camera_yaml_raw_path.exists() and camera_yaml_config_path.exists():
+        Console.info("Found camera.yaml file in /config folder")
+        camera_yaml_path = camera_yaml_config_path
+    elif camera_yaml_raw_path.exists() and camera_yaml_config_path.exists():
+        Console.info("Found camera.yaml both in /raw and in /config folder")
+        Console.info("Using camera.yaml from /config folder")
+        camera_yaml_path = camera_yaml_config_path
     else:
-        Console.info("Found camera.yaml file in /raw folder...")
-        camera_yaml_path = temp_path
-
-    Console.info("camera.yaml:", camera_yaml_path)
-    Console.info("raw folder:", path_raw_folder)
+        Console.quit(
+            "rosbag image type requires a camera.yaml file in /config folder",
+            "Please provide camera.yaml file in /config folder",
+        )
 
     # instantiate the camera system and setup cameras from mission and
     # config files / auv_nav
     camera_system = CameraSystem(camera_yaml_path, path_raw_folder)
     if camera_system.camera_system != mission.image.format:
         Console.quit(
-            "Image system in camera.yaml does not match with mission.yaml...",
-            "Provide correct camera.yaml in /raw folder...",
+            "Image system in camera.yaml does not match with mission.yaml",
+            "Provide correct camera.yaml in /raw folder",
         )
 
     # check for correct_config yaml path

@@ -11,6 +11,8 @@ import uuid
 import cv2
 import numpy as np
 
+from oplab import Console
+
 from ..loaders import default
 
 
@@ -65,6 +67,10 @@ def memmap_loader(
     new_width=None,
     new_height=None,
 ):
+    if image_list[idx] is None:
+        Console.error("Image at idx", idx, "is None")
+        Console.error("Please check your navigation CSV for any missing values")
+        Console.quit("Image list is malformed")
     np_im = loader(image_list[idx]).astype(np.float32)
 
     dimensions = np_im.shape
