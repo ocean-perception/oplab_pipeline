@@ -58,7 +58,18 @@ def main(args=None):
     subparser_parse = subparsers.add_parser(
         "parse", help="Compute the correction parameters"
     )
-    subparser_parse.add_argument("path", help="Path to raw directory till dive.")
+
+#   subparser_parse.add_argument("path", help="Path to raw directory till dive.")
+
+    subparser_parse.add_argument(
+        "path",
+#        default=".",
+        nargs="+",
+        help="Folderpath where the (raw) input data is. Needs to be a \
+        subfolder of 'raw' and contain the mission.yaml configuration file.",
+    )
+
+    
     subparser_parse.add_argument(
         "-F",
         "--Force",
@@ -112,13 +123,19 @@ def call_parse(args):
         User provided arguments for path of source images
     """
 
-    path = Path(args.path).resolve()
-
-    time_string = time.strftime("%Y%m%d_%H%M%S", time.localtime())
-    Console.set_logging_file(
-        get_processed_folder(path)
-        / ("log/" + time_string + "_correct_images_parse.log")
-    )
+    # Now args.path is a list of paths (str / os.PathLike objects)
+    # We need to convert it to a list of Path objects
+    path_list = [Path(path).resolve() for path in args.path]
+    # then we print the list content
+    Console.info("Paths to be parsed:", path_list)
+    # Also, if the number of paths is 1, we can use the single path
+    # as a Path object
+    if len(path_list) == 1:
+        path = path_list[0]
+        Console.warn("Single path provided, using as root path...")
+    else:
+        path = path_list[0]
+        Console.warn("Multiple paths provided. Using first path as root path...")
 
     # Check if we have a multi-dive setup
     # TODO: process on a per-dive basis
@@ -146,6 +163,18 @@ def call_parse(args):
         "corrected images...",
     )
 
+# Proposed approach (discussed Jan 17th)
+# correct_images_yamls = [get_config(x) for x in dives]
+# ret = check_same_cameras(correct_images_yamls)
+# if not ret:
+#     quit()
+
+# cameras = get_cameras(correct_images_yaml[0])
+
+# for camera in cameras:
+#    c = Corrector(camera)
+#    for d in dives:
+#        c.parse(d)
 
 def call_process(args):
     """Perform processing on source images using correction parameters
