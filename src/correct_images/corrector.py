@@ -123,94 +123,106 @@ class Corrector:
         self.image_channels = image_properties[2]
 
         if self.correct_config is not None:
-            """Load general configuration parameters"""
-            self.correction_method = self.correct_config.method
-            if self.correction_method == "colour_correction":
-                self.distance_metric = (
-                    self.correct_config.color_correction.distance_metric
-                )
-                self.distance_path = self.correct_config.color_correction.metric_path
-                self.altitude_max = self.correct_config.color_correction.altitude_max
-                self.altitude_min = self.correct_config.color_correction.altitude_min
-                self.smoothing = self.correct_config.color_correction.smoothing
-                self.window_size = self.correct_config.color_correction.window_size
-                self.outlier_rejection = (
-                    self.correct_config.color_correction.outlier_reject
-                )
-            self.cameraconfigs = self.correct_config.configs.camera_configs
-            self.undistort = self.correct_config.output_settings.undistort_flag
-            self.output_format = (
-                self.correct_config.output_settings.compression_parameter
+            # explicit call to load the correct_config
+            self.load_configuration(self.correct_config)
+
+    # NOTE: we could use an implicit version (correct_config already stored as member)
+    # but in this implementation we force explicit (argument required) call to load_configuration()
+    def load_configuration(self, correct_config=None):
+        if correct_config is None:  #nothing to do here, we expect an explicit call
+            Console.warn("No correct_config provided. Skipping load_configuration()")
+            return 
+
+        self.correct_config = correct_config
+
+        """Load general configuration parameters"""
+        self.correction_method = self.correct_config.method
+        if self.correction_method == "colour_correction":
+            self.distance_metric = (
+                self.correct_config.color_correction.distance_metric
+            )
+            self.distance_path = self.correct_config.color_correction.metric_path
+            self.altitude_max = self.correct_config.color_correction.altitude_max
+            self.altitude_min = self.correct_config.color_correction.altitude_min
+            self.smoothing = self.correct_config.color_correction.smoothing
+            self.window_size = self.correct_config.color_correction.window_size
+            self.outlier_rejection = (
+                self.correct_config.color_correction.outlier_reject
+            )
+        self.cameraconfigs = self.correct_config.configs.camera_configs
+        self.undistort = self.correct_config.output_settings.undistort_flag
+        self.output_format = (
+            self.correct_config.output_settings.compression_parameter
+        )
+
+        # Load camera parameters
+        cam_idx = self.get_camera_idx()
+        self.camera_found = False
+        if cam_idx is None:
+            Console.info(
+                "Camera not included in correct_images.yaml. No",
+                "processing will be done for this camera.",
+            )
+            return
+        else:
+            self.camera_found = True
+        self.user_specified_image_list_parse = self.cameraconfigs[
+            cam_idx
+        ].imagefilelist_parse
+        self.user_specified_image_list_process = self.cameraconfigs[
+            cam_idx
+        ].imagefilelist_process
+
+        if self.correction_method == "colour_correction":
+            # Brighness and contrast are percentages of 255
+            # e.g. brightness of 30 means 30% of 255 = 77
+            self.brightness = float(self.cameraconfigs[cam_idx].brightness)
+            self.contrast = float(self.cameraconfigs[cam_idx].contrast)
+        elif self.correction_method == "manual_balance":
+            self.subtractors_rgb = np.array(
+                self.cameraconfigs[cam_idx].subtractors_rgb
+            )
+            self.color_gain_matrix_rgb = np.array(
+                self.cameraconfigs[cam_idx].color_gain_matrix_rgb
             )
 
-            # Load camera parameters
-            cam_idx = self.get_camera_idx()
-            self.camera_found = False
-            if cam_idx is None:
-                Console.info(
-                    "Camera not included in correct_images.yaml. No",
-                    "processing will be done for this camera.",
-                )
-                return
-            else:
-                self.camera_found = True
-            self.user_specified_image_list_parse = self.cameraconfigs[
-                cam_idx
-            ].imagefilelist_parse
-            self.user_specified_image_list_process = self.cameraconfigs[
-                cam_idx
-            ].imagefilelist_process
+        # Create output directories and needed attributes
+        self.create_output_directories()
 
-            if self.correction_method == "colour_correction":
-                # Brighness and contrast are percentages of 255
-                # e.g. brightness of 30 means 30% of 255 = 77
-                self.brightness = float(self.cameraconfigs[cam_idx].brightness)
-                self.contrast = float(self.cameraconfigs[cam_idx].contrast)
-            elif self.correction_method == "manual_balance":
-                self.subtractors_rgb = np.array(
-                    self.cameraconfigs[cam_idx].subtractors_rgb
-                )
-                self.color_gain_matrix_rgb = np.array(
-                    self.cameraconfigs[cam_idx].color_gain_matrix_rgb
-                )
+        # Define basic filepaths
+        if self.correction_method == "colour_correction":
+            self.attenuation_params_filepath = (
+                Path(self.attenuation_parameters_folder)
+                / "attenuation_parameters.npy"
+            )
+            self.correction_gains_filepath = (
+                Path(self.attenuation_parameters_folder) / "correction_gains.npy"
+            )
+            self.corrected_mean_filepath = (
+                Path(self.attenuation_parameters_folder)
+                / "image_corrected_mean.npy"
+            )
+            self.corrected_std_filepath = (
+                Path(self.attenuation_parameters_folder) / "image_corrected_std.npy"
+            )
+            self.raw_mean_filepath = (
+                Path(self.attenuation_parameters_folder) / "image_raw_mean.npy"
+            )
+            self.raw_std_filepath = (
+                Path(self.attenuation_parameters_folder) / "image_raw_std.npy"
+            )
 
-            # Create output directories and needed attributes
-            self.create_output_directories()
-
-            # Define basic filepaths
-            if self.correction_method == "colour_correction":
-                self.attenuation_params_filepath = (
-                    Path(self.attenuation_parameters_folder)
-                    / "attenuation_parameters.npy"
-                )
-                self.correction_gains_filepath = (
-                    Path(self.attenuation_parameters_folder) / "correction_gains.npy"
-                )
-                self.corrected_mean_filepath = (
-                    Path(self.attenuation_parameters_folder)
-                    / "image_corrected_mean.npy"
-                )
-                self.corrected_std_filepath = (
-                    Path(self.attenuation_parameters_folder) / "image_corrected_std.npy"
-                )
-                self.raw_mean_filepath = (
-                    Path(self.attenuation_parameters_folder) / "image_raw_mean.npy"
-                )
-                self.raw_std_filepath = (
-                    Path(self.attenuation_parameters_folder) / "image_raw_std.npy"
-                )
-
-            # Define image loader
-            # Use default loader
-            self.loader = loader.Loader()
-            self.loader.bit_depth = self.camera.bit_depth
-            if self.camera.extension == "raw":
-                self.loader.set_loader("xviii")
-            elif self.camera.extension == "bag":
-                self.loader.set_loader("rosbag")
-                self.loader.tz_offset_s = tz_offset_s
-            else:
-                self.loader.set_loader("default")
+        # Define image loader
+        # Use default loader
+        self.loader = loader.Loader()
+        self.loader.bit_depth = self.camera.bit_depth
+        if self.camera.extension == "raw":
+            self.loader.set_loader("xviii")
+        elif self.camera.extension == "bag":
+            self.loader.set_loader("rosbag")
+            self.loader.tz_offset_s = tz_offset_s
+        else:
+            self.loader.set_loader("default")
 
     def parse(self):
         # Set the user specified list if any
