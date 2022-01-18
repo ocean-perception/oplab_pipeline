@@ -120,6 +120,10 @@ def call_parse(args):
         / ("log/" + time_string + "_correct_images_parse.log")
     )
 
+    # Check if we have a multi-dive setup
+    # TODO: process on a per-dive basis
+    # Check for every item of the dive_path list if it is a dive folder
+
     correct_config, camerasystem = load_configuration_and_camera_system(path)
 
     for camera in camerasystem.cameras:
@@ -129,6 +133,10 @@ def call_parse(args):
             Console.info("No images found for the camera at the path provided...")
             continue
         else:
+            # TODO: we need to be careful when calling the corrector constructor as we do not want to overwrite existing parameters
+            # for every single dive
+            # WARNING this is not a good idea as we are not checking if the corrector is already created
+            # WARNING we are assuming that each dive has the same camera configuration
             corrector = Corrector(args.force, camera, correct_config, path)
             if corrector.camera_found:
                 corrector.parse()
