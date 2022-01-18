@@ -250,6 +250,9 @@ class CorrectConfig:
         with filename.open("r") as stream:
             data = yaml.safe_load(stream)
 
+        self.color_correction = None
+        self.camerarescale = None
+
         if "version" not in data:
             Console.error(
                 "It seems you are using an old correct_images.yaml.",
@@ -272,11 +275,11 @@ class CorrectConfig:
                 " ".join(m for m in valid_methods),
             )
 
-        node = data["colour_correction"]
-        self.color_correction = ColourCorrection(node)
+        if "colour_correction" in data:
+            self.color_correction = ColourCorrection(data["colour_correction"])
         node = data["cameras"]
         self.configs = CameraConfigs(node)
         node = data["output_settings"]
         self.output_settings = OutputSettings(node)
-        node = data["rescale"]
-        self.camerarescale = CameraRescale(node)
+        if "rescale" in data:
+            self.camerarescale = CameraRescale(data["rescale"])
