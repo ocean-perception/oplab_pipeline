@@ -7,6 +7,7 @@ See LICENSE.md file in the project root for full license information.
 """
 
 import copy
+from importlib.resources import path
 import os
 import random
 from datetime import datetime
@@ -92,11 +93,26 @@ class Corrector:
         self.trimmed_csv_path = None
         self.camera_params_file_path = None
 
-        if path is not None:
-            self.path_raw = get_raw_folder(path)
-            self.path_processed = get_processed_folder(path)
-            self.path_config = get_config_folder(path)
         self.force = force
+
+        if path is not None:   # if path is None then user must define it externally and call set_path(new_path)
+        # Set the path for the corrector
+            self.set_path(path)
+        else:
+            return
+
+        if self.correct_config is not None:
+            # explicit call to load the correct_config
+            self.load_configuration(self.correct_config)
+        else:       
+            return  # this last one it's maybe redundant as it is the last call in the constructor
+
+    def set_path(self, path):
+        """Set the path for the corrector"""
+        # The path is expected to be non-empty, so we no longer check for it
+        self.path_raw = get_raw_folder(path)
+        self.path_processed = get_processed_folder(path)
+        self.path_config = get_config_folder(path)
 
         self.mission = Mission(self.path_raw / "mission.yaml")
 
@@ -122,9 +138,6 @@ class Corrector:
         self.image_width = image_properties[1]
         self.image_channels = image_properties[2]
 
-        if self.correct_config is not None:
-            # explicit call to load the correct_config
-            self.load_configuration(self.correct_config)
 
     # NOTE: we could use an implicit version (correct_config already stored as member)
     # but in this implementation we force explicit (argument required) call to load_configuration()
@@ -225,14 +238,17 @@ class Corrector:
             self.loader.set_loader("default")
 
     def parse(self, path_list, correct_config_list):
+        # both path_list and correct_config_list are assumed to be valid + equivalent
+        for i in range (len(path_list)):    # for each dive
+            path = path_list[i]
+            correct_config = correct_config_list[i]
+            self.set_path(path)                     # update the dive path
+            # Set the user specified list - if any
+            self.user_specified_image_list = self.user_specified_image_list_parse
 
-
-
-        # Set the user specified list if any
-        self.user_specified_image_list = self.user_specified_image_list_parse
-
-        # Read list of images
-        self.get_imagelist()
+            self.load_configuration(correct_config) # load the dive config
+            # Update list of images (it already appends to the list)
+            self.get_imagelist()
 
         Console.info("Output directories created / existing...")
 
@@ -427,7 +443,7 @@ class Corrector:
         """Generate list of source images"""
 
         # Copy the images list from the camera
-        self.camera_image_list = self.camera.image_list # TODO: join with existing list
+        self.camera_image_list = self.camera.image_list
         # TODO: JOIN at the very end of the current method
 
         # If using colour_correction, we need to read in the navigation
