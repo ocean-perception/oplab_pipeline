@@ -40,7 +40,7 @@ matplotlib.use("Agg")
 
 
 class Corrector:
-    def __init__(self, force=False, camera=None, correct_config=None, path=None):
+    def __init__(self, force=False, suffix=None, camera=None, correct_config=None, path=None):
         """Constructor for the Corrector class
 
         Parameters
@@ -67,7 +67,10 @@ class Corrector:
         self.output_dir_path = None
         self.attenuation_parameters_folder = None
         self.output_images_folder = None
-        self.suffix = None
+        if suffix is not None and suffix != "":
+            self.suffix = suffix
+        else:
+            self.suffix = None
 
         # Placeholders for process
         self.image_attenuation_parameters = None

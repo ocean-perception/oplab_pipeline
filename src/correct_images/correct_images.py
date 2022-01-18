@@ -9,6 +9,7 @@ See LICENSE.md file in the project root for full license information.
 
 import argparse
 import os
+import string
 import sys
 import time
 from pathlib import Path
@@ -52,6 +53,12 @@ def main(args=None):
         action="store_true",
         help="Force overwrite if correction parameters already exist.",
     )
+    subparser_correct.add_argument(
+        "--suffix",
+        dest="suffix",
+        default="",
+        help="Expected suffix for correct_images configuration and output folders.",
+    )
     subparser_correct.set_defaults(func=call_correct)
 
     # subparser parse
@@ -65,6 +72,12 @@ def main(args=None):
         dest="force",
         action="store_true",
         help="Force overwrite if correction parameters already exist.",
+    )
+    subparser_parse.add_argument(
+        "--suffix",
+        dest="suffix",
+        default="",
+        help="Expected suffix for correct_images configuration and output folders.",
     )
     subparser_parse.set_defaults(func=call_parse)
 
@@ -80,6 +93,12 @@ def main(args=None):
         action="store_true",
         help="Force overwrite if correction parameters already exist.",
     )
+    subparser_process.add_argument(
+        "--suffix",
+        dest="suffix",
+        default="",
+        help="Expected suffix for correct_images configuration and output folders.",
+    )
     subparser_process.set_defaults(func=call_process)
 
     # subparser rescale image
@@ -87,6 +106,12 @@ def main(args=None):
         "rescale", help="Rescale processed images"
     )
     subparser_rescale.add_argument("path", help="Path to raw folder")
+    subparser_rescale.add_argument(
+        "--suffix",
+        dest="suffix",
+        default="",
+        help="Expected suffix for correct_images configuration and output folders.",
+    )
     subparser_rescale.set_defaults(func=call_rescale)
 
     if len(sys.argv) == 1 and args is None:
@@ -99,7 +124,13 @@ def main(args=None):
             args.func(args)
     else:
         args = parser.parse_args()
-        args.func(args)
+
+        # Check suffix is only text, digits, dash and underscores
+        allowed_chars = string.ascii_letters+ "-" + "_" + string.digits
+        if all([c in allowed_chars for c in args.suffix]):
+            args.func(args)
+        else:
+            Console.error("Suffix must only contain letters, digits, dash and underscores")
 
 
 def call_parse(args):
@@ -120,7 +151,7 @@ def call_parse(args):
         / ("log/" + time_string + "_correct_images_parse.log")
     )
 
-    correct_config, camerasystem = load_configuration_and_camera_system(path)
+    correct_config, camerasystem = load_configuration_and_camera_system(path, args.suffix)
 
     for camera in camerasystem.cameras:
         Console.info("Parsing for camera", camera.name)
@@ -129,7 +160,7 @@ def call_parse(args):
             Console.info("No images found for the camera at the path provided...")
             continue
         else:
-            corrector = Corrector(args.force, camera, correct_config, path)
+            corrector = Corrector(args.force, args.suffix, camera, correct_config, path)
             if corrector.camera_found:
                 corrector.parse()
 
@@ -157,7 +188,7 @@ def call_process(args):
         / ("log/" + time_string + "_correct_images_process.log")
     )
 
-    correct_config, camerasystem = load_configuration_and_camera_system(path)
+    correct_config, camerasystem = load_configuration_and_camera_system(path, args.suffix)
 
     for camera in camerasystem.cameras:
         Console.info("Processing for camera", camera.name)
@@ -166,7 +197,7 @@ def call_process(args):
             Console.info("No images found for the camera at the path provided...")
             continue
         else:
-            corrector = Corrector(args.force, camera, correct_config, path)
+            corrector = Corrector(args.force, args.suffix, camera, correct_config, path)
             if corrector.camera_found:
                 corrector.process()
     Console.info("Process completed for all cameras...")
@@ -193,7 +224,7 @@ def call_rescale(args):
         / ("log/" + time_string + "_correct_images_rescale.log")
     )
 
-    correct_config, camerasystem = load_configuration_and_camera_system(path)
+    correct_config, camerasystem = load_configuration_and_camera_system(path, args.suffix)
 
     # install freeimage plugins if not installed
     imageio.plugins.freeimage.download()
@@ -206,7 +237,7 @@ def call_rescale(args):
     Console.info("Rescaling completed for all cameras ...")
 
 
-def load_configuration_and_camera_system(path):
+def load_configuration_and_camera_system(path, suffix=None):
     """Generate correct_config and camera system objects from input config
     yaml files
 
@@ -327,7 +358,11 @@ def load_configuration_and_camera_system(path):
         )
 
     # check for correct_config yaml path
-    path_correct_images = path_config_folder / "correct_images.yaml"
+    path_correct_images = None
+    if suffix == "" or suffix is None:
+        path_correct_images = path_config_folder / "correct_images.yaml"
+    else:
+        path_correct_images = path_config_folder / ("correct_images_" + suffix + ".yaml")
     if path_correct_images.exists():
         Console.info(
             "Configuration file correct_images.yaml file found at", path_correct_images,
