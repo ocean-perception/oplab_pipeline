@@ -168,32 +168,34 @@ def call_parse(args):
         Console.warn("Camera systems are the same for all dives.")  # so far so good
 
 #########################################################################################
-# cameras = get_cameras(correct_images_yaml[0])
-# for camera in cameras:
-#    c = Corrector(camera)
-#    for d in dives:
-#        c.parse(d)
 
-    #correct_config , camerasystem = load_configuration_and_camera_system(path)
 #    correct_config = correct_config_list[0]
     camerasystem = camerasystem_list[0]     # we peek at the first entry and use it as template for all dives
 
     for camera in camerasystem.cameras:
         Console.info("Parsing for camera", camera.name)
-        # Create a Corrector object for each camera
+        # Create a Corrector object for each camera with empty configuration
+        # The configuration and the paths will be populated later on a per-dive basis
         corrector = Corrector(args.force, camera, correct_config=None)
-        if len(camera.image_list) == 0:
-            Console.info("No images found for the camera at the path provided...")
-            continue
-        else:
-            # TODO: we need to be careful when calling the corrector constructor as we do not want to overwrite existing parameters
-            # for every single dive
-            # WARNING this is not a good idea as we are not checking if the corrector is already created
-            # WARNING we are assuming that each dive has the same camera configuration
-            # corrector = Corrector(args.force, camera, correct_config, path)
-            corrector.load_configuration(correct_config=correct_config) # per dive configuration
-            if corrector.camera_found:
-                corrector.parse()
+
+        for i in range(path_list):
+            # for each dive, complete the corrector object with the corresponding correct_config and the path    
+            if len(camera.image_list) == 0:
+                Console.info("No images found for the camera at the path provided...")
+                continue
+            else:
+                # TODO: we need to be careful when calling the corrector constructor as we do not want to overwrite existing parameters
+                # for every single dive
+                # WARNING this is not a good idea as we are not checking if the corrector is already created
+                # WARNING we are assuming that each dive has the same camera configuration
+                # corrector = Corrector(args.force, camera, correct_config, path)
+                corrector.load_configuration(correct_config=correct_config_list[i]) # per dive configuration
+                corrector
+
+
+
+                # if corrector.camera_found:
+                #     corrector.parse()
 
     Console.info(
         "Parse completed for all cameras. Please run process to develop ",
