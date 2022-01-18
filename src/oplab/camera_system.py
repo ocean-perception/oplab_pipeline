@@ -29,7 +29,19 @@ except ImportError:
 def rosbag_image_loader(img_topic, bagfile):
     """Load an image from a ROS bagfile"""
     if not ROSBAG_IS_AVAILABLE:
-        raise ImportError("ROS bagfile support is not available.")
+        Console.error("ROS bagfile support is not available.")
+        Console.error("Please install the following python packages:")
+        Console.error("- rosbag")
+        Console.error("- roslz4")
+        Console.error("- cv_bridge")
+        Console.error("- sensor_msgs")
+        Console.error("- geometry_msgs")
+        Console.error("Example command:")
+        Console.error(
+            "pip install rosbag roslz4 cv_bridge sensor_msgs geometry_msgs",
+            "--extra-index-url https://rospypi.github.io/simple/",
+        )
+        Console.quit("ROS bagfile support is not available.")
     bridge = CvBridge()
     with rosbag.Bag(str(bagfile)) as bag:
         for topic, msg, t in bag.read_messages(topics=[str(img_topic)]):
