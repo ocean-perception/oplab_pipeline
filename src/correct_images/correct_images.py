@@ -260,93 +260,88 @@ def load_configuration_and_camera_system(path, suffix=None):
     else:
         Console.quit("File mission.yaml file not found at", path_raw_folder)
 
+    acfr_std_camera_file = "auv_nav/default_yaml/ts1/SSK17-01/camera.yaml"
+    sx3_camera_file = "auv_nav/default_yaml/ae2000/YK17-23C/camera.yaml"
+    biocam_camera_file = "auv_nav/default_yaml/as6/DY109/camera.yaml"
+    biocam4000_15c_camera_file = "auv_nav/default_yaml/alr/jc220/camera.yaml"
+    hybis_camera_file = "auv_nav/default_yaml/hybis/camera.yaml"
+    ntnu_camera_file = "auv_nav/default_yaml/ntnu_stereo/tautra21/camera.yaml"
+    rosbag_extracted_camera_file = (
+        "auv_nav/default_yaml/rosbag/grassmap/camera.yaml"
+    )
+
+    acfr_std_correct_config_file = (
+        "correct_images/default_yaml/acfr/correct_images.yaml"
+    )
+    sx3_std_correct_config_file = (
+        "correct_images/default_yaml/sx3/correct_images.yaml"
+    )
+    biocam_std_correct_config_file = (
+        "correct_images/default_yaml/biocam/correct_images.yaml"
+    )
+    biocam4000_15c_std_correct_config_file = (
+        "correct_images/default_yaml/biocam4000_15c/correct_images.yaml"
+    )
+    hybis_std_correct_config_file = (
+        "correct_images/default_yaml/hybis/correct_images.yaml"
+    )
+    ntnu_std_correct_config_file = (
+        "correct_images/default_yaml/ntnu_stereo/correct_images.yaml"
+    )
+    rosbag_extracted_images_std_correct_config_file = (
+        "correct_images/default_yaml/rosbag_extracted_images/correct_images.yaml"
+    )
+
+    camera_yaml_path = None
+    default_file_path_correct_config = None
+
     # load mission parameters
     mission = Mission(path_mission)
 
+    # find out default yaml paths
+    root = Path(__file__).resolve().parents[1]
+
+    if mission.image.format == "acfr_standard":
+        camera_yaml_path = root / acfr_std_camera_file
+        default_file_path_correct_config = root / acfr_std_correct_config_file
+    elif mission.image.format == "seaxerocks_3":
+        camera_yaml_path = root / sx3_camera_file
+        default_file_path_correct_config = root / sx3_std_correct_config_file
+    elif mission.image.format == "biocam":
+        camera_yaml_path = root / biocam_camera_file
+        default_file_path_correct_config = root / biocam_std_correct_config_file
+    elif mission.image.format == "biocam4000_15c":
+        camera_yaml_path = root / biocam4000_15c_camera_file
+        default_file_path_correct_config = (
+            root / biocam4000_15c_std_correct_config_file
+        )
+    elif mission.image.format == "hybis":
+        camera_yaml_path = root / hybis_camera_file
+        default_file_path_correct_config = root / hybis_std_correct_config_file
+    elif mission.image.format == "ntnu_stereo":
+        camera_yaml_path = root / ntnu_camera_file
+        default_file_path_correct_config = root / ntnu_std_correct_config_file
+    elif mission.image.format == "rosbag_extracted_images":
+        camera_yaml_path = root / rosbag_extracted_camera_file
+        default_file_path_correct_config = (
+            root / rosbag_extracted_images_std_correct_config_file
+        )
+    else:
+        Console.quit(
+            "Image system in camera.yaml does not match with mission.yaml",
+            "Provide correct camera.yaml in /raw folder... ",
+        )
+
     # resolve path to camera.yaml file
-    temp_path = path_raw_folder / "camera.yaml"
-
-    default_file_path_correct_config = None
-    camera_yaml_path = None
-
-    if not temp_path.exists():
+    expected_camera_yaml_path = path_raw_folder / "camera.yaml"
+    if not expected_camera_yaml_path.exists():
         Console.info(
             "Not found camera.yaml file in /raw folder...Using default ",
             "camera.yaml file...",
         )
-        # find out default yaml paths
-        root = Path(__file__).resolve().parents[1]
-
-        acfr_std_camera_file = "auv_nav/default_yaml/ts1/SSK17-01/camera.yaml"
-        sx3_camera_file = "auv_nav/default_yaml/ae2000/YK17-23C/camera.yaml"
-        biocam_camera_file = "auv_nav/default_yaml/as6/DY109/camera.yaml"
-        biocam4000_15c_camera_file = "auv_nav/default_yaml/alr/jc220/camera.yaml"
-        hybis_camera_file = "auv_nav/default_yaml/hybis/camera.yaml"
-        ntnu_camera_file = "auv_nav/default_yaml/ntnu_stereo/tautra21/camera.yaml"
-        rosbag_extracted_camera_file = (
-            "auv_nav/default_yaml/rosbag/grassmap/camera.yaml"
-        )
-
-        acfr_std_correct_config_file = (
-            "correct_images/default_yaml/acfr/correct_images.yaml"
-        )
-        sx3_std_correct_config_file = (
-            "correct_images/default_yaml/sx3/correct_images.yaml"
-        )
-        biocam_std_correct_config_file = (
-            "correct_images/default_yaml/biocam/correct_images.yaml"
-        )
-        biocam4000_15c_std_correct_config_file = (
-            "correct_images/default_yaml/biocam4000_15c/correct_images.yaml"
-        )
-        hybis_std_correct_config_file = (
-            "correct_images/default_yaml/hybis/correct_images.yaml"
-        )
-        ntnu_std_correct_config_file = (
-            "correct_images/default_yaml/ntnu_stereo/correct_images.yaml"
-        )
-        rosbag_extracted_images_std_correct_config_file = (
-            "correct_images/default_yaml/rosbag_extracted_images/correct_images.yaml"
-        )
-
-        Console.info("Image format:", mission.image.format)
-
-        if mission.image.format == "acfr_standard":
-            camera_yaml_path = root / acfr_std_camera_file
-            default_file_path_correct_config = root / acfr_std_correct_config_file
-        elif mission.image.format == "seaxerocks_3":
-            camera_yaml_path = root / sx3_camera_file
-            default_file_path_correct_config = root / sx3_std_correct_config_file
-        elif mission.image.format == "biocam":
-            camera_yaml_path = root / biocam_camera_file
-            default_file_path_correct_config = root / biocam_std_correct_config_file
-        elif mission.image.format == "biocam4000_15c":
-            camera_yaml_path = root / biocam4000_15c_camera_file
-            default_file_path_correct_config = (
-                root / biocam4000_15c_std_correct_config_file
-            )
-        elif mission.image.format == "hybis":
-            camera_yaml_path = root / hybis_camera_file
-            default_file_path_correct_config = root / hybis_std_correct_config_file
-        elif mission.image.format == "ntnu_stereo":
-            camera_yaml_path = root / ntnu_camera_file
-            default_file_path_correct_config = root / ntnu_std_correct_config_file
-        elif mission.image.format == "rosbag_extracted_images":
-            camera_yaml_path = root / rosbag_extracted_camera_file
-            default_file_path_correct_config = (
-                root / rosbag_extracted_images_std_correct_config_file
-            )
-        else:
-            Console.quit(
-                "Image system in camera.yaml does not match with mission.yaml",
-                "Provide correct camera.yaml in /raw folder... ",
-            )
     else:
         Console.info("Found camera.yaml file in /raw folder...")
-        camera_yaml_path = temp_path
-
-    Console.info("camera.yaml:", camera_yaml_path)
-    Console.info("raw folder:", path_raw_folder)
+        camera_yaml_path = expected_camera_yaml_path
 
     # instantiate the camera system and setup cameras from mission and
     # config files / auv_nav
