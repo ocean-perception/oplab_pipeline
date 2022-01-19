@@ -139,9 +139,7 @@ def call_parse(args):
                 Console.info("\t", path, " [OK]")
         Console.error("Multiple paths provided. WORK IN PROGRESS, NOT FULLY IMPLEMENTED YET...")
 
-    Console.warn("Populating list of correct_images.yaml files for each dive")
     # Populating the configuration and camerasystem lists for each dive path
-
     correct_config_list, camerasystem_list = zip(*[load_configuration_and_camera_system(path) for path in path_list])
     # Let's check that both lists have the same length and are not empty
     if len(correct_config_list) != len(camerasystem_list):
@@ -155,6 +153,8 @@ def call_parse(args):
     if len(camerasystem_list) > 1: # this test is still valid for single dive mode, so we could remove this if
         camera_system = camerasystem_list[0]
         for cs in camerasystem_list: # the first entry will be repeated, no problem with that
+            # TODO: use the ENABLED cameras from config.yaml AND the defined camera system from camera.yaml
+            # TODO: Extend is_equivalent() method allowing checking cameras in different orders
             if not camera_system.camera_system == cs.camera_system:
                 Console.error("Camera systems differ!")
                 Console.error("\tFirst camera system (reference) ", camera_system.camera_system)
