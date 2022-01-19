@@ -252,7 +252,7 @@ class CorrectConfig:
 
         if "version" not in data:
             Console.error(
-                "It seems you are using an old correct_images.yaml.",
+                "It seems you are using an older correct_images.yaml.",
                 "You will have to delete it and run this software again.",
             )
             Console.error("Delete the file with:")
@@ -282,7 +282,8 @@ class CorrectConfig:
         self.camerarescale = CameraRescale(node)
 
     def is_equivalent(self, other):
-        """is_equivalent checks if two objects are equivalent
+        """is_equivalent checks if two configurations are equivalent
+           We expect to match a minimum set of parameters, including the number and type of cameras.
 
         Parameters
         ----------
@@ -317,5 +318,17 @@ class CorrectConfig:
         if self.color_correction.window_size != other.color_correction.window_size:
             Console.warn("Window size does not match:", self.color_correction.window_size, " / ", other.color_correction.window_size)
             return False
+
+        # Check if the number of cameras match
+        if self.configs.num_cameras != other.configs.num_cameras:
+            Console.warn("Number of cameras does not match:", self.configs.num_cameras, " / ", other.configs.num_cameras)
+            return False
+        # Check if the name of the cameras match. Right now we are impossing same order in camera names
+        # TODO: search for unordered names and validate that they are equivalent
+
+        for i in range(self.configs.num_cameras):
+            if self.configs.camera_configs[i].camera_name != other.configs.camera_configs[i].camera_name:
+                Console.warn("Camera name does not match:", self.configs.camera_configs[i].camera_name, " / ", other.configs.camera_configs[i].camera_name)
+                return False
 
         return True
