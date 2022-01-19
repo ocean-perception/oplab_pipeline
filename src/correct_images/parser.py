@@ -44,7 +44,18 @@ class ColourCorrection:
         node : cdict
             dictionary object for an entry in correct_images.yaml file
         """
+        valid_distance_metrics = ["uniform", "altitude", "depth_map"]
         self.distance_metric = node["distance_metric"]
+
+        if self.distance_metric == "none":
+            self.distance_metric = "uniform"
+            Console.warn("Distance metric is set to none. This is deprecated.",
+                "Please use uniform instead.")
+        if self.distance_metric not in valid_distance_metrics:
+            Console.error("Distance metric not valid. Please use one of the following:",
+                valid_distance_metrics)
+            Console.quit("Invalid distance metric: {}".format(self.distance_metric))
+
         self.metric_path = node["metric_path"]
         self.altitude_max = node["altitude_filter"]["max_m"]
         self.altitude_min = node["altitude_filter"]["min_m"]
