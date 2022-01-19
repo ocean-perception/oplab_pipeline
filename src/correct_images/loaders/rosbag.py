@@ -15,7 +15,7 @@ TOL = 1e-3
 SEARCH_TOL = 0.5
 
 
-def loader(img_timestamp, img_topic, bagfile_list, tz_offset_s, src_bit=None):
+def loader(img_timestamp, img_topic, bagfile_list, tz_offset_s, src_bit=8):
     """Load an image from a ROS bagfile"""
     if not ROSBAG_IS_AVAILABLE:
         raise ImportError("ROS bagfile support is not available.")
@@ -36,6 +36,7 @@ def loader(img_timestamp, img_topic, bagfile_list, tz_offset_s, src_bit=None):
                 # print(abs(epoch_timestamp - img_timestamp))
                 if abs(epoch_timestamp - img_timestamp) < TOL:
                     # print("Image found at", t.to_sec())
-                    return bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
-    # Console.quit("Image not found!")
+                    image = bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
+                    image_float = image.astype(float) * 2 ** (-src_bit)
+                    return image_float
     return None
