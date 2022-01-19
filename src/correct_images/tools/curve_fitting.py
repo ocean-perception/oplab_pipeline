@@ -7,6 +7,7 @@ See LICENSE.md file in the project root for full license information.
 """
 
 import matplotlib.pyplot as plt
+from pathlib import Path
 import numpy as np
 from numba import njit
 from scipy import optimize
@@ -120,18 +121,6 @@ def curve_fitting(altitudes: np.ndarray, intensities: np.ndarray) -> np.ndarray:
 
     # for debug
     save = False
-    """
-    i = 0
-    fn = None
-    while i < 100:
-        fn = Path("least_squares_good" + str(i) + ".png")
-        i += 1
-        if fn.exists():
-            continue
-        else:
-            save = True
-            break
-    """
 
     try:
         tmp_params = optimize.least_squares(
@@ -143,7 +132,13 @@ def curve_fitting(altitudes: np.ndarray, intensities: np.ndarray) -> np.ndarray:
             bounds=(bound_lower, bound_upper),
         )
         if save:
-            fn = "Intensities_curve.png"
+            i = 0
+            while i < 100:
+                fn = Path("Intensities_curve_" + str(i) + ".png")
+                i += 1
+                if not fn.exists():
+                    break
+
             fig = plt.figure()
             plt.plot(altitudes_filt, intensities_filt, "c.")
             xs = np.arange(1, 5, 0.1)

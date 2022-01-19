@@ -214,7 +214,7 @@ class Corrector:
                     self.attenuation_params_filepath
                 )
             else:
-                if self.distance_metric != "none":
+                if self.distance_metric != "uniform":
                     Console.quit(
                         "Code does not find attenuation_parameters.npy...",
                         "Please run parse before process...",
@@ -222,7 +222,7 @@ class Corrector:
             if self.correction_gains_filepath.exists():
                 self.correction_gains = np.load(self.correction_gains_filepath)
             else:
-                if self.distance_metric != "none":
+                if self.distance_metric != "uniform":
                     Console.quit(
                         "Code does not find correction_gains.npy...",
                         "Please run parse before process...",
@@ -232,7 +232,7 @@ class Corrector:
                     self.corrected_mean_filepath
                 ).squeeze()
             else:
-                if self.distance_metric != "none":
+                if self.distance_metric != "uniform":
                     Console.quit(
                         "Code does not find image_corrected_mean.npy...",
                         "Please run parse before process...",
@@ -242,21 +242,21 @@ class Corrector:
                     self.corrected_std_filepath
                 ).squeeze()
             else:
-                if self.distance_metric != "none":
+                if self.distance_metric != "uniform":
                     Console.quit(
                         "Code does not find image_corrected_std.npy...",
                         "Please run parse before process...",
                     )
-            if self.raw_mean_filepath.exists() and self.distance_metric == "none":
+            if self.raw_mean_filepath.exists() and self.distance_metric == "uniform":
                 self.image_raw_mean = np.load(self.raw_mean_filepath).squeeze()
-            elif self.distance_metric == "none":
+            elif self.distance_metric == "uniform":
                 Console.quit(
                     "Code does not find image_raw_mean.npy...",
                     "Please run parse before process...",
                 )
-            if self.raw_std_filepath.exists() and self.distance_metric == "none":
+            if self.raw_std_filepath.exists() and self.distance_metric == "uniform":
                 self.image_raw_std = np.load(self.raw_std_filepath).squeeze()
-            elif self.distance_metric == "none":
+            elif self.distance_metric == "uniform":
                 Console.quit(
                     "Code does not find image_raw_std.npy...",
                     "Please run parse before process...",
@@ -278,24 +278,16 @@ class Corrector:
         parameters_folder_str = "params_"
         developed_folder_str = "corrected_"
 
-        subfolder_name = None
         if self.correction_method == "colour_correction":
-            if self.distance_metric == "none":
-                parameters_folder_str += "ps"
-                developed_folder_str += "ps"
-            elif self.distance_metric == "altitude":
-                parameters_folder_str += "alt"
-                developed_folder_str += "alt"
-            elif self.distance_metric == "depth_map":
-                parameters_folder_str += "dm"
-                developed_folder_str += "dm"
-            subfolder_name = (
-                "mean_" + str(int(self.brightness)) + "_std_" + str(int(self.contrast))
+            parameters_folder_str += self.distance_metric
+            developed_folder_str += self.distance_metric
+            developed_folder_str += (
+                "_mean_" + str(int(self.brightness)) + "_std_" + str(int(self.contrast))
             )
         elif self.correction_method == "manual_balance":
-            parameters_folder_str += "man"
-            developed_folder_str += "man"
-            subfolder_name = ("gain_"
+            parameters_folder_str += "manual"
+            developed_folder_str += "manual"
+            developed_folder_str += ("_gain_"
                 + str(self.color_gain_matrix_rgb[0]) + "_"
                 + str(self.color_gain_matrix_rgb[4]) + "_"
                 + str(self.color_gain_matrix_rgb[8]) + "_sub_"
@@ -311,7 +303,6 @@ class Corrector:
 
         self.attenuation_parameters_folder = self.output_dir_path / parameters_folder_str
         self.output_images_folder = self.output_dir_path / developed_folder_str
-        self.output_images_folder /= subfolder_name
 
         if not self.attenuation_parameters_folder.exists():
             self.attenuation_parameters_folder.mkdir(parents=True)
@@ -428,7 +419,7 @@ class Corrector:
     def get_altitude_and_depth_maps(self):
         """Generate distance matrix numpy files and save them"""
         # read altitude / depth map depending on distance_metric
-        if self.distance_metric == "none":
+        if self.distance_metric == "uniform":
             Console.info("Null distance matrix created")
             return
 
@@ -466,7 +457,7 @@ class Corrector:
         filtered_dataframe = dataframe.iloc[valid_idx]
         filtered_dataframe.reset_index(drop=True)
         # Warning: if the column does not contain any 'None' entry, it will be parsed as float, and the .str() accesor will fail
-        filtered_dataframe["altitude [m]"] = filtered_dataframe["altitude [m]"].astype('string')
+        filtered_dataframe["altitude [m]"] = filtered_dataframe["altitude [m]"].astype(str)
         filtered_dataframe=filtered_dataframe[~filtered_dataframe["altitude [m]"].str.contains("None")]    # drop rows with None altitude
         distance_list = filtered_dataframe["altitude [m]"].tolist()
         self.camera_image_list = []
@@ -821,26 +812,24 @@ class Corrector:
                 del memmap_handle
                 os.remove(memmap_filename)
 
+            base_path = Path(self.attenuation_parameters_folder)
+
             fig = plt.figure()
             plt.imshow(bin_images_sample)
             plt.colorbar()
             plt.title("Image bin " + str(idx_bin))
-            plt.savefig(
-                Path(self.attenuation_parameters_folder)
-                / ("bin_images_sample_" + str(idx_bin) + ".png"),
-                dpi=600,
-            )
+            fig_name = base_path / ("bin_images_sample_" + str(idx_bin) + ".png")
+            #Console.info("Saved figure at", fig_name)
+            plt.savefig(fig_name, dpi=600)
             plt.close(fig)
 
             fig = plt.figure()
             plt.imshow(bin_distances_sample)
             plt.colorbar()
             plt.title("Distance bin " + str(idx_bin))
-            plt.savefig(
-                Path(self.attenuation_parameters_folder)
-                / ("bin_distances_sample_" + str(idx_bin) + ".png"),
-                dpi=600,
-            )
+            fig_name = base_path / ("bin_distances_sample_" + str(idx_bin) + ".png")
+            #Console.info("Saved figure at", fig_name)
+            plt.savefig(fig_name, dpi=600)
             plt.close(fig)
 
             images_map[idx_bin] = bin_images_sample.reshape(
