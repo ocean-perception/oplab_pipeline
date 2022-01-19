@@ -129,7 +129,8 @@ def call_parse(args):
         path = path_list[0]
         Console.info("Single path provided, normal single dive mode...")
     else:
-        Console.warn("Multiple paths provided [", len(path_list), "]. Checking each path...")
+        Console.warn("Multiple paths provided [{}]. Checking each path...".format(len(path_list)))
+        # Console.warn("Multiple paths provided [", len(path_list), "]. Checking each path...")
         for path in path_list:
             # chec if path is valid
             if not path.exists():
@@ -166,15 +167,14 @@ def call_parse(args):
     if len(correct_config_list) > 1:
         correct_config = correct_config_list[0]
         for cc in correct_config_list:
-            print (type(cc))
             # Check if the relevant fields of the configuration are the same
             if not correct_config.is_equivalent(cc):
             # if not correct_config == cc: # TODO: change this test to an equivalence test
-                Console.error("Correct_configs differ!")
-                Console.error("\tFirst correct_config (reference) ", correct_config)
-                Console.error("\tWrong correct_config (current)   ", cc)
+                Console.error("Configurations [correct_config] do not match!")
+                # Console.error("\tFirst correct_config (reference) ", correct_config)
+                # Console.error("\tWrong correct_config (current)   ", cc)
                 sys.exit(1)
-        Console.warn("Correct_configs are equivalent for all dives.")
+        Console.warn("Configurations are equivalent for all dives.")
 
 #########################################################################################
     camerasystem = camerasystem_list[0]     # we peek at the first entry and use it as template for all dives

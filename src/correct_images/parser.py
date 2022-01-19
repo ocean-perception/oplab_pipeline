@@ -91,6 +91,9 @@ class CameraConfig:
             imagefilelist_process = node.get("image_file_list", {}).get(
                 "process", "none"
             )
+            Console.error(">>>>>>>>> Camera: {}".format(camera_name))
+            Console.warn("imagefilelist_parse: {}".format(imagefilelist_parse))
+            Console.warn("imagefilelist_process: {}".format(imagefilelist_process))
 
         brightness = 30.0
         contrast = 3.0
