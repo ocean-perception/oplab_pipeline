@@ -474,8 +474,11 @@ class Corrector:
         # TODO: JOIN at the very end of the current method
         # Store a copy of the currently stored image list in the Corrector object
         _original_image_list = self.camera_image_list
+        _original_altitude_list = self.altitude_list
         # Replaces Corrector object's image_list with the camera image list
-        self.camera_image_list = self.camera.image_list
+        # self.camera_image_list = self.camera.image_list # Complete unfiltered list
+        self.camera_image_list = []
+        self.altitude_list = []
 
         # If using colour_correction, we need to read in the navigation
         if self.correction_method == "colour_correction":
@@ -580,10 +583,6 @@ class Corrector:
                 Console.error("You may need to reprocess the dive with auv_nav")
                 Console.quit("No images were found.")
 
-            # Join the current image list with the original image list (copy)
-            self.camera_image_list.extend(_original_image_list)
-            # Show size of the extended image list
-            # Console.error(">>>>>   The image list is now", len(self.camera_image_list))
             # WARNING: what happens in a multidive setup when the current dive has no images (but the rest of the dive does)?
             Console.info(
                 len(self.altitude_list),
@@ -596,6 +595,17 @@ class Corrector:
                     "Insufficient number of images to compute attenuation ",
                     "parameters...",
                 )
+
+            # Join the current image list with the original image list (copy)
+            self.camera_image_list.extend(_original_image_list)
+            # Show size of the extended image list
+            Console.error(">>>>>   The image list is now", len(self.camera_image_list))
+
+            # Join the current image list with the original image list (copy)
+            self.altitude_list.extend(_original_altitude_list)
+            # Show size of the extended image list
+            Console.error(">>>>>   The image list is now", len(self.altitude_list))
+
 
     def get_altitude_and_depth_maps(self):
         """Generate distance matrix numpy files and save them"""
