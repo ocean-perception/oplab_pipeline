@@ -187,9 +187,9 @@ class Corrector:
         ].imagefilelist_process
 
         # DEBUG SECTION - REMOVE ********************************************************
-        Console.error("corrector.py]] Current camera:", self.camera_name)
-        Console.warn("Corrector.load_configuration(). user_specified_image_list_parse:", self.user_specified_image_list_parse)
-        Console.warn("Corrector.load_configuration(). user_specified_image_list_process:", self.user_specified_image_list_process)
+        # Console.error("corrector.py]] Current camera:", self.camera_name)
+        # Console.warn("Corrector.load_configuration(). user_specified_image_list_parse:", self.user_specified_image_list_parse)
+        # Console.warn("Corrector.load_configuration(). user_specified_image_list_process:", self.user_specified_image_list_process)
         # DEBUG SECTION - REMOVE ********************************************************
 
         if self.correction_method == "colour_correction":
@@ -271,12 +271,12 @@ class Corrector:
         # show the total number of images after filtering + merging the dives
         # TODO: this is not the total number of images, but the number of images after filtering
         # DEBUG SECTION - REMOVE ********************************************************
-        Console.warn("              |||||||||||||||||   Total number of images after filtering:", len(self.camera_image_list))      
+        Console.warn("|||||||||||||   Total number of images after filtering:", len(self.camera_image_list))      
         # TODO: This can be left as info() showing how many images were obtained in a multidive setup. 
         # It should match the sum of the filtered images of each dive.
         # Check if we are in multidive mode
         if len(path_list) > 1:
-            Console.info("Total number of images after merging dives:", len(self.camera_image_list))) 
+            Console.info("Total number of images after merging dives:", len(self.camera_image_list)) 
         # DEBUG SECTION - REMOVE ********************************************************
 
         Console.info("Output directories created / existing...")
@@ -602,6 +602,11 @@ class Corrector:
         # read altitude / depth map depending on distance_metric
         if self.distance_metric == "none":
             Console.info("Null distance matrix created")
+            self.depth_map_list = []
+            return
+        elif self.distance_metric == "altitude":
+            Console.info("Null distance matrix created")
+            self.depth_map_list = []
             return
         elif self.distance_metric == "depth_map":
             path_depth = self.path_processed / "depth_map"
@@ -796,7 +801,8 @@ class Corrector:
                 img = self.loader(self.camera_image_list[i])
 
                 # Load the distance matrix
-                if self.depth_map_list is None:
+                if not self.depth_map_list:
+                # if self.depth_map_list is None:
                     # Generate matrices on the fly
                     distance = distance_vector[i]
                     distance_mtx = np.empty((self.image_height, self.image_width))
