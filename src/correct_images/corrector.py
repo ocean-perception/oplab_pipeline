@@ -442,9 +442,11 @@ class Corrector:
     def get_imagelist(self):
         """Generate list of source images"""
 
-        # Copy the images list from the camera
-        self.camera_image_list = self.camera.image_list
         # TODO: JOIN at the very end of the current method
+        # Store a copy of the currently stored image list in the Corrector object
+        _original_image_list = self.camera_image_list
+        # Replaces Corrector object's image_list with the camera image list
+        self.camera_image_list = self.camera.image_list
 
         # If using colour_correction, we need to read in the navigation
         if self.correction_method == "colour_correction":
@@ -511,7 +513,7 @@ class Corrector:
                     valid_idx.append(idx)
             filtered_dataframe = dataframe.iloc[valid_idx]
             filtered_dataframe.reset_index(drop=True)
-            # Warning: if the column does not contain any 'None' entry, it will be parsed as float, and the .str() accesor will fail
+            # WARNING: if the column does not contain any 'None' entry, it will be parsed as float, and the .str() accesor will fail
             filtered_dataframe["altitude [m]"] = filtered_dataframe[
                 "altitude [m]"
             ].astype("string")
@@ -543,6 +545,9 @@ class Corrector:
                 Console.error("You may need to reprocess the dive with auv_nav")
                 Console.quit("No images were found.")
 
+            # Join the current image list with the original image list (copy)
+            self.camera_image_list.extend(_original_image_list)
+            # WARNING: what happens in a multidive setup when the current dive has no images (but the rest of the dive does)?
             Console.info(
                 len(self.altitude_list),
                 "/",
