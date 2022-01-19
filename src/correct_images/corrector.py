@@ -411,9 +411,6 @@ class Corrector:
     def get_imagelist(self):
         """Generate list of source images"""
 
-        # Copy the images list from the camera
-        self.camera_image_list = self.camera.image_list
-
         # If using colour_correction, we need to read in the navigation
         if self.correction_method == "colour_correction":
             if self.distance_path == "json_renav_*":
@@ -522,6 +519,9 @@ class Corrector:
                     "Insufficient number of images to compute attenuation ",
                     "parameters...",
                 )
+        else:
+            # Copy the images list from the camera
+            self.camera_image_list = self.camera.image_list
 
     def get_altitude_and_depth_maps(self):
         """Generate distance matrix numpy files and save them"""
@@ -805,7 +805,7 @@ class Corrector:
     ):
         dimensions = [self.image_height, self.image_width, self.image_channels]
         tmp_idxs = np.where(idxs == idx_bin)[0]
-        Console.info("In bin", idx_bin, "there are", len(tmp_idxs), "images")
+        # Console.info("In bin", idx_bin, "there are", len(tmp_idxs), "images")
         if len(tmp_idxs) > 2:
             bin_images = [self.camera_image_list[i] for i in tmp_idxs]
             bin_distances_sample = None
@@ -852,6 +852,12 @@ class Corrector:
                 bin_images_sample = median_array(memmap_handle)
                 del memmap_handle
                 os.remove(memmap_filename)
+
+            print(
+                "Saving file to",
+                Path(self.attenuation_parameters_folder)
+                / ("bin_images_sample_" + str(idx_bin) + ".png"),
+            )
 
             fig = plt.figure()
             plt.imshow(bin_images_sample)
