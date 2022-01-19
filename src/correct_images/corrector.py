@@ -523,9 +523,9 @@ class Corrector:
             # TODO: I think this should be None  
             if self.user_specified_image_list != "none":
                 # DEBUG SECTION ************************************************
-                Console.error("Trying to open user specified image list")
-                Console.warn("self.path_config", self.path_config)
-                Console.warn("self.user_specified_image_list", self.user_specified_image_list)
+                # Console.error("Trying to open user specified image list")
+                # Console.warn("self.path_config", self.path_config)
+                # Console.warn("self.user_specified_image_list", self.user_specified_image_list)
                 # DEBUG SECTION ************************************************
                 path_file_list = Path(self.path_config) / self.user_specified_image_list
                 trimmed_csv_file = "trimmed_csv_" + self.camera_name + ".csv"
@@ -583,7 +583,7 @@ class Corrector:
             # Join the current image list with the original image list (copy)
             self.camera_image_list.extend(_original_image_list)
             # Show size of the extended image list
-            Console.error(">>>>>   The image list is now", len(self.camera_image_list))
+            # Console.error(">>>>>   The image list is now", len(self.camera_image_list))
             # WARNING: what happens in a multidive setup when the current dive has no images (but the rest of the dive does)?
             Console.info(
                 len(self.altitude_list),
@@ -787,6 +787,9 @@ class Corrector:
                 ),
                 dtype=np.float32,
             )
+
+            Console.error("depth_map_list size", len(self.depth_map_list))
+            Console.error("camera_image_list size", len(self.camera_image_list))
 
             for i in trange(len(self.camera_image_list)):
                 # Load the image
