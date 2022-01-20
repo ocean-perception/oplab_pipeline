@@ -43,7 +43,8 @@ def trim_csv_files(image_files_paths, original_csv_path, trimmed_csv_path):
     trimmed_dataframe = dataframe.loc[
         dataframe["relative_path"].isin(trimmed_path_list)
     ]
-    trimmed_dataframe.to_csv(trimmed_csv_path, index=False, header=True)
+    # trimmed_dataframe.to_csv(trimmed_csv_path, index=False, header=True)
+    return trimmed_dataframe
 
 
 def get_imagename_list(image_files_paths):
