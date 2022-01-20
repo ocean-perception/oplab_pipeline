@@ -985,9 +985,16 @@ class Corrector:
                     self.brightness,
                     self.contrast,
                 )
-            if self._type != "grayscale" and self._type != "rgb":
+            if (
+                self._type != "grayscale"
+                and self._type != "rgb"
+                and self._type != "bgr"
+            ):
                 # debayer images
                 image_rgb = corrections.debayer(image, self._type)
+            elif self._type != "bgr":
+                image_rgb = image.copy()
+                image_rgb[:, :, [0, 1, 2]] = image_rgb[:, :, [2, 1, 0]]
             else:
                 image_rgb = image
 
@@ -995,6 +1002,9 @@ class Corrector:
             if not self._type == "grayscale":
                 # debayer images
                 image_rgb = corrections.debayer(image, self._type)
+            elif self._type != "bgr":
+                image_rgb = image.copy()
+                image_rgb[:, :, [0, 1, 2]] = image_rgb[:, :, [2, 1, 0]]
             else:
                 image_rgb = image
             image_rgb = corrections.manual_balance(
