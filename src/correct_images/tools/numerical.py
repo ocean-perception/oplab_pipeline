@@ -29,12 +29,43 @@ class RunningMeanStd:
 
     def compute(self, image):
         self.count += 1
+
+        _original_shape = image.shape
+        ############################### QUICKFIX BEGINS
         # clipping to mean if above threshold
-        image[image > self.clipping_max] = self._mean[image > self.clipping_max]
+        print("------------ image shape: {}".format(image.shape))
+        # Let's try reshaping the image first into a 1D array
+        image_1d = image.reshape(image.shape[0] * image.shape[1])
+        print("------------ image_1d shape: {}".format(image_1d.shape))
+        # we need to reshape _mean to be 1D as well
+        mean_1d = self._mean.reshape(self._mean.shape[0] * self._mean.shape[1])
+        print("------------ mean_1d shape: {}".format(mean_1d.shape))
+
+        image_1d[image_1d > self.clipping_max] = mean_1d[image_1d > self.clipping_max]
+        # image_1d[image_1d > self.clipping_max] = self._mean[image_1d > self.clipping_max]
+        # revert back to the original shape
+        image_1d = image_1d.reshape(_original_shape)
+        # self._mean = mean_1d.reshape(self._mean.shape) # store a reshaped version of the mean, maybe unnecessary
+        self._mean = mean_1d.reshape(_original_shape) # store a reshaped version of the mean, maybe unnecessary
+
+        # _mean shape must match image shape
+        print("------------ image_1d shape: {}".format(image_1d.shape))
+        print("------------ _mean shape: {}".format(self._mean.shape))
+        # update orginal image
+        image = image_1d
+        ############################### QUICKFIX ENDS
+
+        # image[image > self.clipping_max] = self._mean[image > self.clipping_max]
         image = image.astype(np.float32)
-        delta = image - self._mean
+        delta = image - self._mean          # enforced shape matching
         self._mean += delta / self.count
-        self.mean2 += delta * (image - self._mean)
+        ################################################### TEST BEGIN
+        # just in case, let's see the mean2 shape
+        print("------------ mean2 shape: {}".format(self.mean2.shape))
+        # now let's reshape it to _original_shape
+        self.mean2 = self.mean2.reshape(_original_shape)
+        #################################################### TEST END
+        self.mean2 += delta * (image - self._mean)  # still not sure if dimensions will match
 
     @property
     def mean(self):
