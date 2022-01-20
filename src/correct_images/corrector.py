@@ -250,16 +250,16 @@ class Corrector:
             correct_config = correct_config_list[i]
 
             Console.warn("Parsing dive:", path)
-            Console.info("Setting path...")
+            # Console.info("Setting path...")
             self.set_path(path)                     # update the dive path
 
-            Console.info("Loading configuration...")
+            # Console.info("Loading configuration...")
             self.load_configuration(correct_config) # load the dive config
             # Update list of images (it already appends to the list)
             # Set the user specified list - if any
 
             # DEBUG SECTION - REMOVE ********************************************************
-            Console.warn("Setting user specified image list:", self.user_specified_image_list_parse)
+            Console.warn("Applying user specified image list:", self.user_specified_image_list_parse)
             # DEBUG SECTION - REMOVE ********************************************************
 
             self.user_specified_image_list = self.user_specified_image_list_parse
@@ -599,11 +599,11 @@ class Corrector:
             # Join the current image list with the original image list (copy)
             self.camera_image_list.extend(_original_image_list)
             # Show size of the extended image list
-            Console.error(">>>>>   The image list is now", len(self.camera_image_list))
+            Console.warn(">> The camera image list is now", len(self.camera_image_list))
 
             # Join the current image list with the original image list (copy)
             self.altitude_list.extend(_original_altitude_list)
-            # Show size of the extended image list
+            # Show size of the extended altitude list
             Console.error(">>>>>   The image list is now", len(self.altitude_list))
 
 
@@ -805,15 +805,17 @@ class Corrector:
 
             Console.error("depth_map_list size", len(self.depth_map_list))
             Console.error("camera_image_list size", len(self.camera_image_list))
-
+###################################################################################################
             for i in trange(len(self.camera_image_list)):
                 # Load the image
                 img = self.loader(self.camera_image_list[i])
 
                 # Load the distance matrix
                 if not self.depth_map_list:
+                    # TODO: Show the depth_map creation
                 # if self.depth_map_list is None:
                     # Generate matrices on the fly
+                    Console.warn("Generating distance matrix ON THE FLY")
                     distance = distance_vector[i]
                     distance_mtx = np.empty((self.image_height, self.image_width))
                     distance_mtx.fill(distance)
@@ -821,7 +823,7 @@ class Corrector:
                     distance_mtx = depth_map.loader(
                         self.depth_map_list[i], self.image_width, self.image_height,
                     )
-
+                # TODO: Show the size of the produced distance_mtx
                 # Correct the image
                 corrected_img = corrections.attenuation_correct(
                     img,
@@ -829,6 +831,9 @@ class Corrector:
                     self.image_attenuation_parameters,
                     self.correction_gains,
                 )
+                # TODO: Inspect the corrected image after attenuation correction
+                # Before calling compute, let's show the corrected_img dimensions
+                # Console.error("corrected_img.shape", corrected_img.shape)
                 runner.compute(corrected_img)
                 memmap_handle[i] = corrected_img.reshape(
                     self.image_height, self.image_width, self.image_channels
