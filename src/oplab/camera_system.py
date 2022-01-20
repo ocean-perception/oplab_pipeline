@@ -85,7 +85,16 @@ class CameraEntry:
 
         if node is not None:
             self.name = node["name"]
+            allowed_types = ["grayscale", "rgb", "bgr", "rggb", "grbg", "bggr", "gbrg"]
             self.type = node["type"]
+            if self.type not in allowed_types:
+                Console.error(
+                    "Camera type '{}' is not allowed. Allowed types are: {}".format(
+                        self.type, allowed_types
+                    )
+                )
+                Console.quit("Camera type is not allowed.")
+
             self.bit_depth = node["bit_depth"]
             self.path = node["path"]
             self.extension = node["extension"]
