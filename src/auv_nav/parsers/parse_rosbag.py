@@ -174,48 +174,42 @@ def parse_rosbag(mission, vehicle, category, output_format, outpath):
         Console.info("... parsing orientation")
         filepath = get_raw_folder(mission.orientation.filepath)
         bagfile = mission.orientation.filename
-        bagfile_list = list(filepath.glob(bagfile))
         wanted_topic = mission.orientation.topic
         data_object = orientation
     elif category == Category.VELOCITY:
         Console.info("... parsing velocity")
         filepath = get_raw_folder(mission.velocity.filepath)
         bagfile = mission.velocity.filename
-        bagfile_list = list(filepath.glob(bagfile))
         wanted_topic = mission.velocity.topic
         data_object = body_velocity
     elif category == Category.DEPTH:
         Console.info("... parsing depth")
         filepath = get_raw_folder(mission.depth.filepath)
         bagfile = mission.depth.filename
-        bagfile_list = list(filepath.glob(bagfile))
         wanted_topic = mission.depth.topic
         data_object = depth
     elif category == Category.ALTITUDE:
         Console.info("... parsing altitude")
         filepath = get_raw_folder(mission.altitude.filepath)
         bagfile = mission.altitude.filename
-        bagfile_list = list(filepath.glob(bagfile))
         wanted_topic = mission.altitude.topic
         data_object = altitude
     elif category == Category.USBL:
         Console.info("... parsing position")
         filepath = get_raw_folder(mission.usbl.filepath)
         bagfile = mission.usbl.filename
-        bagfile_list = list(filepath.glob(bagfile))
         wanted_topic = mission.usbl.topic
         data_object = usbl
     elif category == Category.IMAGES:
         Console.info("... parsing images")
         filepath = get_raw_folder(mission.image.cameras[0].path)
         bagfile = "*.bag"
-        bagfile_list = list(filepath.glob(bagfile))
         wanted_topic = mission.image.cameras[0].topic
         data_object = camera
     else:
         Console.quit("Unknown category for ROS parser", category)
 
-    bagfile = get_raw_folder(outpath / ".." / filepath / bagfile)
+    bagfile_list = list(filepath.glob(bagfile))
     outpath = Path(outpath).parent
     data_list = rosbag_topic_worker(
         bagfile_list, wanted_topic, data_object, data_list, output_format, outpath

@@ -1,14 +1,14 @@
-camera_system: rosbag_extracted_images
+camera_system: rosbag
 cameras:
-  - name: chameleon_left
+  - name: /camera_topic/left/image_raw
     type: rggb
-    bit_depth: 12
-    path: 'images/left/'
-    extension: png
+    bit_depth: 8
+    path: 'images/bagfiles/southampton_image_'
+    extension: bag
     filename_to_date: 'xxxxxeeeeeeeeeeeeeeeeeeee.xxx'
-  - name: chameleon_right
+  - name: /camera_topic/right/image_raw
     type: rggb
-    bit_depth: 12
-    path: 'images/right/'
-    extension: png
+    bit_depth: 8
+    path: 'images/bagfiles/southampton_image_'
+    extension: bag
     filename_to_date: 'xxxxxeeeeeeeeeeeeeeeeeeee.xxx'
