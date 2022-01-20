@@ -77,17 +77,41 @@ def curve_fitting(altitudes: np.ndarray, intensities: np.ndarray) -> np.ndarray:
     altitudes = altitudes[np.isfinite(altitudes)]
     intensities = intensities[np.isfinite(intensities)]
 
+    if altitudes.size == 0:
+        print("---------\naltitudes: ", altitudes, "\nintensities: ", intensities)
+        print("ERROR: Empty non-nan altitudes in curve fitting")
+        return np.array([1, 0, 0])
+    if intensities.size == 0:
+        print("---------\naltitudes: ", altitudes, "\nintensities: ", intensities)
+        print("ERROR: Empty non-nan intensities in curve fitting")
+        return np.array([1, 0, 0])
+
     altitudes_filt = []
     intensities_filt = []
     for x, y in zip(altitudes, intensities):
-        if x > 0 and y > 0:
+        if x >= 0 and y >= 0:
             altitudes_filt.append(x)
             intensities_filt.append(y)
+
+    if not altitudes_filt or not intensities_filt:
+        if not altitudes_filt:
+            print("---------\naltitudes: ", altitudes, "\nintensities: ", intensities, "\naltitudes_filt: ", altitudes_filt,
+          "\nintensities_filt: ", intensities_filt)
+            print("ERROR: Altitudes are negative in curve fitting")
+        if not intensities_filt:
+            print("---------\naltitudes: ", altitudes, "\nintensities: ", intensities, "\naltitudes_filt: ", altitudes_filt,
+          "\nintensities_filt: ", intensities_filt)
+            print("ERROR: Intensities are negative in curve fitting")
+        return np.array([1, 0, 0])
 
     altitudes_filt = np.array(altitudes_filt)
     intensities_filt = np.array(intensities_filt)
 
-    c_upper_bound = intensities_filt.min()
+    try:
+        c_upper_bound = intensities_filt.min()
+    except ValueError:  # raised if it is empty.
+        c_upper_bound = np.finfo(float).eps
+
     if c_upper_bound <= 0:
         # c should be slightly greater than zero to avoid error
         # 'Each lower bound must be strictly less than each upper bound.'
@@ -109,7 +133,11 @@ def curve_fitting(altitudes: np.ndarray, intensities: np.ndarray) -> np.ndarray:
 
     # Avoid zero divisions
     b = 0.0
-    c = intensities_filt.min() * 0.5
+    try:
+        c = intensities_filt.min() * 0.5
+    except ValueError:  # raised if it is empty.
+        c = np.finfo(float).eps
+
     if intensities_filt[idx_1] != 0:
         b = (np.log((int_0 - c) / (int_1 - c))) / (alt_0 - alt_1)
     a = (int_1 - c) / np.exp(b * alt_1)
@@ -152,5 +180,5 @@ def curve_fitting(altitudes: np.ndarray, intensities: np.ndarray) -> np.ndarray:
         return tmp_params.x
     except (ValueError, UnboundLocalError) as e:
         print("ERROR: Value Error due to Overflow", a, b, c)
-        print("Parameters calculated are unoptimised because of Value Error", e)
+        print("Parameters calculated are unoptimised because of error", e)
         return init_params
