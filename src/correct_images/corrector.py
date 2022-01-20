@@ -48,7 +48,9 @@ matplotlib.use("Agg")
 
 
 class Corrector:
-    def __init__(self, force=False, suffix=None, camera=None, correct_config=None, path=None):
+    def __init__(
+        self, force=False, suffix=None, camera=None, correct_config=None, path=None
+    ):
         """Constructor for the Corrector class
 
         Parameters
@@ -187,12 +189,12 @@ class Corrector:
             # Define basic filepaths
             if self.correction_method == "colour_correction":
                 p = Path(self.attenuation_parameters_folder)
-                self.attenuation_params_filepath = (p / "attenuation_parameters.npy")
-                self.correction_gains_filepath = (p / "correction_gains.npy")
-                self.corrected_mean_filepath = (p / "image_corrected_mean.npy")
-                self.corrected_std_filepath = (p / "image_corrected_std.npy")
-                self.raw_mean_filepath = (p / "image_raw_mean.npy")
-                self.raw_std_filepath = (p / "image_raw_std.npy")
+                self.attenuation_params_filepath = p / "attenuation_parameters.npy"
+                self.correction_gains_filepath = p / "correction_gains.npy"
+                self.corrected_mean_filepath = p / "image_corrected_mean.npy"
+                self.corrected_std_filepath = p / "image_corrected_std.npy"
+                self.raw_mean_filepath = p / "image_raw_mean.npy"
+                self.raw_std_filepath = p / "image_raw_std.npy"
 
             # Define image loader
             # Use default loader
@@ -312,12 +314,18 @@ class Corrector:
         elif self.correction_method == "manual_balance":
             parameters_folder_str += "manual"
             developed_folder_str += "manual"
-            developed_folder_str += ("_gain_"
-                + str(self.color_gain_matrix_rgb[0]) + "_"
-                + str(self.color_gain_matrix_rgb[4]) + "_"
-                + str(self.color_gain_matrix_rgb[8]) + "_sub_"
-                + str(self.subtractors_rgb[0]) + "_"
-                + str(self.subtractors_rgb[1]) + "_"
+            developed_folder_str += (
+                "_gain_"
+                + str(self.color_gain_matrix_rgb[0])
+                + "_"
+                + str(self.color_gain_matrix_rgb[4])
+                + "_"
+                + str(self.color_gain_matrix_rgb[8])
+                + "_sub_"
+                + str(self.subtractors_rgb[0])
+                + "_"
+                + str(self.subtractors_rgb[1])
+                + "_"
                 + str(self.subtractors_rgb[2])
             )
         # Accept suffixes for the output directories
@@ -325,7 +333,9 @@ class Corrector:
             parameters_folder_str += "_" + self.suffix
             developed_folder_str += "_" + self.suffix
 
-        self.attenuation_parameters_folder = self.output_dir_path / parameters_folder_str
+        self.attenuation_parameters_folder = (
+            self.output_dir_path / parameters_folder_str
+        )
         self.output_images_folder = self.output_dir_path / developed_folder_str
 
         if not self.attenuation_parameters_folder.exists():
@@ -359,7 +369,6 @@ class Corrector:
                         "Code will overwrite existing corrected images for ",
                         "current configuration...",
                     )
-
 
     def get_camera_idx(self):
         idx = [
@@ -571,7 +580,7 @@ class Corrector:
         self.bin_band = 0.1
         hist_bins = np.arange(self.altitude_min, self.altitude_max, self.bin_band)
         # Watch out: need to substract 1 to get the correct number of bins
-        # because the last bin is not included in the range 
+        # because the last bin is not included in the range
 
         images_fn, images_map = open_memmap(
             shape=(
@@ -607,8 +616,17 @@ class Corrector:
             # Display histogram in console
             for idx_bin in range(hist_bins.size - 1):
                 tmp_idxs = np.where(idxs == idx_bin)[0]
-                Console.info("  Bin", idx_bin, "(", hist_bins[idx_bin],
-                    "m < x <", hist_bins[idx_bin + 1], "m):", len(tmp_idxs), "images")
+                Console.info(
+                    "  Bin",
+                    idx_bin,
+                    "(",
+                    hist_bins[idx_bin],
+                    "m < x <",
+                    hist_bins[idx_bin + 1],
+                    "m):",
+                    len(tmp_idxs),
+                    "images",
+                )
 
             with tqdm_joblib(
                 tqdm(desc="Computing altitude histogram", total=hist_bins.size - 1,)
@@ -700,7 +718,7 @@ class Corrector:
                 img = self.loader(self.camera_image_list[i])
 
                 # Load the distance matrix
-                if self.depth_map_list is None:
+                if not self.depth_map_list:
                     # Generate matrices on the fly
                     distance = distance_vector[i]
                     distance_mtx = np.empty((self.image_height, self.image_width))
@@ -787,7 +805,7 @@ class Corrector:
     ):
         dimensions = [self.image_height, self.image_width, self.image_channels]
         tmp_idxs = np.where(idxs == idx_bin)[0]
-        
+
         if len(tmp_idxs) > 2:
             bin_images = [self.camera_image_list[i] for i in tmp_idxs]
             bin_distances_sample = None
@@ -841,8 +859,10 @@ class Corrector:
             plt.imshow(bin_images_sample)
             plt.colorbar()
             plt.title("Image bin " + str(idx_bin))
-            fig_name = base_path / ("bin_images_sample_" + str(distance_bin_sample) + "m.png")
-            #Console.info("Saved figure at", fig_name)
+            fig_name = base_path / (
+                "bin_images_sample_" + str(distance_bin_sample) + "m.png"
+            )
+            # Console.info("Saved figure at", fig_name)
             plt.savefig(fig_name, dpi=600)
             plt.close(fig)
 
@@ -850,8 +870,10 @@ class Corrector:
             plt.imshow(bin_distances_sample)
             plt.colorbar()
             plt.title("Distance bin " + str(idx_bin))
-            fig_name = base_path / ("bin_distances_sample_" + str(distance_bin_sample) + "m.png")
-            #Console.info("Saved figure at", fig_name)
+            fig_name = base_path / (
+                "bin_distances_sample_" + str(distance_bin_sample) + "m.png"
+            )
+            # Console.info("Saved figure at", fig_name)
             plt.savefig(fig_name, dpi=600)
             plt.close(fig)
 
