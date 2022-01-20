@@ -557,10 +557,12 @@ class Corrector:
 
         self.bin_band = 0.1
         hist_bins = np.arange(self.altitude_min, self.altitude_max, self.bin_band)
+        # Watch out: need to substract 1 to get the correct number of bins
+        # because the last bin is not included in the range 
 
         images_fn, images_map = open_memmap(
             shape=(
-                len(hist_bins),
+                len(hist_bins) - 1,
                 self.image_height * self.image_width,
                 self.image_channels,
             ),
@@ -568,28 +570,30 @@ class Corrector:
         )
 
         distances_fn, distances_map = open_memmap(
-            shape=(len(hist_bins), self.image_height * self.image_width),
+            shape=(len(hist_bins) - 1, self.image_height * self.image_width),
             dtype=np.float32,
         )
 
-        # Fill with NaN not to use empty bins
-        # images_map.fill(np.nan)
-        # distances_map.fill(np.nan)
-
         distance_vector = None
-
         if self.depth_map_list is not None:
-            Console.info("Computing depth map histogram with", hist_bins.size, " bins")
+            Console.info("Computing depth map histogram with", hist_bins.size - 1, " bins")
             distance_vector = np.zeros((len(self.depth_map_list), 1))
             for i, dm_file in enumerate(self.depth_map_list):
                 dm_np = depth_map.loader(dm_file, self.image_width, self.image_height)
                 distance_vector[i] = dm_np.mean(axis=1)
         elif self.altitude_list is not None:
-            Console.info("Computing altitude histogram with", hist_bins.size, " bins")
+            Console.info("Computing altitude histogram with", hist_bins.size - 1, " bins:")
             distance_vector = np.array(self.altitude_list)
 
         if distance_vector is not None:
-            idxs = np.digitize(distance_vector, hist_bins)
+            idxs = np.digitize(distance_vector, hist_bins) - 1
+
+            # Display histogram in console
+            for idx_bin in range(hist_bins.size - 1):
+                tmp_idxs = np.where(idxs == idx_bin)[0]
+                Console.info("  Bin", idx_bin, "(", hist_bins[idx_bin],
+                    "m < x <", hist_bins[idx_bin + 1], "m):", len(tmp_idxs), "images")
+
             with tqdm_joblib(
                 tqdm(desc="Computing altitude histogram", total=hist_bins.size - 1,)
             ):
@@ -603,7 +607,7 @@ class Corrector:
                         max_bin_size_gb,
                         distance_vector,
                     )
-                    for idx_bin in range(1, hist_bins.size)
+                    for idx_bin in range(hist_bins.size - 1)
                 )
 
             # calculate attenuation parameters per channel
@@ -764,7 +768,7 @@ class Corrector:
     ):
         dimensions = [self.image_height, self.image_width, self.image_channels]
         tmp_idxs = np.where(idxs == idx_bin)[0]
-        # Console.info("In bin", idx_bin, "there are", len(tmp_idxs), "images")
+        
         if len(tmp_idxs) > 2:
             bin_images = [self.camera_image_list[i] for i in tmp_idxs]
             bin_distances_sample = None
@@ -818,7 +822,7 @@ class Corrector:
             plt.imshow(bin_images_sample)
             plt.colorbar()
             plt.title("Image bin " + str(idx_bin))
-            fig_name = base_path / ("bin_images_sample_" + str(idx_bin) + ".png")
+            fig_name = base_path / ("bin_images_sample_" + str(distance_bin_sample) + "m.png")
             #Console.info("Saved figure at", fig_name)
             plt.savefig(fig_name, dpi=600)
             plt.close(fig)
@@ -827,7 +831,7 @@ class Corrector:
             plt.imshow(bin_distances_sample)
             plt.colorbar()
             plt.title("Distance bin " + str(idx_bin))
-            fig_name = base_path / ("bin_distances_sample_" + str(idx_bin) + ".png")
+            fig_name = base_path / ("bin_distances_sample_" + str(distance_bin_sample) + "m.png")
             #Console.info("Saved figure at", fig_name)
             plt.savefig(fig_name, dpi=600)
             plt.close(fig)
