@@ -5,7 +5,7 @@ version: 1
 method: 'colour_correction'
 
 colour_correction :
-  distance_metric : 'altitude' # ['none', 'altitude', 'depth_map'] assumes constant altitude, flat seafloor, 3d structure respectively. depth_map requires **** to have been run
+  distance_metric : 'altitude' # ['uniform', 'altitude', 'depth_map'] assumes constant altitude, flat seafloor, 3d structure respectively. depth_map requires **** to have been run
   metric_path : 'json_renav_*' # json nav path in case of altitude / depth map path in case of depth map metric
   altitude_filter : # only use images in the altitude range below to calculate attenuation_modelling parameters
     max_m : 12
