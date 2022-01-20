@@ -92,37 +92,14 @@ def median_array(data: np.ndarray) -> np.ndarray:
     # print("median_array", data.shape)
     if len(data.shape) == 3:
         # Monochrome
-        return median_array_impl(data)
+        return np.median(data, axis=0)
     elif len(data.shape) == 4:
         # Colour
         [n, a, b, c] = data.shape
         median_array = np.zeros((a, b, c), dtype=np.float32)
         for c in range(data.shape[3]):
-            median_array[:, :, c] = median_array_impl(data[:, :, :, c])
+            median_array[:, :, c] = np.median(data[:, :, :, c], axis=0)
         return median_array
-
-
-def median_array_impl(data: np.ndarray) -> np.ndarray:
-    # print("median_array_impl", data.shape)
-    n = data.shape[0]
-    a = data.shape[1]
-    b = data.shape[2]
-    median_array = np.zeros((a, b), dtype=np.float32)
-    for i in range(a):
-        for j in range(b):
-            lst = [0] * n
-            for k in range(n):
-                lst[k] = data[k, i, j]
-            s = sorted(lst)
-            median = 0
-            if n % 2 == 0:
-                for k in range(n // 2 - 1, n // 2 + 1):
-                    median += s[k]
-                median /= 2.0
-            else:
-                median = s[n // 2]
-            median_array[i, j] = median
-    return median_array
 
 
 @njit
