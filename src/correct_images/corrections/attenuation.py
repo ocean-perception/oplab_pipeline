@@ -75,7 +75,6 @@ def attenuation_correct(
         ) * img_float32[:, :]
     return img_float32
 
-
 # compute gain values for each pixel for a targeted altitude using the
 # attenuation parameters
 def calculate_correction_gains(
