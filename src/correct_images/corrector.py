@@ -186,12 +186,6 @@ class Corrector:
             cam_idx
         ].imagefilelist_process
 
-        # DEBUG SECTION - REMOVE ********************************************************
-        # Console.error("corrector.py]] Current camera:", self.camera_name)
-        # Console.warn("Corrector.load_configuration(). user_specified_image_list_parse:", self.user_specified_image_list_parse)
-        # Console.warn("Corrector.load_configuration(). user_specified_image_list_process:", self.user_specified_image_list_process)
-        # DEBUG SECTION - REMOVE ********************************************************
-
         if self.correction_method == "colour_correction":
             # Brighness and contrast are percentages of 255
             # e.g. brightness of 30 means 30% of 255 = 77
@@ -249,7 +243,7 @@ class Corrector:
             path = path_list[i]
             correct_config = correct_config_list[i]
 
-            Console.warn("Parsing dive:", path)
+            Console.info("Parsing dive:", path)
             # Console.info("Setting path...")
             self.set_path(path)                     # update the dive path
 
@@ -258,26 +252,13 @@ class Corrector:
             # Update list of images (it already appends to the list)
             # Set the user specified list - if any
 
-            # DEBUG SECTION - REMOVE ********************************************************
-            Console.warn("Applying user specified image list:", self.user_specified_image_list_parse)
-            # DEBUG SECTION - REMOVE ********************************************************
-
             self.user_specified_image_list = self.user_specified_image_list_parse
             # TODO: this list must be populated from AFTER loading th eonfiguration and BEFORE getting image list
-            # Console.warn("Getting image list...")
             self.get_imagelist()
 
-
-        # show the total number of images after filtering + merging the dives
-        # TODO: this is not the total number of images, but the number of images after filtering
-        # DEBUG SECTION - REMOVE ********************************************************
-        Console.warn("|||||||||||||   Total number of images after filtering:", len(self.camera_image_list))      
-        # TODO: This can be left as info() showing how many images were obtained in a multidive setup. 
-        # It should match the sum of the filtered images of each dive.
-        # Check if we are in multidive mode
+        # Show the total number of images after filtering + merging the dives. It should match the sum of the filtered images of each dive.
         if len(path_list) > 1:
             Console.info("Total number of images after merging dives:", len(self.camera_image_list)) 
-        # DEBUG SECTION - REMOVE ********************************************************
 
         Console.info("Output directories created / existing...")
 
@@ -471,12 +452,11 @@ class Corrector:
     def get_imagelist(self):
         """Generate list of source images"""
 
-        # TODO: JOIN at the very end of the current method
         # Store a copy of the currently stored image list in the Corrector object
         _original_image_list = self.camera_image_list
         _original_altitude_list = self.altitude_list
         # Replaces Corrector object's image_list with the camera image list
-        # self.camera_image_list = self.camera.image_list # Complete unfiltered list
+        # OLD: self.camera_image_list = self.camera.image_list # <---- Now this is done at the end (else condition)
         self.camera_image_list = []
         self.altitude_list = []
 
@@ -523,13 +503,7 @@ class Corrector:
                 )
 
             # get imagelist for given camera object
-            # TODO: I think this should be None  
             if self.user_specified_image_list != "none":
-                # DEBUG SECTION ************************************************
-                # Console.error("Trying to open user specified image list")
-                # Console.warn("self.path_config", self.path_config)
-                # Console.warn("self.user_specified_image_list", self.user_specified_image_list)
-                # DEBUG SECTION ************************************************
                 path_file_list = Path(self.path_config) / self.user_specified_image_list
                 trimmed_csv_file = "trimmed_csv_" + self.camera_name + ".csv"
                 self.trimmed_csv_path = Path(self.path_config) / trimmed_csv_file
@@ -599,12 +573,9 @@ class Corrector:
             # Join the current image list with the original image list (copy)
             self.camera_image_list.extend(_original_image_list)
             # Show size of the extended image list
-            Console.warn(">> The camera image list is now", len(self.camera_image_list))
-
+            Console.warn(">> The camera image list is now", len(self.camera_image_list)) # JC: I'm leaving this as it is informative for multidive
             # Join the current image list with the original image list (copy)
             self.altitude_list.extend(_original_altitude_list)
-            # Show size of the extended altitude list
-            Console.error(">>>>>   The image list is now", len(self.altitude_list))
 
 
     def get_altitude_and_depth_maps(self):

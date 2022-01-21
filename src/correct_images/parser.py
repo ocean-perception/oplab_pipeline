@@ -91,9 +91,6 @@ class CameraConfig:
             imagefilelist_process = node.get("image_file_list", {}).get(
                 "process", "none"
             )
-            # Console.error(">>>>>>>>> Camera: {}".format(camera_name))
-            # Console.warn("imagefilelist_parse: {}".format(imagefilelist_parse))
-            # Console.warn("imagefilelist_process: {}".format(imagefilelist_process))
 
         brightness = 30.0
         contrast = 3.0
@@ -326,9 +323,8 @@ class CorrectConfig:
         if self.configs.num_cameras != other.configs.num_cameras:
             Console.warn("Number of cameras does not match:", self.configs.num_cameras, " / ", other.configs.num_cameras)
             return False
+            
         # Check if the name of the cameras match. Right now we are impossing same order in camera names
-        # TODO: search for unordered names and validate that they are equivalent
-
         for i in range(self.configs.num_cameras):
             if self.configs.camera_configs[i].camera_name != other.configs.camera_configs[i].camera_name:
                 Console.warn("Camera name does not match:", self.configs.camera_configs[i].camera_name, " / ", other.configs.camera_configs[i].camera_name)
