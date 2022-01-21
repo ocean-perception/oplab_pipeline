@@ -22,9 +22,9 @@ class RunningMeanStd:
 
     def __init__(self, dimensions, clipping_max=0.95):
         """Class to compute the mean of a dataset incrementally."""
-        self._mean = np.zeros(dimensions, dtype=np.float32)
-        self.mean2 = np.zeros(dimensions, dtype=np.float32)
-        self._std = np.zeros(dimensions, dtype=np.float32)
+        self._mean = np.zeros(dimensions, dtype=np.float32).squeeze()
+        self.mean2 = np.zeros(dimensions, dtype=np.float32).squeeze()
+        self._std = np.zeros(dimensions, dtype=np.float32).squeze()
         self.count = 0
         self.clipping_max = clipping_max
 
@@ -32,6 +32,7 @@ class RunningMeanStd:
         """Update the mean with a new image."""
         self.count += 1
 
+        image = np.squeeze(image)
         # Clipping image to mean if above threshold:
         #  - Need to reshape to 1-D array view
         mean_1d_view = self._mean.ravel()
@@ -40,7 +41,6 @@ class RunningMeanStd:
             image_1d_view > self.clipping_max
         ]
         # remove size:1 dimension from mean using squeeze
-        self._mean = np.squeeze(self._mean)
         delta = image - self._mean
         self._mean += delta / self.count
         self.mean2 += delta * (image - self._mean)
