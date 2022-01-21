@@ -65,7 +65,17 @@ def main(args=None):
     subparser_parse = subparsers.add_parser(
         "parse", help="Compute the correction parameters"
     )
-    subparser_parse.add_argument("path", help="Path to raw directory till dive.")
+
+    #   subparser_parse.add_argument("path", help="Path to raw directory till dive.")
+
+    subparser_parse.add_argument(
+        "path",
+        #        default=".",
+        nargs="+",
+        help="Folderpath where the (raw) input data is. Needs to be a \
+        subfolder of 'raw' and contain the mission.yaml configuration file.",
+    )
+
     subparser_parse.add_argument(
         "-F",
         "--Force",
@@ -126,11 +136,13 @@ def main(args=None):
         args = parser.parse_args()
 
         # Check suffix is only text, digits, dash and underscores
-        allowed_chars = string.ascii_letters+ "-" + "_" + string.digits
+        allowed_chars = string.ascii_letters + "-" + "_" + string.digits
         if all([c in allowed_chars for c in args.suffix]):
             args.func(args)
         else:
-            Console.error("Suffix must only contain letters, digits, dash and underscores")
+            Console.error(
+                "Suffix must only contain letters, digits, dash and underscores"
+            )
 
 
 def call_parse(args):
@@ -143,26 +155,73 @@ def call_parse(args):
         User provided arguments for path of source images
     """
 
-    path = Path(args.path).resolve()
+    # Now args.path is a list of paths (str / os.PathLike objects)
+    path_list = [Path(path).resolve() for path in args.path]
+    if len(path_list) == 1:
+        path = path_list[0]
+        Console.info("Single path provided, normal single dive mode...")
+    else:
+        Console.warn(
+            "Multiple paths provided [{}]. Checking each path...".format(len(path_list))
+        )
+        for path in path_list:
+            # chec if path is valid
+            if not path.exists():
+                Console.error("Path", path, "does not exist! Exiting...")  # quit
+                sys.exit(1)
+            else:
+                Console.info("\t", path, " [OK]")
 
-    time_string = time.strftime("%Y%m%d_%H%M%S", time.localtime())
-    Console.set_logging_file(
-        get_processed_folder(path)
-        / ("log/" + time_string + "_correct_images_parse.log")
+    # Populating the configuration and camerasystem lists for each dive path
+    correct_config_list, camerasystem_list = zip(
+        *[load_configuration_and_camera_system(path) for path in path_list]
     )
 
-    correct_config, camerasystem = load_configuration_and_camera_system(path, args.suffix)
+    # Let's check that both lists have the same length and are not empty
+    if len(correct_config_list) != len(camerasystem_list):
+        Console.error("Number of [camerasystem] and [configuration] differ!")
+        sys.exit(1)
+    if len(correct_config_list) == 0:
+        Console.error("No valid camerasystem/configuration found!")
+        sys.exit(1)
 
+    # When in multidive mode, check if all camerasystem are the same. For this we test camera_system.camera_system
+    if len(camerasystem_list) > 1:
+        # this test is still valid for single dive mode, so we could remove this if
+        camera_system = camerasystem_list[0]
+        for cs in camerasystem_list:
+            # the first entry will be repeated, no problem with that
+            # TODO: use the ENABLED cameras from config.yaml AND the defined camera system from camera.yaml
+            # TODO: Extend is_equivalent() method allowing checking cameras in different orders
+            # WARNING: We decide not to use equivalent() here, because it is not robust enough. Enforce same camera order
+            if not camera_system.camera_system == cs.camera_system:
+                Console.error("Camera systems differ!")
+                Console.error(
+                    "\tFirst camera system (reference) ", camera_system.camera_system
+                )
+                Console.error("\tWrong camera system (current)   ", cs.camera_system)
+                sys.exit(1)
+        Console.warn("Camera systems are the same for all dives.")  # so far so good
+
+    # Check if the correct_config_lists elements are the same (equivalent)
+    if len(correct_config_list) > 1:
+        correct_config = correct_config_list[0]
+        for cc in correct_config_list:
+            # Check if the relevant fields of the configuration are the same
+            if not correct_config.is_equivalent(cc):
+                Console.error("Configurations [correct_config] do not match!")
+                sys.exit(1)
+        Console.warn("Configurations are equivalent for all dives.")
+
+    # we peek at the first entry and use it as template for all dives
+    camerasystem = camerasystem_list[0]
     for camera in camerasystem.cameras:
         Console.info("Parsing for camera", camera.name)
-
-        if len(camera.image_list) == 0:
-            Console.info("No images found for the camera at the path provided...")
-            continue
-        else:
-            corrector = Corrector(args.force, args.suffix, camera, correct_config, path)
-            if corrector.camera_found:
-                corrector.parse()
+        # Create a Corrector object for each camera with empty configuration
+        # The configuration and the paths will be populated later on a per-dive basis
+        corrector = Corrector(args.force, args.suffix, camera, correct_config=None)
+        # call new list-compatible implementation of parse()
+        corrector.parse(path_list, correct_config_list)
 
     Console.info(
         "Parse completed for all cameras. Please run process to develop ",
@@ -188,7 +247,9 @@ def call_process(args):
         / ("log/" + time_string + "_correct_images_process.log")
     )
 
-    correct_config, camerasystem = load_configuration_and_camera_system(path, args.suffix)
+    correct_config, camerasystem = load_configuration_and_camera_system(
+        path, args.suffix
+    )
 
     for camera in camerasystem.cameras:
         Console.info("Processing for camera", camera.name)
@@ -224,14 +285,18 @@ def call_rescale(args):
         / ("log/" + time_string + "_correct_images_rescale.log")
     )
 
-    correct_config, camerasystem = load_configuration_and_camera_system(path, args.suffix)
+    correct_config, camerasystem = load_configuration_and_camera_system(
+        path, args.suffix
+    )
 
     # install freeimage plugins if not installed
     imageio.plugins.freeimage.download()
 
     if correct_config.camerarescale is None:
         Console.error("Camera rescale configuration not found")
-        Console.error("Please populate the correct_images.yaml file with a rescale configuration")
+        Console.error(
+            "Please populate the correct_images.yaml file with a rescale configuration"
+        )
         Console.quit("Malformed correct_images.yaml file")
 
     # obtain parameters for rescale from correct_config
@@ -264,7 +329,7 @@ def load_configuration_and_camera_system(path, suffix=None):
         Console.info("File mission.yaml found at", path_mission)
     else:
         Console.quit("File mission.yaml file not found at", path_raw_folder)
-        
+
     # load mission parameters
     mission = Mission(path_mission)
 
@@ -274,7 +339,6 @@ def load_configuration_and_camera_system(path, suffix=None):
 
     camera_yaml_path = None
     default_file_path_correct_config = None
-
 
     if not camera_yaml_raw_path.exists() and not camera_yaml_config_path.exists():
         Console.info(
@@ -377,7 +441,9 @@ def load_configuration_and_camera_system(path, suffix=None):
     if suffix == "" or suffix is None:
         path_correct_images = path_config_folder / "correct_images.yaml"
     else:
-        path_correct_images = path_config_folder / ("correct_images_" + suffix + ".yaml")
+        path_correct_images = path_config_folder / (
+            "correct_images_" + suffix + ".yaml"
+        )
     if path_correct_images.exists():
         Console.info(
             "Configuration file correct_images.yaml file found at", path_correct_images,

@@ -95,18 +95,27 @@ class Corrector:
         self.trimmed_csv_path = None
         self.camera_params_file_path = None
 
-        if path is not None:
-            self.path_raw = get_raw_folder(path)
-            self.path_processed = get_processed_folder(path)
-            self.path_config = get_config_folder(path)
         self.force = force
 
-        self.mission = Mission(self.path_raw / "mission.yaml")
+        # if path is None then user must define it externally and call set_path
+        if path is not None:
+            # Set the path for the corrector
+            self.set_path(path)
+        else:
+            return
 
-        tz_offset_s = (
-            read_timezone(self.mission.image.timezone) * 60
-            + self.mission.image.timeoffset
-        )
+        if self.correct_config is not None:
+            # explicit call to load the correct_config
+            self.load_configuration(self.correct_config)
+
+    def set_path(self, path):
+        """Set the path for the corrector"""
+        # The path is expected to be non-empty, so we no longer check for it
+        self.path_raw = get_raw_folder(path)
+        self.path_processed = get_processed_folder(path)
+        self.path_config = get_config_folder(path)
+
+        self.mission = Mission(self.path_raw / "mission.yaml")
 
         self.user_specified_image_list = None  # To be overwritten on parse/process
         self.user_specified_image_list_parse = None
@@ -125,95 +134,112 @@ class Corrector:
         self.image_width = image_properties[1]
         self.image_channels = image_properties[2]
 
-        if self.correct_config is not None:
-            """Load general configuration parameters"""
-            self.correction_method = self.correct_config.method
-            if self.correction_method == "colour_correction":
-                if self.correct_config.color_correction is None:
-                    Console.error(
-                        "No color correction parameters found in the config file"
-                    )
-                    Console.error("Please populate the color_correction section")
-                    Console.quit("Malformed correct_images.yaml file")
-                self.distance_metric = (
-                    self.correct_config.color_correction.distance_metric
-                )
-                self.distance_path = self.correct_config.color_correction.metric_path
-                self.altitude_max = self.correct_config.color_correction.altitude_max
-                self.altitude_min = self.correct_config.color_correction.altitude_min
-                self.smoothing = self.correct_config.color_correction.smoothing
-                self.window_size = self.correct_config.color_correction.window_size
-                self.outlier_rejection = (
-                    self.correct_config.color_correction.outlier_reject
-                )
-            self.cameraconfigs = self.correct_config.configs.camera_configs
-            self.undistort = self.correct_config.output_settings.undistort_flag
-            self.output_format = (
-                self.correct_config.output_settings.compression_parameter
+    # NOTE: we could use an implicit version (correct_config already stored as member)
+    # but in this implementation we force explicit (argument required) call to load_configuration()
+    def load_configuration(self, correct_config=None):
+        if correct_config is None:  # nothing to do here, we expect an explicit call
+            Console.warn("No correct_config provided. Skipping load_configuration()")
+            return
+
+        self.correct_config = correct_config
+
+        """Load general configuration parameters"""
+        self.correction_method = self.correct_config.method
+        if self.correction_method == "colour_correction":
+            self.distance_metric = self.correct_config.color_correction.distance_metric
+            self.distance_path = self.correct_config.color_correction.metric_path
+            self.altitude_max = self.correct_config.color_correction.altitude_max
+            self.altitude_min = self.correct_config.color_correction.altitude_min
+            self.smoothing = self.correct_config.color_correction.smoothing
+            self.window_size = self.correct_config.color_correction.window_size
+            self.outlier_rejection = self.correct_config.color_correction.outlier_reject
+        self.cameraconfigs = self.correct_config.configs.camera_configs
+        self.undistort = self.correct_config.output_settings.undistort_flag
+        self.output_format = self.correct_config.output_settings.compression_parameter
+
+        # Load camera parameters
+        cam_idx = self.get_camera_idx()
+        self.camera_found = False
+        if cam_idx is None:
+            Console.info(
+                "Camera not included in correct_images.yaml. No",
+                "processing will be done for this camera.",
+            )
+            return
+        else:
+            self.camera_found = True
+        self.user_specified_image_list_parse = self.cameraconfigs[
+            cam_idx
+        ].imagefilelist_parse
+        self.user_specified_image_list_process = self.cameraconfigs[
+            cam_idx
+        ].imagefilelist_process
+
+        if self.correction_method == "colour_correction":
+            # Brighness and contrast are percentages of 255
+            # e.g. brightness of 30 means 30% of 255 = 77
+            self.brightness = float(self.cameraconfigs[cam_idx].brightness)
+            self.contrast = float(self.cameraconfigs[cam_idx].contrast)
+        elif self.correction_method == "manual_balance":
+            self.subtractors_rgb = np.array(self.cameraconfigs[cam_idx].subtractors_rgb)
+            self.color_gain_matrix_rgb = np.array(
+                self.cameraconfigs[cam_idx].color_gain_matrix_rgb
             )
 
-            # Load camera parameters
-            cam_idx = self.get_camera_idx()
-            self.camera_found = False
-            if cam_idx is None:
-                Console.info(
-                    "Camera not included in correct_images.yaml. No",
-                    "processing will be done for this camera.",
-                )
-                return
-            else:
-                self.camera_found = True
-            self.user_specified_image_list_parse = self.cameraconfigs[
-                cam_idx
-            ].imagefilelist_parse
-            self.user_specified_image_list_process = self.cameraconfigs[
-                cam_idx
-            ].imagefilelist_process
+        # Create output directories and needed attributes
+        self.create_output_directories()
 
-            if self.correction_method == "colour_correction":
-                # Brighness and contrast are percentages of 255
-                # e.g. brightness of 30 means 30% of 255 = 77
-                self.brightness = float(self.cameraconfigs[cam_idx].brightness)
-                self.contrast = float(self.cameraconfigs[cam_idx].contrast)
-            elif self.correction_method == "manual_balance":
-                self.subtractors_rgb = np.array(
-                    self.cameraconfigs[cam_idx].subtractors_rgb
-                )
-                self.color_gain_matrix_rgb = np.array(
-                    self.cameraconfigs[cam_idx].color_gain_matrix_rgb
-                )
+        # Define basic filepaths
+        if self.correction_method == "colour_correction":
+            p = Path(self.attenuation_parameters_folder)
+            self.attenuation_params_filepath = p / "attenuation_parameters.npy"
+            self.correction_gains_filepath = p / "correction_gains.npy"
+            self.corrected_mean_filepath = p / "image_corrected_mean.npy"
+            self.corrected_std_filepath = p / "image_corrected_std.npy"
+            self.raw_mean_filepath = p / "image_raw_mean.npy"
+            self.raw_std_filepath = p / "image_raw_std.npy"
 
-            # Create output directories and needed attributes
-            self.create_output_directories()
+        # Define image loader
+        # Use default loader
+        self.loader = loader.Loader()
+        self.loader.bit_depth = self.camera.bit_depth
+        if self.camera.extension == "raw":
+            self.loader.set_loader("xviii")
+        elif self.camera.extension == "bag":
+            self.loader.set_loader("rosbag")
+            tz_offset_s = (
+                read_timezone(self.mission.image.timezone) * 60
+                + self.mission.image.timeoffset
+            )
+            self.loader.tz_offset_s = tz_offset_s
+        else:
+            self.loader.set_loader("default")
 
-            # Define basic filepaths
-            if self.correction_method == "colour_correction":
-                p = Path(self.attenuation_parameters_folder)
-                self.attenuation_params_filepath = p / "attenuation_parameters.npy"
-                self.correction_gains_filepath = p / "correction_gains.npy"
-                self.corrected_mean_filepath = p / "image_corrected_mean.npy"
-                self.corrected_std_filepath = p / "image_corrected_std.npy"
-                self.raw_mean_filepath = p / "image_raw_mean.npy"
-                self.raw_std_filepath = p / "image_raw_std.npy"
+    def parse(self, path_list, correct_config_list):
+        # both path_list and correct_config_list are assumed to be valid + equivalent
+        for i in range(len(path_list)):  # for each dive
+            path = path_list[i]
+            correct_config = correct_config_list[i]
 
-            # Define image loader
-            # Use default loader
-            self.loader = loader.Loader()
-            self.loader.bit_depth = self.camera.bit_depth
-            if self.camera.extension == "raw":
-                self.loader.set_loader("xviii")
-            elif self.camera.extension == "bag":
-                self.loader.set_loader("rosbag")
-                self.loader.tz_offset_s = tz_offset_s
-            else:
-                self.loader.set_loader("default")
+            Console.info("Parsing dive:", path)
+            # Console.info("Setting path...")
+            self.set_path(path)  # update the dive path
 
-    def parse(self):
-        # Set the user specified list if any
-        self.user_specified_image_list = self.user_specified_image_list_parse
+            # Console.info("Loading configuration...")
+            self.load_configuration(correct_config)  # load the dive config
+            # Update list of images (it already appends to the list)
+            # Set the user specified list - if any
 
-        # Read list of images
-        self.get_imagelist()
+            self.user_specified_image_list = self.user_specified_image_list_parse
+            # TODO: this list must be populated from AFTER loading th eonfiguration and BEFORE getting image list
+            self.get_imagelist()
+
+        # Show the total number of images after filtering + merging the dives. It should match the sum of the filtered images of each dive.
+        if len(path_list) > 1:
+            Console.info(
+                "Total number of images after merging dives:",
+                len(self.camera_image_list),
+            )
 
         Console.info("Output directories created / existing...")
 
@@ -391,6 +417,14 @@ class Corrector:
     def get_imagelist(self):
         """Generate list of source images"""
 
+        # Store a copy of the currently stored image list in the Corrector object
+        _original_image_list = self.camera_image_list
+        _original_altitude_list = self.altitude_list
+        # Replaces Corrector object's image_list with the camera image list
+        # OLD: self.camera_image_list = self.camera.image_list # <---- Now this is done at the end (else condition)
+        self.camera_image_list = []
+        self.altitude_list = []
+
         # If using colour_correction, we need to read in the navigation
         if self.correction_method == "colour_correction":
             if self.distance_path == "json_renav_*":
@@ -456,7 +490,7 @@ class Corrector:
                     valid_idx.append(idx)
             filtered_dataframe = dataframe.iloc[valid_idx]
             filtered_dataframe.reset_index(drop=True)
-            # Warning: if the column does not contain any 'None' entry, it will be parsed as float, and the .str() accesor will fail
+            # WARNING: if the column does not contain any 'None' entry, it will be parsed as float, and the .str() accesor will fail
             filtered_dataframe["altitude [m]"] = filtered_dataframe[
                 "altitude [m]"
             ].astype("string")
@@ -488,6 +522,7 @@ class Corrector:
                 Console.error("You may need to reprocess the dive with auv_nav")
                 Console.quit("No images were found.")
 
+            # WARNING: what happens in a multidive setup when the current dive has no images (but the rest of the dive does)?
             Console.info(
                 len(self.altitude_list),
                 "/",
@@ -503,11 +538,25 @@ class Corrector:
             # Copy the images list from the camera
             self.camera_image_list = self.camera.image_list
 
+            # Join the current image list with the original image list (copy)
+            self.camera_image_list.extend(_original_image_list)
+            # Show size of the extended image list
+            Console.warn(
+                ">> The camera image list is now", len(self.camera_image_list)
+            )  # JC: I'm leaving this as it is informative for multidive
+            # Join the current image list with the original image list (copy)
+            self.altitude_list.extend(_original_altitude_list)
+
     def get_altitude_and_depth_maps(self):
         """Generate distance matrix numpy files and save them"""
         # read altitude / depth map depending on distance_metric
         if self.distance_metric == "uniform":
             Console.info("Null distance matrix created")
+            self.depth_map_list = []
+            return
+        elif self.distance_metric == "altitude":
+            Console.info("Null distance matrix created")
+            self.depth_map_list = []
             return
         elif self.distance_metric == "depth_map":
             path_depth = self.path_processed / "depth_map"
@@ -620,9 +669,9 @@ class Corrector:
                     "  Bin",
                     idx_bin,
                     "(",
-                    hist_bins[idx_bin],
+                    round(hist_bins[idx_bin], 1),
                     "m < x <",
-                    hist_bins[idx_bin + 1],
+                    round(hist_bins[idx_bin + 1], 1),
                     "m):",
                     len(tmp_idxs),
                     "images",
@@ -681,6 +730,7 @@ class Corrector:
                 self.image_width,
                 self.image_channels,
             )
+            Console.warn("Saving correction gains")
             # Save correction gains
             np.save(self.correction_gains_filepath, self.correction_gains)
 
@@ -689,7 +739,7 @@ class Corrector:
             )
 
             # Useful if fails, to reload precomputed numpyfiles.
-            # TODO offer as a new step.
+            # TODO: offer as a new step.
             # self.image_attenuation_parameters = np.load(
             #   self.attenuation_params_filepath)
             # self.correction_gains = np.load(self.correction_gains_filepath)
@@ -713,13 +763,19 @@ class Corrector:
                 dtype=np.float32,
             )
 
+            Console.error("depth_map_list size", len(self.depth_map_list))
+            Console.error("camera_image_list size", len(self.camera_image_list))
+            ###################################################################################################
             for i in trange(len(self.camera_image_list)):
                 # Load the image
                 img = self.loader(self.camera_image_list[i])
 
                 # Load the distance matrix
                 if not self.depth_map_list:
+                    # TODO: Show the depth_map creation
+                    # if self.depth_map_list is None:
                     # Generate matrices on the fly
+                    Console.warn("Generating distance matrix ON THE FLY")
                     distance = distance_vector[i]
                     distance_mtx = np.empty((self.image_height, self.image_width))
                     distance_mtx.fill(distance)
@@ -727,7 +783,7 @@ class Corrector:
                     distance_mtx = depth_map.loader(
                         self.depth_map_list[i], self.image_width, self.image_height,
                     )
-
+                # TODO: Show the size of the produced distance_mtx
                 # Correct the image
                 corrected_img = corrections.attenuation_correct(
                     img,
@@ -735,6 +791,9 @@ class Corrector:
                     self.image_attenuation_parameters,
                     self.correction_gains,
                 )
+                # TODO: Inspect the corrected image after attenuation correction
+                # Before calling compute, let's show the corrected_img dimensions
+                # Console.error("corrected_img.shape", corrected_img.shape)
                 runner.compute(corrected_img)
                 memmap_handle[i] = corrected_img.reshape(
                     self.image_height, self.image_width, self.image_channels
@@ -748,8 +807,12 @@ class Corrector:
             )
 
             # save parameters for process
-            np.save(self.corrected_mean_filepath, image_corrected_mean)
-            np.save(self.corrected_std_filepath, image_corrected_std)
+            np.save(
+                self.corrected_mean_filepath, image_corrected_mean
+            )  # TODO: make member
+            np.save(
+                self.corrected_std_filepath, image_corrected_std
+            )  # TODO: make member
 
             corrections.save_attenuation_plots(
                 self.attenuation_parameters_folder,

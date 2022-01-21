@@ -21,6 +21,7 @@ class RunningMeanStd:
     __slots__ = ["_mean", "mean2", "_std", "count", "clipping_max"]
 
     def __init__(self, dimensions, clipping_max=0.95):
+        """Class to compute the mean of a dataset incrementally."""
         self._mean = np.zeros(dimensions, dtype=np.float32)
         self.mean2 = np.zeros(dimensions, dtype=np.float32)
         self._std = np.zeros(dimensions, dtype=np.float32)
@@ -28,16 +29,25 @@ class RunningMeanStd:
         self.clipping_max = clipping_max
 
     def compute(self, image):
+        """Update the mean with a new image."""
         self.count += 1
-        # clipping to mean if above threshold
-        image[image > self.clipping_max] = self._mean[image > self.clipping_max]
-        image = image.astype(np.float32)
+
+        # Clipping image to mean if above threshold:
+        #  - Need to reshape to 1-D array view
+        mean_1d_view = self._mean.ravel()
+        image_1d_view = image.ravel()
+        image_1d_view[image_1d_view > self.clipping_max] = mean_1d_view[
+            image_1d_view > self.clipping_max
+        ]
+        # remove size:1 dimension from mean using squeeze
+        self._mean = np.squeeze(self._mean)
         delta = image - self._mean
         self._mean += delta / self.count
         self.mean2 += delta * (image - self._mean)
 
     @property
     def mean(self):
+        """Get the mean of the current batch."""
         if self.count > 1:
             return self._mean
         else:
@@ -45,6 +55,7 @@ class RunningMeanStd:
 
     @property
     def std(self):
+        """Get the standard deviation of the current batch."""
         if self.count > 1:
             self._std = np.sqrt(self.mean2 / self.count)
             self._std[self._std < 1e-4] = 1e-4
@@ -89,6 +100,7 @@ def running_mean_std(file_list, loader=default.loader):
 
 
 def median_array(data: np.ndarray) -> np.ndarray:
+    """Compute the median of an array"""
     # print("median_array", data.shape)
     if len(data.shape) == 3:
         # Monochrome
@@ -104,6 +116,7 @@ def median_array(data: np.ndarray) -> np.ndarray:
 
 @njit
 def mean_std_array(data: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    """Compute the mean and std of an array"""
     # print("mean_std_array", data.shape)
     n = data.shape[0]
     a = data.shape[1]
