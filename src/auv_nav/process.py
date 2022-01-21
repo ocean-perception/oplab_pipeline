@@ -227,31 +227,47 @@ def process(
                 sensors_std["position_z"] = sensors_std["depth"]
             if "speed" not in sensors_std:
                 sensors_std["speed"] = sensors_std["dvl"]
+        else:
+            sensors_std = {}
 
         # Default to use JSON uncertainties
-        if "model" not in sensors_std["position_xy"]:
+        if (
+            "position_xy" not in sensors_std
+            or "model" not in sensors_std["position_xy"]
+        ):
             Console.warn(
                 "No uncertainty model specified for position_xy, defaulting",
                 "to sensor (JSON).",
             )
+            if "position_xy" not in sensors_std:
+                sensors_std["position_xy"] = {}
             sensors_std["position_xy"]["model"] = "sensor"
-        if "model" not in sensors_std["speed"]:
+        if "speed" not in sensors_std or "model" not in sensors_std["speed"]:
             Console.warn(
                 "No uncertainty model specified for speed, defaulting to",
                 "sensor (JSON).",
             )
+            if "speed" not in sensors_std:
+                sensors_std["speed"] = {}
             sensors_std["speed"]["model"] = "sensor"
-        if "model" not in sensors_std["position_z"]:
+        if "position_z" not in sensors_std or "model" not in sensors_std["position_z"]:
             Console.warn(
                 "No uncertainty model specified for Depth, defaulting to",
                 "sensor (JSON).",
             )
+            if "position_z" not in sensors_std:
+                sensors_std["position_z"] = {}
             sensors_std["position_z"]["model"] = "sensor"
-        if "model" not in sensors_std["orientation"]:
+        if (
+            "orientation" not in sensors_std
+            or "model" not in sensors_std["orientation"]
+        ):
             Console.warn(
                 "No uncertainty model specified for Orientation, defaulting",
                 "to sensor (JSON).",
             )
+            if "orientation" not in sensors_std:
+                sensors_std["orientation"] = {}
             sensors_std["orientation"]["model"] = "sensor"
         if "ekf" in load_localisation:
             ekf_activate = load_localisation["ekf"]["activate"]

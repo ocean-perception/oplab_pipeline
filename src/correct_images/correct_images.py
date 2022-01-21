@@ -9,6 +9,7 @@ See LICENSE.md file in the project root for full license information.
 
 import argparse
 import os
+import string
 import sys
 import time
 from pathlib import Path
@@ -52,6 +53,12 @@ def main(args=None):
         action="store_true",
         help="Force overwrite if correction parameters already exist.",
     )
+    subparser_correct.add_argument(
+        "--suffix",
+        dest="suffix",
+        default="",
+        help="Expected suffix for correct_images configuration and output folders.",
+    )
     subparser_correct.set_defaults(func=call_correct)
 
     # subparser parse
@@ -76,6 +83,12 @@ def main(args=None):
         action="store_true",
         help="Force overwrite if correction parameters already exist.",
     )
+    subparser_parse.add_argument(
+        "--suffix",
+        dest="suffix",
+        default="",
+        help="Expected suffix for correct_images configuration and output folders.",
+    )
     subparser_parse.set_defaults(func=call_parse)
 
     # subparser process
@@ -90,6 +103,12 @@ def main(args=None):
         action="store_true",
         help="Force overwrite if correction parameters already exist.",
     )
+    subparser_process.add_argument(
+        "--suffix",
+        dest="suffix",
+        default="",
+        help="Expected suffix for correct_images configuration and output folders.",
+    )
     subparser_process.set_defaults(func=call_process)
 
     # subparser rescale image
@@ -97,6 +116,12 @@ def main(args=None):
         "rescale", help="Rescale processed images"
     )
     subparser_rescale.add_argument("path", help="Path to raw folder")
+    subparser_rescale.add_argument(
+        "--suffix",
+        dest="suffix",
+        default="",
+        help="Expected suffix for correct_images configuration and output folders.",
+    )
     subparser_rescale.set_defaults(func=call_rescale)
 
     if len(sys.argv) == 1 and args is None:
@@ -109,7 +134,15 @@ def main(args=None):
             args.func(args)
     else:
         args = parser.parse_args()
-        args.func(args)
+
+        # Check suffix is only text, digits, dash and underscores
+        allowed_chars = string.ascii_letters + "-" + "_" + string.digits
+        if all([c in allowed_chars for c in args.suffix]):
+            args.func(args)
+        else:
+            Console.error(
+                "Suffix must only contain letters, digits, dash and underscores"
+            )
 
 
 def call_parse(args):
@@ -143,6 +176,7 @@ def call_parse(args):
     correct_config_list, camerasystem_list = zip(
         *[load_configuration_and_camera_system(path) for path in path_list]
     )
+
     # Let's check that both lists have the same length and are not empty
     if len(correct_config_list) != len(camerasystem_list):
         Console.error("Number of [camerasystem] and [configuration] differ!")
@@ -152,15 +186,11 @@ def call_parse(args):
         sys.exit(1)
 
     # When in multidive mode, check if all camerasystem are the same. For this we test camera_system.camera_system
-    if (
-        len(camerasystem_list) > 1
-    ):  # this test is still valid for single dive mode, so we could remove this if
+    if len(camerasystem_list) > 1:
+        # this test is still valid for single dive mode, so we could remove this if
         camera_system = camerasystem_list[0]
-        for (
-            cs
-        ) in (
-            camerasystem_list
-        ):  # the first entry will be repeated, no problem with that
+        for cs in camerasystem_list:
+            # the first entry will be repeated, no problem with that
             # TODO: use the ENABLED cameras from config.yaml AND the defined camera system from camera.yaml
             # TODO: Extend is_equivalent() method allowing checking cameras in different orders
             # WARNING: We decide not to use equivalent() here, because it is not robust enough. Enforce same camera order
@@ -183,17 +213,15 @@ def call_parse(args):
                 sys.exit(1)
         Console.warn("Configurations are equivalent for all dives.")
 
-    camerasystem = camerasystem_list[
-        0
-    ]  # we peek at the first entry and use it as template for all dives
+    # we peek at the first entry and use it as template for all dives
+    camerasystem = camerasystem_list[0]
     for camera in camerasystem.cameras:
         Console.info("Parsing for camera", camera.name)
         # Create a Corrector object for each camera with empty configuration
         # The configuration and the paths will be populated later on a per-dive basis
-        corrector = Corrector(args.force, camera, correct_config=None)
-        corrector.parse(
-            path_list, correct_config_list
-        )  # call new list-compatible implementation of parse()
+        corrector = Corrector(args.force, args.suffix, camera, correct_config=None)
+        # call new list-compatible implementation of parse()
+        corrector.parse(path_list, correct_config_list)
 
     Console.info(
         "Parse completed for all cameras. Please run process to develop ",
@@ -219,7 +247,9 @@ def call_process(args):
         / ("log/" + time_string + "_correct_images_process.log")
     )
 
-    correct_config, camerasystem = load_configuration_and_camera_system(path)
+    correct_config, camerasystem = load_configuration_and_camera_system(
+        path, args.suffix
+    )
 
     for camera in camerasystem.cameras:
         Console.info("Processing for camera", camera.name)
@@ -228,7 +258,7 @@ def call_process(args):
             Console.info("No images found for the camera at the path provided...")
             continue
         else:
-            corrector = Corrector(args.force, camera, correct_config, path)
+            corrector = Corrector(args.force, args.suffix, camera, correct_config, path)
             if corrector.camera_found:
                 corrector.process()
     Console.info("Process completed for all cameras...")
@@ -255,10 +285,19 @@ def call_rescale(args):
         / ("log/" + time_string + "_correct_images_rescale.log")
     )
 
-    correct_config, camerasystem = load_configuration_and_camera_system(path)
+    correct_config, camerasystem = load_configuration_and_camera_system(
+        path, args.suffix
+    )
 
     # install freeimage plugins if not installed
     imageio.plugins.freeimage.download()
+
+    if correct_config.camerarescale is None:
+        Console.error("Camera rescale configuration not found")
+        Console.error(
+            "Please populate the correct_images.yaml file with a rescale configuration"
+        )
+        Console.quit("Malformed correct_images.yaml file")
 
     # obtain parameters for rescale from correct_config
     rescale_cameras = correct_config.camerarescale.rescale_cameras
@@ -268,7 +307,7 @@ def call_rescale(args):
     Console.info("Rescaling completed for all cameras ...")
 
 
-def load_configuration_and_camera_system(path):
+def load_configuration_and_camera_system(path, suffix=None):
     """Generate correct_config and camera system objects from input config
     yaml files
 
@@ -298,8 +337,8 @@ def load_configuration_and_camera_system(path):
     camera_yaml_raw_path = path_raw_folder / "camera.yaml"
     camera_yaml_config_path = path_config_folder / "camera.yaml"
 
-    default_file_path_correct_config = None
     camera_yaml_path = None
+    default_file_path_correct_config = None
 
     if not camera_yaml_raw_path.exists() and not camera_yaml_config_path.exists():
         Console.info(
@@ -398,7 +437,13 @@ def load_configuration_and_camera_system(path):
         )
 
     # check for correct_config yaml path
-    path_correct_images = path_config_folder / "correct_images.yaml"
+    path_correct_images = None
+    if suffix == "" or suffix is None:
+        path_correct_images = path_config_folder / "correct_images.yaml"
+    else:
+        path_correct_images = path_config_folder / (
+            "correct_images_" + suffix + ".yaml"
+        )
     if path_correct_images.exists():
         Console.info(
             "Configuration file correct_images.yaml file found at", path_correct_images,

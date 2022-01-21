@@ -44,7 +44,22 @@ class ColourCorrection:
         node : cdict
             dictionary object for an entry in correct_images.yaml file
         """
+        valid_distance_metrics = ["uniform", "altitude", "depth_map"]
         self.distance_metric = node["distance_metric"]
+
+        if self.distance_metric == "none":
+            self.distance_metric = "uniform"
+            Console.warn(
+                "Distance metric is set to none. This is deprecated.",
+                "Please use uniform instead.",
+            )
+        if self.distance_metric not in valid_distance_metrics:
+            Console.error(
+                "Distance metric not valid. Please use one of the following:",
+                valid_distance_metrics,
+            )
+            Console.quit("Invalid distance metric: {}".format(self.distance_metric))
+
         self.metric_path = node["metric_path"]
         self.altitude_max = node["altitude_filter"]["max_m"]
         self.altitude_min = node["altitude_filter"]["min_m"]
@@ -250,9 +265,12 @@ class CorrectConfig:
         with filename.open("r") as stream:
             data = yaml.safe_load(stream)
 
+        self.color_correction = None
+        self.camerarescale = None
+
         if "version" not in data:
             Console.error(
-                "It seems you are using an older correct_images.yaml.",
+                "It seems you are using an old correct_images.yaml.",
                 "You will have to delete it and run this software again.",
             )
             Console.error("Delete the file with:")
@@ -272,14 +290,12 @@ class CorrectConfig:
                 " ".join(m for m in valid_methods),
             )
 
-        node = data["colour_correction"]
-        self.color_correction = ColourCorrection(node)
-        node = data["cameras"]
-        self.configs = CameraConfigs(node)
-        node = data["output_settings"]
-        self.output_settings = OutputSettings(node)
-        node = data["rescale"]
-        self.camerarescale = CameraRescale(node)
+        if "colour_correction" in data:
+            self.color_correction = ColourCorrection(data["colour_correction"])
+        self.configs = CameraConfigs(data["cameras"])
+        self.output_settings = OutputSettings(data["output_settings"])
+        if "rescale" in data:
+            self.camerarescale = CameraRescale(data["rescale"])
 
     def is_equivalent(self, other):
         """is_equivalent checks if two configurations are equivalent
