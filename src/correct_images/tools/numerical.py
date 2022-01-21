@@ -39,7 +39,8 @@ class RunningMeanStd:
         image_1d_view[image_1d_view > self.clipping_max] = mean_1d_view[
             image_1d_view > self.clipping_max
         ]
-
+        # remove dimension of size 1 from mean using squeeze
+        self._mean = np.squeeze(self._mean)
         delta = image - self._mean
         self._mean += delta / self.count
         self.mean2 += delta * (image - self._mean)
