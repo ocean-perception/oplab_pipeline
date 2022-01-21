@@ -24,7 +24,7 @@ class RunningMeanStd:
         """Class to compute the mean of a dataset incrementally."""
         self._mean = np.zeros(dimensions, dtype=np.float32).squeeze()
         self.mean2 = np.zeros(dimensions, dtype=np.float32).squeeze()
-        self._std = np.zeros(dimensions, dtype=np.float32).squeze()
+        self._std = np.zeros(dimensions, dtype=np.float32).squeeze()
         self.count = 0
         self.clipping_max = clipping_max
 
