@@ -7,29 +7,43 @@ See LICENSE.md file in the project root for full license information.
 """
 
 import sys
-
 from pathlib import Path
-from typing import Union, Optional, List
 from threading import Lock
+from typing import List, Optional, Union
 
 import numpy as np
 import pandas as pd
 
-from oplab import Console
 from auv_nav.sensors import (
-    BodyVelocity, Orientation, Depth, Altitude, Usbl, Tide, Other, Camera, SyncedOrientationBodyVelocity
+    Altitude,
+    BodyVelocity,
+    Camera,
+    Depth,
+    Orientation,
+    Other,
+    SyncedOrientationBodyVelocity,
+    Tide,
+    Usbl,
 )
+from oplab import Console
 
 
 def write_csv(
     csv_filepath: Path,
     data_list: Union[
-        List[BodyVelocity], List[Orientation], List[Depth], List[Altitude], List[Usbl], List[Tide], List[Other],
-        List[Camera], List[SyncedOrientationBodyVelocity]
+        List[BodyVelocity],
+        List[Orientation],
+        List[Depth],
+        List[Altitude],
+        List[Usbl],
+        List[Tide],
+        List[Other],
+        List[Camera],
+        List[SyncedOrientationBodyVelocity],
     ],
     csv_filename: str,
     csv_flag: Optional[bool] = True,
-    mutex: Optional[Lock] = None
+    mutex: Optional[Lock] = None,
 ):
     if csv_flag is True and len(data_list) > 1:
         csv_file = Path(csv_filepath)
@@ -84,9 +98,7 @@ def write_csv(
 
 
 def load_states(
-    path: Path,
-    start_image_identifier: str,
-    end_image_identifier: str
+    path: Path, start_image_identifier: str, end_image_identifier: str
 ) -> List[Camera]:
     """Loads states from csv between 2 timestamps
 
@@ -102,22 +114,56 @@ def load_states(
 
     path_covriance = path.parent / (path.stem + "_cov" + path.suffix)
     covariances = pd.read_csv(path_covriance)
-    covariances.columns = covariances.columns.str.replace(' ', '')
+    covariances.columns = covariances.columns.str.replace(" ", "")
     headers = list(covariances.columns.values)
-    headers = [s.strip() for s in headers]  # Strip whitespace in comma-space (instead of just comma)-separtated columns
+    headers = [
+        s.strip() for s in headers
+    ]  # Strip whitespace in comma-space (instead of just comma)-separtated columns
     expected_headers = [
-        'relative_path',
-        'cov_x_x', 'cov_x_y', 'cov_x_z', 'cov_x_roll', 'cov_x_pitch', 'cov_x_yaw',
-        'cov_y_x', 'cov_y_y', 'cov_y_z', 'cov_y_roll', 'cov_y_pitch', 'cov_y_yaw',
-        'cov_z_x', 'cov_z_y', 'cov_z_z', 'cov_z_roll', 'cov_z_pitch', 'cov_z_yaw',
-        'cov_roll_x', 'cov_roll_y', 'cov_roll_z', 'cov_roll_roll', 'cov_roll_pitch', 'cov_roll_yaw',
-        'cov_pitch_x', 'cov_pitch_y', 'cov_pitch_z', 'cov_pitch_roll', 'cov_pitch_pitch', 'cov_pitch_yaw',
-        'cov_yaw_x', 'cov_yaw_y', 'cov_yaw_z', 'cov_yaw_roll', 'cov_yaw_pitch', 'cov_yaw_yaw'
+        "relative_path",
+        "cov_x_x",
+        "cov_x_y",
+        "cov_x_z",
+        "cov_x_roll",
+        "cov_x_pitch",
+        "cov_x_yaw",
+        "cov_y_x",
+        "cov_y_y",
+        "cov_y_z",
+        "cov_y_roll",
+        "cov_y_pitch",
+        "cov_y_yaw",
+        "cov_z_x",
+        "cov_z_y",
+        "cov_z_z",
+        "cov_z_roll",
+        "cov_z_pitch",
+        "cov_z_yaw",
+        "cov_roll_x",
+        "cov_roll_y",
+        "cov_roll_z",
+        "cov_roll_roll",
+        "cov_roll_pitch",
+        "cov_roll_yaw",
+        "cov_pitch_x",
+        "cov_pitch_y",
+        "cov_pitch_z",
+        "cov_pitch_roll",
+        "cov_pitch_pitch",
+        "cov_pitch_yaw",
+        "cov_yaw_x",
+        "cov_yaw_y",
+        "cov_yaw_z",
+        "cov_yaw_roll",
+        "cov_yaw_pitch",
+        "cov_yaw_yaw",
     ]
     if len(headers) < 37 or headers[0:37] != expected_headers:
         Console.quit("Unexpected headers in covariance file", path)
 
-    covariances.rename(columns={'relative_path': 'relative_path_cov'}, inplace=True)  # prevent same names after merging
+    covariances.rename(
+        columns={"relative_path": "relative_path_cov"}, inplace=True
+    )  # prevent same names after merging
     pd_states = pd.concat([poses, covariances], axis=1)
     use = False
     found_end_imge_identifier = False
@@ -129,7 +175,10 @@ def load_states(
             if use:
                 if row["relative_path"] != row["relative_path_cov"]:
                     Console.error(
-                        "Different relative paths (" + row["relative_path"] + " and " + row["relative_path_cov"]
+                        "Different relative paths ("
+                        + row["relative_path"]
+                        + " and "
+                        + row["relative_path_cov"]
                         + ") in corresponding lines in states and covariance csv"
                     )
                 s = Camera()
@@ -144,22 +193,35 @@ def load_states(
                 s.y_velocity = row["y_velocity [m/s]"]
                 s.z_velocity = row["z_velocity [m/s]"]
                 s.epoch_timestamp = row["timestamp [s]"]
-                s.covariance = np.asarray(row['cov_x_x':'cov_yaw_yaw']).reshape((6, 6))
+                s.covariance = np.asarray(row["cov_x_x":"cov_yaw_yaw"]).reshape((6, 6))
                 states.append(s)
             if row["relative_path"] == end_image_identifier:
                 found_end_imge_identifier = True
                 break
     except KeyError as err:
         Console.error(
-            "In", __file__, "line", sys._getframe().f_lineno,
-            ": KeyError when parsing ", path, ": Key", err, "not found."
+            "In",
+            __file__,
+            "line",
+            sys._getframe().f_lineno,
+            ": KeyError when parsing ",
+            path,
+            ": Key",
+            err,
+            "not found.",
         )
 
     if use is False:
-        Console.error("Did not find start image identifier (" + start_image_identifier + "). Check your input.")
+        Console.error(
+            "Did not find start image identifier ("
+            + start_image_identifier
+            + "). Check your input."
+        )
     elif found_end_imge_identifier is False:
         Console.warn(
-            "Did not find end image identifier (" + end_image_identifier + "). Returning all states until end of file."
+            "Did not find end image identifier ("
+            + end_image_identifier
+            + "). Returning all states until end of file."
         )
 
     return states

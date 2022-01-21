@@ -7,19 +7,19 @@ See LICENSE.md file in the project root for full license information.
 """
 
 import math
-import time
 import threading
+import time
+from pathlib import Path
+from typing import List, Optional
 
 import plotly.graph_objs as go
 import plotly.offline as py
 from plotly import subplots
-from pathlib import Path
-from typing import Optional, List
 
-from oplab import Console
-from auv_nav.localisation.ekf import Index, EkfState
-from auv_nav.tools.time_conversions import epoch_to_utctime
+from auv_nav.localisation.ekf import EkfState, Index
 from auv_nav.sensors import Camera
+from auv_nav.tools.time_conversions import epoch_to_utctime
+from oplab import Console
 
 
 def create_trace(
@@ -30,7 +30,7 @@ def create_trace(
     visibility=True,
     fill="none",
     is_std_bound=False,
-    is_2nd_line=False
+    is_2nd_line=False,
 ):
     dash = "dash" if is_2nd_line else "solid"
     line = dict(width=0) if is_std_bound else dict(color=trace_color, dash=dash)
@@ -410,30 +410,29 @@ def plot_pf_uncertainty(
 
 #  EKF uncertainty plotly
 def plot_ekf_states_and_std_vs_time(
-    ekf_states: List[EkfState],
-    output_folder: Path,
+    ekf_states: List[EkfState], output_folder: Path,
 ):
     Console.info("Plotting EKF states with std vs. time...")
     ekf_time = [i.time for i in ekf_states]
     ekf_northings = [i.state[Index.X, 0] for i in ekf_states]
-    ekf_eastings  = [i.state[Index.Y, 0] for i in ekf_states]
-    ekf_depths    = [i.state[Index.Z, 0] for i in ekf_states]
+    ekf_eastings = [i.state[Index.Y, 0] for i in ekf_states]
+    ekf_depths = [i.state[Index.Z, 0] for i in ekf_states]
     ekf_northing_stds = [i.northing_std() for i in ekf_states]
-    ekf_easting_stds  = [i.easting_std()  for i in ekf_states]
-    ekf_depth_stds    = [i.depth_std()    for i in ekf_states]
+    ekf_easting_stds = [i.easting_std() for i in ekf_states]
+    ekf_depth_stds = [i.depth_std() for i in ekf_states]
 
-    ekf_roll_deg  = [180 / math.pi * i.state[Index.ROLL, 0]  for i in ekf_states]
+    ekf_roll_deg = [180 / math.pi * i.state[Index.ROLL, 0] for i in ekf_states]
     ekf_pitch_deg = [180 / math.pi * i.state[Index.PITCH, 0] for i in ekf_states]
-    ekf_yaw_deg   = [180 / math.pi * i.state[Index.YAW, 0]   for i in ekf_states]
-    ekf_roll_std_deg  = [i.roll_std_deg()  for i in ekf_states]
+    ekf_yaw_deg = [180 / math.pi * i.state[Index.YAW, 0] for i in ekf_states]
+    ekf_roll_std_deg = [i.roll_std_deg() for i in ekf_states]
     ekf_pitch_std_deg = [i.pitch_std_deg() for i in ekf_states]
-    ekf_yaw_std_deg   = [i.yaw_std_deg()   for i in ekf_states]
+    ekf_yaw_std_deg = [i.yaw_std_deg() for i in ekf_states]
 
     ekf_surge_velocities = [i.state[Index.VX, 0] for i in ekf_states]
-    ekf_sway_velocities  = [i.state[Index.VY, 0] for i in ekf_states]
+    ekf_sway_velocities = [i.state[Index.VY, 0] for i in ekf_states]
     ekf_heave_velocities = [i.state[Index.VZ, 0] for i in ekf_states]
     ekf_surge_velocities_std = [i.surge_velocity_std() for i in ekf_states]
-    ekf_sway_velocities_std  = [i.sway_velocity_std()  for i in ekf_states]
+    ekf_sway_velocities_std = [i.sway_velocity_std() for i in ekf_states]
     ekf_heave_velocities_std = [i.heave_velocity_std() for i in ekf_states]
 
     threads = []
@@ -485,26 +484,29 @@ def plot_ekf_states_and_std_vs_time(
     Console.info("... done plotting EKF states with std vs. time.")
 
 
-def plot_cameras_vs_time(
-    cameras: List[Camera],
-    output_folder: Path
-):
+def plot_cameras_vs_time(cameras: List[Camera], output_folder: Path):
     Console.info("Plotting camerass vs. time...")
     timestamps = [i.epoch_timestamp for i in cameras]
 
     northings = [i.northings for i in cameras]
-    eastings  = [i.eastings  for i in cameras]
-    depths    = [i.depth     for i in cameras]
+    eastings = [i.eastings for i in cameras]
+    depths = [i.depth for i in cameras]
     northing_stds = [math.sqrt(max(0, i.covariance[0, 0])) for i in cameras]
-    easting_stds  = [math.sqrt(max(0, i.covariance[1, 1])) for i in cameras]
-    depth_stds    = [math.sqrt(max(0, i.covariance[2, 2])) for i in cameras]
+    easting_stds = [math.sqrt(max(0, i.covariance[1, 1])) for i in cameras]
+    depth_stds = [math.sqrt(max(0, i.covariance[2, 2])) for i in cameras]
 
-    roll_deg  = [i.roll  for i in cameras]
+    roll_deg = [i.roll for i in cameras]
     pitch_deg = [i.pitch for i in cameras]
-    yaw_deg   = [i.yaw   for i in cameras]
-    roll_stds_deg  = [180 / math.pi * math.sqrt(max(0, i.covariance[3, 3])) for i in cameras]
-    pitch_stds_deg = [180 / math.pi * math.sqrt(max(0, i.covariance[4, 4])) for i in cameras]
-    yaw_stds_deg   = [180 / math.pi * math.sqrt(max(0, i.covariance[5, 5])) for i in cameras]
+    yaw_deg = [i.yaw for i in cameras]
+    roll_stds_deg = [
+        180 / math.pi * math.sqrt(max(0, i.covariance[3, 3])) for i in cameras
+    ]
+    pitch_stds_deg = [
+        180 / math.pi * math.sqrt(max(0, i.covariance[4, 4])) for i in cameras
+    ]
+    yaw_stds_deg = [
+        180 / math.pi * math.sqrt(max(0, i.covariance[5, 5])) for i in cameras
+    ]
 
     threads = []
     args = [
@@ -542,42 +544,40 @@ def plot_cameras_vs_time(
 
 
 def plot_synced_states_and_ekf_list_and_std_from_ekf_vs_time(
-    states: List[Camera],
-    ekf_list: List[Camera],
-    output_folder: Path
+    states: List[Camera], ekf_list: List[Camera], output_folder: Path
 ):
     Console.info("Plotting synced states and std from list of covariances vs. time...")
     states_timestamps = [i.epoch_timestamp for i in states]
     ekf_timestamps = [i.epoch_timestamp for i in ekf_list]
-    assert(len(states_timestamps) == len(ekf_timestamps))
+    assert len(states_timestamps) == len(ekf_timestamps)
     for st, et in zip(states_timestamps, ekf_timestamps):
-        assert(abs(st - et) < 0.01)
+        assert abs(st - et) < 0.01
 
-    northings     = [i.northings for i in states]
-    eastings      = [i.eastings  for i in states]
-    depths        = [i.depth     for i in states]
+    northings = [i.northings for i in states]
+    eastings = [i.eastings for i in states]
+    depths = [i.depth for i in states]
     states_northing_stds = [i.northing_std_from_cov() for i in states]
-    states_easting_stds  = [i.easting_std_from_cov()  for i in states]
-    states_depth_stds    = [i.depth_std_from_cov()    for i in states]
+    states_easting_stds = [i.easting_std_from_cov() for i in states]
+    states_depth_stds = [i.depth_std_from_cov() for i in states]
     ekf_northing_stds = [i.northings_std for i in ekf_list]
-    ekf_easting_stds  = [i.eastings_std  for i in ekf_list]
-    ekf_depth_stds    = [i.depth_std     for i in ekf_list]
+    ekf_easting_stds = [i.eastings_std for i in ekf_list]
+    ekf_depth_stds = [i.depth_std for i in ekf_list]
     ekf_northings = [i.northings for i in ekf_list]
-    ekf_eastings  = [i.eastings  for i in ekf_list]
-    ekf_depths    = [i.depth     for i in ekf_list]
+    ekf_eastings = [i.eastings for i in ekf_list]
+    ekf_depths = [i.depth for i in ekf_list]
 
-    roll_deg  = [i.roll  for i in states]
+    roll_deg = [i.roll for i in states]
     pitch_deg = [i.pitch for i in states]
-    yaw_deg   = [i.yaw   for i in states]
-    states_roll_stds_deg  = [i.roll_std_from_cov_deg()  for i in states]
+    yaw_deg = [i.yaw for i in states]
+    states_roll_stds_deg = [i.roll_std_from_cov_deg() for i in states]
     states_pitch_stds_deg = [i.pitch_std_from_cov_deg() for i in states]
-    states_yaw_stds_deg   = [i.yaw_std_from_cov_deg()   for i in states]
-    ekf_roll_stds_deg  = [i.roll_std  for i in ekf_list]
+    states_yaw_stds_deg = [i.yaw_std_from_cov_deg() for i in states]
+    ekf_roll_stds_deg = [i.roll_std for i in ekf_list]
     ekf_pitch_stds_deg = [i.pitch_std for i in ekf_list]
-    ekf_yaw_stds_deg   = [i.yaw_std   for i in ekf_list]
-    ekf_roll_deg  = [i.roll  for i in ekf_list]
+    ekf_yaw_stds_deg = [i.yaw_std for i in ekf_list]
+    ekf_roll_deg = [i.roll for i in ekf_list]
     ekf_pitch_deg = [i.pitch for i in ekf_list]
-    ekf_yaw_deg   = [i.yaw   for i in ekf_list]
+    ekf_yaw_deg = [i.yaw for i in ekf_list]
 
     threads = []
     args = [
@@ -623,7 +623,9 @@ def plot_synced_states_and_ekf_list_and_std_from_ekf_vs_time(
     for t in threads:
         t.join()
 
-    Console.info("... done plotting synced states and std from list of covariances vs. time.")
+    Console.info(
+        "... done plotting synced states and std from list of covariances vs. time."
+    )
 
 
 def plot_position_with_std_vs_time(
@@ -642,46 +644,103 @@ def plot_position_with_std_vs_time(
     eastings_std_1: Optional[List[float]] = None,
     depths_std_1: Optional[List[float]] = None,
 ):
-    assert(len(timestamps) == len(northings) == len(eastings) == len(depths))
-    assert(len(timestamps) == len(northings_std) == len(eastings_std) == len(depths_std))
+    assert len(timestamps) == len(northings) == len(eastings) == len(depths)
+    assert len(timestamps) == len(northings_std) == len(eastings_std) == len(depths_std)
     if northings_2:
-        assert(len(timestamps) == len(northings_2) == len(eastings_2) == len(depths_2))
+        assert len(timestamps) == len(northings_2) == len(eastings_2) == len(depths_2)
     if northings_std_1:
-        assert(len(timestamps) == len(northings_std_1) == len(eastings_std_1) == len(depths_std_1))
+        assert (
+            len(timestamps)
+            == len(northings_std_1)
+            == len(eastings_std_1)
+            == len(depths_std_1)
+        )
 
-    northings_plus_sigma  = [a_i + b_i for a_i, b_i in zip(northings, northings_std)]
+    northings_plus_sigma = [a_i + b_i for a_i, b_i in zip(northings, northings_std)]
     northings_minus_sigma = [a_i - b_i for a_i, b_i in zip(northings, northings_std)]
-    eastings_plus_sigma   = [a_i - b_i for a_i, b_i in zip(eastings, eastings_std)]
-    eastings_minus_sigma  = [a_i + b_i for a_i, b_i in zip(eastings, eastings_std)]
-    depths_plus_sigma     = [a_i + b_i for a_i, b_i in zip(depths, depths_std)]
-    depths_minus_sigma    = [a_i - b_i for a_i, b_i in zip(depths, depths_std)]
+    eastings_plus_sigma = [a_i - b_i for a_i, b_i in zip(eastings, eastings_std)]
+    eastings_minus_sigma = [a_i + b_i for a_i, b_i in zip(eastings, eastings_std)]
+    depths_plus_sigma = [a_i + b_i for a_i, b_i in zip(depths, depths_std)]
+    depths_minus_sigma = [a_i - b_i for a_i, b_i in zip(depths, depths_std)]
 
-    tr_northings             = create_trace(timestamps, northings,             "northings (m)",  "red", fill="tonexty")
-    tr_northings_upper_bound = create_trace(timestamps, northings_plus_sigma,  "northing+sigma", "red", True, "tonexty", True)
-    tr_northings_lower_bound = create_trace(timestamps, northings_minus_sigma, "northing-sigma", "red", True, "tonexty", True)
+    tr_northings = create_trace(
+        timestamps, northings, "northings (m)", "red", fill="tonexty"
+    )
+    tr_northings_upper_bound = create_trace(
+        timestamps, northings_plus_sigma, "northing+sigma", "red", True, "tonexty", True
+    )
+    tr_northings_lower_bound = create_trace(
+        timestamps,
+        northings_minus_sigma,
+        "northing-sigma",
+        "red",
+        True,
+        "tonexty",
+        True,
+    )
     if northings_2:
-        tr_northings_2 = create_trace(timestamps, northings_2, "northings_2", "red", is_2nd_line=True)
+        tr_northings_2 = create_trace(
+            timestamps, northings_2, "northings_2", "red", is_2nd_line=True
+        )
 
-    tr_eastings             = create_trace(timestamps, eastings,             "eastings (m)",  "green", fill="tonexty")
-    tr_eastings_lower_bound = create_trace(timestamps, eastings_plus_sigma,  "easting-sigma", "green", True, "tonexty", True)
-    tr_eastings_upper_bound = create_trace(timestamps, eastings_minus_sigma, "easting+sigma", "green", True, "tonexty", True)
+    tr_eastings = create_trace(
+        timestamps, eastings, "eastings (m)", "green", fill="tonexty"
+    )
+    tr_eastings_lower_bound = create_trace(
+        timestamps, eastings_plus_sigma, "easting-sigma", "green", True, "tonexty", True
+    )
+    tr_eastings_upper_bound = create_trace(
+        timestamps,
+        eastings_minus_sigma,
+        "easting+sigma",
+        "green",
+        True,
+        "tonexty",
+        True,
+    )
     if eastings_2:
-        tr_eastings_2 = create_trace(timestamps, eastings_2, "eastings_2", "green", is_2nd_line=True)
+        tr_eastings_2 = create_trace(
+            timestamps, eastings_2, "eastings_2", "green", is_2nd_line=True
+        )
 
-    tr_depths             = create_trace(timestamps, depths,             "depth (m)",   "blue", fill="tonexty")
-    tr_depths_upper_bound = create_trace(timestamps, depths_plus_sigma,  "depth+sigma", "blue", True, "tonexty", True)
-    tr_depths_lower_bound = create_trace(timestamps, depths_minus_sigma, "depth-sigma", "blue", True, "tonexty", True)
+    tr_depths = create_trace(timestamps, depths, "depth (m)", "blue", fill="tonexty")
+    tr_depths_upper_bound = create_trace(
+        timestamps, depths_plus_sigma, "depth+sigma", "blue", True, "tonexty", True
+    )
+    tr_depths_lower_bound = create_trace(
+        timestamps, depths_minus_sigma, "depth-sigma", "blue", True, "tonexty", True
+    )
     if depths_2:
-        tr_depths_2 = create_trace(timestamps, depths_2, "depths_2", "blue", is_2nd_line=True)
+        tr_depths_2 = create_trace(
+            timestamps, depths_2, "depths_2", "blue", is_2nd_line=True
+        )
 
-    tr_northings_std = create_trace(timestamps, northings_std, "northings std ekf (m)", "red")
-    tr_eastings_std  = create_trace(timestamps, eastings_std,  "eastings std ekf (m)", "green")
-    tr_depths_std    = create_trace(timestamps, depths_std,    "depths std ekf (m)", "blue")
+    tr_northings_std = create_trace(
+        timestamps, northings_std, "northings std ekf (m)", "red"
+    )
+    tr_eastings_std = create_trace(
+        timestamps, eastings_std, "eastings std ekf (m)", "green"
+    )
+    tr_depths_std = create_trace(timestamps, depths_std, "depths std ekf (m)", "blue")
 
     if northings_std_1:
-        tr_northings_std_1 = create_trace(timestamps, northings_std_1, "northings std sub (m)", "red",   is_2nd_line=True)
-        tr_eastings_std_1  = create_trace(timestamps, eastings_std_1,  "eastings std sub (m)",  "green", is_2nd_line=True)
-        tr_depths_std_1    = create_trace(timestamps, depths_std_1,    "depths std sub (m)",    "blue",  is_2nd_line=True)
+        tr_northings_std_1 = create_trace(
+            timestamps,
+            northings_std_1,
+            "northings std sub (m)",
+            "red",
+            is_2nd_line=True,
+        )
+        tr_eastings_std_1 = create_trace(
+            timestamps,
+            eastings_std_1,
+            "eastings std sub (m)",
+            "green",
+            is_2nd_line=True,
+        )
+        tr_depths_std_1 = create_trace(
+            timestamps, depths_std_1, "depths std sub (m)", "blue", is_2nd_line=True
+        )
 
     fig = subplots.make_subplots(
         rows=2,
@@ -767,46 +826,103 @@ def plot_orientation_with_std_vs_time(
     pitch_std_deg_1: Optional[List[float]] = None,
     yaw_std_deg_1: Optional[List[float]] = None,
 ):
-    assert(len(timestamps) == len(roll_deg) == len(pitch_deg) == len(pitch_deg))
-    assert(len(timestamps) == len(roll_stds_deg) == len(pitch_stds_deg) == len(yaw_stds_deg))
+    assert len(timestamps) == len(roll_deg) == len(pitch_deg) == len(pitch_deg)
+    assert (
+        len(timestamps)
+        == len(roll_stds_deg)
+        == len(pitch_stds_deg)
+        == len(yaw_stds_deg)
+    )
     if roll_deg_2:
-        assert(len(timestamps) == len(roll_deg_2) == len(pitch_deg_2) == len(yaw_deg_2))
+        assert len(timestamps) == len(roll_deg_2) == len(pitch_deg_2) == len(yaw_deg_2)
     if roll_std_deg_1:
-        assert(len(timestamps) == len(roll_std_deg_1) == len(pitch_std_deg_1) == len(yaw_std_deg_1))
+        assert (
+            len(timestamps)
+            == len(roll_std_deg_1)
+            == len(pitch_std_deg_1)
+            == len(yaw_std_deg_1)
+        )
 
-    roll_plus_sigma   = [a_i + b_i for a_i, b_i in zip(roll_deg, roll_stds_deg)]
-    roll_minus_sigma  = [a_i - b_i for a_i, b_i in zip(roll_deg, roll_stds_deg)]
-    pitch_plus_sigma  = [a_i + b_i for a_i, b_i in zip(pitch_deg, pitch_stds_deg)]
+    roll_plus_sigma = [a_i + b_i for a_i, b_i in zip(roll_deg, roll_stds_deg)]
+    roll_minus_sigma = [a_i - b_i for a_i, b_i in zip(roll_deg, roll_stds_deg)]
+    pitch_plus_sigma = [a_i + b_i for a_i, b_i in zip(pitch_deg, pitch_stds_deg)]
     pitch_minus_sigma = [a_i - b_i for a_i, b_i in zip(pitch_deg, pitch_stds_deg)]
-    yaw_plus_sigma    = [a_i + b_i for a_i, b_i in zip(yaw_deg, yaw_stds_deg)]
-    yaw_minus_sigma   = [a_i - b_i for a_i, b_i in zip(yaw_deg, yaw_stds_deg)]
+    yaw_plus_sigma = [a_i + b_i for a_i, b_i in zip(yaw_deg, yaw_stds_deg)]
+    yaw_minus_sigma = [a_i - b_i for a_i, b_i in zip(yaw_deg, yaw_stds_deg)]
 
-    tr_roll             = create_trace(timestamps, roll_deg, "roll [deg]", "red", fill="tonexty")
-    tr_roll_std_uppper  = create_trace(timestamps, roll_plus_sigma, "roll+sigma", "red", True, "tonexty", True)
-    tr_roll_std_lower   = create_trace(timestamps, roll_minus_sigma, "roll+sigma", "red", True, "tonexty", True)
-    tr_roll_std         = create_trace(timestamps, roll_stds_deg, "roll std ekf [deg]", "red")
+    tr_roll = create_trace(timestamps, roll_deg, "roll [deg]", "red", fill="tonexty")
+    tr_roll_std_uppper = create_trace(
+        timestamps, roll_plus_sigma, "roll+sigma", "red", True, "tonexty", True
+    )
+    tr_roll_std_lower = create_trace(
+        timestamps, roll_minus_sigma, "roll+sigma", "red", True, "tonexty", True
+    )
+    tr_roll_std = create_trace(timestamps, roll_stds_deg, "roll std ekf [deg]", "red")
     if roll_deg_2:
-        tr_roll_2       = create_trace(timestamps, roll_deg_2, "roll_2 [deg]", "red", fill="tonexty", is_2nd_line=True)
+        tr_roll_2 = create_trace(
+            timestamps,
+            roll_deg_2,
+            "roll_2 [deg]",
+            "red",
+            fill="tonexty",
+            is_2nd_line=True,
+        )
     if roll_std_deg_1:
-        tr_roll_std_1   = create_trace(timestamps, roll_std_deg_1, "roll std sub [deg]", "red", is_2nd_line=True)
+        tr_roll_std_1 = create_trace(
+            timestamps, roll_std_deg_1, "roll std sub [deg]", "red", is_2nd_line=True
+        )
 
-    tr_pitch            = create_trace(timestamps, pitch_deg, "pitch [deg]", "green", fill="tonexty")
-    tr_pitch_std_uppper = create_trace(timestamps, pitch_plus_sigma, "pitch+sigma", "green", True, "tonexty", True)
-    tr_pitch_std_lower  = create_trace(timestamps, pitch_minus_sigma, "pitch+sigma", "green", True, "tonexty", True)
-    tr_pitch_std        = create_trace(timestamps, pitch_stds_deg, "pitch std ekf [deg]", "green")
+    tr_pitch = create_trace(
+        timestamps, pitch_deg, "pitch [deg]", "green", fill="tonexty"
+    )
+    tr_pitch_std_uppper = create_trace(
+        timestamps, pitch_plus_sigma, "pitch+sigma", "green", True, "tonexty", True
+    )
+    tr_pitch_std_lower = create_trace(
+        timestamps, pitch_minus_sigma, "pitch+sigma", "green", True, "tonexty", True
+    )
+    tr_pitch_std = create_trace(
+        timestamps, pitch_stds_deg, "pitch std ekf [deg]", "green"
+    )
     if pitch_deg_2:
-        tr_pitch_2      = create_trace(timestamps, pitch_deg_2, "pitch_2 [deg]", "green", fill="tonexty", is_2nd_line=True)
+        tr_pitch_2 = create_trace(
+            timestamps,
+            pitch_deg_2,
+            "pitch_2 [deg]",
+            "green",
+            fill="tonexty",
+            is_2nd_line=True,
+        )
     if pitch_std_deg_1:
-        tr_pitch_std_1  = create_trace(timestamps, pitch_std_deg_1, "pitch std sub [deg]", "green", is_2nd_line=True)
+        tr_pitch_std_1 = create_trace(
+            timestamps,
+            pitch_std_deg_1,
+            "pitch std sub [deg]",
+            "green",
+            is_2nd_line=True,
+        )
 
-    tr_yaw              = create_trace(timestamps, yaw_deg, "yaw [deg]", "blue", fill="tonexty")
-    tr_yaw_std_uppper   = create_trace(timestamps, yaw_plus_sigma, "yaw+sigma", "blue", True, "tonexty", True)
-    tr_yaw_std_lower    = create_trace(timestamps, yaw_minus_sigma, "yaw+sigma", "blue", True, "tonexty", True)
-    tr_yaw_std          = create_trace(timestamps, yaw_stds_deg, "yaw std ekf [deg]", "blue")
+    tr_yaw = create_trace(timestamps, yaw_deg, "yaw [deg]", "blue", fill="tonexty")
+    tr_yaw_std_uppper = create_trace(
+        timestamps, yaw_plus_sigma, "yaw+sigma", "blue", True, "tonexty", True
+    )
+    tr_yaw_std_lower = create_trace(
+        timestamps, yaw_minus_sigma, "yaw+sigma", "blue", True, "tonexty", True
+    )
+    tr_yaw_std = create_trace(timestamps, yaw_stds_deg, "yaw std ekf [deg]", "blue")
     if yaw_deg_2:
-        tr_yaw_2        = create_trace(timestamps, yaw_deg_2, "yaw_2 [deg]", "blue", fill="tonexty", is_2nd_line=True)
+        tr_yaw_2 = create_trace(
+            timestamps,
+            yaw_deg_2,
+            "yaw_2 [deg]",
+            "blue",
+            fill="tonexty",
+            is_2nd_line=True,
+        )
     if yaw_std_deg_1:
-        tr_yaw_std_1    = create_trace(timestamps, yaw_std_deg_1, "yaw std sub [deg]", "blue", is_2nd_line=True)
+        tr_yaw_std_1 = create_trace(
+            timestamps, yaw_std_deg_1, "yaw std sub [deg]", "blue", is_2nd_line=True
+        )
 
     fig = subplots.make_subplots(
         rows=2,

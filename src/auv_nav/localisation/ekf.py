@@ -1037,7 +1037,7 @@ def save_ekf_to_list(
     mission: Mission,
     vehicle: Vehicle,
     dead_reckoning_dvl_list: List[SyncedOrientationBodyVelocity],
-    shift_to_origin: Optional[bool] = True
+    shift_to_origin: Optional[bool] = True,
 ) -> List[SyncedOrientationBodyVelocity]:
     ekf_list = []
     dr_idx = 1

@@ -7,7 +7,6 @@ See LICENSE.md file in the project root for full license information.
 """
 
 import copy
-from importlib.resources import path
 import os
 import random
 from datetime import datetime
@@ -95,8 +94,10 @@ class Corrector:
 
         self.force = force
 
-        if path is not None:   # if path is None then user must define it externally and call set_path(new_path)
-        # Set the path for the corrector
+        if (
+            path is not None
+        ):  # if path is None then user must define it externally and call set_path(new_path)
+            # Set the path for the corrector
             self.set_path(path)
         else:
             return
@@ -104,7 +105,7 @@ class Corrector:
         if self.correct_config is not None:
             # explicit call to load the correct_config
             self.load_configuration(self.correct_config)
-        else:       
+        else:
             return  # this last one it's maybe redundant as it is the last call in the constructor
 
     def set_path(self, path):
@@ -115,11 +116,6 @@ class Corrector:
         self.path_config = get_config_folder(path)
 
         self.mission = Mission(self.path_raw / "mission.yaml")
-
-        tz_offset_s = (
-            read_timezone(self.mission.image.timezone) * 60
-            + self.mission.image.timeoffset
-        )
 
         self.user_specified_image_list = None  # To be overwritten on parse/process
         self.user_specified_image_list_parse = None
@@ -138,35 +134,28 @@ class Corrector:
         self.image_width = image_properties[1]
         self.image_channels = image_properties[2]
 
-
     # NOTE: we could use an implicit version (correct_config already stored as member)
     # but in this implementation we force explicit (argument required) call to load_configuration()
     def load_configuration(self, correct_config=None):
-        if correct_config is None:  #nothing to do here, we expect an explicit call
+        if correct_config is None:  # nothing to do here, we expect an explicit call
             Console.warn("No correct_config provided. Skipping load_configuration()")
-            return 
+            return
 
         self.correct_config = correct_config
 
         """Load general configuration parameters"""
         self.correction_method = self.correct_config.method
         if self.correction_method == "colour_correction":
-            self.distance_metric = (
-                self.correct_config.color_correction.distance_metric
-            )
+            self.distance_metric = self.correct_config.color_correction.distance_metric
             self.distance_path = self.correct_config.color_correction.metric_path
             self.altitude_max = self.correct_config.color_correction.altitude_max
             self.altitude_min = self.correct_config.color_correction.altitude_min
             self.smoothing = self.correct_config.color_correction.smoothing
             self.window_size = self.correct_config.color_correction.window_size
-            self.outlier_rejection = (
-                self.correct_config.color_correction.outlier_reject
-            )
+            self.outlier_rejection = self.correct_config.color_correction.outlier_reject
         self.cameraconfigs = self.correct_config.configs.camera_configs
         self.undistort = self.correct_config.output_settings.undistort_flag
-        self.output_format = (
-            self.correct_config.output_settings.compression_parameter
-        )
+        self.output_format = self.correct_config.output_settings.compression_parameter
 
         # Load camera parameters
         cam_idx = self.get_camera_idx()
@@ -192,9 +181,7 @@ class Corrector:
             self.brightness = float(self.cameraconfigs[cam_idx].brightness)
             self.contrast = float(self.cameraconfigs[cam_idx].contrast)
         elif self.correction_method == "manual_balance":
-            self.subtractors_rgb = np.array(
-                self.cameraconfigs[cam_idx].subtractors_rgb
-            )
+            self.subtractors_rgb = np.array(self.cameraconfigs[cam_idx].subtractors_rgb)
             self.color_gain_matrix_rgb = np.array(
                 self.cameraconfigs[cam_idx].color_gain_matrix_rgb
             )
@@ -205,15 +192,13 @@ class Corrector:
         # Define basic filepaths
         if self.correction_method == "colour_correction":
             self.attenuation_params_filepath = (
-                Path(self.attenuation_parameters_folder)
-                / "attenuation_parameters.npy"
+                Path(self.attenuation_parameters_folder) / "attenuation_parameters.npy"
             )
             self.correction_gains_filepath = (
                 Path(self.attenuation_parameters_folder) / "correction_gains.npy"
             )
             self.corrected_mean_filepath = (
-                Path(self.attenuation_parameters_folder)
-                / "image_corrected_mean.npy"
+                Path(self.attenuation_parameters_folder) / "image_corrected_mean.npy"
             )
             self.corrected_std_filepath = (
                 Path(self.attenuation_parameters_folder) / "image_corrected_std.npy"
@@ -233,22 +218,26 @@ class Corrector:
             self.loader.set_loader("xviii")
         elif self.camera.extension == "bag":
             self.loader.set_loader("rosbag")
+            tz_offset_s = (
+                read_timezone(self.mission.image.timezone) * 60
+                + self.mission.image.timeoffset
+            )
             self.loader.tz_offset_s = tz_offset_s
         else:
             self.loader.set_loader("default")
 
     def parse(self, path_list, correct_config_list):
         # both path_list and correct_config_list are assumed to be valid + equivalent
-        for i in range (len(path_list)):    # for each dive
+        for i in range(len(path_list)):  # for each dive
             path = path_list[i]
             correct_config = correct_config_list[i]
 
             Console.info("Parsing dive:", path)
             # Console.info("Setting path...")
-            self.set_path(path)                     # update the dive path
+            self.set_path(path)  # update the dive path
 
             # Console.info("Loading configuration...")
-            self.load_configuration(correct_config) # load the dive config
+            self.load_configuration(correct_config)  # load the dive config
             # Update list of images (it already appends to the list)
             # Set the user specified list - if any
 
@@ -258,7 +247,10 @@ class Corrector:
 
         # Show the total number of images after filtering + merging the dives. It should match the sum of the filtered images of each dive.
         if len(path_list) > 1:
-            Console.info("Total number of images after merging dives:", len(self.camera_image_list)) 
+            Console.info(
+                "Total number of images after merging dives:",
+                len(self.camera_image_list),
+            )
 
         Console.info("Output directories created / existing...")
 
@@ -573,10 +565,11 @@ class Corrector:
             # Join the current image list with the original image list (copy)
             self.camera_image_list.extend(_original_image_list)
             # Show size of the extended image list
-            Console.warn(">> The camera image list is now", len(self.camera_image_list)) # JC: I'm leaving this as it is informative for multidive
+            Console.warn(
+                ">> The camera image list is now", len(self.camera_image_list)
+            )  # JC: I'm leaving this as it is informative for multidive
             # Join the current image list with the original image list (copy)
             self.altitude_list.extend(_original_altitude_list)
-
 
     def get_altitude_and_depth_maps(self):
         """Generate distance matrix numpy files and save them"""
@@ -776,7 +769,7 @@ class Corrector:
 
             Console.error("depth_map_list size", len(self.depth_map_list))
             Console.error("camera_image_list size", len(self.camera_image_list))
-###################################################################################################
+            ###################################################################################################
             for i in trange(len(self.camera_image_list)):
                 # Load the image
                 img = self.loader(self.camera_image_list[i])
@@ -784,7 +777,7 @@ class Corrector:
                 # Load the distance matrix
                 if not self.depth_map_list:
                     # TODO: Show the depth_map creation
-                # if self.depth_map_list is None:
+                    # if self.depth_map_list is None:
                     # Generate matrices on the fly
                     Console.warn("Generating distance matrix ON THE FLY")
                     distance = distance_vector[i]
@@ -818,8 +811,12 @@ class Corrector:
             )
 
             # save parameters for process
-            np.save(self.corrected_mean_filepath, image_corrected_mean) # TODO: make member
-            np.save(self.corrected_std_filepath, image_corrected_std)   # TODO: make member
+            np.save(
+                self.corrected_mean_filepath, image_corrected_mean
+            )  # TODO: make member
+            np.save(
+                self.corrected_std_filepath, image_corrected_std
+            )  # TODO: make member
 
             corrections.save_attenuation_plots(
                 self.attenuation_parameters_folder,

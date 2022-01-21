@@ -59,17 +59,16 @@ def main(args=None):
         "parse", help="Compute the correction parameters"
     )
 
-#   subparser_parse.add_argument("path", help="Path to raw directory till dive.")
+    #   subparser_parse.add_argument("path", help="Path to raw directory till dive.")
 
     subparser_parse.add_argument(
         "path",
-#        default=".",
+        #        default=".",
         nargs="+",
         help="Folderpath where the (raw) input data is. Needs to be a \
         subfolder of 'raw' and contain the mission.yaml configuration file.",
     )
 
-    
     subparser_parse.add_argument(
         "-F",
         "--Force",
@@ -129,17 +128,21 @@ def call_parse(args):
         path = path_list[0]
         Console.info("Single path provided, normal single dive mode...")
     else:
-        Console.warn("Multiple paths provided [{}]. Checking each path...".format(len(path_list)))
+        Console.warn(
+            "Multiple paths provided [{}]. Checking each path...".format(len(path_list))
+        )
         for path in path_list:
             # chec if path is valid
             if not path.exists():
-                Console.error("Path", path, "does not exist! Exiting...") # quit
+                Console.error("Path", path, "does not exist! Exiting...")  # quit
                 sys.exit(1)
             else:
                 Console.info("\t", path, " [OK]")
 
     # Populating the configuration and camerasystem lists for each dive path
-    correct_config_list, camerasystem_list = zip(*[load_configuration_and_camera_system(path) for path in path_list])
+    correct_config_list, camerasystem_list = zip(
+        *[load_configuration_and_camera_system(path) for path in path_list]
+    )
     # Let's check that both lists have the same length and are not empty
     if len(correct_config_list) != len(camerasystem_list):
         Console.error("Number of [camerasystem] and [configuration] differ!")
@@ -149,15 +152,23 @@ def call_parse(args):
         sys.exit(1)
 
     # When in multidive mode, check if all camerasystem are the same. For this we test camera_system.camera_system
-    if len(camerasystem_list) > 1: # this test is still valid for single dive mode, so we could remove this if
+    if (
+        len(camerasystem_list) > 1
+    ):  # this test is still valid for single dive mode, so we could remove this if
         camera_system = camerasystem_list[0]
-        for cs in camerasystem_list: # the first entry will be repeated, no problem with that
+        for (
+            cs
+        ) in (
+            camerasystem_list
+        ):  # the first entry will be repeated, no problem with that
             # TODO: use the ENABLED cameras from config.yaml AND the defined camera system from camera.yaml
             # TODO: Extend is_equivalent() method allowing checking cameras in different orders
             # WARNING: We decide not to use equivalent() here, because it is not robust enough. Enforce same camera order
             if not camera_system.camera_system == cs.camera_system:
                 Console.error("Camera systems differ!")
-                Console.error("\tFirst camera system (reference) ", camera_system.camera_system)
+                Console.error(
+                    "\tFirst camera system (reference) ", camera_system.camera_system
+                )
                 Console.error("\tWrong camera system (current)   ", cs.camera_system)
                 sys.exit(1)
         Console.warn("Camera systems are the same for all dives.")  # so far so good
@@ -172,13 +183,17 @@ def call_parse(args):
                 sys.exit(1)
         Console.warn("Configurations are equivalent for all dives.")
 
-    camerasystem = camerasystem_list[0]     # we peek at the first entry and use it as template for all dives
+    camerasystem = camerasystem_list[
+        0
+    ]  # we peek at the first entry and use it as template for all dives
     for camera in camerasystem.cameras:
         Console.info("Parsing for camera", camera.name)
         # Create a Corrector object for each camera with empty configuration
         # The configuration and the paths will be populated later on a per-dive basis
         corrector = Corrector(args.force, camera, correct_config=None)
-        corrector.parse(path_list, correct_config_list) # call new list-compatible implementation of parse()
+        corrector.parse(
+            path_list, correct_config_list
+        )  # call new list-compatible implementation of parse()
 
     Console.info(
         "Parse completed for all cameras. Please run process to develop ",

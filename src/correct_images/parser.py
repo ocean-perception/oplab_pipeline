@@ -301,33 +301,64 @@ class CorrectConfig:
         # .colour_correction:
         #   .distance_metric
         #   .smoothing
-        #   .window_size 
+        #   .window_size
 
         if self.method != other.method:
             Console.warn("Method does not match:", self.method, " / ", other.method)
             return False
 
-        if self.color_correction.distance_metric != other.color_correction.distance_metric:
-            Console.warn("Distance metric does not match:", self.color_correction.distance_metric, " / ", other.color_correction.distance_metric)
+        if (
+            self.color_correction.distance_metric
+            != other.color_correction.distance_metric
+        ):
+            Console.warn(
+                "Distance metric does not match:",
+                self.color_correction.distance_metric,
+                " / ",
+                other.color_correction.distance_metric,
+            )
             return False
 
         if self.color_correction.smoothing != other.color_correction.smoothing:
-            Console.warn("Smoothing does not match:", self.color_correction.smoothing, " / ", other.color_correction.smoothing)
+            Console.warn(
+                "Smoothing does not match:",
+                self.color_correction.smoothing,
+                " / ",
+                other.color_correction.smoothing,
+            )
             return False
 
         if self.color_correction.window_size != other.color_correction.window_size:
-            Console.warn("Window size does not match:", self.color_correction.window_size, " / ", other.color_correction.window_size)
+            Console.warn(
+                "Window size does not match:",
+                self.color_correction.window_size,
+                " / ",
+                other.color_correction.window_size,
+            )
             return False
 
         # Check if the number of cameras match
         if self.configs.num_cameras != other.configs.num_cameras:
-            Console.warn("Number of cameras does not match:", self.configs.num_cameras, " / ", other.configs.num_cameras)
+            Console.warn(
+                "Number of cameras does not match:",
+                self.configs.num_cameras,
+                " / ",
+                other.configs.num_cameras,
+            )
             return False
-            
+
         # Check if the name of the cameras match. Right now we are impossing same order in camera names
         for i in range(self.configs.num_cameras):
-            if self.configs.camera_configs[i].camera_name != other.configs.camera_configs[i].camera_name:
-                Console.warn("Camera name does not match:", self.configs.camera_configs[i].camera_name, " / ", other.configs.camera_configs[i].camera_name)
+            if (
+                self.configs.camera_configs[i].camera_name
+                != other.configs.camera_configs[i].camera_name
+            ):
+                Console.warn(
+                    "Camera name does not match:",
+                    self.configs.camera_configs[i].camera_name,
+                    " / ",
+                    other.configs.camera_configs[i].camera_name,
+                )
                 return False
 
         return True
