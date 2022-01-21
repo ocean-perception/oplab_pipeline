@@ -21,6 +21,7 @@ class RunningMeanStd:
     __slots__ = ["_mean", "mean2", "_std", "count", "clipping_max"]
 
     def __init__(self, dimensions, clipping_max=0.95):
+        """Class to compute the mean of a dataset incrementally."""
         self._mean = np.zeros(dimensions, dtype=np.float32)
         self.mean2 = np.zeros(dimensions, dtype=np.float32)
         self._std = np.zeros(dimensions, dtype=np.float32)
@@ -28,47 +29,24 @@ class RunningMeanStd:
         self.clipping_max = clipping_max
 
     def compute(self, image):
+        """Update the mean with a new image."""
         self.count += 1
 
-        _original_shape = image.shape
-        ############################### QUICKFIX BEGINS
-        # clipping to mean if above threshold
-        print("------------ image shape: {}".format(image.shape))
-        # Let's try reshaping the image first into a 1D array
-        image_1d = image.reshape(image.shape[0] * image.shape[1])
-        print("------------ image_1d shape: {}".format(image_1d.shape))
-        # we need to reshape _mean to be 1D as well
-        mean_1d = self._mean.reshape(self._mean.shape[0] * self._mean.shape[1])
-        print("------------ mean_1d shape: {}".format(mean_1d.shape))
+        # Clipping image to mean if above threshold:
+        #  - Need to reshape to 1-D array view
+        mean_1d_view = self._mean.ravel()
+        image_1d_view = image.ravel()
+        image_1d_view[image_1d_view > self.clipping_max] = mean_1d_view[
+            image_1d_view > self.clipping_max
+        ]
 
-        image_1d[image_1d > self.clipping_max] = mean_1d[image_1d > self.clipping_max]
-        # image_1d[image_1d > self.clipping_max] = self._mean[image_1d > self.clipping_max]
-        # revert back to the original shape
-        image_1d = image_1d.reshape(_original_shape)
-        # self._mean = mean_1d.reshape(self._mean.shape) # store a reshaped version of the mean, maybe unnecessary
-        self._mean = mean_1d.reshape(_original_shape) # store a reshaped version of the mean, maybe unnecessary
-
-        # _mean shape must match image shape
-        print("------------ image_1d shape: {}".format(image_1d.shape))
-        print("------------ _mean shape: {}".format(self._mean.shape))
-        # update orginal image
-        image = image_1d
-        ############################### QUICKFIX ENDS
-
-        # image[image > self.clipping_max] = self._mean[image > self.clipping_max]
-        image = image.astype(np.float32)
-        delta = image - self._mean          # enforced shape matching
+        delta = image - self._mean
         self._mean += delta / self.count
-        ################################################### TEST BEGIN
-        # just in case, let's see the mean2 shape
-        print("------------ mean2 shape: {}".format(self.mean2.shape))
-        # now let's reshape it to _original_shape
-        self.mean2 = self.mean2.reshape(_original_shape)
-        #################################################### TEST END
-        self.mean2 += delta * (image - self._mean)  # still not sure if dimensions will match
+        self.mean2 += delta * (image - self._mean)
 
     @property
     def mean(self):
+        """Get the mean of the current batch."""
         if self.count > 1:
             return self._mean
         else:
@@ -76,6 +54,7 @@ class RunningMeanStd:
 
     @property
     def std(self):
+        """Get the standard deviation of the current batch."""
         if self.count > 1:
             self._std = np.sqrt(self.mean2 / self.count)
             self._std[self._std < 1e-4] = 1e-4
@@ -120,6 +99,7 @@ def running_mean_std(file_list, loader=default.loader):
 
 
 def median_array(data: np.ndarray) -> np.ndarray:
+    """Compute the median of an array"""
     # print("median_array", data.shape)
     if len(data.shape) == 3:
         # Monochrome
@@ -158,6 +138,7 @@ def median_array_impl(data: np.ndarray) -> np.ndarray:
 
 @njit
 def mean_std_array(data: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    """Compute the mean and std of an array"""
     # print("mean_std_array", data.shape)
     n = data.shape[0]
     a = data.shape[1]

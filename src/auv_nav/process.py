@@ -1287,11 +1287,7 @@ def process(
 
     if compute_relative_pose_uncertainty:
         camera3_ekf_list_cropped = update_camera_list(
-            camera3_ekf_list_cropped,
-            ekf_list,
-            [0, 0, 0],
-            [0, 0, 0],
-            latlon_reference,
+            camera3_ekf_list_cropped, ekf_list, [0, 0, 0], [0, 0, 0], latlon_reference,
         )
         assert len(camera3_ekf_list_cropped) == len(laser_camera_states)
 
@@ -1326,10 +1322,14 @@ def process(
         ekf_csv_folder = renavpath / "csv" / "ekf"
         if len(mission.image.cameras) > 2:
             filename_cov_from_ekf = (
-                "auv_ekf_cov_based_on_ekf_propagation_" + mission.image.cameras[2].name + "_at_dvl"
+                "auv_ekf_cov_based_on_ekf_propagation_"
+                + mission.image.cameras[2].name
+                + "_at_dvl"
             )
             filename_cov_from_subtract = (
-                "auv_ekf_cov_based_on_subtraction_" + mission.image.cameras[2].name + "_at_dvl"
+                "auv_ekf_cov_based_on_subtraction_"
+                + mission.image.cameras[2].name
+                + "_at_dvl"
             )
         elif len(mission.image.cameras) == 2:
             filename_cov_from_ekf = (
@@ -1790,7 +1790,9 @@ def process(
                         args=[
                             ekfcsvpath,
                             camera3_ekf_list_at_dvl,
-                            "auv_ekf_" + mission.image.cameras[1].name + "_laser_at_dvl",
+                            "auv_ekf_"
+                            + mission.image.cameras[1].name
+                            + "_laser_at_dvl",
                             csv_ekf_camera_3,
                         ],
                     )
