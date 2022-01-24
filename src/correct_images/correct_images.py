@@ -174,7 +174,7 @@ def call_parse(args):
 
     # Populating the configuration and camerasystem lists for each dive path
     correct_config_list, camerasystem_list = zip(
-        *[load_configuration_and_camera_system(path) for path in path_list]
+        *[load_configuration_and_camera_system(path, args.suffix) for path in path_list]
     )
 
     # Let's check that both lists have the same length and are not empty
@@ -316,6 +316,8 @@ def load_configuration_and_camera_system(path, suffix=None):
     path : Path
         User provided Path of source images
     """
+
+    Console.warn("Parsing multipaths with suffix:", suffix)
 
     # resolve paths to raw, processed and config folders
     path_raw_folder = get_raw_folder(path)
