@@ -231,7 +231,7 @@ class Corrector:
             # Set the user specified list - if any
 
             self.user_specified_image_list = self.user_specified_image_list_parse
-            # TODO: this list must be populated from AFTER loading th eonfiguration and BEFORE getting image list
+            # TODO: this list must be populated from AFTER loading the configuration and BEFORE getting image list
             self.get_imagelist()
 
         # Show the total number of images after filtering + merging the dives. It should match the sum of the filtered images of each dive.
@@ -667,7 +667,7 @@ class Corrector:
                 tmp_idxs = np.where(idxs == idx_bin)[0]
                 Console.info(
                     "  Bin",
-                    idx_bin,
+                    format(idx_bin, '02d'),
                     "(",
                     round(hist_bins[idx_bin], 1),
                     "m < x <",
@@ -775,7 +775,7 @@ class Corrector:
                     # TODO: Show the depth_map creation
                     # if self.depth_map_list is None:
                     # Generate matrices on the fly
-                    Console.warn("Generating distance matrix ON THE FLY")
+                    # Console.warn("Generating distance matrix ON THE FLY")
                     distance = distance_vector[i]
                     distance_mtx = np.empty((self.image_height, self.image_width))
                     distance_mtx.fill(distance)
