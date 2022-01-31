@@ -763,8 +763,9 @@ class Corrector:
                 dtype=np.float32,
             )
 
-            Console.error("depth_map_list size", len(self.depth_map_list))
-            Console.error("camera_image_list size", len(self.camera_image_list))
+            # DEBUG: can be removed
+            # Console.error("depth_map_list size", len(self.depth_map_list))
+            # Console.error("camera_image_list size", len(self.camera_image_list))
             ###################################################################################################
             for i in trange(len(self.camera_image_list)):
                 # Load the image
