@@ -193,7 +193,6 @@ def call_parse(args):
         camera_system = camerasystem_list[0]
         for cs in camerasystem_list:
             # the first entry will be repeated, no problem with that
-            # TODO: use the ENABLED cameras from config.yaml AND the defined camera system from camera.yaml
             # TODO: Extend is_equivalent() method allowing checking cameras in different orders
             # WARNING: We decide not to use equivalent() here, because it is not robust enough. Enforce same camera order
             if not camera_system.camera_system == cs.camera_system:
@@ -219,10 +218,6 @@ def call_parse(args):
     for camera in camerasystem.cameras:
         # check if the camera also exists in the configuration
         if camera.name not in [c.camera_name for c in correct_config.configs.camera_configs]: # ignore if not present
-
-
-
-
             Console.warn("Camera [", camera.name, "] defined in <camera.yaml> but not found in configuration. Skipping...")
         else:
             Console.info("Parsing for camera", camera.name)

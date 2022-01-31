@@ -227,10 +227,9 @@ class Corrector:
 
             # Console.info("Loading configuration...")
             self.load_configuration(correct_config)  # load the dive config
-            # Update list of images (it already appends to the list)
             # Set the user specified list - if any
-
             self.user_specified_image_list = self.user_specified_image_list_parse
+            # Update list of images by appending user-defined list
             # TODO: this list must be populated from AFTER loading the configuration and BEFORE getting image list
             self.get_imagelist()
 
@@ -776,7 +775,6 @@ class Corrector:
                     # TODO: Show the depth_map creation
                     # if self.depth_map_list is None:
                     # Generate matrices on the fly
-                    # Console.warn("Generating distance matrix ON THE FLY")
                     distance = distance_vector[i]
                     distance_mtx = np.empty((self.image_height, self.image_width))
                     distance_mtx.fill(distance)
