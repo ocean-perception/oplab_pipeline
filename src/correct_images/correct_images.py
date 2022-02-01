@@ -213,6 +213,9 @@ def call_parse(args):
                 Console.error("Configurations [correct_config] do not match!")
                 sys.exit(1)
         Console.warn("Configurations are equivalent for all dives.")
+    else:
+        correct_config = correct_config_list[0] # only one element in the list, copy it for single dive mode (this could be moved outside)
+
 
     camerasystem = camerasystem_list[0]
     for camera in camerasystem.cameras:
