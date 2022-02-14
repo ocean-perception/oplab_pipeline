@@ -501,7 +501,12 @@ class Corrector:
                 alt = float(row["altitude [m]"])
                 if alt > self.altitude_min and alt < self.altitude_max:
                     if self.camera.extension == "bag":
-                        self.camera_image_list.append(Path(row["relative_path"]).stem)
+                        timestamp_from_filename = Path(row["relative_path"]).stem
+                        if "\\" in timestamp_from_filename:
+                            timestamp_from_filename = timestamp_from_filename.split(
+                                "\\"
+                            )[-1]
+                        self.camera_image_list.append(timestamp_from_filename)
                     else:
                         self.camera_image_list.append(
                             self.path_raw / row["relative_path"]
@@ -646,7 +651,7 @@ class Corrector:
 
         distance_vector = None
 
-        if self.depth_map_list:
+        if self.depth_map_list and self.distance_metric == "depth_map":
             Console.info("Computing depth map histogram with", hist_bins.size, " bins")
 
             distance_vector = np.zeros((len(self.depth_map_list), 1))
@@ -654,7 +659,7 @@ class Corrector:
                 dm_np = depth_map.loader(dm_file, self.image_width, self.image_height)
                 distance_vector[i] = dm_np.mean(axis=1)
 
-        elif self.altitude_list:
+        elif self.altitude_list and self.distance_metric == "altitude":
             Console.info("Computing altitude histogram with", hist_bins.size, " bins")
             distance_vector = np.array(self.altitude_list)
 
