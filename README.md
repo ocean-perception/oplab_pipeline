@@ -34,6 +34,8 @@ Copyright (c) 2020, University of Southampton. All rights reserved.
 Licensed under the BSD 3-Clause License. 
 See LICENSE.md file in the project root for full license information.  
 
-## Developers
+## Contributing
 Please document the code using [Numpy Docstrings](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_numpy.html).
 If you are using VSCode, there is a useful extension that helps named [Python Docstring Generator](https://marketplace.visualstudio.com/items?itemName=njpwerner.autodocstring). Once installed, make sure you select Numpy documentation in the settings.
+
+Run `pre-commit install` to install [pre-commit](https://pre-commit.com/) into your git hooks. pre-commit will now run on every commit. If you don't have `pre-commit` installed, run `pip install pre-commit`.
