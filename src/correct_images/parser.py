@@ -44,7 +44,18 @@ class ColourCorrection:
         node : cdict
             dictionary object for an entry in correct_images.yaml file
         """
+        valid_distance_metrics = ["uniform", "altitude", "depth_map"]
         self.distance_metric = node["distance_metric"]
+
+        if self.distance_metric == "none":
+            self.distance_metric = "uniform"
+            Console.warn("Distance metric is set to none. This is deprecated.",
+                "Please use uniform instead.")
+        if self.distance_metric not in valid_distance_metrics:
+            Console.error("Distance metric not valid. Please use one of the following:",
+                valid_distance_metrics)
+            Console.quit("Invalid distance metric: {}".format(self.distance_metric))
+
         self.metric_path = node["metric_path"]
         self.altitude_max = node["altitude_filter"]["max_m"]
         self.altitude_min = node["altitude_filter"]["min_m"]
@@ -250,9 +261,12 @@ class CorrectConfig:
         with filename.open("r") as stream:
             data = yaml.safe_load(stream)
 
+        self.color_correction = None
+        self.camerarescale = None
+
         if "version" not in data:
             Console.error(
-                "It seems you are using an older correct_images.yaml.",
+                "It seems you are using an old correct_images.yaml.",
                 "You will have to delete it and run this software again.",
             )
             Console.error("Delete the file with:")
@@ -272,93 +286,11 @@ class CorrectConfig:
                 " ".join(m for m in valid_methods),
             )
 
-        node = data["colour_correction"]
-        self.color_correction = ColourCorrection(node)
+        if "colour_correction" in data:
+            self.color_correction = ColourCorrection(data["colour_correction"])
         node = data["cameras"]
         self.configs = CameraConfigs(node)
         node = data["output_settings"]
         self.output_settings = OutputSettings(node)
-        node = data["rescale"]
-        self.camerarescale = CameraRescale(node)
-
-    def is_equivalent(self, other):
-        """is_equivalent checks if two configurations are equivalent
-           We expect to match a minimum set of parameters, including the number and type of cameras.
-
-        Parameters
-        ----------
-        other : CorrectConfig Object
-            object to be compared to
-
-        Returns
-        -------
-        bool
-            True if objects are equivalent, False otherwise
-        """
-
-        # Objects are considering equivalent if these properties match
-        # .method
-        # .colour_correction:
-        #   .distance_metric
-        #   .smoothing
-        #   .window_size
-
-        if self.method != other.method:
-            Console.warn("Method does not match:", self.method, " / ", other.method)
-            return False
-
-        if (
-            self.color_correction.distance_metric
-            != other.color_correction.distance_metric
-        ):
-            Console.warn(
-                "Distance metric does not match:",
-                self.color_correction.distance_metric,
-                " / ",
-                other.color_correction.distance_metric,
-            )
-            return False
-
-        if self.color_correction.smoothing != other.color_correction.smoothing:
-            Console.warn(
-                "Smoothing does not match:",
-                self.color_correction.smoothing,
-                " / ",
-                other.color_correction.smoothing,
-            )
-            return False
-
-        if self.color_correction.window_size != other.color_correction.window_size:
-            Console.warn(
-                "Window size does not match:",
-                self.color_correction.window_size,
-                " / ",
-                other.color_correction.window_size,
-            )
-            return False
-
-        # Check if the number of cameras match
-        if self.configs.num_cameras != other.configs.num_cameras:
-            Console.warn(
-                "Number of cameras does not match:",
-                self.configs.num_cameras,
-                " / ",
-                other.configs.num_cameras,
-            )
-            return False
-
-        # Check if the name of the cameras match. Right now we are impossing same order in camera names
-        for i in range(self.configs.num_cameras):
-            if (
-                self.configs.camera_configs[i].camera_name
-                != other.configs.camera_configs[i].camera_name
-            ):
-                Console.warn(
-                    "Camera name does not match:",
-                    self.configs.camera_configs[i].camera_name,
-                    " / ",
-                    other.configs.camera_configs[i].camera_name,
-                )
-                return False
-
-        return True
+        if "rescale" in data:
+            self.camerarescale = CameraRescale(data["rescale"])

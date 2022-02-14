@@ -43,8 +43,6 @@ def debayer(image: np.ndarray, pattern: str) -> np.ndarray:
         corrected_rgb_img = cv2.cvtColor(image16, cv2.COLOR_BAYER_RG2RGB_EA)
     elif pattern == "gbrg" or pattern == "GBRG":
         corrected_rgb_img = cv2.cvtColor(image16, cv2.COLOR_BAYER_GR2RGB_EA)
-    elif pattern == "mono" or pattern == "MONO":
-        return image
     else:
         Console.quit("Bayer pattern not supported (", pattern, ")")
 
