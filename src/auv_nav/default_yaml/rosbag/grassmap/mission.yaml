@@ -48,7 +48,7 @@ usbl:
   timeoffset: 0.0
 
 image:
-  format: rosbag_extracted_images
+  format: rosbag
   cameras:
     - name: chameleon_left
       type: bayer_rggb

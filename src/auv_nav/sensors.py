@@ -592,6 +592,10 @@ class Orientation(OutputFormat):
         parts = line.split()
         date_time_obj = datetime.datetime.strptime(parts[2], "%Y:%m:%d:%H:%M:%S.%f")
         self.epoch_timestamp = date_time_obj.timestamp()
+        if self.epoch_timestamp == 0:
+            # Invalid timestamp
+            self.epoch_timestamp = None
+            return
 
         nmea_string = parts[3].replace("\n", "")
         msg = pynmea2.parse(nmea_string)
@@ -805,6 +809,10 @@ class Depth(OutputFormat):
         date_time_obj = datetime.datetime.strptime(parts[4], "%Y:%m:%d:%H:%M:%S.%f")
         self.epoch_timestamp = date_time_obj.timestamp()
         self.depth_timestamp = self.epoch_timestamp
+        if self.epoch_timestamp == 0:
+            # Invalid timestamp
+            self.epoch_timestamp = None
+            return
         self.depth = float(parts[5])
         self.depth_std = self.depth * self.depth_std_factor
 
@@ -1132,6 +1140,10 @@ class Usbl(OutputFormat):
         parts = line.split()
         date_time_obj = datetime.datetime.strptime(parts[3], "%Y:%m:%d:%H:%M:%S.%f")
         self.epoch_timestamp = date_time_obj.timestamp()
+        if self.epoch_timestamp == 0:
+            # Invalid timestamp
+            self.epoch_timestamp = None
+            return
         self.latitude = float(parts[7])
         self.longitude = float(parts[8])
         self.depth = -float(parts[6])
@@ -1323,21 +1335,22 @@ class Usbl(OutputFormat):
 
     def to_acfr(self):
         distance_range = -1.0
-        if self.distance_to_ship > self.depth and self.distance_to_ship > 0:
-            try:
-                distance_range = sqrt(self.distance_to_ship ** 2 - self.depth ** 2)
-            except ValueError:
-                print("Value error:")
-                print("Value distance_to_ship: " + str(self.distance_to_ship))
-                print("Value depth:            " + str(self.depth))
+        if self.distance_to_ship is not None:
+            if self.distance_to_ship > self.depth and self.distance_to_ship > 0:
+                try:
+                    distance_range = sqrt(self.distance_to_ship ** 2 - self.depth ** 2)
+                except ValueError:
+                    print("Value error:")
+                    print("Value distance_to_ship: " + str(self.distance_to_ship))
+                    print("Value depth:            " + str(self.depth))
         bearing = atan2(self.eastings, self.northings) * 180 / pi
         data = (
             "SSBL_FIX: "
             + str(float(self.epoch_timestamp))
             + " ship_x: "
-            + str(float(self.northings_ship))
+            + str(float_or_none(self.northings_ship))
             + " ship_y: "
-            + str(float(self.eastings_ship))
+            + str(float_or_none(self.eastings_ship))
             + " target_x: "
             + str(float(self.northings))
             + " target_y: "
@@ -1345,11 +1358,11 @@ class Usbl(OutputFormat):
             + " target_z: "
             + str(float(self.depth))
             + " target_hr: "
-            + str(float(distance_range))
+            + str(float_or_none(distance_range))
             + " target_sr: "
-            + str(float(self.distance_to_ship))
+            + str(float_or_none(self.distance_to_ship))
             + " target_bearing: "
-            + str(float(bearing))
+            + str(float_or_none(bearing))
             + "\n"
         )
         return data
@@ -1951,7 +1964,7 @@ class Camera(SyncedOrientationBodyVelocity):
         return data
 
     def from_ros(self, msg, msg_type, output_dir):
-        """Parse ROS image topic """
+        """Parse ROS image topic"""
 
         # Check image message type
         """
@@ -1971,9 +1984,8 @@ class Camera(SyncedOrientationBodyVelocity):
         output_dir = Path(output_dir) / ("image/raw/" + self.sensor_string)
         if not output_dir.exists():
             output_dir.mkdir(parents=True)
-        self.filename = str(
-            output_dir / ("frame" + stamp[:-9] + "." + stamp[-9:] + ".png")
-        )
+        self.filename = str(output_dir / (stamp + ".png"))
+
         # cv2.imwrite(self.filename, cv_img)
 
 
