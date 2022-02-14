@@ -173,11 +173,14 @@ def call_parse(args):
                 Console.info("\t", path, " [OK]")
 
     # Populating the configuration and camerasystem lists for each dive path
+    # The camera system is pulled first from <config> folder if available, if not from <raw> folder
     correct_config_list, camerasystem_list = zip(
         *[load_configuration_and_camera_system(path, args.suffix) for path in path_list]
     )
+    # correct_config <--- from correct_images.yaml  (<config> folder)
+    # camerasystem   <--- from camera.yaml          (<config> folder or from <raw> folder)
 
-    # Let's check that both lists have the same length and are not empty
+    # Let's check that both lists have the same length and are not empty (same number of dives)
     if len(correct_config_list) != len(camerasystem_list):
         Console.error("Number of [camerasystem] and [configuration] differ!")
         sys.exit(1)
@@ -186,8 +189,7 @@ def call_parse(args):
         sys.exit(1)
 
     # When in multidive mode, check if all camerasystem are the same. For this we test camera_system.camera_system
-    if len(camerasystem_list) > 1:
-        # this test is still valid for single dive mode, so we could remove this if
+    if len(camerasystem_list) > 1:       # this test is still valid for single dive mode, so we could remove this [if] sentence
         camera_system = camerasystem_list[0]
         for cs in camerasystem_list:
             # the first entry will be repeated, no problem with that
@@ -207,21 +209,28 @@ def call_parse(args):
     if len(correct_config_list) > 1:
         correct_config = correct_config_list[0]
         for cc in correct_config_list:
-            # Check if the relevant fields of the configuration are the same
+            # Check if the relevant fields of the configuration are the same (including per-dive camera setup)
             if not correct_config.is_equivalent(cc):
                 Console.error("Configurations [correct_config] do not match!")
                 sys.exit(1)
         Console.warn("Configurations are equivalent for all dives.")
 
-    # we peek at the first entry and use it as template for all dives
     camerasystem = camerasystem_list[0]
     for camera in camerasystem.cameras:
-        Console.info("Parsing for camera", camera.name)
-        # Create a Corrector object for each camera with empty configuration
-        # The configuration and the paths will be populated later on a per-dive basis
-        corrector = Corrector(args.force, args.suffix, camera, correct_config=None)
-        # call new list-compatible implementation of parse()
-        corrector.parse(path_list, correct_config_list)
+        # check if the camera also exists in the configuration
+        if camera.name not in [c.camera_name for c in correct_config.configs.camera_configs]: # ignore if not present
+
+
+
+
+            Console.warn("Camera [", camera.name, "] defined in <camera.yaml> but not found in configuration. Skipping...")
+        else:
+            Console.info("Parsing for camera", camera.name)
+            # Create a Corrector object for each camera with empty configuration
+            # The configuration and the paths will be populated later on a per-dive basis
+            corrector = Corrector(args.force, args.suffix, camera, correct_config=None)
+            # call new list-compatible implementation of parse()
+            corrector.parse(path_list, correct_config_list)
 
     Console.info(
         "Parse completed for all cameras. Please run process to develop ",
@@ -437,7 +446,6 @@ def load_configuration_and_camera_system(path, suffix=None):
             "Image system in camera.yaml does not match with mission.yaml",
             "Provide correct camera.yaml in /raw folder",
         )
-
     # check for correct_config yaml path
     path_correct_images = None
     if suffix == "" or suffix is None:
