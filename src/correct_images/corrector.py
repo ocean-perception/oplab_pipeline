@@ -45,6 +45,21 @@ matplotlib.use("Agg")
 
 
 # -----------------------------------------
+def copy_file_if_exists(original_file: Path, dest_dir: Path):
+    """Copy a file if it exists.
+
+    Parameters
+    ----------
+    original_file : Path
+        Source file to copy from
+    dest_dir : Path
+        Destination directory to copy the file to
+    """
+    if not original_file.exists():
+        return
+    fname = original_file.name
+    dest_file = dest_dir / fname
+    original_file.copy(dest_file)
 
 
 class Corrector:
@@ -245,6 +260,21 @@ class Corrector:
         if self.correction_method == "colour_correction":
             self.get_altitude_and_depth_maps()
             self.generate_attenuation_correction_parameters()
+
+            for i in range(len(path_list)):  # for each dive
+                path = get_processed_folder(path_list[i])
+                attn_dir = Path(self.attenuation_parameters_folder)
+                relative_folder = attn_dir.relative_to(self.path_processed)
+                dest_dir = path / relative_folder
+                if dest_dir == attn_dir:
+                    # Do not copy over the original files
+                    continue
+                copy_file_if_exists(self.attenuation_params_filepath, dest_dir)
+                copy_file_if_exists(self.correction_gains_filepath, dest_dir)
+                copy_file_if_exists(self.corrected_mean_filepath, dest_dir)
+                copy_file_if_exists(self.corrected_std_filepath, dest_dir)
+                copy_file_if_exists(self.raw_mean_filepath, dest_dir)
+                copy_file_if_exists(self.raw_std_filepath, dest_dir)
         elif self.correction_method == "manual_balance":
             Console.info("run process for manual_balance...")
 
@@ -501,7 +531,12 @@ class Corrector:
                 alt = float(row["altitude [m]"])
                 if alt > self.altitude_min and alt < self.altitude_max:
                     if self.camera.extension == "bag":
-                        self.camera_image_list.append(Path(row["relative_path"]).stem)
+                        timestamp_from_filename = Path(row["relative_path"]).stem
+                        if "\\" in timestamp_from_filename:
+                            timestamp_from_filename = timestamp_from_filename.split(
+                                "\\"
+                            )[-1]
+                        self.camera_image_list.append(timestamp_from_filename)
                     else:
                         self.camera_image_list.append(
                             self.path_raw / row["relative_path"]
@@ -646,7 +681,7 @@ class Corrector:
 
         distance_vector = None
 
-        if self.depth_map_list:
+        if self.depth_map_list and self.distance_metric == "depth_map":
             Console.info("Computing depth map histogram with", hist_bins.size, " bins")
 
             distance_vector = np.zeros((len(self.depth_map_list), 1))
@@ -654,7 +689,7 @@ class Corrector:
                 dm_np = depth_map.loader(dm_file, self.image_width, self.image_height)
                 distance_vector[i] = dm_np.mean(axis=1)
 
-        elif self.altitude_list:
+        elif self.altitude_list and self.distance_metric == "altitude":
             Console.info("Computing altitude histogram with", hist_bins.size, " bins")
             distance_vector = np.array(self.altitude_list)
 
@@ -666,7 +701,7 @@ class Corrector:
                 tmp_idxs = np.where(idxs == idx_bin)[0]
                 Console.info(
                     "  Bin",
-                    format(idx_bin, '02d'),
+                    format(idx_bin, "02d"),
                     "(",
                     round(hist_bins[idx_bin], 1),
                     "m < x <",
