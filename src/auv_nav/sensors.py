@@ -1748,7 +1748,7 @@ class Camera(SyncedOrientationBodyVelocity):
     def fromSyncedBodyVelocity(
         self, other, origin_offsets, sensor_offsets, latlon_reference
     ):
-        [x_offset, y_offset, _] = body_to_inertial(
+        [x_offset, y_offset, z_offset] = body_to_inertial(
             other.roll,
             other.pitch,
             other.yaw,
@@ -1783,12 +1783,12 @@ class Camera(SyncedOrientationBodyVelocity):
         self.north_velocity_std = other.north_velocity_std
         self.east_velocity_std = other.east_velocity_std
         self.down_velocity_std = other.down_velocity_std
-        self.altitude = other.altitude
+        self.altitude = other.altitude + z_offset
         self.northings = other.northings - x_offset
         self.eastings = other.eastings - y_offset
         self.northings_std = other.northings_std
         self.eastings_std = other.eastings_std
-        self.depth = other.depth
+        self.depth = other.depth - z_offset
         self.depth_std = other.depth_std
         self.covariance = other.covariance
 
