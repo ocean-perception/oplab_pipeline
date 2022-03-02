@@ -277,3 +277,5 @@ class Console:
         logger.setLevel(logging.DEBUG)
         fh.setLevel(logging.DEBUG)  # or any level you want
         logger.addHandler(fh)
+        if logger is not None:
+            logger.info("oplab_pipeline version: " + str(Console.get_version()))
