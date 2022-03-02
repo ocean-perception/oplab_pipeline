@@ -877,7 +877,7 @@ def process(
         )
         dead_reckoning_centre_list[i].northings += x_offset
         dead_reckoning_centre_list[i].eastings += y_offset
-        dead_reckoning_centre_list[i].altitude += a_offset
+        dead_reckoning_centre_list[i].altitude -= a_offset
         dead_reckoning_centre_list[i].depth += z_offset
     # correct for altitude and depth offset too!
 

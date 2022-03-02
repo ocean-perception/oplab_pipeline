@@ -462,7 +462,7 @@ def interpolate_sensor_list(
                     _centre_list[j - 1].altitude,
                     _centre_list[j].altitude,
                 )
-                - z_offset
+                + z_offset
             )
             sensor_list[i].depth = (
                 interpolate(
