@@ -1386,7 +1386,7 @@ def process(
         camera1_ekf_list = update_camera_list(
             camera1_ekf_list,
             ekf_list,
-            origin_offsets,
+            dvl_pos_on_vehicle,
             camera1_offsets,
             latlon_reference,
         )
@@ -1394,7 +1394,7 @@ def process(
         camera2_ekf_list = update_camera_list(
             camera2_ekf_list,
             ekf_list,
-            origin_offsets,
+            dvl_pos_on_vehicle,
             camera2_offsets,
             latlon_reference,
         )
@@ -1402,7 +1402,7 @@ def process(
         camera3_ekf_list = update_camera_list(
             camera3_ekf_list,
             ekf_list,
-            origin_offsets,
+            dvl_pos_on_vehicle,
             camera3_offsets,
             latlon_reference,
         )
