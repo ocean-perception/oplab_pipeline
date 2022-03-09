@@ -72,9 +72,8 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
         Console.error("Unexpected category: " + category)
 
     timezone_offset = read_timezone(timezone)
-
-    # convert to seconds from utc
-    # timeoffset = -timezone_offset*60*60 + timeoffset
+    if timezone_offset != 0:
+        Console.info("  The ae2000 nav data is already in UTC, the timezone field is therefore ignored.")
 
     # parse phins data
     Console.info("  Parsing ae2000 logs for " + category + "...")
@@ -109,7 +108,7 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
         secs = int(timestamp_s_ms[0])
         msec = int(timestamp_s_ms[1])
 
-        epoch_time = date_time_to_epoch(yyyy, mm, dd, hour, mins, secs, timezone_offset)
+        epoch_time = date_time_to_epoch(yyyy, mm, dd, hour, mins, secs)
         # dt_obj = datetime(yyyy,mm,dd,hour,mins,secs)
         # time_tuple = dt_obj.timetuple()
         # epoch_time = time.mktime(time_tuple)
