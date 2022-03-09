@@ -11,6 +11,8 @@ from collections import OrderedDict
 
 import yaml
 
+from oplab import Mission
+
 from .console import Console
 
 
@@ -100,29 +102,26 @@ class Vehicle:
         self.filename = filename
 
         mission_file = filename.parent / "mission.yaml"
-        old_format = False
-
-        from oplab import Mission
-
-        mission = Mission(mission_file)
-        mission_stream = mission_file.open("r")
-        mission_data = yaml.safe_load(mission_stream)
+        mission_data = None
 
         try:
             with filename.open("r") as stream:
                 self.data = OrderedDict()
                 self.data = yaml.safe_load(stream)
+
                 if "origin" in self.data:
                     self.origin.load(self.data["origin"])
                     if "x_offset" in self.data["origin"]:
-                        old_format = True
+                        mission = Mission(mission_file)
+                        mission_stream = mission_file.open("r")
+                        mission_data = yaml.safe_load(mission_stream)
                 if "ins" in self.data:
-                    if old_format:
+                    if mission_data is not None:
                         self.ins.load(self.data["ins"], mission_data["orientation"])
                     else:
                         self.ins.load(self.data["ins"])
                 if "dvl" in self.data:
-                    if old_format:
+                    if mission_data is not None:
                         self.dvl.load(self.data["dvl"], mission_data["velocity"])
                     else:
                         self.dvl.load(self.data["dvl"])
