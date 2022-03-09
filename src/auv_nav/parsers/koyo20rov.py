@@ -10,23 +10,7 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta, timezone
-
-
-def date_time_to_epoch(
-    yyyy,
-    mm,
-    dd,
-    hh,
-    mm1,
-    ss,
-    us=0,
-    timezone_offset_to_utc=0,
-):
-    utc_date_time = datetime(yyyy, mm, dd, hh, mm1, ss, us) - timedelta(
-        hours=timezone_offset_to_utc
-    )
-    epochtime = utc_date_time.timestamp()
-    return epochtime
+from auv_nav.tools.time_conversions import date_time_to_epoch
 
 
 class Camera:
@@ -77,8 +61,8 @@ class Camera:
             hour,
             mins,
             secs,
-            usecs,
             0,
+            usecs,
         )
         return epoch_time
     
@@ -141,8 +125,8 @@ class RovRot:
             hour,
             mins,
             secs,
-            usecs,
             0,
+            usecs,
         )
         return epoch_time
 
@@ -190,6 +174,7 @@ class RovPos:
             hour,
             mins,
             secs,
+            0,
             0,
         )
         return epoch_time
