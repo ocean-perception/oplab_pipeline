@@ -13,7 +13,7 @@ import pandas as pd
 
 from auv_nav.tools.interpolate import interpolate
 from auv_nav.tools.time_conversions import date_time_to_epoch
-from oplab import Console, get_raw_folder
+from oplab import Console, Vehicle, get_raw_folder
 
 
 class Camera:
@@ -213,6 +213,12 @@ class RovParser:
             / "../image/Xviii/FileTime.csv"
         ).resolve()
         assert filepath_Xviii.exists()
+        vehicle_yaml_filepath = (
+            nav_dirpath
+            / ".."
+            / "vehicle.yaml"
+        ).resolve()
+        assert vehicle_yaml_filepath.exists()
 
         # Check all output paths
         dirpath_output = (
@@ -265,6 +271,8 @@ class RovParser:
 
         # Read in all data, concatenate position files, and assign data to
         # variable names.
+        Console.info("Loading vehicle.yaml at", vehicle_yaml_filepath)
+        vehicle = Vehicle(vehicle_yaml_filepath)
         dataframe_pos1 = pd.read_csv(
             filepath_pos1,
             encoding="shift_jis",
