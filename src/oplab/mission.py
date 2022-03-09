@@ -86,7 +86,8 @@ class CameraEntry:
         node["origin"] = self.origin
         node["type"] = self.type
         node["path"] = self.path
-        node["timeoffset"] = self.timeoffset
+        if hasattr(self, 'timeoffset'):
+            node["timeoffset"] = self.timeoffset
 
 
 class TimeZoneEntry:
