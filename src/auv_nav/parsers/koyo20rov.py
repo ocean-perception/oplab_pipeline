@@ -12,6 +12,7 @@ import numpy as np
 from datetime import datetime, timedelta, timezone
 from auv_nav.tools.time_conversions import date_time_to_epoch
 from oplab import Console, get_raw_folder
+from auv_nav.tools.interpolate import interpolate
 
 
 class Camera:
@@ -179,16 +180,6 @@ class RovPos:
             0,
         )
         return epoch_time
-
-
-def interpolate(x_query, x_lower, x_upper, y_lower, y_upper):
-    if x_upper == x_lower:
-        y_query = y_lower
-    else:
-        y_query = (y_upper - y_lower) / (x_upper - x_lower) * (
-            x_query - x_lower
-        ) + y_lower
-    return y_query
 
 
 class RovParser:
