@@ -91,6 +91,10 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
     datetime_column = df.iloc[:, 1]
     # length of this should match every other column
     for row_index in range(len(datetime_column)):
+        if pd.isna(datetime_column[row_index]):
+            # Check for NaN. Happens if file ends with an incomplete line.
+            Console.info("  Date-time field in row", row_index, "in", filename, "is NaN. Ignoring line and continuing.")
+            continue
         datetime = datetime_column[row_index].split(" ")
         date = datetime[0].split("/")
         yyyy = int(date[0])
