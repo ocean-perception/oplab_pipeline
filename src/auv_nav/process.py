@@ -656,6 +656,14 @@ def process(
     for i in non_processed_altitude_index_list:
         altitude_list[i].seafloor_depth = altitude_list[i + 1].seafloor_depth
 
+    if len(orientation_list) == 0 or len(velocity_body_list) == 0:
+        Console.quit(
+            "orientation_list and velocity_body_list must not be empty but at",
+            "least one of them is empty (orientation_list contains",
+            len(orientation_list), "elements and velocity_body_list",
+            "conatains", len(velocity_body_list), "elements)"
+        )
+
     # perform usbl_filter
     if usbl_filter_activate:
         usbl_list_no_dist_filter, usbl_list = usbl_filter(
