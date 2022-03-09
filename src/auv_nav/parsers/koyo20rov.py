@@ -295,9 +295,9 @@ class RovParser:
         pos_vector = []
         for i, this_date in enumerate(date):
             if type(this_date) is not str:
-                pass
+                continue
             elif len(this_date) < 8:
-                pass
+                continue
             else:
                 pos_vector.append(
                     RovPos(
@@ -406,7 +406,7 @@ class RovParser:
                 break
             # If image earlier than all position data, just move on.
             if image_epoch < pos_vector[0].epoch_timestamp:
-                pass
+                continue
             # Find the position data that immediately preceeds the image.
             i = 0
             while (image_epoch > pos_vector[i].epoch_timestamp):
@@ -456,7 +456,7 @@ class RovParser:
                 break
             # If image earlier than all position data, just move on.
             if image_epoch < rot_vector[0].epoch_timestamp:
-                pass
+                continue
             # Find the position data that immediately preceeds the image.
             i = 0
             while (image_epoch > rot_vector[i].epoch_timestamp):
@@ -499,7 +499,7 @@ class RovParser:
                 break
             # If image earlier than all position data, just move on.
             if image_epoch < pos_vector[0].epoch_timestamp:
-                pass
+                continue
             # Find the position data that immediately preceeds the image.
             i = 0
             while (image_epoch > pos_vector[i].epoch_timestamp):
@@ -549,7 +549,7 @@ class RovParser:
                 break
             # If image earlier than all position data, just move on.
             if image_epoch < rot_vector[0].epoch_timestamp:
-                pass
+                continue
             # Find the position data that immediately preceeds the image.
             i = 0
             while (image_epoch > rot_vector[i].epoch_timestamp):
