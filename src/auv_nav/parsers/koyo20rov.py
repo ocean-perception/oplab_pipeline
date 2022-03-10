@@ -733,7 +733,22 @@ class RovParser:
                 bearing * np.pi / 180.0
             )
         print(f" - for Xviii - {100*(i+1)/n:6.2f}%")
-        
+
+        print("Generating .csv message strings...")
+        self.data_for_LM165_at_DVL = [
+            "relative_path,",
+            "northing [m],",
+            "easting [m],",
+            "depth [m],",
+            "roll [deg],",
+            "pitch [deg],",
+            "heading [deg],",
+            "altitude [m],",
+            "timestamp [s],",
+            "latitude [deg],",
+            "longitude [deg]\n",
+        ]
+
         print("Saving out .csv files...")
         header = [
             "relative_path",
