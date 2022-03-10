@@ -478,7 +478,8 @@ class RovParser:
         n = len(vector_LM165)
         for j, image_object in enumerate(vector_LM165):
             print(
-                f"Interpolating LM165 from position vectors - {100*j/n:6.2f}%",
+                f"Interpolating LM165 from position vectors"
+                f" - {100*j/n:6.2f}%",
                 end='\r',
                 flush=True,
             )
@@ -522,13 +523,17 @@ class RovParser:
                 pos_vector[i-1].altitude,
                 pos_vector[i].altitude,
             )
-        print(f"Interpolating LM165 from position vectors - {100*(j+1)/n:6.2f}%")
+        print(
+            f"Interpolating LM165 from position vectors"
+            f" - {100*(j+1)/n:6.2f}%"
+        )
 
         # interpolate LM165 from rotation vectors
         n = len(vector_LM165)
         for j, image_object in enumerate(vector_LM165):
             print(
-                f"Interpolating LM165 from rotation vectors - {100*j/n:6.2f}%",
+                f"Interpolating LM165 from rotation vectors"
+                f" - {100*j/n:6.2f}%",
                 end='\r',
                 flush=True,
             )
@@ -565,13 +570,17 @@ class RovParser:
                 rot_vector[i-1].roll,
                 rot_vector[i].roll,
             )
-        print(f"Interpolating LM165 from rotation vectors - {100*(j+1)/n:6.2f}%")
+        print(
+            f"Interpolating LM165 from rotation vectors"
+            f" - {100*(j+1)/n:6.2f}%"
+        )
         
         # interpolate Xvii from position vectors
         n = len(vector_Xviii)
         for j, image_object in enumerate(vector_Xviii):
             print(
-                f"Interpolating Xviii from position vectors - {100*j/n:6.2f}%",
+                f"Interpolating Xviii from position vectors"
+                f" - {100*j/n:6.2f}%",
                 end='\r',
                 flush=True,
             )
@@ -615,13 +624,17 @@ class RovParser:
                 pos_vector[i-1].altitude,
                 pos_vector[i].altitude,
             )
-        print(f"Interpolating Xviii from position vectors - {100*(j+1)/n:6.2f}%")
+        print(
+            f"Interpolating Xviii from position vectors"
+            f" - {100*(j+1)/n:6.2f}%"
+        )
 
         # interpolate vector_Xvii from rotation vectors
         n = len(vector_Xviii)
         for j, image_object in enumerate(vector_Xviii):
             print(
-                f"Interpolating Xviii from rotation vectors - {100*j/n:6.2f}%",
+                f"Interpolating Xviii from rotation vectors"
+                f" - {100*j/n:6.2f}%",
                 end='\r',
                 flush=True,
             )
@@ -658,7 +671,10 @@ class RovParser:
                 rot_vector[i-1].roll,
                 rot_vector[i].roll,
             )
-        print(f"Interpolating Xviii from rotation vectors - {100*(j+1)/n:6.2f}%")
+        print(
+            f"Interpolating Xviii from rotation vectors"
+            f" - {100*(j+1)/n:6.2f}%"
+        )
         print("Finished interpolating everything.")
 
         print("Adding lever arms...")
