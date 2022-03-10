@@ -439,16 +439,16 @@ class RovParser:
         time_LM165 = list(dataframe_LM165["time"])
         index_LM165 = list(dataframe_LM165["index"])
         ms_LM165 = list(dataframe_LM165["ms"])
-        vector_LM165 = []
+        vector_LM165_at_DVL = []
         for i, this_date in enumerate(date_LM165):
-            vector_LM165.append(
+            vector_LM165_at_DVL.append(
                 Camera(
                     this_date,
                     time_LM165[i],
                     ms_LM165[i],
                     index_LM165[i],
                     sensor_positions,
-                    "LM165",
+                    "dvl",  # So that lever arms are correct to DVL
                 )
             )
 
@@ -476,8 +476,8 @@ class RovParser:
         # and then of the Xviii image records.
 
         # interpolate LM165 from position vectors
-        n = len(vector_LM165)
-        for j, image_object in enumerate(vector_LM165):
+        n = len(vector_LM165_at_DVL)
+        for j, image_object in enumerate(vector_LM165_at_DVL):
             print(
                 f"Interpolating LM165 from position vectors"
                 f" - {100*j/n:6.2f}%",
@@ -530,8 +530,8 @@ class RovParser:
         )
 
         # interpolate LM165 from rotation vectors
-        n = len(vector_LM165)
-        for j, image_object in enumerate(vector_LM165):
+        n = len(vector_LM165_at_DVL)
+        for j, image_object in enumerate(vector_LM165_at_DVL):
             print(
                 f"Interpolating LM165 from rotation vectors"
                 f" - {100*j/n:6.2f}%",
@@ -680,8 +680,8 @@ class RovParser:
 
         print("Adding lever arms...")
         # for LM165
-        n = len(vector_LM165)
-        for i, image_object in enumerate(vector_LM165):
+        n = len(vector_LM165_at_DVL)
+        for i, image_object in enumerate(vector_LM165_at_DVL):
             print(f" - for LM165 - {100*i/n:6.2f}%",
                 end='\r',
                 flush=True,
@@ -700,8 +700,8 @@ class RovParser:
 
         print("Calculating northings and eastings...")
         # for LM165
-        n = len(vector_LM165)
-        for i, image_object in enumerate(vector_LM165):
+        n = len(vector_LM165_at_DVL)
+        for i, image_object in enumerate(vector_LM165_at_DVL):
             print(f" - for LM165 - {100*i/n:6.2f}%")
             lateral_distance, bearing = latlon_to_metres(
                 image_object.lat,
@@ -768,4 +768,4 @@ class RovParser:
         
 
 
-        return vector_LM165, vector_Xviii
+        return vector_LM165_at_DVL, vector_Xviii
