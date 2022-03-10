@@ -336,6 +336,13 @@ class RovParser:
         # variable names.
         Console.info("Loading vehicle.yaml at", vehicle_yaml_filepath)
         vehicle = Vehicle(vehicle_yaml_filepath)
+        sensor_positions = {}
+        for key in vehicle.data:
+            x_pos = vehicle.data[key]["surge_m"]
+            y_pos = vehicle.data[key]["sway_m"]
+            z_pos = vehicle.data[key]["heave_m"]
+            sensor_positions[key] = np.array([x_pos, y_pos, z_pos])
+
         dataframe_pos1 = pd.read_csv(
             filepath_pos1,
             encoding="shift_jis",
