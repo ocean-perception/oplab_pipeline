@@ -463,16 +463,14 @@ class EkfImpl(object):
         # Console.info('innovation:', str(innovation.T).replace('\n', ''))
         # print('innovation_cov:', innovation_cov.shape)
         # print('innovation_cov:', innovation_cov)
-        mahalanobis_distance2 = np.asscalar(
-            np.dot(innovation.T, innovation_cov @ innovation)
-        )
+        mahalanobis_distance2 = np.dot(innovation.T, innovation_cov @ innovation).item(0)
 
         if mahalanobis_distance2 >= self.mahalanobis_threshold ** 2:
             self.nb_exceeded_mahalanobis += 1
             ici = innovation_cov @ innovation
             summands = []
             for i in range(len(innovation)):
-                summands.append(np.asscalar(innovation[i] * ici[i]))
+                summands.append((innovation[i] * ici[i]).item(0))
             Console.warn_verbose(
                 "Mahalanobis dist > threshold ({} time(s) so far in this "
                 "dataset) for measurement at t={} of variable(s) with "
