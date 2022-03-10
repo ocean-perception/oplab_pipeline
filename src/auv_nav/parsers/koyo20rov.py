@@ -14,6 +14,7 @@ import pandas as pd
 
 from auv_nav.tools.body_to_inertial import body_to_inertial
 from auv_nav.tools.interpolate import interpolate
+from auv_nav.tools.latlon_wgs84 import latlon_to_metres
 from auv_nav.tools.time_conversions import date_time_to_epoch
 from oplab import Console, Vehicle, get_raw_folder
 
@@ -696,6 +697,24 @@ class RovParser:
             )
             image_object.add_lever_arms()
         print(f" - for Xviii - {100*(i+1)/n:6.2f}%")
+
+        print("Calculating northings and eastings...")
+        # for LM165
+        n = len(vector_LM165)
+        for i, image_object in enumerate(vector_LM165):
+            print()
+            lateral_distance, bearing = latlon_to_metres(
+                image_object.lat,
+                image_object.lon,
+                reference_lat,
+                reference_lon
+            )
+            image_object.northing = lateral_distance * np.cos(
+                bearing * np.pi / 180.0
+            )
+            image_object.easting = lateral_distance * np.sin(
+                bearing * np.pi / 180.0
+            )
 
         print("Saving out .csv files...")
         header = [
