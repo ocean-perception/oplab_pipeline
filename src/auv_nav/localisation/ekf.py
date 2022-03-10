@@ -220,13 +220,13 @@ class Measurement(object):
 
     def from_depth(self, value: Depth, orientation_deg: List[float], depth_to_dvl: List[float]):
         [_, _, depth_offset] = body_to_inertial(*orientation_deg, *depth_to_dvl)
-        depth_std_factor = self.sensors_std["position_z"]["factor"]
-        depth_std_offset = self.sensors_std["position_z"]["offset"]
         self.time = value.epoch_timestamp
         self.measurement[Index.Z] = value.depth + depth_offset
         if value.depth_std > 0:
             self.covariance[Index.Z, Index.Z] = value.depth_std ** 2
         else:
+            depth_std_factor = self.sensors_std["position_z"]["factor"]
+            depth_std_offset = self.sensors_std["position_z"]["offset"]
             self.covariance[Index.Z, Index.Z] = (
                 value.depth * depth_std_factor + depth_std_offset
             ) ** 2
@@ -285,13 +285,6 @@ class Measurement(object):
 
     def from_usbl(self, value: Usbl, orientation_deg: List[float], usbl_to_dvl: List[float]):
         [north_offset, east_offset, _] = body_to_inertial(*orientation_deg, *usbl_to_dvl)
-        usbl_noise_std_offset = self.sensors_std["position_xy"]["offset"]
-        usbl_noise_std_factor = self.sensors_std["position_xy"]["factor"]
-        distance = math.sqrt(
-            value.northings ** 2 + value.eastings ** 2 + value.depth ** 2
-        )
-        error = usbl_noise_std_offset + usbl_noise_std_factor * distance
-
         self.time = value.epoch_timestamp
         self.measurement[Index.X] = value.northings + north_offset
         self.measurement[Index.Y] = value.eastings + east_offset
@@ -300,6 +293,12 @@ class Measurement(object):
             self.covariance[Index.X, Index.X] = value.northings_std ** 2
             self.covariance[Index.Y, Index.Y] = value.eastings_std ** 2
         else:
+            usbl_noise_std_offset = self.sensors_std["position_xy"]["offset"]
+            usbl_noise_std_factor = self.sensors_std["position_xy"]["factor"]
+            distance = math.sqrt(
+                value.northings ** 2 + value.eastings ** 2 + value.depth ** 2
+            )
+            error = usbl_noise_std_offset + usbl_noise_std_factor * distance
             self.covariance[Index.X, Index.X] = error ** 2
             self.covariance[Index.Y, Index.Y] = error ** 2
         warn_if_zero(self.covariance[Index.X, Index.X], "X Covariance")
@@ -310,9 +309,6 @@ class Measurement(object):
         self.type = "USBL"
 
     def from_orientation(self, value):
-        imu_noise_std_offset = self.sensors_std["orientation"]["offset"]
-        imu_noise_std_factor = self.sensors_std["orientation"]["factor"]
-
         self.time = value.epoch_timestamp
         self.measurement[Index.ROLL] = value.roll * math.pi / 180.0
         self.measurement[Index.PITCH] = value.pitch * math.pi / 180.0
@@ -329,6 +325,8 @@ class Measurement(object):
                 value.yaw_std * math.pi / 180.0
             ) ** 2
         else:
+            imu_noise_std_offset = self.sensors_std["orientation"]["offset"]
+            imu_noise_std_factor = self.sensors_std["orientation"]["factor"]
             self.covariance[Index.ROLL, Index.ROLL] = (
                 (imu_noise_std_offset + value.roll * imu_noise_std_factor)
                 * math.pi
