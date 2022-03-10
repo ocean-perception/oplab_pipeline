@@ -12,6 +12,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from auv_nav.tools.body_to_inertial import body_to_inertial
 from auv_nav.tools.interpolate import interpolate
 from auv_nav.tools.time_conversions import date_time_to_epoch
 from oplab import Console, Vehicle, get_raw_folder
@@ -24,6 +25,8 @@ class Camera:
         time_Cam,
         ms_Cam,
         index,
+        sensor_positions,
+        name,
         stamp=0,
     ):
         self.depth=np.nan
@@ -34,6 +37,8 @@ class Camera:
         self.lat=np.nan
         self.lon=np.nan
         self.index=int(index)
+        self.sensor_positions=sensor_positions
+        self.name=name
         
         if date_Cam != 0:
             self.epoch_timestamp = self.convert_times_to_epoch(
@@ -44,6 +49,63 @@ class Camera:
         else:
             self.epoch_timestamp = stamp
     
+    def add_lever_arms(self):
+        """Add the lever arms to depth, altitude, lat, and lon
+        measurements.
+        """
+        self.depth = self.depth + body_to_inertial(
+            self.roll,
+            self.pitch,
+            self.heading,
+            (
+                self.positions[self.name]["surge_m"]
+                - self.positions["depth"]["surge_m"]
+            ),
+            (
+                self.positions[self.name]["sway_m"]
+                - self.positions["depth"]["sway_m"]
+            ),
+            (
+                self.positions[self.name]["heave_m"]
+                - self.positions["depth"]["heave_m"]
+            ),
+        )[2]
+        self.altitude = self.altitude - body_to_inertial(
+            self.roll,
+            self.pitch,
+            self.heading,
+            (
+                self.positions[self.name]["surge_m"]
+                - self.positions["dvl"]["surge_m"]
+            ),
+            (
+                self.positions[self.name]["sway_m"]
+                - self.positions["dvl"]["sway_m"]
+            ),
+            (
+                self.positions[self.name]["heave_m"]
+                - self.positions["dvl"]["heave_m"]
+            ),
+        )[2]
+        (self.lat, self.lon) = (self.lat, self.lon) + body_to_inertial(
+            self.roll,
+            self.pitch,
+            self.heading,
+            (
+                self.positions[self.name]["surge_m"]
+                - self.positions["ins"]["surge_m"]
+            ),
+            (
+                self.positions[self.name]["sway_m"]
+                - self.positions["ins"]["sway_m"]
+            ),
+            (
+                self.positions[self.name]["heave_m"]
+                - self.positions["ins"]["heave_m"]
+            ),
+        )[:2]
+        return
+
     def convert_times_to_epoch(self, date_Cam, time_Cam, ms_Cam):
         date_Cam = str(date_Cam)
         yyyy = int(date_Cam[0:4])
@@ -377,6 +439,8 @@ class RovParser:
                     time_LM165[i],
                     ms_LM165[i],
                     index_LM165[i],
+                    sensor_positions,
+                    "LM165",
                 )
             )
 
@@ -394,6 +458,8 @@ class RovParser:
                     time_Xviii[i],
                     ms_Xviii[i],
                     index_Xviii[i],
+                    sensor_positions,
+                    "Cam303235077",
                 )
             )
         
@@ -587,6 +653,26 @@ class RovParser:
             )
         print(f"Interpolating Xviii from rotation vectors - {100*(j+1)/n:6.2f}%")
         print("Finished interpolating everything.")
+
+        print("Adding lever arms...")
+        # for LM165
+        n = len(vector_LM165)
+        for i, image_object in enumerate(vector_LM165):
+            print(f" - for LM165 - {100*i/n:6.2f}%",
+                end='\r',
+                flush=True,
+            )
+            image_object.add_lever_arms()
+        print(f" - for LM165 - {100*(i+1)/n:6.2f}%")
+        # for Xviii
+        n = len(vector_Xviii)
+        for i, image_object in enumerate(vector_Xviii):
+            print(f" - for Xviii - {100*i/n:6.2f}%",
+                end='\r',
+                flush=True,
+            )
+            image_object.add_lever_arms()
+        print(f" - for Xviii - {100*(i+1)/n:6.2f}%")
 
         print("Saving out .csv files...")
         header = [
