@@ -702,7 +702,7 @@ class RovParser:
         # for LM165
         n = len(vector_LM165)
         for i, image_object in enumerate(vector_LM165):
-            print()
+            print(f" - for LM165 - {100*i/n:6.2f}%")
             lateral_distance, bearing = latlon_to_metres(
                 image_object.lat,
                 image_object.lon,
@@ -715,7 +715,25 @@ class RovParser:
             image_object.easting = lateral_distance * np.sin(
                 bearing * np.pi / 180.0
             )
-
+        print(f" - for LM165 - {100*(i+1)/n:6.2f}%")
+        # for Xviii
+        n = len(vector_Xviii)
+        for i, image_object in enumerate(vector_Xviii):
+            print(f" - for Xviii - {100*i/n:6.2f}%")
+            lateral_distance, bearing = latlon_to_metres(
+                image_object.lat,
+                image_object.lon,
+                reference_lat,
+                reference_lon
+            )
+            image_object.northing = lateral_distance * np.cos(
+                bearing * np.pi / 180.0
+            )
+            image_object.easting = lateral_distance * np.sin(
+                bearing * np.pi / 180.0
+            )
+        print(f" - for Xviii - {100*(i+1)/n:6.2f}%")
+        
         print("Saving out .csv files...")
         header = [
             "relative_path",
