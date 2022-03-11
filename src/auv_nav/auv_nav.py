@@ -13,7 +13,12 @@ import time
 
 import argcomplete
 
-from auv_nav.convert import acfr_to_oplab, hybis_to_oplab, oplab_to_acfr
+from auv_nav.convert import (
+    acfr_to_oplab,
+    hybis_to_oplab,
+    oplab_to_acfr,
+    koyo20rov_to_oplab,
+)
 from auv_nav.parse import parse
 from auv_nav.process import process
 from oplab import Console, get_config_folder, get_processed_folder
@@ -198,6 +203,29 @@ def main(args=None):
         "-F", "--Force", dest="force", action="store_true", help="Force file overwite",
     )
     subparser_acfr_to_oplab.set_defaults(func=acfr_to_oplab)
+
+    # KOYO_20_ROV to OPLAB CSV
+    subparser_koyo20rov_to_oplab = subparsers.add_parser(
+        "koyo20rov_to_oplab",
+        help=(
+            "Converts koyo20rov navigation fileS (plural) to oplab CSV"
+            " format"
+        ),
+    )
+    subparser_koyo20rov_to_oplab.add_argument(
+        "-i",
+        "--dive-path",
+        dest="dive_path",
+        help="Input directory path to dive.",
+    )
+    subparser_koyo20rov_to_oplab.add_argument(
+        "-F",
+        "--Force",
+        dest="force",
+        action="store_true",
+        help="Force overwite of output files",
+    )
+    subparser_koyo20rov_to_oplab.set_defaults(func=koyo20rov_to_oplab)
 
     # HYBIS to OPLAB CSV
     subparser_hybis_to_oplab = subsubparsers.add_parser(
