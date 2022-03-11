@@ -825,7 +825,7 @@ class RovParser:
         """
         Calculate northings and eastings.
         """
-        print("Calculating northings and eastings...")
+        Console.info("Calculating northings and eastings...")
         # for LM165
         n = len(self.vector_LM165_at_DVL)
         for i, image_object in enumerate(self.vector_LM165_at_DVL):
@@ -889,6 +889,7 @@ class RovParser:
                 bearing * np.pi / 180.0
             )
         print(f" - for camB - {100*(i+1)/n:6.2f}%")
+        Console.info("...finished calculating northings and eastings.")
         return
 
     def write_outputs(self):
