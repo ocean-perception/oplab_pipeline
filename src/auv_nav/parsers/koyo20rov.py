@@ -8,7 +8,9 @@ See LICENSE.md file in the project root for full license information.
 
 
 from copy import deepcopy
+from datetime import datetime
 from pathlib import Path
+from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -16,8 +18,16 @@ import pandas as pd
 from auv_nav.tools.body_to_inertial import body_to_inertial
 from auv_nav.tools.interpolate import interpolate
 from auv_nav.tools.latlon_wgs84 import latlon_to_metres
-from auv_nav.tools.time_conversions import date_time_to_epoch
-from oplab import Console, Mission, Vehicle, get_raw_folder
+from auv_nav.tools.time_conversions import (
+    date_time_to_epoch,
+    epoch_to_utctime,
+)
+from oplab import (
+    Console,
+    Mission,
+    Vehicle,
+    get_raw_folder,
+)
 from oplab.folder_structure import get_processed_folder
 
 
@@ -248,6 +258,24 @@ class RovPos:
         return epoch_time
 
 
+def epoch_to_timestr(epoch: Union[int, float]) -> str:
+    """
+    Convert epoch number into time string.
+
+    Args:
+        epoch (int | float): time since epoch [s]
+
+    Returns:
+        str: date as YYYYMMDD_hhmmss
+    """
+    time = datetime.fromtimestamp(epoch)
+    timestr = (
+        f"{time.year:04}{time.month:02}{time.day:02}"
+        f"_{time.hour:02}{time.minute:02}{time.second:02}"
+    )
+    return timestr
+
+
 class RovParser:
     """
     Class to parse and write koyo20rov nav data.
@@ -275,6 +303,8 @@ class RovParser:
         vector_rot (list) : RovRot objects
         vector_LM165_at_DVL (list) : RovCam objects
         vector_Xviii (list) : RovCam objects
+
+        ~ AFTER check_for_outputs IS CALLED ~
     
     """
 
@@ -504,91 +534,83 @@ class RovParser:
         Args:
             forcing (bool): whether forcing file overwrites or not
         """
-        # Check all output paths
+        # Check load_data has been called
+        assert hasattr(self, "vector_pos"), (
+            "ERROR: RovParser.load_data() must be called first."
+        )
+        # Figure out beginning and end times
+        epoch_start = min([
+            self.vector_pos[0].epoch_timestamp,
+            self.vector_rot[0].epoch_timestamp,
+        ])
+        epoch_end = max([
+            self.vector_pos[-1].epoch_timestamp,
+            self.vector_rot[-1].epoch_timestamp,
+        ])
+        timestr_start = epoch_to_timestr(epoch_start)
+        timestr_end = epoch_to_timestr(epoch_end)
+        # Check whether output files already exist
         dirpath_output = (
-            # [base]/raw/[yr]/[sys]/[veh]/[dive]/nav/
-            # Need to take 6 steps back to get to [base].
-            nav_dirpath.parents[5]
-            # Step forward into "processed".
-            / "processed"  # [base]/processed
-            # Then need to take 4 of the 6 steps forward again.
-            / nav_dirpath.parts[-5]  # [base]/processed/[yr]
-            / nav_dirpath.parts[-4]  # [base]/processed/[yr]/[sys]
-            / nav_dirpath.parts[-3]  # [base]/processed/[yr]/[sys]/[veh]
-            / nav_dirpath.parts[-2]  # [base]/processed/[yr]/[sys]/[veh]/[dive]
-            # Then the new bits.
-            / "json_whatever_you_like"
+            self.processed_dive_path
+            / f"json_renav_{timestr_start}_{timestr_end}"
             / "csv"
             / "dead_reckoning"
         ).resolve()
-        # Check we did that properly.
-        assert dirpath_output.parents[2].exists()
-        # Make new folders if need to.
         dirpath_output.mkdir(parents=True, exist_ok=True)
-        # Check image folders exist
-        vis_cam_dirpath = (
-            nav_dirpath
-            / ".."
-            / "image"
-            / "Xviii"
-            / "Cam303235077"
-        ).resolve()
-        assert vis_cam_dirpath.exists()
-        laser_cam_dirpath = (
-            nav_dirpath
-            / ".."
-            / "image"
-            / "LM165"
-        )
-        assert laser_cam_dirpath.exists()
-        # Check that output files we're going to make don't already exist
-        cam_csv_filepath = (
+        self.outpath_camA = (
             dirpath_output
-            / "auv_dr_Cam303235077.csv"
+            / f"auv_dr_{self.name_camA}.csv"
         )
-        assert not cam_csv_filepath.exists()
-        laser_csv_filepath = (
+        try:
+            assert not self.outpath_camA.exists()
+        except AssertionError:
+            if not forcing:
+                raise (
+                    f"{self.outpath_camA.name} already exists at"
+                    f" {self.outpath_camA.parent}. Use forcing to"
+                    f" overwrite."
+                )
+            else:
+                Console.warn(
+                    f"{self.outpath_camA.name} will be overwritten at"
+                    f" {self.outpath_camA.parent}"
+                )
+        self.outpath_camB = (
             dirpath_output
-            / "auv_dr_LM165_at_dvl.csv"
+            / f"auv_dr_{self.name_camB}.csv"
         )
-        assert not laser_csv_filepath.exists()
-        # ============================================================================================
-        filepath = get_processed_folder(args.output_folder)
-        start_datetime = epoch_to_datetime(parser.start_epoch)
-        finish_datetime = epoch_to_datetime(parser.finish_epoch)
-
-        # make path for processed outputs
-        json_filename = (
-            "json_renav_"
-            + start_datetime[0:8]
-            + "_"
-            + start_datetime[8:14]
-            + "_"
-            + finish_datetime[0:8]
-            + "_"
-            + finish_datetime[8:14]
+        try:
+            assert not self.outpath_camB.exists()
+        except AssertionError:
+            if not forcing:
+                raise (
+                    f"{self.outpath_camB.name} already exists at"
+                    f" {self.outpath_camB.parent}. Use forcing to"
+                    f" overwrite."
+                )
+            else:
+                Console.warn(
+                    f"{self.outpath_camB.name} will be overwritten at"
+                    f" {self.outpath_camB.parent}"
+                )
+        self.outpath_LM165_at_dvl = (
+            dirpath_output
+            / f"auv_dr_LM165_at_dvl.csv"
         )
-        renavpath = filepath / json_filename
-        if not renavpath.is_dir():
-            try:
-                renavpath.mkdir()
-            except Exception as e:
-                print("Warning:", e)
-        elif renavpath.is_dir() and not force_overwite:
-            # Check if dataset has already been processed
-            Console.error(
-                "It looks like this dataset has already been processed for the",
-                "specified time span.",
-            )
-            Console.error("The following directory already exist: {}".format(renavpath))
-            Console.error(
-                "To overwrite the contents of this directory rerun auv_nav with",
-                "the flag -F.",
-            )
-            Console.error("Example:   auv_nav process -F PATH")
-            Console.quit("auv_nav process would overwrite json_renav files")
-
-        # ====================================================================================================
+        try:
+            assert not self.outpath_LM165_at_dvl.exists()
+        except AssertionError:
+            if not forcing:
+                raise (
+                    f"{self.outpath_LM165_at_dvl.name} already exists at"
+                    f" {self.outpath_LM165_at_dvl.parent}. Use forcing to"
+                    f" overwrite."
+                )
+            else:
+                Console.warn(
+                    f"{self.outpath_LM165_at_dvl.name} will be overwritten at"
+                    f" {self.outpath_LM165_at_dvl.parent}"
+                )
         return
 
     def interpolate_to_images(self):
