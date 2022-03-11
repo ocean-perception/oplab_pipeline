@@ -251,88 +251,108 @@ class RovParser:
     """Class to parse and write koyo20rov nav data."""
 
     def __init__(self,
-        nav_dirpath,
-        image_dirpath,  # unneeded?
-        reference_lat,
-        reference_lon,
+        unspecified_dive_path: str,
     ):
+        """
+        Check all paths at initialisation, check for preexisting
+        output files and whether force overwrite is enabled.
+
+        Args:
+            dive_path (str): dirpath to the target dive folder
+        """
         # Obtain and check all input paths.
-        nav_dirpath = get_raw_folder(nav_dirpath)
-        nav_dirpath = Path(nav_dirpath).resolve()
-        assert nav_dirpath.exists()
-        assert nav_dirpath.is_dir()
-        filepath_pos1 = (nav_dirpath / "ship_log/201102.csv").resolve()
-        assert filepath_pos1.exists()
-        filepath_pos2 = (nav_dirpath / "ship_log/201103.csv").resolve()
-        assert filepath_pos2.exists()
-        filepath_rot = (nav_dirpath / "TCM/TCM.csv").resolve()
-        assert filepath_rot.exists()
-        filepath_LM165 = (
-            nav_dirpath
-            / "../image/LM165/FileTime.csv"
+        unspecified_dive_path = Path(unspecified_dive_path).resolve()
+        assert unspecified_dive_path.exists()
+        raw_dive_path = get_raw_folder(unspecified_dive_path)
+
+        self.filepath_pos1 = (
+            raw_dive_path
+            / "nav/ship_log/201102.csv"
         ).resolve()
-        assert filepath_LM165.exists()
-        filepath_Xviii = (
-            nav_dirpath
-            / "../image/Xviii/FileTime.csv"
+        assert self.filepath_pos1.exists()
+
+        self.filepath_pos2 = (
+            raw_dive_path
+            / "nav/ship_log/201103.csv"
         ).resolve()
-        assert filepath_Xviii.exists()
-        vehicle_yaml_filepath = (
-            nav_dirpath
-            / ".."
+        assert self.filepath_pos2.exists()
+
+        self.filepath_rot = (
+            raw_dive_path
+            / "nav/TCM/TCM.csv"
+        ).resolve()
+        assert self.filepath_rot.exists()
+
+        self.filepath_LM165 = (
+            raw_dive_path
+            / "image/LM165/FileTime.csv"
+        ).resolve()
+        assert self.filepath_LM165.exists()
+
+        self.filepath_Xviii = (
+            raw_dive_path
+            / "image/Xviii/FileTime.csv"
+        ).resolve()
+        assert self.filepath_Xviii.exists()
+
+        self.vehicle_yaml_filepath = (
+            raw_dive_path
             / "vehicle.yaml"
         ).resolve()
-        assert vehicle_yaml_filepath.exists()
+        assert self.vehicle_yaml_filepath.exists()
 
-        # Check all output paths
-        dirpath_output = (
-            # [base]/raw/[yr]/[sys]/[veh]/[dive]/nav/
-            # Need to take 6 steps back to get to [base].
-            nav_dirpath.parents[5]
-            # Step forward into "processed".
-            / "processed"  # [base]/processed
-            # Then need to take 4 of the 6 steps forward again.
-            / nav_dirpath.parts[-5]  # [base]/processed/[yr]
-            / nav_dirpath.parts[-4]  # [base]/processed/[yr]/[sys]
-            / nav_dirpath.parts[-3]  # [base]/processed/[yr]/[sys]/[veh]
-            / nav_dirpath.parts[-2]  # [base]/processed/[yr]/[sys]/[veh]/[dive]
-            # Then the new bits.
-            / "json_whatever_you_like"
-            / "csv"
-            / "dead_reckoning"
-        ).resolve()
-        # Check we did that properly.
-        assert dirpath_output.parents[2].exists()
-        # Make new folders if need to.
-        dirpath_output.mkdir(parents=True, exist_ok=True)
-        # Check image folders exist
-        vis_cam_dirpath = (
-            nav_dirpath
-            / ".."
-            / "image"
-            / "Xviii"
-            / "Cam303235077"
-        ).resolve()
-        assert vis_cam_dirpath.exists()
-        laser_cam_dirpath = (
-            nav_dirpath
-            / ".."
-            / "image"
-            / "LM165"
+        self.mission_yaml_filepath = (
+            raw_dive_path
+            / "mission.yaml"
         )
-        assert laser_cam_dirpath.exists()
-        # Check that output files we're going to make don't already exist
-        cam_csv_filepath = (
-            dirpath_output
-            / "auv_dr_Cam303235077.csv"
-        )
-        assert not cam_csv_filepath.exists()
-        laser_csv_filepath = (
-            dirpath_output
-            / "auv_dr_LM165_at_dvl.csv"
-        )
-        assert not laser_csv_filepath.exists()
+        assert self.mission_yaml_filepath.exists()
+        return
 
+    def load_data(self):
+        """
+        Load in all data from .yaml files, image files, and navigation
+        files.
+
+        Args:
+            forcing (bool): whether forcing output file overwrites
+        """
+        # ============================================================================================
+        filepath = get_processed_folder(args.output_folder)
+        start_datetime = epoch_to_datetime(parser.start_epoch)
+        finish_datetime = epoch_to_datetime(parser.finish_epoch)
+
+        # make path for processed outputs
+        json_filename = (
+            "json_renav_"
+            + start_datetime[0:8]
+            + "_"
+            + start_datetime[8:14]
+            + "_"
+            + finish_datetime[0:8]
+            + "_"
+            + finish_datetime[8:14]
+        )
+        renavpath = filepath / json_filename
+        if not renavpath.is_dir():
+            try:
+                renavpath.mkdir()
+            except Exception as e:
+                print("Warning:", e)
+        elif renavpath.is_dir() and not force_overwite:
+            # Check if dataset has already been processed
+            Console.error(
+                "It looks like this dataset has already been processed for the",
+                "specified time span.",
+            )
+            Console.error("The following directory already exist: {}".format(renavpath))
+            Console.error(
+                "To overwrite the contents of this directory rerun auv_nav with",
+                "the flag -F.",
+            )
+            Console.error("Example:   auv_nav process -F PATH")
+            Console.quit("auv_nav process would overwrite json_renav files")
+
+        # ====================================================================================================
         # Read in all data, concatenate position files, and assign data to
         # variable names.
         Console.info("Loading vehicle.yaml at", vehicle_yaml_filepath)
@@ -470,7 +490,70 @@ class RovParser:
                     "Cam303235077",
                 )
             )
-        
+        return
+    
+    def check_for_outputs(self, forcing: bool):
+        """
+        Check for preexisting output files, exit if present and not
+        forcing.
+
+        Args:
+            forcing (bool): whether forcing file overwrites or not
+        """
+        # Check all output paths
+        dirpath_output = (
+            # [base]/raw/[yr]/[sys]/[veh]/[dive]/nav/
+            # Need to take 6 steps back to get to [base].
+            nav_dirpath.parents[5]
+            # Step forward into "processed".
+            / "processed"  # [base]/processed
+            # Then need to take 4 of the 6 steps forward again.
+            / nav_dirpath.parts[-5]  # [base]/processed/[yr]
+            / nav_dirpath.parts[-4]  # [base]/processed/[yr]/[sys]
+            / nav_dirpath.parts[-3]  # [base]/processed/[yr]/[sys]/[veh]
+            / nav_dirpath.parts[-2]  # [base]/processed/[yr]/[sys]/[veh]/[dive]
+            # Then the new bits.
+            / "json_whatever_you_like"
+            / "csv"
+            / "dead_reckoning"
+        ).resolve()
+        # Check we did that properly.
+        assert dirpath_output.parents[2].exists()
+        # Make new folders if need to.
+        dirpath_output.mkdir(parents=True, exist_ok=True)
+        # Check image folders exist
+        vis_cam_dirpath = (
+            nav_dirpath
+            / ".."
+            / "image"
+            / "Xviii"
+            / "Cam303235077"
+        ).resolve()
+        assert vis_cam_dirpath.exists()
+        laser_cam_dirpath = (
+            nav_dirpath
+            / ".."
+            / "image"
+            / "LM165"
+        )
+        assert laser_cam_dirpath.exists()
+        # Check that output files we're going to make don't already exist
+        cam_csv_filepath = (
+            dirpath_output
+            / "auv_dr_Cam303235077.csv"
+        )
+        assert not cam_csv_filepath.exists()
+        laser_csv_filepath = (
+            dirpath_output
+            / "auv_dr_LM165_at_dvl.csv"
+        )
+        assert not laser_csv_filepath.exists()
+        return
+
+    def interpolate_to_images(self):
+        """
+        Interpolate data to image timestamps.
+        """
         # Now interpolate position vectors and rotation vectors to give
         # respective vectors at the timestamps of the LM165 images records
         # and then of the Xviii image records.
@@ -677,7 +760,13 @@ class RovParser:
             f" - {100*(j+1)/n:6.2f}%"
         )
         print("Finished interpolating everything.")
-
+        return
+    
+    def add_lever_arms(self):
+        """
+        Convert positional data of raw sensors to be that of the cameras
+        (i.e. add lever arms).
+        """
         print("Adding lever arms...")
         # for LM165
         n = len(vector_LM165_at_DVL)
@@ -697,12 +786,21 @@ class RovParser:
             )
             image_object.add_lever_arms()
         print(f" - for Xviii - {100*(i+1)/n:6.2f}%")
+        return
 
+    def add_northings_eastings(self):
+        """
+        Calculate northings and eastings.
+        """
         print("Calculating northings and eastings...")
         # for LM165
         n = len(vector_LM165_at_DVL)
         for i, image_object in enumerate(vector_LM165_at_DVL):
-            print(f" - for LM165 - {100*i/n:6.2f}%")
+            print(
+                f" - for LM165 - {100*i/n:6.2f}%",
+                end='\r',
+                flush=True,
+            )
             lateral_distance, bearing = latlon_to_metres(
                 image_object.lat,
                 image_object.lon,
@@ -719,7 +817,11 @@ class RovParser:
         # for Xviii
         n = len(vector_Xviii)
         for i, image_object in enumerate(vector_Xviii):
-            print(f" - for Xviii - {100*i/n:6.2f}%")
+            print(
+                f" - for Xviii - {100*i/n:6.2f}%",
+                end='\r',
+                flush=True,
+            )
             lateral_distance, bearing = latlon_to_metres(
                 image_object.lat,
                 image_object.lon,
@@ -733,7 +835,22 @@ class RovParser:
                 bearing * np.pi / 180.0
             )
         print(f" - for Xviii - {100*(i+1)/n:6.2f}%")
+        return
 
+    def write_outputs(self):
+        """
+        Create .csv file text and write output files.
+        """
+        # ==========================================================================================
+        output_dr_centre_path = renavpath / "csv" / "dead_reckoning"
+        if not output_dr_centre_path.exists():
+            output_dr_centre_path.mkdir(parents=True)
+        camera_name = "hybis_camera"
+        output_dr_centre_path = output_dr_centre_path / ("auv_dr_" + camera_name + ".csv")
+        parser.write(output_dr_centre_path)
+        parser.write(output_dr_centre_path)
+        Console.info("Output written to", output_dr_centre_path)
+        # ===========================================================================================
         print("Generating .csv message strings...")
         self.data_for_LM165_at_DVL = [
             "relative_path,",
@@ -748,24 +865,35 @@ class RovParser:
             "latitude [deg],",
             "longitude [deg]\n",
         ]
-
-        print("Saving out .csv files...")
-        header = [
-            "relative_path",
-            # "northing [m]",
-            # "easting [m]",
-            "depth [m]",
-            "roll [deg]",
-            "pitch [deg]",
-            "heading [deg]",
-            "altitude [m]",
-            "timestamp [s]",
-            "latitude [deg]",
-            "longitude [deg]",
-            # etc
+        n = len(vector_LM165_at_DVL)
+        for i, image_object in enumerate(vector_LM165_at_DVL):
+            print(
+                f" - for LM165 - {100*i/n}%",
+                end='\r',
+                flush=True,
+            )
+        print(f" - for LM165 - {100*(i+1)/n}%")
+        self.data_for_Xviii = [
+            "relative_path,",
+            "northing [m],",
+            "easting [m],",
+            "depth [m],",
+            "roll [deg],",
+            "pitch [deg],",
+            "heading [deg],",
+            "altitude [m],",
+            "timestamp [s],",
+            "latitude [deg],",
+            "longitude [deg]\n",
         ]
-        # Start with simpler cam csv file
-        
+        n = len(vector_Xviii)
+        for i, image_object in enumerate(vector_Xviii):
+            print(
+                f" - for Xviii - {100*i/n}%",
+                end='\r',
+                flush=True,
+            )
+            self.data_for_Xviii.append()
+        print(f" - for Xviii - {100*(i+1)/n}%")
+        return
 
-
-        return vector_LM165_at_DVL, vector_Xviii
