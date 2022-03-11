@@ -308,6 +308,10 @@ class RovParser:
         outpath_camA (PosixPath) : output path to camA nav file
         outpath_camB (PosixPath) : output path to camB nav file
         outpath_LM165 (PosixPath) : output path to LM165@dvl nav file
+
+        ~ AFTER add_lever_arms IS CALLED ~
+        vector_camA (list) : RovCam objects
+        vector_camB (list) : RovCam objects
     """
 
     def __init__(self,
@@ -774,7 +778,7 @@ class RovParser:
         Convert positional data of raw sensors to be that of the cameras
         (i.e. add lever arms).
         """
-        print("Adding lever arms...")
+        Console.info("Adding lever arms...")
         # for LM165
         n = len(self.vector_LM165_at_DVL)
         for i, image_object in enumerate(self.vector_LM165_at_DVL):
@@ -814,6 +818,7 @@ class RovParser:
                 self.sensor_positions,
             )
         print(f" - for camB - {100*(i+1)/n:6.2f}%")
+        Console.info("...finished adding lever arms.")
         return
 
     def add_northings_eastings(self):
