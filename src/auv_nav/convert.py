@@ -39,11 +39,8 @@ def koyo20rov_to_oplab(args):
         Console.error("Please provide a dive path")
         Console.quit("Missing comandline arguments")
     # Do all necessary pathchecks on creating of class instance
-    parser = RovParser(
-        args.dive_path,
-        args.force,
-    )
-    parser.load_data()
+    parser = RovParser(args.dive_path)
+    parser.load_data(args.force)
     parser.interpolate_to_images()
     parser.add_lever_arms()
     parser.save_outputs()
