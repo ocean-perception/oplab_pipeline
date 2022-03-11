@@ -305,7 +305,9 @@ class RovParser:
         vector_Xviii (list) : RovCam objects
 
         ~ AFTER check_for_outputs IS CALLED ~
-    
+        outpath_camA (PosixPath) : output path to camA nav file
+        outpath_camB (PosixPath) : output path to camB nav file
+        outpath_LM165 (PosixPath) : output path to LM165@dvl nav file
     """
 
     def __init__(self,
@@ -612,6 +614,7 @@ class RovParser:
                     f" {self.outpath_LM165_at_dvl.parent}"
                 )
         return
+
 
     def interpolate_to_images(self):
         """
