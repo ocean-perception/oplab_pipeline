@@ -615,219 +615,158 @@ class RovParser:
                 )
         return
 
+    def interpolate_vector_pos(self,
+        vector_cam: list,
+        name: str,
+    ) -> list:
+        """
+        Interpolate positional data to camera image timestamps.
+
+        Args:
+            vector_cam (list): RovCam objects
+
+        Returns:
+            list: vector_cam with interpolated positional data
+        """
+        n = len(vector_cam)
+        for j, image_object in enumerate(vector_cam):
+            print(
+                f"Interpolating {name} from position vectors"
+                f" - {100*j/n:6.2f}%",
+                end='\r',
+                flush=True,
+            )
+            image_epoch = image_object.epoch_timestamp
+            # If image later than all position data, just stop.
+            if image_epoch > self.vector_pos[-1].epoch_timestamp:
+                break
+            # If image earlier than all position data, just move on.
+            if image_epoch < self.vector_pos[0].epoch_timestamp:
+                continue
+            # Find the position data that immediately preceeds the image.
+            i = 0
+            while (image_epoch > self.vector_pos[i].epoch_timestamp):
+                i+=1
+            # Interpolate.
+            image_object.lat = interpolate(
+                image_epoch,
+                self.vector_pos[i-1].epoch_timestamp,
+                self.vector_pos[i].epoch_timestamp,
+                self.vector_pos[i-1].lat,
+                self.vector_pos[i].lat,
+            )
+            image_object.lon = interpolate(
+                image_epoch,
+                self.vector_pos[i-1].epoch_timestamp,
+                self.vector_pos[i].epoch_timestamp,
+                self.vector_pos[i-1].lon,
+                self.vector_pos[i].lon,
+            )
+            image_object.depth = interpolate(
+                image_epoch,
+                self.vector_pos[i-1].epoch_timestamp,
+                self.vector_pos[i].epoch_timestamp,
+                self.vector_pos[i-1].depth,
+                self.vector_pos[i].depth,
+            )
+            image_object.altitude = interpolate(
+                image_epoch,
+                self.vector_pos[i-1].epoch_timestamp,
+                self.vector_pos[i].epoch_timestamp,
+                self.vector_pos[i-1].altitude,
+                self.vector_pos[i].altitude,
+            )
+        print(
+            f"Interpolating {name} from position vectors"
+            f" - {100*(j+1)/n:6.2f}%"
+        )
+        return vector_cam
+    
+    def interpolate_vector_rot(self,
+        vector_cam: list,
+        name: str,
+    ) -> list:
+        """
+        Interpolate rotational data to camera image timestamps.
+
+        Args:
+            vector_cam (list): RovCam objects
+
+        Returns:
+            list: vector_cam with interpolated rotational data
+        """
+        n = len(vector_cam)
+        for j, image_object in enumerate(vector_cam):
+            print(
+                f"Interpolating {name} from rotation vectors"
+                f" - {100*j/n:6.2f}%",
+                end='\r',
+                flush=True,
+            )
+            image_epoch = image_object.epoch_timestamp
+            # If image later than all rotation data, just stop.
+            if image_epoch > self.vector_rot[-1].epoch_timestamp:
+                break
+            # If image earlier than all position data, just move on.
+            if image_epoch < self.vector_rot[0].epoch_timestamp:
+                continue
+            # Find the position data that immediately preceeds the image.
+            i = 0
+            while (image_epoch > self.vector_rot[i].epoch_timestamp):
+                i+=1
+            # Interpolate.
+            image_object.heading = interpolate(
+                image_epoch,
+                self.vector_rot[i-1].epoch_timestamp,
+                self.vector_rot[i].epoch_timestamp,
+                self.vector_rot[i-1].heading,
+                self.vector_rot[i].heading,
+            )
+            image_object.pitch = interpolate(
+                image_epoch,
+                self.vector_rot[i-1].epoch_timestamp,
+                self.vector_rot[i].epoch_timestamp,
+                self.vector_rot[i-1].pitch,
+                self.vector_rot[i].pitch,
+            )
+            image_object.roll = interpolate(
+                image_epoch,
+                self.vector_rot[i-1].epoch_timestamp,
+                self.vector_rot[i].epoch_timestamp,
+                self.vector_rot[i-1].roll,
+                self.vector_rot[i].roll,
+            )
+        print(
+            f"Interpolating {name} from rotation vectors"
+            f" - {100*(j+1)/n:6.2f}%"
+        )
+        return vector_cam
 
     def interpolate_to_images(self):
         """
         Interpolate data to image timestamps.
-
-        SHOULD BE ABLE TO SPLIT OFF A FUNCTION TO CALL 4 TIMES.
         """
         # Now interpolate position vectors and rotation vectors to give
         # respective vectors at the timestamps of the LM165 images records
         # and then of the Xviii image records.
-
-        # interpolate LM165 from position vectors
-        n = len(self.vector_LM165_at_DVL)
-        for j, image_object in enumerate(self.vector_LM165_at_DVL):
-            print(
-                f"Interpolating LM165 from position vectors"
-                f" - {100*j/n:6.2f}%",
-                end='\r',
-                flush=True,
-            )
-            image_epoch = image_object.epoch_timestamp
-            # If image later than all position data, just stop.
-            if image_epoch > self.vector_pos[-1].epoch_timestamp:
-                break
-            # If image earlier than all position data, just move on.
-            if image_epoch < self.vector_pos[0].epoch_timestamp:
-                continue
-            # Find the position data that immediately preceeds the image.
-            i = 0
-            while (image_epoch > self.vector_pos[i].epoch_timestamp):
-                i+=1
-            # Interpolate.
-            image_object.lat = interpolate(
-                image_epoch,
-                self.vector_pos[i-1].epoch_timestamp,
-                self.vector_pos[i].epoch_timestamp,
-                self.vector_pos[i-1].lat,
-                self.vector_pos[i].lat,
-            )
-            image_object.lon = interpolate(
-                image_epoch,
-                self.vector_pos[i-1].epoch_timestamp,
-                self.vector_pos[i].epoch_timestamp,
-                self.vector_pos[i-1].lon,
-                self.vector_pos[i].lon,
-            )
-            image_object.depth = interpolate(
-                image_epoch,
-                self.vector_pos[i-1].epoch_timestamp,
-                self.vector_pos[i].epoch_timestamp,
-                self.vector_pos[i-1].depth,
-                self.vector_pos[i].depth,
-            )
-            image_object.altitude = interpolate(
-                image_epoch,
-                self.vector_pos[i-1].epoch_timestamp,
-                self.vector_pos[i].epoch_timestamp,
-                self.vector_pos[i-1].altitude,
-                self.vector_pos[i].altitude,
-            )
-        print(
-            f"Interpolating LM165 from position vectors"
-            f" - {100*(j+1)/n:6.2f}%"
+        Console.info("Interpolating data to image timestamps...")
+        self.vector_LM165_at_DVL = self.interpolate_vector_pos(
+            self.vector_LM165_at_DVL,
+            "LM165",
         )
-
-        # interpolate LM165 from rotation vectors
-        n = len(self.vector_LM165_at_DVL)
-        for j, image_object in enumerate(self.vector_LM165_at_DVL):
-            print(
-                f"Interpolating LM165 from rotation vectors"
-                f" - {100*j/n:6.2f}%",
-                end='\r',
-                flush=True,
-            )
-            image_epoch = image_object.epoch_timestamp
-            # If image later than all rotation data, just stop.
-            if image_epoch > self.vector_rot[-1].epoch_timestamp:
-                break
-            # If image earlier than all position data, just move on.
-            if image_epoch < self.vector_rot[0].epoch_timestamp:
-                continue
-            # Find the position data that immediately preceeds the image.
-            i = 0
-            while (image_epoch > self.vector_rot[i].epoch_timestamp):
-                i+=1
-            # Interpolate.
-            image_object.heading = interpolate(
-                image_epoch,
-                self.vector_rot[i-1].epoch_timestamp,
-                self.vector_rot[i].epoch_timestamp,
-                self.vector_rot[i-1].heading,
-                self.vector_rot[i].heading,
-            )
-            image_object.pitch = interpolate(
-                image_epoch,
-                self.vector_rot[i-1].epoch_timestamp,
-                self.vector_rot[i].epoch_timestamp,
-                self.vector_rot[i-1].pitch,
-                self.vector_rot[i].pitch,
-            )
-            image_object.roll = interpolate(
-                image_epoch,
-                self.vector_rot[i-1].epoch_timestamp,
-                self.vector_rot[i].epoch_timestamp,
-                self.vector_rot[i-1].roll,
-                self.vector_rot[i].roll,
-            )
-        print(
-            f"Interpolating LM165 from rotation vectors"
-            f" - {100*(j+1)/n:6.2f}%"
+        self.vector_LM165_at_DVL = self.interpolate_vector_rot(
+            self.vector_LM165_at_DVL,
+            "LM165",
         )
-        
-        # interpolate Xvii from position vectors
-        n = len(self.vector_Xviii)
-        for j, image_object in enumerate(self.vector_Xviii):
-            print(
-                f"Interpolating Xviii from position vectors"
-                f" - {100*j/n:6.2f}%",
-                end='\r',
-                flush=True,
-            )
-            image_epoch = image_object.epoch_timestamp
-            # If image later than all position data, just stop.
-            if image_epoch > self.vector_pos[-1].epoch_timestamp:
-                break
-            # If image earlier than all position data, just move on.
-            if image_epoch < self.vector_pos[0].epoch_timestamp:
-                continue
-            # Find the position data that immediately preceeds the image.
-            i = 0
-            while (image_epoch > self.vector_pos[i].epoch_timestamp):
-                i+=1
-            # Interpolate.
-            image_object.lat = interpolate(
-                image_epoch,
-                self.vector_pos[i-1].epoch_timestamp,
-                self.vector_pos[i].epoch_timestamp,
-                self.vector_pos[i-1].lat,
-                self.vector_pos[i].lat,
-            )
-            image_object.lon = interpolate(
-                image_epoch,
-                self.vector_pos[i-1].epoch_timestamp,
-                self.vector_pos[i].epoch_timestamp,
-                self.vector_pos[i-1].lon,
-                self.vector_pos[i].lon,
-            )
-            image_object.depth = interpolate(
-                image_epoch,
-                self.vector_pos[i-1].epoch_timestamp,
-                self.vector_pos[i].epoch_timestamp,
-                self.vector_pos[i-1].depth,
-                self.vector_pos[i].depth,
-            )
-            image_object.altitude = interpolate(
-                image_epoch,
-                self.vector_pos[i-1].epoch_timestamp,
-                self.vector_pos[i].epoch_timestamp,
-                self.vector_pos[i-1].altitude,
-                self.vector_pos[i].altitude,
-            )
-        print(
-            f"Interpolating Xviii from position vectors"
-            f" - {100*(j+1)/n:6.2f}%"
+        self.vector_Xviii = self.interpolate_vector_pos(
+            self.vector_Xviii,
+            "Xviii",
         )
-
-        # interpolate vector_Xvii from rotation vectors
-        n = len(self.vector_Xviii)
-        for j, image_object in enumerate(self.vector_Xviii):
-            print(
-                f"Interpolating Xviii from rotation vectors"
-                f" - {100*j/n:6.2f}%",
-                end='\r',
-                flush=True,
-            )
-            image_epoch = image_object.epoch_timestamp
-            # If image later than all rotation data, just stop.
-            if image_epoch > self.vector_rot[-1].epoch_timestamp:
-                break
-            # If image earlier than all position data, just move on.
-            if image_epoch < self.vector_rot[0].epoch_timestamp:
-                continue
-            # Find the position data that immediately preceeds the image.
-            i = 0
-            while (image_epoch > self.vector_rot[i].epoch_timestamp):
-                i+=1
-            # Interpolate.
-            image_object.heading = interpolate(
-                image_epoch,
-                self.vector_rot[i-1].epoch_timestamp,
-                self.vector_rot[i].epoch_timestamp,
-                self.vector_rot[i-1].heading,
-                self.vector_rot[i].heading,
-            )
-            image_object.pitch = interpolate(
-                image_epoch,
-                self.vector_rot[i-1].epoch_timestamp,
-                self.vector_rot[i].epoch_timestamp,
-                self.vector_rot[i-1].pitch,
-                self.vector_rot[i].pitch,
-            )
-            image_object.roll = interpolate(
-                image_epoch,
-                self.vector_rot[i-1].epoch_timestamp,
-                self.vector_rot[i].epoch_timestamp,
-                self.vector_rot[i-1].roll,
-                self.vector_rot[i].roll,
-            )
-        print(
-            f"Interpolating Xviii from rotation vectors"
-            f" - {100*(j+1)/n:6.2f}%"
+        self.vector_Xviii = self.interpolate_vector_rot(
+            self.vector_Xviii,
+            "Xviii",
         )
-        print("Finished interpolating everything.")
+        Console.info("...finished interpolating everything.")
         return
     
     def add_lever_arms(self):
