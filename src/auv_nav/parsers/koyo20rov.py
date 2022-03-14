@@ -894,9 +894,9 @@ class RovParser:
                 flush=True,
             )
             image_path = (
-                self.rel_dirpath_LM165
-                / f"{image_object.index:07}"[1:4]
-                / f"image{image_object.index:07}.tif"
+                f"{self.rel_dirpath_LM165}"
+                + "/" + f"{image_object.index:07}"[1:4]
+                + f"/image{image_object.index:07}.tif"
             )
             msg = (
                 f"{image_path}, {image_object.northing},"
@@ -918,8 +918,8 @@ class RovParser:
                 flush=True,
             )
             image_path = (
-                self.rel_dirpath_camA
-                / f"{image_object.index:07}.raw"
+                f"{self.rel_dirpath_camA}"
+                + f"/{image_object.index:07}.raw"
             )
             msg = (
                 f"{image_path}, {image_object.northing},"
@@ -941,8 +941,8 @@ class RovParser:
                 flush=True,
             )
             image_path = (
-                self.rel_dirpath_camB
-                / f"{image_object.index:07}.raw"
+                f"{self.rel_dirpath_camB}"
+                + f"/{image_object.index:07}.raw"
             )
             msg = (
                 f"{image_path}, {image_object.northing},"
