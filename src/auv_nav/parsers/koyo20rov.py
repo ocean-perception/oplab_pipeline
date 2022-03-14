@@ -81,7 +81,7 @@ class RovCam:
             positions[target][1] - positions["dvl"][1],
             positions[target][2] - positions["dvl"][2],
         )[2]
-        (self.lat, self.lon) = (self.lat, self.lon) + body_to_inertial(
+        (delta_lat, delta_lon) = body_to_inertial(
             self.roll,
             self.pitch,
             self.heading,
@@ -89,6 +89,8 @@ class RovCam:
             positions[target][1] - positions["dvl"][1],
             positions[target][2] - positions["dvl"][2],
         )[:2]
+        self.lat = self.lat + delta_lat
+        self.lon = self.lon + delta_lon
         return
 
     def convert_times_to_epoch(self, date_Cam, time_Cam, ms_Cam):
