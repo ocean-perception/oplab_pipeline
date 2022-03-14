@@ -98,11 +98,11 @@ class RovCam:
         yyyy = int(date_Cam[0:4])
         mm = int(date_Cam[4:6])
         dd = int(date_Cam[6:8])
-        time_Cam = str(time_Cam)
+        time_Cam = f"{int(time_Cam):06}"
         hour = int(time_Cam[0:2])
         mins = int(time_Cam[2:4])
         secs = int(time_Cam[4:6])
-        usecs = ms_Cam*1000
+        usecs = int(float(ms_Cam)*1000)
         if hour < 0:
             hour = 0
             mins = 0
@@ -482,37 +482,45 @@ class RovParser:
 
         dataframe_LM165 = pd.read_csv(self.filepath_LM165)
         Console.info(f"Found {len(dataframe_LM165)} LM165 image records!")
+        index_LM165 = list(dataframe_LM165["index"])
         date_LM165 = list(dataframe_LM165["date"])
         time_LM165 = list(dataframe_LM165["time"])
         index_LM165 = list(dataframe_LM165["index"])
         ms_LM165 = list(dataframe_LM165["ms"])
         self.vector_LM165_at_DVL = []
         for i, this_date in enumerate(date_LM165):
-            self.vector_LM165_at_DVL.append(
-                RovCam(
-                    this_date,
-                    time_LM165[i],
-                    ms_LM165[i],
-                    index_LM165[i],
+            if np.isnan(index_LM165[i]):
+                continue
+            else:
+                self.vector_LM165_at_DVL.append(
+                    RovCam(
+                        this_date,
+                        time_LM165[i],
+                        ms_LM165[i],
+                        index_LM165[i],
+                    )
                 )
-            )
 
         dataframe_Xviii = pd.read_csv(self.filepath_Xviii)
         Console.info(f"Found {len(dataframe_Xviii)} Xviii image records!")
+        index_Xviii = list(dataframe_Xviii["index"])
         date_Xviii = list(dataframe_Xviii["date"])
         time_Xviii = list(dataframe_Xviii["time"])
         ms_Xviii = list(dataframe_Xviii["ms"])
         index_Xviii = list(dataframe_Xviii["index"])
         self.vector_Xviii = []
         for i, this_date in enumerate(date_Xviii):
-            self.vector_Xviii.append(
-                RovCam(
-                    this_date,
-                    time_Xviii[i],
-                    ms_Xviii[i],
-                    index_Xviii[i],
+            if np.isnan(index_Xviii[i]):
+                continue
+            else:
+                self.vector_Xviii.append(
+                    RovCam(
+                        this_date,
+                        time_Xviii[i],
+                        ms_Xviii[i],
+                        index_Xviii[i],
+                    )
                 )
-            )
         return
     
     def check_for_outputs(self, forcing: bool):
