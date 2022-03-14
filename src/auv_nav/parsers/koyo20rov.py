@@ -896,18 +896,8 @@ class RovParser:
         """
         Create .csv file text and write output files.
         """
-        # ==========================================================================================
-        output_dr_centre_path = renavpath / "csv" / "dead_reckoning"
-        if not output_dr_centre_path.exists():
-            output_dr_centre_path.mkdir(parents=True)
-        camera_name = "hybis_camera"
-        output_dr_centre_path = output_dr_centre_path / ("auv_dr_" + camera_name + ".csv")
-        parser.write(output_dr_centre_path)
-        parser.write(output_dr_centre_path)
-        Console.info("Output written to", output_dr_centre_path)
-        # ===========================================================================================
-        print("Generating .csv message strings...")
-        self.data_for_LM165_at_DVL = [
+        Console.info("Generating .csv data strings...")
+        headers = [
             "relative_path,",
             "northing [m],",
             "easting [m],",
@@ -920,35 +910,116 @@ class RovParser:
             "latitude [deg],",
             "longitude [deg]\n",
         ]
-        n = len(vector_LM165_at_DVL)
-        for i, image_object in enumerate(vector_LM165_at_DVL):
+        self.data_for_LM165_at_DVL = deepcopy(headers)
+        n = len(self.vector_LM165_at_DVL)
+        for i, image_object in enumerate(self.vector_LM165_at_DVL):
             print(
-                f" - for LM165 - {100*i/n}%",
+                f" - for LM165_at_DVL - {100*i/n:6.2f}%",
                 end='\r',
                 flush=True,
             )
-        print(f" - for LM165 - {100*(i+1)/n}%")
-        self.data_for_Xviii = [
-            "relative_path,",
-            "northing [m],",
-            "easting [m],",
-            "depth [m],",
-            "roll [deg],",
-            "pitch [deg],",
-            "heading [deg],",
-            "altitude [m],",
-            "timestamp [s],",
-            "latitude [deg],",
-            "longitude [deg]\n",
-        ]
-        n = len(vector_Xviii)
-        for i, image_object in enumerate(vector_Xviii):
+            image_path = (
+                self.rel_dirpath_LM165
+                / f"{image_object.index:07}"[1:4]
+                / f"image{image_object.index:07}.tif"
+            )
+            msg = (
+                f"{image_path}, {image_object.northing},"
+                f" {image_object.easting}, {image_object.depth},"
+                f" {image_object.roll}, {image_object.pitch},"
+                f" {image_object.heading}, {image_object.altitude},"
+                f" {image_object.epoch_timestamp}, {image_object.lat},"
+                f" {image_object.lon}\n"
+            )
+            self.data_for_LM165_at_DVL.append(msg)
+        print(f" - for LM165_at_DVL - {100*(i+1)/n:6.2f}%")
+
+        self.data_for_camA = deepcopy(headers)
+        n = len(self.vector_camA)
+        for i, image_object in enumerate(self.vector_camA):
             print(
-                f" - for Xviii - {100*i/n}%",
+                f" - for camA - {100*i/n:6.2f}%",
                 end='\r',
                 flush=True,
             )
-            self.data_for_Xviii.append()
-        print(f" - for Xviii - {100*(i+1)/n}%")
+            image_path = (
+                self.rel_dirpath_camA
+                / f"{image_object.index:07}.raw"
+            )
+            msg = (
+                f"{image_path}, {image_object.northing},"
+                f" {image_object.easting}, {image_object.depth},"
+                f" {image_object.roll}, {image_object.pitch},"
+                f" {image_object.heading}, {image_object.altitude},"
+                f" {image_object.epoch_timestamp}, {image_object.lat},"
+                f" {image_object.lon}\n"
+            )
+            self.data_for_camA.append(msg)
+        print(f" - for camA - {100*(i+1)/n:6.2f}%")
+        
+        self.data_for_camB = deepcopy(headers)
+        n = len(self.vector_camB)
+        for i, image_object in enumerate(self.vector_camB):
+            print(
+                f" - for camB - {100*i/n:6.2f}%",
+                end='\r',
+                flush=True,
+            )
+            image_path = (
+                self.rel_dirpath_camB
+                / f"{image_object.index:07}.raw"
+            )
+            msg = (
+                f"{image_path}, {image_object.northing},"
+                f" {image_object.easting}, {image_object.depth},"
+                f" {image_object.roll}, {image_object.pitch},"
+                f" {image_object.heading}, {image_object.altitude},"
+                f" {image_object.epoch_timestamp}, {image_object.lat},"
+                f" {image_object.lon}\n"
+            )
+            self.data_for_camB.append(msg)
+        print(f" - for camB - {100*(i+1)/n:6.2f}%")
+        Console.info("...finished generating .csv data strings.")
+
+        Console.info("Writing outputs...")
+        n = len(self.vector_LM165_at_DVL)
+        i = 0
+        with self.outpath_LM165_at_dvl.open("w", encoding="utf-8") as fileout:
+            for line in self.data_for_LM165_at_DVL:
+                print(
+                    f" - for LM165_at_DVL - {100*i/n:6.2f}%",
+                    end='\r',
+                    flush=True,
+                )
+                fileout.write(str(line))
+                i += 1
+        print(f" - for LM165_at_DVL - {100*i/n:6.2f}%")
+
+        n = len(self.vector_camA)
+        i = 0
+        with self.outpath_camA.open("w", encoding="utf-8") as fileout:
+            for line in self.data_for_camA:
+                print(
+                    f" - for camA - {100*i/n:6.2f}%",
+                    end='\r',
+                    flush=True,
+                )
+                fileout.write(str(line))
+                i += 1
+        print(f" - for camA - {100*i/n:6.2f}%")
+
+        n = len(self.vector_camB)
+        i = 0
+        with self.outpath_camB.open("w", encoding="utf-8") as fileout:
+            for line in self.data_for_camB:
+                print(
+                    f" - for camB - {100*i/n:6.2f}%",
+                    end='\r',
+                    flush=True,
+                )
+                fileout.write(str(line))
+                i += 1
+        print(f" - for camB - {100*i/n:6.2f}%")
+        Console.info("...finished writing outputs.")
         return
 
