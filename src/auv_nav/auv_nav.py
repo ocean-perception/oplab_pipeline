@@ -205,7 +205,7 @@ def main(args=None):
     subparser_acfr_to_oplab.set_defaults(func=acfr_to_oplab)
 
     # KOYO_20_ROV to OPLAB CSV
-    subparser_koyo20rov_to_oplab = subparsers.add_parser(
+    subparser_koyo20rov_to_oplab = subsubparsers.add_parser(
         "koyo20rov_to_oplab",
         help=(
             "Converts koyo20rov navigation fileS (plural) to oplab CSV"

@@ -36,7 +36,9 @@ from oplab import Console, Mission, Vehicle, get_processed_folder
 
 def koyo20rov_to_oplab(args):
     if args.dive_path is None:
-        Console.error("Please provide a dive path")
+        Console.error(
+            "Please provide a dive path using --dive-path (-i)"
+        )
         Console.quit("Missing comandline arguments")
     # Do all necessary pathchecks on creating of class instance
     parser = RovParser(args.dive_path)
