@@ -768,7 +768,7 @@ class RovParser:
         print(f" - for LM165 - {100*(i+1)/n:6.2f}%")
         # Create vectors for the two colour cameras
         self.vector_camA = deepcopy(self.vector_Xviii)
-        self.vetcor_camB = deepcopy(self.vector_Xviii)
+        self.vector_camB = deepcopy(self.vector_Xviii)
         # for camA
         n = len(self.vector_camA)
         for i, image_object in enumerate(self.vector_camA):
@@ -777,7 +777,7 @@ class RovParser:
                 flush=True,
             )
             image_object.add_lever_arms(
-                self.camA.name,
+                self.name_camA,
                 self.sensor_positions,
             )
         print(f" - for camA - {100*(i+1)/n:6.2f}%")
@@ -789,7 +789,7 @@ class RovParser:
                 flush=True,
             )
             image_object.add_lever_arms(
-                self.camB.name,
+                self.name_camB,
                 self.sensor_positions,
             )
         print(f" - for camB - {100*(i+1)/n:6.2f}%")
