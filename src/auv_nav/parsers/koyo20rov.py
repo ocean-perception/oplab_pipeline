@@ -546,11 +546,12 @@ class RovParser:
             assert not self.outpath_camA.exists()
         except AssertionError:
             if not forcing:
-                raise (
+                Console.error(
                     f"{self.outpath_camA.name} already exists at"
                     f" {self.outpath_camA.parent}. Use forcing to"
                     f" overwrite."
                 )
+                raise
             else:
                 Console.warn(
                     f"{self.outpath_camA.name} will be overwritten at"
@@ -564,11 +565,12 @@ class RovParser:
             assert not self.outpath_camB.exists()
         except AssertionError:
             if not forcing:
-                raise (
+                Console.error(
                     f"{self.outpath_camB.name} already exists at"
                     f" {self.outpath_camB.parent}. Use forcing to"
                     f" overwrite."
                 )
+                raise
             else:
                 Console.warn(
                     f"{self.outpath_camB.name} will be overwritten at"
@@ -582,11 +584,12 @@ class RovParser:
             assert not self.outpath_LM165_at_dvl.exists()
         except AssertionError:
             if not forcing:
-                raise (
+                Console.error(
                     f"{self.outpath_LM165_at_dvl.name} already exists at"
                     f" {self.outpath_LM165_at_dvl.parent}. Use forcing to"
                     f" overwrite."
                 )
+                raise
             else:
                 Console.warn(
                     f"{self.outpath_LM165_at_dvl.name} will be overwritten at"
