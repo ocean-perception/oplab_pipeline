@@ -157,16 +157,20 @@ class RovRot:
         self.pitch = float(pitch)
         self.roll = float(roll)
     
-    def convert_times_to_epoch(self, rot_date, rot_time, timems):
-        rot_date = str(rot_date)
+    def convert_times_to_epoch(self,
+        rot_date,
+        rot_time,
+        timems,
+    ):
+        rot_date = str(int(rot_date))
         yyyy = int(rot_date[0:4])
         mm = int(rot_date[4:6])
         dd = int(rot_date[6:8])
-        rot_time = str(rot_time)
+        rot_time = f"{int(rot_time):06}"
         hour = int(rot_time[0:2])
         mins = int(rot_time[2:4])
         secs = int(rot_time[4:6])
-        usecs = timems*1000
+        usecs = int(float(timems)*1000)
         if hour < 0:
             hour = 0
             mins = 0
@@ -453,6 +457,7 @@ class RovParser:
 
         dataframe_rot = pd.read_csv(self.filepath_rot)
         Console.info(f"Found {len(dataframe_rot)} rotation records!")
+        index = list(dataframe_rot["index"])
         rot_date = list(dataframe_rot["date(YYYYMMDD)"])
         rot_time = list(dataframe_rot["time(hhmmss)"])
         timems = list(dataframe_rot["time_ms(iiii)"])
@@ -461,16 +466,19 @@ class RovParser:
         roll = list(dataframe_rot["roll(degrees)"])
         self.vector_rot = []
         for i, this_date in enumerate(rot_date):
-            self.vector_rot.append(
-                RovRot(
-                    heading[i],
-                    pitch[i],
-                    roll[i],
-                    this_date,
-                    rot_time[i],
-                    timems[i],
+            if np.isnan(index[i]):
+                continue
+            else:
+                self.vector_rot.append(
+                    RovRot(
+                        heading[i],
+                        pitch[i],
+                        roll[i],
+                        this_date,
+                        rot_time[i],
+                        timems[i],
+                    )
                 )
-            )
 
         dataframe_LM165 = pd.read_csv(self.filepath_LM165)
         Console.info(f"Found {len(dataframe_LM165)} LM165 image records!")
