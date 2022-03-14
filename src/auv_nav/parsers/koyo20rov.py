@@ -69,52 +69,25 @@ class RovCam:
             self.roll,
             self.pitch,
             self.heading,
-            (
-                positions[target]["surge_m"]
-                - positions["depth"]["surge_m"]
-            ),
-            (
-                positions[target]["sway_m"]
-                - positions["depth"]["sway_m"]
-            ),
-            (
-                positions[target]["heave_m"]
-                - positions["depth"]["heave_m"]
-            ),
+            positions[target][0] - positions["depth"][0],
+            positions[target][1] - positions["depth"][1],
+            positions[target][2] - positions["depth"][2],
         )[2]
         self.altitude = self.altitude - body_to_inertial(
             self.roll,
             self.pitch,
             self.heading,
-            (
-                positions[target]["surge_m"]
-                - positions["dvl"]["surge_m"]
-            ),
-            (
-                positions[target]["sway_m"]
-                - positions["dvl"]["sway_m"]
-            ),
-            (
-                positions[target]["heave_m"]
-                - positions["dvl"]["heave_m"]
-            ),
+            positions[target][0] - positions["dvl"][0],
+            positions[target][1] - positions["dvl"][1],
+            positions[target][2] - positions["dvl"][2],
         )[2]
         (self.lat, self.lon) = (self.lat, self.lon) + body_to_inertial(
             self.roll,
             self.pitch,
             self.heading,
-            (
-                positions[target]["surge_m"]
-                - positions["ins"]["surge_m"]
-            ),
-            (
-                positions[target]["sway_m"]
-                - positions["ins"]["sway_m"]
-            ),
-            (
-                positions[target]["heave_m"]
-                - positions["ins"]["heave_m"]
-            ),
+            positions[target][0] - positions["dvl"][0],
+            positions[target][1] - positions["dvl"][1],
+            positions[target][2] - positions["dvl"][2],
         )[:2]
         return
 
