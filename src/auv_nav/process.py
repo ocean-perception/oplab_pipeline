@@ -1211,7 +1211,28 @@ def process(
                     pf_fusion_centre_list,
                 )
 
-    ekf_initial_state = dead_reckoning_dvl_list[0]
+    usbl_to_dvl = [
+        vehicle.dvl.surge - vehicle.usbl.surge,
+        vehicle.dvl.sway - vehicle.usbl.sway,
+        vehicle.dvl.heave - vehicle.usbl.heave,
+    ]
+    depth_to_dvl = [
+        vehicle.dvl.surge - vehicle.depth.surge,
+        vehicle.dvl.sway - vehicle.depth.sway,
+        vehicle.dvl.heave - vehicle.depth.heave,
+    ]
+
+    ekf_initial_state = copy.deepcopy(dead_reckoning_dvl_list[0])
+    [_, _, z_offset] = body_to_inertial(
+        ekf_initial_state.roll,
+        ekf_initial_state.pitch,
+        ekf_initial_state.yaw,
+        depth_to_dvl[0],
+        depth_to_dvl[1],
+        depth_to_dvl[2]
+    )
+    ekf_initial_state.depth += z_offset
+
     ekf_end_time = dead_reckoning_dvl_list[-1].epoch_timestamp
 
     if compute_relative_pose_uncertainty:
@@ -1224,22 +1245,22 @@ def process(
             / "ekf"
             / ("auv_ekf_" + mission.image.cameras[2].name + "_at_dvl.csv")
         )
-        laser_camera_states = load_states(
+        laser_camera_at_dvl_states = load_states(
             ekf_state_file_path, start_image_identifier, end_image_identifier
         )
 
-        if not laser_camera_states:
+        if not laser_camera_at_dvl_states:
             Console.quit(
                 "The pose of the indicated image was not found in the file provided. Please check your input."
             )
 
         # Initialise starting state for EKF
-        ekf_initial_state = copy.deepcopy(laser_camera_states[0])
+        ekf_initial_state = copy.deepcopy(laser_camera_at_dvl_states[0])
 
         ekf_initial_estimate_covariance[
             0:6, 0:6
         ] = 0  # Initialise starting covariance for EKF (set it to 0)
-        ekf_end_time = laser_camera_states[-1].epoch_timestamp
+        ekf_end_time = laser_camera_at_dvl_states[-1].epoch_timestamp
 
         # Initialise camera list (i.e. timestamps) for which the EKF will compute the states
         camera3_ekf_list_cropped = []
@@ -1296,6 +1317,8 @@ def process(
             velocity_body_list,
             mahalanobis_distance_threshold,
             activate_smoother,
+            usbl_to_dvl,
+            depth_to_dvl,
         )
         ekf.run(ekf_timestamps)
         ekf_end_time = time.time()
@@ -1313,26 +1336,26 @@ def process(
         camera3_ekf_list_cropped = update_camera_list(
             camera3_ekf_list_cropped, ekf_list, [0, 0, 0], [0, 0, 0], latlon_reference,
         )
-        assert len(camera3_ekf_list_cropped) == len(laser_camera_states)
+        assert len(camera3_ekf_list_cropped) == len(laser_camera_at_dvl_states)
 
         # Compute uncertainties with poses
         # Compute uncertainties by subtracting original states (-> uncertainties are summed)
-        for i in range(1, len(laser_camera_states)):
-            laser_camera_states[i].covariance += laser_camera_states[0].covariance
-        laser_camera_states[0].covariance[:, :] = 0
+        for i in range(1, len(laser_camera_at_dvl_states)):
+            laser_camera_at_dvl_states[i].covariance += laser_camera_at_dvl_states[0].covariance
+        laser_camera_at_dvl_states[0].covariance[:, :] = 0
 
         # Plot uncertainties
         plots_folder = renavpath / "interactive_plots"
 
         # Plot uncertainties based on subtracting positions
-        args = [laser_camera_states, plots_folder / "based_on_subtraction_at_dvl"]
+        args = [laser_camera_at_dvl_states, plots_folder / "based_on_subtraction_at_dvl"]
         t = threading.Thread(target=plot_cameras_vs_time, args=args)
         t.start()
         threads.append(t)
 
         # Plot uncertainties based on EKF propagation
         args = [
-            laser_camera_states,
+            laser_camera_at_dvl_states,
             camera3_ekf_list_cropped,
             plots_folder / "based_on_ekf_propagation_at_dvl",
         ]
@@ -1368,7 +1391,7 @@ def process(
             )
 
         # Write out uncertainties based on subtracting positions
-        args = [ekf_csv_folder, laser_camera_states, filename_cov_from_subtract]
+        args = [ekf_csv_folder, laser_camera_at_dvl_states, filename_cov_from_subtract]
         t = threading.Thread(target=write_csv, args=args)
         t.start()
         threads.append(t)

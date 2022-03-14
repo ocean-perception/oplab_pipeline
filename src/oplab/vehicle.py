@@ -102,6 +102,7 @@ class Vehicle:
         self.filename = filename
 
         mission_file = filename.parent / "mission.yaml"
+        mission = Mission(mission_file)
         mission_data = None
 
         try:
@@ -112,7 +113,6 @@ class Vehicle:
                 if "origin" in self.data:
                     self.origin.load(self.data["origin"])
                     if "x_offset" in self.data["origin"]:
-                        mission = Mission(mission_file)
                         mission_stream = mission_file.open("r")
                         mission_data = yaml.safe_load(mission_stream)
                 if "ins" in self.data:
