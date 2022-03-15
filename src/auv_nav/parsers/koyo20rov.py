@@ -118,20 +118,6 @@ class RovCam:
             usecs,
         )
         return epoch_time
-    
-    def write_out_vis_cam(self):
-        """
-        Write out data to a csv nav file in vis cam format.
-        """
-        
-        return
-    
-    def write_out_laser_cam(self):
-        """
-        Write out data to a csv nav file in laser cam format.
-        """
-        
-        return
 
 
 class RovRot:
