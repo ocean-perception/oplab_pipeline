@@ -17,7 +17,10 @@ import pandas as pd
 
 from auv_nav.tools.body_to_inertial import body_to_inertial
 from auv_nav.tools.interpolate import interpolate
-from auv_nav.tools.latlon_wgs84 import latlon_to_metres
+from auv_nav.tools.latlon_wgs84 import (
+    latlon_to_metres,
+    metres_to_latlon,
+)
 from auv_nav.tools.time_conversions import (
     date_time_to_epoch,
     epoch_to_utctime,
@@ -61,6 +64,8 @@ class RovCam:
     def add_lever_arms(self,
         target: str,
         positions: dict,
+        ref_lat: float,
+        ref_lon: float,
     ):
         """Add the lever arms to depth, altitude, lat, and lon
         measurements.
@@ -81,7 +86,7 @@ class RovCam:
             positions[target][1] - positions["dvl"][1],
             positions[target][2] - positions["dvl"][2],
         )[2]
-        (delta_lat, delta_lon) = body_to_inertial(
+        (delta_north, delta_east) = body_to_inertial(
             self.roll,
             self.pitch,
             self.heading,
@@ -89,8 +94,16 @@ class RovCam:
             positions[target][1] - positions["dvl"][1],
             positions[target][2] - positions["dvl"][2],
         )[:2]
-        self.lat = self.lat + delta_lat
-        self.lon = self.lon + delta_lon
+        (self.northing, self.easting) = (
+            self.northing + delta_north,
+            self.easting + delta_east,
+        )
+        (self.lat, self.lon) = metres_to_latlon(
+            ref_lat,
+            ref_lon,
+            self.easting,
+            self.northing,
+        )
         return
 
     def convert_times_to_epoch(self, date_Cam, time_Cam, ms_Cam):
@@ -786,6 +799,8 @@ class RovParser:
             image_object.add_lever_arms(
                 "dvl",
                 self.sensor_positions,
+                self.ref_lat,
+                self.ref_lon,
             )
         print(f" - for LM165 - {100*(i+1)/n:6.2f}%")
         # Create vectors for the two colour cameras
@@ -801,6 +816,8 @@ class RovParser:
             image_object.add_lever_arms(
                 self.name_camA,
                 self.sensor_positions,
+                self.ref_lat,
+                self.ref_lon,
             )
         print(f" - for camA - {100*(i+1)/n:6.2f}%")
         # for camB
@@ -813,6 +830,8 @@ class RovParser:
             image_object.add_lever_arms(
                 self.name_camB,
                 self.sensor_positions,
+                self.ref_lat,
+                self.ref_lon,
             )
         print(f" - for camB - {100*(i+1)/n:6.2f}%")
         Console.info("...finished adding lever arms.")
@@ -845,10 +864,10 @@ class RovParser:
             )
         print(f" - for LM165 - {100*(i+1)/n:6.2f}%")
         # for camA
-        n = len(self.vector_camA)
-        for i, image_object in enumerate(self.vector_camA):
+        n = len(self.vector_Xviii)
+        for i, image_object in enumerate(self.vector_Xviii):
             print(
-                f" - for camA - {100*i/n:6.2f}%",
+                f" - for Xviii - {100*i/n:6.2f}%",
                 end='\r',
                 flush=True,
             )
@@ -864,28 +883,7 @@ class RovParser:
             image_object.easting = lateral_distance * np.sin(
                 bearing * np.pi / 180.0
             )
-        print(f" - for camA - {100*(i+1)/n:6.2f}%")
-        # for camB
-        n = len(self.vector_camB)
-        for i, image_object in enumerate(self.vector_camB):
-            print(
-                f" - for camB - {100*i/n:6.2f}%",
-                end='\r',
-                flush=True,
-            )
-            lateral_distance, bearing = latlon_to_metres(
-                image_object.lat,
-                image_object.lon,
-                self.ref_lat,
-                self.ref_lon,
-            )
-            image_object.northing = lateral_distance * np.cos(
-                bearing * np.pi / 180.0
-            )
-            image_object.easting = lateral_distance * np.sin(
-                bearing * np.pi / 180.0
-            )
-        print(f" - for camB - {100*(i+1)/n:6.2f}%")
+        print(f" - for Xviii - {100*(i+1)/n:6.2f}%")
         Console.info("...finished calculating northings and eastings.")
         return
 
