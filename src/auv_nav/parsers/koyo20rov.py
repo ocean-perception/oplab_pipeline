@@ -417,8 +417,8 @@ class RovParser:
                     )
                 )
         
-        def return_epoch_timestamp(rovpos_obj):
-            return rovpos_obj.epoch_timestamp
+        def return_epoch_timestamp(rovdata_obj):
+            return rovdata_obj.epoch_timestamp
         # Sort by timestamp! (just in case)
         self.vector_pos = sorted(
             self.vector_pos,
@@ -467,6 +467,11 @@ class RovParser:
                         timems[i],
                     )
                 )
+        # Sort by timestamp! (just in case)
+        self.vector_rot = sorted(
+            self.vector_rot,
+            key=return_epoch_timestamp,
+        )
 
         dataframe_LM165 = pd.read_csv(self.filepath_LM165)
         Console.info(f"Found {len(dataframe_LM165)} LM165 image records!")
@@ -488,6 +493,11 @@ class RovParser:
                         index_LM165[i],
                     )
                 )
+        # Sort by timestamp! (just in case)
+        self.vector_LM165_at_DVL = sorted(
+            self.vector_LM165_at_DVL,
+            key=return_epoch_timestamp,
+        )
 
         dataframe_Xviii = pd.read_csv(self.filepath_Xviii)
         Console.info(f"Found {len(dataframe_Xviii)} Xviii image records!")
@@ -509,6 +519,11 @@ class RovParser:
                         index_Xviii[i],
                     )
                 )
+        # Sort by timestamp! (just in case)
+        self.vector_Xviii = sorted(
+            self.vector_Xviii,
+            key=return_epoch_timestamp,
+        )
         return
     
     def check_for_outputs(self, forcing: bool):
@@ -615,6 +630,7 @@ class RovParser:
             list: vector_cam with interpolated positional data
         """
         n = len(vector_cam)
+        i = 0
         for j, image_object in enumerate(vector_cam):
             print(
                 f"Interpolating {name} from position vectors"
@@ -630,7 +646,6 @@ class RovParser:
             if image_epoch < self.vector_pos[0].epoch_timestamp:
                 continue
             # Find the position data that immediately preceeds the image.
-            i = 0
             while (image_epoch > self.vector_pos[i].epoch_timestamp):
                 i+=1
             # Interpolate.
@@ -682,6 +697,7 @@ class RovParser:
             list: vector_cam with interpolated rotational data
         """
         n = len(vector_cam)
+        i = 0
         for j, image_object in enumerate(vector_cam):
             print(
                 f"Interpolating {name} from rotation vectors"
@@ -697,7 +713,6 @@ class RovParser:
             if image_epoch < self.vector_rot[0].epoch_timestamp:
                 continue
             # Find the position data that immediately preceeds the image.
-            i = 0
             while (image_epoch > self.vector_rot[i].epoch_timestamp):
                 i+=1
             # Interpolate.
