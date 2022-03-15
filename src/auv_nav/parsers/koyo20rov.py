@@ -297,17 +297,22 @@ class RovParser:
             unspecified_dive_path,
         )
 
-        self.filepath_pos1 = (
-            raw_dive_path
-            / "nav/ship_log/201102.csv"
-        ).resolve()
-        assert self.filepath_pos1.exists()
-
-        self.filepath_pos2 = (
-            raw_dive_path
-            / "nav/ship_log/201103.csv"
-        ).resolve()
-        assert self.filepath_pos2.exists()
+        # Search ship_log folder for all .csv files that don't end in
+        # FIX. Save to a list of their PosixPath filepath objects.
+        self.list_filepath_pos = [
+            filepath for filepath in (
+                raw_dive_path
+                / "nav/ship_log/"
+            ).glob("*[!FIX].csv")
+        ]
+        Console.info(
+            f"Found {len(self.list_filepath_pos)} position files in"
+            + f" [dive]/nav/ship_log/:"
+        )
+        [
+            print(f" - {filepath.name}")
+            for filepath in self.list_filepath_pos
+        ]
 
         self.filepath_rot = (
             raw_dive_path
@@ -370,18 +375,15 @@ class RovParser:
         self.rel_dirpath_camB = mission.image.cameras[1].path
         self.rel_dirpath_LM165 = mission.image.cameras[2].path
 
-        dataframe_pos1 = pd.read_csv(
-            self.filepath_pos1,
-            encoding="shift_jis",
-            header=None,
-        )
-        dataframe_pos2 = pd.read_csv(
-            self.filepath_pos2,
-            encoding="shift_jis",
-            header=None,
-        )
+        list_datatframe_pos = [
+            pd.read_csv(
+                filepath_pos,
+                encoding="shift_jis",
+                header=None,
+            ) for filepath_pos in self.list_filepath_pos
+        ]
         dataframe_pos = pd.concat(
-            [dataframe_pos1, dataframe_pos2],
+            list_datatframe_pos,
             ignore_index=True,
         )
         Console.info(f"Found {len(dataframe_pos)} position records!")
