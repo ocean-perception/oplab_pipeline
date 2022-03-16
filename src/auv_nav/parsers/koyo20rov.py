@@ -629,6 +629,74 @@ class RovParser:
                 )
         return
 
+    def filter_bad_measurements(self):
+        """
+        ship_log files have an error where at the end of the file it
+        ticks over to midnight but writes this to the same file as being
+        midnight the beginning of that first file's day instead of
+        midnight the end of that first file's day or midnight the
+        beginning of a second file's day. So you end up with a vector of
+        measurements that is 24 hours off.
+
+        In order to avoid this problem, this function will calculate the
+        average speed between measurements and use this to filter out
+        bad measurements that would require a ridiculous speed.
+
+        Assumed that first measurement is fine and that bad measurements
+        come in 1s (not pairs, triplets, etc).
+        """
+        assert hasattr(self, "vector_pos"), (
+            "ERROR: RovParser.load_data() must be called first."
+        )
+        FACTOR = 111139  # https://sciencing.com/convert-distances-degrees-meters-7858322.html
+        MAX_SPEED = 20
+        new_vector_pos = [self.vector_pos[0]]
+        outlier_vector_pos = []
+        i = 1
+        Console.info("Checking for outlier position data...")
+        n = len(self.vector_pos)
+        n_outliers = 0
+        i = 1
+        while i < n:
+            print(
+                f" - {100*i/n:6.2f}%",
+                end='\r',
+                flush=True,
+            )
+            delta_x = (
+                self.vector_pos[i].lat
+                - self.vector_pos[i-1].lat
+            )
+            delta_y = (
+                self.vector_pos[i].lon
+                - self.vector_pos[i-1].lon
+            )
+            delta_d = FACTOR * np.sqrt(delta_x**2 + delta_y**2)
+            delta_t = (
+                self.vector_pos[i].epoch_timestamp
+                - self.vector_pos[i-1].epoch_timestamp
+            )
+            av_speed = delta_d/delta_t
+            if av_speed > MAX_SPEED:
+                outlier_vector_pos.append(self.vector_pos[i])
+                if (i+1) < n:
+                    new_vector_pos.append(self.vector_pos[i+1])
+                i += 2
+            else:
+                new_vector_pos.append(self.vector_pos[i])
+                i += 1
+        print(
+            f" - {100*(i+1)/n:6.2f}%"
+        )
+        Console.info(
+            f"...finished (removed {len(outlier_vector_pos)} outliers)."
+        )
+        for pos_object in outlier_vector_pos:
+            print(f" - epoch: {pos_object.epoch_timestamp}")
+        
+        self.vector_pos = new_vector_pos
+        return
+
     def interpolate_vector_pos(self,
         vector_cam: list,
         name: str,
