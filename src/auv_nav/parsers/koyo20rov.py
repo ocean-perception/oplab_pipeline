@@ -395,32 +395,37 @@ class RovParser:
                 header=None,
             ) for filepath_pos in self.list_filepath_pos
         ]
-        dataframe_pos = pd.concat(
-            list_datatframe_pos,
-            ignore_index=True,
-        )
-        Console.info(f"Found {len(dataframe_pos)} position records!")
         #  C :  2 : date
         #  D :  3 : timestr
         #  X : 23 : depth
         #  Y : 24 : altitude
         # AF : 31 : lat
         # AG : 32 : long
-        date = list(dataframe_pos[2])
-        timestr = list(dataframe_pos[3])
-        depth = list(dataframe_pos[23])
-        altitude = list(dataframe_pos[24])
-        lat = list(dataframe_pos[31])
-        lon = list(dataframe_pos[32])
-        self.vector_pos = []
-        for i, this_date in enumerate(date):
-            if type(this_date) is not str:
-                continue
-            elif len(this_date) < 8:
-                continue
-            else:
-                self.vector_pos.append(
-                    RovPos(
+        list_outliers = []
+        list_vector_pos = []
+        for dataframe_pos in list_datatframe_pos:
+            date = list(dataframe_pos[2])
+            timestr = list(dataframe_pos[3])
+            depth = list(dataframe_pos[23])
+            altitude = list(dataframe_pos[24])
+            lat = list(dataframe_pos[31])
+            lon = list(dataframe_pos[32])
+            vector_pos = []
+            current_epoch = RovPos(
+                depth[0],
+                altitude[0],
+                lon[0],
+                lat[0],
+                date[0],
+                timestr[0],
+            ).epoch_timestamp
+            for i, this_date in enumerate(date):
+                if type(this_date) is not str:
+                    continue
+                elif len(this_date) < 8:
+                    continue
+                else:
+                    this_pos = RovPos(
                         depth[i],
                         altitude[i],
                         lon[i],
@@ -428,8 +433,25 @@ class RovParser:
                         this_date,
                         timestr[i],
                     )
-                )
+                    if this_pos.epoch_timestamp > current_epoch:
+                        current_epoch = this_pos.epoch_timestamp
+                        vector_pos.append(this_pos)
+                    else:
+                        list_outliers.append(this_pos)
+            list_vector_pos.append(vector_pos)
         
+        if len(list_outliers) > 0:
+            Console.warn(f"Discarded {len(list_outliers)} temporal outliers")
+            for this_pos in list_outliers:
+                print(f" - epoch: {this_pos.epoch_timestamp}")
+
+        self.vector_pos = []
+        for this_vector_pos in list_vector_pos:
+            self.vector_pos += this_vector_pos
+        Console.info(
+            f"Found {len(self.vector_pos)} good position records!"
+        )
+
         def return_epoch_timestamp(rovdata_obj):
             return rovdata_obj.epoch_timestamp
         # Sort by timestamp! (just in case)
@@ -657,6 +679,7 @@ class RovParser:
         n = len(self.vector_pos)
         n_outliers = 0
         i = 1
+        current_pos = self.vector_pos[0]
         while i < n:
             print(
                 f" - {100*i/n:6.2f}%",
@@ -665,25 +688,24 @@ class RovParser:
             )
             delta_x = (
                 self.vector_pos[i].lat
-                - self.vector_pos[i-1].lat
+                - current_pos.lat
             )
             delta_y = (
                 self.vector_pos[i].lon
-                - self.vector_pos[i-1].lon
+                - current_pos.lon
             )
             delta_d = FACTOR * np.sqrt(delta_x**2 + delta_y**2)
             delta_t = (
                 self.vector_pos[i].epoch_timestamp
-                - self.vector_pos[i-1].epoch_timestamp
+                - current_pos.epoch_timestamp
             )
             av_speed = delta_d/delta_t
             if av_speed > MAX_SPEED:
                 outlier_vector_pos.append(self.vector_pos[i])
-                if (i+1) < n:
-                    new_vector_pos.append(self.vector_pos[i+1])
-                i += 2
+                i += 1
             else:
-                new_vector_pos.append(self.vector_pos[i])
+                current_pos = self.vector_pos[i]
+                new_vector_pos.append(current_pos)
                 i += 1
         print(
             f" - {100*(i+1)/n:6.2f}%"
