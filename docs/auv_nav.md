@@ -91,7 +91,7 @@ The algorithm replicated the same folder structure as the input data, but instea
 ## Convert (`auv_nav convert`)
 The algorithm will read in the nav_standard.json file obtained after the parsing and will write the required formats and outputs.
 
-At v0.1.?? the following conversions are available:
+At v0.2.2 the following conversions are available:
  * oplab_to_acfr: Converts a processed dive to ACFR navigation formats by saving a dRAWLOGS_cv folder with its navigation solutions called combined.RAW.auv, mission.cfg and stereo_pose.est.
  * acfr_to_oplab
  * hybis_to_oplab
