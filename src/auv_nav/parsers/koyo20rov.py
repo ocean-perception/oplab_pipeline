@@ -873,6 +873,55 @@ class RovParser:
         Console.info("...finished interpolating everything.")
         return
     
+    def filter_nans(self):
+        """
+        Remove RovCam entries where RovPos or RovRot info is missing
+        (because outside timestamp range).
+        """
+        Console.info("Removing nan entries...")
+        # for LM165
+        n = len(self.vector_LM165_at_DVL)
+        new_vector_LM165_at_dvl = []
+        n_removed = 0
+        for i, image_object in enumerate(self.vector_LM165_at_DVL):
+            print(f" - for LM165 - {100*i/n:6.2f}%",
+                end='\r',
+                flush=True,
+            )
+            if np.isnan(image_object.lat):
+                n_removed += 1
+                continue
+            elif np.isnan(image_object.heading):
+                n_removed += 1
+                continue
+            else:
+                new_vector_LM165_at_dvl.append(image_object)
+        print(f" - for LM165 - {100*(i+1)/n:6.2f}%")
+        self.vector_LM165_at_DVL = new_vector_LM165_at_dvl
+        print(f"- removed {n_removed} entries")
+
+        # for Xviii
+        n = len(self.vector_Xviii)
+        new_vector_Xviii = []
+        n_removed = 0
+        for i, image_object in enumerate(self.vector_Xviii):
+            print(f" - for Xviii - {100*i/n:6.2f}%",
+                end='\r',
+                flush=True,
+            )
+            if np.isnan(image_object.lat):
+                n_removed += 1
+                continue
+            elif np.isnan(image_object.heading):
+                n_removed += 1
+                continue
+            else:
+                new_vector_Xviii.append(image_object)
+        print(f" - for Xviii - {100*(i+1)/n:6.2f}%")
+        self.vector_Xviii = new_vector_Xviii
+        print(f"- removed {n_removed} entries")
+        return
+
     def add_lever_arms(self):
         """
         Convert positional data of raw sensors to be that of the cameras

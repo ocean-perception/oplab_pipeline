@@ -46,6 +46,7 @@ def koyo20rov_to_oplab(args):
     parser.check_for_outputs(args.force)
     # parser.filter_bad_measurements()
     parser.interpolate_to_images()
+    parser.filter_nans()
     parser.add_northings_eastings()
     parser.add_lever_arms()
     parser.write_outputs()
