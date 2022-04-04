@@ -52,6 +52,12 @@ def main(args=None):
         help="Regenerates and overwrittes all files, including intermediate \
              results",
     )
+    subparser_mono.add_argument(
+        "-s",
+        "--suffix",
+        default="",
+        help="Suffix added to mono calibration file name."
+    )
     subparser_mono.set_defaults(func=call_calibrate_mono)
 
     subparser_stereo = subparsers.add_parser(
@@ -73,6 +79,13 @@ def main(args=None):
         action="store_true",
         help="Regenerates and overwrittes all files, including intermediate \
               results",
+    )
+    subparser_stereo.add_argument(
+        "-s",
+        "--suffix",
+        default="",
+        help="Suffix added to stereo calibration file name. Note: the mono calibration files that are ingested for \
+              this processing step must not contain any suffix."
     )
     subparser_stereo.set_defaults(func=call_calibrate_stereo)
 
@@ -96,6 +109,21 @@ def main(args=None):
         help="Regenerates and overwrittes all files, including intermediate \
               results",
     )
+    subparser_laser.add_argument(
+        "-s",
+        "--suffix",
+        default="",
+        help="Suffix added to laser calibration filename. Note: the stereo calibration file that is ingested for this \
+              processing step must not contain any suffix."
+    )
+    subparser_laser.add_argument(
+        "-u",
+        "--num_uncertainty_planes",
+        dest="num_uncert_planes",
+        default=300,
+        type=int,
+        help="Nunber of uncertainty planes generated"
+    )
     subparser_laser.set_defaults(func=call_calibrate_laser)
 
     if len(sys.argv) == 1 and args is None:
@@ -112,7 +140,7 @@ def call_calibrate_mono(args):
     Console.set_logging_file(
         get_processed_folder(args.path) / ("log/" + time_string + "_auv_cal_mono.log")
     )
-    c = Calibrator(args.path, args.force, args.force2)
+    c = Calibrator(args.path, args.force, args.force2, args.suffix)
     c.mono()
 
 
@@ -121,7 +149,7 @@ def call_calibrate_stereo(args):
     Console.set_logging_file(
         get_processed_folder(args.path) / ("log/" + time_string + "_auv_cal_stereo.log")
     )
-    c = Calibrator(args.path, args.force, args.force2)
+    c = Calibrator(args.path, args.force, args.force2, args.suffix)
     c.stereo()
 
 
@@ -130,7 +158,7 @@ def call_calibrate_laser(args):
     Console.set_logging_file(
         get_processed_folder(args.path) / ("log/" + time_string + "_auv_cal_laser.log")
     )
-    c = Calibrator(args.path, args.force, args.force2)
+    c = Calibrator(args.path, args.force, args.force2, args.suffix, args.num_uncert_planes)
     c.laser()
 
 

@@ -7,6 +7,7 @@ See LICENSE.md file in the project root for full license information.
 """
 import json
 from pathlib import Path
+from typing import Dict
 
 import yaml
 
@@ -191,18 +192,19 @@ def calibrate_stereo(
 
 def calibrate_laser(
     laser_cam_name,
-    laser_cam_filepath,
-    laser_cam_extension,
+    laser_cam_filepath: Path,
+    laser_cam_extension: str,
     non_laser_cam_name,
-    non_laser_cam_filepath,
-    non_laser_cam_extension,
-    stereo_calibration_file,
-    config,
-    output_file,
-    output_file_b,
-    skip_first=0,
-    fo=False,
-    foa=False,
+    non_laser_cam_filepath: Path,
+    non_laser_cam_extension: str,
+    stereo_calibration_file: Path,
+    config: Dict,
+    output_file: Path,
+    output_file_b: Path,
+    num_uncert_planes: int,
+    skip_first: int = 0,
+    fo: bool = False,
+    foa: bool = False,
 ):
     Console.info("Looking for calibration images in {}".format(laser_cam_filepath))
     laser_cam_image_list = collect_image_files(laser_cam_filepath, laser_cam_extension)
@@ -224,7 +226,7 @@ def calibrate_laser(
             else:
                 return default_value
 
-        lc = LaserCalibrator(stereo_camera_model=model, config=config, overwrite=foa)
+        lc = LaserCalibrator(model, config, num_uncert_planes, overwrite=foa)
         lc.cal(
             laser_cam_image_list[skip_first:],
             non_laser_cam_image_list[skip_first:],
@@ -254,14 +256,27 @@ def build_filepath(base, paths):
 
 
 class Calibrator:
-    def __init__(self, filepath, force_overwite=False, overwrite_all=False):
+    def __init__(
+        self,
+        filepath: str,
+        force_overwite: bool = False,
+        overwrite_all: bool = False,
+        suffix: str = "",
+        num_uncert_planes: int = 300,
+    ):
         filepath = Path(filepath).resolve()
         self.filepath = get_raw_folder(filepath)
         self.fo = force_overwite
         self.foa = overwrite_all
+        self.suffix = suffix
+        self.num_uncert_planes = num_uncert_planes
 
         if self.foa:
             self.fo = True
+
+        if self.suffix:
+            if self.suffix[0] != "_":
+                self.suffix = "_" + self.suffix
 
         self.configuration_path = (
             get_config_folder(self.filepath.parent) / "calibration"
@@ -302,7 +317,7 @@ class Calibrator:
         for c in self.calibration_config["cameras"]:
             cam_name = c["name"]
             # Find if the calibration file exists
-            calibration_file = self.output_path / str("mono_" + cam_name + ".yaml")
+            calibration_file = self.output_path / str("mono_" + cam_name + self.suffix + ".yaml")
             Console.info("Looking for a calibration file at " + str(calibration_file))
             if calibration_file.exists() and not self.fo:
                 Console.warn(
@@ -342,7 +357,7 @@ class Calibrator:
             c0 = self.calibration_config["cameras"][0]
             c1 = self.calibration_config["cameras"][1]
             calibration_file = self.output_path / str(
-                "stereo_" + c0["name"] + "_" + c1["name"] + ".yaml"
+                "stereo_" + c0["name"] + "_" + c1["name"] + self.suffix + ".yaml"
             )
             Console.info("Looking for a calibration file at " + str(calibration_file))
             if calibration_file.exists() and not self.fo:
@@ -400,7 +415,13 @@ class Calibrator:
                         + str(right_calibration_file)
                         + "..."
                     )
-                self.mono()
+                if self.suffix:
+                    Console.quit(
+                        "Suffix is indicated, but mono calibration is missing. Automatic calling of mono calibrator is "
+                        "not supported when indicating a suffix."
+                    )
+                else:
+                    self.mono()
             if left_calibration_file.exists() and right_calibration_file.exists():
                 Console.info(
                     "Loading previous monocular calibrations at \
@@ -427,7 +448,7 @@ class Calibrator:
             c0 = self.calibration_config["cameras"][0]
             c2 = self.calibration_config["cameras"][2]
             calibration_file = self.output_path / str(
-                "stereo_" + c0["name"] + "_" + c2["name"] + ".yaml"
+                "stereo_" + c0["name"] + "_" + c2["name"] + self.suffix + ".yaml"
             )
             Console.info("Looking for a calibration file at " + str(calibration_file))
             if calibration_file.exists() and not self.fo:
@@ -474,7 +495,13 @@ class Calibrator:
                         + str(right_calibration_file)
                         + "..."
                     )
-                self.mono()
+                if self.suffix:
+                    Console.quit(
+                        "Suffix is indicated, but mono calibration is missing. Automatic calling of mono calibrator is "
+                        "not supported when indicating a suffix."
+                    )
+                else:
+                    self.mono()
             if left_calibration_file.exists() and right_calibration_file.exists():
                 Console.info(
                     "Loading previous monocular calibrations at \
@@ -498,7 +525,7 @@ class Calibrator:
             )
 
             calibration_file = self.output_path / str(
-                "stereo_" + c2["name"] + "_" + c0["name"] + ".yaml"
+                "stereo_" + c2["name"] + "_" + c0["name"] + self.suffix + ".yaml"
             )
 
             calibrate_stereo(
@@ -530,17 +557,17 @@ class Calibrator:
         c0 = self.calibration_config["cameras"][0]
         c1 = self.calibration_config["cameras"][1]
         self.laser_imp(c1, c0)
-        if len(self.calibration_config["cameras"]) > 2:
-            c1 = self.calibration_config["cameras"][2]
-            self.laser_imp(c0, c1)
+        # if len(self.calibration_config["cameras"]) > 2:
+        #     c1 = self.calibration_config["cameras"][2]
+        #     self.laser_imp(c0, c1)
 
     def laser_imp(self, c0, c1):
         main_camera_name = c1["name"]
         calibration_file = self.output_path / (
-            "laser_calibration_top_" + main_camera_name + ".yaml"
+            "laser_calibration_top_" + main_camera_name + self.suffix + ".yaml"
         )
         calibration_file_b = self.output_path / (
-            "laser_calibration_bottom_" + main_camera_name + ".yaml"
+            "laser_calibration_bottom_" + main_camera_name + self.suffix + ".yaml"
         )
         Console.info("Looking for a calibration file at " + str(calibration_file))
         if calibration_file.exists() and not self.fo:
@@ -566,7 +593,13 @@ class Calibrator:
                 + str(stereo_calibration_file)
                 + "..."
             )
-            self.stereo()
+            if self.suffix:
+                Console.quit(
+                    "Suffix is indicated, but stereo calibration is missing. Automatic calling of stereo calibrator is "
+                    "not supported when indicating a suffix."
+                )
+            else:
+                self.stereo()
 
         non_laser_cam_name = c0["name"]
         non_laser_cam_filepath = get_raw_folder(self.filepath) / str(
@@ -617,6 +650,7 @@ class Calibrator:
             self.calibration_config["laser_calibration"],
             calibration_file,
             calibration_file_b,
+            self.num_uncert_planes,
             self.calibration_config["skip_first"],
             self.fo,
             self.foa,
