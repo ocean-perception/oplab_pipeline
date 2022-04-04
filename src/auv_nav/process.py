@@ -1256,6 +1256,12 @@ def process(
 
         # Initialise starting state for EKF
         ekf_initial_state = copy.deepcopy(laser_camera_at_dvl_states[0])
+        # When reading the timestamp from the csv it sometimes is converted to a slightly different timestamp than the
+        # timestamp read from the image file times file, due to the limited precision of floats.
+        # If it is read as a time even a tiny bit later than in the images file times, the EKF solution will seemingly
+        # start only after the image was taken and the program will crash when attempting to find the EKF position for
+        # the first image. Subtracting 1 microsecond from the timesamp solves this.
+        ekf_initial_state.epoch_timestamp -= 0.000001
 
         ekf_initial_estimate_covariance[
             0:6, 0:6
