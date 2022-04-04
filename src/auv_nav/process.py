@@ -1321,8 +1321,7 @@ def process(
             depth_to_dvl,
         )
         ekf.run(ekf_timestamps)
-        ekf_end_time = time.time()
-        ekf_elapsed_time = ekf_end_time - ekf_start_time
+        ekf_elapsed_time = time.time() - ekf_start_time
         Console.info("EKF took {} mins".format(ekf_elapsed_time / 60))
         ekf_states = ekf.get_smoothed_result()
         ekf_list = save_ekf_to_list(
