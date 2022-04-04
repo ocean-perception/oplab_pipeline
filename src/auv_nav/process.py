@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2020, University of Southampton
+Copyright (c) 2022, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -1556,6 +1556,7 @@ def process(
                 target=plot_2d_deadreckoning,
                 args=[
                     camera1_dr_list,
+                    camera1_ekf_list,
                     dead_reckoning_centre_list,
                     dead_reckoning_dvl_list,
                     pf_fusion_centre_list,
