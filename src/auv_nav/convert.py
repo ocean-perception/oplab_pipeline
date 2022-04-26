@@ -11,6 +11,7 @@ from auv_nav.parsers.acfr_vehicle_pose import (
     AcfrVehiclePoseWriter,
 )
 from auv_nav.parsers.hybis import HybisParser
+from auv_nav.parsers.koyo20rov import RovParser
 from auv_nav.sensors import (
     Altitude,
     BodyVelocity,
@@ -31,6 +32,25 @@ from auv_nav.tools.time_conversions import (
 from oplab import Console, Mission, Vehicle, get_processed_folder
 
 # fmt: on
+
+
+def koyo20rov_to_oplab(args):
+    if args.dive_path is None:
+        Console.error(
+            "Please provide a dive path using --dive-path (-i)"
+        )
+        Console.quit("Missing comandline arguments")
+    # Do all necessary pathchecks on creating of class instance
+    parser = RovParser(args.dive_path)
+    parser.load_data()
+    parser.check_for_outputs(args.force)
+    # parser.filter_bad_measurements()
+    parser.interpolate_to_images()
+    parser.filter_nans()
+    parser.add_northings_eastings()
+    parser.add_lever_arms()
+    parser.write_outputs()
+    return
 
 
 def hybis_to_oplab(args):
