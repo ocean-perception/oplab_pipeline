@@ -8,6 +8,7 @@ See LICENSE.md file in the project root for full license information.
 
 import json
 import multiprocessing
+from multiprocessing.pool import ThreadPool
 from datetime import datetime
 from pathlib import Path
 
@@ -228,7 +229,7 @@ def parse_single(filepath, force_overwrite):
         cpu_to_use = multiprocessing.cpu_count() - 2
 
     try:
-        pool = multiprocessing.Pool(cpu_to_use)
+        pool = ThreadPool(cpu_to_use)
     except AttributeError as e:
         print(
             "Error: ",
