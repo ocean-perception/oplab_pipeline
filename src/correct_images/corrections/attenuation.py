@@ -20,7 +20,10 @@ from oplab import Console
 
 
 def attenuation_correct(
-    img: np.ndarray, altitude: np.ndarray, atn_crr_params: np.ndarray, gain: np.ndarray,
+    img: np.ndarray,
+    altitude: np.ndarray,
+    atn_crr_params: np.ndarray,
+    gain: np.ndarray,
 ) -> np.ndarray:
     """apply attenuation coefficients to an input image
 
@@ -118,7 +121,11 @@ def calculate_correction_gains(
 
 # calculate image attenuation parameters
 def calculate_attenuation_parameters(
-    images, distances, image_height, image_width, image_channels
+    images: np.ndarray,
+    distances: np.ndarray,
+    image_height: int,
+    image_width: int,
+    image_channels: int,
 ):
     """Compute attenuation parameters for all images
 

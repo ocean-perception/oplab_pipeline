@@ -89,18 +89,34 @@ def curve_fitting(altitudes: np.ndarray, intensities: np.ndarray) -> np.ndarray:
     altitudes_filt = []
     intensities_filt = []
     for x, y in zip(altitudes, intensities):
-        if x >= 0 and y >= 0:
+        if x > 0 and y > 0:
             altitudes_filt.append(x)
             intensities_filt.append(y)
 
     if not altitudes_filt or not intensities_filt:
         if not altitudes_filt:
-            print("---------\naltitudes: ", altitudes, "\nintensities: ", intensities, "\naltitudes_filt: ", altitudes_filt,
-          "\nintensities_filt: ", intensities_filt)
+            print(
+                "---------\naltitudes: ",
+                altitudes,
+                "\nintensities: ",
+                intensities,
+                "\naltitudes_filt: ",
+                altitudes_filt,
+                "\nintensities_filt: ",
+                intensities_filt,
+            )
             print("ERROR: Altitudes are negative in curve fitting")
         if not intensities_filt:
-            print("---------\naltitudes: ", altitudes, "\nintensities: ", intensities, "\naltitudes_filt: ", altitudes_filt,
-          "\nintensities_filt: ", intensities_filt)
+            print(
+                "---------\naltitudes: ",
+                altitudes,
+                "\nintensities: ",
+                intensities,
+                "\naltitudes_filt: ",
+                altitudes_filt,
+                "\nintensities_filt: ",
+                intensities_filt,
+            )
             print("ERROR: Intensities are negative in curve fitting")
         return np.array([1, 0, 0])
 
