@@ -247,6 +247,12 @@ class Corrector:
             # Update list of images by appending user-defined list
             # TODO: this list must be populated from AFTER loading the configuration and BEFORE getting image list
             self.get_imagelist()
+        
+        if len(self.altitude_list) < 3:
+            Console.quit(
+                "Insufficient number of images to compute attenuation ",
+                "parameters...",
+            )
 
         # Show the total number of images after filtering + merging the dives. It should match the sum of the filtered images of each dive.
         if len(path_list) > 1:
@@ -563,11 +569,6 @@ class Corrector:
                 len(distance_list),
                 "Images filtered as per altitude range...",
             )
-            if len(self.altitude_list) < 3:
-                Console.quit(
-                    "Insufficient number of images to compute attenuation ",
-                    "parameters...",
-                )
         else:
             # Copy the images list from the camera
             self.camera_image_list = self.camera.image_list
