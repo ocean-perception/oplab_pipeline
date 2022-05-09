@@ -108,7 +108,11 @@ def correct_image(
         else:
             intensities = image[:, :]
         intensities = pixel_stat(
-            intensities, image_raw_mean[i], image_raw_std[i], brightness, contrast,
+            intensities,
+            image_raw_mean[i],
+            image_raw_std[i],
+            brightness,
+            contrast,
         )
         if image_channels == 3:
             output_image[:, :, i] = intensities
@@ -161,16 +165,18 @@ image_raw_std_scaled = np.empty((image_channels, image_height, image_width))
 
 # Subsammple the list:
 total, used, free = shutil.disk_usage("/")
-free = free // (2 ** 30)
+free = free // (2**30)
 
 print("Free disk space: ", free, "Gb")
 if free < max_space_gb:
     print(
-        "Free disk space is below", max_space_gb, "Gb. you might have problems.",
+        "Free disk space is below",
+        max_space_gb,
+        "Gb. you might have problems.",
     )
 
 num_images_to_compute_mean = int(
-    max_space_gb / (image_height * image_width * image_channels * 8 / (1024 ** 3))
+    max_space_gb / (image_height * image_width * image_channels * 8 / (1024**3))
 )
 
 print(
@@ -209,7 +215,7 @@ for i in list_shape:
 
 print(
     "Creating memmap of",
-    size * 8 / (1024 ** 3),
+    size * 8 / (1024**3),
     "Gb on the filesystem. Do not worry, it will be deleted later.",
 )
 
@@ -242,10 +248,14 @@ for i in range(image_channels):
     image_raw_std_scaled_t = image_raw_std_scaled.transpose(1, 2, 0)
 
     image_raw_mean = cv2.resize(
-        image_raw_mean_scaled_t, (orig_image_height, orig_image_width), cv2.INTER_CUBIC,
+        image_raw_mean_scaled_t,
+        (orig_image_height, orig_image_width),
+        cv2.INTER_CUBIC,
     ).transpose(2, 1, 0)
     image_raw_std = cv2.resize(
-        image_raw_std_scaled_t, (orig_image_height, orig_image_width), cv2.INTER_CUBIC,
+        image_raw_std_scaled_t,
+        (orig_image_height, orig_image_width),
+        cv2.INTER_CUBIC,
     ).transpose(2, 1, 0)
 
     """

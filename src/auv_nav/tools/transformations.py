@@ -299,7 +299,8 @@ def rotation_matrix(angle, direction, point=None):
     direction = unit_vector(direction[:3])
     # rotation matrix around unit vector
     R = numpy.array(
-        ((cosa, 0.0, 0.0), (0.0, cosa, 0.0), (0.0, 0.0, cosa)), dtype=numpy.float64,
+        ((cosa, 0.0, 0.0), (0.0, cosa, 0.0), (0.0, 0.0, cosa)),
+        dtype=numpy.float64,
     )
     R += numpy.outer(direction, direction) * (1.0 - cosa)
     direction *= sina
@@ -1203,9 +1204,24 @@ def quaternion_matrix(quaternion):
     q = numpy.outer(q, q)
     return numpy.array(
         (
-            (1.0 - q[1, 1] - q[2, 2], q[0, 1] - q[2, 3], q[0, 2] + q[1, 3], 0.0,),
-            (q[0, 1] + q[2, 3], 1.0 - q[0, 0] - q[2, 2], q[1, 2] - q[0, 3], 0.0,),
-            (q[0, 2] - q[1, 3], q[1, 2] + q[0, 3], 1.0 - q[0, 0] - q[1, 1], 0.0,),
+            (
+                1.0 - q[1, 1] - q[2, 2],
+                q[0, 1] - q[2, 3],
+                q[0, 2] + q[1, 3],
+                0.0,
+            ),
+            (
+                q[0, 1] + q[2, 3],
+                1.0 - q[0, 0] - q[2, 2],
+                q[1, 2] - q[0, 3],
+                0.0,
+            ),
+            (
+                q[0, 2] - q[1, 3],
+                q[1, 2] + q[0, 3],
+                1.0 - q[0, 0] - q[1, 1],
+                0.0,
+            ),
             (0.0, 0.0, 0.0, 1.0),
         ),
         dtype=numpy.float64,
@@ -1502,7 +1518,11 @@ class Arcball(object):
 def arcball_map_to_sphere(point, center, radius):
     """Return unit sphere coordinates from window coordinates."""
     v = numpy.array(
-        ((point[0] - center[0]) / radius, (center[1] - point[1]) / radius, 0.0,),
+        (
+            (point[0] - center[0]) / radius,
+            (center[1] - point[1]) / radius,
+            0.0,
+        ),
         dtype=numpy.float64,
     )
     n = v[0] * v[0] + v[1] * v[1]

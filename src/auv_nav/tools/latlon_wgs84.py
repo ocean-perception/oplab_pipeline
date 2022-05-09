@@ -22,7 +22,7 @@ def latlon_to_metres(latitude, longitude, latitude_reference, longitude_referenc
 
 
 def metres_to_latlon(latitude, longitude, eastings, northings):
-    s12 = math.sqrt(eastings ** 2 + northings ** 2)
+    s12 = math.sqrt(eastings**2 + northings**2)
     azi1 = math.degrees(math.atan2(eastings, northings))
     ret = Geodesic.WGS84.Direct(latitude, longitude, azi1, s12)
     latitude_offset = ret["lat2"]

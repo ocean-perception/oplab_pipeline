@@ -98,7 +98,10 @@ class testCorrections(unittest.TestCase):
             dist = self.distance_matrices[k]
             corrected = img.copy()
             corrected = corrections.attenuation_correct(
-                img, dist, attenuation_parameters, correction_gains,
+                img,
+                dist,
+                attenuation_parameters,
+                correction_gains,
             )
             corrected_rgb[:, :, :, k] = corrected
         # TODO what do we test here?
@@ -111,7 +114,10 @@ class testCorrections(unittest.TestCase):
 
             if bayer_pattern == "grbg":
                 self.assertAlmostEqual(
-                    image_rgb[1, 1, 0], 75 / 255.0, 2, "Red channel value is incorrect",
+                    image_rgb[1, 1, 0],
+                    75 / 255.0,
+                    2,
+                    "Red channel value is incorrect",
                 )
                 self.assertAlmostEqual(
                     image_rgb[1, 1, 1],

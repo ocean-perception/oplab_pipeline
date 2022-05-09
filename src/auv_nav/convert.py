@@ -50,7 +50,10 @@ def hybis_to_oplab(args):
         Console.error("Please provide an output path")
         Console.quit("Missing comandline arguments")
     parser = HybisParser(
-        args.navigation_file, args.image_path, args.reference_lat, args.reference_lon,
+        args.navigation_file,
+        args.image_path,
+        args.reference_lat,
+        args.reference_lon,
     )
     force_overwite = args.force
     filepath = get_processed_folder(args.output_folder)

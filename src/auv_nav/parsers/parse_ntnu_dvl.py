@@ -97,7 +97,9 @@ def parse_ntnu_dvl(mission, vehicle, category, output_format, outpath):
     velocity_std_offset = mission.velocity.std_offset
     heading_offset = vehicle.dvl.yaw
     body_velocity = BodyVelocity(
-        velocity_std_factor, velocity_std_offset, heading_offset,
+        velocity_std_factor,
+        velocity_std_offset,
+        heading_offset,
     )
     altitude = Altitude(altitude_std_factor=mission.altitude.std_factor)
 

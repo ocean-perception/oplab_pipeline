@@ -43,7 +43,10 @@ def main(args=None):
         "path", default=".", help="Folder containing the mission.yaml"
     )
     subparser_mono.add_argument(
-        "-F", dest="force", action="store_true", help="Force output file overwite",
+        "-F",
+        dest="force",
+        action="store_true",
+        help="Force output file overwite",
     )
     subparser_mono.add_argument(
         "-FF",
@@ -53,10 +56,7 @@ def main(args=None):
              results",
     )
     subparser_mono.add_argument(
-        "-s",
-        "--suffix",
-        default="",
-        help="Suffix added to mono calibration file name."
+        "-s", "--suffix", default="", help="Suffix added to mono calibration file name."
     )
     subparser_mono.set_defaults(func=call_calibrate_mono)
 
@@ -85,7 +85,7 @@ def main(args=None):
         "--suffix",
         default="",
         help="Suffix added to stereo calibration file name. Note: the mono calibration files that are ingested for \
-              this processing step must not contain any suffix."
+              this processing step must not contain any suffix.",
     )
     subparser_stereo.set_defaults(func=call_calibrate_stereo)
 
@@ -114,7 +114,7 @@ def main(args=None):
         "--suffix",
         default="",
         help="Suffix added to laser calibration filename. Note: the stereo calibration file that is ingested for this \
-              processing step must not contain any suffix."
+              processing step must not contain any suffix.",
     )
     subparser_laser.add_argument(
         "-u",
@@ -122,7 +122,7 @@ def main(args=None):
         dest="num_uncert_planes",
         default=300,
         type=int,
-        help="Nunber of uncertainty planes generated"
+        help="Nunber of uncertainty planes generated",
     )
     subparser_laser.set_defaults(func=call_calibrate_laser)
 
@@ -158,7 +158,9 @@ def call_calibrate_laser(args):
     Console.set_logging_file(
         get_processed_folder(args.path) / ("log/" + time_string + "_auv_cal_laser.log")
     )
-    c = Calibrator(args.path, args.force, args.force2, args.suffix, args.num_uncert_planes)
+    c = Calibrator(
+        args.path, args.force, args.force2, args.suffix, args.num_uncert_planes
+    )
     c.laser()
 
 

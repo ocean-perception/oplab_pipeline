@@ -102,7 +102,8 @@ def parse_rosbag(mission, vehicle, category, output_format, outpath):
         Console.error("rosbag is not available")
         Console.error("install it with:")
         Console.error(
-            "pip install --extra-index-url", "https://rospypi.github.io/simple/ rosbag",
+            "pip install --extra-index-url",
+            "https://rospypi.github.io/simple/ rosbag",
         )
         Console.quit("rosbag is not available and required to parse ROS bagfiles.")
 
@@ -122,7 +123,9 @@ def parse_rosbag(mission, vehicle, category, output_format, outpath):
     dvl_heading_offset = vehicle.dvl.yaw
 
     body_velocity = BodyVelocity(
-        velocity_std_factor, velocity_std_offset, dvl_heading_offset,
+        velocity_std_factor,
+        velocity_std_offset,
+        dvl_heading_offset,
     )
     orientation = Orientation(ins_heading_offset)
     depth = Depth(depth_std_factor)

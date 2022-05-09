@@ -6,8 +6,9 @@ Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
 
-import matplotlib.pyplot as plt
 from pathlib import Path
+
+import matplotlib.pyplot as plt
 import numpy as np
 from numba import njit
 from scipy import optimize
@@ -95,12 +96,28 @@ def curve_fitting(altitudes: np.ndarray, intensities: np.ndarray) -> np.ndarray:
 
     if not altitudes_filt or not intensities_filt:
         if not altitudes_filt:
-            print("---------\naltitudes: ", altitudes, "\nintensities: ", intensities, "\naltitudes_filt: ", altitudes_filt,
-          "\nintensities_filt: ", intensities_filt)
+            print(
+                "---------\naltitudes: ",
+                altitudes,
+                "\nintensities: ",
+                intensities,
+                "\naltitudes_filt: ",
+                altitudes_filt,
+                "\nintensities_filt: ",
+                intensities_filt,
+            )
             print("ERROR: Altitudes are negative in curve fitting")
         if not intensities_filt:
-            print("---------\naltitudes: ", altitudes, "\nintensities: ", intensities, "\naltitudes_filt: ", altitudes_filt,
-          "\nintensities_filt: ", intensities_filt)
+            print(
+                "---------\naltitudes: ",
+                altitudes,
+                "\nintensities: ",
+                intensities,
+                "\naltitudes_filt: ",
+                altitudes_filt,
+                "\nintensities_filt: ",
+                intensities_filt,
+            )
             print("ERROR: Intensities are negative in curve fitting")
         return np.array([1, 0, 0])
 

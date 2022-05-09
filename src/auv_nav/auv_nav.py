@@ -39,7 +39,9 @@ def main(args=None):
     Console.info("Running auv_nav version " + str(Console.get_version()))
 
     parser = argparse.ArgumentParser()
-    subparsers = parser.add_subparsers(dest="which",)
+    subparsers = parser.add_subparsers(
+        dest="which",
+    )
 
     """
     Subparsers for the 3 targets 'parse', 'convert' and 'process'
@@ -144,7 +146,10 @@ def main(args=None):
     )
     subparser_process.set_defaults(func=call_process_data)
 
-    subparser_convert = subparsers.add_parser("convert", help="Converts data.",)
+    subparser_convert = subparsers.add_parser(
+        "convert",
+        help="Converts data.",
+    )
     subparser_convert.set_defaults(func=show_help)
 
     # CONVERT subparsers
@@ -152,10 +157,14 @@ def main(args=None):
 
     # ACFR to OPLAB CSV
     subparser_oplab_to_acfr = subsubparsers.add_parser(
-        "oplab_to_acfr", help="Converts an already processed dive to ACFR format",
+        "oplab_to_acfr",
+        help="Converts an already processed dive to ACFR format",
     )
     subparser_oplab_to_acfr.add_argument(
-        "-d", "--dive-folder", dest="dive_folder", help="Input dive path.",
+        "-d",
+        "--dive-folder",
+        dest="dive_folder",
+        help="Input dive path.",
     )
     subparser_oplab_to_acfr.add_argument(
         "-o",
@@ -164,7 +173,11 @@ def main(args=None):
         help="Path where results will be written.",
     )
     subparser_oplab_to_acfr.add_argument(
-        "-F", "--Force", dest="force", action="store_true", help="Force file overwite",
+        "-F",
+        "--Force",
+        dest="force",
+        action="store_true",
+        help="Force file overwite",
     )
     subparser_oplab_to_acfr.set_defaults(func=oplab_to_acfr)
 
@@ -176,10 +189,14 @@ def main(args=None):
     )
 
     subparser_acfr_to_oplab.add_argument(
-        "--vehicle-pose", dest="vehicle_pose", help="vehicle_pose_est.data filepath.",
+        "--vehicle-pose",
+        dest="vehicle_pose",
+        help="vehicle_pose_est.data filepath.",
     )
     subparser_acfr_to_oplab.add_argument(
-        "--stereo-pose", dest="stereo_pose", help="stereo_pose_est.data filepath.",
+        "--stereo-pose",
+        dest="stereo_pose",
+        help="stereo_pose_est.data filepath.",
     )
     subparser_acfr_to_oplab.add_argument(
         "-o",
@@ -195,13 +212,18 @@ def main(args=None):
             laser timestamps to ACFR navigation.",
     )
     subparser_acfr_to_oplab.add_argument(
-        "-F", "--Force", dest="force", action="store_true", help="Force file overwite",
+        "-F",
+        "--Force",
+        dest="force",
+        action="store_true",
+        help="Force file overwite",
     )
     subparser_acfr_to_oplab.set_defaults(func=acfr_to_oplab)
 
     # HYBIS to OPLAB CSV
     subparser_hybis_to_oplab = subsubparsers.add_parser(
-        "hybis_to_oplab", help="Converts a hybis navigation file to oplab CSV format",
+        "hybis_to_oplab",
+        help="Converts a hybis navigation file to oplab CSV format",
     )
     subparser_hybis_to_oplab.add_argument(
         "-i",
@@ -210,7 +232,10 @@ def main(args=None):
         help="Input navigation file.",
     )
     subparser_hybis_to_oplab.add_argument(
-        "-d", "--image-path", dest="image_path", help="Input image path.",
+        "-d",
+        "--image-path",
+        dest="image_path",
+        help="Input image path.",
     )
     subparser_hybis_to_oplab.add_argument(
         "-o",
@@ -229,7 +254,11 @@ def main(args=None):
         help="Reference longitude for northing/easting.",
     )
     subparser_hybis_to_oplab.add_argument(
-        "-F", "--Force", dest="force", action="store_true", help="Force file overwite",
+        "-F",
+        "--Force",
+        dest="force",
+        action="store_true",
+        help="Force file overwite",
     )
     subparser_hybis_to_oplab.set_defaults(func=hybis_to_oplab)
 

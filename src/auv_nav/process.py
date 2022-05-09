@@ -660,8 +660,11 @@ def process(
         Console.quit(
             "orientation_list and velocity_body_list must not be empty but at",
             "least one of them is empty (orientation_list contains",
-            len(orientation_list), "elements and velocity_body_list",
-            "conatains", len(velocity_body_list), "elements)"
+            len(orientation_list),
+            "elements and velocity_body_list",
+            "conatains",
+            len(velocity_body_list),
+            "elements)",
         )
 
     # perform usbl_filter
@@ -897,7 +900,8 @@ def process(
         del dead_reckoning_dvl_list[0]
         interpolate_remove_flag = False  # reset flag
     Console.info(
-        "Completed interpolation and coordinate transfomations for", "velocity_body",
+        "Completed interpolation and coordinate transfomations for",
+        "velocity_body",
     )
 
     # perform interpolations of state data to velocity_inertial time stamps
@@ -1229,7 +1233,7 @@ def process(
         ekf_initial_state.yaw,
         depth_to_dvl[0],
         depth_to_dvl[1],
-        depth_to_dvl[2]
+        depth_to_dvl[2],
     )
     ekf_initial_state.depth += z_offset
 
@@ -1339,21 +1343,30 @@ def process(
 
     if compute_relative_pose_uncertainty:
         camera3_ekf_list_cropped = update_camera_list(
-            camera3_ekf_list_cropped, ekf_list, [0, 0, 0], [0, 0, 0], latlon_reference,
+            camera3_ekf_list_cropped,
+            ekf_list,
+            [0, 0, 0],
+            [0, 0, 0],
+            latlon_reference,
         )
         assert len(camera3_ekf_list_cropped) == len(laser_camera_at_dvl_states)
 
         # Compute uncertainties with poses
         # Compute uncertainties by subtracting original states (-> uncertainties are summed)
         for i in range(1, len(laser_camera_at_dvl_states)):
-            laser_camera_at_dvl_states[i].covariance += laser_camera_at_dvl_states[0].covariance
+            laser_camera_at_dvl_states[i].covariance += laser_camera_at_dvl_states[
+                0
+            ].covariance
         laser_camera_at_dvl_states[0].covariance[:, :] = 0
 
         # Plot uncertainties
         plots_folder = renavpath / "interactive_plots"
 
         # Plot uncertainties based on subtracting positions
-        args = [laser_camera_at_dvl_states, plots_folder / "based_on_subtraction_at_dvl"]
+        args = [
+            laser_camera_at_dvl_states,
+            plots_folder / "based_on_subtraction_at_dvl",
+        ]
         t = threading.Thread(target=plot_cameras_vs_time, args=args)
         t.start()
         threads.append(t)
@@ -1486,7 +1499,8 @@ def process(
                     print("Warning:", e)
 
             t = threading.Thread(
-                target=plot_orientation_vs_time, args=[orientation_list, plotlypath],
+                target=plot_orientation_vs_time,
+                args=[orientation_list, plotlypath],
             )
             t.start()
             threads.append(t)

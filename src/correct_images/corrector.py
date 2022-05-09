@@ -160,14 +160,14 @@ class Corrector:
 
         """Load general configuration parameters"""
         self.correction_method = self.correct_config.method
-        if self.correction_method == "colour_correction":
-            self.distance_metric = self.correct_config.color_correction.distance_metric
-            self.distance_path = self.correct_config.color_correction.metric_path
-            self.altitude_max = self.correct_config.color_correction.altitude_max
-            self.altitude_min = self.correct_config.color_correction.altitude_min
-            self.smoothing = self.correct_config.color_correction.smoothing
-            self.window_size = self.correct_config.color_correction.window_size
-            self.outlier_rejection = self.correct_config.color_correction.outlier_reject
+        # if self.correction_method == "colour_correction":
+        self.distance_metric = self.correct_config.color_correction.distance_metric
+        self.distance_path = self.correct_config.color_correction.metric_path
+        self.altitude_max = self.correct_config.color_correction.altitude_max
+        self.altitude_min = self.correct_config.color_correction.altitude_min
+        self.smoothing = self.correct_config.color_correction.smoothing
+        self.window_size = self.correct_config.color_correction.window_size
+        self.outlier_rejection = self.correct_config.color_correction.outlier_reject
         self.cameraconfigs = self.correct_config.configs.camera_configs
         self.undistort = self.correct_config.output_settings.undistort_flag
         self.output_format = self.correct_config.output_settings.compression_parameter
@@ -371,11 +371,11 @@ class Corrector:
             developed_folder_str += "manual"
             developed_folder_str += (
                 "_gain_"
-                + str(self.color_gain_matrix_rgb[0])
+                + str(self.color_gain_matrix_rgb[0, 0])
                 + "_"
-                + str(self.color_gain_matrix_rgb[4])
+                + str(self.color_gain_matrix_rgb[1, 1])
                 + "_"
-                + str(self.color_gain_matrix_rgb[8])
+                + str(self.color_gain_matrix_rgb[2, 2])
                 + "_sub_"
                 + str(self.subtractors_rgb[0])
                 + "_"
@@ -455,7 +455,19 @@ class Corrector:
         self.altitude_list = []
 
         # If using colour_correction, we need to read in the navigation
-        if self.correction_method == "colour_correction":
+        if (
+            self.correction_method == "colour_correction"
+            or self.camera.extension == "bag"
+        ):
+            # Deal with bagfiles:
+            # if the extension is bag, the list is a list of bagfiles
+            if self.camera.extension == "bag":
+                self.camera.bagfile_list = copy.deepcopy(self.camera.image_list)
+                Console.info("Setting camera topic to", self.camera.topic)
+                self.loader.set_bagfile_list_and_topic(
+                    self.camera.bagfile_list, self.camera.topic
+                )
+
             if self.distance_path == "json_renav_*":
                 Console.info(
                     "Picking first JSON folder as the default path to auv_nav",
@@ -488,14 +500,6 @@ class Corrector:
             # read dataframe for corresponding distance csv path
             dataframe = pd.read_csv(self.altitude_csv_path)
 
-            # Deal with bagfiles:
-            # if the extension is bag, the list is a list of bagfiles
-            if self.camera.extension == "bag":
-                self.camera.bagfile_list = copy.deepcopy(self.camera.image_list)
-                self.loader.set_bagfile_list_and_topic(
-                    self.camera.bagfile_list, self.camera.topic
-                )
-
             # get imagelist for given camera object
             if self.user_specified_image_list != "none":
                 path_file_list = Path(self.path_config) / self.user_specified_image_list
@@ -508,15 +512,20 @@ class Corrector:
                 else:
                     # create trimmed csv based on user's  list of images
                     dataframe = trim_csv_files(
-                        path_file_list, self.altitude_csv_path, self.trimmed_csv_path,
+                        path_file_list,
+                        self.altitude_csv_path,
+                        self.trimmed_csv_path,
                     )
 
             # Check images exist:
             valid_idx = []
             for idx, entry in enumerate(dataframe["relative_path"]):
-                im_path = self.path_raw / entry
-                if im_path.exists() or self.camera.extension == "bag":
+                if self.camera.extension == "bag":
                     valid_idx.append(idx)
+                else:
+                    im_path = self.path_raw / entry
+                    if im_path.exists():
+                        valid_idx.append(idx)
             filtered_dataframe = dataframe.iloc[valid_idx]
             filtered_dataframe.reset_index(drop=True)
             # WARNING: if the column does not contain any 'None' entry, it will be parsed as float, and the .str() accesor will fail
@@ -531,12 +540,7 @@ class Corrector:
                 alt = float(row["altitude [m]"])
                 if alt > self.altitude_min and alt < self.altitude_max:
                     if self.camera.extension == "bag":
-                        timestamp_from_filename = Path(row["relative_path"]).stem
-                        if "\\" in timestamp_from_filename:
-                            timestamp_from_filename = timestamp_from_filename.split(
-                                "\\"
-                            )[-1]
-                        self.camera_image_list.append(timestamp_from_filename)
+                        self.camera_image_list.append(row["timestamp [s]"])
                     else:
                         self.camera_image_list.append(
                             self.path_raw / row["relative_path"]
@@ -655,7 +659,7 @@ class Corrector:
             * self.image_height
             * self.image_width
             * 4.0
-            / (1024.0 ** 3)
+            / (1024.0**3)
         )
         max_bin_size_gb = 50.0
         max_bin_size = int(max_bin_size_gb / image_size_gb)
@@ -712,7 +716,10 @@ class Corrector:
                 )
 
             with tqdm_joblib(
-                tqdm(desc="Computing altitude histogram", total=hist_bins.size - 1,)
+                tqdm(
+                    desc="Computing altitude histogram",
+                    total=hist_bins.size - 1,
+                )
             ):
                 joblib.Parallel(n_jobs=-2, verbose=0)(
                     joblib.delayed(self.compute_distance_bin)(
@@ -728,12 +735,14 @@ class Corrector:
                 )
 
             # calculate attenuation parameters per channel
-            self.image_attenuation_parameters = corrections.calculate_attenuation_parameters(
-                images_map,
-                distances_map,
-                self.image_height,
-                self.image_width,
-                self.image_channels,
+            self.image_attenuation_parameters = (
+                corrections.calculate_attenuation_parameters(
+                    images_map,
+                    distances_map,
+                    self.image_height,
+                    self.image_width,
+                    self.image_channels,
+                )
             )
 
             # delete memmap handles
@@ -744,7 +753,8 @@ class Corrector:
 
             # Save attenuation parameter results.
             np.save(
-                self.attenuation_params_filepath, self.image_attenuation_parameters,
+                self.attenuation_params_filepath,
+                self.image_attenuation_parameters,
             )
 
             corrections.save_attenuation_plots(
@@ -755,7 +765,8 @@ class Corrector:
             # compute correction gains per channel
             target_altitude = distance_vector.mean()
             Console.info(
-                "Computing correction gains for target altitude", target_altitude,
+                "Computing correction gains for target altitude",
+                target_altitude,
             )
             self.correction_gains = corrections.calculate_correction_gains(
                 target_altitude,
@@ -769,7 +780,8 @@ class Corrector:
             np.save(self.correction_gains_filepath, self.correction_gains)
 
             corrections.save_attenuation_plots(
-                self.attenuation_parameters_folder, gains=self.correction_gains,
+                self.attenuation_parameters_folder,
+                gains=self.correction_gains,
             )
 
             # Useful if fails, to reload precomputed numpyfiles.
@@ -815,7 +827,9 @@ class Corrector:
                     distance_mtx.fill(distance)
                 else:
                     distance_mtx = depth_map.loader(
-                        self.depth_map_list[i], self.image_width, self.image_height,
+                        self.depth_map_list[i],
+                        self.image_width,
+                        self.image_height,
                     )
                 # TODO: Show the size of the produced distance_mtx
                 # Correct the image
@@ -856,7 +870,8 @@ class Corrector:
 
         else:
             Console.info(
-                "No altitude or depth maps available.", "Computing raw mean and std.",
+                "No altitude or depth maps available.",
+                "Computing raw mean and std.",
             )
 
             image_raw_mean, image_raw_std = running_mean_std(
@@ -911,7 +926,9 @@ class Corrector:
             # Random sample if memmap has to be created
             if self.smoothing != "mean" and len(bin_images) > max_bin_size:
                 Console.info(
-                    "Random sampling altitude bin to fit in", max_bin_size_gb, "Gb",
+                    "Random sampling altitude bin to fit in",
+                    max_bin_size_gb,
+                    "Gb",
                 )
                 bin_images = random.sample(bin_images, max_bin_size)
 
@@ -937,14 +954,18 @@ class Corrector:
                 bin_images_sample = running_mean_std(bin_images, loader=self.loader)[0]
             elif self.smoothing == "mean_trimmed":
                 memmap_filename, memmap_handle = create_memmap(
-                    bin_images, dimensions, loader=self.loader,
+                    bin_images,
+                    dimensions,
+                    loader=self.loader,
                 )
                 bin_images_sample = image_mean_std_trimmed(memmap_handle)[0]
                 del memmap_handle
                 os.remove(memmap_filename)
             elif self.smoothing == "median":
                 memmap_filename, memmap_handle = create_memmap(
-                    bin_images, dimensions, loader=self.loader,
+                    bin_images,
+                    dimensions,
+                    loader=self.loader,
                 )
                 bin_images_sample = median_array(memmap_handle)
                 del memmap_handle
@@ -1042,7 +1063,9 @@ class Corrector:
             distance_matrix = None
             if self.distance_metric == "depth_map":
                 distance_matrix = depth_map.loader(
-                    self.depth_map_list[idx], self.image_width, self.image_height,
+                    self.depth_map_list[idx],
+                    self.image_width,
+                    self.image_height,
                 )
             elif self.distance_metric == "altitude":
                 if idx > len(self.altitude_list) - 1:
@@ -1120,7 +1143,13 @@ class Corrector:
         # print('clip:', image_rgb.dtype, np.max(image_rgb), np.min(image_rgb))
 
         # write to output files
-        image_filename = Path(self.camera_image_list[idx]).stem
+        try:
+            image_filename = Path(self.camera_image_list[idx]).stem
+        except FileNotFoundError:
+            image_filename = self.camera_name + "_" + str(self.camera_image_list[idx])
         return write_output_image(
-            image_rgb, image_filename, self.output_images_folder, self.output_format,
+            image_rgb,
+            image_filename,
+            self.output_images_folder,
+            self.output_format,
         )

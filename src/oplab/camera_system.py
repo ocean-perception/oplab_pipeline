@@ -43,6 +43,8 @@ def rosbag_image_loader(img_topic, bagfile):
         )
         Console.quit("ROS bagfile support is not available.")
     bridge = CvBridge()
+    Console.info("Loading ROS bagfile:", bagfile)
+    Console.info("    Looking for topic", img_topic)
     with rosbag.Bag(str(bagfile)) as bag:
         for topic, msg, t in bag.read_messages(topics=[str(img_topic)]):
             if topic == str(img_topic):
@@ -85,6 +87,7 @@ class CameraEntry:
 
         if node is not None:
             self.name = node["name"]
+            self.topic = node.get("topic", None)
             allowed_types = ["grayscale", "rgb", "bgr", "rggb", "grbg", "bggr", "gbrg"]
             self.type = node["type"]
             if self.type not in allowed_types:
@@ -105,7 +108,9 @@ class CameraEntry:
                 return
             if self.timestamp_file is None and self.filename_to_date is None:
                 Console.error(
-                    "The camera ", self.name, " is missing its timestamp format",
+                    "The camera ",
+                    self.name,
+                    " is missing its timestamp format",
                 )
                 Console.error("You can provide it by means of filename:")
                 Console.error(
@@ -114,7 +119,8 @@ class CameraEntry:
                 )
                 Console.error("or using a separate timestamp file:")
                 Console.error(
-                    "e.g. FileTime.csv, where separate columns z define", "the date.",
+                    "e.g. FileTime.csv, where separate columns z define",
+                    "the date.",
                 )
                 Console.error("Find examples in default_yaml folder.")
                 Console.quit("Missing timestamp format for a camera.")
@@ -192,7 +198,7 @@ class CameraEntry:
         return self._stamp_list
 
     @property
-    def image_properties(self, image_topic=None):
+    def image_properties(self):
         imagelist = self.image_list
         image_path = imagelist[0]
 
@@ -213,6 +219,8 @@ class CameraEntry:
         elif self.extension == "bag":
             for image_path in imagelist:
                 image_matrix = rosbag_image_loader(self.topic, image_path)
+                if image_matrix is None:
+                    continue
                 if image_matrix is not None:
                     self._image_properties = get_image_size(image_matrix)
                     break

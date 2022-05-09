@@ -375,7 +375,11 @@ def plot_deadreckoning_vs_time(
 # pf uncertainty plotly
 # maybe make a slider plot for this, or a dot projection slider
 def plot_pf_uncertainty(
-    pf_fusion_dvl_list, pf_northings_std, pf_eastings_std, pf_yaw_std, plotlypath,
+    pf_fusion_dvl_list,
+    pf_northings_std,
+    pf_eastings_std,
+    pf_yaw_std,
+    plotlypath,
 ):
     Console.info("Plotting pf_uncertainty...")
     pf_time = [i.epoch_timestamp for i in pf_fusion_dvl_list]
@@ -396,7 +400,8 @@ def plot_pf_uncertainty(
     )
     config = {"scrollZoom": True}
     fig = go.Figure(
-        data=[tr_pf_northings_std, tr_pf_eastings_std, tr_pf_yaw_std], layout=layout,
+        data=[tr_pf_northings_std, tr_pf_eastings_std, tr_pf_yaw_std],
+        layout=layout,
     )
     py.plot(
         fig,
@@ -410,7 +415,8 @@ def plot_pf_uncertainty(
 
 #  EKF uncertainty plotly
 def plot_ekf_states_and_std_vs_time(
-    ekf_states: List[EkfState], output_folder: Path,
+    ekf_states: List[EkfState],
+    output_folder: Path,
 ):
     Console.info("Plotting EKF states with std vs. time...")
     ekf_time = [i.time for i in ekf_states]
@@ -1317,7 +1323,9 @@ def plot_2d_deadreckoning(
         plotly_list_static.append(["ekf_camera1", camera1_ekf_list, True])
         plotly_list_slider.append(["ekf_camera1", camera1_ekf_list, True])
     if len(dead_reckoning_centre_list) > 1:
-        plotly_list_static.append(["dr_centre", dead_reckoning_centre_list, "legendonly"])
+        plotly_list_static.append(
+            ["dr_centre", dead_reckoning_centre_list, "legendonly"]
+        )
         # centre and dvl lists contain very large number of points -> plot in static plot but not in slider plot
     if len(dead_reckoning_dvl_list) > 1:
         plotly_list_static.append(["dr_dvl", dead_reckoning_dvl_list, "legendonly"])
@@ -1325,7 +1333,9 @@ def plot_2d_deadreckoning(
         plotly_list_static.append(["ekf_dvl", ekf_centre_list, "legendonly"])
 
     if len(usbl_list_no_dist_filter) > 1:
-        plotly_list_static.append(["usbl_without_distance_filter", usbl_list_no_dist_filter, "legendonly"])
+        plotly_list_static.append(
+            ["usbl_without_distance_filter", usbl_list_no_dist_filter, "legendonly"]
+        )
     if len(usbl_list) > 1:
         plotly_list_static.append(["usbl", usbl_list, True])
         plotly_list_slider.append(["usbl", usbl_list, True])
@@ -1339,13 +1349,18 @@ def plot_2d_deadreckoning(
     figure["layout"]["dragmode"] = "pan"
 
     for i in plotly_list_static:
-        make_data(
-            figure,
-            i[0],
-            [float(j.eastings) for j in i[1]],
-            [float(j.northings) for j in i[1]],
-            visibility=i[2],
-        )
+        print("Processing ", i[0])
+        try:
+            make_data(
+                figure,
+                i[0],
+                [float(j.eastings) for j in i[1]],
+                [float(j.northings) for j in i[1]],
+                visibility=i[2],
+            )
+        except TypeError:
+            Console.error("TypeError in plotting ", i[0])
+
     if len(pf_fusion_centre_list) > 1:
         make_data(
             figure,
