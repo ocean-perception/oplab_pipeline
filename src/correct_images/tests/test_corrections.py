@@ -168,11 +168,11 @@ class testCorrections(unittest.TestCase):
             (image_height, image_width, image_channels), dtype=np.float32
         )
         for i in range(image_channels):
-            img = np.array(self.rgb_images)[:, :, :, i]
+            img = np.array(self.rgb_images)[:, :, :, i] / 255.0
             image_means[:, :, i], image_stds[:, :, i] = mean_std(img)
 
         target_mean = 30
-        target_std = 10
+        target_std = 5
 
         corrected_imgs = np.empty(
             (len(self.rgb_images), image_height, image_width, image_channels),
@@ -180,13 +180,16 @@ class testCorrections(unittest.TestCase):
         )
         for k in range(len(self.rgb_images)):
             for i in range(image_channels):
-                img = self.rgb_images[k][:, :, i]
-                corrected_imgs[k, :, :, i] = corrections.pixel_stat(
-                    img,
-                    image_means[:, :, i],
-                    image_stds[:, :, i],
-                    target_mean,
-                    target_std,
+                img = self.rgb_images[k][:, :, i] / 255.0
+                corrected_imgs[k, :, :, i] = (
+                    corrections.pixel_stat(
+                        img,
+                        image_means[:, :, i],
+                        image_stds[:, :, i],
+                        target_mean,
+                        target_std,
+                    )
+                    * 255.0
                 )
 
         final_image_means = np.empty(
@@ -204,13 +207,16 @@ class testCorrections(unittest.TestCase):
 
         targeted_mean = np.ones(
             (image_height, image_width, image_channels), dtype=np.uint8
-        ) * int(target_mean / 100.0 * 255)
+        ) * int(target_mean / 100.0 * 255.0)
         targeted_std = np.ones(
             (image_height, image_width, image_channels), dtype=np.uint8
-        ) * int(target_std / 100.0 * 255)
+        ) * int(target_std / 100.0 * 255.0)
 
-        np.testing.assert_allclose(final_image_means, targeted_mean, rtol=1)
-        np.testing.assert_allclose(final_image_stds, targeted_std, rtol=1)
+        print(final_image_means)
+        print(final_image_stds)
+
+        np.testing.assert_allclose(final_image_means, targeted_mean, atol=1)
+        np.testing.assert_allclose(final_image_stds, targeted_std, atol=1)
 
     def test_rescale(self):
         image_size = 1000

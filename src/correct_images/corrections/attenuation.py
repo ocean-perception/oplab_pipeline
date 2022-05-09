@@ -121,7 +121,11 @@ def calculate_correction_gains(
 
 # calculate image attenuation parameters
 def calculate_attenuation_parameters(
-    images, distances, image_height, image_width, image_channels
+    images: np.ndarray,
+    distances: np.ndarray,
+    image_height: int,
+    image_width: int,
+    image_channels: int,
 ):
     """Compute attenuation parameters for all images
 

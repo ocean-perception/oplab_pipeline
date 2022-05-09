@@ -6,7 +6,6 @@ Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
 
-import calendar
 import time
 from datetime import datetime, timedelta, timezone
 
@@ -15,11 +14,20 @@ import pytz
 from oplab.console import Console
 
 
-def date_time_to_epoch(yyyy, mm, dd, hh, mm1, ss, timezone_offset_to_utc=0):
-    utc_date_time = datetime(yyyy, mm, dd, hh, mm1, ss) - timedelta(
+def date_time_to_epoch(
+    yyyy,
+    mm,
+    dd,
+    hh,
+    mm1,
+    ss,
+    timezone_offset_to_utc=0,
+    us=0,
+):
+    utc_date_time = datetime(yyyy, mm, dd, hh, mm1, ss, us) - timedelta(
         hours=timezone_offset_to_utc
     )
-    epochtime = calendar.timegm(utc_date_time.timetuple())
+    epochtime = utc_date_time.timestamp()
     return epochtime
 
 

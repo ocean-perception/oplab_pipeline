@@ -90,7 +90,7 @@ def curve_fitting(altitudes: np.ndarray, intensities: np.ndarray) -> np.ndarray:
     altitudes_filt = []
     intensities_filt = []
     for x, y in zip(altitudes, intensities):
-        if x >= 0 and y >= 0:
+        if x > 0 and y > 0:
             altitudes_filt.append(x)
             intensities_filt.append(y)
 
