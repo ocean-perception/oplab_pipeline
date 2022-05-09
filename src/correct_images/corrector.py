@@ -451,7 +451,6 @@ class Corrector:
     # filelist is specified by the user
     def get_imagelist(self):
         """Generate list of source images"""
-
         # Store a copy of the currently stored image list in the Corrector object
         _original_image_list = self.camera_image_list
         _original_altitude_list = self.altitude_list
@@ -534,10 +533,11 @@ class Corrector:
                         valid_idx.append(idx)
             filtered_dataframe = dataframe.iloc[valid_idx]
             filtered_dataframe.reset_index(drop=True)
-            # WARNING: if the column does not contain any 'None' entry, it will be parsed as float, and the .str() accesor will fail
+            # WARNING: if the column does not contain any 'None' entry, it will be
+            # parsed as float, and the .str() accesor will fail
             filtered_dataframe["altitude [m]"] = filtered_dataframe[
                 "altitude [m]"
-            ].astype("string")
+            ].astype(str)
             filtered_dataframe = filtered_dataframe[
                 ~filtered_dataframe["altitude [m]"].str.contains("None")
             ]  # drop rows with None altitude
@@ -580,9 +580,10 @@ class Corrector:
             # Join the current image list with the original image list (copy)
             self.camera_image_list.extend(_original_image_list)
             # Show size of the extended image list
-            Console.warn(
-                ">> The camera image list is now", len(self.camera_image_list)
-            )  # JC: I'm leaving this as it is informative for multidive
+            # Informative for message for multidive
+            Console.info(
+                "The camera image list has", len(self.camera_image_list), "entries"
+            )
             # Join the current image list with the original image list (copy)
             self.altitude_list.extend(_original_altitude_list)
 
