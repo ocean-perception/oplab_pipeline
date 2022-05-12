@@ -22,7 +22,7 @@ colour_correction :
 
 cameras : 
   - camera_name : 'Cam51707923' #in line with vehicle.yaml
-    image_file_list : # Only inidicate this if you want to limit the images used. folder is in the image path  
+      parse : 'none' # Path of file in configuration folder containing list of images to be used. Only indicate this if you want to limit the images used, 'none' otherwise.
       parse : 'none'
       process : 'none'
     colour_correction :
@@ -33,7 +33,7 @@ cameras :
       colour_gain_matrix_rgb : [[1, 0, 0], [0, 1, 0], [0, 0, 1]] # diagonal terms corresponding to r gain, g gain, b gain
   
   - camera_name : 'Cam51707925' #in line with vehicle.yaml
-    image_file_list : # Only inidicate this if you want to limit the images used
+      parse : 'none' # Path of file in configuration folder containing list of images to be used. Only indicate this if you want to limit the images used, 'none' otherwise.
       parse : 'none'
       process : 'none'
     colour_correction :
@@ -43,16 +43,16 @@ cameras :
       subtractors_rgb: [0, 0, 0] # -c values (zero capped)
       colour_gain_matrix_rgb: [[1, 0, 0], [0, 1, 0], [0, 0, 1]] # diagonal terms corresponding to r gain, g gain, b gain
     
-  - camera_name : 'LM165' #in line with vehicle.yaml
-    image_file_list : # Only inidicate this if you want to limit the images used
-      parse : 'none'
-      process : 'none'
-    colour_correction :
-      brightness : 30 # % target across dataset
-      contrast : 3 # % target accross dataset  
-    manual_balance:
-      subtractors_rgb: [0, 0, 0] # -c values (zero capped)
-      colour_gain_matrix_rgb: [[1, 0, 0], [0, 1, 0], [0, 0, 1]] # diagonal terms corresponding to r gain, g gain, b gain
+  # - camera_name : 'LM165' #in line with vehicle.yaml
+  #   image_file_list :
+  #     parse : 'none' # Path of file in configuration folder containing list of images to be used. Only indicate this if you want to limit the images used, 'none' otherwise.
+  #     process : 'none'
+  #   colour_correction :
+  #     brightness : 30 # % target across dataset
+  #     contrast : 3 # % target accross dataset  
+  #   manual_balance:
+  #     subtractors_rgb: [0, 0, 0] # -c values (zero capped)
+  #     colour_gain_matrix_rgb: [[1, 0, 0], [0, 1, 0], [0, 0, 1]] # diagonal terms corresponding to r gain, g gain, b gain
 
 output_settings :
   undistort : False

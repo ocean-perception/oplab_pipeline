@@ -22,7 +22,7 @@ colour_correction :
 cameras : 
   - camera_name : 'cam61008031' #in line with vehicle.yaml
     image_file_list : 
-      parse : 'none' # Only inidicate this if you want to limit the images used. folder is in the image path
+      parse : 'none' # Path of file in configuration folder containing list of images to be used. Only indicate this if you want to limit the images used, 'none' otherwise.
       process : 'none'  
     colour_correction :
       brightness : 30 # % target across dataset
@@ -32,7 +32,7 @@ cameras :
       colour_gain_matrix_rgb : [[8]] # monochrome camera -> single value (but still needs to be stored as list of list)
   - camera_name : 'cam61008269' #in line with vehicle.yaml
     image_file_list : 
-      parse : 'none' # Only inidicate this if you want to limit the images used
+      parse : 'none' # Path of file in configuration folder containing list of images to be used. Only indicate this if you want to limit the images used, 'none' otherwise.
       process : 'none'
     colour_correction :
       brightness : 30 # % target across dataset
