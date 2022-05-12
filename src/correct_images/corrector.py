@@ -605,12 +605,12 @@ class Corrector:
             else:
                 Console.info("Path to depth maps found...")
                 depth_map_list = list(path_depth.glob("*.npy"))
-                self.depth_map_list = [
-                    Path(item)
-                    for item in depth_map_list
-                    for image_path in self.camera_image_list
-                    if Path(image_path).stem in Path(item).stem
-                ]
+                self.depth_map_list = []
+                for item in depth_map_list:
+                    for image_path in self.camera_image_list:
+                        if Path(image_path).stem in Path(item).stem:
+                            self.depth_map_list.append(Path(item))
+                            break
 
                 if len(self.camera_image_list) != len(self.depth_map_list):
                     Console.quit(
