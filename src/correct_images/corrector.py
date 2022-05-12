@@ -949,7 +949,10 @@ class Corrector:
             else:
                 bin_distances = [self.depth_map_list[i] for i in tmp_idxs]
                 bin_distances_sample = running_mean_std(
-                    bin_distances, loader=self.loader
+                    bin_distances,
+                    loader=depth_map.loader,
+                    width=self.image_width,
+                    height=self.image_height,
                 )[0]
 
             if self.smoothing == "mean":
