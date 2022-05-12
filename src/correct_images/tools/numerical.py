@@ -92,7 +92,10 @@ def running_mean_std(file_list, loader=default.loader, width=None, height=None):
     std = np.zeros(dimensions, dtype=np.float32)
 
     for item in file_list:
-        value = loader(item).astype(np.float32)
+        if width is not None and height is not None:
+            value = loader(item, width, height).astype(np.float32)
+        else:
+            value = loader(item).astype(np.float32)
         count += 1
         delta = value - mean
         mean += delta / count
