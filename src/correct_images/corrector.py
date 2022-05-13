@@ -961,6 +961,7 @@ class Corrector:
                     loader=depth_map.loader,
                     width=self.image_width,
                     height=self.image_height,
+                    ignore_zeroes=True
                 )[0]
                 distance_bin_sample = bin_distances_sample.mean()
 

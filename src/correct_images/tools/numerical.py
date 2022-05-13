@@ -64,7 +64,9 @@ class RunningMeanStd:
             return None
 
 
-def running_mean_std(file_list, loader=default.loader, width=None, height=None):
+def running_mean_std(
+    file_list, loader=default.loader, width=None, height=None, ignore_zeroes=False
+):
     """Compute running mean and std of a list of image filenames
 
     Parameters
@@ -96,6 +98,8 @@ def running_mean_std(file_list, loader=default.loader, width=None, height=None):
             value = loader(item, width, height).astype(np.float32)
         else:
             value = loader(item).astype(np.float32)
+        if ignore_zeroes and value == 0:
+            continue
         count += 1
         delta = value - mean
         mean += delta / count
