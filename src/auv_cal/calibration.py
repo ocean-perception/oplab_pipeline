@@ -180,7 +180,8 @@ def calibrate_stereo(
         )
         # sc.cal(left_image_list, right_image_list)
         sc.cal_from_json(
-            left_json=left_json, right_json=right_json,
+            left_json=left_json,
+            right_json=right_json,
         )
         sc.report()
         Console.info("Writing calibration to " "'{}'" "".format(output_file))
@@ -317,7 +318,9 @@ class Calibrator:
         for c in self.calibration_config["cameras"]:
             cam_name = c["name"]
             # Find if the calibration file exists
-            calibration_file = self.output_path / str("mono_" + cam_name + self.suffix + ".yaml")
+            calibration_file = self.output_path / str(
+                "mono_" + cam_name + self.suffix + ".yaml"
+            )
             Console.info("Looking for a calibration file at " + str(calibration_file))
             if calibration_file.exists() and not self.fo:
                 Console.warn(
@@ -370,26 +373,31 @@ class Calibrator:
                     + "the calibration, use the -F flag."
                 )
             Console.info(
-                "The stereo camera is not calibrated, running stereo", "calibration...",
+                "The stereo camera is not calibrated, running stereo",
+                "calibration...",
             )
 
             left_filepaths = build_filepath(
-                get_processed_folder(self.filepath), c0["camera_calibration"]["path"],
+                get_processed_folder(self.filepath),
+                c0["camera_calibration"]["path"],
             )
             right_filepaths = build_filepath(
-                get_processed_folder(self.filepath), c1["camera_calibration"]["path"],
+                get_processed_folder(self.filepath),
+                c1["camera_calibration"]["path"],
             )
             left_name = c0["name"]
             if "glob_pattern" not in c0["camera_calibration"]:
                 Console.error(
-                    "Could not find the key glob_pattern for the camera ", c0["name"],
+                    "Could not find the key glob_pattern for the camera ",
+                    c0["name"],
                 )
                 Console.quit("glob_pattern expected in calibration.yaml")
             left_extension = str(c0["camera_calibration"]["glob_pattern"])
             right_name = c1["name"]
             if "glob_pattern" not in c1["camera_calibration"]:
                 Console.error(
-                    "Could not find the key glob_pattern for the camera ", c1["name"],
+                    "Could not find the key glob_pattern for the camera ",
+                    c1["name"],
                 )
                 Console.quit("glob_pattern expected in calibration.yaml")
             right_extension = str(c1["camera_calibration"]["glob_pattern"])
@@ -461,11 +469,13 @@ class Calibrator:
                     + "the calibration, use the -F flag."
                 )
             Console.info(
-                "The stereo camera is not calibrated, running stereo", "calibration...",
+                "The stereo camera is not calibrated, running stereo",
+                "calibration...",
             )
             left_name = c0["name"]
             left_filepaths = build_filepath(
-                get_processed_folder(self.filepath), c0["camera_calibration"]["path"],
+                get_processed_folder(self.filepath),
+                c0["camera_calibration"]["path"],
             )
             left_extension = str(c0["camera_calibration"]["glob_pattern"])
             right_name = c2["name"]

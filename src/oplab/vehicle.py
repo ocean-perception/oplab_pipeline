@@ -25,7 +25,7 @@ def represent_ordereddict(dumper, data):
 
         value.append((node_key, node_value))
 
-    return yaml.nodes.MappingNode(u"tag:yaml.org,2002:map", value)
+    return yaml.nodes.MappingNode("tag:yaml.org,2002:map", value)
 
 
 yaml.add_representer(OrderedDict, represent_ordereddict)
@@ -146,7 +146,8 @@ class Vehicle:
                             "same.",
                         )
                         Console.quit(
-                            "Your vehicle.yaml or your mission.yaml are", " malformed.",
+                            "Your vehicle.yaml or your mission.yaml are",
+                            " malformed.",
                         )
                     self.camera1.load(self.data[camera_name])
                 if len(mission.image.cameras) > 1:
@@ -165,7 +166,8 @@ class Vehicle:
                             the frame name used in vehicle.yaml are the same.",
                         )
                         Console.quit(
-                            "Your vehicle.yaml or your mission.yaml are", "malformed.",
+                            "Your vehicle.yaml or your mission.yaml are",
+                            "malformed.",
                         )
                     self.camera2.load(self.data[camera_name])
                 if len(mission.image.cameras) > 2:
@@ -184,7 +186,8 @@ class Vehicle:
                             the frame name used in vehicle.yaml are the same.",
                         )
                         Console.quit(
-                            "Your vehicle.yaml or your mission.yaml are ", "malformed.",
+                            "Your vehicle.yaml or your mission.yaml are ",
+                            "malformed.",
                         )
                     self.camera3.load(self.data[camera_name])
                 if "chemical" in self.data:

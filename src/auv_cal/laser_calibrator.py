@@ -17,7 +17,6 @@ import joblib
 import numpy as np
 import yaml
 
-
 from auv_cal.camera_calibrator import resize_with_padding
 from auv_cal.plane_fitting import Plane
 from auv_cal.plot_points_and_planes import plot_pointcloud_and_planes
@@ -597,7 +596,7 @@ class LaserCalibrator:
         stereo_camera_model: StereoCamera,
         config: Dict,
         num_uncert_planes: int,
-        overwrite: bool = False
+        overwrite: bool = False,
     ):
         self.data = []
 
@@ -828,7 +827,7 @@ class LaserCalibrator:
         # print("Min z: " + str(np.min(inliers_cloud[:, 2])))
         # print("Max z: " + str(np.max(inliers_cloud[:, 2])))
         # print("Std z: " + str(std_z))
-        min_dist = 2 * math.sqrt(std_y ** 2 + std_z ** 2)
+        min_dist = 2 * math.sqrt(std_y**2 + std_z**2)
         Console.info("Minimum distance for poisson disc sampling: {}".format(min_dist))
         min_sin_angle = 0.866  # = sin(60°)
 
@@ -1143,7 +1142,8 @@ class LaserCalibrator:
         Console.info("Converted points to NED")
 
         save_cloud(
-            processed_folder / ("points_" + self.camera_name + ".ply"), point_cloud_ned,
+            processed_folder / ("points_" + self.camera_name + ".ply"),
+            point_cloud_ned,
         )
         if self.two_lasers:
             save_cloud(

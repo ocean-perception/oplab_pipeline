@@ -189,7 +189,9 @@ def call_parse(args):
         sys.exit(1)
 
     # When in multidive mode, check if all camerasystem are the same. For this we test camera_system.camera_system
-    if len(camerasystem_list) > 1:       # this test is still valid for single dive mode, so we could remove this [if] sentence
+    if (
+        len(camerasystem_list) > 1
+    ):  # this test is still valid for single dive mode, so we could remove this [if] sentence
         camera_system = camerasystem_list[0]
         for cs in camerasystem_list:
             # the first entry will be repeated, no problem with that
@@ -210,18 +212,23 @@ def call_parse(args):
         for cc in correct_config_list:
             # Check if the relevant fields of the configuration are the same (including per-dive camera setup)
             if not correct_config.is_equivalent(cc):
-                Console.error("Configurations [correct_config] do not match!")
-                sys.exit(1)
+                Console.quit("Configurations [correct_config] do not match!")
         Console.warn("Configurations are equivalent for all dives.")
     else:
-        correct_config = correct_config_list[0] # only one element in the list, copy it for single dive mode (this could be moved outside)
-
+        # only one element in the list, copy it for single dive mode (this could be moved outside)
+        correct_config = correct_config_list[0]
 
     camerasystem = camerasystem_list[0]
     for camera in camerasystem.cameras:
         # check if the camera also exists in the configuration
-        if camera.name not in [c.camera_name for c in correct_config.configs.camera_configs]: # ignore if not present
-            Console.warn("Camera [", camera.name, "] defined in <camera.yaml> but not found in configuration. Skipping...")
+        if camera.name not in [
+            c.camera_name for c in correct_config.configs.camera_configs
+        ]:  # ignore if not present
+            Console.warn(
+                "Camera [",
+                camera.name,
+                "] defined in <camera.yaml> but not found in configuration. Skipping...",
+            )
         else:
             Console.info("Parsing for camera", camera.name)
             # Create a Corrector object for each camera with empty configuration
@@ -454,7 +461,8 @@ def load_configuration_and_camera_system(path, suffix=None):
         )
     if path_correct_images.exists():
         Console.info(
-            "Configuration file correct_images.yaml file found at", path_correct_images,
+            "Configuration file correct_images.yaml file found at",
+            path_correct_images,
         )
     else:
         default_file_path_correct_config.copy(path_correct_images)

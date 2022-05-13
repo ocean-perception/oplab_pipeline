@@ -136,7 +136,10 @@ def parse_usbl_dump(mission, vehicle, category, ftype, outpath):
                     heading_ship = 0
 
                     lateral_distance_target, bearing_target = latlon_to_metres(
-                        latitude, longitude, latitude_reference, longitude_reference,
+                        latitude,
+                        longitude,
+                        latitude_reference,
+                        longitude_reference,
                     )
                     eastings_target = (
                         math.sin(bearing_target * math.pi / 180.0)

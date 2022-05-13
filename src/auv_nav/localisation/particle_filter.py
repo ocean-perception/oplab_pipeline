@@ -76,9 +76,9 @@ class ParticleFilter:
                 usbl_noise_std_offset = 5
                 usbl_noise_std_factor = 0.01
                 distance = math.sqrt(
-                    usbl_datapoint.northings ** 2
-                    + usbl_datapoint.eastings ** 2
-                    + usbl_datapoint.depth ** 2
+                    usbl_datapoint.northings**2
+                    + usbl_datapoint.eastings**2
+                    + usbl_datapoint.depth**2
                 )
                 error = usbl_noise_sigma_factor * (
                     usbl_noise_std_offset + usbl_noise_std_factor * distance
@@ -123,7 +123,9 @@ class ParticleFilter:
                 return max([x_velocity_std, y_velocity_std, z_velocity_std])
 
         def imu_noise(
-            previous_dvlimu_data_point, current_dvlimu_data_point, particle_list_data,
+            previous_dvlimu_data_point,
+            current_dvlimu_data_point,
+            particle_list_data,
         ):  # sensor2 noise
             imu_noise = (
                 0.003 * imu_noise_sigma_factor
@@ -308,7 +310,7 @@ class ParticleFilter:
             weights_list = []
             for i in particles_list[-1]:
                 weights_list.append(i.weight)
-            effectiveParticleSize = 1 / sum([i ** 2 for i in weights_list])
+            effectiveParticleSize = 1 / sum([i**2 for i in weights_list])
 
             if effectiveParticleSize < len(particles_list[-1]) / 2:
                 resample_flag = True

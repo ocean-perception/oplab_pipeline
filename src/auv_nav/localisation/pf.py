@@ -23,8 +23,8 @@ from oplab import Console
 
 
 def gaussian_pdf(mu, sigma, x):
-    num = -((mu - x) ** 2) / (sigma ** 2) / 2.0
-    den = math.sqrt(2.0 * math.pi * (sigma ** 2))
+    num = -((mu - x) ** 2) / (sigma**2) / 2.0
+    den = math.sqrt(2.0 * math.pi * (sigma**2))
     return math.exp(num) / den
 
 
@@ -90,7 +90,7 @@ class UsblObservationModel:
         self.z = value.depth
         # TODO: Could we use a 3D Gaussian instead of a 1D?
         sigma = math.sqrt(
-            value.northings_std ** 2 + value.eastings_std ** 2 + value.depth_std ** 2
+            value.northings_std**2 + value.eastings_std**2 + value.depth_std**2
         )
         self.std = self.usbl_noise_sigma_factor * sigma
 
@@ -224,7 +224,11 @@ class DeadReckoningMovementModel:
 
 class ParticleFilter:
     def __init__(
-        self, num_particles, movement_model, observation_model, expected_iterations=0,
+        self,
+        num_particles,
+        movement_model,
+        observation_model,
+        expected_iterations=0,
     ):
         self.particles = [Particle()] * num_particles
         self.particles_history = []
@@ -466,17 +470,20 @@ def run_particle_filter(
     )
     Console.info(
         "\t* IMU noise std: f(x)={}x+{} deg".format(
-            sensors_std["orientation"]["factor"], sensors_std["orientation"]["offset"],
+            sensors_std["orientation"]["factor"],
+            sensors_std["orientation"]["offset"],
         )
     )
     Console.info(
         "\t* Depth noise std: f(x)={}x+{} meters".format(
-            sensors_std["position_z"]["factor"], sensors_std["position_z"]["offset"],
+            sensors_std["position_z"]["factor"],
+            sensors_std["position_z"]["offset"],
         )
     )
     Console.info(
         "\t* USBL noise std: f(x)={}x+{} meters".format(
-            sensors_std["position_xy"]["factor"], sensors_std["position_xy"]["offset"],
+            sensors_std["position_xy"]["factor"],
+            sensors_std["position_xy"]["offset"],
         )
     )
     Console.info("Running {} iterations...".format(len(dr_list)))

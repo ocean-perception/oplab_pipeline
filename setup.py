@@ -151,7 +151,7 @@ def run_setup():
             "matplotlib>=3.2.1",
             "numba>=0.51.2",
             "numpy>=1.17.3",
-            "opencv-python>=4.1.2",
+            "opencv-python-headless>=4.1.2",
             "pandas>=0.25.3",
             "pillow>=7.2.0",
             "plotly>=4.7.1",

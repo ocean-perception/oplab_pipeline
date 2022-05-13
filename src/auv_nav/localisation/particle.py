@@ -73,8 +73,8 @@ class Particle:
 
     def Gaussian(self, mu, sigma, x):
         # calculates the probability of x for 1-dim Gaussian with mean mu and sigma (standard deviation) # noqa
-        return math.exp(-((mu - x) ** 2) / (sigma ** 2) / 2.0) / math.sqrt(
-            2.0 * math.pi * (sigma ** 2)
+        return math.exp(-((mu - x) ** 2) / (sigma**2) / 2.0) / math.sqrt(
+            2.0 * math.pi * (sigma**2)
         )
 
     def measurement_prob(self, measurement, measurement_error):

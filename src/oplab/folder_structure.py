@@ -8,7 +8,7 @@ See LICENSE.md file in the project root for full license information.
 
 import shutil
 from pathlib import Path
-from typing import Union, Optional
+from typing import Optional, Union
 
 from .console import Console
 
@@ -36,7 +36,10 @@ def change_subfolder(path: Path, prior: str, new: str) -> Path:
         if not new_path.exists():
             dummy_path = Path(*parts[:-1])
             Console.info(
-                "The path", path, "does not exist. I am creating ", "it for you.",
+                "The path",
+                path,
+                "does not exist. I am creating ",
+                "it for you.",
             )
             dummy_path.mkdir(exist_ok=True, parents=True)
     elif new_path.is_file():

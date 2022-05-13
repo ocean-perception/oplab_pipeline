@@ -64,7 +64,7 @@ class RunningMeanStd:
             return None
 
 
-def running_mean_std(file_list, loader=default.loader):
+def running_mean_std(file_list, loader=default.loader, width=None, height=None):
     """Compute running mean and std of a list of image filenames
 
     Parameters
@@ -80,7 +80,11 @@ def running_mean_std(file_list, loader=default.loader):
         Mean and std arrays
     """
     count = 0
-    tmp = loader(file_list[0])
+    tmp = None
+    if width is not None and height is not None:
+        tmp = loader(file_list[0], width, height)
+    else:
+        tmp = loader(file_list[0])
     dimensions = tmp.shape
 
     mean = np.zeros(dimensions, dtype=np.float32)
@@ -88,7 +92,10 @@ def running_mean_std(file_list, loader=default.loader):
     std = np.zeros(dimensions, dtype=np.float32)
 
     for item in file_list:
-        value = loader(item).astype(np.float32)
+        if width is not None and height is not None:
+            value = loader(item, width, height).astype(np.float32)
+        else:
+            value = loader(item).astype(np.float32)
         count += 1
         delta = value - mean
         mean += delta / count

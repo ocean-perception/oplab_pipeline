@@ -238,7 +238,12 @@ class BodyVelocity(OutputFormat):
         if not self.valid():
             return
         [self.x_velocity, self.y_velocity, self.z_velocity] = body_to_inertial(
-            0, 0, self.yaw_offset, self.x_velocity, self.y_velocity, self.z_velocity,
+            0,
+            0,
+            self.yaw_offset,
+            self.x_velocity,
+            self.y_velocity,
+            self.z_velocity,
         )
         [
             self.x_velocity_std,
@@ -262,7 +267,7 @@ class BodyVelocity(OutputFormat):
             if msg.altitude < 0:
                 # No bottom lock, no good.
                 return
-            if np.sqrt(msg.velocity.x ** 2 + msg.velocity.y ** 2) < 2.5:
+            if np.sqrt(msg.velocity.x**2 + msg.velocity.y**2) < 2.5:
                 self.x_velocity = msg.velocity.x
                 self.y_velocity = msg.velocity.y
                 self.z_velocity = msg.velocity.z
@@ -584,7 +589,12 @@ class Orientation(OutputFormat):
     def apply_std_offset(self):
         # account for sensor rotational offset
         [self.roll_std, self.pitch_std, self.heading_std] = body_to_inertial(
-            0, 0, self.yaw_offset, self.roll_std, self.pitch_std, self.yaw_std,
+            0,
+            0,
+            self.yaw_offset,
+            self.roll_std,
+            self.pitch_std,
+            self.yaw_std,
         )
 
     def from_eiva_navipac(self, line):
@@ -1057,6 +1067,7 @@ class Usbl(OutputFormat):
         self.distance = None
         self.bearing = None
         self.category = Category.USBL
+        self.m_declination = None
 
         if std_factor is not None:
             self.std_factor = std_factor
@@ -1081,6 +1092,26 @@ class Usbl(OutputFormat):
             and self.eastings is not None
             and self.northings is not None
             and self.epoch_timestamp is not None
+        )
+
+    def set_magnetic_declination(self, m_declination):
+        self.m_declination = m_declination
+
+    def apply_declination(self):
+        n = self.northings * np.cos(self.m_declination) - self.eastings * np.sin(
+            self.m_declination
+        )
+        e = self.northings * np.sin(self.m_declination) + self.eastings * np.cos(
+            self.m_declination
+        )
+        self.northings = n
+        self.eastings = e
+        # Convert to lat lon from the reference
+        self.latitude, self.longitude = metres_to_latlon(
+            self.latitude_reference,
+            self.longitude_reference,
+            self.eastings,
+            self.northings,
         )
 
     def from_ros(self, msg, msg_type, output_dir):
@@ -1122,15 +1153,29 @@ class Usbl(OutputFormat):
                 self.fill_from_lat_lon_depth()
 
         elif msg_type == "sensor_msgs/NavSatFix":
-            self.latitude = msg.latitude
-            self.longitude = msg.longitude
-            self.depth = 0.0  # GPS measurement
+            if msg.status.status == 0:
+                self.latitude = msg.latitude
+                self.longitude = msg.longitude
+                self.depth = 0.0  # GPS measurement
 
-            self.fill_from_lat_lon_depth()
+                self.fill_from_lat_lon_depth()
 
-            self.eastings_std = msg.position_covariance[0]
-            self.northings_std = msg.position_covariance[4]
-            self.depth_std = msg.position_covariance[8]
+                self.eastings_std = msg.position_covariance[0]
+                self.northings_std = msg.position_covariance[4]
+                self.depth_std = msg.position_covariance[8]
+        elif msg_type == "evologics_ros_sync/EvologicsUsbllong":
+            self.northings = msg.N
+            self.eastings = msg.E
+            self.depth = msg.D
+
+            # Convert to lat lon from the reference
+            self.latitude, self.longitude = metres_to_latlon(
+                self.latitude_reference,
+                self.longitude_reference,
+                self.eastings,
+                self.northings,
+            )
+
         else:
             Console.quit("USBL ROS parser for", msg_type, "not supported.")
         self.epoch_timestamp = ros_stamp_to_epoch(msg.header.stamp) - self.tz_offset_s
@@ -1224,12 +1269,15 @@ class Usbl(OutputFormat):
             )
 
             # determine range to input to uncertainty model
-            distance = sqrt(self.distance_to_ship ** 2 + self.depth ** 2)
+            distance = sqrt(self.distance_to_ship**2 + self.depth**2)
             distance_std = sensor_std["factor"] * distance + sensor_std["offset"]
 
             # determine uncertainty in terms of latitude and longitude
             latitude_offset, longitude_offset = metres_to_latlon(
-                abs(self.latitude), abs(self.longitude), distance_std, distance_std,
+                abs(self.latitude),
+                abs(self.longitude),
+                distance_std,
+                distance_std,
             )
             self.latitude_std = abs(abs(self.latitude) - latitude_offset)
             self.longitude_std = abs(abs(self.longitude) - longitude_offset)
@@ -1338,7 +1386,7 @@ class Usbl(OutputFormat):
         if self.distance_to_ship is not None:
             if self.distance_to_ship > self.depth and self.distance_to_ship > 0:
                 try:
-                    distance_range = sqrt(self.distance_to_ship ** 2 - self.depth ** 2)
+                    distance_range = sqrt(self.distance_to_ship**2 - self.depth**2)
                 except ValueError:
                     print("Value error:")
                     print("Value distance_to_ship: " + str(self.distance_to_ship))
@@ -1654,7 +1702,8 @@ class SyncedOrientationBodyVelocity(OutputFormat):
 
     def to_sidescan_row(self):
         datetime_str = time.strftime(
-            "%Y%m%d %H%M%S", time.gmtime(self.epoch_timestamp),
+            "%Y%m%d %H%M%S",
+            time.gmtime(self.epoch_timestamp),
         )
         lat = self.latitude if self.latitude is not None else 0.0
         lon = self.longitude if self.latitude is not None else 0.0
@@ -1795,7 +1844,10 @@ class Camera(SyncedOrientationBodyVelocity):
         latitude_reference, longitude_reference = latlon_reference
 
         [self.latitude, self.longitude] = metres_to_latlon(
-            latitude_reference, longitude_reference, other.eastings, other.northings,
+            latitude_reference,
+            longitude_reference,
+            other.eastings,
+            other.northings,
         )
 
         self.updated = True

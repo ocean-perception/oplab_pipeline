@@ -163,10 +163,10 @@ class CircularCone:
         d_co = np.dot(ray_vec, co)
         co_co = np.dot(co, co)
 
-        a = d_v ** 2 - cos2
+        a = d_v**2 - cos2
         b = 2 * (d_v * co_v - d_co * cos2)
-        c = co_v ** 2 - co_co * cos2
-        discriminant = b ** 2 - 4 * a * c
+        c = co_v**2 - co_co * cos2
+        discriminant = b**2 - 4 * a * c
         if discriminant < 0:
             return None, None
         elif discriminant == 0:

@@ -156,8 +156,12 @@ def parse_seaxerocks_images(mission, vehicle, category, ftype, outpath):
     for i in range(len(camera1_list)):
         # find corresponding timestamp even if some images are deleted
         if camera1_index[i] == stereo_index[j]:
-            epoch_timestamp_camera1.append(epoch_timestamp_stereo[j] + camera1_timeoffset)
-            epoch_timestamp_camera2.append(epoch_timestamp_stereo[j] + camera2_timeoffset)
+            epoch_timestamp_camera1.append(
+                epoch_timestamp_stereo[j] + camera1_timeoffset
+            )
+            epoch_timestamp_camera2.append(
+                epoch_timestamp_stereo[j] + camera2_timeoffset
+            )
             if ftype == "acfr":
                 date1 = epoch_to_day(epoch_timestamp_stereo[0] + camera1_timeoffset)
                 date2 = epoch_to_day(epoch_timestamp_stereo[0] + camera2_timeoffset)
@@ -286,7 +290,9 @@ def parse_seaxerocks_images(mission, vehicle, category, ftype, outpath):
     for i in range(len(camera3_list)):
         camera3_filename.append(
             "{}/image{}.{}".format(
-                camera3_list[i][s : (s + 3)], camera3_list[i], extension,  # noqa: E203
+                camera3_list[i][s : (s + 3)],
+                camera3_list[i],
+                extension,  # noqa: E203
             )
         )
         camera3_index.append(camera3_list[i])

@@ -10,14 +10,18 @@ class TestFilenameToDate(unittest.TestCase):
         conv = FilenameToDate("xxxYYYYMMDDxhhmmssxfffxxxxx.xxx")
         d = conv("PR_20180811_153729_762_RC16.tif")
         self.assertEqual(
-            d, 1534001849.762, "Filename to date conversion is wrong for AcfrStandard",
+            d,
+            1534001849.762,
+            "Filename to date conversion is wrong for AcfrStandard",
         )
 
     def testBiocam(self):
         conv = FilenameToDate("YYYYMMDDxhhmmssxfffuuuxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxx")
         d = conv("20190913_101347_962382_20190913_101346_411014_pcoc.tif")
         self.assertEqual(
-            d, 1568369627.962382, "Filename to date conversion is wrong for BioCam",
+            d,
+            1568369627.962382,
+            "Filename to date conversion is wrong for BioCam",
         )
 
 
@@ -62,10 +66,14 @@ class TestCameraSystem(unittest.TestCase):
         content = ""
         for item in node:
             self.assertIn(
-                "name", item, "Field name is not present in timestamp file columns",
+                "name",
+                item,
+                "Field name is not present in timestamp file columns",
             )
             self.assertIn(
-                "content", item, "Field name is not present in timestamp file columns",
+                "content",
+                item,
+                "Field name is not present in timestamp file columns",
             )
             content += item["content"]
 
@@ -163,7 +171,9 @@ class TestCameraSystem(unittest.TestCase):
         self.assertEqual(cs.cameras[2].type, "grayscale", "Wrong camera type")
         self.assertEqual(cs.cameras[2].bit_depth, 8, "Wrong camera bit_depth")
         self.assertEqual(
-            cs.cameras[2].path, "image/SeaXerocksData*/LM165", "Wrong camera path",
+            cs.cameras[2].path,
+            "image/SeaXerocksData*/LM165",
+            "Wrong camera path",
         )
         self.assertEqual(cs.cameras[2].extension, "tif", "Wrong camera extension")
         self.assertEqual(
@@ -189,7 +199,9 @@ class TestCameraSystem(unittest.TestCase):
         self.assertEqual(cs.cameras[0].type, "rggb", "Wrong camera type")
         self.assertEqual(cs.cameras[0].bit_depth, 16, "Wrong camera bit_depth")
         self.assertEqual(
-            cs.cameras[0].path, "image/cam61003146_strobed", "Wrong camera path",
+            cs.cameras[0].path,
+            "image/cam61003146_strobed",
+            "Wrong camera path",
         )
         self.assertEqual(cs.cameras[0].extension, "tif", "Wrong camera extension")
         self.assertEqual(
@@ -202,7 +214,9 @@ class TestCameraSystem(unittest.TestCase):
         self.assertEqual(cs.cameras[1].type, "grayscale", "Wrong camera type")
         self.assertEqual(cs.cameras[1].bit_depth, 16, "Wrong camera bit_depth")
         self.assertEqual(
-            cs.cameras[1].path, "image/cam61004444_strobed", "Wrong camera path",
+            cs.cameras[1].path,
+            "image/cam61004444_strobed",
+            "Wrong camera path",
         )
         self.assertEqual(cs.cameras[1].extension, "tif", "Wrong camera extension")
         self.assertEqual(

@@ -36,9 +36,7 @@ from oplab import Console, Mission, Vehicle, get_processed_folder
 
 def koyo20rov_to_oplab(args):
     if args.dive_path is None:
-        Console.error(
-            "Please provide a dive path using --dive-path (-i)"
-        )
+        Console.error("Please provide a dive path using --dive-path (-i)")
         Console.quit("Missing comandline arguments")
     # Do all necessary pathchecks on creating of class instance
     parser = RovParser(args.dive_path)
@@ -70,7 +68,10 @@ def hybis_to_oplab(args):
         Console.error("Please provide an output path")
         Console.quit("Missing comandline arguments")
     parser = HybisParser(
-        args.navigation_file, args.image_path, args.reference_lat, args.reference_lon,
+        args.navigation_file,
+        args.image_path,
+        args.reference_lat,
+        args.reference_lon,
     )
     force_overwite = args.force
     filepath = get_processed_folder(args.output_folder)

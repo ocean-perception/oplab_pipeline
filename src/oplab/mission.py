@@ -23,7 +23,7 @@ def represent_ordereddict(dumper, data):
 
         value.append((node_key, node_value))
 
-    return yaml.nodes.MappingNode(u"tag:yaml.org,2002:map", value)
+    return yaml.nodes.MappingNode("tag:yaml.org,2002:map", value)
 
 
 yaml.add_representer(OrderedDict, represent_ordereddict)
@@ -86,7 +86,7 @@ class CameraEntry:
         node["origin"] = self.origin
         node["type"] = self.type
         node["path"] = self.path
-        if hasattr(self, 'timeoffset'):
+        if hasattr(self, "timeoffset"):
             node["timeoffset"] = self.timeoffset
 
 
@@ -445,5 +445,8 @@ class Mission:
                     mission_dict["image"] = OrderedDict()
                     self.image.write(mission_dict["image"])
                 yaml.dump(
-                    mission_dict, f, allow_unicode=True, default_flow_style=False,
+                    mission_dict,
+                    f,
+                    allow_unicode=True,
+                    default_flow_style=False,
                 )
