@@ -475,6 +475,7 @@ class Corrector:
                         "auv_nav parse and process first",
                     )
                 self.distance_path = json_list[0]
+                Console.info("JSON:", self.distance_path)
             metric_path = self.path_processed / self.distance_path
             # Try if ekf exists:
             full_metric_path = metric_path / "csv" / "ekf"
@@ -519,6 +520,9 @@ class Corrector:
 
             # Check images exist:
             valid_idx = []
+            if "relative_path" not in dataframe:
+                Console.error("CSV FILE:", self.altitude_csv_path)
+                Console.quit("Your CSV navigation file does not have a relative_path column")
             for idx, entry in enumerate(dataframe["relative_path"]):
                 im_path = self.path_raw / entry
                 if im_path.exists() or self.camera.extension == "bag":
