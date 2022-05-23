@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2020, University of Southampton
+Copyright (c) 2022, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -526,7 +526,9 @@ class Corrector:
             valid_idx = []
             if "relative_path" not in dataframe:
                 Console.error("CSV FILE:", self.altitude_csv_path)
-                Console.quit("Your CSV navigation file does not have a relative_path column")
+                Console.quit(
+                    "Your CSV navigation file does not have a relative_path column"
+                )
             for idx, entry in enumerate(dataframe["relative_path"]):
                 if self.camera.extension == "bag":
                     valid_idx.append(idx)
@@ -695,7 +697,7 @@ class Corrector:
         distance_vector = None
 
         if self.depth_map_list and self.distance_metric == "depth_map":
-            Console.info("Computing depth map histogram with", hist_bins.size, " bins")
+            Console.info("Computing depth map histogram with", hist_bins.size, "bins")
 
             distance_vector = np.zeros((len(self.depth_map_list), 1))
             for i, dm_file in enumerate(self.depth_map_list):
@@ -703,7 +705,7 @@ class Corrector:
                 distance_vector[i] = dm_np.mean()
 
         elif self.altitude_list and self.distance_metric == "altitude":
-            Console.info("Computing altitude histogram with", hist_bins.size, " bins")
+            Console.info("Computing altitude histogram with", hist_bins.size, "bins")
             distance_vector = np.array(self.altitude_list)
 
         if distance_vector is not None:
@@ -751,6 +753,7 @@ class Corrector:
                     self.image_height,
                     self.image_width,
                     self.image_channels,
+                    self.attenuation_parameters_folder,
                 )
             )
 
@@ -960,7 +963,7 @@ class Corrector:
                     loader=depth_map.loader,
                     width=self.image_width,
                     height=self.image_height,
-                    ignore_zeroes=True
+                    ignore_zeroes=True,
                 )[0]
                 distance_bin_sample = bin_distances_sample.mean()
 
