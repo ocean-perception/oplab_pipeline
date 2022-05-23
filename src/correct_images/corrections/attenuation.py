@@ -198,13 +198,13 @@ def calculate_attenuation_parameters(
             plt.plot(
                 distances[:, i_pixel],
                 p0 * np.exp(p1 * distances[:, i_pixel]) + p2,
-                colour="black",
+                color="black",
                 alpha=0.1,
             )
             plt.plot(
                 distances[:, i_pixel],
                 images[:, i_pixel, i_channel],
-                colour="blue",
+                color="blue",
                 alpha=0.1,
             )
     plt.show()
