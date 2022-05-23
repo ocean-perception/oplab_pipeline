@@ -6,6 +6,7 @@ Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
 
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -75,8 +76,9 @@ class testCorrections(unittest.TestCase):
             [len(self.distance_matrices), image_height * image_width]
         )
 
+        test_directory = Path(tempfile.gettempdir())
         attenuation_parameters = corrections.calculate_attenuation_parameters(
-            images, distances, image_height, image_width, image_channels
+            images, distances, image_height, image_width, image_channels, test_directory
         )
 
         print(attenuation_parameters.shape)
