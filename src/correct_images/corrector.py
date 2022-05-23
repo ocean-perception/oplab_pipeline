@@ -206,6 +206,8 @@ class Corrector:
         # Define basic filepaths
         if self.correction_method == "colour_correction":
             p = Path(self.attenuation_parameters_folder)
+            self.images_map_filepath = p / "images_map.npy"
+            self.distances_map_filepath = p / "distances_map.npy"
             self.attenuation_params_filepath = p / "attenuation_parameters.npy"
             self.correction_gains_filepath = p / "correction_gains.npy"
             self.corrected_mean_filepath = p / "image_corrected_mean.npy"
@@ -526,7 +528,9 @@ class Corrector:
             valid_idx = []
             if "relative_path" not in dataframe:
                 Console.error("CSV FILE:", self.altitude_csv_path)
-                Console.quit("Your CSV navigation file does not have a relative_path column")
+                Console.quit(
+                    "Your CSV navigation file does not have a relative_path column"
+                )
             for idx, entry in enumerate(dataframe["relative_path"]):
                 if self.camera.extension == "bag":
                     valid_idx.append(idx)
@@ -742,6 +746,10 @@ class Corrector:
                     )
                     for idx_bin in range(hist_bins.size - 1)
                 )
+
+            # Save images map and distances map
+            np.save(self.images_map_filepath, images_map)
+            np.save(self.distances_map_filepath, distances_map)
 
             # calculate attenuation parameters per channel
             self.image_attenuation_parameters = (
@@ -960,7 +968,7 @@ class Corrector:
                     loader=depth_map.loader,
                     width=self.image_width,
                     height=self.image_height,
-                    ignore_zeroes=True
+                    ignore_zeroes=True,
                 )[0]
                 distance_bin_sample = bin_distances_sample.mean()
 
