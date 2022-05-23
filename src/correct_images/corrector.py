@@ -236,10 +236,10 @@ class Corrector:
             correct_config = correct_config_list[i]
 
             Console.info("Parsing dive:", path)
-            # Console.info("Setting path...")
+            # Console.info("Setting path")
             self.set_path(path)  # update the dive path
 
-            # Console.info("Loading configuration...")
+            # Console.info("Loading configuration")
             self.load_configuration(correct_config)  # load the dive config
             # Set the user specified list - if any
             self.user_specified_image_list = self.user_specified_image_list_parse
@@ -250,7 +250,7 @@ class Corrector:
         if len(self.altitude_list) < 3:
             Console.quit(
                 "Insufficient number of images to compute attenuation ",
-                "parameters...",
+                "parameters",
             )
 
         # Show the total number of images after filtering + merging the dives. It should match the sum of the filtered images of each dive.
@@ -260,7 +260,7 @@ class Corrector:
                 len(self.camera_image_list),
             )
 
-        Console.info("Output directories created / existing...")
+        Console.info("Output directories created / existing")
 
         if self.correction_method == "colour_correction":
             self.get_altitude_and_depth_maps()
@@ -281,7 +281,7 @@ class Corrector:
                 copy_file_if_exists(self.raw_mean_filepath, dest_dir)
                 copy_file_if_exists(self.raw_std_filepath, dest_dir)
         elif self.correction_method == "manual_balance":
-            Console.info("run process for manual_balance...")
+            Console.info("run process for manual_balance")
 
     def process(self):
         # Set the user specified list if any
@@ -303,16 +303,16 @@ class Corrector:
             else:
                 if self.distance_metric != "uniform":
                     Console.quit(
-                        "Code does not find attenuation_parameters.npy...",
-                        "Please run parse before process...",
+                        "Code does not find attenuation_parameters.npy.",
+                        "Please run parse before process.",
                     )
             if self.correction_gains_filepath.exists():
                 self.correction_gains = np.load(self.correction_gains_filepath)
             else:
                 if self.distance_metric != "uniform":
                     Console.quit(
-                        "Code does not find correction_gains.npy...",
-                        "Please run parse before process...",
+                        "Code does not find correction_gains.npy.",
+                        "Please run parse before process.",
                     )
             if self.corrected_mean_filepath.exists():
                 self.image_corrected_mean = np.load(
@@ -321,8 +321,8 @@ class Corrector:
             else:
                 if self.distance_metric != "uniform":
                     Console.quit(
-                        "Code does not find image_corrected_mean.npy...",
-                        "Please run parse before process...",
+                        "Code does not find image_corrected_mean.npy.",
+                        "Please run parse before process.",
                     )
             if self.corrected_std_filepath.exists():
                 self.image_corrected_std = np.load(
@@ -485,6 +485,7 @@ class Corrector:
                         "auv_nav parse and process first",
                     )
                 self.distance_path = json_list[0]
+                Console.info("JSON:", self.distance_path)
             metric_path = self.path_processed / self.distance_path
             # Try if ekf exists:
             full_metric_path = metric_path / "csv" / "ekf"
@@ -523,6 +524,9 @@ class Corrector:
 
             # Check images exist:
             valid_idx = []
+            if "relative_path" not in dataframe:
+                Console.error("CSV FILE:", self.altitude_csv_path)
+                Console.quit("Your CSV navigation file does not have a relative_path column")
             for idx, entry in enumerate(dataframe["relative_path"]):
                 if self.camera.extension == "bag":
                     valid_idx.append(idx)
@@ -600,21 +604,24 @@ class Corrector:
         elif self.distance_metric == "depth_map":
             path_depth = self.path_processed / "depth_map"
             if not path_depth.exists():
-                Console.quit("Depth maps not found...")
+                Console.quit(
+                    "Depth maps folder", path_depth, "does not exist. Aborting..."
+                )
             else:
                 Console.info("Path to depth maps found...")
-                depth_map_list = list(path_depth.glob("*.npy"))
-                self.depth_map_list = [
-                    Path(item)
-                    for item in depth_map_list
-                    for image_path in self.camera_image_list
-                    if Path(image_path).stem in Path(item).stem
-                ]
+                depth_map_list = list(path_depth.glob("*map.npy"))
+                self.depth_map_list = []
+                for item in depth_map_list:
+                    for image_path in self.camera_image_list:
+                        if Path(image_path).stem in Path(item).stem:
+                            self.depth_map_list.append(Path(item))
+                            break
+                Console.info("...done generating depth_map_list")
 
                 if len(self.camera_image_list) != len(self.depth_map_list):
                     Console.quit(
-                        "The number of images does not coincide with the ",
-                        "number of depth maps.",
+                        f"The number of images ({len(self.camera_image_list)})",
+                        f"is different from the number of depth maps ({len(self.depth_map_list)}).",
                     )
 
     # compute correction parameters either for attenuation correction or
@@ -623,6 +630,7 @@ class Corrector:
         """Generates image stats and attenuation coefficients and saves the
         parameters for process"""
 
+        Console.info("Generating image stats and attenuation coefficients...")
         if len(self.altitude_list) < 3:
             Console.quit(
                 "Insufficient number of images to compute attenuation ",
@@ -692,7 +700,7 @@ class Corrector:
             distance_vector = np.zeros((len(self.depth_map_list), 1))
             for i, dm_file in enumerate(self.depth_map_list):
                 dm_np = depth_map.loader(dm_file, self.image_width, self.image_height)
-                distance_vector[i] = dm_np.mean(axis=1)
+                distance_vector[i] = dm_np.mean()
 
         elif self.altitude_list and self.distance_metric == "altitude":
             Console.info("Computing altitude histogram with", hist_bins.size, " bins")
@@ -904,7 +912,7 @@ class Corrector:
                 img_std=image_raw_std,
             )
 
-        Console.info("Correction parameters saved...")
+        Console.info("Correction parameters saved")
 
     def compute_distance_bin(
         self,
@@ -948,8 +956,13 @@ class Corrector:
             else:
                 bin_distances = [self.depth_map_list[i] for i in tmp_idxs]
                 bin_distances_sample = running_mean_std(
-                    bin_distances, loader=self.loader
+                    bin_distances,
+                    loader=depth_map.loader,
+                    width=self.image_width,
+                    height=self.image_height,
+                    ignore_zeroes=True
                 )[0]
+                distance_bin_sample = bin_distances_sample.mean()
 
             if self.smoothing == "mean":
                 bin_images_sample = running_mean_std(bin_images, loader=self.loader)[0]
@@ -977,9 +990,9 @@ class Corrector:
             fig = plt.figure()
             plt.imshow(bin_images_sample)
             plt.colorbar()
-            plt.title("Image bin " + str(idx_bin))
+            plt.title(f"Image bin {idx_bin}, altitude: {distance_bin_sample:.2f}")
             fig_name = base_path / (
-                "bin_images_sample_" + str(distance_bin_sample) + "m.png"
+                f"bin_image_{idx_bin:02}_{distance_bin_sample:05.2f}m.png"
             )
             # Console.info("Saved figure at", fig_name)
             plt.savefig(fig_name, dpi=600)
@@ -988,9 +1001,9 @@ class Corrector:
             fig = plt.figure()
             plt.imshow(bin_distances_sample)
             plt.colorbar()
-            plt.title("Distance bin " + str(idx_bin))
+            plt.title(f"Distance bin {idx_bin}, altitude: {distance_bin_sample:.2f}")
             fig_name = base_path / (
-                "bin_distances_sample_" + str(distance_bin_sample) + "m.png"
+                f"bin_distance_sample_{idx_bin:02}_{distance_bin_sample:05.2f}m.png"
             )
             # Console.info("Saved figure at", fig_name)
             plt.savefig(fig_name, dpi=600)
@@ -1015,10 +1028,10 @@ class Corrector:
             camera_params_file_path = camera_params_folder / camera_params_filename
 
             if not camera_params_file_path.exists():
-                Console.info("Calibration file not found...")
+                Console.info("Calibration file not found")
                 self.undistort = False
             else:
-                Console.info("Calibration file found...")
+                Console.info("Calibration file found")
                 self.camera_params_file_path = camera_params_file_path
 
         Console.info(
@@ -1043,7 +1056,7 @@ class Corrector:
         dataframe = pd.DataFrame(image_files)
         filelist_path = self.output_images_folder / "filelist.csv"
         dataframe.to_csv(filelist_path)
-        Console.info("Processing of images is completed...")
+        Console.info("Processing of images is completed")
 
     def process_image(self, idx):
         """Execute series of corrections for an image

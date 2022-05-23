@@ -6,6 +6,6 @@
 # W503 Line break occurred before a binary operator
 # C901 McCabe complexity test.
 ignore = E203, W503, E501, E731, C901
-max-line-length = 79
+max-line-length = 127
 max-complexity = 18
 exclude = __init__.py
