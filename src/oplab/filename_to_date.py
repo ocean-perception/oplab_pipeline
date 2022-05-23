@@ -145,6 +145,8 @@ class FilenameToDate:
         filename = Path(filename)
         filestream = filename.open("r")
         lines = filestream.readlines()
+        if len(lines) == 0:
+            return None
         header = lines[0]
         first_row = lines[1]
 
