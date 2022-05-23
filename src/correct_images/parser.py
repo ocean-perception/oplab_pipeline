@@ -32,8 +32,6 @@ class ColourCorrection:
         method of sampling intensity values
     window_size : int
         control how noisy the parameters can be
-    outlier_reject : bool
-        flag for choosing filtering image outliers
     """
 
     def __init__(self, node):
@@ -65,7 +63,6 @@ class ColourCorrection:
         self.altitude_min = node["altitude_filter"]["min_m"]
         self.smoothing = node["smoothing"]
         self.window_size = node["window_size"]
-        self.outlier_reject = node["curve_fitting_outlier_rejection"]
 
 
 class CameraConfig:

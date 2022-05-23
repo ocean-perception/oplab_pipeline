@@ -11,7 +11,7 @@ colour_correction :
     min_m : 1
   smoothing : 'median' # 'mean' / 'median' / 'mean_trimmed' sampling colour intensity values from window_size to develop model
   window_size : 3 # increase if the attenuation correction parameter looks noisy.
-  curve_fitting_outlier_rejection : False
+  curve_fitting__rejection : False
 
 cameras : 
   - camera_name : 'ntnu_stereo_left' #in line with vehicle.yaml

@@ -167,7 +167,6 @@ class Corrector:
         self.altitude_min = self.correct_config.color_correction.altitude_min
         self.smoothing = self.correct_config.color_correction.smoothing
         self.window_size = self.correct_config.color_correction.window_size
-        self.outlier_rejection = self.correct_config.color_correction.outlier_reject
         self.cameraconfigs = self.correct_config.configs.camera_configs
         self.undistort = self.correct_config.output_settings.undistort_flag
         self.output_format = self.correct_config.output_settings.compression_parameter
