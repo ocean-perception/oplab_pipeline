@@ -208,6 +208,7 @@ class Corrector:
             p = Path(self.attenuation_parameters_folder)
             self.images_map_filepath = p / "images_map.npy"
             self.distances_map_filepath = p / "distances_map.npy"
+            self.attenuation_plot_filepath = p / "attenuation_plot.png"
             self.attenuation_params_filepath = p / "attenuation_parameters.npy"
             self.correction_gains_filepath = p / "correction_gains.npy"
             self.corrected_mean_filepath = p / "image_corrected_mean.npy"
@@ -615,11 +616,25 @@ class Corrector:
                 Console.info("Path to depth maps found...")
                 depth_map_list = list(path_depth.glob("*map.npy"))
                 self.depth_map_list = []
-                for item in depth_map_list:
-                    for image_path in self.camera_image_list:
+                images_to_drop = []
+                for img_idx, image_path in enumerate(self.camera_image_list):
+                    dm_found = False
+                    for item in depth_map_list:
                         if Path(image_path).stem in Path(item).stem:
                             self.depth_map_list.append(Path(item))
+                            dm_found = True
                             break
+                    if not dm_found:
+                        # Drop that image - its depth map is missing
+                        images_to_drop.append(img_idx)
+                # Drop the images that do not have a depth map
+                if len(images_to_drop) > 0:
+                    Console.info(
+                        "Dropped images without depth map:", len(images_to_drop)
+                    )
+                    for idx in sorted(images_to_drop, reverse=True):
+                        del self.camera_image_list[idx]
+
                 Console.info("...done generating depth_map_list")
 
                 if len(self.camera_image_list) != len(self.depth_map_list):
@@ -762,6 +777,8 @@ class Corrector:
                     self.attenuation_parameters_folder,
                 )
             )
+
+            self.plot_all_attenuation_curves(images_map, distances_map)
 
             # delete memmap handles
             del images_map
@@ -922,6 +939,44 @@ class Corrector:
             )
 
         Console.info("Correction parameters saved")
+
+    def plot_all_attenuation_curves(self, images_map, distances_map):
+        fig = plt.figure()
+
+        images_map[images_map == 0] = np.NaN
+        distances_map[distances_map == 0] = np.NaN
+
+        for i_channel in range(self.image_channels):
+            with tqdm(
+                desc="Attenuation plot", total=self.image_height * self.image_width
+            ) as pbar:
+                for i_pixel in range(
+                    0,
+                    self.image_height * self.image_width,
+                    (self.image_height * self.image_width) // 100,
+                ):
+                    i_pixel_height = i_pixel // self.image_width
+                    i_pixel_width = i_pixel % self.image_width
+                    p0, p1, p2 = self.image_attenuation_parameters[
+                        i_channel, i_pixel_height, i_pixel_width
+                    ]
+                    xs = np.arange(2, 10, 0.1)
+                    plt.plot(
+                        xs,
+                        p0 * np.exp(p1 * xs) + p2,
+                        color="black",
+                        alpha=0.1,
+                    )
+                    plt.plot(
+                        distances_map[:, i_pixel],
+                        images_map[:, i_pixel, i_channel],
+                        ",",
+                        color="blue",
+                        alpha=0.1,
+                    )
+                    pbar.update(1)
+        plt.savefig(self.attenuation_plot_filepath, dpi=600)
+        plt.close(fig)
 
     def compute_distance_bin(
         self,
