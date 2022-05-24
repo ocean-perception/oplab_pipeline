@@ -161,7 +161,7 @@ def call_parse(args):
         path = path_list[0]
         Console.info("Single path provided, normal single dive mode...")
     else:
-        Console.warn(
+        Console.info(
             "Multiple paths provided [{}]. Checking each path...".format(len(path_list))
         )
         for path in path_list:
@@ -331,7 +331,8 @@ def load_configuration_and_camera_system(path, suffix=None):
         User provided Path of source images
     """
 
-    Console.warn("Parsing multipaths with suffix:", suffix)
+    if suffix is not None:
+        Console.info("Parsing with suffix:", suffix)
 
     # resolve paths to raw, processed and config folders
     path_raw_folder = get_raw_folder(path)
