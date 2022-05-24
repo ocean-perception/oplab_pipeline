@@ -207,29 +207,6 @@ def calculate_attenuation_parameters(
             )
         image_attenuation_parameters[i_channel] = attenuation_parameters
 
-    plt.figure()
-    for i_channel in range(image_channels):
-        for i_pixel in range(image_height * image_width):
-            i_pixel_height = i_pixel // image_width
-            i_pixel_width = i_pixel % image_width
-            p0, p1, p2 = image_attenuation_parameters[
-                i_channel, i_pixel_height, i_pixel_width
-            ]
-            plt.plot(
-                distances[:, i_pixel],
-                p0 * np.exp(p1 * distances[:, i_pixel]) + p2,
-                color="black",
-                alpha=0.1,
-            )
-            plt.plot(
-                distances[:, i_pixel],
-                images[:, i_pixel, i_channel],
-                color="blue",
-                alpha=0.1,
-            )
-    plt.show()
-    plt.savefig("attenuation_curves_" + str(i_channel) + ".png")
-
     return image_attenuation_parameters
 
 
