@@ -782,9 +782,24 @@ class Corrector:
 
             # delete memmap handles
             del images_map
-            os.remove(images_fn)
+            try:
+                os.remove(images_fn)
+            except PermissionError:
+                Console.warn(
+                    "Unable to remove memmap file at",
+                    images_fn,
+                    ". Please delete the file manually.",
+                )
+
             del distances_map
-            os.remove(distances_fn)
+            try:
+                os.remove(distances_fn)
+            except PermissionError:
+                Console.warn(
+                    "Unable to remove memmap file at",
+                    distances_fn,
+                    ". Please delete the file manually.",
+                )
 
             # Save attenuation parameter results.
             np.save(
