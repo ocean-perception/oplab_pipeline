@@ -786,7 +786,7 @@ class Corrector:
                 os.remove(images_fn)
             except PermissionError:
                 Console.warn(
-                    "Unable to remove memmap file at",
+                    "Unable to remove images memmap file",
                     images_fn,
                     ". Please delete the file manually.",
                 )
@@ -796,7 +796,7 @@ class Corrector:
                 os.remove(distances_fn)
             except PermissionError:
                 Console.warn(
-                    "Unable to remove memmap file at",
+                    "Unable to remove distances memmap file",
                     distances_fn,
                     ". Please delete the file manually.",
                 )
@@ -962,9 +962,7 @@ class Corrector:
         distances_map[distances_map == 0] = np.NaN
 
         for i_channel in range(self.image_channels):
-            with tqdm(
-                desc="Attenuation plot", total=self.image_height * self.image_width
-            ) as pbar:
+            with tqdm(desc="Attenuation plot", total=101) as pbar:
                 for i_pixel in range(
                     0,
                     self.image_height * self.image_width,
