@@ -17,6 +17,7 @@ import matplotlib
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
+from numba import njit
 from tqdm import tqdm, trange
 
 # fmt: off
@@ -617,11 +618,17 @@ class Corrector:
                 depth_map_list = list(path_depth.glob("*map.npy"))
                 self.depth_map_list = []
                 images_to_drop = []
-                for img_idx, image_path in enumerate(self.camera_image_list):
+                for img_idx, image_path in tqdm(
+                    enumerate(self.camera_image_list),
+                    desc="Loading depth maps",
+                    total=len(self.camera_image_list),
+                ):
+                    # TODO: if the same structure as for camera filenames is used
+                    # this step can become unnecessary
                     dm_found = False
-                    for item in depth_map_list:
-                        if Path(image_path).stem in Path(item).stem:
-                            self.depth_map_list.append(Path(item))
+                    for dm_idx, dm_path in enumerate(depth_map_list):
+                        if Path(image_path).stem in Path(dm_path).stem:
+                            self.depth_map_list.append(Path(dm_path))
                             dm_found = True
                             break
                     if not dm_found:
@@ -694,6 +701,7 @@ class Corrector:
 
         self.bin_band = 0.1
         hist_bins = np.arange(self.altitude_min, self.altitude_max, self.bin_band)
+        self.altitude_bins = len(hist_bins)
         # Watch out: need to substract 1 to get the correct number of bins
         # because the last bin is not included in the range
 
@@ -717,7 +725,11 @@ class Corrector:
             Console.info("Computing depth map histogram with", hist_bins.size, "bins")
 
             distance_vector = np.zeros((len(self.depth_map_list), 1))
-            for i, dm_file in enumerate(self.depth_map_list):
+            for i, dm_file in tqdm(
+                enumerate(self.depth_map_list),
+                desc="Computing mean depth map altitude",
+                total=len(self.depth_map_list),
+            ):
                 dm_np = depth_map.loader(dm_file, self.image_width, self.image_height)
                 distance_vector[i] = dm_np.mean()
 
@@ -726,7 +738,7 @@ class Corrector:
             distance_vector = np.array(self.altitude_list)
 
         if distance_vector is not None:
-            idxs = np.digitize(distance_vector, hist_bins) - 1
+            idxs = self.get_hist_band(distance_vector)
 
             # Display histogram in console
             for idx_bin in range(hist_bins.size - 1):
@@ -743,28 +755,114 @@ class Corrector:
                     "images",
                 )
 
-            with tqdm_joblib(
-                tqdm(
-                    desc="Computing altitude histogram",
-                    total=hist_bins.size - 1,
-                )
-            ):
-                joblib.Parallel(n_jobs=-2, verbose=0)(
-                    joblib.delayed(self.compute_distance_bin)(
-                        idxs,
-                        idx_bin,
-                        images_map,
-                        distances_map,
-                        max_bin_size,
-                        max_bin_size_gb,
-                        distance_vector,
+            if not self.depth_map_list:
+                with tqdm_joblib(
+                    tqdm(
+                        desc="Computing altitude histogram",
+                        total=hist_bins.size - 1,
                     )
-                    for idx_bin in range(hist_bins.size - 1)
+                ):
+                    joblib.Parallel(n_jobs=-2, verbose=0)(
+                        joblib.delayed(self.compute_distance_bin)(
+                            idxs,
+                            idx_bin,
+                            images_map,
+                            distances_map,
+                            max_bin_size,
+                            max_bin_size_gb,
+                            distance_vector,
+                        )
+                        for idx_bin in range(hist_bins.size - 1)
+                    )
+            else:
+                Console.info(
+                    "Computing depth map histogram with", hist_bins.size, "bins"
                 )
+                counts_fn, counts_map = open_memmap(
+                    shape=(len(hist_bins) - 1, self.image_height * self.image_width),
+                    dtype=np.float32,
+                )
+                for i, dm_file in tqdm(
+                    enumerate(self.depth_map_list),
+                    desc="Computing depth map histogram",
+                    total=len(self.depth_map_list),
+                ):
+                    dm_np = depth_map.loader(
+                        dm_file, self.image_width, self.image_height
+                    )
+                    dm_np = dm_np.reshape([self.image_height * self.image_width])
+                    img_np = self.loader(self.camera_image_list[i])
+                    img_np = img_np.reshape(
+                        [self.image_height * self.image_width, self.image_channels]
+                    )
+                    # Digitize each pixel of the depth map
+                    idxs = self.get_hist_band(dm_np)
+                    # Store the depth map value in the distance matrix using its index
 
-            # Save images map and distances map
-            np.save(self.images_map_filepath, images_map)
-            np.save(self.distances_map_filepath, distances_map)
+                    @njit(parallel=True)
+                    def assign_bins(
+                        distances_map, images_map, dm_np, img_np, idxs, total
+                    ):
+                        for k in range(total):
+                            distances_map[idxs[k], k] = dm_np[k]
+                            images_map[idxs[k], k, :] = img_np[k, :]
+
+                    assign_bins(
+                        distances_map,
+                        images_map,
+                        dm_np,
+                        img_np,
+                        idxs,
+                        self.image_height * self.image_width,
+                    )
+
+                    # Store the intensities of the image in the image matrix using its index
+                    counts_map[idxs, i] += 1.0
+
+                distances_map /= counts_map
+                images_map /= counts_map
+
+                # Save images map and distances map
+                np.save(self.images_map_filepath, images_map)
+                np.save(self.distances_map_filepath, distances_map)
+                del counts_map
+                os.remove(counts_fn)
+
+                # save all distance and image maps for each bin
+                base_path = Path(self.attenuation_parameters_folder)
+                for idx_bin in range(hist_bins.size - 1):
+                    bin_images_sample = images_map[idx_bin, ...].reshape(
+                        [self.image_height, self.image_width, self.image_channels]
+                    )
+                    bin_distances_sample = distances_map[idx_bin, ...].reshape(
+                        [self.image_height, self.image_width]
+                    )
+                    distance_bin_sample = self.altitude_min + idx_bin * self.bin_band
+                    fig = plt.figure()
+                    plt.imshow(bin_images_sample)
+                    plt.colorbar()
+                    plt.title(
+                        f"Image bin {idx_bin}, altitude: {distance_bin_sample:.2f}"
+                    )
+                    fig_name = base_path / (
+                        f"bin_image_{idx_bin:02}_{distance_bin_sample:05.2f}m.png"
+                    )
+                    # Console.info("Saved figure at", fig_name)
+                    plt.savefig(fig_name, dpi=600)
+                    plt.close(fig)
+
+                    fig = plt.figure()
+                    plt.imshow(bin_distances_sample)
+                    plt.colorbar()
+                    plt.title(
+                        f"Distance bin {idx_bin}, altitude: {distance_bin_sample:.2f}"
+                    )
+                    fig_name = base_path / (
+                        f"bin_distance_sample_{idx_bin:02}_{distance_bin_sample:05.2f}m.png"
+                    )
+                    # Console.info("Saved figure at", fig_name)
+                    plt.savefig(fig_name, dpi=600)
+                    plt.close(fig)
 
             # calculate attenuation parameters per channel
             self.image_attenuation_parameters = (
@@ -1019,6 +1117,7 @@ class Corrector:
                 bin_distances_sample.fill(distance_bin_sample)
             else:
                 bin_distances = [self.depth_map_list[i] for i in tmp_idxs]
+                """
                 bin_distances_sample = running_mean_std(
                     bin_distances,
                     loader=depth_map.loader,
@@ -1026,6 +1125,9 @@ class Corrector:
                     height=self.image_height,
                     ignore_zeroes=True,
                 )[0]
+                distance_bin_sample = bin_distances_sample.mean()
+                """
+                bin_distances_sample = bin_distances[int(len(bin_distances) / 2)]
                 distance_bin_sample = bin_distances_sample.mean()
 
             if self.smoothing == "mean":
@@ -1231,3 +1333,9 @@ class Corrector:
             self.output_images_folder,
             self.output_format,
         )
+
+    def get_hist_band(self, x: np.ndarray) -> np.ndarray:
+        b = ((x - self.altitude_min) / self.bin_band).astype(int)
+        b[b > (self.altitude_bins - 2)] = self.altitude_bins - 2
+        b[b < 0] = 0
+        return b
