@@ -98,8 +98,8 @@ def running_mean_std(
             value = loader(item, width, height).astype(np.float32)
         else:
             value = loader(item).astype(np.float32)
-        if ignore_zeroes and value == 0:
-            continue
+        if ignore_zeroes:
+            value[value == 0] = mean[value == 0]
         count += 1
         delta = value - mean
         mean += delta / count

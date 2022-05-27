@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2020, University of Southampton
+Copyright (c) 2022, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -161,7 +161,7 @@ def call_parse(args):
         path = path_list[0]
         Console.info("Single path provided, normal single dive mode...")
     else:
-        Console.warn(
+        Console.info(
             "Multiple paths provided [{}]. Checking each path...".format(len(path_list))
         )
         for path in path_list:
@@ -331,7 +331,8 @@ def load_configuration_and_camera_system(path, suffix=None):
         User provided Path of source images
     """
 
-    Console.warn("Parsing multipaths with suffix:", suffix)
+    if suffix is not None:
+        Console.info("Parsing with suffix:", suffix)
 
     # resolve paths to raw, processed and config folders
     path_raw_folder = get_raw_folder(path)
@@ -358,8 +359,9 @@ def load_configuration_and_camera_system(path, suffix=None):
 
     if not camera_yaml_raw_path.exists() and not camera_yaml_config_path.exists():
         Console.info(
-            "Not found camera.yaml file in /raw folder...Using default ",
-            "camera.yaml file...",
+            "camera.yaml file not found neither in /raw nor in /config folder.",
+            "Using default camera.yaml file for image format",
+            mission.image.format,
         )
         # find out default yaml paths
         root = Path(__file__).resolve().parents[1]
@@ -394,8 +396,6 @@ def load_configuration_and_camera_system(path, suffix=None):
             "correct_images/default_yaml/rosbag/correct_images.yaml"
         )
 
-        Console.info("Image format:", mission.image.format)
-
         if mission.image.format == "acfr_standard":
             camera_yaml_path = root / acfr_std_camera_file
             default_file_path_correct_config = root / acfr_std_correct_config_file
@@ -424,8 +424,10 @@ def load_configuration_and_camera_system(path, suffix=None):
             Console.info("The file is located at", camera_yaml_config_path)
         else:
             Console.quit(
-                "Image system in camera.yaml does not match with mission.yaml",
-                "Provide correct camera.yaml in /raw folder... ",
+                "There is currently no default camera file for image format",
+                mission.image.format,
+                ". Please provide the camera.yaml file in the /config folder and",
+                "rerun correct_images.",
             )
     elif camera_yaml_raw_path.exists() and not camera_yaml_config_path.exists():
         Console.info("Found camera.yaml file in /raw folder")

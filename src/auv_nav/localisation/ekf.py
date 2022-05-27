@@ -1145,6 +1145,7 @@ def update_camera_list(
                 camera1_offsets,
                 latlon_reference,
             )
+            c.filename = camera_list[c_idx].filename
             valid_camera_list.append(c)
             c_idx += 1
             ekf_idx += 1

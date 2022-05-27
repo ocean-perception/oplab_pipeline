@@ -238,8 +238,10 @@ Folder structure for process output :
 
 ## Example of required `correct_images.yaml` File ##
 
-the correct_images.yaml file should be placed in the following path
+The correct_images.yaml file should be placed in the following path
 `../configuration/year/cruise/platform/dive/correct_images.yaml`
+
+Note regarding the `altitude_filter` parameter: Set `min_m` and `max_m` to the range of altitudes where there are plenty of images.  When running `coorect_images` it prints the number of images per bin (sections of 0.1m). Set `min_m` and `max_m` to the range where each bin has a sufficient number of images (typically at least 10).
 
 ```yaml
 # Yaml 1.0

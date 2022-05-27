@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2020, University of Southampton
+Copyright (c) 2022, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -128,8 +128,9 @@ def calibrate_stereo(
     fo,
     foa,
 ):
-    if not check_dirs_exist(left_filepaths) or not check_dirs_exist(right_filepaths):
+    if not check_dirs_exist(left_filepaths):
         left_filepaths = get_raw_folders(left_filepaths)
+    if not check_dirs_exist(right_filepaths):
         right_filepaths = get_raw_folders(right_filepaths)
     Console.info("Looking for calibration images in {}".format(str(left_filepaths)))
     left_image_list = collect_image_files(left_filepaths, left_extension)
