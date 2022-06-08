@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2020, University of Southampton
+Copyright (c) 2022, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
 
-import matplotlib.pyplot as plt
 from pathlib import Path
+from typing import Optional
+
+import matplotlib.pyplot as plt
 import numpy as np
 from numba import njit
 from scipy import optimize
@@ -59,7 +61,9 @@ def residual_exp_curve(params: np.ndarray, x: np.ndarray, y: np.ndarray):
 
 
 # compute attenuation correction parameters through regression
-def curve_fitting(altitudes: np.ndarray, intensities: np.ndarray) -> np.ndarray:
+def curve_fitting(
+    altitudes: np.ndarray, intensities: np.ndarray, figure_path: Optional[Path]
+) -> np.ndarray:
     """Compute attenuation coefficients with respect to distance values
 
     Parameters
@@ -68,6 +72,8 @@ def curve_fitting(altitudes: np.ndarray, intensities: np.ndarray) -> np.ndarray:
         list of distance values
     intensities : list
         list of intensity values
+    figure_path: Path | None
+        Path where curve fitting figure is written; or None to not write figure to file
 
     Returns
     --------
@@ -89,18 +95,34 @@ def curve_fitting(altitudes: np.ndarray, intensities: np.ndarray) -> np.ndarray:
     altitudes_filt = []
     intensities_filt = []
     for x, y in zip(altitudes, intensities):
-        if x >= 0 and y >= 0:
+        if x > 0 and y > 0:
             altitudes_filt.append(x)
             intensities_filt.append(y)
 
     if not altitudes_filt or not intensities_filt:
         if not altitudes_filt:
-            print("---------\naltitudes: ", altitudes, "\nintensities: ", intensities, "\naltitudes_filt: ", altitudes_filt,
-          "\nintensities_filt: ", intensities_filt)
+            print(
+                "---------\naltitudes: ",
+                altitudes,
+                "\nintensities: ",
+                intensities,
+                "\naltitudes_filt: ",
+                altitudes_filt,
+                "\nintensities_filt: ",
+                intensities_filt,
+            )
             print("ERROR: Altitudes are negative in curve fitting")
         if not intensities_filt:
-            print("---------\naltitudes: ", altitudes, "\nintensities: ", intensities, "\naltitudes_filt: ", altitudes_filt,
-          "\nintensities_filt: ", intensities_filt)
+            print(
+                "---------\naltitudes: ",
+                altitudes,
+                "\nintensities: ",
+                intensities,
+                "\naltitudes_filt: ",
+                altitudes_filt,
+                "\nintensities_filt: ",
+                intensities_filt,
+            )
             print("ERROR: Intensities are negative in curve fitting")
         return np.array([1, 0, 0])
 
@@ -147,9 +169,6 @@ def curve_fitting(altitudes: np.ndarray, intensities: np.ndarray) -> np.ndarray:
 
     init_params = np.array([a, b, c], dtype=np.float32)
 
-    # for debug
-    save = False
-
     try:
         tmp_params = optimize.least_squares(
             residual_exp_curve,
@@ -159,22 +178,15 @@ def curve_fitting(altitudes: np.ndarray, intensities: np.ndarray) -> np.ndarray:
             args=(altitudes_filt, intensities_filt),
             bounds=(bound_lower, bound_upper),
         )
-        if save:
-            i = 0
-            while i < 100:
-                fn = Path("Intensities_curve_" + str(i) + ".png")
-                i += 1
-                if not fn.exists():
-                    break
-
+        if figure_path:
             fig = plt.figure()
-            plt.plot(altitudes_filt, intensities_filt, "c.")
-            xs = np.arange(1, 5, 0.1)
+            plt.plot(altitudes_filt, intensities_filt, "c.", label="Intensities")
+            xs = np.arange(2, 10, 0.1)
             ys = exp_curve(xs, tmp_params.x[0], tmp_params.x[1], tmp_params.x[2])
-            plt.plot(xs, np.ones(xs.shape[0]) * tmp_params.x[2], "-y")
-            plt.plot(xs, ys, "-m")
-            plt.legend(["Intensities", "Exp curve", "C term"])
-            plt.savefig(str(fn), dpi=600)
+            plt.plot(xs, ys, "-m", label="Exp curve")
+            plt.plot(xs, np.ones(xs.shape[0]) * tmp_params.x[2], "-y", label="C term")
+            plt.legend()
+            plt.savefig(str(figure_path), dpi=600)
             plt.close(fig)
 
         return tmp_params.x

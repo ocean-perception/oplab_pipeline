@@ -9,6 +9,8 @@ See LICENSE.md file in the project root for full license information.
 import math
 import random
 import time
+from datetime import timedelta
+from typing import Dict
 
 import cv2
 import joblib
@@ -19,7 +21,7 @@ from auv_cal.camera_calibrator import resize_with_padding
 from auv_cal.plane_fitting import Plane
 from auv_cal.plot_points_and_planes import plot_pointcloud_and_planes
 from auv_nav.parsers.parse_biocam_images import biocam_timestamp_from_filename
-from oplab import Console, get_processed_folder
+from oplab import Console, StereoCamera, get_processed_folder
 
 
 def build_plane(pitch, yaw, point):
@@ -589,14 +591,19 @@ def save_cloud(filename, cloud):
 
 
 class LaserCalibrator:
-    TWO_SIGMA = 0.9545  # +/- 2 sigma in case of Gaussian distribution
-
-    def __init__(self, stereo_camera_model, config, overwrite=False):
+    def __init__(
+        self,
+        stereo_camera_model: StereoCamera,
+        config: Dict,
+        num_uncert_planes: int,
+        overwrite: bool = False,
+    ):
         self.data = []
 
         self.sc = stereo_camera_model
         self.camera_name = self.sc.left.name
         self.config = config
+        self.num_uncert_planes = num_uncert_planes
         self.overwrite = overwrite
 
         if config.get("filter") is not None:
@@ -820,7 +827,7 @@ class LaserCalibrator:
         # print("Min z: " + str(np.min(inliers_cloud[:, 2])))
         # print("Max z: " + str(np.max(inliers_cloud[:, 2])))
         # print("Std z: " + str(std_z))
-        min_dist = 2 * math.sqrt(std_y ** 2 + std_z ** 2)
+        min_dist = 2 * math.sqrt(std_y**2 + std_z**2)
         Console.info("Minimum distance for poisson disc sampling: {}".format(min_dist))
         min_sin_angle = 0.866  # = sin(60°)
 
@@ -831,16 +838,12 @@ class LaserCalibrator:
             [inliers_cloud, np.ones((inliers_cloud.shape[0], 1))], axis=1
         )
 
-        planes_enclose_inliers = False
-        Console.info("Generating uncertainty planes...")
-        max_uncertainty_planes = 300
+        Console.info("Generating", self.num_uncert_planes, "uncertainty planes...")
+        generate_planes_start = time.time()
         tries = 0
         failed_distance = 0
         failed_angle = 0
-        while (
-            planes_enclose_inliers is False
-            and len(self.uncertainty_planes) < max_uncertainty_planes
-        ):
+        while len(self.uncertainty_planes) < self.num_uncert_planes:
             tries += 1
             point_cloud_local = random.sample(self.inliers_cloud_list, 3)
 
@@ -856,7 +859,7 @@ class LaserCalibrator:
             if p0p1_norm < min_dist or p0p2_norm < min_dist or p1p2_norm < min_dist:
                 failed_distance += 1
                 if failed_distance % 100000 == 0:
-                    Console.info(
+                    Console.info_verbose(
                         "Combinations rejected due to distance criterion",
                         "(Poisson disk sampling):",
                         failed_distance,
@@ -871,7 +874,7 @@ class LaserCalibrator:
             if abs(np.cross(p0p1, p0p2)) / (p0p1_norm * p0p2_norm) < min_sin_angle:
                 failed_angle += 1
                 if failed_angle % 100000 == 0:
-                    print(
+                    Console.info_verbose(
                         "Combinations rejected due to distance criterion",
                         "(Poisson disk sampling):",
                         failed_distance,
@@ -885,7 +888,7 @@ class LaserCalibrator:
             # Compute plane through the 3 points and append to list
             self.triples.append(np.array(point_cloud_local))
             self.uncertainty_planes.append(plane_through_3_points(point_cloud_local))
-            Console.info(
+            Console.info_verbose(
                 "Number of planes: ",
                 len(self.uncertainty_planes),
                 ", " "Number of tries so far: ",
@@ -899,16 +902,12 @@ class LaserCalibrator:
                 failed_angle,
                 "times",
             )
-            planes_enclose_inliers = self._do_planes_enclose_inliers()
 
+        elapsed = time.time() - generate_planes_start
+        elapsed_formatted = timedelta(seconds=elapsed)
         Console.info(
-            "... finished generating {} uncertainty planes.".format(
-                len(self.uncertainty_planes)
-            )
+            f"... finished generating {len(self.uncertainty_planes)} uncertainty planes in {elapsed_formatted}"
         )
-
-        if len(self.uncertainty_planes) >= max_uncertainty_planes:
-            Console.warn("Stopped due to reaching max_uncertainty_planes")
 
         filename = time.strftime(
             "pointclouds_and_uncertainty_planes_all_" "%Y%m%d_%H%M%S.html"
@@ -923,12 +922,6 @@ class LaserCalibrator:
         # for i, plane in enumerate(self.uncertainty_planes):
         #     np.save('plane' + str(i) + '.npy', plane)
 
-        # Console.info("Removing uncertainty planes that do not contribute...")
-        # self._remove_unnecessary_uncertainty_planes()
-        # Console.info("... finished removing non-contributing planes. Reduced"
-        #              "number of uncertainty planes to {}."
-        #              .format(len(self.uncertainty_planes)))
-        # assert self._check_if_planes_enclose_inliers()  # Sanity check
         filename = time.strftime(
             "pointclouds_and_uncertainty_planes_%Y%m%d_" "%H%M%S.html"
         )
@@ -969,82 +962,6 @@ class LaserCalibrator:
         )
 
         return yaml_msg
-
-    def _do_planes_enclose_inliers(self):
-        """Checks if uncertainty planes enclose at least 95.45% of inliers"""
-
-        # Check for each inlier points if it is in front, beghind or on last
-        # (= latest added) uncertainty plane. 1 if point is in front of the
-        # plane, -1 if behind theplane, 0 if in the plane
-        in_front_or_behind_current = np.sign(
-            self.inliers_1 @ self.uncertainty_planes[-1]
-        )
-        if np.size(self.in_front_or_behind) == 0:
-            self.in_front_or_behind = in_front_or_behind_current
-            return False
-        else:
-            self.in_front_or_behind = np.column_stack(
-                (self.in_front_or_behind, in_front_or_behind_current)
-            )
-
-        # Check for each point if it is at least once before and once behind
-        # (or in) the plane. If this is the case, it is enclosed by the planes
-        enclosed = self.in_front_or_behind.min(1) != self.in_front_or_behind.max(1)
-        number_enclosed = np.sum(enclosed)
-
-        population = self.inliers_1.shape[0]
-        min_enclosed = self.TWO_SIGMA * population
-        if number_enclosed > min_enclosed:
-            return True
-        else:
-            return False
-
-    def _remove_unnecessary_uncertainty_planes(self):
-        """Remove uncertainty planes that do not contribute to enclosing any
-        points that would not be enclosed with them
-        """
-        population = self.inliers_1.shape[0]  # len(self.inliers_cloud_list)
-        min_enclosed = self.TWO_SIGMA * population
-        j = 0
-        while j < self.in_front_or_behind.shape[1]:
-            temp = np.delete(self.in_front_or_behind, j, 1)
-            enclosed = temp.min(1) != temp.max(1)
-            number_enclosed = np.sum(enclosed)
-            if number_enclosed > min_enclosed:
-                # Means the j-th plane does not contribute and can be deleted
-                self.in_front_or_behind = np.delete(self.in_front_or_behind, j, 1)
-                del self.uncertainty_planes[j]
-                del self.triples[j]
-            else:
-                j += 1
-
-    def _check_if_planes_enclose_inliers(self):
-        """Checks if (remaining) uncertainty planes enclose at least 95.45% of
-        inliers"""
-        # Check for each inlier points if it is in front, beghind or on last
-        # (= latest added) uncertainty plane. 1 if point is in front of the
-        # plane, -1 if behind theplane, 0 if in the plane
-        in_front_or_behind = []
-        for plane in self.uncertainty_planes:
-            in_front_or_behind_curr = np.sign(self.inliers_1 @ plane)
-            if np.size(in_front_or_behind) == 0:
-                in_front_or_behind = in_front_or_behind_curr
-            else:
-                in_front_or_behind = np.column_stack(
-                    (in_front_or_behind, in_front_or_behind_curr)
-                )
-        # Check for each point if it is at least once before and once behind
-        # (or in) the plane. If this is the case, it is enclosed by the planes
-        enclosed = in_front_or_behind.min(1) != in_front_or_behind.max(1)
-        number_enclosed = np.sum(enclosed)
-
-        population = self.inliers_1.shape[0]
-        min_enclosed = self.TWO_SIGMA * population
-        if number_enclosed > min_enclosed:
-            return True
-        else:
-            print("Uncertainty planes do not enclose sufficient number of " "points")
-            return False
 
     def cal(self, limages, rimages, processed_folder):
         """Main function that is called by the code using the LaserCalibrator
@@ -1121,7 +1038,7 @@ class LaserCalibrator:
             limages_rs = limages
             rimages_rs = rimages
 
-        Console.info("Processing ", str(len(limages_sync)), " synchronised images...")
+        Console.info("Processing", str(len(limages_sync)), "synchronised images...")
         result = joblib.Parallel(n_jobs=-1)(
             [
                 joblib.delayed(get_laser_pixels_in_image_pair)(
@@ -1222,22 +1139,25 @@ class LaserCalibrator:
             point_cloud_ned_b = joblib.Parallel(n_jobs=-1)(
                 [joblib.delayed(opencv_to_ned)(i) for i in point_cloud_b]
             )
+        Console.info("Converted points to NED")
 
         save_cloud(
-            processed_folder / ("points_" + self.camera_name + ".ply"), point_cloud_ned,
+            processed_folder / ("points_" + self.camera_name + ".ply"),
+            point_cloud_ned,
         )
         if self.two_lasers:
             save_cloud(
                 processed_folder / ("points_b_" + self.camera_name + ".ply"),
                 point_cloud_ned_b,
             )
+        Console.info("Saved cloud to ply")
 
         rss_before = len(point_cloud_ned)
         # point_cloud_filt = self.filter_cloud(point_cloud_ned)
         point_cloud_filt = self.z_stratified_sampling(point_cloud_ned)
         rss_after = len(point_cloud_filt)
         Console.info(
-            "Points after filtering: " + str(rss_after) + "/" + str(rss_before)
+            "Points after stratifying: " + str(rss_after) + "/" + str(rss_before)
         )
         rs_size = min(rss_after, self.max_point_cloud_size)
         point_cloud_rs = random.sample(point_cloud_filt, rs_size)
@@ -1259,7 +1179,7 @@ class LaserCalibrator:
             point_cloud_b_filt = self.z_stratified_sampling(point_cloud_ned_b)
             rss_after = len(point_cloud_b_filt)
             Console.info(
-                "Points after filtering: " + str(rss_after) + "/" + str(rss_before)
+                "Points after stratifying: " + str(rss_after) + "/" + str(rss_before)
             )
             rs_size = min(rss_after, self.max_point_cloud_size)
             point_cloud_b_rs = random.sample(point_cloud_b_filt, rs_size)

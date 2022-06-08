@@ -60,6 +60,13 @@ def usbl_filter(usbl_list, depth_list, sigma_factor, max_auv_speed):
         consecutive measurements
     """
 
+    if len(depth_list) == 0:
+        Console.error(
+            "Depth list is empty. Check if start/end time range is "
+            "appropriate and if timezone offsets are set correctly"
+        )
+        return [], []
+
     # Timestamp-based filtering
     j = 0
     printed1 = False

@@ -30,9 +30,13 @@ def debayer(image: np.ndarray, pattern: str) -> np.ndarray:
         Debayered image
     """
 
+    if image is None:
+        Console.warn("Image is None")
+        return None
+
     # Make use of 16 bit debayering
-    image16_float = image.astype(np.float32) * (2 ** 16 - 1)
-    image16 = image16_float.clip(0, 2 ** 16 - 1).astype(np.uint16)
+    image16_float = image.astype(np.float32) * (2**16 - 1)
+    image16 = image16_float.clip(0, 2**16 - 1).astype(np.uint16)
 
     corrected_rgb_img = None
     if pattern == "rggb" or pattern == "RGGB":

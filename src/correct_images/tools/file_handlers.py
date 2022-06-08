@@ -87,7 +87,10 @@ def load_memmap_from_numpyfilelist(filepath, numpyfilelist: list):
     memmap_path = Path(filepath) / filename_map
 
     memmap_handle = np.memmap(
-        filename=memmap_path, mode="w+", shape=tuple(list_shape), dtype=np.float32,
+        filename=memmap_path,
+        mode="w+",
+        shape=tuple(list_shape),
+        dtype=np.float32,
     )
     Console.info("Loading memmaps from numpy files...")
 

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2020, University of Southampton
+Copyright (c) 2022, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -23,7 +23,7 @@ def represent_ordereddict(dumper, data):
 
         value.append((node_key, node_value))
 
-    return yaml.nodes.MappingNode(u"tag:yaml.org,2002:map", value)
+    return yaml.nodes.MappingNode("tag:yaml.org,2002:map", value)
 
 
 yaml.add_representer(OrderedDict, represent_ordereddict)
@@ -77,12 +77,17 @@ class CameraEntry:
             self.topic = None
             if "topic" in node:
                 self.topic = node["topic"]
+            self.timeoffset = 0.0
+            if "timeoffset" in node:
+                self.timeoffset = node["timeoffset"]
 
     def write(self, node):
         node["name"] = self.name
         node["origin"] = self.origin
         node["type"] = self.type
         node["path"] = self.path
+        if hasattr(self, "timeoffset"):
+            node["timeoffset"] = self.timeoffset
 
 
 class TimeZoneEntry:
@@ -153,23 +158,28 @@ class ImageEntry(TimeZoneEntry):
                 self.cameras[0].origin = "camera1"
                 self.cameras[0].type = "bayer_rggb"
                 self.cameras[0].path = node["filepath"] + node["camera1"]
+                self.cameras[0].timeoffset = 0.0
                 self.cameras[1].name = "aft"
                 self.cameras[1].origin = "camera2"
                 self.cameras[1].type = "bayer_rggb"
                 self.cameras[1].path = node["filepath"] + node["camera2"]
+                self.cameras[1].timeoffset = 0.0
                 self.cameras[2].name = "laser"
                 self.cameras[2].origin = "camera3"
                 self.cameras[2].type = "grayscale"
                 self.cameras[2].path = node["filepath"] + node["camera3"]
+                self.cameras[2].timeoffset = 0.0
             elif self.format == "acfr_standard":
                 self.cameras[0].name = node["camera1"]
                 self.cameras[0].origin = "camera1"
                 self.cameras[0].type = "bayer_rggb"
                 self.cameras[0].path = node["filepath"]
+                self.cameras[0].timeoffset = 0.0
                 self.cameras[1].name = node["camera2"]
                 self.cameras[1].origin = "camera2"
                 self.cameras[1].type = "bayer_rggb"
                 self.cameras[1].path = node["filepath"]
+                self.cameras[1].timeoffset = 0.0
 
     def write(self, node):
         super().write(node)
@@ -435,5 +445,8 @@ class Mission:
                     mission_dict["image"] = OrderedDict()
                     self.image.write(mission_dict["image"])
                 yaml.dump(
-                    mission_dict, f, allow_unicode=True, default_flow_style=False,
+                    mission_dict,
+                    f,
+                    allow_unicode=True,
+                    default_flow_style=False,
                 )

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2021, University of Southampton
+Copyright (c) 2022, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -375,7 +375,11 @@ def plot_deadreckoning_vs_time(
 # pf uncertainty plotly
 # maybe make a slider plot for this, or a dot projection slider
 def plot_pf_uncertainty(
-    pf_fusion_dvl_list, pf_northings_std, pf_eastings_std, pf_yaw_std, plotlypath,
+    pf_fusion_dvl_list,
+    pf_northings_std,
+    pf_eastings_std,
+    pf_yaw_std,
+    plotlypath,
 ):
     Console.info("Plotting pf_uncertainty...")
     pf_time = [i.epoch_timestamp for i in pf_fusion_dvl_list]
@@ -396,7 +400,8 @@ def plot_pf_uncertainty(
     )
     config = {"scrollZoom": True}
     fig = go.Figure(
-        data=[tr_pf_northings_std, tr_pf_eastings_std, tr_pf_yaw_std], layout=layout,
+        data=[tr_pf_northings_std, tr_pf_eastings_std, tr_pf_yaw_std],
+        layout=layout,
     )
     py.plot(
         fig,
@@ -410,7 +415,8 @@ def plot_pf_uncertainty(
 
 #  EKF uncertainty plotly
 def plot_ekf_states_and_std_vs_time(
-    ekf_states: List[EkfState], output_folder: Path,
+    ekf_states: List[EkfState],
+    output_folder: Path,
 ):
     Console.info("Plotting EKF states with std vs. time...")
     ekf_time = [i.time for i in ekf_states]
@@ -1291,6 +1297,7 @@ def plot_sensor_uncertainty(
 
 def plot_2d_deadreckoning(
     camera1_list,
+    camera1_ekf_list,
     dead_reckoning_centre_list,
     dead_reckoning_dvl_list,
     pf_fusion_centre_list,
@@ -1307,31 +1314,31 @@ def plot_2d_deadreckoning(
     # and north east
     Console.info("Plotting auv_path...")
 
-    # might not be robust in the future
-    min_timestamp = float("inf")
-    max_timestamp = float("-inf")
-
-    plotly_list = []
+    plotly_list_static = []
+    plotly_list_slider = []
     if len(camera1_list) > 1:
-        plotly_list.append(["dr_camera1", camera1_list, "legendonly"])
+        plotly_list_static.append(["dr_camera1", camera1_list, True])
+        plotly_list_slider.append(["dr_camera1", camera1_list, True])
+    if len(camera1_ekf_list) > 1:
+        plotly_list_static.append(["ekf_camera1", camera1_ekf_list, True])
+        plotly_list_slider.append(["ekf_camera1", camera1_ekf_list, True])
     if len(dead_reckoning_centre_list) > 1:
-        plotly_list.append(["dr_centre", dead_reckoning_centre_list, "legendonly"])
+        plotly_list_static.append(
+            ["dr_centre", dead_reckoning_centre_list, "legendonly"]
+        )
+        # centre and dvl lists contain very large number of points -> plot in static plot but not in slider plot
     if len(dead_reckoning_dvl_list) > 1:
-        plotly_list.append(["dr_dvl", dead_reckoning_dvl_list, True])
+        plotly_list_static.append(["dr_dvl", dead_reckoning_dvl_list, "legendonly"])
+    if len(ekf_centre_list) > 1:
+        plotly_list_static.append(["ekf_dvl", ekf_centre_list, "legendonly"])
 
     if len(usbl_list_no_dist_filter) > 1:
-        plotly_list.append(
+        plotly_list_static.append(
             ["usbl_without_distance_filter", usbl_list_no_dist_filter, "legendonly"]
         )
     if len(usbl_list) > 1:
-        plotly_list.append(["usbl", usbl_list, True])
-
-    for i in plotly_list:
-        timestamp_list = [j.epoch_timestamp for j in i[1]]
-        if min(timestamp_list) < min_timestamp:
-            min_timestamp = min(timestamp_list)
-        if max(timestamp_list) > max_timestamp:
-            max_timestamp = max(timestamp_list)
+        plotly_list_static.append(["usbl", usbl_list, True])
+        plotly_list_slider.append(["usbl", usbl_list, True])
 
     figure = {"data": [], "layout": {}, "frames": []}
 
@@ -1340,64 +1347,20 @@ def plot_2d_deadreckoning(
     figure["layout"]["yaxis"] = {"title": "Northings,m", "scaleanchor": "x"}
     figure["layout"]["hovermode"] = "closest"
     figure["layout"]["dragmode"] = "pan"
-    figure["layout"]["updatemenus"] = [
-        {
-            "buttons": [
-                {
-                    "args": [
-                        None,
-                        {
-                            "frame": {"duration": 500, "redraw": False},
-                            "fromcurrent": True,
-                            "transition": {
-                                "duration": 300,
-                                "easing": "quadratic-in-out",
-                            },
-                        },
-                    ],
-                    "label": "Play",
-                    "method": "animate",
-                },
-                {
-                    "args": [
-                        [None],
-                        {
-                            "frame": {"duration": 0, "redraw": False},
-                            "mode": "immediate",
-                            "transition": {"duration": 0},
-                        },
-                    ],
-                    "label": "Pause",
-                    "method": "animate",
-                },
-            ],
-            "direction": "left",
-            "pad": {"r": 10, "t": 87},
-            "showactive": False,
-            "type": "buttons",
-            "x": 0.1,
-            "xanchor": "right",
-            "y": 0,
-            "yanchor": "top",
-        }
-    ]
 
-    for i in plotly_list:
-        make_data(
-            figure,
-            i[0],
-            [float(j.eastings) for j in i[1]],
-            [float(j.northings) for j in i[1]],
-            visibility=i[2],
-        )
-    if len(ekf_centre_list) > 1:
-        make_data(
-            figure,
-            "ekf_centre",
-            [float(i.eastings) for i in ekf_centre_list],
-            [float(i.northings) for i in ekf_centre_list],
-            visibility="legendonly",
-        )
+    for i in plotly_list_static:
+        print("Processing ", i[0])
+        try:
+            make_data(
+                figure,
+                i[0],
+                [float(j.eastings) for j in i[1]],
+                [float(j.northings) for j in i[1]],
+                visibility=i[2],
+            )
+        except TypeError:
+            Console.error("TypeError in plotting ", i[0])
+
     if len(pf_fusion_centre_list) > 1:
         make_data(
             figure,
@@ -1483,7 +1446,8 @@ def plot_2d_deadreckoning(
         auto_open=False,
     )
 
-    Console.info("...plotting auv_path_slider...")
+    Console.info("... done plotting auv_path.html")
+    Console.info("Plotting auv_path_slider.html ...")
 
     sliders_dict = {
         "active": 0,
@@ -1504,6 +1468,15 @@ def plot_2d_deadreckoning(
     }
 
     # slider plot
+    # might not be robust in the future
+    min_timestamp = float("inf")
+    max_timestamp = float("-inf")
+    for i in plotly_list_slider:
+        timestamp_list = [j.epoch_timestamp for j in i[1]]
+        if min(timestamp_list) < min_timestamp:
+            min_timestamp = min(timestamp_list)
+        if max(timestamp_list) > max_timestamp:
+            max_timestamp = max(timestamp_list)
     # time_gap = 240
     time_gap = int((max_timestamp - min_timestamp) / 40)
     epoch_timestamps_slider = list(
@@ -1514,7 +1487,7 @@ def plot_2d_deadreckoning(
     for i in epoch_timestamps_slider:
         frame = {"data": [], "name": str(i)}
 
-        for j in plotly_list:
+        for j in plotly_list_slider:
             make_frame(
                 frame,
                 [
@@ -1536,51 +1509,6 @@ def plot_2d_deadreckoning(
                 ],
                 i,
             )
-        if len(pf_fusion_centre_list) > 1:
-            make_frame(
-                frame,
-                [
-                    "pf_centre",
-                    [float(i.epoch_timestamp) for i in pf_fusion_centre_list],
-                    [float(i.eastings) for i in pf_fusion_centre_list],
-                    [float(i.northings) for i in pf_fusion_centre_list],
-                ],
-                i,
-            )
-        if len(ekf_centre_list) > 1:
-            make_frame(
-                frame,
-                [
-                    "ekf_centre",
-                    [float(i.epoch_timestamp) for i in ekf_centre_list],
-                    [float(i.eastings) for i in ekf_centre_list],
-                    [float(i.northings) for i in ekf_centre_list],
-                ],
-                i,
-            )
-        if len(pf_fusion_dvl_list) > 1:
-            make_frame(
-                frame,
-                [
-                    "pf_dvl",
-                    [float(i.epoch_timestamp) for i in pf_fusion_dvl_list],
-                    [float(i.eastings) for i in pf_fusion_dvl_list],
-                    [float(i.northings) for i in pf_fusion_dvl_list],
-                ],
-                i,
-            )
-        if len(pf_fusion_centre_list) > 1:
-            make_frame(
-                frame,
-                [
-                    "pf_dvl_distribution",
-                    pf_timestamps_interval,
-                    pf_eastings_interval,
-                    pf_northings_interval,
-                ],
-                i,
-                mode="markers",
-            )
 
         figure["frames"].append(frame)
         slider_step = {
@@ -1598,6 +1526,47 @@ def plot_2d_deadreckoning(
         sliders_dict["steps"].append(slider_step)
 
     figure["layout"]["sliders"] = [sliders_dict]
+    figure["layout"]["updatemenus"] = [
+        {
+            "buttons": [
+                {
+                    "args": [
+                        None,
+                        {
+                            "frame": {"duration": 500, "redraw": False},
+                            "fromcurrent": True,
+                            "transition": {
+                                "duration": 300,
+                                "easing": "quadratic-in-out",
+                            },
+                        },
+                    ],
+                    "label": "Play",
+                    "method": "animate",
+                },
+                {
+                    "args": [
+                        [None],
+                        {
+                            "frame": {"duration": 0, "redraw": False},
+                            "mode": "immediate",
+                            "transition": {"duration": 0},
+                        },
+                    ],
+                    "label": "Pause",
+                    "method": "animate",
+                },
+            ],
+            "direction": "left",
+            "pad": {"r": 10, "t": 87},
+            "showactive": False,
+            "type": "buttons",
+            "x": 0.1,
+            "xanchor": "right",
+            "y": 0,
+            "yanchor": "top",
+        }
+    ]
 
     py.plot(
         figure,
@@ -1606,7 +1575,7 @@ def plot_2d_deadreckoning(
         auto_open=False,
     )
 
-    Console.info("... done plotting auv_path.")
+    Console.info("... done plotting auv_path_slider.html.")
 
 
 def plot_2d_localisation(dr_list, pf_list, ekf_list, eks_list, plotlypath):

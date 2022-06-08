@@ -12,7 +12,7 @@ from typing import List, Optional
 
 import numpy as np
 
-from auv_nav.sensors import Camera, SyncedOrientationBodyVelocity
+from auv_nav.sensors import Camera, Depth, SyncedOrientationBodyVelocity, Usbl
 from auv_nav.tools.body_to_inertial import body_to_inertial
 from auv_nav.tools.interpolate import interpolate
 from auv_nav.tools.latlon_wgs84 import metres_to_latlon
@@ -218,14 +218,17 @@ class Measurement(object):
         )
         return msg
 
-    def from_depth(self, value):
-        depth_std_factor = self.sensors_std["position_z"]["factor"]
-        depth_std_offset = self.sensors_std["position_z"]["offset"]
+    def from_depth(
+        self, value: Depth, orientation_deg: List[float], depth_to_dvl: List[float]
+    ):
+        [_, _, depth_offset] = body_to_inertial(*orientation_deg, *depth_to_dvl)
         self.time = value.epoch_timestamp
-        self.measurement[Index.Z] = value.depth
+        self.measurement[Index.Z] = value.depth + depth_offset
         if value.depth_std > 0:
-            self.covariance[Index.Z, Index.Z] = value.depth_std ** 2
+            self.covariance[Index.Z, Index.Z] = value.depth_std**2
         else:
+            depth_std_factor = self.sensors_std["position_z"]["factor"]
+            depth_std_offset = self.sensors_std["position_z"]["offset"]
             self.covariance[Index.Z, Index.Z] = (
                 value.depth * depth_std_factor + depth_std_offset
             ) ** 2
@@ -259,9 +262,9 @@ class Measurement(object):
         self.measurement[Index.VZ] = value.z_velocity
 
         if value.x_velocity_std > 0:
-            self.covariance[Index.VX, Index.VX] = value.x_velocity_std ** 2
-            self.covariance[Index.VY, Index.VY] = value.y_velocity_std ** 2
-            self.covariance[Index.VZ, Index.VZ] = value.z_velocity_std ** 2
+            self.covariance[Index.VX, Index.VX] = value.x_velocity_std**2
+            self.covariance[Index.VY, Index.VY] = value.y_velocity_std**2
+            self.covariance[Index.VZ, Index.VZ] = value.z_velocity_std**2
         else:
             self.covariance[Index.VX, Index.VX] = (
                 abs(value.x_velocity) * velocity_std_factor_x + velocity_std_offset_x
@@ -282,24 +285,28 @@ class Measurement(object):
         self.update_vector[Index.VZ] = 1
         self.type = "DVL"
 
-    def from_usbl(self, value):
-        usbl_noise_std_offset = self.sensors_std["position_xy"]["offset"]
-        usbl_noise_std_factor = self.sensors_std["position_xy"]["factor"]
-        distance = math.sqrt(
-            value.northings ** 2 + value.eastings ** 2 + value.depth ** 2
+    def from_usbl(
+        self, value: Usbl, orientation_deg: List[float], usbl_to_dvl: List[float]
+    ):
+        [north_offset, east_offset, _] = body_to_inertial(
+            *orientation_deg, *usbl_to_dvl
         )
-        error = usbl_noise_std_offset + usbl_noise_std_factor * distance
-
         self.time = value.epoch_timestamp
-        self.measurement[Index.X] = value.northings
-        self.measurement[Index.Y] = value.eastings
+        self.measurement[Index.X] = value.northings + north_offset
+        self.measurement[Index.Y] = value.eastings + east_offset
 
         if value.northings_std > 0:
-            self.covariance[Index.X, Index.X] = value.northings_std ** 2
-            self.covariance[Index.Y, Index.Y] = value.eastings_std ** 2
+            self.covariance[Index.X, Index.X] = value.northings_std**2
+            self.covariance[Index.Y, Index.Y] = value.eastings_std**2
         else:
-            self.covariance[Index.X, Index.X] = error ** 2
-            self.covariance[Index.Y, Index.Y] = error ** 2
+            usbl_noise_std_offset = self.sensors_std["position_xy"]["offset"]
+            usbl_noise_std_factor = self.sensors_std["position_xy"]["factor"]
+            distance = math.sqrt(
+                value.northings**2 + value.eastings**2 + value.depth**2
+            )
+            error = usbl_noise_std_offset + usbl_noise_std_factor * distance
+            self.covariance[Index.X, Index.X] = error**2
+            self.covariance[Index.Y, Index.Y] = error**2
         warn_if_zero(self.covariance[Index.X, Index.X], "X Covariance")
         warn_if_zero(self.covariance[Index.Y, Index.Y], "Y Covariance")
         # print('USBL cov:', self.covariance[Index.X, Index.X])
@@ -308,9 +315,6 @@ class Measurement(object):
         self.type = "USBL"
 
     def from_orientation(self, value):
-        imu_noise_std_offset = self.sensors_std["orientation"]["offset"]
-        imu_noise_std_factor = self.sensors_std["orientation"]["factor"]
-
         self.time = value.epoch_timestamp
         self.measurement[Index.ROLL] = value.roll * math.pi / 180.0
         self.measurement[Index.PITCH] = value.pitch * math.pi / 180.0
@@ -327,6 +331,8 @@ class Measurement(object):
                 value.yaw_std * math.pi / 180.0
             ) ** 2
         else:
+            imu_noise_std_offset = self.sensors_std["orientation"]["offset"]
+            imu_noise_std_factor = self.sensors_std["orientation"]["factor"]
             self.covariance[Index.ROLL, Index.ROLL] = (
                 (imu_noise_std_offset + value.roll * imu_noise_std_factor)
                 * math.pi
@@ -463,16 +469,16 @@ class EkfImpl(object):
         # Console.info('innovation:', str(innovation.T).replace('\n', ''))
         # print('innovation_cov:', innovation_cov.shape)
         # print('innovation_cov:', innovation_cov)
-        mahalanobis_distance2 = np.asscalar(
-            np.dot(innovation.T, innovation_cov @ innovation)
+        mahalanobis_distance2 = np.dot(innovation.T, innovation_cov @ innovation).item(
+            0
         )
 
-        if mahalanobis_distance2 >= self.mahalanobis_threshold ** 2:
+        if mahalanobis_distance2 >= self.mahalanobis_threshold**2:
             self.nb_exceeded_mahalanobis += 1
             ici = innovation_cov @ innovation
             summands = []
             for i in range(len(innovation)):
-                summands.append(np.asscalar(innovation[i] * ici[i]))
+                summands.append((innovation[i] * ici[i]).item(0))
             Console.warn_verbose(
                 "Mahalanobis dist > threshold ({} time(s) so far in this "
                 "dataset) for measurement at t={} of variable(s) with "
@@ -824,6 +830,8 @@ class ExtendedKalmanFilter(object):
         "velocity_body_list",
         "mahalanobis_distance_threshold",
         "activate_smoother",
+        "usbl_to_dvl",
+        "depth_to_dvl",
     ]
 
     def __init__(
@@ -839,6 +847,8 @@ class ExtendedKalmanFilter(object):
         velocity_body_list,
         mahalanobis_distance_threshold,
         activate_smoother,
+        usbl_to_dvl: List[float],
+        depth_to_dvl: List[float],
     ):
         """
         Get the first USBL, DVL and Orientation reading for EKF initialization
@@ -857,6 +867,8 @@ class ExtendedKalmanFilter(object):
         )
         self.mahalanobis_distance_threshold = mahalanobis_distance_threshold
         self.activate_smoother = activate_smoother
+        self.usbl_to_dvl = usbl_to_dvl
+        self.depth_to_dvl = depth_to_dvl
 
     def run(self, timestamp_list=[]):
         if timestamp_list is None:
@@ -973,28 +985,41 @@ class ExtendedKalmanFilter(object):
                 break  # If there is no timestep left to predict to, we are done
 
             self.ekf.predict(
-                current_stamp, current_stamp - self.ekf.get_last_update_time(),
+                current_stamp,
+                current_stamp - self.ekf.get_last_update_time(),
             )
 
             # Check if the current timestamp is from a (or multiple) measurement(s).
             # If so, update (correct), before moving on to next timestamp.
-            if usbl_stamp == current_stamp:
-                m = Measurement(self.sensors_std)
-                m.from_usbl(self.usbl_list[usbl_idx])
-                self.ekf.correct(m)
-                usbl_idx += 1
-
-            if depth_stamp == current_stamp:
-                m = Measurement(self.sensors_std)
-                m.from_depth(self.depth_list[depth_idx])
-                self.ekf.correct(m)
-                depth_idx += 1
-
             if orientation_stamp == current_stamp:
                 m = Measurement(self.sensors_std)
                 m.from_orientation(self.orientation_list[orientation_idx])
                 self.ekf.correct(m)
                 orientation_idx += 1
+
+            if usbl_stamp == current_stamp:
+                orientation_deg = [
+                    math.degrees(self.ekf.state[Index.ROLL]),
+                    math.degrees(self.ekf.state[Index.PITCH]),
+                    math.degrees(self.ekf.state[Index.YAW]),
+                ]
+                m = Measurement(self.sensors_std)
+                m.from_usbl(self.usbl_list[usbl_idx], orientation_deg, self.usbl_to_dvl)
+                self.ekf.correct(m)
+                usbl_idx += 1
+
+            if depth_stamp == current_stamp:
+                orientation_deg = [
+                    math.degrees(self.ekf.state[Index.ROLL]),
+                    math.degrees(self.ekf.state[Index.PITCH]),
+                    math.degrees(self.ekf.state[Index.YAW]),
+                ]
+                m = Measurement(self.sensors_std)
+                m.from_depth(
+                    self.depth_list[depth_idx], orientation_deg, self.depth_to_dvl
+                )
+                self.ekf.correct(m)
+                depth_idx += 1
 
             if velocity_stamp == current_stamp:
                 m = Measurement(self.sensors_std)
@@ -1060,7 +1085,10 @@ def save_ekf_to_list(
 
         # Transform to lat lon using origins
         b.latitude, b.longitude = metres_to_latlon(
-            mission.origin.latitude, mission.origin.longitude, b.eastings, b.northings,
+            mission.origin.latitude,
+            mission.origin.longitude,
+            b.eastings,
+            b.northings,
         )
 
         # Interpolate altitude from DVL
@@ -1089,9 +1117,16 @@ def update_camera_list(
 ) -> List[Camera]:
     ekf_idx = 0
     c_idx = 0
+
+    # Need to make a new list to append only valid camera entries
+    # TODO: filter out camera entries that are outside of the mission
+    # This is filtered for DR, but not for PF or EKF
+    valid_camera_list = []
+
     while c_idx < len(camera_list) and ekf_idx < len(ekf_list):
         cam_ts = camera_list[c_idx].epoch_timestamp
         ekf_ts = ekf_list[ekf_idx].epoch_timestamp
+
         if cam_ts < ekf_ts:
             if not camera_list[c_idx].updated:
                 Console.error(
@@ -1103,9 +1138,15 @@ def update_camera_list(
         elif cam_ts > ekf_ts:
             ekf_idx += 1
         elif cam_ts == ekf_ts:
-            camera_list[c_idx].fromSyncedBodyVelocity(
-                ekf_list[ekf_idx], origin_offsets, camera1_offsets, latlon_reference,
+            c = Camera()
+            c.fromSyncedBodyVelocity(
+                ekf_list[ekf_idx],
+                origin_offsets,
+                camera1_offsets,
+                latlon_reference,
             )
+            c.filename = camera_list[c_idx].filename
+            valid_camera_list.append(c)
             c_idx += 1
             ekf_idx += 1
-    return camera_list
+    return valid_camera_list

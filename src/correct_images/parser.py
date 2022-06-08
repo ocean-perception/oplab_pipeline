@@ -32,8 +32,6 @@ class ColourCorrection:
         method of sampling intensity values
     window_size : int
         control how noisy the parameters can be
-    outlier_reject : bool
-        flag for choosing filtering image outliers
     """
 
     def __init__(self, node):
@@ -49,11 +47,15 @@ class ColourCorrection:
 
         if self.distance_metric == "none":
             self.distance_metric = "uniform"
-            Console.warn("Distance metric is set to none. This is deprecated.",
-                "Please use uniform instead.")
+            Console.warn(
+                "Distance metric is set to none. This is deprecated.",
+                "Please use uniform instead.",
+            )
         if self.distance_metric not in valid_distance_metrics:
-            Console.error("Distance metric not valid. Please use one of the following:",
-                valid_distance_metrics)
+            Console.error(
+                "Distance metric not valid. Please use one of the following:",
+                valid_distance_metrics,
+            )
             Console.quit("Invalid distance metric: {}".format(self.distance_metric))
 
         self.metric_path = node["metric_path"]
@@ -61,7 +63,6 @@ class ColourCorrection:
         self.altitude_min = node["altitude_filter"]["min_m"]
         self.smoothing = node["smoothing"]
         self.window_size = node["window_size"]
-        self.outlier_reject = node["curve_fitting_outlier_rejection"]
 
 
 class CameraConfig:
@@ -288,9 +289,89 @@ class CorrectConfig:
 
         if "colour_correction" in data:
             self.color_correction = ColourCorrection(data["colour_correction"])
-        node = data["cameras"]
-        self.configs = CameraConfigs(node)
-        node = data["output_settings"]
-        self.output_settings = OutputSettings(node)
+        self.configs = CameraConfigs(data["cameras"])
+        self.output_settings = OutputSettings(data["output_settings"])
         if "rescale" in data:
             self.camerarescale = CameraRescale(data["rescale"])
+
+    def is_equivalent(self, other):
+        """is_equivalent checks if two configurations are equivalent
+           We expect to match a minimum set of parameters, including the number and type of cameras.
+
+        Parameters
+        ----------
+        other : CorrectConfig Object
+            object to be compared to
+
+        Returns
+        -------
+        bool
+            True if objects are equivalent, False otherwise
+        """
+
+        # Objects are considering equivalent if these properties match
+        # .method
+        # .colour_correction:
+        #   .distance_metric
+        #   .smoothing
+        #   .window_size
+
+        if self.method != other.method:
+            Console.warn("Method does not match:", self.method, " / ", other.method)
+            return False
+
+        if (
+            self.color_correction.distance_metric
+            != other.color_correction.distance_metric
+        ):
+            Console.warn(
+                "Distance metric does not match:",
+                self.color_correction.distance_metric,
+                " / ",
+                other.color_correction.distance_metric,
+            )
+            return False
+
+        if self.color_correction.smoothing != other.color_correction.smoothing:
+            Console.warn(
+                "Smoothing does not match:",
+                self.color_correction.smoothing,
+                " / ",
+                other.color_correction.smoothing,
+            )
+            return False
+
+        if self.color_correction.window_size != other.color_correction.window_size:
+            Console.warn(
+                "Window size does not match:",
+                self.color_correction.window_size,
+                " / ",
+                other.color_correction.window_size,
+            )
+            return False
+
+        # Check if the number of cameras match
+        if self.configs.num_cameras != other.configs.num_cameras:
+            Console.warn(
+                "Number of cameras does not match:",
+                self.configs.num_cameras,
+                " / ",
+                other.configs.num_cameras,
+            )
+            return False
+
+        # Check if the name of the cameras match. Right now we are impossing same order in camera names
+        for i in range(self.configs.num_cameras):
+            if (
+                self.configs.camera_configs[i].camera_name
+                != other.configs.camera_configs[i].camera_name
+            ):
+                Console.warn(
+                    "Camera name does not match:",
+                    self.configs.camera_configs[i].camera_name,
+                    " / ",
+                    other.configs.camera_configs[i].camera_name,
+                )
+                return False
+
+        return True

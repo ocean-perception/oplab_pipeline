@@ -161,7 +161,11 @@ def interpolate_camera(query_timestamp, camera_list, filename):
         c2.eastings,
     )
     c.depth = interpolate(
-        query_timestamp, c1.epoch_timestamp, c2.epoch_timestamp, c1.depth, c2.depth,
+        query_timestamp,
+        c1.epoch_timestamp,
+        c2.epoch_timestamp,
+        c1.depth,
+        c2.depth,
     )
     c.latitude = interpolate(
         query_timestamp,
@@ -178,10 +182,18 @@ def interpolate_camera(query_timestamp, camera_list, filename):
         c2.longitude,
     )
     c.roll = interpolate(
-        query_timestamp, c1.epoch_timestamp, c2.epoch_timestamp, c1.roll, c2.roll,
+        query_timestamp,
+        c1.epoch_timestamp,
+        c2.epoch_timestamp,
+        c1.roll,
+        c2.roll,
     )
     c.pitch = interpolate(
-        query_timestamp, c1.epoch_timestamp, c2.epoch_timestamp, c1.pitch, c2.pitch,
+        query_timestamp,
+        c1.epoch_timestamp,
+        c2.epoch_timestamp,
+        c1.pitch,
+        c2.pitch,
     )
     c.yaw = interpolate(
         query_timestamp, c1.epoch_timestamp, c2.epoch_timestamp, c1.yaw, c2.yaw
@@ -462,7 +474,7 @@ def interpolate_sensor_list(
                     _centre_list[j - 1].altitude,
                     _centre_list[j].altitude,
                 )
-                - z_offset
+                + z_offset
             )
             sensor_list[i].depth = (
                 interpolate(

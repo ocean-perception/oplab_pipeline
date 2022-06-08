@@ -346,11 +346,15 @@ def correct_timestamps(data_list):
     #    plt.show()
 
     Console.info(
-        "...... Divergence over time of cpu clock to cam1 clock:", m1 / 100, "%",
+        "...... Divergence over time of cpu clock to cam1 clock:",
+        m1 / 100,
+        "%",
     )
     Console.info("...... Initial offset of cpu clock to cam1 clock:", line1[1][0], "s")
     Console.info(
-        "...... Divergence over time of cpu clock to cam2 clock:", m2 / 100, "%",
+        "...... Divergence over time of cpu clock to cam2 clock:",
+        m2 / 100,
+        "%",
     )
     Console.info("...... Initial offset of cpu clock to cam2 clock:", line2[1][0], "s")
 

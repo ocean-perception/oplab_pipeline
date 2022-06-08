@@ -247,7 +247,13 @@ def parse_gaps(mission, vehicle, category, ftype, outpath):
 
                                 # calculate epoch time
                                 epoch_time = date_time_to_epoch(
-                                    yyyy, mm, dd, hour, mins, secs, timezone_offset,
+                                    yyyy,
+                                    mm,
+                                    dd,
+                                    hour,
+                                    mins,
+                                    secs,
+                                    timezone_offset,
                                 )
                                 # dt_obj = datetime(yyyy,mm,dd,hour,mins,secs)
                                 # time_tuple = dt_obj.timetuple()
@@ -335,7 +341,10 @@ def parse_gaps(mission, vehicle, category, ftype, outpath):
 
                     # determine uncertainty in terms of latitude and longitude
                     latitude_offset, longitude_offset = metres_to_latlon(
-                        abs(latitude), abs(longitude), distance_std, distance_std,
+                        abs(latitude),
+                        abs(longitude),
+                        distance_std,
+                        distance_std,
                     )
 
                     latitude_std = abs(abs(latitude) - latitude_offset)
@@ -356,7 +365,10 @@ def parse_gaps(mission, vehicle, category, ftype, outpath):
                     )
 
                     lateral_distance_target, bearing_target = latlon_to_metres(
-                        latitude, longitude, latitude_reference, longitude_reference,
+                        latitude,
+                        longitude,
+                        latitude_reference,
+                        longitude_reference,
                     )
                     eastings_target = (
                         math.sin(bearing_target * math.pi / 180.0)

@@ -11,6 +11,7 @@ from auv_nav.parsers.acfr_vehicle_pose import (
     AcfrVehiclePoseWriter,
 )
 from auv_nav.parsers.hybis import HybisParser
+from auv_nav.parsers.koyo20rov import RovParser
 from auv_nav.sensors import (
     Altitude,
     BodyVelocity,
@@ -33,6 +34,23 @@ from oplab import Console, Mission, Vehicle, get_processed_folder
 # fmt: on
 
 
+def koyo20rov_to_oplab(args):
+    if args.dive_path is None:
+        Console.error("Please provide a dive path using --dive-path (-i)")
+        Console.quit("Missing comandline arguments")
+    # Do all necessary pathchecks on creating of class instance
+    parser = RovParser(args.dive_path)
+    parser.load_data()
+    parser.check_for_outputs(args.force)
+    # parser.filter_bad_measurements()
+    parser.interpolate_to_images()
+    parser.filter_nans()
+    parser.add_northings_eastings()
+    parser.add_lever_arms()
+    parser.write_outputs()
+    return
+
+
 def hybis_to_oplab(args):
     if args.navigation_file is None:
         Console.error("Please provide a navigation file")
@@ -50,7 +68,10 @@ def hybis_to_oplab(args):
         Console.error("Please provide an output path")
         Console.quit("Missing comandline arguments")
     parser = HybisParser(
-        args.navigation_file, args.image_path, args.reference_lat, args.reference_lon,
+        args.navigation_file,
+        args.image_path,
+        args.reference_lat,
+        args.reference_lon,
     )
     force_overwite = args.force
     filepath = get_processed_folder(args.output_folder)

@@ -263,7 +263,9 @@ def plot_parse_data(filepath, ftype="oplab"):
         )
         table_fig = go.Figure(data=[table_trace], layout=layout_table)
         py.plot(
-            table_fig, filename=str(filepath / "json_data_info.html"), auto_open=False,
+            table_fig,
+            filename=str(filepath / "json_data_info.html"),
+            auto_open=False,
         )
 
         layout = go.Layout(
@@ -333,7 +335,9 @@ def plot_parse_data(filepath, ftype="oplab"):
                 rangeslider=dict(thickness=0.05),
                 type="date",
             ),
-            yaxis=dict(title="Category-Frame",),
+            yaxis=dict(
+                title="Category-Frame",
+            ),
             dragmode="pan",
             margin=go.layout.Margin(l=150),  # noqa
         )

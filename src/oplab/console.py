@@ -270,10 +270,13 @@ class Console:
             folder_path.mkdir(parents=True)
         fh = logging.FileHandler(filename)
         formatter = logging.Formatter(
-            fmt="%(asctime)s %(levelname)-8s %(message)s", datefmt="%Y-%m-%d %H:%M:%S",
+            fmt="%(asctime)s %(levelname)-8s %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
         )
         fh.setFormatter(formatter)
         logger = logging.getLogger()
         logger.setLevel(logging.DEBUG)
         fh.setLevel(logging.DEBUG)  # or any level you want
         logger.addHandler(fh)
+        if logger is not None:
+            logger.info("oplab_pipeline version: " + str(Console.get_version()))

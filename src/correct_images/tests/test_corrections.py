@@ -6,6 +6,7 @@ Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
 
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -75,8 +76,9 @@ class testCorrections(unittest.TestCase):
             [len(self.distance_matrices), image_height * image_width]
         )
 
+        test_directory = Path(tempfile.gettempdir())
         attenuation_parameters = corrections.calculate_attenuation_parameters(
-            images, distances, image_height, image_width, image_channels
+            images, distances, image_height, image_width, image_channels, test_directory
         )
 
         print(attenuation_parameters.shape)
@@ -98,7 +100,10 @@ class testCorrections(unittest.TestCase):
             dist = self.distance_matrices[k]
             corrected = img.copy()
             corrected = corrections.attenuation_correct(
-                img, dist, attenuation_parameters, correction_gains,
+                img,
+                dist,
+                attenuation_parameters,
+                correction_gains,
             )
             corrected_rgb[:, :, :, k] = corrected
         # TODO what do we test here?
@@ -111,7 +116,10 @@ class testCorrections(unittest.TestCase):
 
             if bayer_pattern == "grbg":
                 self.assertAlmostEqual(
-                    image_rgb[1, 1, 0], 75 / 255.0, 2, "Red channel value is incorrect",
+                    image_rgb[1, 1, 0],
+                    75 / 255.0,
+                    2,
+                    "Red channel value is incorrect",
                 )
                 self.assertAlmostEqual(
                     image_rgb[1, 1, 1],
@@ -162,11 +170,11 @@ class testCorrections(unittest.TestCase):
             (image_height, image_width, image_channels), dtype=np.float32
         )
         for i in range(image_channels):
-            img = np.array(self.rgb_images)[:, :, :, i]
+            img = np.array(self.rgb_images)[:, :, :, i] / 255.0
             image_means[:, :, i], image_stds[:, :, i] = mean_std(img)
 
         target_mean = 30
-        target_std = 10
+        target_std = 5
 
         corrected_imgs = np.empty(
             (len(self.rgb_images), image_height, image_width, image_channels),
@@ -174,13 +182,16 @@ class testCorrections(unittest.TestCase):
         )
         for k in range(len(self.rgb_images)):
             for i in range(image_channels):
-                img = self.rgb_images[k][:, :, i]
-                corrected_imgs[k, :, :, i] = corrections.pixel_stat(
-                    img,
-                    image_means[:, :, i],
-                    image_stds[:, :, i],
-                    target_mean,
-                    target_std,
+                img = self.rgb_images[k][:, :, i] / 255.0
+                corrected_imgs[k, :, :, i] = (
+                    corrections.pixel_stat(
+                        img,
+                        image_means[:, :, i],
+                        image_stds[:, :, i],
+                        target_mean,
+                        target_std,
+                    )
+                    * 255.0
                 )
 
         final_image_means = np.empty(
@@ -198,13 +209,16 @@ class testCorrections(unittest.TestCase):
 
         targeted_mean = np.ones(
             (image_height, image_width, image_channels), dtype=np.uint8
-        ) * int(target_mean / 100.0 * 255)
+        ) * int(target_mean / 100.0 * 255.0)
         targeted_std = np.ones(
             (image_height, image_width, image_channels), dtype=np.uint8
-        ) * int(target_std / 100.0 * 255)
+        ) * int(target_std / 100.0 * 255.0)
 
-        np.testing.assert_allclose(final_image_means, targeted_mean, rtol=1)
-        np.testing.assert_allclose(final_image_stds, targeted_std, rtol=1)
+        print(final_image_means)
+        print(final_image_stds)
+
+        np.testing.assert_allclose(final_image_means, targeted_mean, atol=1)
+        np.testing.assert_allclose(final_image_stds, targeted_std, atol=1)
 
     def test_rescale(self):
         image_size = 1000

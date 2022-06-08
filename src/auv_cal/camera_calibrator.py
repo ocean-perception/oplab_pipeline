@@ -195,7 +195,8 @@ def _get_corners(img, board, refine=True, checkerboard_flags=0):
             for col in range(board.n_cols - 1):
                 index = row * board.n_rows + col
                 min_distance = min(
-                    min_distance, _pdist(corners[index, 0], corners[index + 1, 0]),
+                    min_distance,
+                    _pdist(corners[index, 0], corners[index + 1, 0]),
                 )
         for row in range(board.n_rows - 1):
             for col in range(board.n_cols):
@@ -271,7 +272,10 @@ def _get_circles(img, board, pattern, invert=False):
     detector = cv2.SimpleBlobDetector_create(params)
 
     (ok, corners) = cv2.findCirclesGrid(
-        mono_arr, (board.n_cols, board.n_rows), flags=flag, blobDetector=detector,
+        mono_arr,
+        (board.n_cols, board.n_rows),
+        flags=flag,
+        blobDetector=detector,
     )
 
     # In symmetric case, findCirclesGrid does not detect the target if it's
@@ -647,7 +651,10 @@ class MonoCalibrator(Calibrator):
                         self.good_corners.append(i[1])
                         good_corners_names.append(str(i[2]))
                         all_detections = cv2.drawChessboardCorners(
-                            all_detections, (board.n_cols, board.n_rows), corners, True,
+                            all_detections,
+                            (board.n_cols, board.n_rows),
+                            corners,
+                            True,
                         )
 
                         if name == "":
@@ -833,7 +840,12 @@ class MonoCalibrator(Calibrator):
             for i in range(3):
                 self.P[j, i] = ncm[j, i]
         self.mapx, self.mapy = cv2.initUndistortRectifyMap(
-            self.intrinsics, self.distortion, self.R, ncm, self.size, cv2.CV_32FC1,
+            self.intrinsics,
+            self.distortion,
+            self.R,
+            ncm,
+            self.size,
+            cv2.CV_32FC1,
         )
 
     def remap(self, src):
@@ -1176,10 +1188,16 @@ class StereoCalibrator(Calibrator):
                     Console.info("Writing debug images to /tmp/")
                     if self.debug:
                         limg = cv2.drawChessboardCorners(
-                            lgray, (lboard.n_cols, lboard.n_rows), lcorners, lok,
+                            lgray,
+                            (lboard.n_cols, lboard.n_rows),
+                            lcorners,
+                            lok,
                         )
                         rimg = cv2.drawChessboardCorners(
-                            rgray, (rboard.n_cols, rboard.n_rows), rcorners, rok,
+                            rgray,
+                            (rboard.n_cols, rboard.n_rows),
+                            rcorners,
+                            rok,
                         )
                         lname = Path(i).stem
                         rname = Path(j).stem

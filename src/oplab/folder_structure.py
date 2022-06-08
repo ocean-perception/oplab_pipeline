@@ -8,6 +8,7 @@ See LICENSE.md file in the project root for full license information.
 
 import shutil
 from pathlib import Path
+from typing import Optional, Union
 
 from .console import Console
 
@@ -25,7 +26,7 @@ def valid_dive(p):
     return a and b and c
 
 
-def change_subfolder(path, prior, new):
+def change_subfolder(path: Path, prior: str, new: str) -> Path:
     # path = path.resolve(strict=False)
     index = path.parts.index(prior)
     parts = list(path.parts)
@@ -35,7 +36,10 @@ def change_subfolder(path, prior, new):
         if not new_path.exists():
             dummy_path = Path(*parts[:-1])
             Console.info(
-                "The path", path, "does not exist. I am creating ", "it for you.",
+                "The path",
+                path,
+                "does not exist. I am creating ",
+                "it for you.",
             )
             dummy_path.mkdir(exist_ok=True, parents=True)
     elif new_path.is_file():
@@ -45,7 +49,7 @@ def change_subfolder(path, prior, new):
     return new_path
 
 
-def get_folder(path, name):
+def get_folder(path: Union[str, Path], name: str) -> Optional[Path]:
     path = Path(path).resolve(strict=False)
     if name in path.parts:
         return path
@@ -75,15 +79,15 @@ def get_file_list(directory):
     return file_list
 
 
-def get_config_folder(path):
+def get_config_folder(path: Union[str, Path]) -> Optional[Path]:
     return get_folder(path, "configuration")
 
 
-def get_raw_folder(path):
+def get_raw_folder(path: Union[str, Path]) -> Optional[Path]:
     return get_folder(path, "raw")
 
 
-def get_processed_folder(path):
+def get_processed_folder(path: Union[str, Path]) -> Optional[Path]:
     return get_folder(path, "processed")
 
 

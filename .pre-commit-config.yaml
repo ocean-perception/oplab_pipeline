@@ -1,16 +1,16 @@
 repos:
 - repo: https://github.com/pycqa/isort
-  rev: 5.3.2
+  rev: 5.10.0
   hooks:
   - id: isort
     args: ["--profile", "black"]
 - repo: https://github.com/python/black
-  rev: 19.10b0
+  rev: 22.3.0
   hooks:
   - id: black
     pass_filenames: true
 - repo: https://gitlab.com/pycqa/flake8
-  rev: 3.8.3
+  rev: 4.0.1
   hooks:
   - id: flake8
     pass_filenames: true

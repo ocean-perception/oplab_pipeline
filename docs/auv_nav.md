@@ -91,10 +91,11 @@ The algorithm replicated the same folder structure as the input data, but instea
 ## Convert (`auv_nav convert`)
 The algorithm will read in the nav_standard.json file obtained after the parsing and will write the required formats and outputs.
 
-At v0.1.10 the following conversions are available:
+At v0.2.2 the following conversions are available:
  * oplab_to_acfr: Converts a processed dive to ACFR navigation formats by saving a dRAWLOGS_cv folder with its navigation solutions called combined.RAW.auv, mission.cfg and stereo_pose.est.
  * acfr_to_oplab
  * hybis_to_oplab
+ * koyo20rov_to_oplab
 
 
 At v0.1.6 the following output formats are available:
@@ -109,13 +110,14 @@ If output format "acfr" is selected:
 
 `auv_nav convert` usage:
 ```
-auv_nav convert [-h] {oplab_to_acfr,acfr_to_oplab,hybis_to_oplab} ...
+auv_nav convert [-h] {oplab_to_acfr,acfr_to_oplab,hybis_to_oplab,koyo20rov_to_oplab} ...
 
 positional arguments:
-  {oplab_to_acfr,acfr_to_oplab,hybis_to_oplab}
+  {oplab_to_acfr,acfr_to_oplab,hybis_to_oplab,koyo20rov_to_oplab}
     oplab_to_acfr       Converts an already processed dive to ACFR format
     acfr_to_oplab       Converts a VehiclePosEst.data and/or a StereoPosEst.data to OPLAB csv format
     hybis_to_oplab      Converts a hybis navigation file to oplab CSV format
+    koyo20rov_to_oplab       Converts TCM and ship_logs files to oplab CSV format
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -124,6 +126,7 @@ optional arguments:
 The algorithm will read in the nav_standard.json file obtained after the parsing and will write the required formats and outputs. At v0.1.6 the following output formats are available:
 * acfr: The AFCR format uses a 'dRAWLOGS_cv' folder name and outputs its navigation solution to a file called 'combined.RAW.auv' as well as to a 'mission.cfg' to the processing folder root.
 * hybis: Given a Hybis navigation file and their image folder, it generates the required CSV files for correct_images or other software. It does not generate any intermediate json file.
+* koyo20rov Given a koyo20rov dive folder, it reads in the vehicle.yaml; mission.yaml; FileTime.csv for three cameras; TCM.csv; and two ship_log folder .csv files. It generates dead reckoning .csv files for two colour cameras and LM165_at_dvl.
 
 
 ## Inputs and outputs of `auv_nav` ##

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2020, University of Southampton
+Copyright (c) 2022, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -36,6 +36,9 @@ def parse_seaxerocks_images(mission, vehicle, category, ftype, outpath):
     camera1_label = mission.image.cameras[0].name
     camera2_label = mission.image.cameras[1].name
     camera3_label = mission.image.cameras[2].name
+    camera1_timeoffset = mission.image.cameras[0].timeoffset
+    camera2_timeoffset = mission.image.cameras[1].timeoffset
+    camera3_timeoffset = mission.image.cameras[2].timeoffset
 
     epoch_timestamp_stereo = []
     epoch_timestamp_laser = []
@@ -151,26 +154,31 @@ def parse_seaxerocks_images(mission, vehicle, category, ftype, outpath):
 
     j = 0
     for i in range(len(camera1_list)):
-        # find corresponding timestamp even if some images are deletec
+        # find corresponding timestamp even if some images are deleted
         if camera1_index[i] == stereo_index[j]:
-            epoch_timestamp_camera1.append(epoch_timestamp_stereo[j])
-            epoch_timestamp_camera2.append(epoch_timestamp_stereo[j])
-            date = epoch_to_day(epoch_timestamp_stereo[0])
+            epoch_timestamp_camera1.append(
+                epoch_timestamp_stereo[j] + camera1_timeoffset
+            )
+            epoch_timestamp_camera2.append(
+                epoch_timestamp_stereo[j] + camera2_timeoffset
+            )
             if ftype == "acfr":
+                date1 = epoch_to_day(epoch_timestamp_stereo[0] + camera1_timeoffset)
+                date2 = epoch_to_day(epoch_timestamp_stereo[0] + camera2_timeoffset)
                 camera1_filename.append(
                     "sx3_"
-                    + date[2:4]
-                    + date[5:7]
-                    + date[8:10]
+                    + date1[2:4]
+                    + date1[5:7]
+                    + date1[8:10]
                     + "_image"
                     + str(camera1_index[i])
                     + "_FC.png"
                 )
                 camera2_filename.append(
                     "sx3_"
-                    + date[2:4]
-                    + date[5:7]
-                    + date[8:10]
+                    + date2[2:4]
+                    + date2[5:7]
+                    + date2[8:10]
                     + "_image"
                     + str(camera2_index[i])
                     + "_AC.png"
@@ -265,7 +273,7 @@ def parse_seaxerocks_images(mission, vehicle, category, ftype, outpath):
                 )
 
                 epoch_timestamp_laser.append(
-                    float(epoch_time + msec / 1000 + timeoffset)
+                    float(epoch_time + msec / 1000 + timeoffset + camera3_timeoffset)
                 )
 
     # try use pandas for all parsers, should be faster
@@ -282,7 +290,9 @@ def parse_seaxerocks_images(mission, vehicle, category, ftype, outpath):
     for i in range(len(camera3_list)):
         camera3_filename.append(
             "{}/image{}.{}".format(
-                camera3_list[i][s : (s + 3)], camera3_list[i], extension,  # noqa: E203
+                camera3_list[i][s : (s + 3)],
+                camera3_list[i],
+                extension,  # noqa: E203
             )
         )
         camera3_index.append(camera3_list[i])

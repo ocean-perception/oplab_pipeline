@@ -11,6 +11,8 @@ from collections import OrderedDict
 
 import yaml
 
+from oplab import Mission
+
 from .console import Console
 
 
@@ -23,7 +25,7 @@ def represent_ordereddict(dumper, data):
 
         value.append((node_key, node_value))
 
-    return yaml.nodes.MappingNode(u"tag:yaml.org,2002:map", value)
+    return yaml.nodes.MappingNode("tag:yaml.org,2002:map", value)
 
 
 yaml.add_representer(OrderedDict, represent_ordereddict)
@@ -100,29 +102,26 @@ class Vehicle:
         self.filename = filename
 
         mission_file = filename.parent / "mission.yaml"
-        old_format = False
-
-        from oplab import Mission
-
         mission = Mission(mission_file)
-        mission_stream = mission_file.open("r")
-        mission_data = yaml.safe_load(mission_stream)
+        mission_data = None
 
         try:
             with filename.open("r") as stream:
                 self.data = OrderedDict()
                 self.data = yaml.safe_load(stream)
+
                 if "origin" in self.data:
                     self.origin.load(self.data["origin"])
                     if "x_offset" in self.data["origin"]:
-                        old_format = True
+                        mission_stream = mission_file.open("r")
+                        mission_data = yaml.safe_load(mission_stream)
                 if "ins" in self.data:
-                    if old_format:
+                    if mission_data is not None:
                         self.ins.load(self.data["ins"], mission_data["orientation"])
                     else:
                         self.ins.load(self.data["ins"])
                 if "dvl" in self.data:
-                    if old_format:
+                    if mission_data is not None:
                         self.dvl.load(self.data["dvl"], mission_data["velocity"])
                     else:
                         self.dvl.load(self.data["dvl"])
@@ -147,7 +146,8 @@ class Vehicle:
                             "same.",
                         )
                         Console.quit(
-                            "Your vehicle.yaml or your mission.yaml are", " malformed.",
+                            "Your vehicle.yaml or your mission.yaml are",
+                            " malformed.",
                         )
                     self.camera1.load(self.data[camera_name])
                 if len(mission.image.cameras) > 1:
@@ -166,7 +166,8 @@ class Vehicle:
                             the frame name used in vehicle.yaml are the same.",
                         )
                         Console.quit(
-                            "Your vehicle.yaml or your mission.yaml are", "malformed.",
+                            "Your vehicle.yaml or your mission.yaml are",
+                            "malformed.",
                         )
                     self.camera2.load(self.data[camera_name])
                 if len(mission.image.cameras) > 2:
@@ -185,7 +186,8 @@ class Vehicle:
                             the frame name used in vehicle.yaml are the same.",
                         )
                         Console.quit(
-                            "Your vehicle.yaml or your mission.yaml are ", "malformed.",
+                            "Your vehicle.yaml or your mission.yaml are ",
+                            "malformed.",
                         )
                     self.camera3.load(self.data[camera_name])
                 if "chemical" in self.data:

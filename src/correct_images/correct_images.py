@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2020, University of Southampton
+Copyright (c) 2022, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -161,7 +161,7 @@ def call_parse(args):
         path = path_list[0]
         Console.info("Single path provided, normal single dive mode...")
     else:
-        Console.warn(
+        Console.info(
             "Multiple paths provided [{}]. Checking each path...".format(len(path_list))
         )
         for path in path_list:
@@ -189,7 +189,9 @@ def call_parse(args):
         sys.exit(1)
 
     # When in multidive mode, check if all camerasystem are the same. For this we test camera_system.camera_system
-    if len(camerasystem_list) > 1:       # this test is still valid for single dive mode, so we could remove this [if] sentence
+    if (
+        len(camerasystem_list) > 1
+    ):  # this test is still valid for single dive mode, so we could remove this [if] sentence
         camera_system = camerasystem_list[0]
         for cs in camerasystem_list:
             # the first entry will be repeated, no problem with that
@@ -210,15 +212,23 @@ def call_parse(args):
         for cc in correct_config_list:
             # Check if the relevant fields of the configuration are the same (including per-dive camera setup)
             if not correct_config.is_equivalent(cc):
-                Console.error("Configurations [correct_config] do not match!")
-                sys.exit(1)
+                Console.quit("Configurations [correct_config] do not match!")
         Console.warn("Configurations are equivalent for all dives.")
+    else:
+        # only one element in the list, copy it for single dive mode (this could be moved outside)
+        correct_config = correct_config_list[0]
 
     camerasystem = camerasystem_list[0]
     for camera in camerasystem.cameras:
         # check if the camera also exists in the configuration
-        if camera.name not in [c.camera_name for c in correct_config.configs.camera_configs]: # ignore if not present
-            Console.warn("Camera [", camera.name, "] defined in <camera.yaml> but not found in configuration. Skipping...")
+        if camera.name not in [
+            c.camera_name for c in correct_config.configs.camera_configs
+        ]:  # ignore if not present
+            Console.warn(
+                "Camera [",
+                camera.name,
+                "] defined in <camera.yaml> but not found in configuration. Skipping...",
+            )
         else:
             Console.info("Parsing for camera", camera.name)
             # Create a Corrector object for each camera with empty configuration
@@ -321,7 +331,8 @@ def load_configuration_and_camera_system(path, suffix=None):
         User provided Path of source images
     """
 
-    Console.warn("Parsing multipaths with suffix:", suffix)
+    if suffix is not None:
+        Console.info("Parsing with suffix:", suffix)
 
     # resolve paths to raw, processed and config folders
     path_raw_folder = get_raw_folder(path)
@@ -348,8 +359,9 @@ def load_configuration_and_camera_system(path, suffix=None):
 
     if not camera_yaml_raw_path.exists() and not camera_yaml_config_path.exists():
         Console.info(
-            "Not found camera.yaml file in /raw folder...Using default ",
-            "camera.yaml file...",
+            "camera.yaml file not found neither in /raw nor in /config folder.",
+            "Using default camera.yaml file for image format",
+            mission.image.format,
         )
         # find out default yaml paths
         root = Path(__file__).resolve().parents[1]
@@ -384,8 +396,6 @@ def load_configuration_and_camera_system(path, suffix=None):
             "correct_images/default_yaml/rosbag/correct_images.yaml"
         )
 
-        Console.info("Image format:", mission.image.format)
-
         if mission.image.format == "acfr_standard":
             camera_yaml_path = root / acfr_std_camera_file
             default_file_path_correct_config = root / acfr_std_correct_config_file
@@ -414,8 +424,10 @@ def load_configuration_and_camera_system(path, suffix=None):
             Console.info("The file is located at", camera_yaml_config_path)
         else:
             Console.quit(
-                "Image system in camera.yaml does not match with mission.yaml",
-                "Provide correct camera.yaml in /raw folder... ",
+                "There is currently no default camera file for image format",
+                mission.image.format,
+                ". Please provide the camera.yaml file in the /config folder and",
+                "rerun correct_images.",
             )
     elif camera_yaml_raw_path.exists() and not camera_yaml_config_path.exists():
         Console.info("Found camera.yaml file in /raw folder")
@@ -451,7 +463,8 @@ def load_configuration_and_camera_system(path, suffix=None):
         )
     if path_correct_images.exists():
         Console.info(
-            "Configuration file correct_images.yaml file found at", path_correct_images,
+            "Configuration file correct_images.yaml file found at",
+            path_correct_images,
         )
     else:
         default_file_path_correct_config.copy(path_correct_images)
