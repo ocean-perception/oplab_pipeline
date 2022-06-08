@@ -4,7 +4,7 @@ title: >-
   Ocean Perception Laboratory Pipeline
   (oplab_pipeline)
 version: 1.0.0
-# doi: 10.5281/zenodo.1234  # UNCOMMENT THIS LINE TO USE DOI
+doi: 10.5281/zenodo.6623369
 date-released: 2022-06-08
 type: software
 authors:

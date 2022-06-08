@@ -1,5 +1,6 @@
 [![oplab_pipeline](https://github.com/ocean-perception/oplab_pipeline/actions/workflows/oplab_pipeline.yml/badge.svg)](https://github.com/ocean-perception/oplab_pipeline/actions/workflows/oplab_pipeline.yml)
-[![Code Coverage](https://codecov.io/gh/ocean-perception/oplab_pipeline/branch/master/graph/badge.svg?token=PJBfl6qhp5)](https://codecov.io/gh/ocean-perception/oplab_pipeline) [![Documentation Status](https://readthedocs.org/projects/oplab-pipeline/badge/?version=latest)](https://oplab-pipeline.readthedocs.io/en/latest/?badge=latest) [![Docker Image CI](https://github.com/ocean-perception/oplab_pipeline/actions/workflows/docker_image.yml/badge.svg)](https://github.com/ocean-perception/oplab_pipeline/actions/workflows/docker_image.yml)
+[![Code Coverage](https://codecov.io/gh/ocean-perception/oplab_pipeline/branch/master/graph/badge.svg?token=PJBfl6qhp5)](https://codecov.io/gh/ocean-perception/oplab_pipeline) [![Documentation Status](https://readthedocs.org/projects/oplab-pipeline/badge/?version=latest)](https://oplab-pipeline.readthedocs.io/en/latest/?badge=latest) [![Docker Image CI](https://github.com/ocean-perception/oplab_pipeline/actions/workflows/docker_image.yml/badge.svg)](https://github.com/ocean-perception/oplab_pipeline/actions/workflows/docker_image.yml) [![DOI](https://zenodo.org/badge/101513536.svg)](https://zenodo.org/badge/latestdoi/101513536)
+
 
 
 # oplab_pipeline
