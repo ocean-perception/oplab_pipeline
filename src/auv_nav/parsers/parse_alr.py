@@ -5,6 +5,8 @@ All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
+import os
+import pandas as pd
 
 from math import isnan
 
@@ -43,8 +45,14 @@ def parse_alr(mission, vehicle, category, ftype, outpath):
 
     path = get_raw_folder(outpath / ".." / filepath / filename)
 
-    alr_log = loadmat(str(path))
-    mission_data = alr_log["MissionData"]
+    # Check if file extension is .mat (Matlab) use legacy parser
+    _, extension = os.path.spltext(filename)
+    if extension == ".mat":
+        alr_log = loadmat(str(path))
+        mission_data = alr_log["MissionData"]
+    elif extension == ".csv":
+        # Load the data from CSV file with well-known headers
+        mission_data = pd.read_csv(str(path))
 
     data_list = []
     if category == Category.VELOCITY:
