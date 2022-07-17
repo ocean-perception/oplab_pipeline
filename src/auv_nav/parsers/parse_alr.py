@@ -46,7 +46,7 @@ def parse_alr(mission, vehicle, category, ftype, outpath):
     path = get_raw_folder(outpath / ".." / filepath / filename)
 
     # Check if file extension is .mat (Matlab) use legacy parser
-    _, extension = os.path.spltext(filename)
+    _, extension = os.path.splitext(filename)
     if extension == ".mat":
         alr_log = loadmat(str(path))
         mission_data = alr_log["MissionData"]
@@ -54,6 +54,7 @@ def parse_alr(mission, vehicle, category, ftype, outpath):
     elif extension == ".csv":
         # Load the data from CSV file with well-known headers
         mission_data = pd.read_csv(str(path))
+        # TODO: Check if header is ALR/MARS format (pre-adjustment) which uses 'timestamp' rather than 'epoch_timestamp'
         dvl_down_bt_key = "DVL_down_BT_valid"
 
     data_list = []
