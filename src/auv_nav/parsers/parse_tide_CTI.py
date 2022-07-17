@@ -65,7 +65,12 @@ def parse_tide_CTI(mission, vehicle, category, ftype, outpath):
                     )
                     epoch_timestamp = epoch_time + msec / 1000 + timeoffset
                     tide.epoch_timestamp = epoch_timestamp
-                    tide.height = float(line[22:28])
+
+                    # Warning: NOC/CTI format does not enforce fixed field width.
+                    # Use the comma(,) as field delimiters
+                    _ini = line.find(",") + 1
+                    _end = line.find(",", _ini)
+                    tide.height = float(line[_ini:_end])
                     tide.height_std = tide.height * tide.height_std_factor
 
                     data = tide.export(output_format)
