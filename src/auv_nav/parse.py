@@ -23,6 +23,7 @@ from auv_nav.parsers.parse_gaps import parse_gaps
 from auv_nav.parsers.parse_interlacer import parse_interlacer
 from auv_nav.parsers.parse_NOC_nmea import parse_NOC_nmea
 from auv_nav.parsers.parse_NOC_polpred import parse_NOC_polpred
+from auv_nav.parsers.parse_tide_CTI import parse_tide_CTI
 from auv_nav.parsers.parse_ntnu_dvl import parse_ntnu_dvl
 from auv_nav.parsers.parse_ntnu_stereo import parse_ntnu_stereo_images
 
@@ -542,6 +543,8 @@ def parse_single(filepath, force_overwrite):
     if not mission.tide.empty():
         if mission.tide.format == "NOC_polpred":
             tide_list = parse_NOC_polpred(mission, vehicle, "tide", ftype, outpath)
+        elif mission.tide.format == "NOC_CTI":
+            tide_list = parse_tide_CTI(mission, vehicle, "tide", ftype, outpath)
         else:
             Console.quit("Mission tide format", mission.tide.format, "not supported.")
     else:
