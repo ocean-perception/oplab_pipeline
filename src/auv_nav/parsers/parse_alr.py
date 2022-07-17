@@ -54,7 +54,10 @@ def parse_alr(mission, vehicle, category, ftype, outpath):
     elif extension == ".csv":
         # Load the data from CSV file with well-known headers
         mission_data = pd.read_csv(str(path))
-        # TODO: Check if header is ALR/MARS format (pre-adjustment) which uses 'timestamp' rather than 'epoch_timestamp'
+        # Check if mission_data dataframe has "timestamp" header
+        if "timestamp" in mission_data.keys():
+            mission_data = mission_data.rename(columns = {'timestamp':'epoch_timestamp'})
+            # mission_data["epoch_timestamp"]=mission_data["timestamp"]
         dvl_down_bt_key = "DVL_down_BT_valid"
 
     data_list = []
