@@ -54,7 +54,7 @@ def parse_tide_CTI(mission, vehicle, category, ftype, outpath):
                     yyyy = int(line[0:4])
                     mm = int(line[5:7])
                     dd = int(line[8:10])
-                    # SKip one (T)
+                    # Skip one (T)
                     hour = int(line[11:13])
                     mins = int(line[14:16])
                     secs = int(line[17:19])
