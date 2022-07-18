@@ -87,6 +87,8 @@ def read_timezone(timezone):
             timezone_offset_h = 0.0
         elif timezone == "jst" or timezone == "JST":
             timezone_offset_h = 9.0
+        elif timezone == "bst" or timezone == "BST":
+            timezone_offset_h = 1.0
     else:
         try:
             timezone_offset_h = float(timezone)
