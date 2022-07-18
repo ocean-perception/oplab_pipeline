@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: 'If you use this software, please cite it as below.'
+title: >-
+  Ocean Perception Laboratory Pipeline
+  (oplab_pipeline)
+version: 1.0.0
+doi: 10.5281/zenodo.6623369
+date-released: 2022-06-08
+type: software
+authors:
+  - given-names: Miguel Massot
+    name-particle: Miguel
+    family-names: Massot Campos
+    email: miquel.massot-campos@soton.ac.uk
+    affiliation: University of Southampton
+    orcid: 'https://orcid.org/0000-0002-1202-0362'
+  - given-names: Adrian Bodenmann
+    name-particle: Adrian
+    family-names: Bodenmann
+    email: adrian.bodenmann@soton.ac.uk
+    affiliation: University of Southampton
+    orcid: 'https://orcid.org/0000-0002-3195-0602'
+  - given-names: Blair Thornton
+    name-particle: Blair
+    family-names: Thornton
+    email: b.thornton@soton.ac.uk
+    affiliation: University of Southampton
+    orcid: 'https://orcid.org/0000-0003-4492-622X'
