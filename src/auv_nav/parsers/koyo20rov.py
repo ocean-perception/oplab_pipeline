@@ -17,41 +17,32 @@ import pandas as pd
 
 from auv_nav.tools.body_to_inertial import body_to_inertial
 from auv_nav.tools.interpolate import interpolate
-from auv_nav.tools.latlon_wgs84 import (
-    latlon_to_metres,
-    metres_to_latlon,
-)
-from auv_nav.tools.time_conversions import (
-    date_time_to_epoch,
-    epoch_to_utctime,
-)
-from oplab import (
-    Console,
-    Mission,
-    Vehicle,
-    get_raw_folder,
-)
+from auv_nav.tools.latlon_wgs84 import latlon_to_metres, metres_to_latlon
+from auv_nav.tools.time_conversions import date_time_to_epoch
+from oplab import Console, Mission, Vehicle, get_raw_folder
 from oplab.folder_structure import get_processed_folder
 
 
 class RovCam:
     """Class to parse and store camera FileTime data"""
-    def __init__(self,
+
+    def __init__(
+        self,
         date_Cam,
         time_Cam,
         ms_Cam,
         index,
         stamp=0,
     ):
-        self.depth=np.nan
-        self.altitude=np.nan
-        self.heading=np.nan
-        self.pitch=np.nan
-        self.roll=np.nan
-        self.lat=np.nan
-        self.lon=np.nan
-        self.index=int(index)
-        
+        self.depth = np.nan
+        self.altitude = np.nan
+        self.heading = np.nan
+        self.pitch = np.nan
+        self.roll = np.nan
+        self.lat = np.nan
+        self.lon = np.nan
+        self.index = int(index)
+
         if date_Cam != 0:
             self.epoch_timestamp = self.convert_times_to_epoch(
                 date_Cam,
@@ -60,8 +51,9 @@ class RovCam:
             )
         else:
             self.epoch_timestamp = stamp
-    
-    def add_lever_arms(self,
+
+    def add_lever_arms(
+        self,
         target: str,
         positions: dict,
         ref_lat: float,
@@ -70,22 +62,28 @@ class RovCam:
         """Add the lever arms to depth, altitude, lat, and lon
         measurements.
         """
-        self.depth = self.depth + body_to_inertial(
-            self.roll,
-            self.pitch,
-            self.heading,
-            positions[target][0] - positions["depth"][0],
-            positions[target][1] - positions["depth"][1],
-            positions[target][2] - positions["depth"][2],
-        )[2]
-        self.altitude = self.altitude - body_to_inertial(
-            self.roll,
-            self.pitch,
-            self.heading,
-            positions[target][0] - positions["dvl"][0],
-            positions[target][1] - positions["dvl"][1],
-            positions[target][2] - positions["dvl"][2],
-        )[2]
+        self.depth = (
+            self.depth
+            + body_to_inertial(
+                self.roll,
+                self.pitch,
+                self.heading,
+                positions[target][0] - positions["depth"][0],
+                positions[target][1] - positions["depth"][1],
+                positions[target][2] - positions["depth"][2],
+            )[2]
+        )
+        self.altitude = (
+            self.altitude
+            - body_to_inertial(
+                self.roll,
+                self.pitch,
+                self.heading,
+                positions[target][0] - positions["dvl"][0],
+                positions[target][1] - positions["dvl"][1],
+                positions[target][2] - positions["dvl"][2],
+            )[2]
+        )
         (delta_north, delta_east) = body_to_inertial(
             self.roll,
             self.pitch,
@@ -115,7 +113,7 @@ class RovCam:
         hour = int(time_Cam[0:2])
         mins = int(time_Cam[2:4])
         secs = int(time_Cam[4:6])
-        usecs = int(float(ms_Cam)*1000)
+        usecs = int(float(ms_Cam) * 1000)
         if hour < 0:
             hour = 0
             mins = 0
@@ -135,7 +133,9 @@ class RovCam:
 
 class RovRot:
     """Class to parse and store koyo20rov TCM data"""
-    def __init__(self,
+
+    def __init__(
+        self,
         heading,
         pitch,
         roll,
@@ -155,8 +155,9 @@ class RovRot:
         self.heading = float(heading)
         self.pitch = float(pitch)
         self.roll = float(roll)
-    
-    def convert_times_to_epoch(self,
+
+    def convert_times_to_epoch(
+        self,
         rot_date,
         rot_time,
         timems,
@@ -169,7 +170,7 @@ class RovRot:
         hour = int(rot_time[0:2])
         mins = int(rot_time[2:4])
         secs = int(rot_time[4:6])
-        usecs = int(float(timems)*1000)
+        usecs = int(float(timems) * 1000)
         if hour < 0:
             hour = 0
             mins = 0
@@ -189,7 +190,9 @@ class RovRot:
 
 class RovPos:
     """Class to parse and store koyo20rov ship_log data."""
-    def __init__(self,
+
+    def __init__(
+        self,
         depth=np.nan,
         altitude=np.nan,
         lon=np.nan,
@@ -209,10 +212,10 @@ class RovPos:
         self.altitude = float(altitude)
         self.lon = float(lon)
         self.lat = float(lat)
-    
+
     def convert_timestr_to_epoch(self, date, timestr):
         while len(date) < 13:
-            date = ' ' + date
+            date = " " + date
         yyyy = 2000 + int(date[5:7])
         mm = int(date[8:10])
         dd = int(date[11:13])
@@ -292,7 +295,8 @@ class RovParser:
         vector_camB (list) : RovCam objects
     """
 
-    def __init__(self,
+    def __init__(
+        self,
         unspecified_dive_path: str,
     ):
         """
@@ -313,48 +317,30 @@ class RovParser:
         # Search ship_log folder for all .csv files that don't end in
         # FIX. Save to a list of their PosixPath filepath objects.
         self.list_filepath_pos = [
-            filepath for filepath in (
-                raw_dive_path
-                / "nav/ship_log/"
-            ).glob("*[!FIX].csv")
+            filepath
+            for filepath in (raw_dive_path / "nav/ship_log/").glob("*[!FIX].csv")
         ]
         Console.info(
-            f"Found {len(self.list_filepath_pos)} position files in"
-            + f" [dive]/nav/ship_log/:"
+            "Found",
+            len(self.list_filepath_pos),
+            "position files in" + " [dive]/nav/ship_log/:",
         )
-        [
-            print(f" - {filepath.name}")
-            for filepath in self.list_filepath_pos
-        ]
+        for filepath in self.list_filepath_pos:
+            Console.info(" -", filepath.name)
 
-        self.filepath_rot = (
-            raw_dive_path
-            / "nav/TCM/TCM.csv"
-        ).resolve()
+        self.filepath_rot = (raw_dive_path / "nav/TCM/TCM.csv").resolve()
         assert self.filepath_rot.exists()
 
-        self.filepath_LM165 = (
-            raw_dive_path
-            / "image/LM165/FileTime.csv"
-        ).resolve()
+        self.filepath_LM165 = (raw_dive_path / "image/LM165/FileTime.csv").resolve()
         assert self.filepath_LM165.exists()
 
-        self.filepath_Xviii = (
-            raw_dive_path
-            / "image/Xviii/FileTime.csv"
-        ).resolve()
+        self.filepath_Xviii = (raw_dive_path / "image/Xviii/FileTime.csv").resolve()
         assert self.filepath_Xviii.exists()
 
-        self.vehicle_yaml_filepath = (
-            raw_dive_path
-            / "vehicle.yaml"
-        ).resolve()
+        self.vehicle_yaml_filepath = (raw_dive_path / "vehicle.yaml").resolve()
         assert self.vehicle_yaml_filepath.exists()
 
-        self.mission_yaml_filepath = (
-            raw_dive_path
-            / "mission.yaml"
-        )
+        self.mission_yaml_filepath = raw_dive_path / "mission.yaml"
         assert self.mission_yaml_filepath.exists()
         return
 
@@ -365,9 +351,7 @@ class RovParser:
         """
         # Read in all data, concatenate position files, and assign data
         # to variable names.
-        Console.info(
-            f"Loading vehicle.yaml at {self.vehicle_yaml_filepath}"
-        )
+        Console.info(f"Loading vehicle.yaml at {self.vehicle_yaml_filepath}")
         vehicle = Vehicle(self.vehicle_yaml_filepath)
         self.sensor_positions = {}
         for key in vehicle.data:
@@ -376,9 +360,7 @@ class RovParser:
             z_pos = vehicle.data[key]["heave_m"]
             self.sensor_positions[key] = np.array([x_pos, y_pos, z_pos])
 
-        Console.info(
-            f"Loading mission.yaml at {self.mission_yaml_filepath}"
-        )
+        Console.info(f"Loading mission.yaml at {self.mission_yaml_filepath}")
         mission = Mission(self.mission_yaml_filepath)
         self.ref_lat = mission.origin.latitude
         self.ref_lon = mission.origin.longitude
@@ -393,7 +375,8 @@ class RovParser:
                 filepath_pos,
                 encoding="shift_jis",
                 header=None,
-            ) for filepath_pos in self.list_filepath_pos
+            )
+            for filepath_pos in self.list_filepath_pos
         ]
         #  C :  2 : date
         #  D :  3 : timestr
@@ -439,7 +422,7 @@ class RovParser:
                     else:
                         list_outliers.append(this_pos)
             list_vector_pos.append(vector_pos)
-        
+
         if len(list_outliers) > 0:
             Console.warn(f"Discarded {len(list_outliers)} temporal outliers")
             for this_pos in list_outliers:
@@ -448,12 +431,11 @@ class RovParser:
         self.vector_pos = []
         for this_vector_pos in list_vector_pos:
             self.vector_pos += this_vector_pos
-        Console.info(
-            f"Found {len(self.vector_pos)} good position records!"
-        )
+        Console.info(f"Found {len(self.vector_pos)} good position records!")
 
         def return_epoch_timestamp(rovdata_obj):
             return rovdata_obj.epoch_timestamp
+
         # Sort by timestamp! (just in case)
         self.vector_pos = sorted(
             self.vector_pos,
@@ -560,7 +542,7 @@ class RovParser:
             key=return_epoch_timestamp,
         )
         return
-    
+
     def check_for_outputs(self, forcing: bool):
         """
         Check for preexisting output files, exit if present and not
@@ -570,18 +552,22 @@ class RovParser:
             forcing (bool): whether forcing file overwrites or not
         """
         # Check load_data has been called
-        assert hasattr(self, "vector_pos"), (
-            "ERROR: RovParser.load_data() must be called first."
-        )
+        assert hasattr(
+            self, "vector_pos"
+        ), "ERROR: RovParser.load_data() must be called first."
         # Figure out beginning and end times
-        epoch_start = min([
-            self.vector_pos[0].epoch_timestamp,
-            self.vector_rot[0].epoch_timestamp,
-        ])
-        epoch_end = max([
-            self.vector_pos[-1].epoch_timestamp,
-            self.vector_rot[-1].epoch_timestamp,
-        ])
+        epoch_start = min(
+            [
+                self.vector_pos[0].epoch_timestamp,
+                self.vector_rot[0].epoch_timestamp,
+            ]
+        )
+        epoch_end = max(
+            [
+                self.vector_pos[-1].epoch_timestamp,
+                self.vector_rot[-1].epoch_timestamp,
+            ]
+        )
         timestr_start = epoch_to_timestr(epoch_start)
         timestr_end = epoch_to_timestr(epoch_end)
         # Check whether output files already exist
@@ -592,62 +578,63 @@ class RovParser:
             / "dead_reckoning"
         ).resolve()
         dirpath_output.mkdir(parents=True, exist_ok=True)
-        self.outpath_camA = (
-            dirpath_output
-            / f"auv_dr_{self.name_camA}.csv"
-        )
+        self.outpath_camA = dirpath_output / f"auv_dr_{self.name_camA}.csv"
         try:
             assert not self.outpath_camA.exists()
         except AssertionError:
             if not forcing:
                 Console.error(
-                    f"{self.outpath_camA.name} already exists at"
-                    f" {self.outpath_camA.parent}. Use forcing to"
-                    f" overwrite."
+                    self.outpath_camA.name,
+                    "already exists at",
+                    self.outpath_camA.parent,
+                    ". Use forcing to",
+                    " overwrite.",
                 )
                 raise
             else:
                 Console.warn(
-                    f"{self.outpath_camA.name} will be overwritten at"
-                    f" {self.outpath_camA.parent}"
+                    self.outpath_camA.name,
+                    "will be overwritten at",
+                    self.outpath_camA.parent,
+                    "",
                 )
-        self.outpath_camB = (
-            dirpath_output
-            / f"auv_dr_{self.name_camB}.csv"
-        )
+        self.outpath_camB = dirpath_output / f"auv_dr_{self.name_camB}.csv"
         try:
             assert not self.outpath_camB.exists()
         except AssertionError:
             if not forcing:
                 Console.error(
-                    f"{self.outpath_camB.name} already exists at"
-                    f" {self.outpath_camB.parent}. Use forcing to"
-                    f" overwrite."
+                    self.outpath_camB.name,
+                    "already exists at",
+                    self.outpath_camB.parent,
+                    ". Use forcing to",
+                    " overwrite.",
                 )
                 raise
             else:
                 Console.warn(
-                    f"{self.outpath_camB.name} will be overwritten at"
-                    f" {self.outpath_camB.parent}"
+                    self.outpath_camB.name,
+                    "will be overwritten at",
+                    self.outpath_camB.parent,
                 )
-        self.outpath_LM165_at_dvl = (
-            dirpath_output
-            / f"auv_dr_LM165_at_dvl.csv"
-        )
+        self.outpath_LM165_at_dvl = dirpath_output / "auv_dr_LM165_at_dvl.csv"
         try:
             assert not self.outpath_LM165_at_dvl.exists()
         except AssertionError:
             if not forcing:
                 Console.error(
-                    f"{self.outpath_LM165_at_dvl.name} already exists at"
-                    f" {self.outpath_LM165_at_dvl.parent}. Use forcing to"
-                    f" overwrite."
+                    self.outpath_LM165_at_dvl.name,
+                    "already exists at",
+                    self.outpath_LM165_at_dvl.parent,
+                    ". Use forcing to",
+                    "overwrite.",
                 )
                 raise
             else:
                 Console.warn(
-                    f"{self.outpath_LM165_at_dvl.name} will be overwritten at"
-                    f" {self.outpath_LM165_at_dvl.parent}"
+                    self.outpath_LM165_at_dvl.name,
+                    "will be overwritten at",
+                    self.outpath_LM165_at_dvl.parent,
                 )
         return
 
@@ -667,9 +654,9 @@ class RovParser:
         Assumed that first measurement is fine and that bad measurements
         come in 1s (not pairs, triplets, etc).
         """
-        assert hasattr(self, "vector_pos"), (
-            "ERROR: RovParser.load_data() must be called first."
-        )
+        assert hasattr(
+            self, "vector_pos"
+        ), "ERROR: RovParser.load_data() must be called first."
         FACTOR = 111139  # https://sciencing.com/convert-distances-degrees-meters-7858322.html
         MAX_SPEED = 20
         new_vector_pos = [self.vector_pos[0]]
@@ -677,29 +664,19 @@ class RovParser:
         i = 1
         Console.info("Checking for outlier position data...")
         n = len(self.vector_pos)
-        n_outliers = 0
         i = 1
         current_pos = self.vector_pos[0]
         while i < n:
             print(
                 f" - {100*i/n:6.2f}%",
-                end='\r',
+                end="\r",
                 flush=True,
             )
-            delta_x = (
-                self.vector_pos[i].lat
-                - current_pos.lat
-            )
-            delta_y = (
-                self.vector_pos[i].lon
-                - current_pos.lon
-            )
+            delta_x = self.vector_pos[i].lat - current_pos.lat
+            delta_y = self.vector_pos[i].lon - current_pos.lon
             delta_d = FACTOR * np.sqrt(delta_x**2 + delta_y**2)
-            delta_t = (
-                self.vector_pos[i].epoch_timestamp
-                - current_pos.epoch_timestamp
-            )
-            av_speed = delta_d/delta_t
+            delta_t = self.vector_pos[i].epoch_timestamp - current_pos.epoch_timestamp
+            av_speed = delta_d / delta_t
             if av_speed > MAX_SPEED:
                 outlier_vector_pos.append(self.vector_pos[i])
                 i += 1
@@ -707,19 +684,16 @@ class RovParser:
                 current_pos = self.vector_pos[i]
                 new_vector_pos.append(current_pos)
                 i += 1
-        print(
-            f" - {100*(i+1)/n:6.2f}%"
-        )
-        Console.info(
-            f"...finished (removed {len(outlier_vector_pos)} outliers)."
-        )
+        print(f" - {100*(i+1)/n:6.2f}%")
+        Console.info(f"...finished (removed {len(outlier_vector_pos)} outliers).")
         for pos_object in outlier_vector_pos:
             print(f" - epoch: {pos_object.epoch_timestamp}")
-        
+
         self.vector_pos = new_vector_pos
         return
 
-    def interpolate_vector_pos(self,
+    def interpolate_vector_pos(
+        self,
         vector_cam: list,
         name: str,
     ) -> list:
@@ -736,9 +710,8 @@ class RovParser:
         i = 0
         for j, image_object in enumerate(vector_cam):
             print(
-                f"Interpolating {name} from position vectors"
-                f" - {100*j/n:6.2f}%",
-                end='\r',
+                f"Interpolating {name} from position vectors" f" - {100*j/n:6.2f}%",
+                end="\r",
                 flush=True,
             )
             image_epoch = image_object.epoch_timestamp
@@ -749,44 +722,42 @@ class RovParser:
             if image_epoch < self.vector_pos[0].epoch_timestamp:
                 continue
             # Find the position data that immediately preceeds the image.
-            while (image_epoch > self.vector_pos[i].epoch_timestamp):
-                i+=1
+            while image_epoch > self.vector_pos[i].epoch_timestamp:
+                i += 1
             # Interpolate.
             image_object.lat = interpolate(
                 image_epoch,
-                self.vector_pos[i-1].epoch_timestamp,
+                self.vector_pos[i - 1].epoch_timestamp,
                 self.vector_pos[i].epoch_timestamp,
-                self.vector_pos[i-1].lat,
+                self.vector_pos[i - 1].lat,
                 self.vector_pos[i].lat,
             )
             image_object.lon = interpolate(
                 image_epoch,
-                self.vector_pos[i-1].epoch_timestamp,
+                self.vector_pos[i - 1].epoch_timestamp,
                 self.vector_pos[i].epoch_timestamp,
-                self.vector_pos[i-1].lon,
+                self.vector_pos[i - 1].lon,
                 self.vector_pos[i].lon,
             )
             image_object.depth = interpolate(
                 image_epoch,
-                self.vector_pos[i-1].epoch_timestamp,
+                self.vector_pos[i - 1].epoch_timestamp,
                 self.vector_pos[i].epoch_timestamp,
-                self.vector_pos[i-1].depth,
+                self.vector_pos[i - 1].depth,
                 self.vector_pos[i].depth,
             )
             image_object.altitude = interpolate(
                 image_epoch,
-                self.vector_pos[i-1].epoch_timestamp,
+                self.vector_pos[i - 1].epoch_timestamp,
                 self.vector_pos[i].epoch_timestamp,
-                self.vector_pos[i-1].altitude,
+                self.vector_pos[i - 1].altitude,
                 self.vector_pos[i].altitude,
             )
-        print(
-            f"Interpolating {name} from position vectors"
-            f" - {100*(j+1)/n:6.2f}%"
-        )
+        print(f"Interpolating {name} from position vectors" f" - {100*(j+1)/n:6.2f}%")
         return vector_cam
-    
-    def interpolate_vector_rot(self,
+
+    def interpolate_vector_rot(
+        self,
         vector_cam: list,
         name: str,
     ) -> list:
@@ -803,9 +774,8 @@ class RovParser:
         i = 0
         for j, image_object in enumerate(vector_cam):
             print(
-                f"Interpolating {name} from rotation vectors"
-                f" - {100*j/n:6.2f}%",
-                end='\r',
+                f"Interpolating {name} from rotation vectors" f" - {100*j/n:6.2f}%",
+                end="\r",
                 flush=True,
             )
             image_epoch = image_object.epoch_timestamp
@@ -816,34 +786,31 @@ class RovParser:
             if image_epoch < self.vector_rot[0].epoch_timestamp:
                 continue
             # Find the position data that immediately preceeds the image.
-            while (image_epoch > self.vector_rot[i].epoch_timestamp):
-                i+=1
+            while image_epoch > self.vector_rot[i].epoch_timestamp:
+                i += 1
             # Interpolate.
             image_object.heading = interpolate(
                 image_epoch,
-                self.vector_rot[i-1].epoch_timestamp,
+                self.vector_rot[i - 1].epoch_timestamp,
                 self.vector_rot[i].epoch_timestamp,
-                self.vector_rot[i-1].heading,
+                self.vector_rot[i - 1].heading,
                 self.vector_rot[i].heading,
             )
             image_object.pitch = interpolate(
                 image_epoch,
-                self.vector_rot[i-1].epoch_timestamp,
+                self.vector_rot[i - 1].epoch_timestamp,
                 self.vector_rot[i].epoch_timestamp,
-                self.vector_rot[i-1].pitch,
+                self.vector_rot[i - 1].pitch,
                 self.vector_rot[i].pitch,
             )
             image_object.roll = interpolate(
                 image_epoch,
-                self.vector_rot[i-1].epoch_timestamp,
+                self.vector_rot[i - 1].epoch_timestamp,
                 self.vector_rot[i].epoch_timestamp,
-                self.vector_rot[i-1].roll,
+                self.vector_rot[i - 1].roll,
                 self.vector_rot[i].roll,
             )
-        print(
-            f"Interpolating {name} from rotation vectors"
-            f" - {100*(j+1)/n:6.2f}%"
-        )
+        print(f"Interpolating {name} from rotation vectors" f" - {100*(j+1)/n:6.2f}%")
         return vector_cam
 
     def interpolate_to_images(self):
@@ -872,7 +839,7 @@ class RovParser:
         )
         Console.info("...finished interpolating everything.")
         return
-    
+
     def filter_nans(self):
         """
         Remove RovCam entries where RovPos or RovRot info is missing
@@ -884,8 +851,9 @@ class RovParser:
         new_vector_LM165_at_dvl = []
         n_removed = 0
         for i, image_object in enumerate(self.vector_LM165_at_DVL):
-            print(f" - for LM165 - {100*i/n:6.2f}%",
-                end='\r',
+            print(
+                f" - for LM165 - {100*i/n:6.2f}%",
+                end="\r",
                 flush=True,
             )
             if np.isnan(image_object.lat):
@@ -905,8 +873,9 @@ class RovParser:
         new_vector_Xviii = []
         n_removed = 0
         for i, image_object in enumerate(self.vector_Xviii):
-            print(f" - for Xviii - {100*i/n:6.2f}%",
-                end='\r',
+            print(
+                f" - for Xviii - {100*i/n:6.2f}%",
+                end="\r",
                 flush=True,
             )
             if np.isnan(image_object.lat):
@@ -931,8 +900,9 @@ class RovParser:
         # for LM165
         n = len(self.vector_LM165_at_DVL)
         for i, image_object in enumerate(self.vector_LM165_at_DVL):
-            print(f" - for LM165 - {100*i/n:6.2f}%",
-                end='\r',
+            print(
+                f" - for LM165 - {100*i/n:6.2f}%",
+                end="\r",
                 flush=True,
             )
             image_object.add_lever_arms(
@@ -948,8 +918,9 @@ class RovParser:
         # for camA
         n = len(self.vector_camA)
         for i, image_object in enumerate(self.vector_camA):
-            print(f" - for camA - {100*i/n:6.2f}%",
-                end='\r',
+            print(
+                f" - for camA - {100*i/n:6.2f}%",
+                end="\r",
                 flush=True,
             )
             image_object.add_lever_arms(
@@ -962,8 +933,9 @@ class RovParser:
         # for camB
         n = len(self.vector_camB)
         for i, image_object in enumerate(self.vector_camB):
-            print(f" - for camB - {100*i/n:6.2f}%",
-                end='\r',
+            print(
+                f" - for camB - {100*i/n:6.2f}%",
+                end="\r",
                 flush=True,
             )
             image_object.add_lever_arms(
@@ -986,7 +958,7 @@ class RovParser:
         for i, image_object in enumerate(self.vector_LM165_at_DVL):
             print(
                 f" - for LM165 - {100*i/n:6.2f}%",
-                end='\r',
+                end="\r",
                 flush=True,
             )
             lateral_distance, bearing = latlon_to_metres(
@@ -995,19 +967,15 @@ class RovParser:
                 self.ref_lat,
                 self.ref_lon,
             )
-            image_object.northing = lateral_distance * np.cos(
-                bearing * np.pi / 180.0
-            )
-            image_object.easting = lateral_distance * np.sin(
-                bearing * np.pi / 180.0
-            )
+            image_object.northing = lateral_distance * np.cos(bearing * np.pi / 180.0)
+            image_object.easting = lateral_distance * np.sin(bearing * np.pi / 180.0)
         print(f" - for LM165 - {100*(i+1)/n:6.2f}%")
         # for camA
         n = len(self.vector_Xviii)
         for i, image_object in enumerate(self.vector_Xviii):
             print(
                 f" - for Xviii - {100*i/n:6.2f}%",
-                end='\r',
+                end="\r",
                 flush=True,
             )
             lateral_distance, bearing = latlon_to_metres(
@@ -1016,12 +984,8 @@ class RovParser:
                 self.ref_lat,
                 self.ref_lon,
             )
-            image_object.northing = lateral_distance * np.cos(
-                bearing * np.pi / 180.0
-            )
-            image_object.easting = lateral_distance * np.sin(
-                bearing * np.pi / 180.0
-            )
+            image_object.northing = lateral_distance * np.cos(bearing * np.pi / 180.0)
+            image_object.easting = lateral_distance * np.sin(bearing * np.pi / 180.0)
         print(f" - for Xviii - {100*(i+1)/n:6.2f}%")
         Console.info("...finished calculating northings and eastings.")
         return
@@ -1049,12 +1013,13 @@ class RovParser:
         for i, image_object in enumerate(self.vector_LM165_at_DVL):
             print(
                 f" - for LM165_at_DVL - {100*i/n:6.2f}%",
-                end='\r',
+                end="\r",
                 flush=True,
             )
             image_path = (
                 f"{self.rel_dirpath_LM165}"
-                + "/" + f"{image_object.index:07}"[1:4]
+                + "/"
+                + f"{image_object.index:07}"[1:4]
                 + f"/image{image_object.index:07}.tif"
             )
             msg = (
@@ -1073,13 +1038,10 @@ class RovParser:
         for i, image_object in enumerate(self.vector_camA):
             print(
                 f" - for camA - {100*i/n:6.2f}%",
-                end='\r',
+                end="\r",
                 flush=True,
             )
-            image_path = (
-                f"{self.rel_dirpath_camA}"
-                + f"/{image_object.index:07}.raw"
-            )
+            image_path = f"{self.rel_dirpath_camA}" + f"/{image_object.index:07}.raw"
             msg = (
                 f"{image_path}, {image_object.northing},"
                 f" {image_object.easting}, {image_object.depth},"
@@ -1090,19 +1052,16 @@ class RovParser:
             )
             self.data_for_camA.append(msg)
         print(f" - for camA - {100*(i+1)/n:6.2f}%")
-        
+
         self.data_for_camB = deepcopy(headers)
         n = len(self.vector_camB)
         for i, image_object in enumerate(self.vector_camB):
             print(
                 f" - for camB - {100*i/n:6.2f}%",
-                end='\r',
+                end="\r",
                 flush=True,
             )
-            image_path = (
-                f"{self.rel_dirpath_camB}"
-                + f"/{image_object.index:07}.raw"
-            )
+            image_path = f"{self.rel_dirpath_camB}" + f"/{image_object.index:07}.raw"
             msg = (
                 f"{image_path}, {image_object.northing},"
                 f" {image_object.easting}, {image_object.depth},"
@@ -1122,7 +1081,7 @@ class RovParser:
             for line in self.data_for_LM165_at_DVL:
                 print(
                     f" - for LM165_at_DVL - {100*i/n:6.2f}%",
-                    end='\r',
+                    end="\r",
                     flush=True,
                 )
                 fileout.write(str(line))
@@ -1135,7 +1094,7 @@ class RovParser:
             for line in self.data_for_camA:
                 print(
                     f" - for camA - {100*i/n:6.2f}%",
-                    end='\r',
+                    end="\r",
                     flush=True,
                 )
                 fileout.write(str(line))
@@ -1148,7 +1107,7 @@ class RovParser:
             for line in self.data_for_camB:
                 print(
                     f" - for camB - {100*i/n:6.2f}%",
-                    end='\r',
+                    end="\r",
                     flush=True,
                 )
                 fileout.write(str(line))
@@ -1156,4 +1115,3 @@ class RovParser:
         print(f" - for camB - {100*i/n:6.2f}%")
         Console.info("...finished writing outputs.")
         return
-

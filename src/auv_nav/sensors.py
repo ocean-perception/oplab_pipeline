@@ -267,7 +267,7 @@ class BodyVelocity(OutputFormat):
             if msg.altitude < 0:
                 # No bottom lock, no good.
                 return
-            if np.sqrt(msg.velocity.x**2 + msg.velocity.y**2) < 2.5:
+            if np.sqrt(msg.velocity.x ** 2 + msg.velocity.y ** 2) < 2.5:
                 self.x_velocity = msg.velocity.x
                 self.y_velocity = msg.velocity.y
                 self.z_velocity = msg.velocity.z
@@ -314,6 +314,13 @@ class BodyVelocity(OutputFormat):
                 self.x_velocity = None
                 self.y_velocity = None
                 self.z_velocity = None
+        elif msg_type == "sonardyne_sprintnav_ins/HNav":
+            self.x_velocity = msg.forward_velocity
+            self.y_velocity = msg.starboard_velocity
+            self.z_velocity = msg.down_velocity
+            self.x_velocity_std = msg.velocity_quality
+            self.y_velocity_std = msg.velocity_quality
+            self.z_velocity_std = msg.velocity_quality
         else:
             Console.quit("BodyVelocity ROS parser for", msg_type, "not supported.")
         self.epoch_timestamp = ros_stamp_to_epoch(msg.header.stamp) - self.tz_offset_s
@@ -680,6 +687,16 @@ class Orientation(OutputFormat):
             self.roll_std = np.degrees(np.sqrt(msg.orientation_covariance[0]))
             self.pitch_std = np.degrees(np.sqrt(msg.orientation_covariance[4]))
             self.yaw_std = np.degrees(np.sqrt(msg.orientation_covariance[8]))
+        elif msg_type == "sonardyne_sprintnav_ins/HNav":
+            self.roll = msg.roll
+            self.pitch = msg.pitch
+            self.yaw = msg.heading
+            self.roll_std = msg.heading_quality
+            self.pitch_std = msg.heading_quality
+            self.yaw_std = msg.heading_quality
+            self.epoch_timestamp = (
+                ros_stamp_to_epoch(msg.header.stamp) - self.tz_offset_s
+            )
         else:
             Console.quit("Orientation ROS parser for", msg_type, "not supported.")
         self.apply_offset()
@@ -806,6 +823,9 @@ class Depth(OutputFormat):
         elif msg_type == "geometry_msgs/PoseWithCovarianceStamped":
             self.depth = msg.pose.pose.position.z
             self.depth_std = np.sqrt(msg.pose.covariance[14])
+        elif msg_type == "sonardyne_sprintnav_ins/HNav":
+            self.depth = msg.depth
+            self.depth_std = msg.position_quality_cep50 * 1.2
         else:
             Console.quit("Depth ROS parser for", msg_type, "not supported.")
         self.epoch_timestamp = ros_stamp_to_epoch(msg.header.stamp) - self.tz_offset_s
@@ -946,6 +966,8 @@ class Altitude(OutputFormat):
                 # If status is "V" is NOT valid
                 return
             self.altitude = msg.bd_range
+        elif msg_type == "sonardyne_sprintnav_ins/HNav":
+            self.altitude = msg.altitude
         else:
             Console.quit("Altitude ROS parser for", msg_type, "not supported.")
         self.epoch_timestamp = ros_stamp_to_epoch(msg.header.stamp) - self.tz_offset_s
@@ -1269,7 +1291,7 @@ class Usbl(OutputFormat):
             )
 
             # determine range to input to uncertainty model
-            distance = sqrt(self.distance_to_ship**2 + self.depth**2)
+            distance = sqrt(self.distance_to_ship ** 2 + self.depth ** 2)
             distance_std = sensor_std["factor"] * distance + sensor_std["offset"]
 
             # determine uncertainty in terms of latitude and longitude
@@ -1386,7 +1408,7 @@ class Usbl(OutputFormat):
         if self.distance_to_ship is not None:
             if self.distance_to_ship > self.depth and self.distance_to_ship > 0:
                 try:
-                    distance_range = sqrt(self.distance_to_ship**2 - self.depth**2)
+                    distance_range = sqrt(self.distance_to_ship ** 2 - self.depth ** 2)
                 except ValueError:
                     print("Value error:")
                     print("Value distance_to_ship: " + str(self.distance_to_ship))

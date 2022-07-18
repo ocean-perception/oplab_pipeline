@@ -367,7 +367,7 @@ def parse_single(filepath, force_overwrite):
                     [mission, vehicle, "velocity", ftype, outpath],
                 )
             )
-        elif mission.usbl.format == "rosbag":
+        elif mission.velocity.format == "rosbag":
             pool_list.append(
                 pool.apply_async(
                     parse_rosbag,
@@ -424,7 +424,7 @@ def parse_single(filepath, force_overwrite):
                     [mission, vehicle, "orientation", ftype, outpath],
                 )
             )
-        elif mission.usbl.format == "rosbag":
+        elif mission.orientation.format == "rosbag":
             pool_list.append(
                 pool.apply_async(
                     parse_rosbag,
@@ -474,7 +474,7 @@ def parse_single(filepath, force_overwrite):
                     [mission, vehicle, "depth", ftype, outpath],
                 )
             )
-        elif mission.usbl.format == "rosbag":
+        elif mission.depth.format == "rosbag":
             pool_list.append(
                 pool.apply_async(
                     parse_rosbag,
@@ -525,7 +525,7 @@ def parse_single(filepath, force_overwrite):
                     [mission, vehicle, "altitude", ftype, outpath],
                 )
             )
-        elif mission.usbl.format == "rosbag":
+        elif mission.altitude.format == "rosbag":
             pool_list.append(
                 pool.apply_async(
                     parse_rosbag,
