@@ -58,7 +58,9 @@ def parse_alr(mission, vehicle, category, ftype, outpath):
         # mission_data["epoch_timestamp"]=mission_data["timestamp"]
         if "corrected_timestamp" in mission_data.keys():
             mission_data = mission_data.rename(columns = {'corrected_timestamp':'epoch_timestamp'})
+            print ("Using [corrected_timestap]")
         elif "timestamp" in mission_data.keys():
+            print ("Using [timestaps]")
             mission_data = mission_data.rename(columns = {'timestamp':'epoch_timestamp'})
 
         dvl_down_bt_key = "DVL_down_BT_valid"
