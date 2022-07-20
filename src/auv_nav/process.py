@@ -539,7 +539,6 @@ def process(
         camera2_ekf_list = copy.deepcopy(camera2_list)
         camera3_ekf_list = copy.deepcopy(camera3_list)
         camera3_ekf_list_at_dvl = copy.deepcopy(camera3_list)
-        print ("EKF activated")
         # chemical_ekf_list = copy.deepcopy(chemical_list)
 
     # make path for processed outputs
@@ -1334,7 +1333,6 @@ def process(
         ekf.run(ekf_timestamps)
         ekf_elapsed_time = time.time() - ekf_start_time
         Console.info("EKF took {} mins".format(ekf_elapsed_time / 60))
-        print ("EKF activate: ", ekf_activate)
         ekf_states = ekf.get_smoothed_result()
         ekf_list = save_ekf_to_list(
             ekf_states, mission, vehicle, dead_reckoning_dvl_list
