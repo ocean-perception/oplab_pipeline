@@ -387,7 +387,7 @@ class EkfImpl(object):
         self.state = np.array([])
         self.initialized = False
         self.last_update_time = 0.0
-        self.mahalanobis_threshold = 3.0  # In number of sigmas
+        self.mahalanobis_threshold = 300.0  # In number of sigmas
         self.nb_exceeded_mahalanobis = 0
         self.predicted_state = np.array([])
         self.process_noise_covariance = np.array([])
@@ -479,7 +479,8 @@ class EkfImpl(object):
             summands = []
             for i in range(len(innovation)):
                 summands.append((innovation[i] * ici[i]).item(0))
-            Console.warn_verbose(
+            print ("------------------MahTh:", self.mahalanobis_threshold)
+            Console.warn(
                 "Mahalanobis dist > threshold ({} time(s) so far in this "
                 "dataset) for measurement at t={} of variable(s) with "
                 "index(es): {}\nInnovation:\n{}\nMahalanobis distance: {} "

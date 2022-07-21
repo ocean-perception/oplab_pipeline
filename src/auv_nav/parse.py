@@ -331,6 +331,13 @@ def parse_single(filepath, force_overwrite):
                     [mission, vehicle, "usbl", ftype, outpath],
                 )
             )
+        elif mission.usbl.format == "alr2":
+            pool_list.append(
+                pool.apply_async(
+                    parse_alr,
+                    [mission, vehicle, "usbl", ftype, outpath, True],
+                )
+            )
         else:
             Console.quit("Mission usbl format", mission.usbl.format, "not supported.")
 

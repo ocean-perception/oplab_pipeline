@@ -15,7 +15,7 @@ from auv_nav.sensors import Altitude, BodyVelocity, Category, Depth, Orientation
 from oplab import Console, get_raw_folder
 
 
-def parse_alr(mission, vehicle, category, ftype, outpath):
+def parse_alr(mission, vehicle, category, ftype, outpath, use_auv = False):
     # parser meta data
     sensor_string = "alr"
     category = category
@@ -150,9 +150,11 @@ def parse_alr(mission, vehicle, category, ftype, outpath):
         total = 0
         for i in range(len(mission_data["epoch_timestamp"])):   # for each entry
             # check if GPS data is not None
-            if mission.usbl.use_auv is True:    # use ALR nav solution for AUV coordinates
-                lat = mission_data["AUV_latitude"][i]
-                lat = mission_data["AUV_longitude"][i]
+            if use_auv is True:    # use ALR nav solution for AUV coordinates
+                lat = mission_data["latitude"][i]
+                lon = mission_data["longitude"][i]
+                # lat = mission_data["AUV_position_lat"][i]
+                # lon = mission_data["AUV_position_lon"][i]
             else:                               # Use, when available on-surface GPS data
                 lat = mission_data["GPS_latitude"][i]
                 lon = mission_data["GPS_longitude"][i]
