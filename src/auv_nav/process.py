@@ -1447,7 +1447,6 @@ def process(
             camera2_offsets,
             latlon_reference,
         )
-    print ("Camera 3 list: ", len(camera3_ekf_list))
     if len(camera3_ekf_list) > 0:
         camera3_ekf_list = update_camera_list(
             camera3_ekf_list,

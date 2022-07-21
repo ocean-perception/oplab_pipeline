@@ -47,8 +47,6 @@ def parse_alr(mission, vehicle, category, ftype, outpath):
     )
     sensor_string = "alr"
     usbl.sensor_string = sensor_string
-
-
     body_velocity.sensor_string = sensor_string
     orientation.sensor_string = sensor_string
     depth.sensor_string = sensor_string
@@ -152,8 +150,12 @@ def parse_alr(mission, vehicle, category, ftype, outpath):
         total = 0
         for i in range(len(mission_data["epoch_timestamp"])):   # for each entry
             # check if GPS data is not None
-            lat = mission_data["GPS_latitude"][i]
-            lon = mission_data["GPS_longitude"][i]
+            if mission.usbl.use_auv is True:    # use ALR nav solution for AUV coordinates
+                lat = mission_data["AUV_latitude"][i]
+                lat = mission_data["AUV_longitude"][i]
+            else:                               # Use, when available on-surface GPS data
+                lat = mission_data["GPS_latitude"][i]
+                lon = mission_data["GPS_longitude"][i]
             depth = mission_data["AUV_depth"][i]
             if not isnan(lat) and not isnan(lon):
                 t = mission_data["epoch_timestamp"][i]  # current entry timestamp
