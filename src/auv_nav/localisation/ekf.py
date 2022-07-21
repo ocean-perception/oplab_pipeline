@@ -469,9 +469,7 @@ class EkfImpl(object):
         # Console.info('innovation:', str(innovation.T).replace('\n', ''))
         # print('innovation_cov:', innovation_cov.shape)
         # print('innovation_cov:', innovation_cov)
-        mahalanobis_distance2 = np.dot(innovation.T, innovation_cov @ innovation).item(
-            0
-        )
+        mahalanobis_distance2 = np.dot(innovation.T, innovation_cov @ innovation).item(0)
 
         if mahalanobis_distance2 >= self.mahalanobis_threshold**2:
             self.nb_exceeded_mahalanobis += 1
