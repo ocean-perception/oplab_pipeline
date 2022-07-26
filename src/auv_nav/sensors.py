@@ -1216,6 +1216,13 @@ class Usbl(OutputFormat):
         self.depth = -float(parts[6])
         self.fill_from_lat_lon_depth()
 
+    def from_alr(self, time, lat, lon, depth):
+        self.epoch_timestamp = time
+        self.latitude = lat
+        self.longitude = lon
+        self.depth = depth
+        self.fill_from_lat_lon_depth()
+
     def fill_from_lat_lon_depth(self):
         # calculate in meters from reference
         lateral_distance, bearing = latlon_to_metres(
