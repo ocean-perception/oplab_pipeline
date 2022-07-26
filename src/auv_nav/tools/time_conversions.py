@@ -7,7 +7,7 @@ See LICENSE.md file in the project root for full license information.
 """
 
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, tzinfo
 
 import pytz
 
@@ -24,9 +24,9 @@ def date_time_to_epoch(
     timezone_offset_to_utc=0,
     us=0,
 ):
-    utc_date_time = datetime(yyyy, mm, dd, hh, mm1, ss, us) - timedelta(
-        hours=timezone_offset_to_utc
-    )
+    utc_date_time = datetime(
+        yyyy, mm, dd, hh, mm1, ss, us, tzinfo.tzname("UTC")
+    ) - timedelta(hours=timezone_offset_to_utc)
     epochtime = utc_date_time.timestamp()
     return epochtime
 
