@@ -220,6 +220,7 @@ class Corrector:
         # Use default loader
         self.loader = loader.Loader()
         self.loader.bit_depth = self.camera.bit_depth
+        self._type = self.camera.type
         if self.camera.extension == "raw":
             self.loader.set_loader("xviii")
         elif self.camera.extension == "bag":
@@ -1206,7 +1207,11 @@ class Corrector:
                 image_rgb = image
 
         elif self.correction_method == "manual_balance":
-            if not self._type == "grayscale":
+            if (
+                self._type != "grayscale"
+                and self._type != "rgb"
+                and self._type != "bgr"
+            ):
                 # debayer images
                 image_rgb = corrections.debayer(image, self._type)
             elif self._type != "bgr":
