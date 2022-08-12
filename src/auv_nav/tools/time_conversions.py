@@ -25,7 +25,7 @@ def date_time_to_epoch(
     us=0,
 ):
     utc_date_time = datetime(
-        yyyy, mm, dd, hh, mm1, ss, us, tzinfo.tzname("UTC")
+        yyyy, mm, dd, hh, mm1, ss, us, tzinfo=timezone.utc
     ) - timedelta(hours=timezone_offset_to_utc)
     epochtime = utc_date_time.timestamp()
     return epochtime
