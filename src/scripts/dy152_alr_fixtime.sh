@@ -21,7 +21,7 @@ fi
 # Parsing method extracted from http://wiki.bash-hackers.org/howto/getopts_tutorial
 #######################################################################################################################
 
-while getopts "s:e:" opt; do
+while getopts "s:e:o:" opt; do
   case $opt in
     s)
 	SERIAL_LOG=$OPTARG 
