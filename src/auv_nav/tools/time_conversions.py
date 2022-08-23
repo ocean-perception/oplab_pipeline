@@ -55,14 +55,14 @@ def epoch_to_day(epoch):
     return time.strftime("%Y/%m/%d", time.localtime(epoch))
 
 
-def string_to_epoch(datetime):
-    yyyy = int(datetime[0:4])
-    mm = int(datetime[4:6])
-    dd = int(datetime[6:8])
+def string_to_epoch(date_time):
+    yyyy = int(date_time[0:4])
+    mm = int(date_time[4:6])
+    dd = int(date_time[6:8])
 
-    hours = int(datetime[8:10])
-    mins = int(datetime[10:12])
-    secs = int(datetime[12:14])
+    hours = int(date_time[8:10])
+    mins = int(date_time[10:12])
+    secs = int(date_time[12:14])
 
     return date_time_to_epoch(yyyy, mm, dd, hours, mins, secs)
 
