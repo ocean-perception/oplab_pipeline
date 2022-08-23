@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2020, University of Southampton
+Copyright (c) 2022, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -24,9 +24,9 @@ def date_time_to_epoch(
     timezone_offset_to_utc=0,
     us=0,
 ):
-    utc_date_time = datetime(yyyy, mm, dd, hh, mm1, ss, us) - timedelta(
-        hours=timezone_offset_to_utc
-    )
+    utc_date_time = datetime(
+        yyyy, mm, dd, hh, mm1, ss, us, tzinfo=timezone.utc
+    ) - timedelta(hours=timezone_offset_to_utc)
     epochtime = utc_date_time.timestamp()
     return epochtime
 
