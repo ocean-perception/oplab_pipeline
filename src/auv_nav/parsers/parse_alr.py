@@ -15,7 +15,7 @@ from auv_nav.sensors import Altitude, BodyVelocity, Category, Depth, Orientation
 from oplab import Console, get_raw_folder
 
 
-def parse_alr(mission, vehicle, category, ftype, outpath, use_auv = False):
+def parse_alr(mission, vehicle, category, ftype, outpath):
     # parser meta data
     sensor_string = "alr"
     category = category
