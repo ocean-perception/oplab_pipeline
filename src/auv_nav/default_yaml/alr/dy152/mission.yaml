@@ -1,0 +1,83 @@
+#YAML 1.0
+version: 1
+
+# Top Left corner of ALR3 box
+# latitude: 50.407953
+# longitude: -7.701577
+
+origin:  # Matching NAV reference system used by ALR/MARS team
+  latitude:  50.406000
+  longitude: -7.716000
+  coordinate_reference_system: wgs84
+  date: 2022/07/11
+
+velocity:
+  format: alr
+  filepath: nav/alr_log/
+  filename: engineering_log_m43.csv
+  timezone: 0
+  timeoffset: 0.0
+  std_factor: 0.001
+  std_offset: 0.2
+
+orientation:
+  format: alr
+  filepath: nav/alr_log/
+  filename: engineering_log_m43.csv
+  timezone: 0
+  timeoffset: 0.0
+  std_factor: 0.0
+  std_offset: 0.003
+
+depth:
+  format: alr
+  filepath: nav/alr_log/
+  filename: engineering_log_m43.csv
+  timezone: 0
+  timeoffset: 0.0
+  std_factor: 0.0001
+  std_offset: 0.0
+
+tide:
+  format: NOC_CTI
+  filepath: nav/tide/
+  filename: HaigFras.csv
+  timezone: utc
+  timeoffset: 0.0
+  std_factor: 0.0
+  std_offset: 0.0
+
+
+altitude:
+  format: alr
+  filepath: nav/alr_log/
+  filename: engineering_log_m43.csv
+  timezone: 0
+  timeoffset: 0.0
+  std_factor: 0.0001
+  std_offset: 0.0  
+
+# No USBL available for ALR3 - DY152
+# usbl:
+#   format: gaps
+#   filepath: nav/gaps/
+#   timezone: 0
+#   timeoffset: .0
+#   id: 4
+#   std_factor: 0.01
+#   std_offset: 2.0
+  
+
+image:
+  format: biocam
+  cameras:
+    - name: cam61008269
+      type: bayer_rggb
+      # bit_depth: 18
+      path: image # FIX
+    - name: cam61008031
+      type: grayscale
+      # bit_depth: 18
+      path: image # FIX
+  timezone: 0
+  timeoffset: 0.0

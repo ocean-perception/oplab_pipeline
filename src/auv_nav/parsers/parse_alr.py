@@ -11,11 +11,11 @@ import pandas as pd
 from math import isnan
 
 from auv_nav.parsers.load_matlab_file import loadmat
-from auv_nav.sensors import Altitude, BodyVelocity, Category, Depth, Orientation
+from auv_nav.sensors import Altitude, BodyVelocity, Category, Depth, Orientation, Usbl
 from oplab import Console, get_raw_folder
 
 
-def parse_alr(mission, vehicle, category, ftype, outpath):
+def parse_alr(mission, vehicle, category, ftype, outpath, use_auv = False):
     # parser meta data
     sensor_string = "alr"
     category = category
@@ -37,7 +37,16 @@ def parse_alr(mission, vehicle, category, ftype, outpath):
     orientation = Orientation(headingoffset, orientation_std_offset)
     depth = Depth(depth_std_factor)
     altitude = Altitude(altitude_std_factor)
-
+    latitude_reference = mission.origin.latitude
+    longitude_reference = mission.origin.longitude
+    usbl = Usbl(
+        mission.usbl.std_factor,
+        mission.usbl.std_offset,
+        latitude_reference,
+        longitude_reference,
+    )
+    sensor_string = "alr"
+    usbl.sensor_string = sensor_string
     body_velocity.sensor_string = sensor_string
     orientation.sensor_string = sensor_string
     depth.sensor_string = sensor_string
@@ -54,7 +63,13 @@ def parse_alr(mission, vehicle, category, ftype, outpath):
     elif extension == ".csv":
         # Load the data from CSV file with well-known headers
         mission_data = pd.read_csv(str(path))
-        # TODO: Check if header is ALR/MARS format (pre-adjustment) which uses 'timestamp' rather than 'epoch_timestamp'
+        # Check if mission_data dataframe has "timestamp" header
+        # mission_data["epoch_timestamp"]=mission_data["timestamp"]
+        if "corrected_timestamp" in mission_data.keys():
+            mission_data = mission_data.rename(columns = {'corrected_timestamp':'epoch_timestamp'})
+        elif "timestamp" in mission_data.keys():
+            mission_data = mission_data.rename(columns = {'timestamp':'epoch_timestamp'})
+
         dvl_down_bt_key = "DVL_down_BT_valid"
 
     data_list = []
@@ -77,9 +92,9 @@ def parse_alr(mission, vehicle, category, ftype, outpath):
                     else:
                         data_list[-1] = data
                     previous_timestamp = body_velocity.epoch_timestamp
-        Console.info("...done parsing alr velocity")
+        Console.info("...done parsing ALR velocity")
     if category == Category.ORIENTATION:
-        Console.info("Parsing alr orientation...")
+        Console.info("Parsing ALR orientation...")
         previous_timestamp = 0
         for i in range(len(mission_data["epoch_timestamp"])):
             roll = mission_data["AUV_roll"][i]
@@ -94,9 +109,9 @@ def parse_alr(mission, vehicle, category, ftype, outpath):
                 else:
                     data_list[-1] = data
                 previous_timestamp = orientation.epoch_timestamp
-        Console.info("...done parsing alr orientation")
+        Console.info("...done parsing ALR orientation")
     if category == Category.DEPTH:
-        Console.info("Parsing alr depth...")
+        Console.info("Parsing ALR depth...")
         previous_timestamp = 0
         for i in range(len(mission_data["epoch_timestamp"])):
             d = mission_data["AUV_depth"][i]
@@ -109,9 +124,9 @@ def parse_alr(mission, vehicle, category, ftype, outpath):
                 else:
                     data_list[-1] = data
                 previous_timestamp = depth.epoch_timestamp
-        Console.info("...done parsing alr depth")
+        Console.info("...done parsing ALR depth")
     if category == Category.ALTITUDE:
-        Console.info("Parsing alr altitude...")
+        Console.info("Parsing ALR altitude...")
         previous_timestamp = 0
         for i in range(len(mission_data["epoch_timestamp"])):
             if mission_data[dvl_down_bt_key][i] == 1:
@@ -127,5 +142,33 @@ def parse_alr(mission, vehicle, category, ftype, outpath):
                     else:
                         data_list[-1] = data
                     previous_timestamp = altitude.epoch_timestamp
-        Console.info("...done parsing alr altitude")
+        Console.info("...done parsing ALR altitude")
+
+    if category == Category.USBL:
+        Console.info("Parsing GPS data as USBL")
+        previous_timestamp = 0
+        total = 0
+        for i in range(len(mission_data["epoch_timestamp"])):   # for each entry
+            # check if GPS data is not None
+            if use_auv is True:    # use ALR nav solution for AUV coordinates
+                lat = mission_data["latitude"][i]
+                lon = mission_data["longitude"][i]
+                # lat = mission_data["AUV_position_lat"][i]
+                # lon = mission_data["AUV_position_lon"][i]
+            else:                               # Use, when available on-surface GPS data
+                lat = mission_data["GPS_latitude"][i]
+                lon = mission_data["GPS_longitude"][i]
+            depth = mission_data["AUV_depth"][i]
+            if not isnan(lat) and not isnan(lon):
+                t = mission_data["epoch_timestamp"][i]  # current entry timestamp
+                usbl.from_alr(t, lat, lon, depth)    # populate the structure with time, lat, lon and depth
+                data = usbl.export(output_format)   # convert to currently defined output format
+                if t > previous_timestamp:
+                    data_list.append(data)
+                    total = total + 1
+                else:
+                    data_list[-1] = data
+                previous_timestamp = t
+        Console.info ("...done parsing ALR USBL. Total: ", total)
+
     return data_list
