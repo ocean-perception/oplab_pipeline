@@ -150,14 +150,8 @@ def parse_alr(mission, vehicle, category, ftype, outpath, use_auv = False):
         total = 0
         for i in range(len(mission_data["epoch_timestamp"])):   # for each entry
             # check if GPS data is not None
-            if use_auv is True:    # use ALR nav solution for AUV coordinates
-                lat = mission_data["latitude"][i]
-                lon = mission_data["longitude"][i]
-                # lat = mission_data["AUV_position_lat"][i]
-                # lon = mission_data["AUV_position_lon"][i]
-            else:                               # Use, when available on-surface GPS data
-                lat = mission_data["GPS_latitude"][i]
-                lon = mission_data["GPS_longitude"][i]
+            lat = mission_data["GPS_latitude"][i]
+            lon = mission_data["GPS_longitude"][i]
             depth = mission_data["AUV_depth"][i]
             if not isnan(lat) and not isnan(lon):
                 t = mission_data["epoch_timestamp"][i]  # current entry timestamp

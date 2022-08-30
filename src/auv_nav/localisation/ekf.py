@@ -477,7 +477,6 @@ class EkfImpl(object):
             summands = []
             for i in range(len(innovation)):
                 summands.append((innovation[i] * ici[i]).item(0))
-            print ("------------------MahTh:", self.mahalanobis_threshold)
             Console.warn(
                 "Mahalanobis dist > threshold ({} time(s) so far in this "
                 "dataset) for measurement at t={} of variable(s) with "
