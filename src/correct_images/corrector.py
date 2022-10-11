@@ -694,7 +694,9 @@ class Corrector:
         max_bin_size = int(max_bin_size_gb / image_size_gb)
 
         self.bin_band = 0.1
-        hist_bins = np.arange(self.altitude_min, self.altitude_max, self.bin_band)
+        hist_bins = np.arange(
+            self.altitude_min, self.altitude_max + 0.5 * self.bin_band, self.bin_band
+        )
         # Watch out: need to substract 1 to get the correct number of bins
         # because the last bin is not included in the range
 

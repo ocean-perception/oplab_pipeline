@@ -1,0 +1,9 @@
+camera_system: biocam
+# camera_system: biocam4000_15c
+cameras:
+  - name: cam61008269
+    type: grbg
+    bit_depth: 18
+    path: 'image/cam61008269_strobe'
+    extension: tif
+    filename_to_date: YYYYMMDDxhhmmssxfffuuuxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxx
