@@ -19,7 +19,7 @@ jobs:
       contents: read
     steps:
       - name: Check out the repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v3.1.0
       - name: Log in to the Container registry
         uses: docker/login-action@49ed152c8eca782a232dede0303416e8f356c37b
         with:
@@ -33,7 +33,7 @@ jobs:
           images: |
             ghcr.io/${{ github.repository }}
       - name: Build and push Docker images
-        uses: docker/build-push-action@e551b19e49efd4e98792db7592c17c09b89db8d8
+        uses: docker/build-push-action@c84f38281176d4c9cdb1626ffafcd6b3911b5d94
         with:
           context: .
           push: true
