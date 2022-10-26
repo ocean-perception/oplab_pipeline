@@ -5,6 +5,8 @@ All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
+import os
+import pandas as pd
 
 from math import isnan
 
@@ -43,15 +45,23 @@ def parse_alr(mission, vehicle, category, ftype, outpath):
 
     path = get_raw_folder(outpath / ".." / filepath / filename)
 
-    alr_log = loadmat(str(path))
-    mission_data = alr_log["MissionData"]
+    # Check if file extension is .mat (Matlab) use legacy parser
+    _, extension = os.path.spltext(filename)
+    if extension == ".mat":
+        alr_log = loadmat(str(path))
+        mission_data = alr_log["MissionData"]
+        dvl_down_bt_key = "DVL_down_BT_is_good"
+    elif extension == ".csv":
+        # Load the data from CSV file with well-known headers
+        mission_data = pd.read_csv(str(path))
+        dvl_down_bt_key = "DVL_down_BT_valid"
 
     data_list = []
     if category == Category.VELOCITY:
         Console.info("Parsing alr velocity...")
         previous_timestamp = 0
         for i in range(len(mission_data["epoch_timestamp"])):
-            if mission_data["DVL_down_BT_is_good"][i] == 1:
+            if mission_data[dvl_down_bt_key][i] == 1:
                 vx = mission_data["DVL_down_BT_x"][i]
                 vy = mission_data["DVL_down_BT_y"][i]
                 vz = mission_data["DVL_down_BT_z"][i]
@@ -103,7 +113,7 @@ def parse_alr(mission, vehicle, category, ftype, outpath):
         Console.info("Parsing alr altitude...")
         previous_timestamp = 0
         for i in range(len(mission_data["epoch_timestamp"])):
-            if mission_data["DVL_down_BT_is_good"][i] == 1:
+            if mission_data[dvl_down_bt_key][i] == 1:
                 a = mission_data["AUV_altitude"][i]
                 # The altitude should not be NaN on lines with bottom lock,
                 # but check to be on the safe side:
