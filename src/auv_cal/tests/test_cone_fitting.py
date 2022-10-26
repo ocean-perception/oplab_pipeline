@@ -2902,8 +2902,8 @@ cone_points = np.array(
 
 class TestConeFitting(unittest.TestCase):
     def test_rotation_matrix(self):
-        v = [3, 5, 0]
-        axis = [4, 4, 1]
+        v = np.array([3, 5, 0], dtype=np.float64)
+        axis = np.array([4, 4, 1], dtype=np.float64)
         theta = 1.2
 
         res = np.dot(rotation_matrix(axis, theta), v)
@@ -2913,30 +2913,30 @@ class TestConeFitting(unittest.TestCase):
 
     def test_point_cone_distance(self):
         c = CircularCone()
-        c.apex = np.array([0, 0, 0])
-        c.axis = np.array([1, 0, 0])
+        c.apex = np.array([0, 0, 0], dtype=np.float64)
+        c.axis = np.array([1, 0, 0], dtype=np.float64)
         c.theta = math.radians(45.0)
 
-        point = np.array([0, 0, 0])
+        point = np.array([0, 0, 0], dtype=np.float64)
         d = c.distance(point)
         self.assertAlmostEqual(d, 0)
 
-        point = np.array([0, 1, 0])
+        point = np.array([0, 1, 0], dtype=np.float64)
         d = c.distance(point)
         self.assertAlmostEqual(d, math.sqrt(2.0) / 2.0)
 
-        c.axis = np.array([0, 0, 1])
+        c.axis = np.array([0, 0, 1], dtype=np.float64)
         d = c.distance(point)
         self.assertAlmostEqual(d, math.sqrt(2.0) / 2.0)
 
-        c.axis = np.array([0, 1, 0])
+        c.axis = np.array([0, 1, 0], dtype=np.float64)
         d = c.distance(point)
         self.assertAlmostEqual(d, math.sqrt(2.0) / 2.0)
 
     def test_build_matrix(self):
-        a = [1, 0, 0]
-        b = [0, 1, 0]
-        c = [0, 0, 1]
+        a = np.array([1, 0, 0], dtype=np.float64)
+        b = np.array([0, 1, 0], dtype=np.float64)
+        c = np.array([0, 0, 1], dtype=np.float64)
         m = build_matrix(a, b, c)
         n = np.eye(3)
         for i, j in zip(m.flatten(), n.flatten()):
@@ -2959,7 +2959,7 @@ class TestConeFitting(unittest.TestCase):
     def test_fitting(self):
         coeffs = [-1.5849, 0.2, -0.5, 1, 0, 0, 1.5]
         c = CircularCone(coeffs)
-        c.fit(cone_points)
+        c.fit(cone_points, tol=1e-3)
         self.assertAlmostEqual(c.apex[0], -1.58490564, places=1)
         self.assertGreaterEqual(c.apex[1], -0.2)
         self.assertLessEqual(c.apex[1], 0.2)
@@ -2972,7 +2972,7 @@ class TestConeFitting(unittest.TestCase):
 
     @patch("matplotlib.pyplot.figure")
     def test_plot(self, mock_fig):
-        coeffs = [0, 0, 0, 0, 0, 1, np.pi / 2]
+        coeffs = [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, np.pi / 2.0]
         c = CircularCone(coeffs)
         c.plot()
         mock_fig.assert_called()

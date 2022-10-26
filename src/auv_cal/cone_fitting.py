@@ -10,8 +10,13 @@ import numpy as np
 from mpl_toolkits.mplot3d import axes3d  # noqa
 from numpy.linalg import norm
 from scipy.optimize import least_squares
+import numba as nb
 
 
+@nb.jit(
+    (nb.types.float64[:, :])(nb.types.float64[:], nb.types.float64),
+    nopython=True,
+)
 def rotation_matrix(axis, theta):
     """
     Returns the rotation matrix associated with counterclockwise rotation about
@@ -32,6 +37,12 @@ def rotation_matrix(axis, theta):
     )
 
 
+@nb.jit(
+    (nb.types.float64[:, :])(
+        nb.types.float64[:], nb.types.float64[:], nb.types.float64[:]
+    ),
+    nopython=True,
+)
 def build_matrix(v1, v2, v3):
     """Returns the rotation matrix associated with the vector basis provided
 
@@ -60,6 +71,79 @@ def build_matrix(v1, v2, v3):
     )
 
 
+@nb.jit(
+    (nb.types.float64)(
+        nb.types.float64[:], nb.types.float64[:], nb.types.float64[:], nb.types.float64
+    ),
+    nopython=True,
+)
+def _distance(point, apex, axis, theta):
+    """Compute distance from point to modelled cone
+
+    The distance from a point :math:`p_i` to a cone with apex :math:`Ap`
+    and basis :math:`[\\vec{u}, \\vec{n}_1, \\vec{n}_2]`, where
+    :math:`\\vec{u}` is the cone asis is defined by:
+
+    .. math::
+        (p_i - Ap) = \\begin{bmatrix} \\vec{u}, \\vec{n}_1, \\vec{n}_2
+        \\end{bmatrix} \\begin{bmatrix} \\alpha \\\\ \\beta \\\\ \\gamma
+        \\end{bmatrix}
+
+    being :math:`\\gamma` the signed distance between the point and the
+    cone.
+    """
+    w = point - apex
+    if norm(w) == 0:
+        # The point is in the apex
+        return 0.0
+    w = w / norm(w)
+    v = axis
+    wxv = np.cross(w, v)
+    if norm(wxv) == 0:
+        # The point lies in the axis
+        d = norm(point - apex)
+        return d * np.cos(theta)
+    n1 = wxv / norm(wxv)
+    R = rotation_matrix(n1, -theta)
+    u = np.dot(R, v)
+    uxn1 = np.cross(u, n1)
+    n2 = uxn1 / norm(uxn1)
+    basis = build_matrix(u, n1, n2)
+    abc = basis.T @ w
+    signed_distance = abc[2]
+    return np.abs(signed_distance)
+
+
+@nb.jit(
+    nb.types.Tuple((nb.types.float64[:], nb.types.float64[:], nb.types.float64))(
+        nb.types.float64[:]
+    ),
+    nopython=True,
+)
+def _from_coeffs(coeffs):
+    apex = coeffs[0:3]
+    axis = coeffs[3:6]
+    theta = float(coeffs[6])
+    axis /= np.linalg.norm(axis)
+    if axis[0] < 0:
+        axis *= -1.0
+    return (apex, axis, theta)
+
+
+# @nb.jit(nopython=False, parallel=True)
+@nb.jit(
+    (nb.types.float64[:])(nb.types.float64[:], nb.types.float64[:]),
+    nopython=False,
+    parallel=True,
+)
+def _residuals(coeffs, points):
+    residuals = np.zeros(len(points))
+    apex, axis, theta = _from_coeffs(coeffs)
+    for i, p in enumerate(points):
+        residuals[i] = _distance(p, apex, axis, theta)
+    return residuals
+
+
 class CircularCone:
     apex = np.array([0.0, 0.0, 0.0], dtype=np.float64)
     axis = np.array([0.0, 0.0, 0.0], dtype=np.float64)
@@ -70,58 +154,19 @@ class CircularCone:
             self.from_coeffs(coeffs)
 
     def from_coeffs(self, coeffs):
-        coeffs = np.array(coeffs, dtype=np.float64)
-        self.apex = np.array(coeffs[0:3])
-        self.axis = np.array(coeffs[3:6])
-        self.theta = coeffs[6]
-        self.axis /= np.linalg.norm(self.axis)
-        if self.axis[0] < 0:
-            self.axis *= -1.0
+        """Sets the apex, axis and theta from the given coefficients."""
+        coeffs = np.array(coeffs)
+        self.apex, self.axis, self.theta = _from_coeffs(coeffs)
 
     def distance(self, point):
-        """Compute distance from point to modelled cone
-
-        The distance from a point :math:`p_i` to a cone with apex :math:`Ap`
-        and basis :math:`[\\vec{u}, \\vec{n}_1, \\vec{n}_2]`, where
-        :math:`\\vec{u}` is the cone asis is defined by:
-
-        .. math::
-            (p_i - Ap) = \\begin{bmatrix} \\vec{u}, \\vec{n}_1, \\vec{n}_2
-            \\end{bmatrix} \\begin{bmatrix} \\alpha \\\\ \\beta \\\\ \\gamma
-            \\end{bmatrix}
-
-        being :math:`\\gamma` the signed distance between the point and the
-        cone.
-        """
-        w = point - self.apex
-        if norm(w) == 0:
-            # The point is in the apex
-            return 0
-        w = w / norm(w)
-        v = self.axis
-        wxv = np.cross(w, v)
-        if norm(wxv) == 0:
-            # The point lies in the axis
-            d = norm(point - self.apex)
-            return d * np.cos(self.theta)
-        n1 = wxv / norm(wxv)
-        R = rotation_matrix(n1, -self.theta)
-        u = np.dot(R, v)
-        uxn1 = np.cross(u, n1)
-        n2 = uxn1 / norm(uxn1)
-        basis = build_matrix(u, n1, n2)
-        abc = basis.T @ w
-        signed_distance = abc[2]
-        return np.abs(signed_distance)
+        point = np.array(point)
+        return _distance(point, self.apex, self.axis, self.theta)
 
     def residuals(self, coeffs, points):
-        residuals = np.zeros(len(points))
-        self.from_coeffs(coeffs)
-        for i, p in enumerate(points):
-            residuals[i] = self.distance(p)
-        return residuals
+        points = np.array(points)
+        return _residuals(coeffs, points)
 
-    def fit(self, points, verbose=True):
+    def fit(self, points, tol=1e-9, verbose=True):
         # Coeffs: apex(x, y, z), axis(x, y, z) and theta
         coefficients = np.array([0, 0, 0, 0, 0, 1, np.pi / 2], dtype=float)
         bounds = (
@@ -140,7 +185,7 @@ class CircularCone:
             bounds=bounds,
             args=([points]),
             ftol=None,
-            xtol=1e-9,
+            xtol=tol,
             loss="soft_l1",
             verbose=verb_level,
             max_nfev=5000,
@@ -163,10 +208,10 @@ class CircularCone:
         d_co = np.dot(ray_vec, co)
         co_co = np.dot(co, co)
 
-        a = d_v**2 - cos2
+        a = d_v ** 2 - cos2
         b = 2 * (d_v * co_v - d_co * cos2)
-        c = co_v**2 - co_co * cos2
-        discriminant = b**2 - 4 * a * c
+        c = co_v ** 2 - co_co * cos2
+        discriminant = b ** 2 - 4 * a * c
         if discriminant < 0:
             return None, None
         elif discriminant == 0:
