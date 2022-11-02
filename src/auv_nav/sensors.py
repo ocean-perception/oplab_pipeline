@@ -631,6 +631,13 @@ class Orientation(OutputFormat):
         self.pitch = pitch_rad * 180.0 / pi
         self.yaw = yaw_rad * 180.0 / pi
 
+    def from_koyo21rov(self, t, roll, pitch, yaw):
+        self.epoch_timestamp = t
+        # angles are already in degrees, no need to convert
+        self.roll = roll
+        self.pitch = pitch
+        self.yaw = yaw
+
     def from_autosub(self, data, i):
         self.epoch_timestamp = data["eTime"][i]
         self.roll = data["Roll"][i] * 180.0 / pi
@@ -832,6 +839,12 @@ class Depth(OutputFormat):
         self.depth = d
         self.depth_std = self.depth * self.depth_std_factor
 
+    def from_koyo21rov(self, t, d):
+        self.epoch_timestamp = t
+        self.depth_timestamp = self.epoch_timestamp
+        self.depth = d
+        self.depth_std = self.depth * self.depth_std_factor
+
     def from_autosub(self, data, i):
         self.epoch_timestamp = data["eTime"][i]
         self.depth_timestamp = self.epoch_timestamp
@@ -967,6 +980,12 @@ class Altitude(OutputFormat):
         self.altitude_std = self.altitude * self.altitude_std_factor
 
     def from_alr(self, t, a):
+        self.epoch_timestamp = t
+        self.altitude_timestamp = self.epoch_timestamp
+        self.altitude = a
+        self.altitude_std = self.altitude * self.altitude_std_factor
+
+    def from_koyo21rov(self, t, a):
         self.epoch_timestamp = t
         self.altitude_timestamp = self.epoch_timestamp
         self.altitude = a

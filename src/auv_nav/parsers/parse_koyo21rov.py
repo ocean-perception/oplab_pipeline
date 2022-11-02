@@ -6,6 +6,7 @@ Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
 import os
+import time
 import pandas as pd
 
 from math import isnan
@@ -15,7 +16,7 @@ from auv_nav.sensors import Altitude, BodyVelocity, Category, Depth, Orientation
 from oplab import Console, get_raw_folder
 
 from auv_nav.tools.time_conversions import (
-    date_time_to_epoch,
+    string_to_epoch,
     epoch_to_utctime,
 )
 
@@ -53,9 +54,6 @@ def parse_koyo21rov(mission, vehicle, category, ftype, outpath):
     # Load the data from CSV file with well-known headers
     mission_data = pd.read_csv(str(path))
 
-    # print the header of the pandas dataframe before populating the epoch_timestamp column
-    print(mission_data.head())
-
     # this is a sample of the data
     #     Date	Time	LatD	LatM	LatS		LonD	LonM	LonS		North	East	Roll	Pich	Hedding	Depth(ROV)	ALT
     # 2021/11/17	19:30:16	22	51	25.5777	N	153	21	7.0884	E	2527744.54	536108.34	-0.7	1.3	94.9	1164.1	10
@@ -66,8 +64,9 @@ def parse_koyo21rov(mission, vehicle, category, ftype, outpath):
     # then we can use the date_time_to_epoch function to convert the date and time to epoch time
     # then we can add the epoch time to the dataframe as a new column
     mission_data["epoch_timestamp"] = mission_data.apply(
-        lambda row: date_time_to_epoch(
+        lambda row: time.mktime(time.strptime(
             str(row["Date"]) + " " + str(row["Time"]), "%Y/%m/%d %H:%M:%S"
+        )
         ),
         axis=1,
     )
@@ -80,12 +79,12 @@ def parse_koyo21rov(mission, vehicle, category, ftype, outpath):
         Console.info("Parsing koyo21-rov orientation...")
         previous_timestamp = 0
         for i in range(len(mission_data["epoch_timestamp"])):
-            roll = mission_data["Roll"][i]
-            pitch = mission_data["AUV_pitch"][i]
-            yaw = mission_data["AUV_heading"][i]
+            roll = mission_data["Roll"][i]      # roll is in the Roll column, which is ok
+            pitch = mission_data["Pich"][i]     # yes, pitch is in the 'Pich' column
+            yaw = mission_data["Hedding"][i]    # and yes, yaw is in the 'Hedding' column... that's how it is in the data
             if not isnan(roll) and not isnan(pitch) and not isnan(yaw):
                 t = mission_data["epoch_timestamp"][i]
-                orientation.from_alr(t, roll, pitch, yaw)
+                orientation.from_koyo21rov(t, roll, pitch, yaw)
                 data = orientation.export(output_format)
                 if orientation.epoch_timestamp > previous_timestamp:
                     data_list.append(data)
@@ -93,37 +92,36 @@ def parse_koyo21rov(mission, vehicle, category, ftype, outpath):
                     data_list[-1] = data
                 previous_timestamp = orientation.epoch_timestamp
         Console.info("...done parsing koyo21-rov orientation")
-    # if category == Category.DEPTH:
-    #     Console.info("Parsing koyo21-rov depth...")
-    #     previous_timestamp = 0
-    #     for i in range(len(mission_data["epoch_timestamp"])):
-    #         d = mission_data["AUV_depth"][i]
-    #         if not isnan(d):
-    #             t = mission_data["epoch_timestamp"][i]
-    #             depth.from_alr(t, d)
-    #             data = depth.export(output_format)
-    #             if depth.epoch_timestamp > previous_timestamp:
-    #                 data_list.append(data)
-    #             else:
-    #                 data_list[-1] = data
-    #             previous_timestamp = depth.epoch_timestamp
-    #     Console.info("...done parsing koyo21-rov depth")
-    # if category == Category.ALTITUDE:
-    #     Console.info("Parsing koyo21-rov altitude...")
-    #     previous_timestamp = 0
-    #     for i in range(len(mission_data["epoch_timestamp"])):
-    #         if mission_data[dvl_down_bt_key][i] == 1:
-    #             a = mission_data["AUV_altitude"][i]
-    #             # The altitude should not be NaN on lines with bottom lock,
-    #             # but check to be on the safe side:
-    #             if not isnan(a):
-    #                 t = mission_data["epoch_timestamp"][i]
-    #                 altitude.from_alr(t, a)
-    #                 data = altitude.export(output_format)
-    #                 if altitude.epoch_timestamp > previous_timestamp:
-    #                     data_list.append(data)
-    #                 else:
-    #                     data_list[-1] = data
-    #                 previous_timestamp = altitude.epoch_timestamp
-    #     Console.info("...done parsing alr altitude")
+    if category == Category.DEPTH:
+        Console.info("Parsing koyo21-rov depth...")
+        previous_timestamp = 0
+        for i in range(len(mission_data["epoch_timestamp"])):
+            d = mission_data["Depth(ROV)"][i]
+            if not isnan(d):
+                t = mission_data["epoch_timestamp"][i]
+                depth.from_koyo21rov(t, d)
+                data = depth.export(output_format)
+                if depth.epoch_timestamp > previous_timestamp:
+                    data_list.append(data)
+                else:
+                    data_list[-1] = data
+                previous_timestamp = depth.epoch_timestamp
+        Console.info("...done parsing koyo21-rov depth")
+    if category == Category.ALTITUDE:
+        Console.info("Parsing koyo21-rov altitude...")
+        previous_timestamp = 0
+        for i in range(len(mission_data["epoch_timestamp"])):
+            a = mission_data["ALT"][i]
+            # The altitude should not be NaN on lines with bottom lock,
+            # but check to be on the safe side:
+            if not isnan(a):
+                t = mission_data["epoch_timestamp"][i]
+                altitude.from_koyo21rov(t, a)
+                data = altitude.export(output_format)
+                if altitude.epoch_timestamp > previous_timestamp:
+                    data_list.append(data)
+                else:
+                    data_list[-1] = data
+                previous_timestamp = altitude.epoch_timestamp
+        Console.info("...done parsing alr altitude")
     return data_list
