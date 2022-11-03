@@ -1213,6 +1213,14 @@ class Usbl(OutputFormat):
         self.depth = -float(parts[6])
         self.fill_from_lat_lon_depth()
 
+    def from_koyo21rov(self, t, lat, lon, d):
+        self.sensor_string = "koyo21rov"
+        self.epoch_timestamp = t
+        self.latitude = lat
+        self.longitude = lon
+        self.depth = d
+        self.fill_from_lat_lon_depth()
+
     def fill_from_lat_lon_depth(self):
         # calculate in meters from reference
         lateral_distance, bearing = latlon_to_metres(

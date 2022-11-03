@@ -324,6 +324,12 @@ def parse_single(filepath, force_overwrite):
                     [mission, vehicle, "usbl", ftype, outpath],
                 )
             )
+        elif mission.usbl.format == "koyo21rov":
+            pool_list.append(
+                pool.apply_async(
+                    parse_koyo21rov, [mission, vehicle, "usbl", ftype, outpath]
+                )
+            )
         else:
             Console.quit("Mission usbl format", mission.usbl.format, "not supported.")
 
