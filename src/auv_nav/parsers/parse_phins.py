@@ -37,7 +37,7 @@ class PhinsTimestamp:
     def epoch_timestamp_from_phins(self, line):
         epoch_timestamp = None
         time_string = str(line[2])
-        if len(time_string) == 10:
+        if len(time_string) == 10 or len(time_string) == 13:
             hour = int(time_string[0:2])
             mins = int(time_string[2:4])
             try:

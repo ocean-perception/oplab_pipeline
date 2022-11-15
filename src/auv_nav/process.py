@@ -483,6 +483,7 @@ def process(
                     velocity_inertial = InertialVelocity()
                     velocity_inertial.from_json(parsed_json_data[i])
                     velocity_inertial_list.append(velocity_inertial)
+                    Console.warn("Inertial frame velocity data found. Needs to be converted!")                
 
             if "orientation" in parsed_json_data[i]["category"]:
                 orientation = Orientation()
@@ -662,7 +663,7 @@ def process(
             "least one of them is empty (orientation_list contains",
             len(orientation_list),
             "elements and velocity_body_list",
-            "conatains",
+            "contains",
             len(velocity_body_list),
             "elements)",
         )

@@ -85,21 +85,21 @@ def parse_koyo21rov(mission, vehicle, category, ftype, outpath):
                     data_list[-1] = data
                 previous_timestamp = orientation.epoch_timestamp
         Console.info("...done parsing koyo21-rov orientation")
-    # if category == Category.DEPTH:
-    #     Console.info("Parsing koyo21-rov depth...")
-    #     previous_timestamp = 0
-    #     for i in range(len(mission_data["epoch_timestamp"])):
-    #         d = mission_data["Depth(ROV)"][i]
-    #         if not isnan(d):
-    #             t = mission_data["epoch_timestamp"][i]
-    #             depth.from_koyo21rov(t, d)
-    #             data = depth.export(output_format)
-    #             if depth.epoch_timestamp > previous_timestamp:
-    #                 data_list.append(data)
-    #             else:
-    #                 data_list[-1] = data
-    #             previous_timestamp = depth.epoch_timestamp
-    #     Console.info("...done parsing koyo21-rov depth")
+    if category == Category.DEPTH:
+        Console.info("Parsing koyo21-rov depth...")
+        previous_timestamp = 0
+        for i in range(len(mission_data["epoch_timestamp"])):
+            d = mission_data["Depth(ROV)"][i]
+            if not isnan(d):
+                t = mission_data["epoch_timestamp"][i]
+                depth.from_koyo21rov(t, d)
+                data = depth.export(output_format)
+                if t > previous_timestamp:
+                    data_list.append(data)
+                else:
+                    data_list[-1] = data
+                previous_timestamp = t
+        Console.info("...done parsing koyo21-rov depth")
     if category == Category.ALTITUDE:
         Console.info("Parsing koyo21-rov altitude...")
         previous_timestamp = 0

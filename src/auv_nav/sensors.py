@@ -492,7 +492,7 @@ class InertialVelocity(OutputFormat):
     def valid(self):
         return (
             self.north_velocity is not None
-            and self.north_velocity_std is not None
+            # and self.north_velocity_std is not None # Fix for koyo21rov, no VEL_STD messages provided
             and self.epoch_timestamp is not None
         )
 
