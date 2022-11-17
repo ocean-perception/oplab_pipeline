@@ -16,14 +16,17 @@ Please review the latest changes in the [CHANGELOG.md](CHANGELOG.md).
 
 ## Installation
 
-To install this package run:
+For __production__, to install this package run:
 ```bash
 pip install -U git+https://github.com/ocean-perception/oplab_pipeline.git
 ```
 
-For __development__, clone the repository, `cd` into the oplab-pipeline folder and run `pip3 install .`, resp. if you are using Anaconda run `pip install .` from the Anaconda Prompt (Anaconda3).  
 This will make the commands `auv_nav`, `auv_cal` and `correct_images` available in the terminal. For more details refer to the documentation.
 
+For __development__, clone the repository, navigate to the oplab-pipeline folder and run 
+```bash
+pip install -U --user -e .
+```
 
 ## Documentation
 The documentation is hosted in [read the docs](https://oplab-pipeline.readthedocs.io).
