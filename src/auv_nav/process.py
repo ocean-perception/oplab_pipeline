@@ -1333,7 +1333,11 @@ def process(
         ekf.run(ekf_timestamps)
         ekf_elapsed_time = time.time() - ekf_start_time
         Console.info("EKF took {} mins".format(ekf_elapsed_time / 60))
-        ekf_states = ekf.get_smoothed_result()
+        ekf_states = None
+        if activate_smoother:
+            ekf_states = ekf.get_smoothed_result()
+        else:
+            ekf_states = ekf.get_result()
         ekf_list = save_ekf_to_list(
             ekf_states, mission, vehicle, dead_reckoning_dvl_list
         )
@@ -1462,6 +1466,15 @@ def process(
             [0, 0, 0],
             latlon_reference,
         )
+
+        _temp_ekf =[]    
+        # Let's remove every row that has a None entry for [depth] - ALR missing engineering logs affecting laser_bathymetry
+        for c in range(len(camera3_ekf_list_at_dvl)):
+            # append to the temp empty list. [remove] or[pop] or [del] will fail because list index is updated
+            if camera3_ekf_list_at_dvl[c].depth is not None:
+                _temp_ekf.append(camera3_ekf_list_at_dvl[c])
+        # Deep-copy of the temporal list
+        camera3_ekf_list_at_dvl = copy.deepcopy(_temp_ekf)
 
     # perform interpolations of state data to chemical time stamps for both
     # DR and PF
@@ -1852,6 +1865,7 @@ def process(
                     )
                     t.start()
                     threads.append(t)
+                    print ("Writing CSV EKF at_dvl")
                     t = threading.Thread(
                         target=write_csv,
                         args=[

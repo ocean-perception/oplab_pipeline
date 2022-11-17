@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2020, University of Southampton
+Copyright (c) 2022, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -24,9 +24,9 @@ def date_time_to_epoch(
     timezone_offset_to_utc=0,
     us=0,
 ):
-    utc_date_time = datetime(yyyy, mm, dd, hh, mm1, ss, us) - timedelta(
-        hours=timezone_offset_to_utc
-    )
+    utc_date_time = datetime(
+        yyyy, mm, dd, hh, mm1, ss, us, tzinfo=timezone.utc
+    ) - timedelta(hours=timezone_offset_to_utc)
     epochtime = utc_date_time.timestamp()
     return epochtime
 
@@ -55,14 +55,14 @@ def epoch_to_day(epoch):
     return time.strftime("%Y/%m/%d", time.localtime(epoch))
 
 
-def string_to_epoch(datetime):
-    yyyy = int(datetime[0:4])
-    mm = int(datetime[4:6])
-    dd = int(datetime[6:8])
+def string_to_epoch(date_time):
+    yyyy = int(date_time[0:4])
+    mm = int(date_time[4:6])
+    dd = int(date_time[6:8])
 
-    hours = int(datetime[8:10])
-    mins = int(datetime[10:12])
-    secs = int(datetime[12:14])
+    hours = int(date_time[8:10])
+    mins = int(date_time[10:12])
+    secs = int(date_time[12:14])
 
     return date_time_to_epoch(yyyy, mm, dd, hours, mins, secs)
 
@@ -87,6 +87,8 @@ def read_timezone(timezone):
             timezone_offset_h = 0.0
         elif timezone == "jst" or timezone == "JST":
             timezone_offset_h = 9.0
+        elif timezone == "bst" or timezone == "BST":
+            timezone_offset_h = 1.0
     else:
         try:
             timezone_offset_h = float(timezone)
