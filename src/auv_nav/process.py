@@ -1333,7 +1333,11 @@ def process(
         ekf.run(ekf_timestamps)
         ekf_elapsed_time = time.time() - ekf_start_time
         Console.info("EKF took {} mins".format(ekf_elapsed_time / 60))
-        ekf_states = ekf.get_smoothed_result()
+        ekf_states = None
+        if activate_smoother:
+            ekf_states = ekf.get_smoothed_result()
+        else:
+            ekf_states = ekf.get_result()
         ekf_list = save_ekf_to_list(
             ekf_states, mission, vehicle, dead_reckoning_dvl_list
         )
