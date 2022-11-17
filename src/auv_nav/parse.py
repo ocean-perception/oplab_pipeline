@@ -26,6 +26,7 @@ from auv_nav.parsers.parse_NOC_polpred import parse_NOC_polpred
 from auv_nav.parsers.parse_tide_CTI import parse_tide_CTI
 from auv_nav.parsers.parse_ntnu_dvl import parse_ntnu_dvl
 from auv_nav.parsers.parse_ntnu_stereo import parse_ntnu_stereo_images
+from auv_nav.parsers.parse_stereo_gopro import parse_stereo_gopro_images
 
 # sys.path.append("..")
 from auv_nav.parsers.parse_phins import parse_phins
@@ -288,6 +289,13 @@ def parse_single(filepath, force_overwrite):
             pool_list.append(
                 pool.apply_async(
                     parse_rosbag,
+                    [mission, vehicle, "images", ftype, outpath],
+                )
+            )
+        elif mission.image.format == "stereo_gopro":
+            pool_list.append(
+                pool.apply_async(
+                    parse_stereo_gopro_images,
                     [mission, vehicle, "images", ftype, outpath],
                 )
             )
