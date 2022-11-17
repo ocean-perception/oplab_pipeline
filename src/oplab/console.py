@@ -12,7 +12,12 @@ import socket
 import timeit
 from pathlib import Path
 
-import pkg_resources
+try:
+    # Python 3.8+
+    import importlib.metadata as importlib_metadata
+except ImportError:
+    # Python 3.7 and lower
+    import importlib_metadata
 
 logger = None  # Public logger
 verbose = False
@@ -196,7 +201,7 @@ class Console:
         str
             version number (e.g. "0.1.2")
         """
-        return str(pkg_resources.require(pkg_name)[0].version)
+        return str(importlib_metadata.version("oplab_pipeline"))
 
     @staticmethod
     def write_metadata():
