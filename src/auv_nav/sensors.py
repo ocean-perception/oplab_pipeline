@@ -967,6 +967,10 @@ class Altitude(OutputFormat):
                 return
             self.altitude = msg.bd_range
         elif msg_type == "sonardyne_sprintnav_ins/HNav":
+            # SprintNav INS sometimes reports zero altitudes...
+            if msg.altitude == 0:
+                self.altitude = None
+                return
             self.altitude = msg.altitude
         else:
             Console.quit("Altitude ROS parser for", msg_type, "not supported.")
