@@ -8,7 +8,7 @@ See LICENSE.md file in the project root for full license information.
 import time
 import pandas as pd
 from math import isnan
-from auv_nav.sensors import Altitude, Category, Depth, Orientation, Usbl
+from auv_nav.sensors import Altitude, Category, Depth, Orientation, Usbl,  BodyVelocity
 from oplab import Console, get_raw_folder
 from auv_nav.tools.time_conversions import read_timezone
 
@@ -24,6 +24,9 @@ def parse_koyo21rov(mission, vehicle, category, ftype, outpath):
     if category == Category.USBL:
         filename = mission.usbl.filename
         filepath = mission.usbl.filepath
+    elif category == Category.VELOCITY:
+        filename = mission.velocity.filename
+        filepath = mission.velocity.filepath
     else:
         filename = mission.orientation.filename
         filepath = mission.orientation.filepath
@@ -176,6 +179,28 @@ def parse_koyo21rov(mission, vehicle, category, ftype, outpath):
                     data_list[-1] = data
                 previous_timestamp = t
         Console.info("...done parsing koyo21-rov USBL")
+
+    # For koyo21, the filtered data has a synthetic velocity column (surge) calculated from the 'dist' column
+    if category == Category.VELOCITY:
+        Console.info("Parsing koyo21-rov synthetic body velocity...")
+        velocity = BodyVelocity(
+            mission.velocity.std_factor,
+            mission.velocity.std_offset
+        )   # create empty container. Let's populate it with time and surge data
+        previous_timestamp = 0
+        for i in range(len(mission_data["epoch_timestamp"])):
+            surge = mission_data["surge"][i]
+            heave = mission_data["heave"][i]
+            if not isnan(surge) and not isnan(heave):
+                t = mission_data["epoch_timestamp"][i]
+                velocity.from_koyo21rov(t, surge, heave)
+                data = velocity.export(output_format)
+                if t > previous_timestamp:
+                    data_list.append(data)
+                else:
+                    data_list[-1] = data
+                previous_timestamp = t
+        Console.info("...done parsing koyo21-rov velocity")
 
     # if category == Category.USBL:     # This one is for RAW USBL data extracted from the hypack payload
         # Console.info("Parsing koyo21-rov hypack USBL...")

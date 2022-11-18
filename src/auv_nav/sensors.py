@@ -189,6 +189,20 @@ class BodyVelocity(OutputFormat):
         self.y_velocity_std = data["Verr0"][i] * 0.001
         self.z_velocity_std = data["Verr0"][i] * 0.001
 
+    def from_koyo21rov(self, t, surge, heave):
+        self.sensor_string = "koyo21rov"
+        vx = surge
+        vy = 0.0
+        vz = heave
+        self.x_velocity = vx
+        self.y_velocity = vy
+        self.z_velocity = vz
+        self.x_velocity_std = self.get_std(vx)
+        self.y_velocity_std = self.get_std(vy)
+        self.z_velocity_std = self.get_std(vz)
+        self.epoch_timestamp = t
+        self.epoch_timestamp_dvl = t
+
     def from_phins(self, line):
         self.sensor_string = "phins"
         vx = float(line[2])  # DVL convention is +ve aft to forward

@@ -404,6 +404,13 @@ def parse_single(filepath, force_overwrite):
                     [mission, vehicle, "velocity", ftype, outpath],
                 )
             )
+        elif mission.velocity.format == "koyo21rov":
+            pool_list.append(
+                pool.apply_async(
+                    parse_koyo21rov,
+                    [mission, vehicle, "velocity", ftype, outpath],
+                )
+            )
         else:
             Console.quit(
                 "Mission velocity format",

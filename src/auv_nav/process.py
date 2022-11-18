@@ -681,7 +681,7 @@ def process(
     #         j = 0
     #         non_processed_velocity_index_list = []
     #         for i in range(len(velocity_inertial_list)):
-    #             while (
+    #             while (1
     #                 j < len(orientation_list) - 1
     #                 and orientation_list[j].epoch_timestamp < velocity_inertial_list[i].epoch_timestamp
     #             ):
