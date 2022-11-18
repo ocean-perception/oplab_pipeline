@@ -554,6 +554,36 @@ class InertialVelocity(OutputFormat):
     def to_acfr(self):
         pass
 
+    def get_csv_header(self):
+        return (
+            "epoch_timestamp,"
+            + "east_velocity,"
+            + "north_velocity,"
+            + "down_velocity,"
+            + "east_velocity_std,"
+            + "north_velocity_std,"
+            + "down_velocity_std\n"
+        )
+
+    def to_csv_row(self):
+        return (
+            str(self.epoch_timestamp)
+            + ","
+            + str(self.east_velocity)
+            + ","
+            + str(self.north_velocity)
+            + ","
+            + str(self.down_velocity)
+            + ","
+            + str(self.east_velocity_std)
+            + ","
+            + str(self.north_velocity_std)
+            + ","
+            + str(self.down_velocity_std)
+            + "\n"
+        )
+
+
 
 class Orientation(OutputFormat):
     def __init__(self, heading_offset=0.0, orientation_std_offset=None):

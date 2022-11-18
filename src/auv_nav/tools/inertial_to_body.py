@@ -51,7 +51,7 @@ def inertial_to_body(roll, pitch, yaw, old_x, old_y, old_z):
     #       + ( cp*cr)           * old_z    # i
     # )
 
-    # rotation matrix - transpose
+    # rotation matrix - transpose -> same as inverse for orthonormal matrices
     #    a d g
     # R= b e h
     #    c f i
