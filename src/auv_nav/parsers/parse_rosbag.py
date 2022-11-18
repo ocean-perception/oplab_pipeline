@@ -136,8 +136,6 @@ def parse_rosbag(mission, vehicle, category, output_format, outpath):
         latitude_reference=origin_latitude,
         longitude_reference=origin_longitude,
     )
-    camera = Camera()
-    camera.sensor_string = mission.image.cameras[0].name
 
     body_velocity.sensor_string = "rosbag"
     orientation.sensor_string = "rosbag"
@@ -162,9 +160,13 @@ def parse_rosbag(mission, vehicle, category, output_format, outpath):
     usbl.tz_offset_s = (
         read_timezone(mission.usbl.timezone) * 60 + mission.usbl.timeoffset
     )
-    camera.tz_offset_s = (
-        read_timezone(mission.image.timezone) * 60 + mission.image.timeoffset
-    )
+
+    if len(mission.image.cameras) > 0:
+        camera = Camera()
+        camera.sensor_string = mission.image.cameras[0].name
+        camera.tz_offset_s = (
+            read_timezone(mission.image.timezone) * 60 + mission.image.timeoffset
+        )
 
     data_list = []
 

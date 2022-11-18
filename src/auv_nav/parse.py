@@ -24,8 +24,10 @@ from auv_nav.parsers.parse_gaps import parse_gaps
 from auv_nav.parsers.parse_interlacer import parse_interlacer
 from auv_nav.parsers.parse_NOC_nmea import parse_NOC_nmea
 from auv_nav.parsers.parse_NOC_polpred import parse_NOC_polpred
+from auv_nav.parsers.parse_tide_CTI import parse_tide_CTI
 from auv_nav.parsers.parse_ntnu_dvl import parse_ntnu_dvl
 from auv_nav.parsers.parse_ntnu_stereo import parse_ntnu_stereo_images
+from auv_nav.parsers.parse_stereo_gopro import parse_stereo_gopro_images
 
 # sys.path.append("..")
 from auv_nav.parsers.parse_phins import parse_phins
@@ -291,6 +293,13 @@ def parse_single(filepath, force_overwrite):
                     [mission, vehicle, "images", ftype, outpath],
                 )
             )
+        elif mission.image.format == "stereo_gopro":
+            pool_list.append(
+                pool.apply_async(
+                    parse_stereo_gopro_images,
+                    [mission, vehicle, "images", ftype, outpath],
+                )
+            )
         else:
             Console.quit("Mission image format", mission.image.format, "not supported.")
     if not mission.usbl.empty():
@@ -328,6 +337,20 @@ def parse_single(filepath, force_overwrite):
             pool_list.append(
                 pool.apply_async(
                     parse_koyo21rov, [mission, vehicle, "usbl", ftype, outpath]
+                )
+            )
+        elif mission.usbl.format == "alr":
+            pool_list.append(
+                pool.apply_async(
+                    parse_alr,
+                    [mission, vehicle, "usbl", ftype, outpath],
+                )
+            )
+        elif mission.usbl.format == "alr2":
+            pool_list.append(
+                pool.apply_async(
+                    parse_alr,
+                    [mission, vehicle, "usbl", ftype, outpath, True],
                 )
             )
         else:
@@ -374,7 +397,7 @@ def parse_single(filepath, force_overwrite):
                     [mission, vehicle, "velocity", ftype, outpath],
                 )
             )
-        elif mission.usbl.format == "rosbag":
+        elif mission.velocity.format == "rosbag":
             pool_list.append(
                 pool.apply_async(
                     parse_rosbag,
@@ -438,7 +461,7 @@ def parse_single(filepath, force_overwrite):
                     [mission, vehicle, "orientation", ftype, outpath],
                 )
             )
-        elif mission.usbl.format == "rosbag":
+        elif mission.orientation.format == "rosbag":
             pool_list.append(
                 pool.apply_async(
                     parse_rosbag,
@@ -492,7 +515,7 @@ def parse_single(filepath, force_overwrite):
                     [mission, vehicle, "depth", ftype, outpath],
                 )
             )
-        elif mission.usbl.format == "rosbag":
+        elif mission.depth.format == "rosbag":
             pool_list.append(
                 pool.apply_async(
                     parse_rosbag,
@@ -550,7 +573,7 @@ def parse_single(filepath, force_overwrite):
                     [mission, vehicle, "altitude", ftype, outpath],
                 )
             )
-        elif mission.usbl.format == "rosbag":
+        elif mission.altitude.format == "rosbag":
             pool_list.append(
                 pool.apply_async(
                     parse_rosbag,
@@ -567,6 +590,8 @@ def parse_single(filepath, force_overwrite):
     if not mission.tide.empty():
         if mission.tide.format == "NOC_polpred":
             tide_list = parse_NOC_polpred(mission, vehicle, "tide", ftype, outpath)
+        elif mission.tide.format == "NOC_CTI":
+            tide_list = parse_tide_CTI(mission, vehicle, "tide", ftype, outpath)
         else:
             Console.quit("Mission tide format", mission.tide.format, "not supported.")
     else:

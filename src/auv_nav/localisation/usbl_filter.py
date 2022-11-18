@@ -71,14 +71,17 @@ def usbl_filter(usbl_list, depth_list, sigma_factor, max_auv_speed):
     j = 0
     printed1 = False
     printed2 = False
-    acceptable_time_difference = 20  # seconds
+    acceptable_time_difference = 1  # seconds
     usbl_filtered_list = []
     original_size = len(usbl_list)
+    pre = 0
+    post = 0
     for i in range(len(usbl_list)):
         if (
             usbl_list[i].epoch_timestamp
             < depth_list[0].epoch_timestamp + acceptable_time_difference
         ):
+            pre = pre + 1
             if not printed1:
                 Console.info("Discarding USBL measurements before DR...")
                 printed1 = True
@@ -87,12 +90,15 @@ def usbl_filter(usbl_list, depth_list, sigma_factor, max_auv_speed):
             usbl_list[i].epoch_timestamp + acceptable_time_difference
             > depth_list[-1].epoch_timestamp
         ):
+            post = post + 1
             if not printed2:
                 Console.info("Discarding USBL measurements after DR...")
                 printed2 = True
             continue
         else:
             usbl_filtered_list.append(usbl_list[i])
+    print ("Total removed pre DR: ", pre)
+    print ("Total removed post DR: ", post)
     usbl_list = usbl_filtered_list
     usbl_filtered_list = []
     Console.info(

@@ -28,9 +28,20 @@ class RunningMeanStd:
         self.count = 0
         self.clipping_max = clipping_max
 
+    def exclude_outliers(self, data, max_std_times=5):
+        """Check if the input data is within max_std_times standard deviations of the mean."""
+        outliers = np.abs(data - self._mean) > max_std_times * self._std
+        cleaned_data = data.copy()
+        cleaned_data[outliers == True] = self._mean[outliers == True]
+        cleaned_data[outliers == False] = data[outliers == False]
+        return cleaned_data
+
     def compute(self, image):
         """Update the mean with a new image."""
         self.count += 1
+
+        if self.count > 10:
+            image = self.exclude_outliers(image)
 
         image = np.squeeze(image)
         # Clipping image to mean if above threshold:
@@ -58,7 +69,7 @@ class RunningMeanStd:
         """Get the standard deviation of the current batch."""
         if self.count > 1:
             self._std = np.sqrt(self.mean2 / self.count)
-            self._std[self._std < 1e-4] = 1e-4
+            self._std[self._std < 1e-6] = 1e-6
             return self._std
         else:
             return None
