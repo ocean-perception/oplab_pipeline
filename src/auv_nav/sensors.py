@@ -121,7 +121,7 @@ class OutputFormat:
                 data = self._to_acfr()
             self.clear()
         if data is None:
-            Console.warn("WARNING: exporting non valid data from", self.category, "!")
+            Console.warn("exporting non valid data from", self.category, "!")
         return data
 
 
@@ -281,7 +281,7 @@ class BodyVelocity(OutputFormat):
             if msg.altitude < 0:
                 # No bottom lock, no good.
                 return
-            if np.sqrt(msg.velocity.x ** 2 + msg.velocity.y ** 2) < 2.5:
+            if np.sqrt(msg.velocity.x**2 + msg.velocity.y**2) < 2.5:
                 self.x_velocity = msg.velocity.x
                 self.y_velocity = msg.velocity.y
                 self.z_velocity = msg.velocity.z
@@ -356,7 +356,7 @@ class BodyVelocity(OutputFormat):
                 )
         except Exception as exc:
             Console.warn(
-                "Warning: Badly formatted packet (PHINS TIME): "
+                "Badly formatted packet (PHINS TIME): "
                 + line[6]
                 + " Exception: "
                 + str(exc)
@@ -596,7 +596,6 @@ class InertialVelocity(OutputFormat):
             + str(self.down_velocity_std)
             + "\n"
         )
-
 
 
 class Orientation(OutputFormat):
@@ -1373,7 +1372,7 @@ class Usbl(OutputFormat):
             )
 
             # determine range to input to uncertainty model
-            distance = sqrt(self.distance_to_ship ** 2 + self.depth ** 2)
+            distance = sqrt(self.distance_to_ship**2 + self.depth**2)
             distance_std = sensor_std["factor"] * distance + sensor_std["offset"]
 
             # determine uncertainty in terms of latitude and longitude
@@ -1490,7 +1489,7 @@ class Usbl(OutputFormat):
         if self.distance_to_ship is not None:
             if self.distance_to_ship > self.depth and self.distance_to_ship > 0:
                 try:
-                    distance_range = sqrt(self.distance_to_ship ** 2 - self.depth ** 2)
+                    distance_range = sqrt(self.distance_to_ship**2 - self.depth**2)
                 except ValueError:
                     print("Value error:")
                     print("Value distance_to_ship: " + str(self.distance_to_ship))
