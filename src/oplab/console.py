@@ -63,6 +63,12 @@ class Console:
         verbose = verbosity
 
     @staticmethod
+    def log(*args, **kwargs) -> None:
+        """Log a message only to logger."""
+        if logger is not None:
+            logger.debug(" ".join(map(str, args)), **kwargs)
+
+    @staticmethod
     def warn(*args, **kwargs) -> None:
         """Print a warning message"""
         print(
