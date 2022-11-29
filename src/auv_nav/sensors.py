@@ -355,7 +355,7 @@ class BodyVelocity(OutputFormat):
                     hour_dvl, mins_dvl, secs_dvl, msec_dvl
                 )
         except Exception as exc:
-            Console.warn(
+            Console.log(
                 "Badly formatted packet (PHINS TIME): "
                 + line[6]
                 + " Exception: "
@@ -929,7 +929,7 @@ class Depth(OutputFormat):
                 msec = int(time_string[7:10])
                 self.depth_timestamp = self.ts.get(hour, mins, secs, msec)
         except Exception as exc:
-            Console.warn(
+            Console.log(
                 "Badly formatted packet (DEPTH TIME): "
                 + time_string
                 + " Exception: "
