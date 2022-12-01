@@ -179,6 +179,10 @@ class CameraEntry:
             Console.quit("Multiple globbing is not supported.")
 
         self._image_list.sort()
+        if len(self._image_list) > 0:
+            Console.info("Found", len(self._image_list), "images for camera", self.name)
+        else:
+            Console.warn("No images found for camera", self.name, "at", self.path)
         return self._image_list
 
     @property
