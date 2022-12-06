@@ -110,6 +110,10 @@ class Corrector:
         self.trimmed_csv_path = None
         self.camera_params_file_path = None
 
+        self.images_fn = None
+        self.distances_fn = None
+        self.memmap_to_delete = []
+
         self.force = force
 
         # if path is None then user must define it externally and call set_path
@@ -122,6 +126,35 @@ class Corrector:
         if self.correct_config is not None:
             # explicit call to load the correct_config
             self.load_configuration(self.correct_config)
+
+    def __del__(self):
+        # delete memmaps
+        Console.info("Checking if memmaps have to be deleted...")
+        if self.images_fn is not None:
+            try:
+                os.remove(self.images_fn)
+                Console.info("Memmap", self.images_fn, "deleted!")
+            except PermissionError:
+                Console.warn(
+                    "Unable to remove images memmap file",
+                    self.images_fn,
+                    ". Please delete the file manually.",
+                )
+        if self.distances_fn is not None:
+            try:
+                os.remove(self.distances_fn)
+                Console.info("Memmap", self.distances_fn, "deleted!")
+            except PermissionError:
+                Console.warn(
+                    "Unable to remove distances memmap file",
+                    self.distances_fn,
+                    ". Please delete the file manually.",
+                )
+        for memmap_fn in self.memmap_to_delete:
+            # If the memmap exists, delete it
+            if Path(memmap_fn).exists:
+                os.remove(memmap_fn)
+                Console.info("Memmap", memmap_fn, "deleted!")
 
     def set_path(self, path):
         """Set the path for the corrector"""
@@ -688,7 +721,7 @@ class Corrector:
             * self.image_height
             * self.image_width
             * 4.0
-            / (1024.0**3)
+            / (1024.0 ** 3)
         )
         max_bin_size_gb = 50.0
         max_bin_size = int(max_bin_size_gb / image_size_gb)
@@ -700,7 +733,7 @@ class Corrector:
         # Watch out: need to substract 1 to get the correct number of bins
         # because the last bin is not included in the range
 
-        images_fn, images_map = open_memmap(
+        self.images_fn, images_map = open_memmap(
             shape=(
                 len(hist_bins) - 1,
                 self.image_height * self.image_width,
@@ -709,7 +742,7 @@ class Corrector:
             dtype=np.float32,
         )
 
-        distances_fn, distances_map = open_memmap(
+        self.distances_fn, distances_map = open_memmap(
             shape=(len(hist_bins) - 1, self.image_height * self.image_width),
             dtype=np.float32,
         )
@@ -786,21 +819,21 @@ class Corrector:
             # delete memmap handles
             del images_map
             try:
-                os.remove(images_fn)
+                os.remove(self.images_fn)
             except PermissionError:
                 Console.warn(
                     "Unable to remove images memmap file",
-                    images_fn,
+                    self.images_fn,
                     ". Please delete the file manually.",
                 )
 
             del distances_map
             try:
-                os.remove(distances_fn)
+                os.remove(self.distances_fn)
             except PermissionError:
                 Console.warn(
                     "Unable to remove distances memmap file",
-                    distances_fn,
+                    self.distances_fn,
                     ". Please delete the file manually.",
                 )
 
@@ -1052,6 +1085,7 @@ class Corrector:
                     dimensions,
                     loader=self.loader,
                 )
+                self.memmap_to_delete.append(memmap_filename)
                 bin_images_sample = image_mean_std_trimmed(memmap_handle)[0]
                 del memmap_handle
                 os.remove(memmap_filename)
@@ -1061,6 +1095,7 @@ class Corrector:
                     dimensions,
                     loader=self.loader,
                 )
+                self.memmap_to_delete.append(memmap_filename)
                 bin_images_sample = median_array(memmap_handle)
                 del memmap_handle
                 os.remove(memmap_filename)
