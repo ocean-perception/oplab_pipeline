@@ -37,7 +37,7 @@ class PhinsTimestamp:
     def epoch_timestamp_from_phins(self, line):
         epoch_timestamp = None
         time_string = str(line[2])
-        if len(time_string) == 10:
+        if len(time_string) == 10 or len(time_string) == 13:
             hour = int(time_string[0:2])
             mins = int(time_string[2:4])
             try:
@@ -189,12 +189,12 @@ class PhinsParser:
         if self.category == Category.VELOCITY:
             if header == PhinsHeaders.DVL:
                 self.body_velocity.from_phins(line)
-                if self.output_format == "oplab":
+                if self.output_format == "oplab" and self.body_velocity.valid():
                     data = self.body_velocity.export(self.output_format)
 
             if header == PhinsHeaders.VEL or header == PhinsHeaders.VEL_STD:
                 self.inertial_velocity.from_phins(line)
-                if self.output_format == "oplab":
+                if self.output_format == "oplab" and self.inertial_velocity.valid():
                     data = self.inertial_velocity.export(self.output_format)
 
             if self.output_format == "acfr":
@@ -212,19 +212,23 @@ class PhinsParser:
 
         if self.category == Category.ORIENTATION:
             self.orientation.from_phins(line)
-            data = self.orientation.export(self.output_format)
+            if self.orientation.valid():
+                data = self.orientation.export(self.output_format)
 
         if self.category == Category.DEPTH and header == PhinsHeaders.DEPTH:
             self.depth.from_phins(line)
-            data = self.depth.export(self.output_format)
+            if self.depth.valid():
+                data = self.depth.export(self.output_format)
 
         if self.category == Category.ALTITUDE:
             if header == PhinsHeaders.ALTITUDE:
                 self.altitude.from_phins(line, self.body_velocity.epoch_timestamp_dvl)
-                data = self.altitude.export(self.output_format)
+                if self.altitude.valid():
+                    data = self.altitude.export(self.output_format)
             if header == PhinsHeaders.DVL:
                 self.body_velocity.from_phins(line)
-                data = self.altitude.export(self.output_format)
+                if self.altitude.valid():
+                    data = self.altitude.export(self.output_format)
         return data
 
 

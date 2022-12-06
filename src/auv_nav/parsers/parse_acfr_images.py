@@ -100,6 +100,11 @@ def parse_acfr_images(mission, vehicle, category, ftype, outpath):
         if camera2_label in line and ".txt" not in line and "._" not in line
     ]
 
+    if len(camera2_filename) == 0:
+        Console.warn("ACFR Camera 2 folder is empty")
+        Console.warn("   --  Will assume that you want to process one camera only.")
+        camera2_filename = camera1_filename
+
     data_list = []
     if ftype == "acfr":
         data_list = ""

@@ -121,7 +121,7 @@ class OutputFormat:
                 data = self._to_acfr()
             self.clear()
         if data is None:
-            Console.warn("WARNING: exporting non valid data from", self.category, "!")
+            Console.warn("exporting non valid data from", self.category, "!")
         return data
 
 
@@ -188,6 +188,20 @@ class BodyVelocity(OutputFormat):
         self.x_velocity_std = data["Verr0"][i] * 0.001
         self.y_velocity_std = data["Verr0"][i] * 0.001
         self.z_velocity_std = data["Verr0"][i] * 0.001
+
+    def from_koyo21rov(self, t, surge, heave):
+        self.sensor_string = "koyo21rov"
+        vx = surge
+        vy = 0.0
+        vz = heave
+        self.x_velocity = vx
+        self.y_velocity = vy
+        self.z_velocity = vz
+        self.x_velocity_std = self.get_std(vx)
+        self.y_velocity_std = self.get_std(vy)
+        self.z_velocity_std = self.get_std(vz)
+        self.epoch_timestamp = t
+        self.epoch_timestamp_dvl = t
 
     def from_phins(self, line):
         self.sensor_string = "phins"
@@ -267,7 +281,7 @@ class BodyVelocity(OutputFormat):
             if msg.altitude < 0:
                 # No bottom lock, no good.
                 return
-            if np.sqrt(msg.velocity.x ** 2 + msg.velocity.y ** 2) < 2.5:
+            if np.sqrt(msg.velocity.x**2 + msg.velocity.y**2) < 2.5:
                 self.x_velocity = msg.velocity.x
                 self.y_velocity = msg.velocity.y
                 self.z_velocity = msg.velocity.z
@@ -341,8 +355,8 @@ class BodyVelocity(OutputFormat):
                     hour_dvl, mins_dvl, secs_dvl, msec_dvl
                 )
         except Exception as exc:
-            Console.warn(
-                "Warning: Badly formatted packet (PHINS TIME): "
+            Console.log(
+                "Badly formatted packet (PHINS TIME): "
                 + line[6]
                 + " Exception: "
                 + str(exc)
@@ -499,7 +513,7 @@ class InertialVelocity(OutputFormat):
     def valid(self):
         return (
             self.north_velocity is not None
-            and self.north_velocity_std is not None
+            # and self.north_velocity_std is not None # Fix for koyo21rov, no VEL_STD messages provided
             and self.epoch_timestamp is not None
         )
 
@@ -553,6 +567,35 @@ class InertialVelocity(OutputFormat):
 
     def to_acfr(self):
         pass
+
+    def get_csv_header(self):
+        return (
+            "epoch_timestamp,"
+            + "east_velocity,"
+            + "north_velocity,"
+            + "down_velocity,"
+            + "east_velocity_std,"
+            + "north_velocity_std,"
+            + "down_velocity_std\n"
+        )
+
+    def to_csv_row(self):
+        return (
+            str(self.epoch_timestamp)
+            + ","
+            + str(self.east_velocity)
+            + ","
+            + str(self.north_velocity)
+            + ","
+            + str(self.down_velocity)
+            + ","
+            + str(self.east_velocity_std)
+            + ","
+            + str(self.north_velocity_std)
+            + ","
+            + str(self.down_velocity_std)
+            + "\n"
+        )
 
 
 class Orientation(OutputFormat):
@@ -637,6 +680,13 @@ class Orientation(OutputFormat):
         self.roll = roll_rad * 180.0 / pi
         self.pitch = pitch_rad * 180.0 / pi
         self.yaw = yaw_rad * 180.0 / pi
+
+    def from_koyo21rov(self, t, roll, pitch, yaw):
+        self.epoch_timestamp = t
+        # angles are already in degrees, no need to convert
+        self.roll = roll
+        self.pitch = pitch
+        self.yaw = yaw
 
     def from_autosub(self, data, i):
         self.epoch_timestamp = data["eTime"][i]
@@ -852,6 +902,12 @@ class Depth(OutputFormat):
         self.depth = d
         self.depth_std = self.depth * self.depth_std_factor
 
+    def from_koyo21rov(self, t, d):
+        self.epoch_timestamp = t
+        self.depth_timestamp = self.epoch_timestamp
+        self.depth = d
+        self.depth_std = self.depth * self.depth_std_factor
+
     def from_autosub(self, data, i):
         self.epoch_timestamp = data["eTime"][i]
         self.depth_timestamp = self.epoch_timestamp
@@ -873,7 +929,7 @@ class Depth(OutputFormat):
                 msec = int(time_string[7:10])
                 self.depth_timestamp = self.ts.get(hour, mins, secs, msec)
         except Exception as exc:
-            Console.warn(
+            Console.log(
                 "Badly formatted packet (DEPTH TIME): "
                 + time_string
                 + " Exception: "
@@ -993,6 +1049,12 @@ class Altitude(OutputFormat):
         self.altitude_std = self.altitude * self.altitude_std_factor
 
     def from_alr(self, t, a):
+        self.epoch_timestamp = t
+        self.altitude_timestamp = self.epoch_timestamp
+        self.altitude = a
+        self.altitude_std = self.altitude * self.altitude_std_factor
+
+    def from_koyo21rov(self, t, a):
         self.epoch_timestamp = t
         self.altitude_timestamp = self.epoch_timestamp
         self.altitude = a
@@ -1220,6 +1282,14 @@ class Usbl(OutputFormat):
         self.depth = -float(parts[6])
         self.fill_from_lat_lon_depth()
 
+    def from_koyo21rov(self, t, lat, lon, d):
+        self.sensor_string = "koyo21rov"
+        self.epoch_timestamp = t
+        self.latitude = lat
+        self.longitude = lon
+        self.depth = d
+        self.fill_from_lat_lon_depth()
+
     def from_alr(self, time, lat, lon, depth):
         self.epoch_timestamp = time
         self.latitude = lat
@@ -1302,7 +1372,7 @@ class Usbl(OutputFormat):
             )
 
             # determine range to input to uncertainty model
-            distance = sqrt(self.distance_to_ship ** 2 + self.depth ** 2)
+            distance = sqrt(self.distance_to_ship**2 + self.depth**2)
             distance_std = sensor_std["factor"] * distance + sensor_std["offset"]
 
             # determine uncertainty in terms of latitude and longitude
@@ -1419,7 +1489,7 @@ class Usbl(OutputFormat):
         if self.distance_to_ship is not None:
             if self.distance_to_ship > self.depth and self.distance_to_ship > 0:
                 try:
-                    distance_range = sqrt(self.distance_to_ship ** 2 - self.depth ** 2)
+                    distance_range = sqrt(self.distance_to_ship**2 - self.depth**2)
                 except ValueError:
                     print("Value error:")
                     print("Value distance_to_ship: " + str(self.distance_to_ship))

@@ -51,6 +51,7 @@ from auv_nav.sensors import (
     Usbl,
 )
 from auv_nav.tools.body_to_inertial import body_to_inertial
+from auv_nav.tools.inertial_to_body import inertial_to_body
 from auv_nav.tools.csv_tools import load_states, spp_csv, write_csv, write_sidescan_csv
 from auv_nav.tools.dvl_level_arm import compute_angular_speeds, correct_lever_arm
 from auv_nav.tools.interpolate import interpolate, interpolate_sensor_list
@@ -483,6 +484,7 @@ def process(
                     velocity_inertial = InertialVelocity()
                     velocity_inertial.from_json(parsed_json_data[i])
                     velocity_inertial_list.append(velocity_inertial)
+                    Console.warn("Inertial frame velocity data found. Needs to be converted!")                
 
             if "orientation" in parsed_json_data[i]["category"]:
                 orientation = Orientation()
@@ -600,6 +602,13 @@ def process(
     threads.append(t)
     t = threading.Thread(
         target=write_csv,
+        args=[raw_sensor_path, velocity_inertial_list, "velocity_inertial"],
+        kwargs={"mutex": mutex},
+    )
+    t.start()
+    threads.append(t)
+    t = threading.Thread(
+        target=write_csv,
         args=[raw_sensor_path, altitude_list, "altitude"],
         kwargs={"mutex": mutex},
     )
@@ -656,13 +665,79 @@ def process(
     for i in non_processed_altitude_index_list:
         altitude_list[i].seafloor_depth = altitude_list[i + 1].seafloor_depth
 
+    # # if velocity_body_list is empty, then estimate it from velocity_inertial_list and orientation_list
+    # if len(velocity_body_list) == 0:
+    #     Console.info("velocity_body_list is empty, estimating it from velocity_inertial_list and orientation_list")
+    #     # check if velocity_inertial_list and orientation_list are non-empty. Exit otherwise
+    #     if len(velocity_inertial_list) == 0:
+    #         Console.error("velocity_inertial_list is empty")
+    #         Console.quit("auv_nav process failed")
+    #     if len(orientation_list) == 0:
+    #         Console.error("orientation_list is empty")
+    #         Console.quit("auv_nav process failed")
+    #     else:
+    #         Console.info("Interpolating orientation_list at velocity_inertial_list timestamps")
+    #         # interpolate orientation_list at velocity_inertial_list timestamps
+    #         j = 0
+    #         non_processed_velocity_index_list = []
+    #         for i in range(len(velocity_inertial_list)):
+    #             while (1
+    #                 j < len(orientation_list) - 1
+    #                 and orientation_list[j].epoch_timestamp < velocity_inertial_list[i].epoch_timestamp
+    #             ):
+    #                 j = j + 1   # iterate until finding the previous (timestamp) orientation measurement
+
+    #             if j > 0:
+    #                 # let's interpolate the roll, pitch and yaw at the velocity_inertial_list[i] timestamp
+    #                 roll = interpolate(
+    #                     velocity_inertial_list[i].epoch_timestamp,
+    #                     orientation_list[j - 1].epoch_timestamp,
+    #                     orientation_list[j].epoch_timestamp,
+    #                     orientation_list[j - 1].roll,
+    #                     orientation_list[j].roll,
+    #                 )
+    #                 pitch = interpolate(
+    #                     velocity_inertial_list[i].epoch_timestamp,
+    #                     orientation_list[j - 1].epoch_timestamp,
+    #                     orientation_list[j].epoch_timestamp,
+    #                     orientation_list[j - 1].pitch,
+    #                     orientation_list[j].pitch,
+    #                 )
+    #                 yaw = interpolate(
+    #                     velocity_inertial_list[i].epoch_timestamp,
+    #                     orientation_list[j - 1].epoch_timestamp,
+    #                     orientation_list[j].epoch_timestamp,
+    #                     orientation_list[j - 1].yaw,
+    #                     orientation_list[j].yaw,
+    #                 )
+
+    #                 vx = velocity_inertial_list[i].east_velocity
+    #                 vy = velocity_inertial_list[i].north_velocity
+    #                 vz = velocity_inertial_list[i].down_velocity
+    #                 # calculate the [vx, vy, vz] in body frame from [vx, vy, vz] in inertial frame and roll, pitch and yaw
+    #                 [vx, vy, vz] = inertial_to_body(0, 0, yaw, vx, vy, vz) # heading only correction
+    #                 # create a new BodyVelocity object
+    #                 velocity_body_item = BodyVelocity()
+    #                 # populate it with the timestamp, the [vx, vy, vz] and the std
+    #                 velocity_body_item.epoch_timestamp = velocity_inertial_list[i].epoch_timestamp
+    #                 velocity_body_item.epoch_timestamp_dvl = velocity_inertial_list[i].epoch_timestamp
+    #                 velocity_body_item.x_velocity = vx
+    #                 velocity_body_item.y_velocity = vy
+    #                 velocity_body_item.z_velocity = vz
+    #                 velocity_body_item.x_velocity_std = velocity_body_item.get_std(vx)
+    #                 velocity_body_item.y_velocity_std = velocity_body_item.get_std(vy)
+    #                 velocity_body_item.z_velocity_std = velocity_body_item.get_std(vz)
+    #                 velocity_body_list.append(velocity_body_item)
+    #             else:
+    #                 non_processed_velocity_index_list.append(i)
+
     if len(orientation_list) == 0 or len(velocity_body_list) == 0:
         Console.quit(
             "orientation_list and velocity_body_list must not be empty but at",
             "least one of them is empty (orientation_list contains",
             len(orientation_list),
             "elements and velocity_body_list",
-            "conatains",
+            "contains",
             len(velocity_body_list),
             "elements)",
         )

@@ -66,6 +66,7 @@ def write_csv(
             # write headers
             str_to_write = data_list[0].get_csv_header()
             fileout.write(str_to_write)
+            fileout.close()
             if hasattr(data_list[0], "covariance") and hasattr(
                 data_list[0], "get_csv_header_cov"
             ):
@@ -73,6 +74,7 @@ def write_csv(
                     fileout_cov = covariance_file.open("w")
                     str_to_write_cov = data_list[0].get_csv_header_cov()
                     fileout_cov.write(str_to_write_cov)
+                    fileout_cov.close()
 
             # Loop for each line in csv
             for i in range(len(data_list)):
@@ -80,8 +82,13 @@ def write_csv(
                     str_to_write = data_list[i].to_csv_row()
                     if fileout_cov is not None:
                         str_to_write_cov = data_list[i].to_csv_cov_row()
+                        fileout_cov = covariance_file.open("a")
                         fileout_cov.write(str_to_write_cov)
+                        fileout_cov.close()
+
+                    fileout = file.open("a")
                     fileout.write(str_to_write)
+                    fileout.close()
                 except IndexError:
                     Console.error(
                         "There is something wrong with camera filenames and \
@@ -89,7 +96,6 @@ def write_csv(
                         csv_filename,
                     )
                     Console.quit("Check write_csv function.")
-            fileout.close()
             if fileout_cov is not None:
                 fileout_cov.close()
             Console.info("... done writing {}.csv.".format(csv_filename))

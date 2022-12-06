@@ -15,6 +15,7 @@ from pathlib import Path
 # fmt: off
 from auv_nav.parsers.parse_acfr_images import parse_acfr_images
 from auv_nav.parsers.parse_ae2000 import parse_ae2000
+from auv_nav.parsers.parse_koyo21rov import parse_koyo21rov
 from auv_nav.parsers.parse_alr import parse_alr
 from auv_nav.parsers.parse_autosub import parse_autosub
 from auv_nav.parsers.parse_biocam_images import correct_timestamps, parse_biocam_images
@@ -332,6 +333,12 @@ def parse_single(filepath, force_overwrite):
                     [mission, vehicle, "usbl", ftype, outpath],
                 )
             )
+        elif mission.usbl.format == "koyo21rov":
+            pool_list.append(
+                pool.apply_async(
+                    parse_koyo21rov, [mission, vehicle, "usbl", ftype, outpath]
+                )
+            )
         elif mission.usbl.format == "alr":
             pool_list.append(
                 pool.apply_async(
@@ -397,6 +404,13 @@ def parse_single(filepath, force_overwrite):
                     [mission, vehicle, "velocity", ftype, outpath],
                 )
             )
+        elif mission.velocity.format == "koyo21rov":
+            pool_list.append(
+                pool.apply_async(
+                    parse_koyo21rov,
+                    [mission, vehicle, "velocity", ftype, outpath],
+                )
+            )
         else:
             Console.quit(
                 "Mission velocity format",
@@ -423,6 +437,13 @@ def parse_single(filepath, force_overwrite):
             pool_list.append(
                 pool.apply_async(
                     parse_alr,
+                    [mission, vehicle, "orientation", ftype, outpath],
+                )
+            )
+        elif mission.orientation.format == "koyo21rov":
+            pool_list.append(
+                pool.apply_async(
+                    parse_koyo21rov,
                     [mission, vehicle, "orientation", ftype, outpath],
                 )
             )
@@ -478,6 +499,10 @@ def parse_single(filepath, force_overwrite):
             pool_list.append(
                 pool.apply_async(parse_alr, [mission, vehicle, "depth", ftype, outpath])
             )
+        elif mission.depth.format == "koyo21rov":
+            pool_list.append(
+                pool.apply_async(parse_koyo21rov, [mission, vehicle, "depth", ftype, outpath])
+            )
         elif mission.depth.format == "autosub":
             pool_list.append(
                 pool.apply_async(
@@ -525,6 +550,13 @@ def parse_single(filepath, force_overwrite):
             pool_list.append(
                 pool.apply_async(
                     parse_alr,
+                    [mission, vehicle, "altitude", ftype, outpath],
+                )
+            )
+        elif mission.altitude.format == "koyo21rov":
+            pool_list.append(
+                pool.apply_async(
+                    parse_koyo21rov,
                     [mission, vehicle, "altitude", ftype, outpath],
                 )
             )
