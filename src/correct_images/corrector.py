@@ -11,7 +11,11 @@ import os
 import random
 from pathlib import Path
 
-import imageio
+try:
+    # Try using the v2 API directly to avoid a warning from imageio >= 2.16.2
+    from imageio.v2 import imwrite
+except ImportError:
+    from imageio import imwrite
 import joblib
 import matplotlib
 import numpy as np
@@ -974,11 +978,11 @@ class Corrector:
                 image_raw_mean = image_raw_mean.transpose((1, 2, 0))
                 image_raw_std = image_raw_std.transpose((1, 2, 0))
 
-            imageio.imwrite(
+            imwrite(
                 Path(self.attenuation_parameters_folder) / "image_raw_mean.png",
                 image_raw_mean,
             )
-            imageio.imwrite(
+            imwrite(
                 Path(self.attenuation_parameters_folder) / "image_raw_std.png",
                 image_raw_std,
             )

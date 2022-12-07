@@ -9,7 +9,11 @@ See LICENSE.md file in the project root for full license information.
 import os
 from pathlib import Path
 
-import imageio
+try:
+    # Try using the v2 API directly to avoid a warning from imageio >= 2.16.2
+    from imageio.v2 import imwrite, imread
+except ImportError:
+    from imageio import imwrite, imread
 import numpy as np
 import pandas as pd
 from PIL import Image
@@ -118,7 +122,7 @@ def rescale_images(
         ]
         altitude = trimmed_dataframe["altitude [m]"]
         if len(altitude) > 0:
-            image = imageio.imread(source_image_path).astype("uint8")
+            image = imread(source_image_path).astype("uint8")
             rescaled_image = rescale(
                 image,
                 interpolate_method,
@@ -128,7 +132,7 @@ def rescale_images(
                 f_y,
                 maintain_pixels,
             )
-            imageio.imwrite(output_image_path, rescaled_image, format="PNG-FI")
+            imwrite(output_image_path, rescaled_image, format="PNG-FI")
         else:
             Console.warn("Did not get distance values for image: " + image_name)
 
