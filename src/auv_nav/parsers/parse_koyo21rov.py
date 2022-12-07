@@ -6,11 +6,12 @@ Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
 import time
-import pandas as pd
 from math import isnan
-from auv_nav.sensors import Altitude, Category, Depth, Orientation, Usbl,  BodyVelocity
+
+import pandas as pd
+
+from auv_nav.sensors import Altitude, BodyVelocity, Category, Depth, Orientation, Usbl
 from oplab import Console, get_raw_folder
-from auv_nav.tools.time_conversions import read_timezone
 
 
 def parse_koyo21rov(mission, vehicle, category, ftype, outpath):
@@ -18,7 +19,7 @@ def parse_koyo21rov(mission, vehicle, category, ftype, outpath):
     sensor_string = "koyo21rov"
     category = category
     output_format = ftype
-    
+
     # There are two data sources: raw data (nav/hypack) and processed data (nav/posfilter)
     # If the category is USBL then we used the processed data, otherwise we use the raw data
     if category == Category.USBL:
@@ -90,9 +91,10 @@ def parse_koyo21rov(mission, vehicle, category, ftype, outpath):
     else:
         # raw data
         mission_data["epoch_timestamp"] = mission_data.apply(
-            lambda row: time.mktime(time.strptime(
-                str(row["Date"]) + " " + str(row["Time"]), "%Y/%m/%d %H:%M:%S"
-            )
+            lambda row: time.mktime(
+                time.strptime(
+                    str(row["Date"]) + " " + str(row["Time"]), "%Y/%m/%d %H:%M:%S"
+                )
             ),
             axis=1,
         )
@@ -102,9 +104,11 @@ def parse_koyo21rov(mission, vehicle, category, ftype, outpath):
         Console.info("Parsing koyo21-rov orientation...")
         previous_timestamp = 0
         for i in range(len(mission_data["epoch_timestamp"])):
-            roll = mission_data["Roll"][i]      # roll is in the Roll column, which is ok
-            pitch = mission_data["Pich"][i]     # yes, pitch is in the 'Pich' column
-            yaw = mission_data["Hedding"][i]    # and yes, yaw is in the 'Hedding' column... that's how it is in the data
+            roll = mission_data["Roll"][i]  # roll is in the Roll column, which is ok
+            pitch = mission_data["Pich"][i]  # yes, pitch is in the 'Pich' column
+            yaw = mission_data["Hedding"][
+                i
+            ]  # and yes, yaw is in the 'Hedding' column... that's how it is in the data
             if not isnan(roll) and not isnan(pitch) and not isnan(yaw):
                 t = mission_data["epoch_timestamp"][i]
                 orientation.from_koyo21rov(t, roll, pitch, yaw)
@@ -147,12 +151,14 @@ def parse_koyo21rov(mission, vehicle, category, ftype, outpath):
                     data_list[-1] = data
                 previous_timestamp = altitude.epoch_timestamp
         Console.info("...done parsing alr altitude")
-    if category == Category.USBL:     # This one is for posfilter version of the ROV nav data (posfilter/pos_filter_1117_v2_HR02.csv)
+    if (
+        category == Category.USBL
+    ):  # This one is for posfilter version of the ROV nav data (posfilter/pos_filter_1117_v2_HR02.csv)
         Console.info("Parsing koyo21-rov filtered USBL...")
         filepath = mission.usbl.filepath
-        timezone = mission.usbl.timezone
-        timeoffset = mission.usbl.timeoffset
-        timezone_offset = read_timezone(timezone)
+        # timezone = mission.usbl.timezone
+        # timeoffset = mission.usbl.timeoffset
+        # timezone_offset = read_timezone(timezone)
         latitude_reference = mission.origin.latitude
         longitude_reference = mission.origin.longitude
         usbl = Usbl(
@@ -169,10 +175,12 @@ def parse_koyo21rov(mission, vehicle, category, ftype, outpath):
             lon = mission_data["Lon_flt"][i]
             # read depth information, which is required to calculate the std from depth for northings/eastings
             d = mission_data["Depth(ROV)"][i]
-            if not isnan(d):    # double check in case of invalid rows
+            if not isnan(d):  # double check in case of invalid rows
                 t = mission_data["epoch_timestamp"][i]
                 usbl.from_koyo21rov(t, lat, lon, d)
-                data = usbl.export(output_format)       # warning: after calling export(), the entry is cleared
+                data = usbl.export(
+                    output_format
+                )  # warning: after calling export(), the entry is cleared
                 if t > previous_timestamp:
                     data_list.append(data)
                 else:
@@ -184,9 +192,8 @@ def parse_koyo21rov(mission, vehicle, category, ftype, outpath):
     if category == Category.VELOCITY:
         Console.info("Parsing koyo21-rov synthetic body velocity...")
         velocity = BodyVelocity(
-            mission.velocity.std_factor,
-            mission.velocity.std_offset
-        )   # create empty container. Let's populate it with time and surge data
+            mission.velocity.std_factor, mission.velocity.std_offset
+        )  # create empty container. Let's populate it with time and surge data
         previous_timestamp = 0
         for i in range(len(mission_data["epoch_timestamp"])):
             surge = mission_data["surge"][i]
@@ -203,45 +210,45 @@ def parse_koyo21rov(mission, vehicle, category, ftype, outpath):
         Console.info("...done parsing koyo21-rov velocity")
 
     # if category == Category.USBL:     # This one is for RAW USBL data extracted from the hypack payload
-        # Console.info("Parsing koyo21-rov hypack USBL...")
-        # filepath = mission.usbl.filepath
-        # timezone = mission.usbl.timezone
-        # # beacon_id = mission.usbl.label
-        # timeoffset = mission.usbl.timeoffset
-        # timezone_offset = read_timezone(timezone)
-        # latitude_reference = mission.origin.latitude
-        # longitude_reference = mission.origin.longitude
+    # Console.info("Parsing koyo21-rov hypack USBL...")
+    # filepath = mission.usbl.filepath
+    # timezone = mission.usbl.timezone
+    # # beacon_id = mission.usbl.label
+    # timeoffset = mission.usbl.timeoffset
+    # timezone_offset = read_timezone(timezone)
+    # latitude_reference = mission.origin.latitude
+    # longitude_reference = mission.origin.longitude
 
-        # usbl = Usbl(
-        #     mission.usbl.std_factor,
-        #     mission.usbl.std_offset,
-        #     latitude_reference,
-        #     longitude_reference,
-        # )
-        # usbl.sensor_string = sensor_string
-        # previous_timestamp = 0.0
-        # # Rename column 5 to NS, column 9 to EW
-        # mission_data.rename(columns={"Unnamed: 5": "NS"}, inplace=True)
-        # mission_data.rename(columns={"Unnamed: 9": "EW"}, inplace=True)
-        # # Lat/Lon information is available as DMS in separate columns, we need to convert to decimal degrees
-        # for i in range(len(mission_data["epoch_timestamp"])):
-        #     lat = mission_data["LatD"][i] + mission_data["LatM"][i] / 60 + mission_data["LatS"][i] / 3600
-        #     lon = mission_data["LonD"][i] + mission_data["LonM"][i] / 60 + mission_data["LonS"][i] / 3600
-        #     # column 5 is N/S and column 9 is E/W. If it's S or W, we need to make the value negative
-        #     if mission_data["NS"][i] == "S":
-        #         lat = -lat
-        #     if mission_data["EW"][i] == "W":
-        #         lon = -lon
-        #     # read depth information, which is required to calculate the std from depth for northings/eastings
-        #     d = mission_data["Depth(ROV)"][i]
-        #     if not isnan(d):    # double check in case of invalid rows
-        #         t = mission_data["epoch_timestamp"][i]
-        #         usbl.from_koyo21rov(t, lat, lon, d)
-        #         data = usbl.export(output_format)       # warning: after calling export(), the entry is cleared
-        #         if t > previous_timestamp:
-        #             data_list.append(data)
-        #         else:
-        #             data_list[-1] = data
-        #         previous_timestamp = t
-        # Console.info("...done parsing koyo21-rov USBL")
+    # usbl = Usbl(
+    #     mission.usbl.std_factor,
+    #     mission.usbl.std_offset,
+    #     latitude_reference,
+    #     longitude_reference,
+    # )
+    # usbl.sensor_string = sensor_string
+    # previous_timestamp = 0.0
+    # # Rename column 5 to NS, column 9 to EW
+    # mission_data.rename(columns={"Unnamed: 5": "NS"}, inplace=True)
+    # mission_data.rename(columns={"Unnamed: 9": "EW"}, inplace=True)
+    # # Lat/Lon information is available as DMS in separate columns, we need to convert to decimal degrees
+    # for i in range(len(mission_data["epoch_timestamp"])):
+    #     lat = mission_data["LatD"][i] + mission_data["LatM"][i] / 60 + mission_data["LatS"][i] / 3600
+    #     lon = mission_data["LonD"][i] + mission_data["LonM"][i] / 60 + mission_data["LonS"][i] / 3600
+    #     # column 5 is N/S and column 9 is E/W. If it's S or W, we need to make the value negative
+    #     if mission_data["NS"][i] == "S":
+    #         lat = -lat
+    #     if mission_data["EW"][i] == "W":
+    #         lon = -lon
+    #     # read depth information, which is required to calculate the std from depth for northings/eastings
+    #     d = mission_data["Depth(ROV)"][i]
+    #     if not isnan(d):    # double check in case of invalid rows
+    #         t = mission_data["epoch_timestamp"][i]
+    #         usbl.from_koyo21rov(t, lat, lon, d)
+    #         data = usbl.export(output_format)       # warning: after calling export(), the entry is cleared
+    #         if t > previous_timestamp:
+    #             data_list.append(data)
+    #         else:
+    #             data_list[-1] = data
+    #         previous_timestamp = t
+    # Console.info("...done parsing koyo21-rov USBL")
     return data_list

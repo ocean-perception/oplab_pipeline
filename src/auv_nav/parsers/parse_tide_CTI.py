@@ -13,6 +13,7 @@ from auv_nav.sensors import Category, Tide
 from auv_nav.tools.time_conversions import date_time_to_epoch, read_timezone
 from oplab import Console, get_file_list, get_raw_folder
 
+
 def parse_tide_CTI(mission, vehicle, category, ftype, outpath):
     # parser meta data
     sensor_string = "alr"
@@ -49,7 +50,9 @@ def parse_tide_CTI(mission, vehicle, category, ftype, outpath):
         # 2022-07-09T01:00:00Z,1.09346,0.11924,94
         for file in file_list:
             with file.open("r", errors="ignore") as tide_file:
-                for line in tide_file.readlines()[6:]:  # Skip first 5 lines of header information
+                for line in tide_file.readlines()[
+                    6:
+                ]:  # Skip first 5 lines of header information
                     # YYYY-MM-DD
                     yyyy = int(line[0:4])
                     mm = int(line[5:7])

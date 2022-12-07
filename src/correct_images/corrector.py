@@ -725,7 +725,7 @@ class Corrector:
             * self.image_height
             * self.image_width
             * 4.0
-            / (1024.0 ** 3)
+            / (1024.0**3)
         )
         max_bin_size_gb = 50.0
         max_bin_size = int(max_bin_size_gb / image_size_gb)

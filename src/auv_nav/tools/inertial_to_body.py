@@ -15,7 +15,8 @@ See LICENSE.md file in the project root for full license information.
 # Date: 03/11/2022
 
 import math
-deg_to_rad = math.pi / 180  
+
+deg_to_rad = math.pi / 180
 
 
 def inertial_to_body(roll, pitch, yaw, old_x, old_y, old_z):
@@ -56,19 +57,18 @@ def inertial_to_body(roll, pitch, yaw, old_x, old_y, old_z):
     # R= b e h
     #    c f i
 
-    new_x = ( (cy*cp)            * old_x    # a
-            + (sy*cp)            * old_y    # d
-            + (-sp)              * old_z    # g
+    new_x = (cy * cp) * old_x + (sy * cp) * old_y + (-sp) * old_z  # a  # d  # g
+
+    new_y = (
+        (-sy * cr + cy * sp * sr) * old_x  # b
+        + (cy * cr + sy * sp * sr) * old_y  # e
+        + (cp * sr) * old_z  # h
     )
 
-    new_y = ( (-sy*cr + cy*sp*sr) * old_x   # b
-            + ( cy*cr + sy*sp*sr) * old_y   # e
-            + ( cp*sr)            * old_z   # h
-    )
-
-    new_z = ( ( sy*sr + cy*sp*cr) * old_x   # c
-            + (-cy*sr + sy*sp*sr) * old_y   # f
-            + ( cp*cr)            * old_z   # i
+    new_z = (
+        (sy * sr + cy * sp * cr) * old_x  # c
+        + (-cy * sr + sy * sp * sr) * old_y  # f
+        + (cp * cr) * old_z  # i
     )
 
     return new_x, new_y, new_z
