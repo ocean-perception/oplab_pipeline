@@ -236,6 +236,7 @@ def call_parse(args):
             corrector = Corrector(args.force, args.suffix, camera, correct_config=None)
             # call new list-compatible implementation of parse()
             corrector.parse(path_list, correct_config_list)
+            corrector.cleanup()
 
     Console.info(
         "Parse completed for all cameras. Please run process to develop ",

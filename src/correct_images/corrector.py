@@ -11,7 +11,12 @@ import os
 import random
 from pathlib import Path
 
-import imageio
+try:
+    # Try using the v2 API directly to avoid a warning from imageio >= 2.16.2
+    from imageio.v2 import imwrite
+except ImportError:
+    from imageio import imwrite
+
 import joblib
 import matplotlib
 import numpy as np
@@ -42,6 +47,22 @@ from oplab import (
 
 # fmt: on
 matplotlib.use("Agg")
+
+
+def try_remove(filename, verbose=False):
+    if filename is not None:
+        try:
+            os.remove(filename)
+            if verbose:
+                Console.info("Memmap", filename, "deleted!")
+        except PermissionError:
+            Console.warn(
+                "Unable to remove distances memmap file",
+                filename,
+                ". Please delete the file manually.",
+            )
+        except FileNotFoundError:
+            pass
 
 
 # -----------------------------------------
@@ -110,9 +131,10 @@ class Corrector:
         self.trimmed_csv_path = None
         self.camera_params_file_path = None
 
+        self.memmaps_to_remove = []
+
         self.images_fn = None
         self.distances_fn = None
-        self.memmap_to_delete = []
 
         self.force = force
 
@@ -127,34 +149,12 @@ class Corrector:
             # explicit call to load the correct_config
             self.load_configuration(self.correct_config)
 
-    def __del__(self):
-        # delete memmaps
+    def cleanup(self):
         Console.info("Checking if memmaps have to be deleted...")
-        if self.images_fn is not None:
-            try:
-                os.remove(self.images_fn)
-                Console.info("Memmap", self.images_fn, "deleted!")
-            except PermissionError:
-                Console.warn(
-                    "Unable to remove images memmap file",
-                    self.images_fn,
-                    ". Please delete the file manually.",
-                )
-        if self.distances_fn is not None:
-            try:
-                os.remove(self.distances_fn)
-                Console.info("Memmap", self.distances_fn, "deleted!")
-            except PermissionError:
-                Console.warn(
-                    "Unable to remove distances memmap file",
-                    self.distances_fn,
-                    ". Please delete the file manually.",
-                )
-        for memmap_fn in self.memmap_to_delete:
-            # If the memmap exists, delete it
-            if Path(memmap_fn).exists:
-                os.remove(memmap_fn)
-                Console.info("Memmap", memmap_fn, "deleted!")
+        try_remove(self.images_fn, verbose=True)
+        try_remove(self.distances_fn, verbose=True)
+        for fn in self.memmaps_to_remove:
+            try_remove(fn, verbose=True)
 
     def set_path(self, path):
         """Set the path for the corrector"""
@@ -818,24 +818,9 @@ class Corrector:
 
             # delete memmap handles
             del images_map
-            try:
-                os.remove(self.images_fn)
-            except PermissionError:
-                Console.warn(
-                    "Unable to remove images memmap file",
-                    self.images_fn,
-                    ". Please delete the file manually.",
-                )
-
             del distances_map
-            try:
-                os.remove(self.distances_fn)
-            except PermissionError:
-                Console.warn(
-                    "Unable to remove distances memmap file",
-                    self.distances_fn,
-                    ". Please delete the file manually.",
-                )
+            try_remove(self.images_fn)
+            try_remove(self.distances_fn)
 
             # Save attenuation parameter results.
             np.save(
@@ -974,11 +959,11 @@ class Corrector:
                 image_raw_mean = image_raw_mean.transpose((1, 2, 0))
                 image_raw_std = image_raw_std.transpose((1, 2, 0))
 
-            imageio.imwrite(
+            imwrite(
                 Path(self.attenuation_parameters_folder) / "image_raw_mean.png",
                 image_raw_mean,
             )
-            imageio.imwrite(
+            imwrite(
                 Path(self.attenuation_parameters_folder) / "image_raw_std.png",
                 image_raw_std,
             )
@@ -1085,20 +1070,20 @@ class Corrector:
                     dimensions,
                     loader=self.loader,
                 )
-                self.memmap_to_delete.append(memmap_filename)
+                self.memmaps_to_remove.append(memmap_filename)
                 bin_images_sample = image_mean_std_trimmed(memmap_handle)[0]
                 del memmap_handle
-                os.remove(memmap_filename)
+                try_remove(memmap_filename)
             elif self.smoothing == "median":
                 memmap_filename, memmap_handle = create_memmap(
                     bin_images,
                     dimensions,
                     loader=self.loader,
                 )
-                self.memmap_to_delete.append(memmap_filename)
+                self.memmaps_to_remove.append(memmap_filename)
                 bin_images_sample = median_array(memmap_handle)
                 del memmap_handle
-                os.remove(memmap_filename)
+                try_remove(memmap_filename)
 
             base_path = Path(self.attenuation_parameters_folder)
 

@@ -9,7 +9,11 @@ See LICENSE.md file in the project root for full license information.
 import uuid
 from pathlib import Path
 
-import imageio
+try:
+    # Try using the v2 API directly to avoid a warning from imageio >= 2.16.2
+    from imageio.v2 import imwrite
+except ImportError:
+    from imageio import imwrite
 import joblib
 import numpy as np
 import pandas as pd
@@ -128,5 +132,5 @@ def write_output_image(image, filename, dest_path, dest_format):
     ch = image.shape[0]
     if ch == 3:
         image = image.transpose((1, 2, 0))
-    imageio.imwrite(file_path, image)
+    imwrite(file_path, image)
     return file_path
