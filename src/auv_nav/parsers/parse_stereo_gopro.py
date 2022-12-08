@@ -7,10 +7,10 @@ See LICENSE.md file in the project root for full license information.
 """
 
 import os
-import pandas as pd
 from pathlib import Path
 
-from auv_nav.tools.time_conversions import date_time_to_epoch
+import pandas as pd
+
 from oplab import Console, get_raw_folder
 
 

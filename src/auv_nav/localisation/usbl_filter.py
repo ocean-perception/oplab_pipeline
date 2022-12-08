@@ -97,8 +97,8 @@ def usbl_filter(usbl_list, depth_list, sigma_factor, max_auv_speed):
             continue
         else:
             usbl_filtered_list.append(usbl_list[i])
-    print ("Total removed pre DR: ", pre)
-    print ("Total removed post DR: ", post)
+    print("Total removed pre DR: ", pre)
+    print("Total removed post DR: ", post)
     usbl_list = usbl_filtered_list
     usbl_filtered_list = []
     Console.info(

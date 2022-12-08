@@ -14,7 +14,7 @@ import numpy as np
 import yaml
 
 from correct_images import corrections
-from correct_images.tools.numerical import mean_std, RunningMeanStd
+from correct_images.tools.numerical import RunningMeanStd, mean_std
 
 
 class testCorrections(unittest.TestCase):
