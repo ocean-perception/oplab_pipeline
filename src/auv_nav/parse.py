@@ -15,25 +15,25 @@ from pathlib import Path
 # fmt: off
 from auv_nav.parsers.parse_acfr_images import parse_acfr_images
 from auv_nav.parsers.parse_ae2000 import parse_ae2000
-from auv_nav.parsers.parse_koyo21rov import parse_koyo21rov
 from auv_nav.parsers.parse_alr import parse_alr
 from auv_nav.parsers.parse_autosub import parse_autosub
 from auv_nav.parsers.parse_biocam_images import correct_timestamps, parse_biocam_images
 from auv_nav.parsers.parse_eiva_navipac import parse_eiva_navipac
 from auv_nav.parsers.parse_gaps import parse_gaps
 from auv_nav.parsers.parse_interlacer import parse_interlacer
+from auv_nav.parsers.parse_koyo21rov import parse_koyo21rov
 from auv_nav.parsers.parse_NOC_nmea import parse_NOC_nmea
 from auv_nav.parsers.parse_NOC_polpred import parse_NOC_polpred
-from auv_nav.parsers.parse_tide_CTI import parse_tide_CTI
 from auv_nav.parsers.parse_ntnu_dvl import parse_ntnu_dvl
 from auv_nav.parsers.parse_ntnu_stereo import parse_ntnu_stereo_images
-from auv_nav.parsers.parse_stereo_gopro import parse_stereo_gopro_images
 
 # sys.path.append("..")
 from auv_nav.parsers.parse_phins import parse_phins
 from auv_nav.parsers.parse_rdi import parse_rdi
 from auv_nav.parsers.parse_rosbag import parse_rosbag, parse_rosbag_extracted_images
 from auv_nav.parsers.parse_seaxerocks_images import parse_seaxerocks_images
+from auv_nav.parsers.parse_stereo_gopro import parse_stereo_gopro_images
+from auv_nav.parsers.parse_tide_CTI import parse_tide_CTI
 from auv_nav.parsers.parse_usbl_dump import parse_usbl_dump
 
 # from lib_sensors.parse_chemical import parse_chemical
@@ -501,7 +501,9 @@ def parse_single(filepath, force_overwrite):
             )
         elif mission.depth.format == "koyo21rov":
             pool_list.append(
-                pool.apply_async(parse_koyo21rov, [mission, vehicle, "depth", ftype, outpath])
+                pool.apply_async(
+                    parse_koyo21rov, [mission, vehicle, "depth", ftype, outpath]
+                )
             )
         elif mission.depth.format == "autosub":
             pool_list.append(

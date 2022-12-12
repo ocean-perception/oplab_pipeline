@@ -6,9 +6,9 @@ Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
 import os
-import pandas as pd
-
 from math import isnan
+
+import pandas as pd
 
 from auv_nav.parsers.load_matlab_file import loadmat
 from auv_nav.sensors import Altitude, BodyVelocity, Category, Depth, Orientation, Usbl
@@ -66,9 +66,11 @@ def parse_alr(mission, vehicle, category, ftype, outpath):
         # Check if mission_data dataframe has "timestamp" header
         # mission_data["epoch_timestamp"]=mission_data["timestamp"]
         if "corrected_timestamp" in mission_data.keys():
-            mission_data = mission_data.rename(columns = {'corrected_timestamp':'epoch_timestamp'})
+            mission_data = mission_data.rename(
+                columns={"corrected_timestamp": "epoch_timestamp"}
+            )
         elif "timestamp" in mission_data.keys():
-            mission_data = mission_data.rename(columns = {'timestamp':'epoch_timestamp'})
+            mission_data = mission_data.rename(columns={"timestamp": "epoch_timestamp"})
 
         dvl_down_bt_key = "DVL_down_BT_valid"
 
@@ -148,21 +150,25 @@ def parse_alr(mission, vehicle, category, ftype, outpath):
         Console.info("Parsing GPS data as USBL")
         previous_timestamp = 0
         total = 0
-        for i in range(len(mission_data["epoch_timestamp"])):   # for each entry
+        for i in range(len(mission_data["epoch_timestamp"])):  # for each entry
             # check if GPS data is not None
             lat = mission_data["GPS_latitude"][i]
             lon = mission_data["GPS_longitude"][i]
             depth = mission_data["AUV_depth"][i]
             if not isnan(lat) and not isnan(lon):
                 t = mission_data["epoch_timestamp"][i]  # current entry timestamp
-                usbl.from_alr(t, lat, lon, depth)    # populate the structure with time, lat, lon and depth
-                data = usbl.export(output_format)   # convert to currently defined output format
+                usbl.from_alr(
+                    t, lat, lon, depth
+                )  # populate the structure with time, lat, lon and depth
+                data = usbl.export(
+                    output_format
+                )  # convert to currently defined output format
                 if t > previous_timestamp:
                     data_list.append(data)
                     total = total + 1
                 else:
                     data_list[-1] = data
                 previous_timestamp = t
-        Console.info ("...done parsing ALR USBL. Total: ", total)
+        Console.info("...done parsing ALR USBL. Total: ", total)
 
     return data_list

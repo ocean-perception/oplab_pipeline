@@ -6,11 +6,11 @@ Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
 import matplotlib.pyplot as plt
+import numba as nb
 import numpy as np
 from mpl_toolkits.mplot3d import axes3d  # noqa
 from numpy.linalg import norm
 from scipy.optimize import least_squares
-import numba as nb
 
 
 @nb.jit(
@@ -208,10 +208,10 @@ class CircularCone:
         d_co = np.dot(ray_vec, co)
         co_co = np.dot(co, co)
 
-        a = d_v ** 2 - cos2
+        a = d_v**2 - cos2
         b = 2 * (d_v * co_v - d_co * cos2)
-        c = co_v ** 2 - co_co * cos2
-        discriminant = b ** 2 - 4 * a * c
+        c = co_v**2 - co_co * cos2
+        discriminant = b**2 - 4 * a * c
         if discriminant < 0:
             return None, None
         elif discriminant == 0:

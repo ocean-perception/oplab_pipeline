@@ -225,7 +225,7 @@ class Measurement(object):
         self.time = value.epoch_timestamp
         self.measurement[Index.Z] = value.depth + depth_offset
         if value.depth_std > 0:
-            self.covariance[Index.Z, Index.Z] = value.depth_std ** 2
+            self.covariance[Index.Z, Index.Z] = value.depth_std**2
         else:
             depth_std_factor = self.sensors_std["position_z"]["factor"]
             depth_std_offset = self.sensors_std["position_z"]["offset"]
@@ -262,9 +262,9 @@ class Measurement(object):
         self.measurement[Index.VZ] = value.z_velocity
 
         if value.x_velocity_std > 0:
-            self.covariance[Index.VX, Index.VX] = value.x_velocity_std ** 2
-            self.covariance[Index.VY, Index.VY] = value.y_velocity_std ** 2
-            self.covariance[Index.VZ, Index.VZ] = value.z_velocity_std ** 2
+            self.covariance[Index.VX, Index.VX] = value.x_velocity_std**2
+            self.covariance[Index.VY, Index.VY] = value.y_velocity_std**2
+            self.covariance[Index.VZ, Index.VZ] = value.z_velocity_std**2
         else:
             self.covariance[Index.VX, Index.VX] = (
                 abs(value.x_velocity) * velocity_std_factor_x + velocity_std_offset_x
@@ -296,17 +296,17 @@ class Measurement(object):
         self.measurement[Index.Y] = value.eastings + east_offset
 
         if value.northings_std > 0:
-            self.covariance[Index.X, Index.X] = value.northings_std ** 2
-            self.covariance[Index.Y, Index.Y] = value.eastings_std ** 2
+            self.covariance[Index.X, Index.X] = value.northings_std**2
+            self.covariance[Index.Y, Index.Y] = value.eastings_std**2
         else:
             usbl_noise_std_offset = self.sensors_std["position_xy"]["offset"]
             usbl_noise_std_factor = self.sensors_std["position_xy"]["factor"]
             distance = math.sqrt(
-                value.northings ** 2 + value.eastings ** 2 + value.depth ** 2
+                value.northings**2 + value.eastings**2 + value.depth**2
             )
             error = usbl_noise_std_offset + usbl_noise_std_factor * distance
-            self.covariance[Index.X, Index.X] = error ** 2
-            self.covariance[Index.Y, Index.Y] = error ** 2
+            self.covariance[Index.X, Index.X] = error**2
+            self.covariance[Index.Y, Index.Y] = error**2
         warn_if_zero(self.covariance[Index.X, Index.X], "X Covariance")
         warn_if_zero(self.covariance[Index.Y, Index.Y], "Y Covariance")
         # print('USBL cov:', self.covariance[Index.X, Index.X])
@@ -473,7 +473,7 @@ class EkfImpl(object):
             0
         )
 
-        if mahalanobis_distance2 >= self.mahalanobis_threshold ** 2:
+        if mahalanobis_distance2 >= self.mahalanobis_threshold**2:
             self.nb_exceeded_mahalanobis += 1
             ici = innovation_cov @ innovation
             summands = []

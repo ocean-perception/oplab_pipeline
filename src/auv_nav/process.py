@@ -51,7 +51,6 @@ from auv_nav.sensors import (
     Usbl,
 )
 from auv_nav.tools.body_to_inertial import body_to_inertial
-from auv_nav.tools.inertial_to_body import inertial_to_body
 from auv_nav.tools.csv_tools import load_states, spp_csv, write_csv, write_sidescan_csv
 from auv_nav.tools.dvl_level_arm import compute_angular_speeds, correct_lever_arm
 from auv_nav.tools.interpolate import interpolate, interpolate_sensor_list
@@ -484,7 +483,9 @@ def process(
                     velocity_inertial = InertialVelocity()
                     velocity_inertial.from_json(parsed_json_data[i])
                     velocity_inertial_list.append(velocity_inertial)
-                    Console.warn("Inertial frame velocity data found. Needs to be converted!")                
+                    Console.warn(
+                        "Inertial frame velocity data found. Needs to be converted!"
+                    )
 
             if "orientation" in parsed_json_data[i]["category"]:
                 orientation = Orientation()
@@ -1542,7 +1543,7 @@ def process(
             latlon_reference,
         )
 
-        _temp_ekf =[]    
+        _temp_ekf = []
         # Let's remove every row that has a None entry for [depth] - ALR missing engineering logs affecting laser_bathymetry
         for c in range(len(camera3_ekf_list_at_dvl)):
             # append to the temp empty list. [remove] or[pop] or [del] will fail because list index is updated
@@ -1940,7 +1941,7 @@ def process(
                     )
                     t.start()
                     threads.append(t)
-                    print ("Writing CSV EKF at_dvl")
+                    print("Writing CSV EKF at_dvl")
                     t = threading.Thread(
                         target=write_csv,
                         args=[

@@ -7,3 +7,9 @@ cameras:
     path: 'image/cam61008269_strobe'
     extension: tif
     filename_to_date: YYYYMMDDxhhmmssxfffuuuxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxx
+  - name: cam61008031
+    type: grayscale
+    bit_depth: 18
+    path: 'image/cam61008031_strobe'
+    extension: tif
+    filename_to_date: YYYYMMDDxhhmmssxfffuuuxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxx
