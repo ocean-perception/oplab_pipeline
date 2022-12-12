@@ -1113,6 +1113,18 @@ class Corrector:
                 bin_images_sample = median_array(memmap_handle)
                 del memmap_handle
                 try_remove(memmap_filename)
+            elif self.smoothing == "ransac_mean":
+                memmap_filename, memmap_handle = create_memmap(
+                    bin_images,
+                    dimensions,
+                    loader=self.loader,
+                )
+                self.memmaps_to_remove.append(memmap_filename)
+                bin_images_sample = ransac_mean_std(memmap_handle, calculate_std=False)
+                del memmap_handle
+                try_remove(memmap_filename)
+            else:
+                raise ValueError("Smoothing method not recognized")
 
             base_path = Path(self.attenuation_parameters_folder)
 
