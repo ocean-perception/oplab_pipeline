@@ -32,8 +32,8 @@ class RunningMeanStd:
         """Check if the input data is within max_std_times standard deviations of the mean."""
         outliers = np.abs(data - self._mean) > max_std_times * self._std
         cleaned_data = data.copy()
-        cleaned_data[outliers == True] = self._mean[outliers == True]
-        cleaned_data[outliers == False] = data[outliers == False]
+        cleaned_data[outliers == True] = self._mean[outliers == True]  # noqa: E712
+        cleaned_data[outliers == False] = data[outliers == False]  # noqa: E712
         return cleaned_data
 
     def compute(self, image):
@@ -191,6 +191,84 @@ def mean_std(data, calculate_std=True):
         return mean_array, std_array
     else:
         return mean_array
+
+
+def ransac_mean_std_1d(data, max_iterations=1000, threshold=0.1, sample_size=2):
+    """Compute mean and std for image intensities using RANSAC from two points.
+
+    Parameters
+    -----------
+    data : numpy.ndarray
+        data series
+
+    Returns
+    --------
+    [float, float]
+        mean and std of image intensities
+    """
+    iterations = 0
+    best_fit = None
+    best_error = np.inf
+    best_inliers = None
+    while iterations < max_iterations:
+        # Get two random points
+        idxs = np.random.choice(len(data), sample_size, replace=False)
+        # Compute the mean with these two points
+        mean = np.mean(data[idxs])
+        # Compute the inliers given the threshold
+        inliers = data[np.abs(data - mean) < threshold]
+        # Compute the error
+        error = np.sum(inliers - mean)
+        # If the error is smaller than the best error, update the best fit
+        if error < best_error:
+            best_fit = mean
+            best_error = error
+            best_inliers = inliers
+        iterations += 1
+    if best_fit is None:
+        raise ValueError("did not meet fit acceptance criteria")
+    return np.mean(best_inliers), np.std(best_inliers)
+
+
+def ransac_mean_std(data, calculate_std=True):
+    """Compute mean and std for image intensities and distance values
+
+    Parameters
+    -----------
+    data : numpy.ndarray
+        data series
+    calculate_std : bool
+        denotes to compute std along with mean
+
+    Returns
+    --------
+    numpy.ndarray
+        mean and std of input image
+    """
+    a = data.shape[1]
+    b = data.shape[2]
+    c = 1
+    if len(data.shape) == 4:
+        c = data.shape[3]
+    ret_mean = np.zeros((a, b, c), np.float32)
+    ret_std = np.zeros((a, b, c), np.float32)
+
+    for k in range(c):
+        for i in range(a):
+            for j in range(b):
+                if len(data.shape) == 4:
+                    ret_mean[i, j, k], ret_std[i, j, k] = ransac_mean_std_1d(
+                        data[:, i, j, k]
+                    )
+                else:
+                    ret_mean[i, j, k], ret_std[i, j, k] = ransac_mean_std_1d(
+                        data[:, i, j]
+                    )
+
+    if calculate_std:
+        return ret_mean, ret_std
+    else:
+        return ret_mean
 
 
 def image_mean_std_trimmed(data, ratio_trimming=0.2, calculate_std=True):

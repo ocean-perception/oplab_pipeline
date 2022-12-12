@@ -111,7 +111,7 @@ def curve_fitting(
                 "\nintensities_filt: ",
                 intensities_filt,
             )
-            print("ERROR: Altitudes are negative in curve fitting")
+            print("ERROR: Altitudes are negative or zero in curve fitting")
         if not intensities_filt:
             print(
                 "---------\naltitudes: ",
@@ -123,7 +123,7 @@ def curve_fitting(
                 "\nintensities_filt: ",
                 intensities_filt,
             )
-            print("ERROR: Intensities are negative in curve fitting")
+            print("ERROR: Intensities are negative or zero in curve fitting")
         return np.array([1, 0, 0])
 
     altitudes_filt = np.array(altitudes_filt)
