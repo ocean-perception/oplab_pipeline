@@ -10,6 +10,7 @@ import datetime
 import math
 from typing import Tuple
 
+import numba as nb
 import numpy as np
 from numba import njit, prange
 from tqdm import trange
@@ -182,7 +183,11 @@ def mean_std(data, calculate_std=True):
         return mean_array
 
 
-@njit
+@nb.jit(
+    nb.types.UniTuple(nb.float64, 2)(nb.float64[:], nb.int64, nb.float64, nb.int64),
+    fastmath=True,
+    nopython=True,
+)
 def ransac_mean_std_1d(data, max_iterations=1000, threshold=0.1, sample_size=2):
     """Compute mean and std for image intensities using RANSAC from two points.
 
@@ -190,34 +195,41 @@ def ransac_mean_std_1d(data, max_iterations=1000, threshold=0.1, sample_size=2):
     -----------
     data : numpy.ndarray
         data series
+    max_iterations : int
+        Max iterations
+    threshold : float
+        Threshold
+    sample_size : int
+        Sample size
 
     Returns
     --------
     [float, float]
         mean and std of image intensities
     """
-    iterations = 0
-    best_fit = None
-    best_error = np.inf
-    best_inliers = None
+    iterations: int = 0
+    best_error: float = np.inf
+    best_inliers = np.empty(data.shape, dtype=data.dtype)
     while iterations < max_iterations:
         # Get two random points
         idxs = np.random.choice(len(data), sample_size, replace=False)
         # Compute the mean with these two points
         mean = np.mean(data[idxs])
         # Compute the inliers given the threshold
-        inliers = data[np.abs(data - mean) < threshold]
+        inliers_idx = np.argwhere(np.abs(data - mean) < threshold).flatten()
+        inliers = np.zeros((len(inliers_idx)))
+        for i, idx in enumerate(inliers_idx):
+            inliers[i] = data[idx]
         # Compute the error
         error = np.sum(inliers - mean)
         # If the error is smaller than the best error, update the best fit
         if error < best_error:
-            best_fit = mean
             best_error = error
             best_inliers = inliers
         iterations += 1
-    if best_fit is None:
-        raise ValueError("did not meet fit acceptance criteria")
-    return np.mean(best_inliers), np.std(best_inliers)
+    best_mean = float(best_inliers.mean())
+    best_std = float(best_inliers.std())
+    return best_mean, best_std
 
 
 @njit(parallel=True)
