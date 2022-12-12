@@ -35,6 +35,7 @@ from correct_images.tools.numerical import (
     RunningMeanStd,
     image_mean_std_trimmed,
     median_array,
+    ransac_mean_std,
     running_mean_std,
 )
 from oplab import (
@@ -917,6 +918,17 @@ class Corrector:
                 memmap_handle[i] = corrected_img.reshape(
                     self.image_height, self.image_width, self.image_channels
                 )
+            # Compute mean and std using RANSAC
+            image_corrected_mean_ransac, image_corrected_std_ransac = ransac_mean_std(
+                memmap_handle
+            )
+
+            image_corrected_mean_ransac = image_corrected_mean_ransac.reshape(
+                self.image_height, self.image_width, self.image_channels
+            )
+            image_corrected_std_ransac = image_corrected_std_ransac.reshape(
+                self.image_height, self.image_width, self.image_channels
+            )
 
             image_corrected_mean = runner.mean.reshape(
                 self.image_height, self.image_width, self.image_channels
@@ -933,10 +945,27 @@ class Corrector:
                 self.corrected_std_filepath, image_corrected_std
             )  # TODO: make member
 
+            np.save(
+                self.corrected_mean_filepath.with_name(
+                    "image_corrected_mean_ransac.npy"
+                ),
+                image_corrected_mean_ransac,
+            )  # TODO: make member
+            np.save(
+                self.corrected_std_filepath.with_name("image_corrected_std_ransac.npy"),
+                image_corrected_std_ransac,
+            )  # TODO: make member
+
             corrections.save_attenuation_plots(
                 self.attenuation_parameters_folder,
                 img_mean=image_corrected_mean,
                 img_std=image_corrected_std,
+            )
+
+            corrections.save_attenuation_plots(
+                self.attenuation_parameters_folder / "ransac",
+                img_mean=image_corrected_mean_ransac,
+                img_std=image_corrected_std_ransac,
             )
 
         else:
