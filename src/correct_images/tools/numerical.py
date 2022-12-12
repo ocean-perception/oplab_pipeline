@@ -11,7 +11,7 @@ import math
 from typing import Tuple
 
 import numpy as np
-from numba import njit
+from numba import njit, prange
 from tqdm import trange
 
 from ..loaders import default
@@ -182,6 +182,7 @@ def mean_std(data, calculate_std=True):
         return mean_array
 
 
+@njit
 def ransac_mean_std_1d(data, max_iterations=1000, threshold=0.1, sample_size=2):
     """Compute mean and std for image intensities using RANSAC from two points.
 
@@ -219,6 +220,7 @@ def ransac_mean_std_1d(data, max_iterations=1000, threshold=0.1, sample_size=2):
     return np.mean(best_inliers), np.std(best_inliers)
 
 
+@njit(parallel=True)
 def ransac_mean_std(data, calculate_std=True):
     """Compute mean and std for image intensities and distance values
 
@@ -242,9 +244,9 @@ def ransac_mean_std(data, calculate_std=True):
     ret_mean = np.zeros((a, b, c), np.float32)
     ret_std = np.zeros((a, b, c), np.float32)
 
-    for k in range(c):
-        for i in range(a):
-            for j in range(b):
+    for k in prange(c):
+        for i in prange(a):
+            for j in prange(b):
                 if len(data.shape) == 4:
                     ret_mean[i, j, k], ret_std[i, j, k] = ransac_mean_std_1d(
                         data[:, i, j, k]
