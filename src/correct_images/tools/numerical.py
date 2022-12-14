@@ -233,7 +233,7 @@ def ransac_mean_std_1d(data, max_iterations=1000, threshold=0.1, sample_size=2):
 
 
 @njit(parallel=True)
-def ransac_mean_std(data, calculate_std=True):
+def ransac_mean_std(data, max_iterations=1000, threshold=0.1, sample_size=2):
     """Compute mean and std for image intensities and distance values
 
     Parameters
@@ -261,17 +261,19 @@ def ransac_mean_std(data, calculate_std=True):
             for j in prange(b):
                 if len(data.shape) == 4:
                     ret_mean[i, j, k], ret_std[i, j, k] = ransac_mean_std_1d(
-                        data[:, i, j, k]
+                        data[:, i, j, k].flatten(),
+                        max_iterations,
+                        threshold,
+                        sample_size,
                     )
                 else:
                     ret_mean[i, j, k], ret_std[i, j, k] = ransac_mean_std_1d(
-                        data[:, i, j]
+                        data[:, i, j].flatten(),
+                        max_iterations,
+                        threshold,
+                        sample_size,
                     )
-
-    if calculate_std:
-        return ret_mean, ret_std
-    else:
-        return ret_mean
+    return ret_mean, ret_std
 
 
 def image_mean_std_trimmed(data, ratio_trimming=0.2, calculate_std=True):

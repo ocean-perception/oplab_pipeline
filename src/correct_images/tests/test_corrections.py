@@ -14,7 +14,7 @@ import numpy as np
 import yaml
 
 from correct_images import corrections
-from correct_images.tools.numerical import RunningMeanStd, mean_std
+from correct_images.tools.numerical import RunningMeanStd, mean_std, ransac_mean_std
 
 
 class testCorrections(unittest.TestCase):
@@ -286,7 +286,6 @@ class testCorrections(unittest.TestCase):
 
     def test_running_mean_std_with_outliers(self):
         dimensions = (10, 10, 3)
-        runner = RunningMeanStd(dimensions)
         all_images = []
         for i in range(100):
             img = np.random.rand(*dimensions) * 0.1 + 0.3
@@ -294,13 +293,17 @@ class testCorrections(unittest.TestCase):
                 img = np.random.rand(*dimensions) * 0.7 + 0.3
             else:
                 all_images.append(img)
-            runner.compute(img)
         all_images = np.array(all_images)
+        print(all_images.shape)
+        print(all_images[:, 0, 0, 0].shape)
+        ransac_mean, ransac_std = ransac_mean_std(
+            all_images, max_iterations=1000, threshold=0.1, sample_size=2
+        )
         true_mean = np.mean(all_images, axis=0)
         true_std = np.std(all_images, axis=0)
         # Note, allow a 10% error in the mean and std
-        np.testing.assert_allclose(runner.mean, true_mean, rtol=0.1, atol=0.1)
-        np.testing.assert_allclose(runner.std, true_std, rtol=0.1, atol=0.1)
+        np.testing.assert_allclose(ransac_mean, true_mean, rtol=0.1, atol=0.1)
+        np.testing.assert_allclose(ransac_std, true_std, rtol=0.1, atol=0.1)
 
     def test_undistort(self):
         # TODO

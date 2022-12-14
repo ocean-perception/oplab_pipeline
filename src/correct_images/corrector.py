@@ -920,7 +920,7 @@ class Corrector:
                 )
             # Compute mean and std using RANSAC
             image_corrected_mean_ransac, image_corrected_std_ransac = ransac_mean_std(
-                memmap_handle
+                memmap_handle, max_iterations=1000, threshold=0.1, sample_size=2
             )
 
             image_corrected_mean_ransac = image_corrected_mean_ransac.reshape(
@@ -1120,7 +1120,9 @@ class Corrector:
                     loader=self.loader,
                 )
                 self.memmaps_to_remove.append(memmap_filename)
-                bin_images_sample = ransac_mean_std(memmap_handle, calculate_std=False)
+                bin_images_sample = ransac_mean_std(
+                    memmap_handle, max_iterations=1000, threshold=0.1, sample_size=2
+                )[0]
                 del memmap_handle
                 try_remove(memmap_filename)
             else:
