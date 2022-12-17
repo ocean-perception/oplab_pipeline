@@ -1,0 +1,24 @@
+camera_system: stereo_gopro
+cameras:
+  - name: gopro_left
+    type: rgb
+    bit_depth: 8
+    path: 'image/left/*'
+    extension: JPG
+    filename_to_date: xiiiiiii.xxx
+    timestamp_file: 'image/filelist.csv'
+    columns: [
+      {'name': 'file_left', 'content': 'filename'},
+      {'name': 'number_left', 'content':'iiiiiii'},
+      {'name': 'epoch', 'content': 'epoch_timestamp'}]
+  - name: gopro_right
+    type: rgb
+    bit_depth: 8
+    path: 'image/right/*'
+    extension: JPG
+    filename_to_date: xiiiiiii.xxx
+    timestamp_file: 'image/filelist.csv'
+    columns: [
+      {'name': 'file_right', 'content': 'filename'},
+      {'name': 'number_right', 'content':'iiiiiii'},
+      {'name': 'epoch', 'content': 'epoch_timestamp'}]
