@@ -86,8 +86,8 @@ class CameraEntry:
             self.raw_folder = Path(raw_folder)
 
         if node is not None:
-            self.name = node["name"]
-            self.topic = node.get("topic", None)
+            self.name = node["name"][1:].replace("/", "_")
+            self.topic = node.get("name")
             allowed_types = ["grayscale", "rgb", "bgr", "rggb", "grbg", "bggr", "gbrg"]
             self.type = node["type"]
             if self.type not in allowed_types:
@@ -173,8 +173,12 @@ class CameraEntry:
                 self._image_list.append(str(i))
         elif len(split_glob) == 1:
             img_dir = raw_dir / self.path
-            for i in img_dir.rglob("*." + self.extension):
+            for i in img_dir.glob("*." + self.extension):
                 self._image_list.append(str(i))
+            if len(self._image_list) == 0:
+                for i in img_dir.parent.glob(img_dir.stem + "*." + self.extension):
+                    self._image_list.append(str(i))
+
         else:
             Console.quit("Multiple globbing is not supported.")
 

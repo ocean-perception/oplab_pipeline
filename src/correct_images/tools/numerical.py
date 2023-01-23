@@ -184,7 +184,7 @@ def mean_std(data, calculate_std=True):
 
 
 @nb.jit(
-    nb.types.UniTuple(nb.float64, 2)(nb.float64[:], nb.int64, nb.float64, nb.int64),
+    nb.types.UniTuple(nb.float64, 2)(nb.float32[:], nb.int64, nb.float64, nb.int64),
     fastmath=True,
     nopython=True,
 )
@@ -209,7 +209,7 @@ def ransac_mean_std_1d(data, max_iterations=1000, threshold=0.1, sample_size=2):
     """
     iterations: int = 0
     best_error: float = np.inf
-    best_inliers = np.empty(data.shape, dtype=data.dtype)
+    best_inliers = np.empty(data.shape, dtype=np.float64)
     while iterations < max_iterations:
         # Get two random points
         idxs = np.random.choice(len(data), sample_size, replace=False)
@@ -253,8 +253,8 @@ def ransac_mean_std(data, max_iterations=1000, threshold=0.1, sample_size=2):
     c = 1
     if len(data.shape) == 4:
         c = data.shape[3]
-    ret_mean = np.zeros((a, b, c), np.float32)
-    ret_std = np.zeros((a, b, c), np.float32)
+    ret_mean = np.zeros((a, b, c), np.float64)
+    ret_std = np.zeros((a, b, c), np.float64)
 
     for k in prange(c):
         for i in prange(a):
