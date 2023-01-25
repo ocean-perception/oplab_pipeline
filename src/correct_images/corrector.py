@@ -919,6 +919,7 @@ class Corrector:
                     self.image_height, self.image_width, self.image_channels
                 )
             # Compute mean and std using RANSAC
+            """
             image_corrected_mean_ransac, image_corrected_std_ransac = ransac_mean_std(
                 memmap_handle, max_iterations=1000, threshold=0.1, sample_size=2
             )
@@ -929,6 +930,7 @@ class Corrector:
             image_corrected_std_ransac = image_corrected_std_ransac.reshape(
                 self.image_height, self.image_width, self.image_channels
             )
+            """
 
             image_corrected_mean = runner.mean.reshape(
                 self.image_height, self.image_width, self.image_channels
@@ -945,6 +947,7 @@ class Corrector:
                 self.corrected_std_filepath, image_corrected_std
             )  # TODO: make member
 
+            """
             np.save(
                 self.corrected_mean_filepath.with_name(
                     "image_corrected_mean_ransac.npy"
@@ -955,6 +958,7 @@ class Corrector:
                 self.corrected_std_filepath.with_name("image_corrected_std_ransac.npy"),
                 image_corrected_std_ransac,
             )  # TODO: make member
+            """
 
             corrections.save_attenuation_plots(
                 self.attenuation_parameters_folder,
@@ -962,11 +966,13 @@ class Corrector:
                 img_std=image_corrected_std,
             )
 
+            """
             corrections.save_attenuation_plots(
                 self.attenuation_parameters_folder / "ransac",
                 img_mean=image_corrected_mean_ransac,
                 img_std=image_corrected_std_ransac,
             )
+            """
 
         else:
             Console.info(
@@ -1289,7 +1295,7 @@ class Corrector:
             ):
                 # debayer images
                 image_rgb = corrections.debayer(image, self._type)
-            elif self._type != "bgr":
+            elif self._type != "bgr" and self._type != "grayscale":
                 image_rgb = image.copy()
                 image_rgb[:, :, [0, 1, 2]] = image_rgb[:, :, [2, 1, 0]]
             else:

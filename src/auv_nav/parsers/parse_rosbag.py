@@ -175,39 +175,41 @@ def parse_rosbag(mission, vehicle, category, output_format, outpath):
     data_object = None
     filepath = None
 
+    raw_path = get_raw_folder(outpath.parent)
+
     if category == Category.ORIENTATION:
         Console.info("... parsing orientation")
-        filepath = get_raw_folder(mission.orientation.filepath)
+        filepath = raw_path / mission.orientation.filepath
         bagfile = mission.orientation.filename
         wanted_topic = mission.orientation.topic
         data_object = orientation
     elif category == Category.VELOCITY:
         Console.info("... parsing velocity")
-        filepath = get_raw_folder(mission.velocity.filepath)
+        filepath = raw_path / mission.velocity.filepath
         bagfile = mission.velocity.filename
         wanted_topic = mission.velocity.topic
         data_object = body_velocity
     elif category == Category.DEPTH:
         Console.info("... parsing depth")
-        filepath = get_raw_folder(mission.depth.filepath)
+        filepath = raw_path / mission.depth.filepath
         bagfile = mission.depth.filename
         wanted_topic = mission.depth.topic
         data_object = depth
     elif category == Category.ALTITUDE:
         Console.info("... parsing altitude")
-        filepath = get_raw_folder(mission.altitude.filepath)
+        filepath = raw_path / mission.altitude.filepath
         bagfile = mission.altitude.filename
         wanted_topic = mission.altitude.topic
         data_object = altitude
     elif category == Category.USBL:
         Console.info("... parsing position")
-        filepath = get_raw_folder(mission.usbl.filepath)
+        filepath = raw_path / mission.usbl.filepath
         bagfile = mission.usbl.filename
         wanted_topic = mission.usbl.topic
         data_object = usbl
     elif category == Category.IMAGES:
         Console.info("... parsing images")
-        filepath = get_raw_folder(mission.image.cameras[0].path)
+        filepath = raw_path / mission.image.cameras[0].path
         bagfile = "*.bag"
         wanted_topic = mission.image.cameras[0].topic
         data_object = camera

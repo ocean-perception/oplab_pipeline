@@ -9,6 +9,7 @@ FROM python:3.10-slim-bullseye AS base
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir llvmlite>=0.37.0 && \
+    pip install --extra-index-url https://rospypi.github.io/simple/ rosbag && \
     pip install --no-cache-dir -r requirements.txt
 
 # Get su-exec
