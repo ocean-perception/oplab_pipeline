@@ -254,9 +254,12 @@ def _get_circles(img, board, pattern, invert=False):
         mono = img
 
     if invert:
+        """
         (thresh, mono) = cv2.threshold(
             mono, 140, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU
         )
+        """
+        mono = cv2.bitwise_not(mono)  # Found to improve detection
         # cv2.imshow('Test', mono)
         # cv2.waitKey(3)
 
@@ -265,17 +268,17 @@ def _get_circles(img, board, pattern, invert=False):
         flag = cv2.CALIB_CB_ASYMMETRIC_GRID
     mono_arr = numpy.array(mono)
 
-    params = cv2.SimpleBlobDetector_Params()
-    params.minArea = 15
-    params.minDistBetweenBlobs = 7
+    # params = cv2.SimpleBlobDetector_Params()
+    # params.minArea = 15
+    # params.minDistBetweenBlobs = 7
 
-    detector = cv2.SimpleBlobDetector_create(params)
+    # detector = cv2.SimpleBlobDetector_create(params)
 
     (ok, corners) = cv2.findCirclesGrid(
         mono_arr,
         (board.n_cols, board.n_rows),
-        flags=flag,
-        blobDetector=detector,
+        flags=flag + cv2.CALIB_CB_CLUSTERING,  # Found to improve detection
+        # blobDetector=detector,               # Found to improve detection
     )
 
     # In symmetric case, findCirclesGrid does not detect the target if it's
