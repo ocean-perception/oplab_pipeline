@@ -10,6 +10,8 @@ from pathlib import Path
 
 import imageio
 import yaml
+import numpy as np
+import cv2
 
 from .console import Console
 from .filename_to_date import FilenameToDate
@@ -48,7 +50,15 @@ def rosbag_image_loader(img_topic, bagfile):
     with rosbag.Bag(str(bagfile)) as bag:
         for topic, msg, t in bag.read_messages(topics=[str(img_topic)]):
             if topic == str(img_topic):
-                return bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
+                type_str = str(type(msg))
+                msg_type = type_str.split(".")[1][1:-2].replace("__", "/")
+                if msg_type == "sensor_msgs/CompressedImage":
+                    #### direct conversion to CV2 ####
+                    np_arr = np.fromstring(msg.data, np.uint8)
+                    image_np = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+                    return image_np
+                else:
+                    return bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
     return None
 
 
