@@ -786,7 +786,7 @@ class Corrector:
                     total=hist_bins.size - 1,
                 )
             ):
-                joblib.Parallel(n_jobs=-2, verbose=0)(
+                joblib.Parallel(n_jobs=-2, verbose=0, prefer="threads")(
                     joblib.delayed(self.compute_distance_bin)(
                         idxs,
                         idx_bin,
@@ -1192,19 +1192,43 @@ class Corrector:
         with tqdm_joblib(
             tqdm(desc="Correcting images", total=len(self.camera_image_list))
         ):
-            self.processed_image_list = joblib.Parallel(n_jobs=-2, verbose=0)(
+            self.processed_image_list = joblib.Parallel(
+                n_jobs=-2, verbose=0, prefer="threads"
+            )(
                 joblib.delayed(self.process_image)(idx)
                 for idx in range(0, len(self.camera_image_list))
             )
 
-        # write a filelist.csv containing image filenames which are processed
-        image_files = []
+        # write a filelist.csv containing image filenames and navigation
+        image_names = []
         for path in self.processed_image_list:
             if path is not None:
-                image_files.append(Path(path).name)
-        dataframe = pd.DataFrame(image_files)
+                image_names.append(Path(path).stem)
+        d = {"image_names": image_names, "relative_path": self.processed_image_list}
+        dataframe = pd.DataFrame(d)
+
+        orig_dataframe = pd.read_csv(self.altitude_csv_path)
+        orig_dataframe["raw_relative_path"] = orig_dataframe["relative_path"]
+
+        # Merge the two dataframes when image filenames are the same
+        output_df = orig_dataframe.copy()
+        for index, row in output_df.iterrows():
+            current_image_name = Path(row["relative_path"]).stem
+            # find current_image_name in dataframe
+            res = dataframe.loc[dataframe["image_names"] == current_image_name]
+            if not res.empty:
+                # update relative_path
+                output_df.at[index, "relative_path"] = Path(
+                    res["relative_path"].values[0]
+                ).name
+                output_df.at[index, "raw_relative_path"] = Path(
+                    row["relative_path"]
+                ).relative_to(self.path_raw)
+            else:
+                # remove row
+                output_df.drop(index, inplace=True)
         filelist_path = self.output_images_folder / "filelist.csv"
-        dataframe.to_csv(filelist_path)
+        output_df.to_csv(filelist_path)
         Console.info("Processing of images is completed")
 
     def process_image(self, idx):

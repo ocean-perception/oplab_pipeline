@@ -217,7 +217,7 @@ def ransac_mean_std_1d(data, max_iterations=1000, threshold=0.1, sample_size=2):
         mean = np.mean(data[idxs])
         # Compute the inliers given the threshold
         inliers_idx = np.argwhere(np.abs(data - mean) < threshold).flatten()
-        inliers = np.zeros((len(inliers_idx)))
+        inliers = np.zeros((len(inliers_idx)), dtype=data.dtype)
         for i, idx in enumerate(inliers_idx):
             inliers[i] = data[idx]
         # Compute the error

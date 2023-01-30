@@ -190,7 +190,7 @@ def calculate_attenuation_parameters(
                     # Not on diagonal -> don't output figure / generate path for file
                     figure_paths.append(None)
         with tqdm_joblib(tqdm(desc="Curve fitting", total=image_height * image_width)):
-            results = joblib.Parallel(n_jobs=num_jobs, verbose=0)(
+            results = joblib.Parallel(n_jobs=num_jobs, verbose=0, prefer="threads")(
                 [
                     joblib.delayed(curve_fitting)(
                         distances[:, i_pixel],

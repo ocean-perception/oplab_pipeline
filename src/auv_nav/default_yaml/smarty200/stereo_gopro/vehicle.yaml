@@ -1,0 +1,61 @@
+#YAML 1.0
+
+# Turbot AUV (Sparus II from University of Balearic Islancs) 
+# GRASSMAP cruise 14-20 Sept 2021
+# Distance with reference to origin of robot
+
+origin:
+  surge_m: 0
+  sway_m: 0
+  heave_m: 0
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 0
+
+gps:
+  surge_m: -0.39
+  sway_m: 0
+  heave_m: -0.36
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 0
+
+dvl:
+  surge_m: 0
+  sway_m: 0
+  heave_m: 0
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 0
+
+ins:
+  surge_m: 0
+  sway_m: 0
+  heave_m: 0
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 0
+
+depth:
+  surge_m: 0
+  sway_m: 0
+  heave_m: 0
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 0
+
+gopro_left:
+  surge_m: 0.79325    # unknown
+  sway_m: -0.02       # unknown
+  heave_m: 0
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 0
+
+gopro_right:
+  surge_m: 0.79325    # unknown
+  sway_m: 0.02        # unknown
+  heave_m: 0
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 0

@@ -31,13 +31,6 @@ def create_memmap(image_list, dimensions, loader=default.loader):
         shape=tuple(list_shape),
         dtype=np.float32,
     )
-    """
-    joblib.Parallel(n_jobs=1, verbose=0)(
-        joblib.delayed(memmap_loader)(
-            image_list, image_memmap, idx, loader, dimensions[1], dimensions[0]
-        )
-    )
-    """
 
     # The parent process/function is paralelised, so this one should not be!
     for idx in range(len(image_list)):
