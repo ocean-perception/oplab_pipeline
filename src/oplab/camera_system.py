@@ -96,7 +96,10 @@ class CameraEntry:
             self.raw_folder = Path(raw_folder)
 
         if node is not None:
-            self.name = node["name"][1:].replace("/", "_")
+            if "/" in node["name"]:
+                self.name = node["name"][1:].replace("/", "_")
+            else:
+                self.name = node["name"]
             self.topic = node.get("name")
             allowed_types = ["grayscale", "rgb", "bgr", "rggb", "grbg", "bggr", "gbrg"]
             self.type = node["type"]
