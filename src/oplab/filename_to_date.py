@@ -84,7 +84,7 @@ class FilenameToDate:
             if f == "i":
                 index += n
             if f == "e":
-                epoch += f
+                epoch += n
         if not index and epoch == "":
             assert len(year) == 4, "Year in filename should have a length of 4"
             assert (
@@ -173,11 +173,11 @@ class FilenameToDate:
             name = c["name"]
             content = c["content"]
             # If it is not index columns, concatenate all columns into one
-            if "i" not in content:
+            if "iii" not in content and content != "filename":
                 df["combined"] += df[name].astype(str)
                 df["combined_format"] += content
                 df.drop(name, axis=1)
-            else:
+            elif content != "filename":
                 if df_index_name is None:
                     df_index_name = name
                 else:

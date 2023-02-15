@@ -1335,7 +1335,10 @@ class Corrector:
 
         # write to output files
         try:
-            image_filename = Path(self.camera_image_list[idx]).stem
+            if self.camera.extension == "bag":
+                image_filename = self.camera_name + "_" + str(self.camera_image_list[idx])
+            else:
+                image_filename = Path(self.camera_image_list[idx]).stem
         except FileNotFoundError:
             image_filename = self.camera_name + "_" + str(self.camera_image_list[idx])
         return write_output_image(

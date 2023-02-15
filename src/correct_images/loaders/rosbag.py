@@ -1,6 +1,9 @@
 from auv_nav.sensors import ros_stamp_to_epoch
 from oplab import Console
 
+import numpy as np
+import cv2
+
 # fmt: off
 ROSBAG_IS_AVAILABLE = False
 try:
@@ -36,7 +39,14 @@ def loader(img_timestamp, img_topic, bagfile_list, tz_offset_s, src_bit=8):
                 # print(abs(epoch_timestamp - img_timestamp))
                 if abs(epoch_timestamp - img_timestamp) < TOL:
                     # print("Image found at", t.to_sec())
-                    image = bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
+                    type_str = str(type(msg))
+                    msg_type = type_str.split(".")[1][1:-2].replace("__", "/")
+                    image = None
+                    if msg_type == "sensor_msgs/CompressedImage":
+                        np_arr = np.fromstring(msg.data, np.uint8)
+                        image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+                    else:
+                        image = bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
                     image_float = image.astype(float) * 2 ** (-src_bit)
                     return image_float
     Console.warn("Image", img_timestamp, "not found in bagfile list.")
