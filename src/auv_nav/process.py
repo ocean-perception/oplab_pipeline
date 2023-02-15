@@ -529,7 +529,9 @@ def process(
         payload_format = mission.payloads[payload].format
         if payload_format == "generic_csv":
             payload_dict[payload] = generic_csv_payload_parser(
-                mission.payloads[payload].path, mission.payloads[payload].columns
+                mission.payloads[payload].path,
+                mission.payloads[payload].columns,
+                mission.payloads[payload].timeoffset_s,
             )
         else:
             Console.quit("Payload format {} not supported.".format(payload_format))
