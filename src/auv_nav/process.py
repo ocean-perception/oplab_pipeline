@@ -152,8 +152,13 @@ def process(
 
     # placeholders for chemical data
     chemical_list = []
-    # chemical_ekf_list = []
-    # chemical_pf_list = []
+    chemical_ekf_list = []
+    chemical_pf_list = []
+
+    # Placeholders for other payloads
+    # We could have more than one payload, so we will store them as a dict of lists
+    # where they key is the payload name
+    payload_dict = {}
 
     # load auv_nav.yaml for particle filter and other setup
     filepath = Path(filepath).resolve()
@@ -301,50 +306,31 @@ def process(
             ekf_process_noise_covariance = ekf_process_noise_covariance.astype(float)
         if "csv_output" in load_localisation:
             # csv_active
-            csv_output_activate = load_localisation["csv_output"]["activate"]
-            csv_usbl = load_localisation["csv_output"]["usbl"]
-            csv_dr_auv_centre = load_localisation["csv_output"]["dead_reckoning"][
-                "auv_centre"
-            ]
-            csv_dr_auv_dvl = load_localisation["csv_output"]["dead_reckoning"][
-                "auv_dvl"
-            ]
-            csv_dr_camera_1 = load_localisation["csv_output"]["dead_reckoning"][
-                "camera_1"
-            ]
-            csv_dr_camera_2 = load_localisation["csv_output"]["dead_reckoning"][
-                "camera_2"
-            ]
-            csv_dr_camera_3 = load_localisation["csv_output"]["dead_reckoning"][
-                "camera_3"
-            ]
-            csv_dr_chemical = load_localisation["csv_output"]["dead_reckoning"][
-                "chemical"
-            ]
+            d = load_localisation["csv_output"]
+            csv_output_activate = d["activate"]
+            csv_usbl = d["usbl"]
+            csv_dr_auv_centre = d["dead_reckoning"]["auv_centre"]
+            csv_dr_auv_dvl = d["dead_reckoning"]["auv_dvl"]
+            csv_dr_camera_1 = d["dead_reckoning"]["camera_1"]
+            csv_dr_camera_2 = d["dead_reckoning"]["camera_2"]
+            csv_dr_camera_3 = d["dead_reckoning"]["camera_3"]
+            csv_dr_chemical = d["dead_reckoning"].get("chemical", False)
+            csv_dr_payload = d["dead_reckoning"].get("payload", False)
 
-            csv_pf_auv_centre = load_localisation["csv_output"]["particle_filter"][
-                "auv_centre"
-            ]
-            csv_pf_auv_dvl = load_localisation["csv_output"]["particle_filter"][
-                "auv_dvl"
-            ]
-            csv_pf_camera_1 = load_localisation["csv_output"]["particle_filter"][
-                "camera_1"
-            ]
-            csv_pf_camera_2 = load_localisation["csv_output"]["particle_filter"][
-                "camera_2"
-            ]
-            csv_pf_camera_3 = load_localisation["csv_output"]["particle_filter"][
-                "camera_3"
-            ]
-            csv_pf_chemical = load_localisation["csv_output"]["particle_filter"][
-                "chemical"
-            ]
+            csv_pf_auv_centre = d["particle_filter"]["auv_centre"]
+            csv_pf_auv_dvl = d["particle_filter"]["auv_dvl"]
+            csv_pf_camera_1 = d["particle_filter"]["camera_1"]
+            csv_pf_camera_2 = d["particle_filter"]["camera_2"]
+            csv_pf_camera_3 = d["particle_filter"]["camera_3"]
+            csv_pf_chemical = d["particle_filter"].get("chemical", False)
+            csv_pf_payload = d["particle_filter"].get("payload", False)
 
-            csv_ekf_auv_centre = load_localisation["csv_output"]["ekf"]["auv_centre"]
-            csv_ekf_camera_1 = load_localisation["csv_output"]["ekf"]["camera_1"]
-            csv_ekf_camera_2 = load_localisation["csv_output"]["ekf"]["camera_2"]
-            csv_ekf_camera_3 = load_localisation["csv_output"]["ekf"]["camera_3"]
+            csv_ekf_auv_centre = d["ekf"]["auv_centre"]
+            csv_ekf_camera_1 = d["ekf"]["camera_1"]
+            csv_ekf_camera_2 = d["ekf"]["camera_2"]
+            csv_ekf_camera_3 = d["ekf"]["camera_3"]
+            csv_ekf_chemical = d["ekf"].get("chemical", False)
+            csv_ekf_payload = d["ekf"].get("payload", False)
         else:
             csv_output_activate = False
             Console.warn(
@@ -531,18 +517,37 @@ def process(
     camera2_dr_list = copy.deepcopy(camera2_list)
     camera3_dr_list = copy.deepcopy(camera3_list)
 
+    payload_offset = {}
+    for payload in vehicle.payloads:
+        payload_offset[payload.name] = [
+            payload.surge,
+            payload.sway,
+            payload.heave,
+        ]
+        # Copy the velocity body list to the payload dictionary to generate a
+        # transformed list for each payload
+        # If for some reason, we don't have velocity body data, we will use inertial
+        if len(velocity_body_list) != 0:
+            payload_dict[payload.name] = copy.deepcopy(velocity_body)
+        elif len(velocity_inertial_list) != 0:
+            payload_dict[payload.name] = copy.deepcopy(velocity_inertial)
+
     if particle_filter_activate:
         camera1_pf_list = copy.deepcopy(camera1_list)
         camera2_pf_list = copy.deepcopy(camera2_list)
         camera3_pf_list = copy.deepcopy(camera3_list)
-        # chemical_pf_list = copy.deepcopy(chemical_list)
+        chemical_pf_list = copy.deepcopy(chemical_list)
+        for key in payload_dict:
+            payload_dict[key + "_pf"] = copy.deepcopy(payload_dict[key])
 
     if ekf_activate:
         camera1_ekf_list = copy.deepcopy(camera1_list)
         camera2_ekf_list = copy.deepcopy(camera2_list)
         camera3_ekf_list = copy.deepcopy(camera3_list)
         camera3_ekf_list_at_dvl = copy.deepcopy(camera3_list)
-        # chemical_ekf_list = copy.deepcopy(chemical_list)
+        chemical_ekf_list = copy.deepcopy(chemical_list)
+        for key in payload_dict:
+            payload_dict[key + "_ekf"] = copy.deepcopy(payload_dict[key])
 
     # make path for processed outputs
     json_filename = (
@@ -1565,13 +1570,55 @@ def process(
         )
         if len(pf_fusion_centre_list) > 1:
             interpolate_sensor_list(
-                chemical_list,
+                chemical_pf_list,
                 "chemical",
                 chemical_offset,
                 origin_offsets,
                 latlon_reference,
                 pf_fusion_centre_list,
             )
+        if len(chemical_ekf_list) > 1:
+            interpolate_sensor_list(
+                chemical_ekf_list,
+                "chemical",
+                chemical_offset,
+                origin_offsets,
+                latlon_reference,
+                ekf_list,
+            )
+
+    if len(payload_dict) > 0:
+        for key in payload_dict:
+            if "_pf" in key or "_ekf" in key:
+                continue
+            interpolate_sensor_list(
+                payload_dict[key],
+                "payload",
+                payload_offset[key],
+                origin_offsets,
+                latlon_reference,
+                dead_reckoning_centre_list,
+            )
+            if len(pf_fusion_centre_list) > 1:
+                for key in payload_dict:
+                    interpolate_sensor_list(
+                        payload_dict[key + "_pf"],
+                        "payload",
+                        payload_offset[key],
+                        origin_offsets,
+                        latlon_reference,
+                        pf_fusion_centre_list,
+                    )
+            if len(ekf_list) > 1:
+                for key in payload_dict:
+                    interpolate_sensor_list(
+                        payload_dict[key + "_ekf"],
+                        "payload",
+                        payload_offset[key],
+                        origin_offsets,
+                        latlon_reference,
+                        ekf_list,
+                    )
 
     if plot_output_activate:
         # if pdf_plot:
@@ -1766,7 +1813,7 @@ def process(
 
         t = threading.Thread(
             target=write_csv,
-            args=[pfcsvpath, chemical_list, "auv_pf_chemical", csv_pf_chemical],
+            args=[pfcsvpath, chemical_pf_list, "auv_pf_chemical", csv_pf_chemical],
         )
         t.start()
         threads.append(t)
@@ -1780,10 +1827,49 @@ def process(
 
         t = threading.Thread(
             target=write_csv,
-            args=[ekfcsvpath, chemical_list, "auv_ekf_chemical", csv_pf_chemical],
+            args=[ekfcsvpath, chemical_ekf_list, "auv_ekf_chemical", csv_ekf_chemical],
         )
         t.start()
         threads.append(t)
+
+        if len(payload_dict) > 0:
+            for key in payload_dict:
+                if "_pf" in key:
+                    t = threading.Thread(
+                        target=write_csv,
+                        args=[
+                            pfcsvpath,
+                            payload_dict[key],
+                            "auv_" + key,
+                            csv_pf_payload,
+                        ],
+                    )
+                    t.start()
+                    threads.append(t)
+                elif "_ekf" in key:
+                    t = threading.Thread(
+                        target=write_csv,
+                        args=[
+                            ekfcsvpath,
+                            payload_dict[key],
+                            "auv_" + key,
+                            csv_ekf_payload,
+                        ],
+                    )
+                    t.start()
+                    threads.append(t)
+                else:
+                    t = threading.Thread(
+                        target=write_csv,
+                        args=[
+                            drcsvpath,
+                            payload_dict[key],
+                            "auv_" + key,
+                            csv_dr_payload,
+                        ],
+                    )
+                    t.start()
+                    threads.append(t)
 
         if len(camera1_dr_list) > 0:
             t = threading.Thread(

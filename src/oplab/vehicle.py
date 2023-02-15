@@ -82,6 +82,23 @@ class SensorOffset:
         )
 
 
+class Payload(SensorOffset):
+    def __init__(self):
+        super().__init__()
+        self.name = ""
+
+    def load(self, node):
+        self.name = node["name"]
+        super().load(node)
+
+    def print(self):
+        super().print(self.name)
+
+    def write(self, node):
+        node["name"] = self.name
+        super().write(node)
+
+
 class Vehicle:
     """Vehicle class that parses and writes vehicle.yaml"""
 
@@ -95,6 +112,7 @@ class Vehicle:
         self.camera2 = SensorOffset()
         self.camera3 = SensorOffset()
         self.chemical = SensorOffset()
+        self.payloads = []
 
         if filename is None:
             return
@@ -192,6 +210,11 @@ class Vehicle:
                     self.camera3.load(self.data[camera_name])
                 if "chemical" in self.data:
                     self.chemical.load(self.data["chemical"])
+                if "payloads" in self.data:
+                    for payload in self.data["payloads"]:
+                        payload = Payload()
+                        payload.load(payload)
+                        self.payloads.append(payload)
         except FileNotFoundError:
             Console.error("The file vehicle.yaml could not be found at the location:")
             Console.error(filename)

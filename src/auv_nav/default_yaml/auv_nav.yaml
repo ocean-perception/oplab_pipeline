@@ -93,20 +93,23 @@ csv_output:
     camera_1: True
     camera_2: True
     camera_3: True
-    chemical: False
+    chemical: True
+    payload: True
   particle_filter:
     auv_centre: True
     auv_dvl: True
     camera_1: True
     camera_2: True
     camera_3: True
-    chemical: False
+    chemical: True
+    payload: True
   ekf:
     auv_centre: True
     camera_1: True
     camera_2: True
     camera_3: True
-    chemical: False
+    chemical: True
+    payload: True
 
 spp_output:
   activate: False
@@ -115,7 +118,7 @@ spp_output:
     camera_1: True
     camera_2: True
     camera_3: True
-    chemical: False
+    chemical: True
 
 plot_output:
   activate: True
