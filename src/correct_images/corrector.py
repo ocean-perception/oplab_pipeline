@@ -1221,9 +1221,12 @@ class Corrector:
                 output_df.at[index, "relative_path"] = Path(
                     res["relative_path"].values[0]
                 ).name
-                output_df.at[index, "raw_relative_path"] = Path(
-                    row["relative_path"]
-                ).relative_to(self.path_raw)
+                # Check if path is absolute:
+                if Path(row["relative_path"]).is_absolute():
+                    # update raw_relative_path to relative
+                    output_df.at[index, "raw_relative_path"] = Path(
+                        row["relative_path"]
+                    ).relative_to(self.path_raw)
             else:
                 # remove row
                 output_df.drop(index, inplace=True)
@@ -1336,7 +1339,9 @@ class Corrector:
         # write to output files
         try:
             if self.camera.extension == "bag":
-                image_filename = self.camera_name + "_" + str(self.camera_image_list[idx])
+                image_filename = (
+                    self.camera_name + "_" + str(self.camera_image_list[idx])
+                )
             else:
                 image_filename = Path(self.camera_image_list[idx]).stem
         except FileNotFoundError:

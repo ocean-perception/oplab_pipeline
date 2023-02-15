@@ -27,6 +27,7 @@ from auv_nav.localisation.ekf import (
 from auv_nav.localisation.pf import run_particle_filter
 from auv_nav.localisation.usbl_filter import usbl_filter
 from auv_nav.localisation.usbl_offset import usbl_offset
+from auv_nav.parsers.generic_csv_payload_parser import generic_csv_payload_parser
 from auv_nav.plot.plot_process_data import (
     plot_2d_deadreckoning,
     plot_cameras_vs_time,
@@ -524,13 +525,14 @@ def process(
             payload.sway,
             payload.heave,
         ]
-        # Copy the velocity body list to the payload dictionary to generate a
-        # transformed list for each payload
-        # If for some reason, we don't have velocity body data, we will use inertial
-        if len(velocity_body_list) != 0:
-            payload_dict[payload.name] = copy.deepcopy(velocity_body)
-        elif len(velocity_inertial_list) != 0:
-            payload_dict[payload.name] = copy.deepcopy(velocity_inertial)
+        # Parse the payload data
+        payload_format = mission.payloads[payload].format
+        if payload_format == "generic_csv":
+            payload_dict[payload] = generic_csv_payload_parser(
+                mission.payloads[payload].path, mission.payloads[payload].columns
+            )
+        else:
+            Console.quit("Payload format {} not supported.".format(payload_format))
 
     if particle_filter_activate:
         camera1_pf_list = copy.deepcopy(camera1_list)
@@ -1393,6 +1395,12 @@ def process(
         if camera3_ekf_list:
             camera3_timestamp_list = [x.epoch_timestamp for x in camera3_ekf_list]
             ekf_timestamps += camera3_timestamp_list
+        if payload_dict:
+            for key, value in payload_dict.items():
+                if "_ekf" not in key:
+                    continue
+                payload_timestamp_list = [x.epoch_timestamp for x in value]
+                ekf_timestamps += payload_timestamp_list
         # Sort timestamps and remove duplicates in place
         ekf_timestamps = sorted(set(ekf_timestamps))
 

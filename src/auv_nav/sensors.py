@@ -12,6 +12,7 @@ from math import atan2, cos, pi, sin, sqrt
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import pynmea2
 
 from auv_nav.tools.body_to_inertial import body_to_inertial
@@ -1577,66 +1578,6 @@ class Tide(OutputFormat):
         return data
 
 
-class Other:
-    def __init__(self, timestamp=None):
-        self.epoch_timestamp = None
-        self.data = []
-
-        self.northings = None
-        self.eastings = None
-        self.depth = None
-
-        self.latitude = None
-        self.longitude = None
-
-        self.roll = None
-        self.pitch = None
-        self.yaw = None
-
-        self.altitude = None
-        self.covariance = None
-
-    def from_json(self, json):
-        self.epoch_timestamp = json["epoch_timestamp"]
-        self.data = json["data"]
-
-    def get_csv_header(self):
-        str_to_write = (
-            "timestamp,northing [m],easting [m],depth [m],"
-            "roll [deg],pitch [deg],heading [deg],altitude "
-            "[m],latitude [deg],longitude [deg]"
-            ",data\n"
-        )
-        return str_to_write
-
-    def to_csv_row(self):
-        str_to_write = (
-            str(self.epoch_timestamp)
-            + ","
-            + str(self.northings)
-            + ","
-            + str(self.eastings)
-            + ","
-            + str(self.depth)
-            + ","
-            + str(self.roll)
-            + ","
-            + str(self.pitch)
-            + ","
-            + str(self.yaw)
-            + ","
-            + str(self.altitude)
-            + ","
-            + str(self.latitude)
-            + ","
-            + str(self.longitude)
-            + ","
-            + str(self.data)
-            + "\n"
-        )
-        return str_to_write
-
-
 class SyncedOrientationBodyVelocity(OutputFormat):
     def __init__(self):
         self.epoch_timestamp = None
@@ -2171,3 +2112,37 @@ class StereoCamera:
             ],
         }
         return data
+
+
+class Other(SyncedOrientationBodyVelocity):
+    def __init__(self):
+        super().__init__()
+        self.data = None
+
+    def from_json(self, json):
+        super().from_json(json)
+        self.data = json["data"]
+
+    def get_csv_header(self):
+        str_to_write = super().get_csv_header()
+        # Remove the newline, we will write it later
+        str_to_write.replace("\n", "")
+        if isinstance(self.data, pd.DataFrame):
+            str_to_write += "," + ",".join(self.data.columns) + "\n"
+        if isinstance(self.data, dict):
+            str_to_write += "," + ",".join(self.data.keys()) + "\n"
+        else:
+            str_to_write.replace("\n", ",data\n")
+        return str_to_write
+
+    def to_csv_row(self):
+        str_to_write = super().to_csv_row()
+        # Remove the newline, we will write it later
+        str_to_write.replace("\n", "")
+        if isinstance(self.data, pd.DataFrame):
+            str_to_write += "," + ",".join(self.data.values) + "\n"
+        if isinstance(self.data, dict):
+            str_to_write += "," + ",".join(self.data.values()) + "\n"
+        else:
+            str_to_write += "," + str(self.data) + "\n"
+        return str_to_write

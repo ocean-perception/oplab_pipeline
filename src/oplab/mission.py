@@ -97,7 +97,7 @@ class TimeZoneEntry:
         self.timeoffset_s = 0
 
     def load(self, node):
-        self.timezone = node["timezone"]
+        self.timezone = node.get("timezone", 0)
         # read in timezone
         if isinstance(self.timezone, str):
             if self.timezone == "utc" or self.timezone == "UTC":
@@ -118,12 +118,36 @@ class TimeZoneEntry:
                         " hours",
                     )
 
-        self.timeoffset = node["timeoffset"]
+        self.timeoffset = node.get("timeoffset", 0)
         self.timeoffset_s = +self.timezone * 60 * 60 + self.timeoffset
 
     def write(self, node):
         node["timezone"] = self.timezone
         node["timeoffset"] = self.timeoffset
+
+
+class PayloadEntry(TimeZoneEntry):
+    def __init__(self):
+        super().__init__()
+        self.name = ""
+        self.path = ""
+        self.format = ""
+        self.columns = None
+
+    def load(self, node):
+        super().load(node)
+        self.name = node["name"]
+        self.path = node["path"]
+        self.format = node["format"]
+        self.columns = node.get("columns", None)
+
+    def write(self, node):
+        super().write(node)
+        node["name"] = self.name
+        node["path"] = self.path
+        node["format"] = self.format
+        if self.columns is not None:
+            node["columns"] = self.columns
 
 
 class ImageEntry(TimeZoneEntry):
@@ -280,6 +304,7 @@ class Mission:
         self.tide = DefaultEntry()
         self.dead_reckoning = DefaultEntry()
         self.image = ImageEntry()
+        self.payloads = []
         self.filename = None
 
         if filename is None:
@@ -385,6 +410,19 @@ class Mission:
                             )
                             error_and_exit()
 
+                if "payloads" in data:
+                    for payload_entry in data["payloads"]:
+                        payload = PayloadEntry()
+                        payload.load(payload_entry)
+                        self.payloads.append(payload)
+                        if payload.name not in vehicle_data["payloads"]:
+                            Console.error(
+                                "The payload mounted at "
+                                + payload.origin
+                                + " does not correspond to any frame in vehicle.yaml."  # noqa
+                            )
+                            error_and_exit()
+
         except FileNotFoundError:
             Console.error("The file mission.yaml could not be found at the location:")
             Console.error(filename)
@@ -444,6 +482,12 @@ class Mission:
                 if not self.image.empty():
                     mission_dict["image"] = OrderedDict()
                     self.image.write(mission_dict["image"])
+                if not self.payloads.empty():
+                    mission_dict["payloads"] = []
+                    for payload in self.payloads:
+                        payload_entry = OrderedDict()
+                        payload.write(payload_entry)
+                        mission_dict["payloads"].append(payload_entry)
                 yaml.dump(
                     mission_dict,
                     f,
