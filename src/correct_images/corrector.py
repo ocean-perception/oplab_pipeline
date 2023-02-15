@@ -1060,7 +1060,7 @@ class Corrector:
         dimensions = [self.image_height, self.image_width, self.image_channels]
         tmp_idxs = np.where(idxs == idx_bin)[0]
 
-        if len(tmp_idxs) > 2:
+        if len(tmp_idxs) >= 10:
             bin_images = [self.camera_image_list[i] for i in tmp_idxs]
             bin_distances_sample = None
             bin_images_sample = None
@@ -1335,7 +1335,10 @@ class Corrector:
 
         # write to output files
         try:
-            image_filename = Path(self.camera_image_list[idx]).stem
+            if self.camera.extension == "bag":
+                image_filename = self.camera_name + "_" + str(self.camera_image_list[idx])
+            else:
+                image_filename = Path(self.camera_image_list[idx]).stem
         except FileNotFoundError:
             image_filename = self.camera_name + "_" + str(self.camera_image_list[idx])
         return write_output_image(

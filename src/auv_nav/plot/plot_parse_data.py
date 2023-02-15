@@ -54,7 +54,10 @@ def print_lines(object, time_difference):
             line[0] += i + "\n"
             line[1] += str(object[i]) + "\n"
     line[0] += "Approximate update rate (Hz)"
-    line[1] += str(1 / time_difference)
+    if time_difference != 0:
+        line[1] += str(1 / time_difference)
+    else:
+        line[1] += "None"
     if "frame" in object:
         if object["frame"] != "body":
             if object["frame"] != "inertial":
@@ -78,13 +81,16 @@ def create_trace(x_list, y_list, text_list, trace_name):
 def data2trace(i, j, t, plotlytable_info_list):
     title = j[0]["category"] + " - " + j[0]["frame"]
     # print the info
-    time_difference = j[1]["epoch_timestamp"] - j[0]["epoch_timestamp"]
-    n = 0
+    if len(j) > 1:
+        time_difference = j[1]["epoch_timestamp"] - j[0]["epoch_timestamp"]
+    else:
+        time_difference = 0
+    n = 2
     # print (time_difference, j[0]['epoch_timestamp'], j[1]['epoch_timestamp'])
-    while time_difference == 0 or time_difference < 0.002 and n < len(j):
-        n += 1
-        time_difference = j[1 + n]["epoch_timestamp"] - j[n]["epoch_timestamp"]
+    while (time_difference == 0 or time_difference < 0.002) and n < len(j):
+        time_difference = j[n]["epoch_timestamp"] - j[n - 1]["epoch_timestamp"]
         # print (time_difference, n, len(j))
+        n += 1
         if n > 10:
             sys.exit(0)
     line = print_lines(j[0], time_difference)
