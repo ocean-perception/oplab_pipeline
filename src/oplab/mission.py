@@ -413,7 +413,7 @@ class Mission:
                 if "payloads" in data:
                     for payload_entry in data["payloads"]:
                         payload = PayloadEntry()
-                        payload.load(payload_entry)
+                        payload.load(data["payloads"][payload_entry])
                         self.payloads.append(payload)
                         if payload.name not in vehicle_data["payloads"]:
                             Console.error(
