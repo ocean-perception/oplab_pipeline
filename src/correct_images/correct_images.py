@@ -172,6 +172,12 @@ def call_parse(args):
             else:
                 Console.info("\t", path, " [OK]")
 
+    time_string = time.strftime("%Y%m%d_%H%M%S", time.localtime())
+    Console.set_logging_file(
+        get_processed_folder(path)
+        / ("log/" + time_string + "_correct_images_parse.log")
+    )
+
     # Populating the configuration and camerasystem lists for each dive path
     # The camera system is pulled first from <config> folder if available, if not from <raw> folder
     correct_config_list, camerasystem_list = zip(
@@ -373,7 +379,9 @@ def load_configuration_and_camera_system(path, suffix=None):
         biocam4000_15c_camera_file = "auv_nav/default_yaml/alr/jc220/camera.yaml"
         hybis_camera_file = "auv_nav/default_yaml/hybis/camera.yaml"
         ntnu_camera_file = "auv_nav/default_yaml/ntnu_stereo/tautra21/camera.yaml"
-        stereo_gopro_camera_file = "auv_nav/default_yaml/smarty200/stereo_gopro/camera.yaml"
+        stereo_gopro_camera_file = (
+            "auv_nav/default_yaml/smarty200/stereo_gopro/camera.yaml"
+        )
         rosbag_camera_file = "auv_nav/default_yaml/rosbag/grassmap/camera.yaml"
 
         acfr_std_correct_config_file = (
@@ -423,7 +431,9 @@ def load_configuration_and_camera_system(path, suffix=None):
             default_file_path_correct_config = root / ntnu_std_correct_config_file
         elif mission.image.format == "stereo_gopro":
             camera_yaml_path = root / stereo_gopro_camera_file
-            default_file_path_correct_config = root / stereo_gopro_std_correct_config_file
+            default_file_path_correct_config = (
+                root / stereo_gopro_std_correct_config_file
+            )
         elif mission.image.format == "rosbag":
             camera_yaml_path = root / rosbag_camera_file
             default_file_path_correct_config = root / rosbag_std_correct_config_file
