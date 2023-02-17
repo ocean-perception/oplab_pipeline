@@ -65,6 +65,7 @@ from oplab import (
     Console,
     Mission,
     Vehicle,
+    get_raw_folder,
     get_config_folder,
     get_processed_folder,
     valid_dive,
@@ -520,16 +521,16 @@ def process(
 
     payload_offset = {}
     for payload in vehicle.payloads:
-        payload_offset[payload.name] = [
-            payload.surge,
-            payload.sway,
-            payload.heave,
+        payload_offset[payload] = [
+            vehicle.payloads[payload].surge,
+            vehicle.payloads[payload].sway,
+            vehicle.payloads[payload].heave,
         ]
         # Parse the payload data
         payload_format = mission.payloads[payload].format
         if payload_format == "generic_csv":
             payload_dict[payload] = generic_csv_payload_parser(
-                mission.payloads[payload].path,
+                get_raw_folder(filepath) / mission.payloads[payload].path,
                 mission.payloads[payload].columns,
                 mission.payloads[payload].timeoffset_s,
             )
@@ -541,8 +542,11 @@ def process(
         camera2_pf_list = copy.deepcopy(camera2_list)
         camera3_pf_list = copy.deepcopy(camera3_list)
         chemical_pf_list = copy.deepcopy(chemical_list)
+        pf_payload_dict = {}
         for key in payload_dict:
-            payload_dict[key + "_pf"] = copy.deepcopy(payload_dict[key])
+            if "_pf" not in key and "_ekf" not in key:
+                pf_payload_dict[key + "_pf"] = copy.deepcopy(payload_dict[key])
+        payload_dict = {**payload_dict, **pf_payload_dict}
 
     if ekf_activate:
         camera1_ekf_list = copy.deepcopy(camera1_list)
@@ -550,8 +554,11 @@ def process(
         camera3_ekf_list = copy.deepcopy(camera3_list)
         camera3_ekf_list_at_dvl = copy.deepcopy(camera3_list)
         chemical_ekf_list = copy.deepcopy(chemical_list)
+        ekf_payload_dict = {}
         for key in payload_dict:
-            payload_dict[key + "_ekf"] = copy.deepcopy(payload_dict[key])
+            if "_pf" not in key and "_ekf" not in key:
+                ekf_payload_dict[key + "_ekf"] = copy.deepcopy(payload_dict[key])
+        payload_dict = {**payload_dict, **ekf_payload_dict}
 
     # make path for processed outputs
     json_filename = (
