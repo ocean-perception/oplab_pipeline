@@ -131,21 +131,18 @@ class TimeZoneEntry:
 class PayloadEntry(TimeZoneEntry):
     def __init__(self):
         super().__init__()
-        self.name = ""
         self.path = ""
         self.format = ""
         self.columns = None
 
     def load(self, node):
         super().load(node)
-        self.name = node["name"]
         self.path = node["path"]
         self.format = node["format"]
         self.columns = node.get("columns", None)
 
     def write(self, node):
         super().write(node)
-        node["name"] = self.name
         node["path"] = self.path
         node["format"] = self.format
         if self.columns is not None:
@@ -306,7 +303,7 @@ class Mission:
         self.tide = DefaultEntry()
         self.dead_reckoning = DefaultEntry()
         self.image = ImageEntry()
-        self.payloads = []
+        self.payloads = {}
         self.filename = None
 
         if filename is None:
@@ -416,8 +413,11 @@ class Mission:
                     for payload_entry in data["payloads"]:
                         payload = PayloadEntry()
                         payload.load(data["payloads"][payload_entry])
-                        self.payloads.append(payload)
-                        if payload.name not in vehicle_data["payloads"]:
+                        self.payloads[payload_entry] = payload
+                        if payload_entry not in vehicle_data["payloads"]:
+                            Console.error("Cannot find", payload_entry, "in payloads")
+                            Console.info("vehicle_data[\"payloads\"]:", vehicle_data["payloads"])
+                            Console.info("current payload:", payload_entry)
                             Console.error(
                                 "The payload mounted at "
                                 + payload.origin
