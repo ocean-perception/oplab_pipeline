@@ -95,6 +95,7 @@ class TimeZoneEntry:
         self.timezone = 0
         self.timeoffset = 0
         self.timeoffset_s = 0
+        self.timezone_s = 0
 
     def load(self, node):
         self.timezone = node.get("timezone", 0)
@@ -119,7 +120,8 @@ class TimeZoneEntry:
                     )
 
         self.timeoffset = node.get("timeoffset", 0)
-        self.timeoffset_s = +self.timezone * 60 * 60 + self.timeoffset
+        self.timezone_s = self.timezone * 60 * 60
+        self.timeoffset_s = self.timezone_s + self.timeoffset
 
     def write(self, node):
         node["timezone"] = self.timezone
