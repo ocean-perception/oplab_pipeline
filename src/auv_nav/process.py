@@ -1405,10 +1405,10 @@ def process(
             camera3_timestamp_list = [x.epoch_timestamp for x in camera3_ekf_list]
             ekf_timestamps += camera3_timestamp_list
         if payload_dict:
-            for key, value in payload_dict.items():
+            for key in payload_dict:
                 if "_ekf" not in key:
                     continue
-                payload_timestamp_list = [x.epoch_timestamp for x in value]
+                payload_timestamp_list = [x.epoch_timestamp for x in payload_dict[key]]
                 ekf_timestamps += payload_timestamp_list
         # Sort timestamps and remove duplicates in place
         ekf_timestamps = sorted(set(ekf_timestamps))
@@ -1604,38 +1604,34 @@ def process(
                 ekf_list,
             )
 
-    if len(payload_dict) > 0:
-        for key in payload_dict:
-            if "_pf" in key or "_ekf" in key:
-                continue
+    for key in payload_dict:
+        if "_pf" not in key and "_ekf" not in key:
             interpolate_sensor_list(
                 payload_dict[key],
-                "payload",
+                key,
                 payload_offset[key],
                 origin_offsets,
                 latlon_reference,
                 dead_reckoning_centre_list,
             )
-            if len(pf_fusion_centre_list) > 1:
-                for key in payload_dict:
-                    interpolate_sensor_list(
-                        payload_dict[key + "_pf"],
-                        "payload",
-                        payload_offset[key],
-                        origin_offsets,
-                        latlon_reference,
-                        pf_fusion_centre_list,
-                    )
-            if len(ekf_list) > 1:
-                for key in payload_dict:
-                    interpolate_sensor_list(
-                        payload_dict[key + "_ekf"],
-                        "payload",
-                        payload_offset[key],
-                        origin_offsets,
-                        latlon_reference,
-                        ekf_list,
-                    )
+        if len(pf_fusion_centre_list) > 1 and "_pf" in key:
+            interpolate_sensor_list(
+                payload_dict[key],
+                key,
+                payload_offset[key.replace("_pf","")],
+                origin_offsets,
+                latlon_reference,
+                pf_fusion_centre_list,
+            )
+        if len(ekf_list) > 1 and "_ekf" in key:
+            interpolate_sensor_list(
+                payload_dict[key],
+                key,
+                payload_offset[key.replace("_ekf","")],
+                origin_offsets,
+                latlon_reference,
+                ekf_list,
+            )
 
     if plot_output_activate:
         # if pdf_plot:
@@ -1849,44 +1845,43 @@ def process(
         t.start()
         threads.append(t)
 
-        if len(payload_dict) > 0:
-            for key in payload_dict:
-                if "_pf" in key:
-                    t = threading.Thread(
-                        target=write_csv,
-                        args=[
-                            pfcsvpath,
-                            payload_dict[key],
-                            "auv_" + key,
-                            csv_pf_payload,
-                        ],
-                    )
-                    t.start()
-                    threads.append(t)
-                elif "_ekf" in key:
-                    t = threading.Thread(
-                        target=write_csv,
-                        args=[
-                            ekfcsvpath,
-                            payload_dict[key],
-                            "auv_" + key,
-                            csv_ekf_payload,
-                        ],
-                    )
-                    t.start()
-                    threads.append(t)
-                else:
-                    t = threading.Thread(
-                        target=write_csv,
-                        args=[
-                            drcsvpath,
-                            payload_dict[key],
-                            "auv_" + key,
-                            csv_dr_payload,
-                        ],
-                    )
-                    t.start()
-                    threads.append(t)
+        for key in payload_dict:
+            if "_pf" in key:
+                t = threading.Thread(
+                    target=write_csv,
+                    args=[
+                        pfcsvpath,
+                        payload_dict[key],
+                        "auv_" + key,
+                        csv_pf_payload,
+                    ],
+                )
+                t.start()
+                threads.append(t)
+            elif "_ekf" in key:
+                t = threading.Thread(
+                    target=write_csv,
+                    args=[
+                        ekfcsvpath,
+                        payload_dict[key],
+                        "auv_" + key,
+                        csv_ekf_payload,
+                    ],
+                )
+                t.start()
+                threads.append(t)
+            else:
+                t = threading.Thread(
+                    target=write_csv,
+                    args=[
+                        drcsvpath,
+                        payload_dict[key],
+                        "auv_" + key,
+                        csv_dr_payload,
+                    ],
+                )
+                t.start()
+                threads.append(t)
 
         if len(camera1_dr_list) > 0:
             t = threading.Thread(
