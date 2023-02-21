@@ -493,6 +493,14 @@ def load_configuration_and_camera_system(path, suffix=None):
 
     # load parameters from correct_config.yaml
     correct_config = CorrectConfig(path_correct_images)
+
+    # Copy configuration file to log folder
+    time_string = time.strftime("%Y%m%d_%H%M%S", time.localtime())
+    correct_config_path_log = get_processed_folder(path_correct_images.parent) / (
+        "log/" + time_string + "_correct_images.yaml"
+    )
+    path_correct_images.copy(correct_config_path_log)
+
     return correct_config, camera_system
 
 
