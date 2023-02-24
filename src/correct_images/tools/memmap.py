@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2020, University of Southampton
+Copyright (c) 2023, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
 
 import uuid
+from datetime import datetime
 
 import cv2
 import numpy as np
@@ -16,8 +17,20 @@ from oplab import Console
 from ..loaders import default
 
 
+def create_memmap_name() -> str:
+    filename_map = (
+        "memmap_"
+        + datetime.now().strftime("%Y%m%d_%H%M%S_")
+        + "correct_images_"
+        + Console.get_username() + "_"
+        + str(uuid.uuid4()) + ".map"
+    )
+    return filename_map
+
+
 def create_memmap(image_list, dimensions, loader=default.loader):
-    filename_map = "memmap_" + str(uuid.uuid4()) + ".map"
+    filename_map = create_memmap_name()
+    Console.info("Creating memmap at", filename_map)
     # If only 1 channel, do not create a 3D array
     if dimensions[-1] == 1:
         dimensions = dimensions[:-1]
@@ -41,13 +54,15 @@ def create_memmap(image_list, dimensions, loader=default.loader):
 
 
 def open_memmap(shape, dtype):
-    filename_map = "memmap_" + str(uuid.uuid4()) + ".map"
+    filename_map = create_memmap_name()
+    Console.info("Creating memmap (open_mammap) at", filename_map)
     image_memmap = np.memmap(filename=filename_map, mode="w+", shape=shape, dtype=dtype)
     return filename_map, image_memmap
 
 
 def convert_to_memmap(array, loader=default.loader):
-    filename_map = "memmap_" + str(uuid.uuid4()) + ".map"
+    filename_map = create_memmap_name()
+    Console.info("Creating memmap (convert_to_memmap) at", filename_map)
     image_memmap = np.memmap(
         filename=filename_map, mode="w+", shape=array.shape, dtype=array.dtype
     )
