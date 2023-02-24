@@ -68,7 +68,9 @@ class CameraEntry:
     def __init__(self, node=None):
         if node is not None:
             self.name = node["name"]
-            self.type = node["type"]
+            self.type = node.get("type", None)
+            if self.type is not None:
+                Console.warn("Camera type is deprecated in mission.yaml")
             self.path = node["path"]
             self.origin = None
             if "origin" in node:
