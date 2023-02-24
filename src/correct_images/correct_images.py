@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2022, University of Southampton
+Copyright (c) 2023, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -159,7 +159,7 @@ def call_parse(args):
     path_list = [Path(path).resolve() for path in args.path]
     if len(path_list) == 1:
         path = path_list[0]
-        Console.info("Single path provided, normal single dive mode...")
+        Console.info("Single path provided, normal single dive mode")
     else:
         Console.info(
             "Multiple paths provided [{}]. Checking each path...".format(len(path_list))
@@ -167,7 +167,7 @@ def call_parse(args):
         for path in path_list:
             # chec if path is valid
             if not path.exists():
-                Console.error("Path", path, "does not exist! Exiting...")  # quit
+                Console.error("Path", path, "does not exist! Exiting.")  # quit
                 sys.exit(1)
             else:
                 Console.info("\t", path, " [OK]")
@@ -233,7 +233,7 @@ def call_parse(args):
             Console.warn(
                 "Camera [",
                 camera.name,
-                "] defined in <camera.yaml> but not found in configuration. Skipping...",
+                "] defined in <camera.yaml> but not found in configuration. Skipping.",
             )
         else:
             Console.info("Parsing for camera", camera.name)
@@ -245,8 +245,8 @@ def call_parse(args):
             corrector.cleanup()
 
     Console.info(
-        "Parse completed for all cameras. Please run process to develop ",
-        "corrected images...",
+        "Parse completed for all cameras. Please run process to develop",
+        "corrected images",
     )
 
 
@@ -276,13 +276,13 @@ def call_process(args):
         Console.info("Processing for camera", camera.name)
 
         if len(camera.image_list) == 0:
-            Console.info("No images found for the camera at the path provided...")
+            Console.info("No images found for the camera at the path provided")
             continue
         else:
             corrector = Corrector(args.force, args.suffix, camera, correct_config, path)
             if corrector.camera_found:
                 corrector.process()
-    Console.info("Process completed for all cameras...")
+    Console.info("Process completed for all cameras")
 
 
 def call_correct(args):
@@ -493,6 +493,23 @@ def load_configuration_and_camera_system(path, suffix=None):
 
     # load parameters from correct_config.yaml
     correct_config = CorrectConfig(path_correct_images)
+
+    for camera in mission.image.cameras:
+        found = False
+        for camera2 in camera_system.cameras:
+            if camera.name == camera2.name:
+                found = True
+                if camera.type is not None and camera.type != camera2.type:
+                    Console.quit(
+                        "Camera", camera.name, "is indicated as type", camera.type,
+                        "in the mission.yaml file, but as type", camera2.type,
+                        "in the camera.yaml file at", camera_yaml_path, "."
+                    )
+        if not found:
+            Console.warn(
+                "Camera", camera.name, "indicated in mission.yaml is missing in the",
+                "camera.yaml file (", camera_yaml_path, ")."
+            )
 
     # Copy configuration file to log folder
     time_string = time.strftime("%Y%m%d_%H%M%S", time.localtime())
