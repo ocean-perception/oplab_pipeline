@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2022, University of Southampton
+Copyright (c) 2023, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -195,6 +195,8 @@ def calculate_attenuation_parameters(
                     joblib.delayed(curve_fitting)(
                         distances[:, i_pixel],
                         images[:, i_pixel, i_channel],
+                        i_pixel % image_width,
+                        i_pixel // image_width,
                         figure_paths[i_pixel],
                     )
                     for i_pixel in range(image_height * image_width)
