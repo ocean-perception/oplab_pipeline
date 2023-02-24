@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2022, University of Southampton
+Copyright (c) 2023, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -134,9 +134,6 @@ class Corrector:
 
         self.memmaps_to_remove = []
 
-        self.images_fn = None
-        self.distances_fn = None
-
         self.force = force
 
         # if path is None then user must define it externally and call set_path
@@ -151,9 +148,7 @@ class Corrector:
             self.load_configuration(self.correct_config)
 
     def cleanup(self):
-        Console.info("Checking if memmaps have to be deleted...")
-        try_remove(self.images_fn, verbose=True)
-        try_remove(self.distances_fn, verbose=True)
+        Console.info("Check if any memmaps have not been deleted yet, and delete if so")
         for fn in self.memmaps_to_remove:
             try_remove(fn, verbose=True)
 
@@ -287,7 +282,7 @@ class Corrector:
 
         if len(self.altitude_list) < 3:
             Console.quit(
-                "Insufficient number of images to compute attenuation ",
+                "Insufficient number of images to compute attenuation",
                 "parameters",
             )
 
@@ -386,7 +381,7 @@ class Corrector:
                     "Code does not find image_raw_std.npy...",
                     "Please run parse before process...",
                 )
-            Console.info("Correction parameters loaded...")
+            Console.info("Correction parameters loaded")
             Console.info("Running process for colour correction...")
         else:
             Console.info("Running process with manual colour balancing...")
@@ -448,7 +443,7 @@ class Corrector:
                     )
                 else:
                     Console.warn(
-                        "Code will overwrite existing parameters for ",
+                        "Code will overwrite existing parameters for",
                         "current configuration...",
                     )
 
@@ -459,12 +454,12 @@ class Corrector:
             if len(file_list) > 0:
                 if not self.force:
                     Console.quit(
-                        "Corrected images exist for current configuration. ",
+                        "Corrected images exist for current configuration.",
                         "Run process with Force (-F flag)...",
                     )
                 else:
                     Console.warn(
-                        "Code will overwrite existing corrected images for ",
+                        "Code will overwrite existing corrected images for",
                         "current configuration...",
                     )
 
@@ -731,22 +726,6 @@ class Corrector:
         hist_bins = np.arange(
             self.altitude_min, self.altitude_max + 0.5 * self.bin_band, self.bin_band
         )
-        # Watch out: need to substract 1 to get the correct number of bins
-        # because the last bin is not included in the range
-
-        self.images_fn, images_map = open_memmap(
-            shape=(
-                len(hist_bins) - 1,
-                self.image_height * self.image_width,
-                self.image_channels,
-            ),
-            dtype=np.float32,
-        )
-
-        self.distances_fn, distances_map = open_memmap(
-            shape=(len(hist_bins) - 1, self.image_height * self.image_width),
-            dtype=np.float32,
-        )
 
         distance_vector = None
 
@@ -780,13 +759,33 @@ class Corrector:
                     "images",
                 )
 
+            # Watch out: need to substract 1 to get the correct number of bins
+            # because the last bin is not included in the range
+            images_fn, images_map = open_memmap(
+                shape=(
+                    len(hist_bins) - 1,
+                    self.image_height * self.image_width,
+                    self.image_channels,
+                ),
+                dtype=np.float32,
+            )
+            self.memmaps_to_remove.append(images_fn)
+
+            distances_fn, distances_map = open_memmap(
+                shape=(len(hist_bins) - 1, self.image_height * self.image_width),
+                dtype=np.float32,
+            )
+            self.memmaps_to_remove.append(distances_fn)
+
             with tqdm_joblib(
                 tqdm(
                     desc="Computing altitude histogram",
                     total=hist_bins.size - 1,
                 )
             ):
-                joblib.Parallel(n_jobs=-2, verbose=0, prefer="threads")(
+                joblib.Parallel(n_jobs=-2, verbose=0)( 
+                    # Do not prefer="threads" as in certain cases this can cause the
+                    # program to crash when calling plt.imshow() in compute_distance_bin
                     joblib.delayed(self.compute_distance_bin)(
                         idxs,
                         idx_bin,
@@ -820,8 +819,8 @@ class Corrector:
             # delete memmap handles
             del images_map
             del distances_map
-            try_remove(self.images_fn)
-            try_remove(self.distances_fn)
+            try_remove(images_fn)
+            try_remove(distances_fn)
 
             # Save attenuation parameter results.
             np.save(
@@ -847,7 +846,7 @@ class Corrector:
                 self.image_width,
                 self.image_channels,
             )
-            Console.warn("Saving correction gains")
+            Console.info("Saving correction gains")
             # Save correction gains
             np.save(self.correction_gains_filepath, self.correction_gains)
 
@@ -871,6 +870,7 @@ class Corrector:
             ]
             runner = RunningMeanStd(image_properties)
 
+            """
             memmap_filename, memmap_handle = open_memmap(
                 shape=(
                     len(self.camera_image_list),
@@ -880,6 +880,7 @@ class Corrector:
                 ),
                 dtype=np.float32,
             )
+            """
 
             # DEBUG: can be removed
             # Console.error("depth_map_list size", len(self.depth_map_list))
@@ -915,14 +916,18 @@ class Corrector:
                 # Before calling compute, let's show the corrected_img dimensions
                 # Console.error("corrected_img.shape", corrected_img.shape)
                 runner.compute(corrected_img)
+                """
                 memmap_handle[i] = corrected_img.reshape(
                     self.image_height, self.image_width, self.image_channels
                 )
+                """
             # Compute mean and std using RANSAC
             """
             image_corrected_mean_ransac, image_corrected_std_ransac = ransac_mean_std(
                 memmap_handle, max_iterations=1000, threshold=0.1, sample_size=2
             )
+            # This is the last time we need the memmap_handle.
+            # We probably should call try_remove(memmap_filename) here.
 
             image_corrected_mean_ransac = image_corrected_mean_ransac.reshape(
                 self.image_height, self.image_width, self.image_channels
@@ -1017,13 +1022,14 @@ class Corrector:
         images_map[images_map == 0] = np.NaN
         distances_map[distances_map == 0] = np.NaN
 
+        pixel_range = range(
+            0,
+            self.image_height * self.image_width,
+            (self.image_height * self.image_width) // 100,
+        )
         for i_channel in range(self.image_channels):
-            with tqdm(desc="Attenuation plot", total=101) as pbar:
-                for i_pixel in range(
-                    0,
-                    self.image_height * self.image_width,
-                    (self.image_height * self.image_width) // 100,
-                ):
+            with tqdm(desc="Attenuation plot", total=len(pixel_range)) as pbar:
+                for i_pixel in pixel_range:
                     i_pixel_height = i_pixel // self.image_width
                     i_pixel_width = i_pixel % self.image_width
                     p0, p1, p2 = self.image_attenuation_parameters[
