@@ -86,12 +86,14 @@ def copy_file_if_exists(original_file: Path, dest_dir: Path):
 
 class Corrector:
     def __init__(
-        self, force=False, suffix=None, camera=None, correct_config=None, path=None
+        self, mode, force=False, suffix=None, camera=None, correct_config=None, path=None
     ):
         """Constructor for the Corrector class
 
         Parameters
         ----------
+        mode : str
+            mode of the corrector. Can be "parse" or "process"
         force : bool
             to indicate an overwrite for existing parameters or images
         camera : CameraEntry
@@ -134,6 +136,8 @@ class Corrector:
 
         self.memmaps_to_remove = []
 
+        assert(mode in ["parse", "process"])
+        self.mode = mode
         self.force = force
 
         # if path is None then user must define it externally and call set_path
@@ -431,37 +435,39 @@ class Corrector:
         )
         self.output_images_folder = self.output_dir_path / developed_folder_str
 
-        if not self.attenuation_parameters_folder.exists():
-            self.attenuation_parameters_folder.mkdir(parents=True)
-        else:
-            file_list = list(self.attenuation_parameters_folder.glob("*.npy"))
-            if len(file_list) > 0:
-                if not self.force:
-                    Console.quit(
-                        "Parameters exist for current configuration.",
-                        "Run parse with Force (-F flag)...",
-                    )
-                else:
-                    Console.warn(
-                        "Code will overwrite existing parameters for",
-                        "current configuration...",
-                    )
+        if self.mode == "parse":
+            if not self.attenuation_parameters_folder.exists():
+                self.attenuation_parameters_folder.mkdir(parents=True)
+            else:
+                file_list = list(self.attenuation_parameters_folder.glob("*.npy"))
+                if len(file_list) > 0:
+                    if not self.force:
+                        Console.quit(
+                            "Parameters exist for current configuration.",
+                            "Run parse with Force (-F flag)...",
+                        )
+                    else:
+                        Console.warn(
+                            "Code will overwrite existing parameters for",
+                            "current configuration...",
+                        )
 
-        if not self.output_images_folder.exists():
-            self.output_images_folder.mkdir(parents=True)
-        else:
-            file_list = list(self.output_images_folder.glob("*.*"))
-            if len(file_list) > 0:
-                if not self.force:
-                    Console.quit(
-                        "Corrected images exist for current configuration.",
-                        "Run process with Force (-F flag)...",
-                    )
-                else:
-                    Console.warn(
-                        "Code will overwrite existing corrected images for",
-                        "current configuration...",
-                    )
+        if self.mode == "process":
+            if not self.output_images_folder.exists():
+                self.output_images_folder.mkdir(parents=True)
+            else:
+                file_list = list(self.output_images_folder.glob("*.*"))
+                if len(file_list) > 0:
+                    if not self.force:
+                        Console.quit(
+                            "Corrected images exist for current configuration.",
+                            "Run process with Force (-F flag)...",
+                        )
+                    else:
+                        Console.warn(
+                            "Code will overwrite existing corrected images for",
+                            "current configuration...",
+                        )
 
     def get_camera_idx(self):
         idx = [

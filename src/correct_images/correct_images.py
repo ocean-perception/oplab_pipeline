@@ -239,7 +239,7 @@ def call_parse(args):
             Console.info("Parsing for camera", camera.name)
             # Create a Corrector object for each camera with empty configuration
             # The configuration and the paths will be populated later on a per-dive basis
-            corrector = Corrector(args.force, args.suffix, camera, correct_config=None)
+            corrector = Corrector("parse", args.force, args.suffix, camera, correct_config=None)
             # call new list-compatible implementation of parse()
             corrector.parse(path_list, correct_config_list)
             corrector.cleanup()
@@ -279,7 +279,7 @@ def call_process(args):
             Console.info("No images found for the camera at the path provided")
             continue
         else:
-            corrector = Corrector(args.force, args.suffix, camera, correct_config, path)
+            corrector = Corrector("process", args.force, args.suffix, camera, correct_config, path)
             if corrector.camera_found:
                 corrector.process()
     Console.info("Process completed for all cameras")
