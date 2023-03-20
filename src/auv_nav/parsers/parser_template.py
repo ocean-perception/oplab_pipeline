@@ -14,6 +14,8 @@ def parse_template(mission, vehicle, category, output_format, outpath):
     # Get your data from a file using mission paths, for example
     your_data = None
 
+    # TODO handle timezone and timeoffsets
+
     # Let's say you want a new IMU, instance the measurement to work
     orientation = Orientation()
 

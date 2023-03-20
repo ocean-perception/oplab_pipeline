@@ -56,7 +56,7 @@ def parse_acfr_images(mission, vehicle, category, ftype, outpath):
     sensor_string = "acfr_standard"
 
     timezone = mission.image.timezone
-    timeoffset = mission.image.timeoffset
+    timeoffset = mission.image.timeoffset_s
     filepath = mission.image.cameras[0].path
     camera1_label = mission.image.cameras[0].name
     camera2_label = mission.image.cameras[1].name

@@ -93,7 +93,7 @@ class CameraEntry:
 class TimeZoneEntry:
     def __init__(self):
         self.timezone = 0
-        self.timeoffset = 0
+        self.offset_s = 0
         self.timeoffset_s = 0
         self.timezone_s = 0
 
@@ -119,13 +119,13 @@ class TimeZoneEntry:
                         " hours",
                     )
 
-        self.timeoffset = node.get("timeoffset", 0)
+        self.timeoffset_s = node.get("timeoffset", 0)
         self.timezone_s = self.timezone * 60 * 60
-        self.timeoffset_s = self.timezone_s + self.timeoffset
+        self.offset_s = self.timezone_s + self.timeoffset_s
 
     def write(self, node):
         node["timezone"] = self.timezone
-        node["timeoffset"] = self.timeoffset
+        node["timeoffset"] = self.timeoffset_s
 
 
 class PayloadEntry(TimeZoneEntry):
@@ -416,7 +416,9 @@ class Mission:
                         self.payloads[payload_entry] = payload
                         if payload_entry not in vehicle_data["payloads"]:
                             Console.error("Cannot find", payload_entry, "in payloads")
-                            Console.info("vehicle_data[\"payloads\"]:", vehicle_data["payloads"])
+                            Console.info(
+                                'vehicle_data["payloads"]:', vehicle_data["payloads"]
+                            )
                             Console.info("current payload:", payload_entry)
                             Console.error(
                                 "The payload mounted at "

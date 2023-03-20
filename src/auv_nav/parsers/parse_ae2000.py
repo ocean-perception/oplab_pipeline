@@ -29,7 +29,7 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
 
     # read in date from filename
     timezone = mission.velocity.timezone
-    timeoffset = mission.velocity.timeoffset
+    timeoffset = mission.velocity.timeoffset_s
     filepath = mission.velocity.filepath
 
     if category == "velocity" or category == "altitude":

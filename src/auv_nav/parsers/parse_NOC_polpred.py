@@ -24,7 +24,7 @@ def parse_NOC_polpred(mission, vehicle, category, ftype, outpath):
     if category == Category.TIDE:
         filepath = mission.tide.filepath
         timezone = mission.tide.timezone
-        timeoffset = mission.tide.timeoffset
+        timeoffset = mission.tide.timeoffset_s
         timezone_offset = read_timezone(timezone)
 
         tide = Tide(mission.tide.std_offset)

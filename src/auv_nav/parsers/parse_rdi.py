@@ -48,16 +48,16 @@ def parse_rdi(mission, vehicle, category, ftype, outpath):
         Console.info("... parsing RDI velocity")
         filename = mission.velocity.filename
         filepath = mission.velocity.filepath
-        timeoffset_s = mission.velocity.timeoffset_s
+        timeoffset_s = mission.velocity.offset_s
     elif category == Category.ORIENTATION:
         Console.info("... parsing RDI orientation")
         filename = mission.orientation.filename
         filepath = mission.orientation.filepath
-        timeoffset_s = mission.orientation.timeoffset_s
+        timeoffset_s = mission.orientation.offset_s
     elif category == Category.ALTITUDE:
         Console.info("... parsing RDI altitude")
         filename = mission.altitude.filename
-        timeoffset_s = mission.altitude.timeoffset_s
+        timeoffset_s = mission.altitude.offset_s
         filepath = mission.altitude.filepath
 
     logfile = get_raw_folder(outpath / ".." / filepath / filename)

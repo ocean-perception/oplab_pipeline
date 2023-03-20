@@ -23,6 +23,8 @@ def parse_alr(mission, vehicle, category, ftype, outpath):
     filename = mission.velocity.filename
     filepath = mission.velocity.filepath
 
+    # TODO handle timezone and timeoffsets
+
     # ALR std models
     depth_std_factor = mission.depth.std_factor
     velocity_std_factor = mission.velocity.std_factor

@@ -53,7 +53,7 @@ def parse_ntnu_stereo_images(mission, vehicle, category, ftype, outpath):
     sensor_string = "ntnu_stereo"
 
     timezone = mission.image.timezone
-    timeoffset = mission.image.timeoffset
+    timeoffset = mission.image.timeoffset_s
     filepath = mission.image.cameras[0].path
     camera1_label = "L"
     camera2_label = "R"

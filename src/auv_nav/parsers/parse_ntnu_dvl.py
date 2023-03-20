@@ -93,6 +93,8 @@ def parse_ntnu_dvl(mission, vehicle, category, output_format, outpath):
     elif category == Category.ALTITUDE:
         category_str = "altitude"
 
+    # TODO handle timezone and timeoffsets
+
     velocity_std_factor = mission.velocity.std_factor
     velocity_std_offset = mission.velocity.std_offset
     heading_offset = vehicle.dvl.yaw

@@ -29,16 +29,16 @@ def parse_seaxerocks_images(mission, vehicle, category, ftype, outpath):
     sensor_string = "seaxerocks_3"
 
     timezone = mission.image.timezone
-    timeoffset = mission.image.timeoffset
+    timeoffset = mission.image.timeoffset_s
     camera1_filepath = mission.image.cameras[0].path
     camera2_filepath = mission.image.cameras[1].path
     camera3_filepath = mission.image.cameras[2].path
     camera1_label = mission.image.cameras[0].name
     camera2_label = mission.image.cameras[1].name
     camera3_label = mission.image.cameras[2].name
-    camera1_timeoffset = mission.image.cameras[0].timeoffset
-    camera2_timeoffset = mission.image.cameras[1].timeoffset
-    camera3_timeoffset = mission.image.cameras[2].timeoffset
+    camera1_timeoffset = mission.image.cameras[0].timeoffset_s
+    camera2_timeoffset = mission.image.cameras[1].timeoffset_s
+    camera3_timeoffset = mission.image.cameras[2].timeoffset_s
 
     epoch_timestamp_stereo = []
     epoch_timestamp_laser = []

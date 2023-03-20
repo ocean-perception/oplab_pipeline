@@ -23,7 +23,7 @@ def parse_NOC_nmea(mission, vehicle, category, ftype, outpath):
         filepath = mission.usbl.filepath
         timezone = mission.usbl.timezone
         beacon_id = mission.usbl.label
-        timeoffset = mission.usbl.timeoffset
+        timeoffset = mission.usbl.timeoffset_s
         timezone_offset = read_timezone(timezone)
         latitude_reference = mission.origin.latitude
         longitude_reference = mission.origin.longitude

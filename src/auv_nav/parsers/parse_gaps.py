@@ -33,7 +33,7 @@ def parse_gaps(mission, vehicle, category, ftype, outpath):
     frame_string = "inertial"
 
     timezone = mission.usbl.timezone
-    timeoffset = mission.usbl.timeoffset
+    timeoffset = mission.usbl.timeoffset_s
     filepath = mission.usbl.filepath
     usbl_id = mission.usbl.label
     latitude_reference = mission.origin.latitude

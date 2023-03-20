@@ -29,7 +29,7 @@ def parse_usbl_dump(mission, vehicle, category, ftype, outpath):
     distance_std_offset = mission.usbl.std_offset
 
     timezone = mission.usbl.timezone
-    timeoffset = mission.usbl.timeoffset
+    timeoffset = mission.usbl.timeoffset_s
     filepath = mission.usbl.filepath
     filename = mission.usbl.filename
     label = mission.usbl.label

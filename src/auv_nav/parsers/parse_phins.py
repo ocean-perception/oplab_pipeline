@@ -84,7 +84,7 @@ class PhinsParser:
         date = yyyy, mm, dd
 
         self.timestamp = PhinsTimestamp(
-            date, mission.velocity.timezone, mission.velocity.timeoffset
+            date, mission.velocity.timezone, mission.velocity.timeoffset_s
         )
         self.body_velocity = BodyVelocity(
             velocity_std_factor,

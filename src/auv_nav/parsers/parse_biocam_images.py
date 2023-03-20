@@ -105,7 +105,7 @@ def parse_biocam_images(mission, vehicle, category, ftype, outpath):
 
     timezone = mission.image.timezone
     timezone_offset = 0
-    timeoffset = mission.image.timeoffset
+    timeoffset = mission.image.timeoffset_s
     filepath = mission.image.cameras[0].path
     camera1_label = mission.image.cameras[0].name
     camera2_label = mission.image.cameras[1].name
