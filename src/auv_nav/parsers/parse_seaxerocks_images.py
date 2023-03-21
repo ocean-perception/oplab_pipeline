@@ -340,7 +340,7 @@ def determine_extension_and_images_per_folder(folder_path, image_list, label):
 
     :param folder_path: Path where images are stored
     :type  folder_path: pathlib.Path
-    :param image_list:  list of image 7-digit zeropadded image numbers
+    :param image_list:  list of 7-digit zero padded image numbers
     :type  image_list:  list of str
     :param label:       Camera label
     :type  label:       str
@@ -350,9 +350,16 @@ def determine_extension_and_images_per_folder(folder_path, image_list, label):
         -extension (`str`) - Filename extension of images ("jpg" or "tif")
     """
     Console.info(
-        "    Determine filename extension and images per subfolder "
+        "    Determine filename extension and number of images per subfolder "
         "of camera {}...".format(label)
     )
+
+    if len(image_list[0]) < 7:
+        Console.error(
+            'Image number "{}" in FileTime.csv is shorter than 7 digits. '
+            "Make sure the image numbers are zero padded to a length of "
+            "7 digits.".format(image_list[-1])
+        )
 
     if build_image_path(folder_path, image_list[-1], 0, "jpg").is_file():
         index_start_of_folder_name = 0
