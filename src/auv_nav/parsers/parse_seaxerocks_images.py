@@ -354,11 +354,11 @@ def determine_extension_and_images_per_folder(folder_path, image_list, label):
         "of camera {}...".format(label)
     )
 
-    if len(image_list[0]) < 7:
+    if len(image_list[0]) < 7:  # Testing the first image (-> shortest name) in the list
         Console.error(
             'Image number "{}" in FileTime.csv is shorter than 7 digits. '
             "Make sure the image numbers are zero padded to a length of "
-            "7 digits.".format(image_list[-1])
+            "7 digits.".format(image_list[0])
         )
 
     if build_image_path(folder_path, image_list[-1], 0, "jpg").is_file():
@@ -392,10 +392,15 @@ def determine_extension_and_images_per_folder(folder_path, image_list, label):
     else:
         index_start_of_folder_name = 0
         extension = "jpg"
-        Console.warn(
-            "    ...Did not find images from camera {} in {}. "
+        Console.error(
+            "    ...Unable to indentify the naming patttern of images from camera {} "
+            "in {}. The images are expected to be saved as jpg or or tif, file names "
+            "must be be 7 digit zero padded numbers, and they must be stored in "
+            "subfolders, where each subfolder contains either 1000 or 10000 files. "
+            "The subfolder names must be the image_index/1000 or image_index/10000, "
+            "zero padded to 3 digits.\n"
             'Default to using extension "{}" and 10000 images per '
-            "subfolder.".format(label, folder_path, extension)
+            "subfolder for now.".format(label, folder_path, extension)
         )
 
     return index_start_of_folder_name, extension
