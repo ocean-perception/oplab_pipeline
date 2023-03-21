@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2022, University of Southampton
+Copyright (c) 2023, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -193,10 +193,6 @@ def process(
         if not localisation_file.parent.exists():
             localisation_file.parent.mkdir(parents=True)
         default_localisation.copy(localisation_file)
-
-    # copy the configuration file
-    localisation_file_processed = get_processed_folder(localisation_file)
-    localisation_file.copy(localisation_file_processed)
 
     # Default to no EKF and PF and SPP
     particle_filter_activate = False
@@ -1252,7 +1248,7 @@ def process(
         if len(mission.image.cameras) > 2:
             interpolate_sensor_list(
                 camera3_dr_list,
-                mission.image.cameras[2].name,
+                mission.image.cameras[2].name + "_laser",
                 camera3_offsets,
                 origin_offsets,
                 latlon_reference,
@@ -1291,7 +1287,7 @@ def process(
             if len(mission.image.cameras) > 2:
                 interpolate_sensor_list(
                     camera3_pf_list,
-                    mission.image.cameras[2].name,
+                    mission.image.cameras[2].name + "_laser",
                     camera3_offsets,
                     origin_offsets,
                     latlon_reference,
@@ -1339,7 +1335,7 @@ def process(
             renavpath
             / "csv"
             / "ekf"
-            / ("auv_ekf_" + mission.image.cameras[2].name + "_at_dvl.csv")
+            / ("auv_ekf_" + mission.image.cameras[2].name + "_laser_at_dvl.csv")
         )
         laser_camera_at_dvl_states = load_states(
             ekf_state_file_path, start_image_identifier, end_image_identifier
@@ -1491,12 +1487,12 @@ def process(
             filename_cov_from_ekf = (
                 "auv_ekf_cov_based_on_ekf_propagation_"
                 + mission.image.cameras[2].name
-                + "_at_dvl"
+                + "_laser_at_dvl"
             )
             filename_cov_from_subtract = (
                 "auv_ekf_cov_based_on_subtraction_"
                 + mission.image.cameras[2].name
-                + "_at_dvl"
+                + "_laser_at_dvl"
             )
         elif len(mission.image.cameras) == 2:
             filename_cov_from_ekf = (
@@ -1962,7 +1958,7 @@ def process(
                     args=[
                         drcsvpath,
                         camera3_dr_list,
-                        "auv_dr_" + mission.image.cameras[2].name,
+                        "auv_dr_" + mission.image.cameras[2].name + "_laser",
                         csv_dr_camera_3,
                     ],
                 )
@@ -1974,7 +1970,7 @@ def process(
                         args=[
                             pfcsvpath,
                             camera3_pf_list,
-                            "auv_pf_" + mission.image.cameras[2].name,
+                            "auv_pf_" + mission.image.cameras[2].name + "_laser",
                             csv_pf_camera_3,
                         ],
                     )
@@ -1986,7 +1982,7 @@ def process(
                         args=[
                             ekfcsvpath,
                             camera3_ekf_list,
-                            "auv_ekf_" + mission.image.cameras[2].name,
+                            "auv_ekf_" + mission.image.cameras[2].name + "_laser",
                             csv_ekf_camera_3,
                         ],
                     )
@@ -1997,7 +1993,7 @@ def process(
                         args=[
                             ekfcsvpath,
                             camera3_ekf_list_at_dvl,
-                            "auv_ekf_" + mission.image.cameras[2].name + "_at_dvl",
+                            "auv_ekf_" + mission.image.cameras[2].name + "_laser_at_dvl",
                             csv_ekf_camera_3,
                         ],
                     )
@@ -2133,7 +2129,7 @@ def process(
                     target=spp_csv,
                     args=[
                         camera3_ekf_list,
-                        "auv_ekf_" + mission.image.cameras[2].name,
+                        "auv_ekf_" + mission.image.cameras[2].name + "_laser",
                         ekfcsvpath,
                         spp_ekf_camera_3,
                     ],
