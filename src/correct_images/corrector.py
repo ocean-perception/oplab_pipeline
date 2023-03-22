@@ -284,7 +284,7 @@ class Corrector:
             # TODO: this list must be populated from AFTER loading the configuration and BEFORE getting image list
             self.get_imagelist()
 
-        if len(self.altitude_list) < 3:
+        if len(self.altitude_list) < 3 and self.correction_method == "colour_correction":
             Console.quit(
                 "Insufficient number of images to compute attenuation",
                 "parameters",
