@@ -1205,7 +1205,7 @@ class Corrector:
             tqdm(desc="Correcting images", total=len(self.camera_image_list))
         ):
             self.processed_image_list = joblib.Parallel(
-                n_jobs=-2, verbose=0, prefer="threads"
+                n_jobs=-2, verbose=0
             )(
                 joblib.delayed(self.process_image)(idx)
                 for idx in range(0, len(self.camera_image_list))
