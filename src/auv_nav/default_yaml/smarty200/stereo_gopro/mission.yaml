@@ -1,5 +1,5 @@
 #YAML 1.0
-version: 1
+version: 2
 
 origin:
   latitude: 50.6456902931687
@@ -43,10 +43,8 @@ image:
   format: stereo_gopro
   cameras:
     - name: gopro_left
-      type: rgb
       path: image/left/
     - name: gopro_right
-      type: rgb
       path: image/right/
   timezone: utc
   timeoffset: 0.0

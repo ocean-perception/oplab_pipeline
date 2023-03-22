@@ -396,20 +396,23 @@ def process(
     ]
 
     if mission.image.format == "biocam":
-        if mission.image.cameras[0].type == "grayscale":
+        if mission.image.cameras[0].records_laser == True:
             camera3_offsets = [
                 vehicle.camera1.surge,
                 vehicle.camera1.sway,
                 vehicle.camera1.heave,
             ]
-        elif mission.image.cameras[1].type == "grayscale":
+        elif mission.image.cameras[1].records_laser == True:
             camera3_offsets = [
                 vehicle.camera2.surge,
                 vehicle.camera2.sway,
                 vehicle.camera2.heave,
             ]
         else:
-            Console.quit("BioCam format is expected to have a grayscale camera.")
+            Console.quit(
+                "BioCam format is expected to have one camera where `records_laser` "
+                "is set to `True`."
+            )
 
     chemical_offset = [
         vehicle.chemical.surge,

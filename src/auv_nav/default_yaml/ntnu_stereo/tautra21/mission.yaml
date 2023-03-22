@@ -1,5 +1,5 @@
 #YAML 1.0
-version: 1
+version: 2
 
 origin:
   latitude: 63.61
@@ -62,11 +62,9 @@ image:
   cameras:
     - name: ntnu_stereo_left
       type: rgb
-      bit_depth: 8
       path: image
     - name: ntnu_stereo_right
       type: rgb
-      bit_depth: 8
       path: image
   timezone: cet
   timeoffset: 0.0

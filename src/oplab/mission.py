@@ -66,11 +66,14 @@ class OriginEntry:
 
 class CameraEntry:
     def __init__(self, node=None):
+        self.records_laser = False
         if node is not None:
             self.name = node["name"]
-            self.type = node.get("type", None)
-            if self.type is not None:
-                Console.warn("Camera type is deprecated in mission.yaml")
+            if node["type"] or node["bit_depth"]:
+                Console.warn(
+                    "Camera type and bit_depth are deprecated in mission.yaml. "
+                    "They are indicated in camera.yaml now."
+                )
             self.path = node["path"]
             self.origin = None
             if "origin" in node:
@@ -82,6 +85,7 @@ class CameraEntry:
             self.timeoffset = 0.0
             if "timeoffset" in node:
                 self.timeoffset = node["timeoffset"]
+            self.records_laser = node.get("records_laser", False)
 
     def write(self, node):
         node["name"] = self.name
@@ -179,28 +183,24 @@ class ImageEntry(TimeZoneEntry):
                 self.cameras.append(CameraEntry())
                 self.cameras[0].name = "fore"
                 self.cameras[0].origin = "camera1"
-                self.cameras[0].type = "bayer_rggb"
                 self.cameras[0].path = node["filepath"] + node["camera1"]
                 self.cameras[0].timeoffset = 0.0
                 self.cameras[1].name = "aft"
                 self.cameras[1].origin = "camera2"
-                self.cameras[1].type = "bayer_rggb"
                 self.cameras[1].path = node["filepath"] + node["camera2"]
                 self.cameras[1].timeoffset = 0.0
                 self.cameras[2].name = "laser"
                 self.cameras[2].origin = "camera3"
-                self.cameras[2].type = "grayscale"
                 self.cameras[2].path = node["filepath"] + node["camera3"]
+                self.cameras[2].records_laser = True
                 self.cameras[2].timeoffset = 0.0
             elif self.format == "acfr_standard":
                 self.cameras[0].name = node["camera1"]
                 self.cameras[0].origin = "camera1"
-                self.cameras[0].type = "bayer_rggb"
                 self.cameras[0].path = node["filepath"]
                 self.cameras[0].timeoffset = 0.0
                 self.cameras[1].name = node["camera2"]
                 self.cameras[1].origin = "camera2"
-                self.cameras[1].type = "bayer_rggb"
                 self.cameras[1].path = node["filepath"]
                 self.cameras[1].timeoffset = 0.0
 

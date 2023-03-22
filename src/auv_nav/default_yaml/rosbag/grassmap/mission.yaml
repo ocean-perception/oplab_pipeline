@@ -1,5 +1,5 @@
 #YAML 1.0
-version: 1
+version: 2
 
 origin:
   latitude: 39.1546
@@ -51,10 +51,8 @@ image:
   format: rosbag
   cameras:
     - name: chameleon_left
-      type: bayer_rggb
       path: images/left/
     - name: chameleon_right
-      type: bayer_rggb
       path: images/right/
   timezone: cet
   timeoffset: 0.0

@@ -1,5 +1,5 @@
 #YAML 1.0
-version: 1
+version: 2
 
 origin:
   latitude: 22.8778145
@@ -57,17 +57,12 @@ usbl:
 image:
   format: seaxerocks_3
   cameras:
-    - name: fore
-      type: bayer_rggb
-      bit_depth: 12
+    - name: Cam51707923
       path: image/SeaXerocksData20181119_073812_laserCal/Xviii/Cam51707923
-    - name: aft
-      type: bayer_rggb
-      bit_depth: 12
+    - name: Cam51707925
       path: image/SeaXerocksData20181119_073812_laserCal/Xviii/Cam51707925
-    - name: laser
-      type: grayscale
-      bit_depth: 12
+    - name: LM165
       path: image/SeaXerocksData20181119_073812_laserCal/LM165
+      records_laser: true
   timezone: 10
   timeoffset: 0.0

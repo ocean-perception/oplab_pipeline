@@ -31,7 +31,7 @@ class TestLoadMissionYK1723C(unittest.TestCase):
             self.m = Mission(path)
 
     def test_LoadMission(self):
-        self.assertEqual(self.m.version, 1)
+        self.assertEqual(self.m.version, 2)
 
         self.assertEqual(self.m.origin.latitude, 22.8778145)
         self.assertEqual(self.m.origin.longitude, 153.38397866666668)
@@ -93,26 +93,23 @@ class TestLoadMissionYK1723C(unittest.TestCase):
         self.assertEqual(self.m.tide.std_offset, 0.0)
 
         self.assertEqual(self.m.image.format, "seaxerocks_3")
-        self.assertEqual(self.m.image.cameras[0].name, "fore")
-        self.assertEqual(self.m.image.cameras[0].origin, "fore")
-        self.assertEqual(self.m.image.cameras[0].type, "bayer_rggb")
-        # self.assertEqual(self.m.image.cameras[0].bit_depth, 12) # this does not get loaded # noqa
+        self.assertEqual(self.m.image.cameras[0].name, "Cam51707923")
+        self.assertEqual(self.m.image.cameras[0].origin, "Cam51707923")
+        self.assertEqual(self.m.image.cameras[0].records_laser, False)
         self.assertEqual(
             self.m.image.cameras[0].path,
             "image/SeaXerocksData20181119_073812_laserCal/Xviii/Cam51707923",
         )
-        self.assertEqual(self.m.image.cameras[1].name, "aft")
-        self.assertEqual(self.m.image.cameras[1].origin, "aft")
-        self.assertEqual(self.m.image.cameras[1].type, "bayer_rggb")
-        # self.assertEqual(self.m.image.cameras[1].bit_depth, 12) # this does not get loaded # noqa
+        self.assertEqual(self.m.image.cameras[1].name, "Cam51707925")
+        self.assertEqual(self.m.image.cameras[1].origin, "Cam51707925")
+        self.assertEqual(self.m.image.cameras[1].records_laser, False)
         self.assertEqual(
             self.m.image.cameras[1].path,
             "image/SeaXerocksData20181119_073812_laserCal/Xviii/Cam51707925",
         )
-        self.assertEqual(self.m.image.cameras[2].name, "laser")
-        self.assertEqual(self.m.image.cameras[2].origin, "laser")
-        self.assertEqual(self.m.image.cameras[2].type, "grayscale")
-        # self.assertEqual(self.m.image.cameras[2].bit_depth, 12) # this does not get loaded # noqa
+        self.assertEqual(self.m.image.cameras[2].name, "LM165")
+        self.assertEqual(self.m.image.cameras[2].origin, "LM165")
+        self.assertEqual(self.m.image.cameras[2].records_laser, True)
         self.assertEqual(
             self.m.image.cameras[2].path,
             "image/SeaXerocksData20181119_073812_laserCal/LM165",
@@ -193,14 +190,12 @@ class TestLoadMissionDY109(unittest.TestCase):
         self.assertEqual(self.m.image.format, "biocam")
         self.assertEqual(self.m.image.cameras[0].name, "cam61003146")
         self.assertEqual(self.m.image.cameras[0].origin, "cam61003146")
-        self.assertEqual(self.m.image.cameras[0].type, "bayer_rggb")
-        # self.assertEqual(self.m.image.cameras[0].bit_depth, 16) # this does not get loaded # noqa
         self.assertEqual(self.m.image.cameras[0].path, "image")
+        self.assertEqual(self.m.image.cameras[0].records_laser, False)
         self.assertEqual(self.m.image.cameras[1].name, "cam61004444")
         self.assertEqual(self.m.image.cameras[1].origin, "cam61004444")
-        self.assertEqual(self.m.image.cameras[1].type, "grayscale")
-        # self.assertEqual(self.m.image.cameras[1].bit_depth, 16) # this does not get loaded # noqa
         self.assertEqual(self.m.image.cameras[1].path, "image")
+        self.assertEqual(self.m.image.cameras[1].records_laser, True)
         self.assertEqual(self.m.image.timezone, 0)
         self.assertEqual(self.m.image.timeoffset, 0.0)
 
@@ -277,16 +272,14 @@ class TestLoadMissionSSK1701FileFormat0(unittest.TestCase):
         self.assertEqual(self.m.image.format, "acfr_standard")
         self.assertEqual(self.m.image.cameras[0].name, "camera1")
         self.assertEqual(self.m.image.cameras[0].origin, "camera1")
-        self.assertEqual(self.m.image.cameras[0].type, "bayer_rggb")
-        # self.assertEqual(self.m.image.cameras[0].bit_depth, 0) # this does not get loaded # noqa
+        self.assertEqual(self.m.image.cameras[0].records_laser, False)
         self.assertEqual(
             self.m.image.cameras[0].path,
             "image/r20170817_041459_UG117_sesoko/i20170817_041459/",
         )
         self.assertEqual(self.m.image.cameras[1].name, "camera2")
         self.assertEqual(self.m.image.cameras[1].origin, "camera2")
-        self.assertEqual(self.m.image.cameras[1].type, "bayer_rggb")
-        # self.assertEqual(self.m.image.cameras[1].bit_depth, 0) # this does not get loaded # noqa
+        self.assertEqual(self.m.image.cameras[1].records_laser, False)
         self.assertEqual(
             self.m.image.cameras[1].path,
             "image/r20170817_041459_UG117_sesoko/i20170817_041459/",
@@ -598,12 +591,12 @@ class TestWriteMissionDY109(unittest.TestCase):
             self.m1.image.cameras.append(CameraEntry())
             self.m1.image.cameras[0].name = "cam61003146"
             self.m1.image.cameras[0].origin = "cam61003146"
-            self.m1.image.cameras[0].type = "bayer_rggb"
+            self.m1.image.cameras[0].records_laser = False
             self.m1.image.cameras[0].path = "image"
             self.m1.image.cameras.append(CameraEntry())
             self.m1.image.cameras[1].name = "cam61004444"
             self.m1.image.cameras[1].origin = "cam61004444"
-            self.m1.image.cameras[1].type = "grayscale"
+            self.m1.image.cameras[1].records_laser = True
             self.m1.image.cameras[1].path = "image"
             self.m1.image.timezone = 0
             self.m1.image.timeoffset = 0.0
@@ -679,13 +672,19 @@ class TestWriteMissionDY109(unittest.TestCase):
         self.assertEqual(
             self.m1.image.cameras[0].origin, self.m2.image.cameras[0].origin
         )
-        self.assertEqual(self.m1.image.cameras[0].type, self.m2.image.cameras[0].type)
+        self.assertEqual(
+            self.m1.image.cameras[0].records_laser,
+            self.m2.image.cameras[0].records_laser
+        )
         self.assertEqual(self.m1.image.cameras[0].path, self.m2.image.cameras[0].path)
         self.assertEqual(self.m1.image.cameras[1].name, self.m2.image.cameras[1].name)
         self.assertEqual(
             self.m1.image.cameras[1].origin, self.m2.image.cameras[1].origin
         )
-        self.assertEqual(self.m1.image.cameras[1].type, self.m2.image.cameras[1].type)
+        self.assertEqual(
+            self.m1.image.cameras[1].records_laser,
+            self.m2.image.cameras[1].records_laser
+        )
         self.assertEqual(self.m1.image.cameras[1].path, self.m2.image.cameras[1].path)
         self.assertEqual(self.m1.image.timezone, self.m2.image.timezone)
         self.assertEqual(self.m1.image.timeoffset, self.m2.image.timeoffset)
