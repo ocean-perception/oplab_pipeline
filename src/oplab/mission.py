@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2022, University of Southampton
+Copyright (c) 2023, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -69,10 +69,15 @@ class CameraEntry:
         self.records_laser = False
         if node is not None:
             self.name = node["name"]
-            if node["type"] or node["bit_depth"]:
+            if "type" in node:
                 Console.warn(
-                    "Camera type and bit_depth are deprecated in mission.yaml. "
-                    "They are indicated in camera.yaml now."
+                    "Camera type indicated for camera " + self.name + " is deprecated "
+                    "in mission.yaml. It is now indicated in camera.yaml."
+                )
+            if "bit_depth" in node:
+                Console.warn(
+                    "Camera bit_depth indicated for camera " + self.name + " is "
+                    "deprecated in mission.yaml. It is now indicated in camera.yaml."
                 )
             self.path = node["path"]
             self.origin = None
