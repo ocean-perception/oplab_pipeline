@@ -538,7 +538,9 @@ class Corrector:
             # Check if file exists
             if not self.altitude_csv_path.exists():
                 Console.quit(
-                    "The navigation CSV file is not present. Run auv_nav first."
+                    "Cannot find altitude csv file expected to be save at ",
+                    self.altitude_csv_path,
+                    ". Run auv_nav first."
                 )
 
             # read dataframe for corresponding distance csv path
