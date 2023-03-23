@@ -171,8 +171,9 @@ def process(
     # check that it is a valid dive folder
     if not valid_dive(filepath):
         Console.error(
-            "The dive folder supplied does not contain any mission or vehicle",
-            "YAML files. Is the path correct?",
+            "The folder supplied does not contain nav_standard.json in a nav/ "
+            "subfolder, which is normally created by auv_nav parse. Please first run "
+            "auv_nav parse."
         )
         Console.quit("Invalid path")
 
@@ -368,12 +369,12 @@ def process(
 
     Console.info("Loading vehicle.yaml")
     vehicle_file = filepath / "vehicle.yaml"
-    vehicle_file = get_processed_folder(vehicle_file)
+    vehicle_file = get_raw_folder(vehicle_file)
     vehicle = Vehicle(vehicle_file)
 
     Console.info("Loading mission.yaml")
     mission_file = filepath / "mission.yaml"
-    mission_file = get_processed_folder(mission_file)
+    mission_file = get_raw_folder(mission_file)
     mission = Mission(mission_file)
 
     camera1_offsets = [
