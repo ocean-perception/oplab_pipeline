@@ -126,7 +126,7 @@ class TestLoadMissionDY109(unittest.TestCase):
             self.m = Mission(path)
 
     def test_LoadMission(self):
-        self.assertEqual(self.m.version, 1)
+        self.assertEqual(self.m.version, 2)
 
         self.assertEqual(self.m.origin.latitude, 59.85643)
         self.assertEqual(self.m.origin.longitude, -7.15903)
@@ -674,7 +674,7 @@ class TestWriteMissionDY109(unittest.TestCase):
         )
         self.assertEqual(
             self.m1.image.cameras[0].records_laser,
-            self.m2.image.cameras[0].records_laser
+            self.m2.image.cameras[0].records_laser,
         )
         self.assertEqual(self.m1.image.cameras[0].path, self.m2.image.cameras[0].path)
         self.assertEqual(self.m1.image.cameras[1].name, self.m2.image.cameras[1].name)
@@ -683,7 +683,7 @@ class TestWriteMissionDY109(unittest.TestCase):
         )
         self.assertEqual(
             self.m1.image.cameras[1].records_laser,
-            self.m2.image.cameras[1].records_laser
+            self.m2.image.cameras[1].records_laser,
         )
         self.assertEqual(self.m1.image.cameras[1].path, self.m2.image.cameras[1].path)
         self.assertEqual(self.m1.image.timezone, self.m2.image.timezone)

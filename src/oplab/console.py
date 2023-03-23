@@ -9,6 +9,7 @@ import datetime
 import getpass
 import logging
 import socket
+import sys
 import timeit
 from pathlib import Path
 
@@ -135,7 +136,7 @@ class Console:
         )
         if logger is not None:
             logger.warn(" ".join(map(str, args)), **kwargs)
-        quit()
+        sys.exit(1)
 
     @staticmethod
     def banner() -> None:

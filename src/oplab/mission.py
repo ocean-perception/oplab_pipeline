@@ -67,6 +67,10 @@ class OriginEntry:
 class CameraEntry:
     def __init__(self, node=None):
         self.records_laser = False
+        self.origin = None
+        self.type = None
+        self.path = None
+        self.timeoffset = None
         if node is not None:
             self.name = node["name"]
             if "type" in node:
@@ -80,7 +84,6 @@ class CameraEntry:
                     "deprecated in mission.yaml. It is now indicated in camera.yaml."
                 )
             self.path = node["path"]
-            self.origin = None
             if "origin" in node:
                 self.origin = node["origin"]
                 Console.info("Using camera " + self.name + " mounted at " + self.origin)
@@ -97,6 +100,7 @@ class CameraEntry:
         node["origin"] = self.origin
         node["type"] = self.type
         node["path"] = self.path
+        node["records_laser"] = self.records_laser
         if hasattr(self, "timeoffset"):
             node["timeoffset"] = self.timeoffset
 
@@ -173,7 +177,7 @@ class ImageEntry(TimeZoneEntry):
         super().load(node)
         self.format = node["format"]
         self._empty = False
-        if version == 1:
+        if version == 1 or version == 2:
             for camera in node["cameras"]:
                 self.cameras.append(CameraEntry(camera))
             if "origin" not in node["cameras"][0]:
@@ -197,7 +201,6 @@ class ImageEntry(TimeZoneEntry):
                 self.cameras[2].name = "laser"
                 self.cameras[2].origin = "camera3"
                 self.cameras[2].path = node["filepath"] + node["camera3"]
-                self.cameras[2].records_laser = True
                 self.cameras[2].timeoffset = 0.0
             elif self.format == "acfr_standard":
                 self.cameras[0].name = node["camera1"]
@@ -421,7 +424,9 @@ class Mission:
                         self.payloads[payload_entry] = payload
                         if payload_entry not in vehicle_data["payloads"]:
                             Console.error("Cannot find", payload_entry, "in payloads")
-                            Console.info("vehicle_data[\"payloads\"]:", vehicle_data["payloads"])
+                            Console.info(
+                                'vehicle_data["payloads"]:', vehicle_data["payloads"]
+                            )
                             Console.info("current payload:", payload_entry)
                             Console.error(
                                 "The payload mounted at "
@@ -489,7 +494,7 @@ class Mission:
                 if not self.image.empty():
                     mission_dict["image"] = OrderedDict()
                     self.image.write(mission_dict["image"])
-                if not self.payloads.empty():
+                if len(self.payloads) > 1:
                     mission_dict["payloads"] = []
                     for payload in self.payloads:
                         payload_entry = OrderedDict()
