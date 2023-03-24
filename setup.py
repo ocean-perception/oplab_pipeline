@@ -69,9 +69,6 @@ def git_command(args):
 
 
 def git_pep440_version():
-    # Is this called from Github Actions?
-    if "GITHUB_REF_NAME" in os.environ:
-        return os.environ["GITHUB_REF_NAME"]
     # Is Git installed?
     try:
         subprocess.call(["git", "--version"], stdout=subprocess.PIPE)
@@ -110,7 +107,7 @@ def run_setup():
         with open(".oplab_pipeline_commit_hash", "w") as f:
             f.write(commit_hash_header + "\n")
             f.write(sha1 + "\n")
-            print("Written .oplab_pipeline_commit_hash with the hash", commit_hash_header)
+            print("Written .oplab_pipeline_commit_hash with the hash", commit_hash_header, "\n", sha1)
     else:
         print("No .git repository was found. Will not be able to retrieve the version number.")
     oplab_pipeline_version = return_version()
