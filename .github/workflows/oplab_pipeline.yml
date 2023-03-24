@@ -16,6 +16,9 @@ jobs:
     - uses: actions/checkout@v3.1.0
       with:
         fetch-depth: 0
+    - name: Display git tag version
+      run: |
+        git describe --tags
     - uses: actions/setup-python@v4
       with:
         python-version: '3.9'
