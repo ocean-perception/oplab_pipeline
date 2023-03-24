@@ -76,6 +76,7 @@ def git_pep440_version():
     try:
         subprocess.call(["git", "--version"], stdout=subprocess.PIPE)
     except OSError:
+        print("The command git --version was not successful. Is git installed?")
         return None
     version_full = git_command(["describe", "--tags", "--dirty=.dirty"])
     version_tag = git_command(["describe", "--tags", "--abbrev=0"])
@@ -97,6 +98,7 @@ def run_setup():
     if os.path.exists(".git"):
         # Provide commit hash or empty file to indicate release
         sha1 = git_pep440_version()
+        print("SHA1 is", sha1)
         if sha1 is None:
             sha1 = "unknown-commit"
         elif sha1 == "release":
@@ -108,6 +110,9 @@ def run_setup():
         with open(".oplab_pipeline_commit_hash", "w") as f:
             f.write(commit_hash_header + "\n")
             f.write(sha1 + "\n")
+            print("Written .oplab_pipeline_commit_hash with the hash", commit_hash_header)
+    else:
+        print("No .git repository was found. Will not be able to retrieve the version number.")
     oplab_pipeline_version = return_version()
     setup(
         name="oplab_pipeline",
