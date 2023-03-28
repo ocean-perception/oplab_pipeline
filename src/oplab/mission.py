@@ -278,26 +278,6 @@ class DefaultEntry(TimeZoneEntry):
         node["std_factor"] = self.std_factor
         node["std_offset"] = self.std_offset
 
-    def get_offset_s(self):
-        if isinstance(self.timezone, str):
-            if self.timezone == "utc" or self.timezone == "UTC":
-                self.timezone_offset = 0
-            elif self.timezone == "jst" or self.timezone == "JST":
-                self.timezone_offset = 9
-        else:
-            try:
-                self.timezone_offset = float(self.timezone)
-            except ValueError:
-                print(
-                    "Error: timezone",
-                    self.timezone,
-                    "in mission.yaml not recognised, ",
-                    "please enter value from UTC in hours",
-                )
-                return
-            timeoffset = -self.timezone_offset * 60 * 60 + self.timeoffset
-            return timeoffset
-
 
 class Mission:
     """Mission class that parses and writes mission.yaml"""

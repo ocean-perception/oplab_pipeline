@@ -43,7 +43,7 @@ class TestLoadMissionYK1723C(unittest.TestCase):
         self.assertEqual(self.m.velocity.filename, "pos181119064007.csv")
         self.assertEqual(self.m.velocity.label, 0)
         self.assertEqual(self.m.velocity.timezone, 10)
-        self.assertEqual(self.m.velocity.timeoffset, 0.0)
+        self.assertEqual(self.m.velocity.timeoffset_s, 0.0)
         self.assertEqual(self.m.velocity.std_factor, 0.001)
         self.assertEqual(self.m.velocity.std_offset, 0.2)
 
@@ -52,7 +52,7 @@ class TestLoadMissionYK1723C(unittest.TestCase):
         self.assertEqual(self.m.orientation.filename, "pos181119064007.csv")
         self.assertEqual(self.m.orientation.label, 0)
         self.assertEqual(self.m.orientation.timezone, 10)
-        self.assertEqual(self.m.orientation.timeoffset, 0.0)
+        self.assertEqual(self.m.orientation.timeoffset_s, 0.0)
         self.assertEqual(self.m.orientation.std_factor, 0.0)
         self.assertEqual(self.m.orientation.std_offset, 0.003)
 
@@ -61,7 +61,7 @@ class TestLoadMissionYK1723C(unittest.TestCase):
         self.assertEqual(self.m.depth.filename, "pos181119064007.csv")
         self.assertEqual(self.m.depth.label, 0)
         self.assertEqual(self.m.depth.timezone, 10)
-        self.assertEqual(self.m.depth.timeoffset, 0.0)
+        self.assertEqual(self.m.depth.timeoffset_s, 0.0)
         self.assertEqual(self.m.depth.std_factor, 0.0001)
         self.assertEqual(self.m.depth.std_offset, 0.0)
 
@@ -70,7 +70,7 @@ class TestLoadMissionYK1723C(unittest.TestCase):
         self.assertEqual(self.m.altitude.filename, "pos181119064007.csv")
         self.assertEqual(self.m.altitude.label, 0)
         self.assertEqual(self.m.altitude.timezone, 10)
-        self.assertEqual(self.m.altitude.timeoffset, 0.0)
+        self.assertEqual(self.m.altitude.timeoffset_s, 0.0)
         self.assertEqual(self.m.altitude.std_factor, 0.0001)
         self.assertEqual(self.m.altitude.std_offset, 0.0)
 
@@ -79,7 +79,7 @@ class TestLoadMissionYK1723C(unittest.TestCase):
         self.assertEqual(self.m.usbl.filename, "")
         self.assertEqual(self.m.usbl.label, 4)
         self.assertEqual(self.m.usbl.timezone, 0)
-        self.assertEqual(self.m.usbl.timeoffset, 0.0)
+        self.assertEqual(self.m.usbl.timeoffset_s, 0.0)
         self.assertEqual(self.m.usbl.std_factor, 0.01)
         self.assertEqual(self.m.usbl.std_offset, 2.0)
 
@@ -88,7 +88,7 @@ class TestLoadMissionYK1723C(unittest.TestCase):
         self.assertEqual(self.m.tide.filename, "")
         self.assertEqual(self.m.tide.label, 0)
         self.assertEqual(self.m.tide.timezone, 0)
-        self.assertEqual(self.m.tide.timeoffset, 0.0)
+        self.assertEqual(self.m.tide.timeoffset_s, 0.0)
         self.assertEqual(self.m.tide.std_factor, 0.0)
         self.assertEqual(self.m.tide.std_offset, 0.0)
 
@@ -115,7 +115,7 @@ class TestLoadMissionYK1723C(unittest.TestCase):
             "image/SeaXerocksData20181119_073812_laserCal/LM165",
         )
         self.assertEqual(self.m.image.timezone, 10)
-        self.assertEqual(self.m.image.timeoffset, 0.0)
+        self.assertEqual(self.m.image.timeoffset_s, 0.0)
 
 
 class TestLoadMissionDY109(unittest.TestCase):
@@ -138,7 +138,7 @@ class TestLoadMissionDY109(unittest.TestCase):
         self.assertEqual(self.m.velocity.filename, "M155.mat")
         self.assertEqual(self.m.velocity.label, 0)
         self.assertEqual(self.m.velocity.timezone, 0)
-        self.assertEqual(self.m.velocity.timeoffset, 0.0)
+        self.assertEqual(self.m.velocity.timeoffset_s, 0.0)
         self.assertEqual(self.m.velocity.std_factor, 0.001)
         self.assertEqual(self.m.velocity.std_offset, 0.2)
 
@@ -147,7 +147,7 @@ class TestLoadMissionDY109(unittest.TestCase):
         self.assertEqual(self.m.orientation.filename, "M155.mat")
         self.assertEqual(self.m.orientation.label, 0)
         self.assertEqual(self.m.orientation.timezone, 0)
-        self.assertEqual(self.m.orientation.timeoffset, 0.0)
+        self.assertEqual(self.m.orientation.timeoffset_s, 0.0)
         self.assertEqual(self.m.orientation.std_factor, 0.0)
         self.assertEqual(self.m.orientation.std_offset, 0.003)
 
@@ -156,7 +156,7 @@ class TestLoadMissionDY109(unittest.TestCase):
         self.assertEqual(self.m.depth.filename, "M155.mat")
         self.assertEqual(self.m.depth.label, 0)
         self.assertEqual(self.m.depth.timezone, 0)
-        self.assertEqual(self.m.depth.timeoffset, 0.0)
+        self.assertEqual(self.m.depth.timeoffset_s, 0.0)
         self.assertEqual(self.m.depth.std_factor, 0.001)
         self.assertEqual(self.m.depth.std_offset, 0.0)
 
@@ -165,7 +165,7 @@ class TestLoadMissionDY109(unittest.TestCase):
         self.assertEqual(self.m.altitude.filename, "M155.mat")
         self.assertEqual(self.m.altitude.label, 0)
         self.assertEqual(self.m.altitude.timezone, 0)
-        self.assertEqual(self.m.altitude.timeoffset, 0.0)
+        self.assertEqual(self.m.altitude.timeoffset_s, 0.0)
         self.assertEqual(self.m.altitude.std_factor, 0.001)
         self.assertEqual(self.m.altitude.std_offset, 0.3)
 
@@ -174,7 +174,7 @@ class TestLoadMissionDY109(unittest.TestCase):
         self.assertEqual(self.m.usbl.filename, "")
         self.assertEqual(self.m.usbl.label, 13)
         self.assertEqual(self.m.usbl.timezone, 0)
-        self.assertEqual(self.m.usbl.timeoffset, 0.0)
+        self.assertEqual(self.m.usbl.timeoffset_s, 0.0)
         self.assertEqual(self.m.usbl.std_factor, 0.01)
         self.assertEqual(self.m.usbl.std_offset, 2.0)
 
@@ -183,7 +183,7 @@ class TestLoadMissionDY109(unittest.TestCase):
         self.assertEqual(self.m.tide.filename, "dy_108_polpred_tide_10m.txt")
         self.assertEqual(self.m.tide.label, 0)
         self.assertEqual(self.m.tide.timezone, 0)
-        self.assertEqual(self.m.tide.timeoffset, 0.0)
+        self.assertEqual(self.m.tide.timeoffset_s, 0.0)
         self.assertEqual(self.m.tide.std_factor, 0.0)
         self.assertEqual(self.m.tide.std_offset, 0.0)
 
@@ -197,7 +197,7 @@ class TestLoadMissionDY109(unittest.TestCase):
         self.assertEqual(self.m.image.cameras[1].path, "image")
         self.assertEqual(self.m.image.cameras[1].records_laser, True)
         self.assertEqual(self.m.image.timezone, 0)
-        self.assertEqual(self.m.image.timeoffset, 0.0)
+        self.assertEqual(self.m.image.timeoffset_s, 0.0)
 
 
 class TestLoadMissionSSK1701FileFormat0(unittest.TestCase):
@@ -220,7 +220,7 @@ class TestLoadMissionSSK1701FileFormat0(unittest.TestCase):
         self.assertEqual(self.m.velocity.filename, "20170817_phins.txt")
         self.assertEqual(self.m.velocity.label, 0)
         self.assertEqual(self.m.velocity.timezone, 0)
-        self.assertEqual(self.m.velocity.timeoffset, 0.0)
+        self.assertEqual(self.m.velocity.timeoffset_s, 0.0)
         self.assertEqual(self.m.velocity.std_factor, 0)
         self.assertEqual(self.m.velocity.std_offset, 0)
 
@@ -229,7 +229,7 @@ class TestLoadMissionSSK1701FileFormat0(unittest.TestCase):
         self.assertEqual(self.m.orientation.filename, "20170817_phins.txt")
         self.assertEqual(self.m.orientation.label, 0)
         self.assertEqual(self.m.orientation.timezone, 0)
-        self.assertEqual(self.m.orientation.timeoffset, 0.0)
+        self.assertEqual(self.m.orientation.timeoffset_s, 0.0)
         self.assertEqual(self.m.orientation.std_factor, 0)
         self.assertEqual(self.m.orientation.std_offset, 0)
 
@@ -238,7 +238,7 @@ class TestLoadMissionSSK1701FileFormat0(unittest.TestCase):
         self.assertEqual(self.m.depth.filename, "20170817_phins.txt")
         self.assertEqual(self.m.depth.label, 0)
         self.assertEqual(self.m.depth.timezone, 0)
-        self.assertEqual(self.m.depth.timeoffset, 0.0)
+        self.assertEqual(self.m.depth.timeoffset_s, 0.0)
         self.assertEqual(self.m.depth.std_factor, 0)
         self.assertEqual(self.m.depth.std_offset, 0)
 
@@ -247,7 +247,7 @@ class TestLoadMissionSSK1701FileFormat0(unittest.TestCase):
         self.assertEqual(self.m.altitude.filename, "20170817_phins.txt")
         self.assertEqual(self.m.altitude.label, 0)
         self.assertEqual(self.m.altitude.timezone, 0)
-        self.assertEqual(self.m.altitude.timeoffset, 0.0)
+        self.assertEqual(self.m.altitude.timeoffset_s, 0.0)
         self.assertEqual(self.m.altitude.std_factor, 0)
         self.assertEqual(self.m.altitude.std_offset, 0)
 
@@ -256,7 +256,7 @@ class TestLoadMissionSSK1701FileFormat0(unittest.TestCase):
         self.assertEqual(self.m.usbl.filename, "")
         self.assertEqual(self.m.usbl.label, 2)
         self.assertEqual(self.m.usbl.timezone, 0)
-        self.assertEqual(self.m.usbl.timeoffset, 0.0)
+        self.assertEqual(self.m.usbl.timeoffset_s, 0.0)
         self.assertEqual(self.m.usbl.std_factor, 0)
         self.assertEqual(self.m.usbl.std_offset, 0)
 
@@ -265,7 +265,7 @@ class TestLoadMissionSSK1701FileFormat0(unittest.TestCase):
         self.assertEqual(self.m.tide.filename, "")
         self.assertEqual(self.m.tide.label, 0)
         self.assertEqual(self.m.tide.timezone, 0)
-        self.assertEqual(self.m.tide.timeoffset, 0.0)
+        self.assertEqual(self.m.tide.timeoffset_s, 0.0)
         self.assertEqual(self.m.tide.std_factor, 0)
         self.assertEqual(self.m.tide.std_offset, 0)
 
@@ -285,7 +285,7 @@ class TestLoadMissionSSK1701FileFormat0(unittest.TestCase):
             "image/r20170817_041459_UG117_sesoko/i20170817_041459/",
         )
         self.assertEqual(self.m.image.timezone, 9)
-        self.assertEqual(self.m.image.timeoffset, 0.0)
+        self.assertEqual(self.m.image.timeoffset_s, 0.0)
 
 
 class TestLoadVehicleYK1723C(unittest.TestCase):
@@ -532,7 +532,7 @@ class TestWriteMissionDY109(unittest.TestCase):
             self.m1.velocity.filename = "M155.mat"
             self.m1.velocity.label = 0
             self.m1.velocity.timezone = 0
-            self.m1.velocity.timeoffset = 0.0
+            self.m1.velocity.timeoffset_s = 0.0
             self.m1.velocity.std_factor = 0.001
             self.m1.velocity.std_offset = 0.2
             self.m1.velocity._empty = False
@@ -542,7 +542,7 @@ class TestWriteMissionDY109(unittest.TestCase):
             self.m1.orientation.filename = "M155.mat"
             self.m1.orientation.label = 0
             self.m1.orientation.timezone = 0
-            self.m1.orientation.timeoffset = 0.0
+            self.m1.orientation.timeoffset_s = 0.0
             self.m1.orientation.std_factor = 0.0
             self.m1.orientation.std_offset = 0.003
             self.m1.orientation._empty = False
@@ -552,7 +552,7 @@ class TestWriteMissionDY109(unittest.TestCase):
             self.m1.depth.filename = "M155.mat"
             self.m1.depth.label = 0
             self.m1.depth.timezone = 0
-            self.m1.depth.timeoffset = 0.0
+            self.m1.depth.timeoffset_s = 0.0
             self.m1.depth.std_factor = 0.001
             self.m1.depth.std_offset = 0.0
             self.m1.depth._empty = False
@@ -562,7 +562,7 @@ class TestWriteMissionDY109(unittest.TestCase):
             self.m1.altitude.filename = "M155.mat"
             self.m1.altitude.label = 0
             self.m1.altitude.timezone = 0
-            self.m1.altitude.timeoffset = 0.0
+            self.m1.altitude.timeoffset_s = 0.0
             self.m1.altitude.std_factor = 0.001
             self.m1.altitude.std_offset = 0.3
             self.m1.altitude._empty = False
@@ -572,7 +572,7 @@ class TestWriteMissionDY109(unittest.TestCase):
             self.m1.usbl.filename = ""
             self.m1.usbl.label = 13
             self.m1.usbl.timezone = 0
-            self.m1.usbl.timeoffset = 0.0
+            self.m1.usbl.timeoffset_s = 0.0
             self.m1.usbl.std_factor = 0.01
             self.m1.usbl.std_offset = 2.0
             self.m1.usbl._empty = False
@@ -582,7 +582,7 @@ class TestWriteMissionDY109(unittest.TestCase):
             self.m1.tide.filename = "dy_108_polpred_tide_10m.txt"
             self.m1.tide.label = 0
             self.m1.tide.timezone = 0
-            self.m1.tide.timeoffset = 0.0
+            self.m1.tide.timeoffset_s = 0.0
             self.m1.tide.std_factor = 0.0
             self.m1.tide.std_offset = 0.0
             self.m1.tide._empty = False
@@ -599,7 +599,7 @@ class TestWriteMissionDY109(unittest.TestCase):
             self.m1.image.cameras[1].records_laser = True
             self.m1.image.cameras[1].path = "image"
             self.m1.image.timezone = 0
-            self.m1.image.timeoffset = 0.0
+            self.m1.image.timeoffset_s = 0.0
             self.m1.image._empty = False
 
             self.m1.write(mission_path)
@@ -618,7 +618,7 @@ class TestWriteMissionDY109(unittest.TestCase):
         self.assertEqual(self.m1.velocity.filename, self.m2.velocity.filename)
         self.assertEqual(self.m1.velocity.label, self.m2.velocity.label)
         self.assertEqual(self.m1.velocity.timezone, self.m2.velocity.timezone)
-        self.assertEqual(self.m1.velocity.timeoffset, self.m2.velocity.timeoffset)
+        self.assertEqual(self.m1.velocity.timeoffset_s, self.m2.velocity.timeoffset_s)
         self.assertEqual(self.m1.velocity.std_factor, self.m2.velocity.std_factor)
         self.assertEqual(self.m1.velocity.std_offset, self.m2.velocity.std_offset)
 
@@ -627,7 +627,9 @@ class TestWriteMissionDY109(unittest.TestCase):
         self.assertEqual(self.m1.orientation.filename, self.m2.orientation.filename)
         self.assertEqual(self.m1.orientation.label, self.m2.orientation.label)
         self.assertEqual(self.m1.orientation.timezone, self.m2.orientation.timezone)
-        self.assertEqual(self.m1.orientation.timeoffset, self.m2.orientation.timeoffset)
+        self.assertEqual(
+            self.m1.orientation.timeoffset_s, self.m2.orientation.timeoffset_s
+        )
         self.assertEqual(self.m1.orientation.std_factor, self.m2.orientation.std_factor)
         self.assertEqual(self.m1.orientation.std_offset, self.m2.orientation.std_offset)
 
@@ -636,7 +638,7 @@ class TestWriteMissionDY109(unittest.TestCase):
         self.assertEqual(self.m1.depth.filename, self.m2.depth.filename)
         self.assertEqual(self.m1.depth.label, self.m2.depth.label)
         self.assertEqual(self.m1.depth.timezone, self.m2.depth.timezone)
-        self.assertEqual(self.m1.depth.timeoffset, self.m2.depth.timeoffset)
+        self.assertEqual(self.m1.depth.timeoffset_s, self.m2.depth.timeoffset_s)
         self.assertEqual(self.m1.depth.std_factor, self.m2.depth.std_factor)
         self.assertEqual(self.m1.depth.std_offset, self.m2.depth.std_offset)
 
@@ -645,7 +647,7 @@ class TestWriteMissionDY109(unittest.TestCase):
         self.assertEqual(self.m1.altitude.filename, self.m2.altitude.filename)
         self.assertEqual(self.m1.altitude.label, self.m2.altitude.label)
         self.assertEqual(self.m1.altitude.timezone, self.m2.altitude.timezone)
-        self.assertEqual(self.m1.altitude.timeoffset, self.m2.altitude.timeoffset)
+        self.assertEqual(self.m1.altitude.timeoffset_s, self.m2.altitude.timeoffset_s)
         self.assertEqual(self.m1.altitude.std_factor, self.m2.altitude.std_factor)
         self.assertEqual(self.m1.altitude.std_offset, self.m2.altitude.std_offset)
 
@@ -654,7 +656,7 @@ class TestWriteMissionDY109(unittest.TestCase):
         self.assertEqual(self.m1.usbl.filename, self.m2.usbl.filename)
         self.assertEqual(self.m1.usbl.label, self.m2.usbl.label)
         self.assertEqual(self.m1.usbl.timezone, self.m2.usbl.timezone)
-        self.assertEqual(self.m1.usbl.timeoffset, self.m2.usbl.timeoffset)
+        self.assertEqual(self.m1.usbl.timeoffset_s, self.m2.usbl.timeoffset_s)
         self.assertEqual(self.m1.usbl.std_factor, self.m2.usbl.std_factor)
         self.assertEqual(self.m1.usbl.std_offset, self.m2.usbl.std_offset)
 
@@ -663,7 +665,7 @@ class TestWriteMissionDY109(unittest.TestCase):
         self.assertEqual(self.m1.tide.filename, self.m2.tide.filename)
         self.assertEqual(self.m1.tide.label, self.m2.tide.label)
         self.assertEqual(self.m1.tide.timezone, self.m2.tide.timezone)
-        self.assertEqual(self.m1.tide.timeoffset, self.m2.tide.timeoffset)
+        self.assertEqual(self.m1.tide.timeoffset_s, self.m2.tide.timeoffset_s)
         self.assertEqual(self.m1.tide.std_factor, self.m2.tide.std_factor)
         self.assertEqual(self.m1.tide.std_offset, self.m2.tide.std_offset)
 
@@ -687,4 +689,4 @@ class TestWriteMissionDY109(unittest.TestCase):
         )
         self.assertEqual(self.m1.image.cameras[1].path, self.m2.image.cameras[1].path)
         self.assertEqual(self.m1.image.timezone, self.m2.image.timezone)
-        self.assertEqual(self.m1.image.timeoffset, self.m2.image.timeoffset)
+        self.assertEqual(self.m1.image.timeoffset_s, self.m2.image.timeoffset_s)
