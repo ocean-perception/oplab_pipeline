@@ -3,8 +3,7 @@
 
 # Run me with the below line
 # Replace HOST_FOLDER with the path to the folder that you want to use in the Docker session. In the Docker session that location will be mapped to /data
-# docker run -e USER=$(whoami) -h $HOSTNAME --user $(id -u):$(id -g) --rm -it --ipc=private --name=oplab_pipeline_$(whoami)_$(date +%Y%m%d_%H%M%S) -v HOST_FOLDER:/data oceanperception/oplab_pipeline
-# Note: The console prompts starts with "I have no name!", e.g. "I have no name!@oplab-crunch1:/data/processed". This is not an error. It stems from setting the user ID, which otherwise would be root.
+# docker run -e USER=$(whoami) -h $HOSTNAME --user $(id -u):$(id -g) -v /etc/passwd:/etc/passwd:ro --rm -it --ipc=private --name=oplab_pipeline_$(whoami)_$(date +%Y%m%d_%H%M%S) -v HOST_FOLDER:/data oceanperception/oplab_pipeline
 
 
 FROM python:3.10-slim-bullseye AS base
