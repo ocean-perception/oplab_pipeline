@@ -86,7 +86,13 @@ def copy_file_if_exists(original_file: Path, dest_dir: Path):
 
 class Corrector:
     def __init__(
-        self, mode, force=False, suffix=None, camera=None, correct_config=None, path=None
+        self,
+        mode,
+        force=False,
+        suffix=None,
+        camera=None,
+        correct_config=None,
+        path=None,
     ):
         """Constructor for the Corrector class
 
@@ -136,7 +142,7 @@ class Corrector:
 
         self.memmaps_to_remove = []
 
-        assert(mode in ["parse", "process"])
+        assert mode in ["parse", "process"]
         self.mode = mode
         self.force = force
 
@@ -284,7 +290,10 @@ class Corrector:
             # TODO: this list must be populated from AFTER loading the configuration and BEFORE getting image list
             self.get_imagelist()
 
-        if len(self.altitude_list) < 3:
+        if (
+            len(self.altitude_list) < 3
+            and self.correction_method == "colour_correction"
+        ):
             Console.quit(
                 "Insufficient number of images to compute attenuation",
                 "parameters",
@@ -789,7 +798,7 @@ class Corrector:
                     total=hist_bins.size - 1,
                 )
             ):
-                joblib.Parallel(n_jobs=-2, verbose=0)( 
+                joblib.Parallel(n_jobs=-2, verbose=0)(
                     # Do not prefer="threads" as in certain cases this can cause the
                     # program to crash when calling plt.imshow() in compute_distance_bin
                     joblib.delayed(self.compute_distance_bin)(
