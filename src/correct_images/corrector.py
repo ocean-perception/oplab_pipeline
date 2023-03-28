@@ -202,8 +202,18 @@ class Corrector:
         # if self.correction_method == "colour_correction":
         self.distance_metric = self.correct_config.color_correction.distance_metric
         self.distance_path = self.correct_config.color_correction.metric_path
-        self.altitude_max = self.correct_config.color_correction.altitude_max
-        self.altitude_min = self.correct_config.color_correction.altitude_min
+        self.parse_altitude_min = (
+            self.correct_config.color_correction.parse_altitude_min
+        )
+        self.parse_altitude_max = (
+            self.correct_config.color_correction.parse_altitude_max
+        )
+        self.process_altitude_min = (
+            self.correct_config.color_correction.process_altitude_min
+        )
+        self.process_altitude_max = (
+            self.correct_config.color_correction.process_altitude_max
+        )
         self.smoothing = self.correct_config.color_correction.smoothing
         self.window_size = self.correct_config.color_correction.window_size
         self.cameraconfigs = self.correct_config.configs.camera_configs
@@ -288,7 +298,7 @@ class Corrector:
             self.user_specified_image_list = self.user_specified_image_list_parse
             # Update list of images by appending user-defined list
             # TODO: this list must be populated from AFTER loading the configuration and BEFORE getting image list
-            self.get_imagelist()
+            self.get_imagelist("parse")
 
         if (
             len(self.altitude_list) < 3
@@ -334,7 +344,7 @@ class Corrector:
         self.user_specified_image_list = self.user_specified_image_list_process
 
         # Read list of images
-        self.get_imagelist()
+        self.get_imagelist("process")
 
         # create target sub directores based on configurations defined in
         # correct_images.yaml
@@ -496,7 +506,7 @@ class Corrector:
 
     # load imagelist: output is same as camera.imagelist unless a smaller
     # filelist is specified by the user
-    def get_imagelist(self):
+    def get_imagelist(self, mode):
         """Generate list of source images"""
         # Store a copy of the currently stored image list in the Corrector object
         _original_image_list = self.camera_image_list
@@ -511,6 +521,14 @@ class Corrector:
             self.correction_method == "colour_correction"
             or self.camera.extension == "bag"
         ):
+            assert mode in ["parse", "process"]
+            if mode == "parse":
+                altitude_min = self.parse_altitude_min
+                altitude_max = self.parse_altitude_max
+            elif mode == "process":
+                altitude_min = self.process_altitude_min
+                altitude_max = self.process_altitude_max
+
             # Deal with bagfiles:
             # if the extension is bag, the list is a list of bagfiles
             if self.camera.extension == "bag":
@@ -547,7 +565,9 @@ class Corrector:
             # Check if file exists
             if not self.altitude_csv_path.exists():
                 Console.quit(
-                    "The navigation CSV file is not present. Run auv_nav first."
+                    "Cannot find altitude csv file expected to be save at ",
+                    self.altitude_csv_path,
+                    ". Run auv_nav first.",
                 )
 
             # read dataframe for corresponding distance csv path
@@ -597,7 +617,7 @@ class Corrector:
             distance_list = filtered_dataframe["altitude [m]"].tolist()
             for _, row in filtered_dataframe.iterrows():
                 alt = float(row["altitude [m]"])
-                if alt > self.altitude_min and alt < self.altitude_max:
+                if alt > altitude_min and alt < altitude_max:
                     if self.camera.extension == "bag":
                         self.camera_image_list.append(row["timestamp [s]"])
                     else:
@@ -739,7 +759,9 @@ class Corrector:
 
         self.bin_band = 0.1
         hist_bins = np.arange(
-            self.altitude_min, self.altitude_max + 0.5 * self.bin_band, self.bin_band
+            self.parse_altitude_min,
+            self.parse_altitude_max + 0.5 * self.bin_band,
+            self.bin_band,
         )
 
         distance_vector = None
@@ -1213,9 +1235,7 @@ class Corrector:
         with tqdm_joblib(
             tqdm(desc="Correcting images", total=len(self.camera_image_list))
         ):
-            self.processed_image_list = joblib.Parallel(
-                n_jobs=-2, verbose=0, prefer="threads"
-            )(
+            self.processed_image_list = joblib.Parallel(n_jobs=-2, verbose=0)(
                 joblib.delayed(self.process_image)(idx)
                 for idx in range(0, len(self.camera_image_list))
             )

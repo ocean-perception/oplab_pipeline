@@ -31,19 +31,22 @@ A. Example configuration for `colour_correction` :
 
 ```yaml
 # Yaml 1.0
-version: 1
+version: 2
 
 method: 'colour_correction'
 
 colour_correction :
   distance_metric : 'altitude' # ['none', 'altitude', 'depth_map'] 
   metric_path : 'json_renav_*' # json nav path in case of altitude / depth map path in case of depth map metric
-  altitude_filter : # only use images in the altitude range below to calculate attenuation_modelling parameters
-    max_m : 12
-    min_m : 4
+  altitude_filter :
+    parse : # only use images in the altitude range below to calculate attenuation_modelling parameters. Look at the histogram of the bins when running `correct_images parse` and use range where bins contain at least ~20 samples.
+      min_m : 4.2
+      max_m : 6.3
+    process: # only convert the images in the altitude range below
+      min_m : 2
+      max_m : 12
   smoothing : 'median' # ['mean' / 'median' / 'mean_trimmed']
   window_size : 3 # increase if the attenuation correction parameter looks noisy.
-  curve_fitting_outlier_rejection : False
 ```
 
 Configuration fields to generate `colour_correction` parameters :
@@ -56,18 +59,16 @@ Configuration fields to generate `colour_correction` parameters :
                 For `depth_map` based colour corrections, provide the path to folder containing depth map `*.npy` files.
                 Note: for `depth_map` place the depth maps folder inside the processed folder chain relative to the dive.
                 Note: Please ensure the metric_path inside correct_images.yaml actually points to the desired json_renav* folder within the processed folder chain for the dive. By default the code assumes the first json_renav* within the processed folder chaing for the dive.
-- `altitude_filter` : set `max_m` and `min_m` as maximum and minimum altitude (in meters) to filter images which are too far from or too close to the seafloor.
-                    Note: the altitude range is used only to generate correction parameters and are not used in `process` step for `correct_images`.
+- `altitude_filter` : `parse` : set `min_m` and `max_m` as minimum and maximum altitudes (in meters) to filter images within the range of altitudes that should be used for training the attenuation parameters. Initially set it to a wide range and run `correct_images parse`. Look at the histogram of altitude bins and determine range where bins contain at least ~20 samples. Then use this range in the setting here.
+- `altitude_filter` : `process` : set `min_m` and `max_m` as minimum and maximum altitudes (in meters) to filter images within the range of altitudes that should be convert from raw to corrected colour.
 - `smoothing` : sampling colour intensity values from window_size to develop attenuation model. options are ['mean' / 'median' / 'mean_trimmed']
 - `window_size` : is applicable if `smoothing` is set to `median`
-- `curve_fitting_outlier_rejection` : set this variable if filtering the attenuation parameters is needed.
-                                    Note: code ignores `smoothing` and `window_size` if this variable is `False`.
 
 B. Example configuration for `manual_balance` :
 
 ```yaml
 # Yaml 1.0
-version: 1
+version: 2
 
 method: 'colour_correction'
 ...
@@ -245,7 +246,7 @@ Note regarding the `altitude_filter` parameter: Set `min_m` and `max_m` to the r
 
 ```yaml
 # Yaml 1.0
-version: 1
+version: 2
 
 method: 'colour_correction'
 
@@ -258,12 +259,15 @@ colour_correction :
   # the dive processed folder with the same filename as the images
   distance_metric : 'altitude'
   metric_path : 'json_renav_*' # json nav path in case of altitude / depth map
-  altitude_filter : # only use images in the altitude range below to calculate attenuation_modelling parameters
-    max_m : 12
-    min_m : 4
+  altitude_filter :
+    parse : # only use images in the altitude range below to calculate attenuation_modelling parameters. Look at the histogram of the bins when running `correct_images parse` and use range where bins contain at least ~20 samples.
+      min_m : 2
+      max_m : 12
+    process : # only convert the images in the altitude range below
+      min_m : 2
+      max_m : 12
   smoothing : 'median' # 'mean' / 'median' / 'mean_trimmed' sampling colour intensity values from window_size to develop model
   window_size : 3 # increase if the attenuation correction parameter looks noisy.
-  curve_fitting_outlier_rejection : False
 
 cameras : 
   - camera_name : 'LC' #in line with vehicle.yaml

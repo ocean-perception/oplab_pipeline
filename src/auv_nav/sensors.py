@@ -2120,7 +2120,7 @@ class Other(SyncedOrientationBodyVelocity):
         self.data = None
 
     def from_json(self, json):
-        super().from_json(json)
+        self.epoch_timestamp = json["epoch_timestamp"]
         self.data = json["data"]
 
     def get_csv_header(self):

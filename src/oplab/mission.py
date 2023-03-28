@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2022, University of Southampton
+Copyright (c) 2023, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -66,13 +66,24 @@ class OriginEntry:
 
 class CameraEntry:
     def __init__(self, node=None):
+        self.records_laser = False
+        self.origin = None
+        self.type = None
+        self.path = None
+        self.timeoffset = None
         if node is not None:
             self.name = node["name"]
-            self.type = node.get("type", None)
-            if self.type is not None:
-                Console.warn("Camera type is deprecated in mission.yaml")
+            if "type" in node:
+                Console.warn(
+                    "Camera type indicated for camera " + self.name + " is deprecated "
+                    "in mission.yaml. It is now indicated in camera.yaml."
+                )
+            if "bit_depth" in node:
+                Console.warn(
+                    "Camera bit_depth indicated for camera " + self.name + " is "
+                    "deprecated in mission.yaml. It is now indicated in camera.yaml."
+                )
             self.path = node["path"]
-            self.origin = None
             if "origin" in node:
                 self.origin = node["origin"]
                 Console.info("Using camera " + self.name + " mounted at " + self.origin)
@@ -82,12 +93,14 @@ class CameraEntry:
             self.timeoffset = 0.0
             if "timeoffset" in node:
                 self.timeoffset = node["timeoffset"]
+            self.records_laser = node.get("records_laser", False)
 
     def write(self, node):
         node["name"] = self.name
         node["origin"] = self.origin
         node["type"] = self.type
         node["path"] = self.path
+        node["records_laser"] = self.records_laser
         if hasattr(self, "timeoffset"):
             node["timeoffset"] = self.timeoffset
 
@@ -164,7 +177,7 @@ class ImageEntry(TimeZoneEntry):
         super().load(node)
         self.format = node["format"]
         self._empty = False
-        if version == 1:
+        if version == 1 or version == 2:
             for camera in node["cameras"]:
                 self.cameras.append(CameraEntry(camera))
             if "origin" not in node["cameras"][0]:
@@ -179,28 +192,23 @@ class ImageEntry(TimeZoneEntry):
                 self.cameras.append(CameraEntry())
                 self.cameras[0].name = "fore"
                 self.cameras[0].origin = "camera1"
-                self.cameras[0].type = "bayer_rggb"
                 self.cameras[0].path = node["filepath"] + node["camera1"]
                 self.cameras[0].timeoffset = 0.0
                 self.cameras[1].name = "aft"
                 self.cameras[1].origin = "camera2"
-                self.cameras[1].type = "bayer_rggb"
                 self.cameras[1].path = node["filepath"] + node["camera2"]
                 self.cameras[1].timeoffset = 0.0
                 self.cameras[2].name = "laser"
                 self.cameras[2].origin = "camera3"
-                self.cameras[2].type = "grayscale"
                 self.cameras[2].path = node["filepath"] + node["camera3"]
                 self.cameras[2].timeoffset = 0.0
             elif self.format == "acfr_standard":
                 self.cameras[0].name = node["camera1"]
                 self.cameras[0].origin = "camera1"
-                self.cameras[0].type = "bayer_rggb"
                 self.cameras[0].path = node["filepath"]
                 self.cameras[0].timeoffset = 0.0
                 self.cameras[1].name = node["camera2"]
                 self.cameras[1].origin = "camera2"
-                self.cameras[1].type = "bayer_rggb"
                 self.cameras[1].path = node["filepath"]
                 self.cameras[1].timeoffset = 0.0
 
@@ -416,7 +424,9 @@ class Mission:
                         self.payloads[payload_entry] = payload
                         if payload_entry not in vehicle_data["payloads"]:
                             Console.error("Cannot find", payload_entry, "in payloads")
-                            Console.info("vehicle_data[\"payloads\"]:", vehicle_data["payloads"])
+                            Console.info(
+                                'vehicle_data["payloads"]:', vehicle_data["payloads"]
+                            )
                             Console.info("current payload:", payload_entry)
                             Console.error(
                                 "The payload mounted at "
@@ -484,7 +494,7 @@ class Mission:
                 if not self.image.empty():
                     mission_dict["image"] = OrderedDict()
                     self.image.write(mission_dict["image"])
-                if not self.payloads.empty():
+                if len(self.payloads) > 1:
                     mission_dict["payloads"] = []
                     for payload in self.payloads:
                         payload_entry = OrderedDict()

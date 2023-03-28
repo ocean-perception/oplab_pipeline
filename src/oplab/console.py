@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2020, University of Southampton
+Copyright (c) 2023, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -9,6 +9,7 @@ import datetime
 import getpass
 import logging
 import socket
+import sys
 import timeit
 from pathlib import Path
 
@@ -135,7 +136,7 @@ class Console:
         )
         if logger is not None:
             logger.warn(" ".join(map(str, args)), **kwargs)
-        quit()
+        sys.exit(1)
 
     @staticmethod
     def banner() -> None:
@@ -151,7 +152,7 @@ class Console:
             + " University of Southampton"
         )
         print(" ")
-        print(" Copyright (C) 2020 University of Southampton   ")
+        print(" Copyright (C) 2023 University of Southampton   ")
         print(" This program comes with ABSOLUTELY NO WARRANTY.")
         print(" This is free software, and you are welcome to  ")
         print(" redistribute it.                               ")

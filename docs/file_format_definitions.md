@@ -99,6 +99,27 @@ image:
   timeoffset: 0.0
 ```
 
+### Version 2 ###
+Changes since verison 1:
+The camera nodes do not have a type or bit_depth node anymore, but they have an (optional) field `records_laser`, which is set to `true` for the laser observing camera. The type of filter and the bit depth are now stored in camera.yaml.
+
+```yaml
+version: 2
+
+image:
+  format: seaxerocks_3  # acfr_standard or seaxerocks_3
+  cameras:
+    - name: Cam51707923 # fore
+      path: image/SeaXeroxData20171123_095119/Xviii/Cam51707923
+    - name: Cam51707925 # aft
+      path: image/SeaXeroxData20171123_095119/Xviii/Cam51707925
+    - name: LM165
+      path: image/SeaXeroxData20171123_095119/LM165
+      records_laser: true
+  timezone: jst
+  timeoffset: 0.0
+```
+
 ## vehicle.yaml file format definition ##
 Currently only file format version 2 is supported. For examples check the subfolders of auv_nav/default_yaml/.
 

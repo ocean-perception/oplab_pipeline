@@ -1,5 +1,5 @@
 #YAML 1.0
-version: 1
+version: 2
 
 origin:
   latitude: 26.674083
@@ -18,7 +18,6 @@ image:
   format: hybis
   cameras:
     - name: scorpio
-      type: rgb
       path: image/scorpio
   timezone: utc
   timeoffset: 0.0

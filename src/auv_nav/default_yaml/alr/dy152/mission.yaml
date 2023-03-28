@@ -1,5 +1,5 @@
 #YAML 1.0
-version: 1
+version: 2
 
 # Top Left corner of ALR3 box
 # latitude: 50.407953
@@ -72,12 +72,9 @@ image:
   format: biocam
   cameras:
     - name: cam61008269
-      type: bayer_rggb
-      # bit_depth: 18
-      path: image # FIX
+      path: image
     - name: cam61008031
-      type: grayscale
-      # bit_depth: 18
-      path: image # FIX
+      path: image
+      records_laser: true
   timezone: 0
   timeoffset: 0.0

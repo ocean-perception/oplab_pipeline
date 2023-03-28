@@ -3,7 +3,7 @@
 # Autosub 6000 cruise DY108/109
 # Distance with reference to origin/DVL of robot
 
-version: 1
+version: 2
 
 origin:
   latitude: 59.85643
@@ -69,12 +69,9 @@ image:
   format: biocam
   cameras:
     - name: cam61003146
-      type: bayer_rggb
-      bit_depth: 16
       path: image
     - name: cam61004444
-      type: grayscale
-      bit_depth: 16
       path: image
+      records_laser: true
   timezone: 0
   timeoffset: 0.0

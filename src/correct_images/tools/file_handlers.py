@@ -102,7 +102,7 @@ def load_memmap_from_numpyfilelist(filepath, numpyfilelist: list):
         memmap_handle[idx, ...] = np.load(numpyfilelist[idx])
 
     with tqdm_joblib(tqdm(desc="numpy images to memmap", total=len(numpyfilelist))):
-        joblib.Parallel(n_jobs=-2, verbose=0, prefer="threads")(
+        joblib.Parallel(n_jobs=-2, verbose=0)(
             joblib.delayed(memmap_loader)(numpyfilelist, memmap_handle, idx)
             for idx in range(len(numpyfilelist))
         )

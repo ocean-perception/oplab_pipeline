@@ -1,5 +1,5 @@
 #YAML 1.0
-version: 1
+version: 2
 
 origin:
   latitude: 22.8778145
@@ -64,12 +64,9 @@ image:
   format: biocam
   cameras:
     - name: cam61003146
-      type: bayer_rggb
-      bit_depth: 16
       path: image
     - name: cam61004444
-      type: grayscale
-      bit_depth: 16
       path: image
+      records_laser: true
   timezone: 0
   timeoffset: 0.0
