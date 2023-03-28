@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2022, University of Southampton
+Copyright (c) 2023, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -155,7 +155,7 @@ def calculate_attenuation_parameters(
     mem = psutil.virtual_memory()
     available_bytes = mem.available  # in bytes
     required_bytes = image_channels * image_height * image_width * 4 * len(images)
-    num_jobs = min(int(available_bytes / required_bytes), 12)
+    num_jobs = int(available_bytes / required_bytes)*2
 
     # Keep one alive!
     cpus = psutil.cpu_count() - 1
@@ -190,11 +190,13 @@ def calculate_attenuation_parameters(
                     # Not on diagonal -> don't output figure / generate path for file
                     figure_paths.append(None)
         with tqdm_joblib(tqdm(desc="Curve fitting", total=image_height * image_width)):
-            results = joblib.Parallel(n_jobs=num_jobs, verbose=0, prefer="threads")(
+            results = joblib.Parallel(n_jobs=num_jobs, verbose=0)(
                 [
                     joblib.delayed(curve_fitting)(
                         distances[:, i_pixel],
                         images[:, i_pixel, i_channel],
+                        i_pixel % image_width,
+                        i_pixel // image_width,
                         figure_paths[i_pixel],
                     )
                     for i_pixel in range(image_height * image_width)

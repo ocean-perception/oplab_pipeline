@@ -177,7 +177,7 @@ class FilenameToDate:
                 df["combined"] += df[name].astype(str)
                 df["combined_format"] += content
                 df.drop(name, axis=1)
-            elif content != "filename":
+            elif "iii" in content:
                 if df_index_name is None:
                     df_index_name = name
                 else:

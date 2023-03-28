@@ -335,6 +335,8 @@ def interpolate_sensor_list(
                     Console.warn(
                         "Deleted",
                         i,
+                        "out of",
+                        len(sensor_list),
                         "entries from sensor",
                         sensor_name,
                         ". Reason: data before start of mission",
@@ -348,6 +350,8 @@ def interpolate_sensor_list(
                     Console.warn(
                         "Deleted",
                         ii,
+                        "out of",
+                        len(sensor_list),
                         "entries from sensor",
                         sensor_name,
                         ". Reason: data after end of mission",

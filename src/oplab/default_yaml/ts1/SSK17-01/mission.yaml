@@ -1,5 +1,5 @@
 #YAML 1.0
-version: 1
+version: 2
 
 origin:
   latitude: 26.674083
@@ -47,10 +47,8 @@ image:
   format: acfr_standard
   cameras:
     - name: LC
-      type: bayer_rggb
       path: image/r20170817_041459_UG117_sesoko/i20170817_041459/
     - name: RC
-      type: bayer_rggb
       path: image/r20170817_041459_UG117_sesoko/i20170817_041459/
   timezone: jst
   timeoffset: 0.0

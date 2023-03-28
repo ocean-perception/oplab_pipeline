@@ -44,3 +44,13 @@
  - Store memmaps from correct_images in the processed folder
  - Added parser template at [auv_nav/parsers/parser_template.py](auv_nav/parsers/parser_template.py)
  - Added documentation at [read the docs](oplab-pipeline.readthedocs.io).
+
+## 1.1.0 (2023-03-27)
+- [mission.yaml]  Update mission.yaml definition to support records_laser field in camera nodes, but no longer have type and bit_depth fields, as this information is already contained in correct_images.yaml
+- [auv_nav]        Add support for payload node to generate poses for sensors mounted to AUV
+- [auv_nav]        Improve output to terminal
+- [correct_images] Update correct_images.yaml definition to allow for different altitude filters in parse and processed
+- [correct_images] Fix issue where memmaps were not deleted after use
+- [correct_images] Fix issue where correct_images process could not be run without force (-F) flag
+- [correct_images] Fix issue where processed folders were generated in parse mode
+- [Dockerfile]     Fix issue that caused it to be unable to determine the version of oplab_pipeline

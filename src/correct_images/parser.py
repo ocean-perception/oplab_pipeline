@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2020, University of Southampton
+Copyright (c) 2023, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -22,12 +22,14 @@ class ColourCorrection:
         what mode of distance values will be used
     metric_path : string
         path to the file containing distance values
-    altitude_max : int
-        maximum permissible height for an image for use in calculating
-        attenuation coefficients
-    altitude_min : int
-        minimum permissible height for an image for use in calculating
-        attenuation coefficients
+    parse_altitude_min : float
+        minimum altitude of images to be used for calculating attenuation coefficients
+    parse_altitude_max : float
+        maximum altitude of images to be used for calculating attenuation coefficients
+    process_altitude_min : float
+        minimum altitude of images to be converted
+    process_altitude_max : float
+        maximum altitude of images to be converted
     smoothing : string
         method of sampling intensity values
     window_size : int
@@ -59,8 +61,38 @@ class ColourCorrection:
             Console.quit("Invalid distance metric: {}".format(self.distance_metric))
 
         self.metric_path = node["metric_path"]
-        self.altitude_max = node["altitude_filter"]["max_m"]
-        self.altitude_min = node["altitude_filter"]["min_m"]
+
+        altitude_filter_format = (
+            "altitude_filter:\n"
+            "  parse:\n"
+            "    min_m: 4.2\n"
+            "    max_m: 6.3\n"
+            "  process:\n"
+            "    min_m: 2.5\n"
+            "    max_m: 10"
+        )
+        if "parse" in node["altitude_filter"] and "process" in node["altitude_filter"]:
+            self.parse_altitude_min = node["altitude_filter"]["parse"]["min_m"]
+            self.parse_altitude_max = node["altitude_filter"]["parse"]["max_m"]
+            self.process_altitude_min = node["altitude_filter"]["process"]["min_m"]
+            self.process_altitude_max = node["altitude_filter"]["process"]["max_m"]
+        elif "min_m" in node["altitude_filter"] and "max_m" in node["altitude_filter"]:
+            self.parse_altitude_min = node["altitude_filter"]["min_m"]
+            self.parse_altitude_max = node["altitude_filter"]["max_m"]
+            self.process_altitude_min = node["altitude_filter"]["min_m"]
+            self.process_altitude_max = node["altitude_filter"]["max_m"]
+            Console.warn(
+                "The altitude filter format in your correct_images.yaml is deprecated. "
+                + "Please use the following format in the future:\n"
+                + altitude_filter_format
+            )
+        else:
+            Console.quit(
+                "Invalid altitude_filter:\n"
+                + yaml.dump(node["altitude_filter"])
+                + "Please indicate the altitude filter in the following format:\n"
+                + altitude_filter_format
+            )
         self.smoothing = node["smoothing"]
         self.window_size = node["window_size"]
 

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2022, University of Southampton
+Copyright (c) 2023, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from numba import njit
 from scipy import optimize
+from oplab import Console
 
 
 @njit
@@ -62,7 +63,11 @@ def residual_exp_curve(params: np.ndarray, x: np.ndarray, y: np.ndarray):
 
 # compute attenuation correction parameters through regression
 def curve_fitting(
-    altitudes: np.ndarray, intensities: np.ndarray, figure_path: Optional[Path]
+    altitudes: np.ndarray,
+    intensities: np.ndarray,
+    x: int,
+    y: int,
+    figure_path: Optional[Path]
 ) -> np.ndarray:
     """Compute attenuation coefficients with respect to distance values
 
@@ -72,6 +77,10 @@ def curve_fitting(
         list of distance values
     intensities : list
         list of intensity values
+    x : int
+        x coordinate of the pixel
+    y : int
+        y coordinate of the pixel
     figure_path: Path | None
         Path where curve fitting figure is written; or None to not write figure to file
 
@@ -84,25 +93,35 @@ def curve_fitting(
     intensities = intensities[np.isfinite(intensities)]
 
     if altitudes.size == 0:
-        print("---------\naltitudes: ", altitudes, "\nintensities: ", intensities)
-        print("ERROR: Empty non-nan altitudes in curve fitting")
+        Console.warn(
+            "Empty non-nan altitudes in curve fitting at pixel position",
+            "x:", x, ", y:", y,
+            "\n altitudes: ", altitudes,
+            "\nintensities: ", intensities
+        )
         return np.array([1, 0, 0])
     if intensities.size == 0:
-        print("---------\naltitudes: ", altitudes, "\nintensities: ", intensities)
-        print("ERROR: Empty non-nan intensities in curve fitting")
+        Console.warn(
+            "Empty non-nan intensities in curve fitting at pixel position",
+            "x:", x, ", y:", y,
+            "\naltitudes: ", altitudes,
+            "\nintensities: ", intensities
+        )
         return np.array([1, 0, 0])
 
     altitudes_filt = []
     intensities_filt = []
-    for x, y in zip(altitudes, intensities):
-        if x > 0 and y > 0:
-            altitudes_filt.append(x)
-            intensities_filt.append(y)
+    for altitude, intensity in zip(altitudes, intensities):
+        if altitude > 0 and intensity > 0:
+            altitudes_filt.append(altitude)
+            intensities_filt.append(intensity)
 
     if not altitudes_filt or not intensities_filt:
         if not altitudes_filt:
-            print(
-                "---------\naltitudes: ",
+            Console.warn(
+                "Altitudes are negative or zero in curve fitting at pixel position",
+                "x:", x, ", y:", y,
+                "\naltitudes: ",
                 altitudes,
                 "\nintensities: ",
                 intensities,
@@ -111,10 +130,11 @@ def curve_fitting(
                 "\nintensities_filt: ",
                 intensities_filt,
             )
-            print("ERROR: Altitudes are negative or zero in curve fitting")
         if not intensities_filt:
-            print(
-                "---------\naltitudes: ",
+            Console.warn(
+                "Intensities are negative or zero in curve fitting at pixel position",
+                "x:", x, ", y:", y,
+                "\naltitudes: ",
                 altitudes,
                 "\nintensities: ",
                 intensities,
@@ -123,7 +143,6 @@ def curve_fitting(
                 "\nintensities_filt: ",
                 intensities_filt,
             )
-            print("ERROR: Intensities are negative or zero in curve fitting")
         return np.array([1, 0, 0])
 
     altitudes_filt = np.array(altitudes_filt)
@@ -191,6 +210,6 @@ def curve_fitting(
 
         return tmp_params.x
     except (ValueError, UnboundLocalError) as e:
-        print("ERROR: Value Error due to Overflow", a, b, c)
-        print("Parameters calculated are unoptimised because of error", e)
+        Console.error("Value Error due to Overflow", a, b, c)
+        Console.error("Parameters calculated are unoptimised because of error", e)
         return init_params

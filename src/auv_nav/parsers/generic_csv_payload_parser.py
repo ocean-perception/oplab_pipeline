@@ -17,7 +17,7 @@ def generic_csv_payload_parser(filepath, columns_dict, timeoffset_s=0):
     for index, row in df.iterrows():
         data = Other()
         data.data = {}
-        data.timestamp = row["epoch_timestamp"] + timeoffset_s
+        data.epoch_timestamp = row["epoch_timestamp"] + timeoffset_s
         for key in df.columns:
             if key == "epoch_timestamp":
                 continue

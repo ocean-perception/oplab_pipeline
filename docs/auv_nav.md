@@ -207,7 +207,7 @@ These files need to be in the root raw folder. Further examples can be found in 
 This file describes the mission's details and parameters of each sensor (e.g. where is the filepath of the data, its timezone format, etc).
 ```
 #YAML 1.0
-version: 1  # New vehicle.yaml format
+version: 2
 
 origin:
   latitude: 22.745000
@@ -263,15 +263,13 @@ usbl:
 image:
   format: seaxerocks_3  # acfr_standard or seaxerocks_3
   cameras:
-    - name: fore   # Make sure in vehicle.yaml there is a "fore" element
-      type: bayer_rggb
+    - name: Cam51707923 # fore
       path: image/SeaXeroxData20171123_095119/Xviii/Cam51707923
-    - name: aft    # Make sure in vehicle.yaml there is a "aft" element
-      type: bayer_rggb
+    - name: Cam51707925 # aft
       path: image/SeaXeroxData20171123_095119/Xviii/Cam51707925
-    - name: laser  # Make sure in vehicle.yaml there is a "laser" element
-      type: grayscale
+    - name: LM165
       path: image/SeaXeroxData20171123_095119/LM165
+      records_laser: true
   timezone: jst
   timeoffset: 0.0
 ```

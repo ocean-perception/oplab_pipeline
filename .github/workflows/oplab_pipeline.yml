@@ -13,13 +13,17 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3.1.0
+    - uses: actions/checkout@v3.5.0
+      with:
+        fetch-depth: 0
+    - name: Display git tag version
+      run: |
+        git describe --tags
     - uses: actions/setup-python@v4
       with:
         python-version: '3.9'
     - name: Install dependencies
       run: |
-        sudo apt-get install llvm
         python -m pip install --upgrade pip
         python -m pip install flake8 pytest pytest-cov
         if [ -f requirements.txt ]; then python -m pip install -r requirements.txt; fi
@@ -40,5 +44,6 @@ jobs:
       uses: codecov/codecov-action@v3
       with:
         flags: unittests
+        files: ./coverage.xml
         fail_ci_if_error: false
         verbose: true

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2020, University of Southampton
+Copyright (c) 2023, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -8,6 +8,7 @@ See LICENSE.md file in the project root for full license information.
 
 import json
 import multiprocessing
+import time
 from datetime import datetime
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
@@ -205,14 +206,11 @@ def parse_single(filepath, force_overwrite):
     Console.info("Loading vehicle.yaml at", vehicle_file)
     vehicle = Vehicle(vehicle_file)
 
-    # copy mission.yaml and vehicle.yaml to processed folder for process step
-    mission_processed = get_processed_folder(mission_file)
-    vehicle_processed = get_processed_folder(vehicle_file)
-
-    # Write mission with metadata (username, date and hostname)
-    mission.write(mission_processed)
-    # mission_file.copy(mission_processed)
-    vehicle.write(vehicle_processed)
+    time_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
+    mission_log = get_processed_folder(filepath) / "log" / (time_str + "_mission.yaml")
+    vehicle_log = get_processed_folder(filepath) / "log" / (time_str + "_vehicle.yaml")
+    mission_file.copy(mission_log)
+    vehicle_file.copy(vehicle_log)
 
     # check for recognised formats and create nav file
     outpath = get_processed_folder(filepath)
