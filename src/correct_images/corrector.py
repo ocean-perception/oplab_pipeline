@@ -642,9 +642,9 @@ class Corrector:
             # WARNING: what happens in a multidive setup when the current dive has no images (but the rest of the dive does)?
             Console.info(
                 len(self.altitude_list),
-                "/",
+                "of",
                 len(distance_list),
-                "Images filtered as per altitude range...",
+                "images remaining after applying altitude filter",
             )
         else:
             # Copy the images list from the camera
@@ -672,41 +672,38 @@ class Corrector:
             self.depth_map_list = []
             return
         elif self.distance_metric == "depth_map":
-            path_depth = self.path_processed / "depth_map"
+            # Load depth maps
+            path_depth = self.path_processed / "3d_reconstruction" / "depth_maps"
             if not path_depth.exists():
                 Console.quit(
-                    "Depth maps folder", path_depth, "does not exist. Aborting..."
+                    "Depth maps folder", path_depth, "does not exist."
                 )
-            else:
-                Console.info("Path to depth maps found...")
-                depth_map_list = list(path_depth.glob("*map.npy"))
-                self.depth_map_list = []
-                images_to_drop = []
-                for img_idx, image_path in enumerate(self.camera_image_list):
-                    dm_found = False
-                    for item in depth_map_list:
-                        if Path(image_path).stem in Path(item).stem:
-                            self.depth_map_list.append(Path(item))
-                            dm_found = True
-                            break
-                    if not dm_found:
-                        # Drop that image - its depth map is missing
-                        images_to_drop.append(img_idx)
-                # Drop the images that do not have a depth map
-                if len(images_to_drop) > 0:
-                    Console.info(
-                        "Dropped images without depth map:", len(images_to_drop)
-                    )
-                    for idx in sorted(images_to_drop, reverse=True):
-                        del self.camera_image_list[idx]
+            images_to_drop = []
+            for img_idx, image_path in enumerate(self.camera_image_list):
+                p = path_depth / os.path.relpath(image_path, self.path_raw)
+                p = p.with_name(p.stem + "_depthmap.npy")
+                if p.exists():
+                    self.depth_map_list.append(p)
+                else:
+                    images_to_drop.append(img_idx)
 
-                Console.info("...done generating depth_map_list")
-
-                if len(self.camera_image_list) != len(self.depth_map_list):
+            # Drop images that do not have a corresponding depth map
+            if len(images_to_drop) > 0:
+                if len(images_to_drop) == len(self.camera_image_list):
                     Console.quit(
-                        f"The number of images ({len(self.camera_image_list)})",
-                        f"is different from the number of depth maps ({len(self.depth_map_list)}).",
+                        "No depth maps found in", path_depth,
+                        "\nLast path checked:", p
                     )
+                Console.info(
+                    "Dropping", len(images_to_drop), "of", len(self.camera_image_list),
+                    "images for which no depth maps exists."
+                )
+                for idx in sorted(images_to_drop, reverse=True):
+                    del self.camera_image_list[idx]
+            assert(len(self.camera_image_list) == len(self.depth_map_list))
+
+            Console.info("Depth maps loaded")
+            return
 
     # compute correction parameters either for attenuation correction or
     # static correction of images
