@@ -2114,7 +2114,7 @@ class StereoCamera:
         return data
 
 
-class Other(SyncedOrientationBodyVelocity):
+class Payload(SyncedOrientationBodyVelocity):
     def __init__(self):
         super().__init__()
         self.data = None
@@ -2124,27 +2124,36 @@ class Other(SyncedOrientationBodyVelocity):
         self.data = json["data"]
 
     def get_csv_header(self):
-        str_to_write = super().get_csv_header()
-        # Remove the newline, we will write it later
-        str_to_write = str_to_write.replace("\n", "")
+        str_to_write = (
+            "northing [m],easting [m],depth [m],altitude [m],"
+            "latitude [deg],longitude [deg],"
+        )
         if isinstance(self.data, pd.DataFrame):
-            str_to_write += "," + ",".join(self.data.columns) + "\n"
-        if isinstance(self.data, dict):
-            str_to_write += "," + ",".join(self.data.keys()) + "\n"
+            str_to_write += ",".join(self.data.columns) + "\n"
+        elif isinstance(self.data, dict):
+            str_to_write += ",".join(self.data.keys()) + "\n"
         else:
-            str_to_write = str_to_write.replace("\n", ",data\n")
+            #str_to_write = str_to_write.replace("\n", ",data\n")
+            str_to_write += "data\n"
+
         return str_to_write
 
     def to_csv_row(self):
-        str_to_write = super().to_csv_row()
-        # Remove the newline, we will write it later
-        str_to_write = str_to_write.replace("\n", "")
+        str_to_write = (
+            str(self.northings) + ","
+            + str(self.eastings) + ","
+            + str(self.depth) + ","
+            + str(self.altitude) + ","
+            + str(self.latitude) + ","
+            + str(self.longitude)
+        )
         if isinstance(self.data, pd.DataFrame):
             str_to_write += ",".join(str(self.data.values)) + "\n"
-        if isinstance(self.data, dict):
+        elif isinstance(self.data, dict):
             for value in self.data.values():
                 str_to_write += "," + str(value)
             str_to_write += "\n"
         else:
             str_to_write += "," + str(self.data) + "\n"
+
         return str_to_write

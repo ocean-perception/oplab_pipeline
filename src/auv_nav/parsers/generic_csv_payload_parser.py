@@ -1,4 +1,4 @@
-from auv_nav.sensors import Other
+from auv_nav.sensors import Payload
 from oplab.console import Console
 from oplab.filename_to_date import FilenameToDate
 
@@ -15,7 +15,7 @@ def generic_csv_payload_parser(filepath, columns_dict, timeoffset_s=0):
     df["epoch_timestamp"] = df["corrected_timestamp"]
 
     for index, row in df.iterrows():
-        data = Other()
+        data = Payload()
         data.data = {}
         data.epoch_timestamp = row["epoch_timestamp"] + timeoffset_s
         for key in df.columns:

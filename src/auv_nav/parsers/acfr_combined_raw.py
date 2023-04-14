@@ -13,7 +13,7 @@ from auv_nav.sensors import (
     Depth,
     InertialVelocity,
     Orientation,
-    Other,
+    Payload,
     Usbl,
 )
 from oplab import Console, get_processed_folder
@@ -87,7 +87,7 @@ class AcfrCombinedRawWriter:
         elif type(measurement) is Orientation:
             data = measurement.to_acfr()
             self.rdi_orientation = measurement
-        elif type(measurement) is Other:
+        elif type(measurement) is Payload:
             pass
         elif type(measurement) is Camera:
             # Get rid of laser images

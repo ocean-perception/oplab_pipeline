@@ -47,7 +47,7 @@ from auv_nav.sensors import (
     Depth,
     InertialVelocity,
     Orientation,
-    Other,
+    Payload,
     SyncedOrientationBodyVelocity,
     Usbl,
 )
@@ -511,7 +511,7 @@ def process(
                 camera3_list.append(camera3)
 
             if "chemical" in parsed_json_data[i]["category"]:
-                chemical = Other()
+                chemical = Payload()
                 chemical.from_json(parsed_json_data[i])
                 chemical_list.append(chemical)
 
@@ -1852,7 +1852,7 @@ def process(
                     args=[
                         pfcsvpath,
                         payload_dict[key],
-                        "auv_" + key,
+                        key,
                         csv_pf_payload,
                     ],
                 )
@@ -1864,19 +1864,19 @@ def process(
                     args=[
                         ekfcsvpath,
                         payload_dict[key],
-                        "auv_" + key,
+                        key,
                         csv_ekf_payload,
                     ],
                 )
                 t.start()
                 threads.append(t)
-            else:
+            else:  # dead reckoning
                 t = threading.Thread(
                     target=write_csv,
                     args=[
                         drcsvpath,
                         payload_dict[key],
-                        "auv_" + key,
+                        key + "_dr",
                         csv_dr_payload,
                     ],
                 )

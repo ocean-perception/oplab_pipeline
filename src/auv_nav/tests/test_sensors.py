@@ -15,7 +15,7 @@ from auv_nav.sensors import (
     Depth,
     InertialVelocity,
     Orientation,
-    Other,
+    Payload,
     OutputFormat,
     SyncedOrientationBodyVelocity,
     Tide,
@@ -132,7 +132,7 @@ class TestTide(unittest.TestCase):
 
 class TestOther(unittest.TestCase):
     def setUp(self):
-        self.other = Other()
+        self.other = Payload()
 
     def test_Other(self):
         json_data = {"epoch_timestamp": 10, "data": "test"}
