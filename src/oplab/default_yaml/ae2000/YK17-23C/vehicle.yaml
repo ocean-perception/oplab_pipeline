@@ -64,10 +64,12 @@ LM165: # Laser Camera (LM165)
   pitch_deg: 0
   yaw_deg: 0
 
-chemical:
-  surge_m: 0.4
-  sway_m: 0
-  heave_m: -0.5
-  roll_deg: 0
-  pitch_deg: 0
-  yaw_deg: 0
+
+payloads:
+  payload_0:
+    surge_m: 0.4
+    sway_m: 0
+    heave_m: -0.5
+    roll_deg: 0
+    pitch_deg: 0
+    yaw_deg: 0

@@ -66,6 +66,7 @@ class OriginEntry:
 
 class CameraEntry:
     def __init__(self, node=None):
+        self.name = None
         self.records_laser = False
         self.origin = None
         self.type = None
@@ -175,11 +176,11 @@ class ImageEntry(TimeZoneEntry):
     def empty(self):
         return self._empty
 
-    def load(self, node, version=1):
+    def load(self, node, mission_yaml_version=1):
         super().load(node)
         self.format = node["format"]
         self._empty = False
-        if version == 1 or version == 2:
+        if mission_yaml_version >= 1:
             for camera in node["cameras"]:
                 self.cameras.append(CameraEntry(camera))
             if "origin" not in node["cameras"][0]:
@@ -392,11 +393,17 @@ class Mission:
                     self.image.load(data["image"], self.version)
                     for camera in self.image.cameras:
                         if camera.origin not in vehicle_data:
-                            Console.error(
-                                "The camera mounted at "
-                                + camera.origin
-                                + " does not correspond to any frame in vehicle.yaml."  # noqa
-                            )
+                            if camera.name:
+                                Console.error(
+                                    "The camera "
+                                    + camera.name
+                                    + " does not correspond to any frame in vehicle.yaml."  # noqa
+                                )
+                            else:
+                                Console.error(
+                                    "The image node in the mission.yaml file does not "
+                                    "seem to be valid."  # noqa
+                                )
                             error_and_exit()
 
                 if "payloads" in data:

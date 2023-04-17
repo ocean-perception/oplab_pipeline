@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2020, University of Southampton
+Copyright (c) 2023, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -94,7 +94,6 @@ class Vehicle:
         self.camera1 = SensorOffset()
         self.camera2 = SensorOffset()
         self.camera3 = SensorOffset()
-        self.chemical = SensorOffset()
         self.payloads = {}
 
         if filename is None:
@@ -192,7 +191,10 @@ class Vehicle:
                         )
                     self.camera3.load(self.data[camera_name])
                 if "chemical" in self.data:
-                    self.chemical.load(self.data["chemical"])
+                    Console.warn(
+                        "The node \"chemical\" is deprecated. "
+                        "Please define a payload instead."
+                    )
                 if "payloads" in self.data:
                     for payload_name in self.data["payloads"]:
                         payload = SensorOffset()

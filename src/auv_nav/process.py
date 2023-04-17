@@ -152,12 +152,7 @@ def process(
     pf_eastings_std = []
     pf_yaw_std = []
 
-    # placeholders for chemical data
-    chemical_list = []
-    chemical_ekf_list = []
-    chemical_pf_list = []
-
-    # Placeholders for other payloads
+    # Placeholders for payloads
     # We could have more than one payload, so we will store them as a dict of lists
     # where they key is the payload name
     payload_dict = {}
@@ -313,7 +308,6 @@ def process(
             csv_dr_camera_1 = d["dead_reckoning"]["camera_1"]
             csv_dr_camera_2 = d["dead_reckoning"]["camera_2"]
             csv_dr_camera_3 = d["dead_reckoning"]["camera_3"]
-            csv_dr_chemical = d["dead_reckoning"].get("chemical", True)
             csv_dr_payload = d["dead_reckoning"].get("payload", True)
 
             csv_pf_auv_centre = d["particle_filter"]["auv_centre"]
@@ -321,14 +315,12 @@ def process(
             csv_pf_camera_1 = d["particle_filter"]["camera_1"]
             csv_pf_camera_2 = d["particle_filter"]["camera_2"]
             csv_pf_camera_3 = d["particle_filter"]["camera_3"]
-            csv_pf_chemical = d["particle_filter"].get("chemical", True)
             csv_pf_payload = d["particle_filter"].get("payload", True)
 
             csv_ekf_auv_centre = d["ekf"]["auv_centre"]
             csv_ekf_camera_1 = d["ekf"]["camera_1"]
             csv_ekf_camera_2 = d["ekf"]["camera_2"]
             csv_ekf_camera_3 = d["ekf"]["camera_3"]
-            csv_ekf_chemical = d["ekf"].get("chemical", True)
             csv_ekf_payload = d["ekf"].get("payload", True)
         else:
             csv_output_activate = False
@@ -414,12 +406,6 @@ def process(
                 "BioCam format is expected to have one camera where `records_laser` "
                 "is set to `True`."
             )
-
-    chemical_offset = [
-        vehicle.chemical.surge,
-        vehicle.chemical.sway,
-        vehicle.chemical.heave,
-    ]
 
     outpath = filepath / "nav"
 
@@ -510,11 +496,6 @@ def process(
                 camera3.from_json(parsed_json_data[i], "camera3")
                 camera3_list.append(camera3)
 
-            if "chemical" in parsed_json_data[i]["category"]:
-                chemical = Payload()
-                chemical.from_json(parsed_json_data[i])
-                chemical_list.append(chemical)
-
     camera1_dr_list = copy.deepcopy(camera1_list)
     camera2_dr_list = copy.deepcopy(camera2_list)
     camera3_dr_list = copy.deepcopy(camera3_list)
@@ -541,7 +522,6 @@ def process(
         camera1_pf_list = copy.deepcopy(camera1_list)
         camera2_pf_list = copy.deepcopy(camera2_list)
         camera3_pf_list = copy.deepcopy(camera3_list)
-        chemical_pf_list = copy.deepcopy(chemical_list)
         pf_payload_dict = {}
         for key in payload_dict:
             if "_pf" not in key and "_ekf" not in key:
@@ -553,7 +533,6 @@ def process(
         camera2_ekf_list = copy.deepcopy(camera2_list)
         camera3_ekf_list = copy.deepcopy(camera3_list)
         camera3_ekf_list_at_dvl = copy.deepcopy(camera3_list)
-        chemical_ekf_list = copy.deepcopy(chemical_list)
         ekf_payload_dict = {}
         for key in payload_dict:
             if "_pf" not in key and "_ekf" not in key:
@@ -1574,36 +1553,7 @@ def process(
         # Deep-copy of the temporal list
         camera3_ekf_list_at_dvl = copy.deepcopy(_temp_ekf)
 
-    # perform interpolations of state data to chemical time stamps for both
-    # DR and PF
-    if len(chemical_list) > 1:
-        interpolate_sensor_list(
-            chemical_list,
-            "chemical",
-            chemical_offset,
-            origin_offsets,
-            latlon_reference,
-            dead_reckoning_centre_list,
-        )
-        if len(pf_fusion_centre_list) > 1:
-            interpolate_sensor_list(
-                chemical_pf_list,
-                "chemical",
-                chemical_offset,
-                origin_offsets,
-                latlon_reference,
-                pf_fusion_centre_list,
-            )
-        if len(chemical_ekf_list) > 1:
-            interpolate_sensor_list(
-                chemical_ekf_list,
-                "chemical",
-                chemical_offset,
-                origin_offsets,
-                latlon_reference,
-                ekf_list,
-            )
-
+    # Interpolate state data to payload time stamps for DR, EKF and PF
     for key in payload_dict:
         if "_pf" not in key and "_ekf" not in key:
             interpolate_sensor_list(
@@ -1800,13 +1750,6 @@ def process(
 
         t = threading.Thread(
             target=write_csv,
-            args=[drcsvpath, chemical_list, "auv_dr_chemical", csv_dr_chemical],
-        )
-        t.start()
-        threads.append(t)
-
-        t = threading.Thread(
-            target=write_csv,
             args=[
                 pfcsvpath,
                 pf_fusion_centre_list,
@@ -1826,21 +1769,7 @@ def process(
 
         t = threading.Thread(
             target=write_csv,
-            args=[pfcsvpath, chemical_pf_list, "auv_pf_chemical", csv_pf_chemical],
-        )
-        t.start()
-        threads.append(t)
-
-        t = threading.Thread(
-            target=write_csv,
             args=[ekfcsvpath, ekf_list, "auv_ekf_centre", csv_ekf_auv_centre],
-        )
-        t.start()
-        threads.append(t)
-
-        t = threading.Thread(
-            target=write_csv,
-            args=[ekfcsvpath, chemical_ekf_list, "auv_ekf_chemical", csv_ekf_chemical],
         )
         t.start()
         threads.append(t)

@@ -351,13 +351,6 @@ class TestLoadVehicleYK1723C(unittest.TestCase):
         self.assertEqual(self.v.camera3.pitch, 0)
         self.assertEqual(self.v.camera3.yaw, 0)
 
-        self.assertEqual(self.v.chemical.surge, 0.4)
-        self.assertEqual(self.v.chemical.sway, 0)
-        self.assertEqual(self.v.chemical.heave, -0.5)
-        self.assertEqual(self.v.chemical.roll, 0)
-        self.assertEqual(self.v.chemical.pitch, 0)
-        self.assertEqual(self.v.chemical.yaw, 0)
-
 
 class TestLoadVehicleDY109(unittest.TestCase):
     def setUp(self):
@@ -421,13 +414,6 @@ class TestLoadVehicleDY109(unittest.TestCase):
         self.assertEqual(self.v.camera3.roll, 0)
         self.assertEqual(self.v.camera3.pitch, 0)
         self.assertEqual(self.v.camera3.yaw, 0)
-
-        self.assertEqual(self.v.chemical.surge, 0)
-        self.assertEqual(self.v.chemical.sway, 0)
-        self.assertEqual(self.v.chemical.heave, 0)
-        self.assertEqual(self.v.chemical.roll, 0)
-        self.assertEqual(self.v.chemical.pitch, 0)
-        self.assertEqual(self.v.chemical.yaw, 0)
 
 
 class TestLoadVehicleSSK1701FileFormat0(unittest.TestCase):
@@ -496,13 +482,6 @@ class TestLoadVehicleSSK1701FileFormat0(unittest.TestCase):
         self.assertEqual(self.v.camera3.roll, 0)
         self.assertEqual(self.v.camera3.pitch, 0)
         self.assertEqual(self.v.camera3.yaw, 0)
-
-        self.assertEqual(self.v.chemical.surge, 0)
-        self.assertEqual(self.v.chemical.sway, 0)
-        self.assertEqual(self.v.chemical.heave, 0)
-        self.assertEqual(self.v.chemical.roll, 0)
-        self.assertEqual(self.v.chemical.pitch, 0)
-        self.assertEqual(self.v.chemical.yaw, 0)
 
 
 class TestWriteMissionDY109(unittest.TestCase):

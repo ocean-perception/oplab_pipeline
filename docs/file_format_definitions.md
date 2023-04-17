@@ -120,6 +120,30 @@ image:
   timeoffset: 0.0
 ```
 
+### Version 3 ###
+Changes since version 2:
+Support for an arbitrary number of payloads was added. They need to be indicated under the nonde "payloads" and need be named the same as they are in the vehicle.yaml file. The path, file format (currently "generic_csv" is the only supported format), the column where the timestamp is indicated (in the csv), timezone (hours from GMT) and timeoffset (seconds from master clock) need to be indicated.
+Example:
+```yaml
+version: 3
+
+payloads:
+  chelsea_pah_plus:
+    path: payloads/chelsea_pah_plus_format_fixed_time_corrected_20221006.csv
+    format: generic_csv
+    columns: [{'name': 'corrected_timestamp', 'content':'eeeeeeeeee.fffuuu'}]
+    timezone: 0
+    timeoffset: 0
+  franatech_mets:
+    path: payloads/franatech_mets_time_corrected_20221006.csv
+    format: generic_csv
+    columns: [{'name': 'corrected_timestamp'}]
+    timezone: 0
+    timeoffset: 0
+```
+auv_nav computes the nav solutions at the timestamps in the file at the given path, prepend it to the data in each row and write the result to disk again as csv.
+
+
 ## vehicle.yaml file format definition ##
 Currently only file format version 2 is supported. For examples check the subfolders of auv_nav/default_yaml/.
 
@@ -189,6 +213,32 @@ cam61003146: # Cameras name corresponding to camera label in mission.yaml
   pitch_deg: -90
   yaw_deg: 0
 ```
+
+### Version 3 ###
+Changes since version 2:
+Node "chemical" is no longer used. Instead a node "payloads" is used, which can have an arbitrary number of payloads in subnodes.
+Example:
+```yaml
+version: 3
+
+payloads:
+  chelsea_pah_plus:
+    surge_m: 1.820
+    sway_m: 0.245
+    heave_m: -0.385
+    roll_deg: 0
+    pitch_deg: 0
+    yaw_deg: 0
+  franatech_mets:
+    surge_m: 1.820
+    sway_m: 0.245
+    heave_m: -0.385
+    roll_deg: 0
+    pitch_deg: 0
+    yaw_deg: 0
+```
+
+The mission.yaml needs to have matching payload nodes.
 
 ## Compatibility with auv_nav ##
 Currently both file format versions of mission.yaml and all 3 versions of vehicle.yaml are supported. However, when using vehicle.yaml file formats 0 or 1, the cameras in mission.yaml have to have their `name`s fields set to "camera1", "camera2" and (if present) "camera3".
