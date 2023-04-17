@@ -313,23 +313,23 @@ def process(
             csv_dr_camera_1 = d["dead_reckoning"]["camera_1"]
             csv_dr_camera_2 = d["dead_reckoning"]["camera_2"]
             csv_dr_camera_3 = d["dead_reckoning"]["camera_3"]
-            csv_dr_chemical = d["dead_reckoning"].get("chemical", False)
-            csv_dr_payload = d["dead_reckoning"].get("payload", False)
+            csv_dr_chemical = d["dead_reckoning"].get("chemical", True)
+            csv_dr_payload = d["dead_reckoning"].get("payload", True)
 
             csv_pf_auv_centre = d["particle_filter"]["auv_centre"]
             csv_pf_auv_dvl = d["particle_filter"]["auv_dvl"]
             csv_pf_camera_1 = d["particle_filter"]["camera_1"]
             csv_pf_camera_2 = d["particle_filter"]["camera_2"]
             csv_pf_camera_3 = d["particle_filter"]["camera_3"]
-            csv_pf_chemical = d["particle_filter"].get("chemical", False)
-            csv_pf_payload = d["particle_filter"].get("payload", False)
+            csv_pf_chemical = d["particle_filter"].get("chemical", True)
+            csv_pf_payload = d["particle_filter"].get("payload", True)
 
             csv_ekf_auv_centre = d["ekf"]["auv_centre"]
             csv_ekf_camera_1 = d["ekf"]["camera_1"]
             csv_ekf_camera_2 = d["ekf"]["camera_2"]
             csv_ekf_camera_3 = d["ekf"]["camera_3"]
-            csv_ekf_chemical = d["ekf"].get("chemical", False)
-            csv_ekf_payload = d["ekf"].get("payload", False)
+            csv_ekf_chemical = d["ekf"].get("chemical", True)
+            csv_ekf_payload = d["ekf"].get("payload", True)
         else:
             csv_output_activate = False
             Console.warn(
