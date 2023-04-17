@@ -1,0 +1,87 @@
+#YAML 1.0
+version: 3
+
+origin:
+  coordinate_reference_system: wgs84
+  date: 2022/10/04
+  latitude:  58.720
+  longitude: 1.400
+
+usbl:
+  format: alr
+  filepath: nav/alr_log/
+  filename: engineering_log_corrected.csv
+  timezone: 0
+  timeoffset: 0.0
+  std_factor: 0.0001
+  std_offset: 0.0  
+
+velocity:
+  format: alr
+  filepath: nav/alr_log/
+  filename: engineering_log_corrected.csv
+  timezone: 0
+  timeoffset: 0.0
+  std_factor: 0.001
+  std_offset: 0.2
+
+orientation:
+  format: alr
+  filepath: nav/alr_log/
+  filename: engineering_log_corrected.csv
+  timezone: 0
+  timeoffset: 0.0
+  std_factor: 0.0
+  std_offset: 0.003
+
+depth:
+  format: alr
+  filepath: nav/alr_log/
+  filename: engineering_log_corrected.csv
+  timezone: 0
+  timeoffset: 0.0
+  std_factor: 0.0001
+  std_offset: 0.0
+
+tide:
+  format: NOC_polpred
+  filepath: nav/tide/
+  filename: tides.txt
+  timezone: utc
+  timeoffset: 0.0
+  std_factor: 0.0
+  std_offset: 0.0
+
+altitude:
+  format: alr
+  filepath: nav/alr_log/
+  filename: engineering_log_corrected.csv
+  timezone: 0
+  timeoffset: 0.0
+  std_factor: 0.0001
+  std_offset: 0.0  
+
+image:
+  format: biocam
+  cameras:
+    - name: cam61008269
+      path: image
+    - name: cam61008031
+      path: image
+      records_laser: true
+  timezone: 0
+  timeoffset: 0.0
+
+payloads:
+  chelsea_pah_plus:
+    path: payloads/chelsea_pah_plus_format_fixed_time_corrected.csv
+    format: generic_csv
+    columns: [{'name': 'corrected_timestamp', 'content':'eeeeeeeeee.fffuuu'}]
+    timezone: 0
+    timeoffset: 0
+  franatech_mets:
+    path: payloads/franatech_mets_time_corrected.csv
+    format: generic_csv
+    columns: [{'name': 'corrected_timestamp'}]
+    timezone: 0
+    timeoffset: 0
