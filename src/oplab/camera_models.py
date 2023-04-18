@@ -40,8 +40,8 @@ class MonoCamera:
     @property
     def rectification_maps(self):
         mapx, mapy = cv2.initUndistortRectifyMap(
-            self.intrinsics,
-            self.distortion,
+            self.K,
+            self.d,
             self.R,
             self.P,
             self.size,
