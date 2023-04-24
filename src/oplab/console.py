@@ -291,4 +291,6 @@ class Console:
         fh.setLevel(logging.DEBUG)  # or any level you want
         logger.addHandler(fh)
         if logger is not None:
-            logger.info("oplab_pipeline version: " + str(Console.get_version()))
+            logger.info("oplab_pipeline version: " + Console.get_version())
+            logger.info("User: " + Console.get_username())
+            logger.info("Hostname: " + Console.get_hostname())
