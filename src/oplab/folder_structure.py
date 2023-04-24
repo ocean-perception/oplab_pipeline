@@ -136,7 +136,7 @@ def remove_directory(folder: Path):
 def _copy(self, target):
     if not target.parent.exists():
         target.parent.mkdir(exist_ok=True, parents=True)
-    shutil.copy(str(self), str(target))  # str() only there for Python < (3, 6)
+    shutil.copyfile(str(self), str(target))  # str() only there for Python < (3, 6)
 
 
 Path.copy = _copy
