@@ -369,6 +369,12 @@ def process(
     mission_file = get_raw_folder(mission_file)
     mission = Mission(mission_file)
 
+    time_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
+    mission_log = get_processed_folder(filepath) / "log" / (time_str + "_mission.yaml")
+    vehicle_log = get_processed_folder(filepath) / "log" / (time_str + "_vehicle.yaml")
+    mission_file.copy(mission_log)
+    vehicle_file.copy(vehicle_log)
+
     camera1_offsets = [
         vehicle.camera1.surge,
         vehicle.camera1.sway,
