@@ -767,9 +767,11 @@ class Corrector:
             Console.info("Computing depth map histogram with", hist_bins.size, "bins")
 
             distance_vector = np.zeros((len(self.depth_map_list), 1))
-            for i, dm_file in enumerate(self.depth_map_list):
-                dm_np = depth_map.loader(dm_file, self.image_width, self.image_height)
-                distance_vector[i] = dm_np.mean()
+            with tqdm(desc="Computing depth map histogram", total=len(self.depth_map_list)) as pbar:
+                for i, dm_file in enumerate(self.depth_map_list):
+                    dm_np = depth_map.loader(dm_file, self.image_width, self.image_height)
+                    distance_vector[i] = dm_np.mean()
+                    pbar.update(1)
 
         elif self.altitude_list and self.distance_metric == "altitude":
             Console.info("Computing altitude histogram with", hist_bins.size, "bins")
