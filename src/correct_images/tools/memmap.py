@@ -22,8 +22,10 @@ def create_memmap_name() -> str:
         "memmap_"
         + datetime.now().strftime("%Y%m%d_%H%M%S_")
         + "correct_images_"
-        + Console.get_username() + "_"
-        + str(uuid.uuid4()) + ".map"
+        + Console.get_username()
+        + "_"
+        + str(uuid.uuid4())
+        + ".map"
     )
     return filename_map
 
@@ -55,7 +57,7 @@ def create_memmap(image_list, dimensions, loader=default.loader):
 
 def open_memmap(shape, dtype):
     filename_map = create_memmap_name()
-    Console.info("Creating memmap (open_mammap) at", filename_map)
+    Console.info("Creating memmap (open_memmap) at", filename_map)
     image_memmap = np.memmap(filename=filename_map, mode="w+", shape=shape, dtype=dtype)
     return filename_map, image_memmap
 
