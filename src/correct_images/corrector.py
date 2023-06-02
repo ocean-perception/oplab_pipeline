@@ -11,12 +11,6 @@ import os
 import random
 from pathlib import Path
 
-try:
-    # Try using the v2 API directly to avoid a warning from imageio >= 2.16.2
-    from imageio.v2 import imwrite
-except ImportError:
-    from imageio import imwrite
-
 import joblib
 import matplotlib
 import numpy as np
@@ -675,9 +669,7 @@ class Corrector:
             # Load depth maps
             path_depth = self.path_processed / "3d_reconstruction" / "depth_maps"
             if not path_depth.exists():
-                Console.quit(
-                    "Depth maps folder", path_depth, "does not exist."
-                )
+                Console.quit("Depth maps folder", path_depth, "does not exist.")
             images_to_drop = []
             for img_idx, image_path in enumerate(self.camera_image_list):
                 p = path_depth / os.path.relpath(image_path, self.path_raw)
@@ -691,16 +683,18 @@ class Corrector:
             if len(images_to_drop) > 0:
                 if len(images_to_drop) == len(self.camera_image_list):
                     Console.quit(
-                        "No depth maps found in", path_depth,
-                        "\nLast path checked:", p
+                        "No depth maps found in", path_depth, "\nLast path checked:", p
                     )
                 Console.info(
-                    "Dropping", len(images_to_drop), "of", len(self.camera_image_list),
-                    "images for which no depth maps exists."
+                    "Dropping",
+                    len(images_to_drop),
+                    "of",
+                    len(self.camera_image_list),
+                    "images for which no depth maps exists.",
                 )
                 for idx in sorted(images_to_drop, reverse=True):
                     del self.camera_image_list[idx]
-            assert(len(self.camera_image_list) == len(self.depth_map_list))
+            assert len(self.camera_image_list) == len(self.depth_map_list)
 
             Console.info("Depth maps loaded")
             return
@@ -767,9 +761,13 @@ class Corrector:
             Console.info("Computing depth map histogram with", hist_bins.size, "bins")
 
             distance_vector = np.zeros((len(self.depth_map_list), 1))
-            with tqdm(desc="Computing depth map histogram", total=len(self.depth_map_list)) as pbar:
+            with tqdm(
+                desc="Computing depth map histogram", total=len(self.depth_map_list)
+            ) as pbar:
                 for i, dm_file in enumerate(self.depth_map_list):
-                    dm_np = depth_map.loader(dm_file, self.image_width, self.image_height)
+                    dm_np = depth_map.loader(
+                        dm_file, self.image_width, self.image_height
+                    )
                     distance_vector[i] = dm_np.mean()
                     pbar.update(1)
 
@@ -1034,15 +1032,6 @@ class Corrector:
             if ch == 3:
                 image_raw_mean = image_raw_mean.transpose((1, 2, 0))
                 image_raw_std = image_raw_std.transpose((1, 2, 0))
-
-            imwrite(
-                Path(self.attenuation_parameters_folder) / "image_raw_mean.png",
-                image_raw_mean,
-            )
-            imwrite(
-                Path(self.attenuation_parameters_folder) / "image_raw_std.png",
-                image_raw_std,
-            )
 
             corrections.save_attenuation_plots(
                 self.attenuation_parameters_folder,
