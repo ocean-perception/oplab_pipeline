@@ -193,5 +193,6 @@ class FilenameToDate:
 
         df = df.drop("combined", axis=1)
         df = df.drop("combined_format", axis=1)
-        df[df_index_name] = df[df_index_name].astype(int)
-        self.df = df.set_index(df_index_name)
+        if df_index_name:
+            df[df_index_name] = df[df_index_name].astype(int)
+            self.df = df.set_index(df_index_name)
