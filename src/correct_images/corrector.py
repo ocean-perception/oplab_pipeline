@@ -762,7 +762,9 @@ class Corrector:
 
             distance_vector = np.zeros((len(self.depth_map_list), 1))
             with tqdm(
-                desc="Computing depth map histogram", total=len(self.depth_map_list)
+                desc="Computing depth map histogram",
+                total=len(self.depth_map_list),
+                dynamic_ncols=True,
             ) as pbar:
                 for i, dm_file in enumerate(self.depth_map_list):
                     dm_np = depth_map.loader(
@@ -815,6 +817,7 @@ class Corrector:
                 tqdm(
                     desc="Computing altitude histogram",
                     total=hist_bins.size - 1,
+                    dynamic_ncols=True,
                 )
             ):
                 joblib.Parallel(n_jobs=-2, verbose=0)(
@@ -1053,7 +1056,11 @@ class Corrector:
             (self.image_height * self.image_width) // 100,
         )
         for i_channel in range(self.image_channels):
-            with tqdm(desc="Attenuation plot", total=len(pixel_range)) as pbar:
+            with tqdm(
+                     desc="Attenuation plot",
+                     total=len(pixel_range),
+                     dynamic_ncols=True,
+                 ) as pbar:
                 for i_pixel in pixel_range:
                     i_pixel_height = i_pixel // self.image_width
                     i_pixel_width = i_pixel % self.image_width
@@ -1221,7 +1228,11 @@ class Corrector:
         )
 
         with tqdm_joblib(
-            tqdm(desc="Correcting images", total=len(self.camera_image_list))
+            tqdm(
+                desc="Correcting images",
+                total=len(self.camera_image_list),
+                dynamic_ncols=True
+            )
         ):
             self.processed_image_list = joblib.Parallel(n_jobs=-2, verbose=0)(
                 joblib.delayed(self.process_image)(idx)
