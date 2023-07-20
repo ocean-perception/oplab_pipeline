@@ -12,6 +12,7 @@ import numpy as np
 import plotly.graph_objects as go
 from plyfile import PlyData
 
+import matplotlib.pyplot as plt
 
 def read_ply(filename):
     filename = Path(filename)
@@ -189,15 +190,15 @@ if __name__ == "__main__":
     coeffs = np.array([float(x) for x in coeffs])
     plot_pointcloud_and_planes([cloud], [coeffs])
 
-def plot_pointcloud_and_Lines(pointclouds, planes, plot_path=None):
-    """Plots list of pointclouds and planes with plotly
+def plot_pointcloud_and_Lines(pointclouds, lines, plot_path=None):
+    """Plots list of pointclouds and lines with plotly
 
     Parameters
     ----------
     pointclouds : list of ndarray
         List of (n x 3) ndarrays with coordintes of points to be plotted
-    planes : list of ndarray
-        List of ndarrays (vectors of length 4) containing plane parameters
+    lines : list of ndarray
+        List of ndarrays (vectors of length 6) containing Line parameters (direction vector, line point coordinate)
     plot_path: String or None, optional
         Filename for storing plot as html. If None, plot is displayed but not
         saved. Default: None.
@@ -228,28 +229,17 @@ def plot_pointcloud_and_Lines(pointclouds, planes, plot_path=None):
             )
         )
     cmin = 0
-    cmax = len(planes) - 1
+    cmax = len(lines) - 1
     colorscale = "rainbow"
-    for i, plane in enumerate(planes):
-        # x, y, z = plane_to_rectuangular_grid(plane, -6, 6, 4, 14)
-        x, y, z = plane_to_isosceles_trapezoid_grid(plane, 2, 8, 4, 14)
-        surfacecolor = i * np.ones(shape=z.shape)
-        fig.add_trace(
-            go.Surface(
-                x=x,
-                y=y,
-                z=z,
-                name="plane" + str(i),
-                surfacecolor=surfacecolor,
-                cmin=cmin,
-                cmax=cmax,
-                colorscale=colorscale,
-                showscale=False,
-                showlegend=True,
-            )
-        )
+    for i, line in enumerate(lines):
+        #need to change to create a line
+        scalar = 5
+        X1, Y1, Z1 = line[0:3]
+        X2, Y2, Z2 = scalar*line[3] , scalar*line[4], scalar*line[5]  
+        fig.quiver(X1, Y1, Z1, 2, Y2, Z2, arrow_length_ratio=0.0)
+        
     now = datetime.now()
-    fig.update_layout(title="Pointcloud and plane(s) generated on " + str(now))
+    fig.update_layout(title="Pointcloud and Line(s) generated on " + str(now))
     if plot_path is None:
         fig.show()
     else:
@@ -260,11 +250,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("ply_file", help="Path to a PLY file containing a point cloud")
     parser.add_argument(
-        "-p",
-        "--plane",
-        dest="plane",
+        "-l",
+        "--line",
+        dest="line",
         type=str,
-        help="Plane coefficients separated by spaces",
+        help="Line coefficients separated by spaces",
     )
 
     args = parser.parse_args()
@@ -272,4 +262,4 @@ if __name__ == "__main__":
     cloud = read_ply(args.ply_file)
     coeffs = args.plane.split(" ")
     coeffs = np.array([float(x) for x in coeffs])
-    plot_pointcloud_and_planes([cloud], [coeffs])
+    plot_pointcloud_and_lines([cloud], [coeffs])
