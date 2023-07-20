@@ -172,6 +172,8 @@ def findLaserInImage(
     else:
         columns = [i[1] for i in prior]
 
+    columns = round(width/2)    #makes the function return a single coordinate, from the centre column
+    
     for u in columns:
         gmax = 0
         vw = start_row
