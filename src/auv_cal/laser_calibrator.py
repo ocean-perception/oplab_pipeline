@@ -23,6 +23,8 @@ from auv_cal.plot_points_and_planes import plot_pointcloud_and_planes
 from auv_nav.parsers.parse_biocam_images import biocam_timestamp_from_filename
 from oplab import Console, StereoCamera, get_processed_folder
 
+from auv_cal.plane_fitting import Line
+from auv_cal.plot_points_and_planes import plot_pointcloud_and_lines
 
 def build_plane(pitch, yaw, point):
     """Compute plane parametrisation given a point and 2 angles
