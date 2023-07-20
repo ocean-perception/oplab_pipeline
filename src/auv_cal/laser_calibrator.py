@@ -766,7 +766,7 @@ class LaserCalibrator:
         return cloud, count, count_inversed
 
     def fit_and_save_line(self, cloud, processed_folder):
-        """Fit mean plane and uncertainty bounding planes to point cloud
+        """Fit mean Line and uncertainty bounding Line to point cloud
 
         Parameters
         ----------
@@ -786,8 +786,8 @@ class LaserCalibrator:
 
         # Fit mean plane
         Console.info("Fitting a line to", total_no_points, "points...")
-        l = Plane([1, 0, 0, 1.5])
-        mean_plane, self.inliers_cloud_list = p.fit(cloud, self.mdt)
+        l = Line([1, 0, 0, 1.5, 0.0, 0.0])
+        mean_line, self.inliers_cloud_list = l.fit(cloud, self.mdt)
         # p.plot(cloud=cloud)
 
         filename = time.strftime("pointclouds_and_best_model_%Y%m%d_%H%M%S.html")
@@ -796,7 +796,7 @@ class LaserCalibrator:
             [np.array(mean_plane)],
             str(processed_folder / filename),
         )
-
+        
         scale = 1.0 / mean_plane[0]
         mean_plane = np.array(mean_plane) * scale
         mean_plane = mean_plane.tolist()
