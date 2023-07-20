@@ -1375,8 +1375,8 @@ class LaserCalibrator:
         point_cloud_rs = point_cloud_rs.reshape(-1, 3)
         point_cloud_filt = np.array(point_cloud_filt)
         point_cloud_filt = point_cloud_filt.reshape(-1, 3)
-        # self.yaml_msg = self.fit_and_save(point_cloud_rs)
-        self.yaml_msg = self.fit_and_save(point_cloud_filt, processed_folder)
+        # self.yaml_msg = self.fit_and_save_line(point_cloud_rs)
+        self.yaml_msg = self.fit_and_save_line(point_cloud_filt, processed_folder)
 
         if self.two_lasers:
             Console.info("Fitting a plane to second line...")
@@ -1397,8 +1397,8 @@ class LaserCalibrator:
             point_cloud_b_rs = point_cloud_b_rs.reshape(-1, 3)
             point_cloud_b_filt = np.array(point_cloud_b_filt)
             point_cloud_b_filt = point_cloud_b_filt.reshape(-1, 3)
-            # self.yaml_msg_b = self.fit_and_save(point_cloud_b_rs)
-            self.yaml_msg_b = self.fit_and_save(point_cloud_b_filt, processed_folder)
+            # self.yaml_msg_b = self.fit_and_save_line(point_cloud_b_rs)
+            self.yaml_msg_b = self.fit_and_save_line(point_cloud_b_filt, processed_folder)
 
     def yaml(self):
         return self.yaml_msg
