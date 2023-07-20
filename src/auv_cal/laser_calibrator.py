@@ -127,7 +127,6 @@ def get_angles(normal):
 
     return plane_angle, pitch_angle, yaw_angle
 
-
 def findLaserInImage(
     img, min_green_ratio, k, num_columns, start_row=0, end_row=-1, prior=None
 ):
@@ -158,7 +157,6 @@ def findLaserInImage(
 
     height, width = img.shape
     peaks = []
-    intensity = []
     width_array = np.array(range(80, width - 80))
 
     if end_row == -1:
@@ -200,13 +198,7 @@ def findLaserInImage(
         ):  # If `true`, there is a point in the current column, which
             # presumably belongs to the laser line
             peaks.append([vgmax, u])
-            intensity.append(gmax)
-
-        wam_x = sum(peaks[0]*intensity)/sum(intensity)
-        wam_y = sum(peaks[1]*intensity)/sum(intensity)
-        wam_coord = [wam_x,wam_y]
-        
-    return wam_coord
+    return np.array(peaks)
 
 
 def triangulate_lst(x1, x2, P1, P2):
