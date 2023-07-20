@@ -212,7 +212,7 @@ class Plane:
 
 
 class Line:
-    coeffs = np.array([0.0, 0.0, 0.0, 0.0], dtype=np.float64)
+    coeffs = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0], dtype=np.float64)
     direction = np.array([0.0, 0.0, 0.0], dtype=np.float64)
     point = np.array([0.0, 0.0, 0.0], dtype=np.float64)
 
@@ -223,24 +223,15 @@ class Line:
     def from_coeffs(self, coeffs):
         self.coeffs = np.array(coeffs, dtype=np.float64)    
         self.direction = self.coeffs[0:3]         #coefficients of the line's direction vector
-        norm_normal = norm(self.direction)
-        self.direction /= norm_normal
-        self.coeffs /= norm_normal
-        
-        self.point = np.array([0.0, 1.0, 10.0], dtype=np.float64)
-        self.point[0] = -(
-            (
-                self.point[1] * self.coeffs[1]
-                + self.point[2] * self.coeffs[2]
-                + self.coeffs[3]
-            )
-            / self.coeffs[0]
-        )
+        self.point= self.coeff[3:6]      #sets an initial point for the line to start at
+        #self.point changed to the 'starting' point of the line
 
     def distance(self, point):
         """Compute distance from point to line"""
-        d = np.abs(np.dot(self.normal, point) + self.coeffs[3])
-        return d
+        selfpoint2point = point - self.point
+        d_numerator = np.abs(np.cross(selfpoint2point,self.direction))
+        d_denominator = np.abs(self.direction
+        return d_numerator/d_denominator
 
     def residuals(self, coeffs, points):
         residuals = np.zeros(len(points))
