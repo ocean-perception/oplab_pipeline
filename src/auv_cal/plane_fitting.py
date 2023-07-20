@@ -241,7 +241,7 @@ class Line:
         return residuals
 
     def fit(self, points, min_distance_inliers, verbose=True, output_inliers=True):
-        """Fit plane to points
+        """Fit line to points
 
         Parameters
         ----------
