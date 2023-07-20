@@ -970,6 +970,208 @@ class LaserCalibrator:
 
         return yaml_msg
 
+def fit_and_save_line(self, cloud, processed_folder):
+        """Fit mean plane and uncertainty bounding planes to point cloud
+
+        Parameters
+        ----------
+        cloud : ndarray of shape (nx3)
+            Point cloud
+        processed_folder : Path
+            Path of the processed folder where outputs are written
+
+        Returns
+        -------
+        String
+            Plane parameters of the mean plane and a set of uncertainty
+            bounding planes of the point cloud in yaml-file format.
+        """
+
+        total_no_points = len(cloud)
+
+        # Fit mean plane
+        Console.info("Fitting a line to", total_no_points, "points...")
+        l = Plane([1, 0, 0, 1.5])
+        mean_plane, self.inliers_cloud_list = p.fit(cloud, self.mdt)
+        # p.plot(cloud=cloud)
+
+        filename = time.strftime("pointclouds_and_best_model_%Y%m%d_%H%M%S.html")
+        plot_pointcloud_and_planes(
+            [np.array(cloud), np.array(self.inliers_cloud_list)],
+            [np.array(mean_plane)],
+            str(processed_folder / filename),
+        )
+
+        scale = 1.0 / mean_plane[0]
+        mean_plane = np.array(mean_plane) * scale
+        mean_plane = mean_plane.tolist()
+
+        Console.info("Least squares found", len(self.inliers_cloud_list), "inliers")
+
+        if len(self.inliers_cloud_list) < 0.5 * len(cloud) * self.gip:
+            Console.warn("The number of inliers found are off from what you expected.")
+            Console.warn(" * Expected inliers:", len(cloud) * self.gip)
+            Console.warn(" * Found inliers:", len(self.inliers_cloud_list))
+            Console.warn(
+                "Check the output cloud to see if the found plane makes sense."
+            )
+            Console.warn("Try to increase your distance threshold.")
+
+        inliers_cloud = np.array(self.inliers_cloud_list)
+        mean_x = np.mean(inliers_cloud[:, 0])
+        mean_y = np.mean(inliers_cloud[:, 1])
+        mean_z = np.mean(inliers_cloud[:, 2])
+        mean_xyz = np.array([mean_x, mean_y, mean_z])
+
+        # Determine minimum distance between points as function of inlier
+        # point cloud size
+        std_y = np.std(inliers_cloud[:, 1])
+        std_z = np.std(inliers_cloud[:, 2])
+        # print("Min y: " + str(np.min(inliers_cloud[:, 1])))
+        # print("Max y: " + str(np.max(inliers_cloud[:, 1])))
+        # print("Std y: " + str(std_y))
+        # print("Min z: " + str(np.min(inliers_cloud[:, 2])))
+        # print("Max z: " + str(np.max(inliers_cloud[:, 2])))
+        # print("Std z: " + str(std_z))
+        min_dist = 2 * math.sqrt(std_y**2 + std_z**2)
+        Console.info("Minimum distance for poisson disc sampling: {}".format(min_dist))
+        min_sin_angle = 0.866  # = sin(60°)
+
+        # Append 1 to the points, so they can be multiplied (dot product) with
+        # plane paramters to find out if they are in front, behind or on a
+        # plane.
+        self.inliers_1 = np.concatenate(
+            [inliers_cloud, np.ones((inliers_cloud.shape[0], 1))], axis=1
+        )
+
+        Console.info("Generating", self.num_uncert_planes, "uncertainty planes...")
+        generate_planes_start = time.time()
+        tries = 0
+        failed_distance = 0
+        failed_angle = 0
+        while len(self.uncertainty_planes) < self.num_uncert_planes:
+            tries += 1
+            point_cloud_local = random.sample(self.inliers_cloud_list, 3)
+
+            # Check if the points are sufficiently far apart and not aligned
+            p0p1 = point_cloud_local[1][1:3] - point_cloud_local[0][1:3]
+            p0p2 = point_cloud_local[2][1:3] - point_cloud_local[0][1:3]
+            p1p2 = point_cloud_local[2][1:3] - point_cloud_local[1][1:3]
+            p0p1_norm = np.linalg.norm(p0p1)
+            p0p2_norm = np.linalg.norm(p0p2)
+            p1p2_norm = np.linalg.norm(p1p2)
+
+            # Poisson disc sampling: reject points that are too close together
+            if p0p1_norm < min_dist or p0p2_norm < min_dist or p1p2_norm < min_dist:
+                failed_distance += 1
+                if failed_distance % 100000 == 0:
+                    Console.info_verbose(
+                        "Combinations rejected due to distance criterion",
+                        "(Poisson disk sampling):",
+                        failed_distance,
+                        "times,",
+                        "due to angle criterion:",
+                        failed_angle,
+                        "times",
+                    )
+                continue
+
+            # Reject points that are too closely aligned
+            if abs(np.cross(p0p1, p0p2)) / (p0p1_norm * p0p2_norm) < min_sin_angle:
+                failed_angle += 1
+                if failed_angle % 100000 == 0:
+                    Console.info_verbose(
+                        "Combinations rejected due to distance criterion",
+                        "(Poisson disk sampling):",
+                        failed_distance,
+                        "times,",
+                        "due to angle criterion:",
+                        failed_angle,
+                        "times",
+                    )
+                continue
+
+            # Compute plane through the 3 points and append to list
+            self.triples.append(np.array(point_cloud_local))
+            self.uncertainty_planes.append(plane_through_3_points(point_cloud_local))
+            Console.info_verbose(
+                "Number of planes: ",
+                len(self.uncertainty_planes),
+                ", " "Number of tries so far: ",
+                tries,
+                ".",
+                "Combinations rejected due to distance criterion",
+                "(Poisson disk sampling):",
+                failed_distance,
+                "times,",
+                "due to angle criterion:",
+                failed_angle,
+                "times",
+            )
+
+        elapsed = time.time() - generate_planes_start
+        elapsed_formatted = timedelta(seconds=elapsed)
+        Console.info(
+            f"... finished generating {len(self.uncertainty_planes)} uncertainty planes in {elapsed_formatted}"
+        )
+
+        filename = time.strftime(
+            "pointclouds_and_uncertainty_planes_all_" "%Y%m%d_%H%M%S.html"
+        )
+        plot_pointcloud_and_planes(
+            self.triples + [np.array(cloud), inliers_cloud],
+            self.uncertainty_planes,
+            str(processed_folder / filename),
+        )
+        # uncomment to save for debugging
+        # np.save('inliers_cloud.npy', inliers_cloud)
+        # for i, plane in enumerate(self.uncertainty_planes):
+        #     np.save('plane' + str(i) + '.npy', plane)
+
+        filename = time.strftime(
+            "pointclouds_and_uncertainty_planes_%Y%m%d_" "%H%M%S.html"
+        )
+        plot_pointcloud_and_planes(
+            self.triples + [np.array(cloud), inliers_cloud],
+            self.uncertainty_planes,
+            str(processed_folder / filename),
+        )
+
+        yaml_msg = (
+            "mean_xyz_m: "
+            + str(mean_xyz.tolist())
+            + "\n"
+            + "mean_plane: "
+            + str(mean_plane)
+            + "\n"
+        )
+
+        if len(self.uncertainty_planes) > 0:
+            uncertainty_planes_str = "uncertainty_planes:\n"
+            for i, up in enumerate(self.uncertainty_planes):
+                uncertainty_planes_str += "  - " + str(up.tolist()) + "\n"
+            yaml_msg += uncertainty_planes_str
+
+        yaml_msg += (
+            'date: "'
+            + Console.get_date()
+            + '" \n'
+            + 'user: "'
+            + Console.get_username()
+            + '" \n'
+            + 'host: "'
+            + Console.get_hostname()
+            + '" \n'
+            + 'version: "'
+            + Console.get_version()
+            + '" \n'
+        )
+
+        return yaml_msg
+
+
+
+    
     def cal(self, limages, rimages, processed_folder):
         """Main function that is called by the code using the LaserCalibrator
             class to trigger the computation of laser plane parameters
