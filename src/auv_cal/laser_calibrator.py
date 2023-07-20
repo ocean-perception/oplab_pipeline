@@ -968,9 +968,10 @@ class LaserCalibrator:
             + '" \n'
         )
 
-        return yaml_msg
 
-def fit_and_save_line(self, cloud, processed_folder):
+        
+        return yaml_msg
+    def fit_and_save_line(self, cloud, processed_folder):
         """Fit mean plane and uncertainty bounding planes to point cloud
 
         Parameters
@@ -1168,6 +1169,7 @@ def fit_and_save_line(self, cloud, processed_folder):
         )
 
         return yaml_msg
+
 
 
 
