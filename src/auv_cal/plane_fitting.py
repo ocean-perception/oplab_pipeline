@@ -230,7 +230,7 @@ class Line:
         """Compute distance from point to line"""
         selfpoint2point = point - self.point
         d_numerator = np.abs(np.cross(selfpoint2point,self.direction))
-        d_denominator = np.abs(self.direction
+        d_denominator = np.abs(self.direction)
         return d_numerator/d_denominator
 
     def residuals(self, coeffs, points):
@@ -325,8 +325,8 @@ class Line:
         ray_vec /= norm(ray_vec)
         if np.dot(self.normal, ray_vec) == 0:
             return None
-        num = np.dot(self.normal, self.point) - np.dot(self.normal, ray_point)
-        den = np.dot(self.normal, ray_vec)
+        num = np.dot(self.direction, self.point) - np.dot(self.direction, ray_point)
+        den = np.dot(self.direction, ray_vec)
         t = num / den
         return ray_point + ray_vec * t
 
