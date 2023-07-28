@@ -223,7 +223,7 @@ class Line:
     def from_coeffs(self, coeffs):
         self.coeffs = np.array(coeffs, dtype=np.float64)    
         self.direction = self.coeffs[0:3]         #coefficients of the line's direction vector
-        self.point= self.coeff[3:6]      #sets an initial point for the line to start at
+        self.point= self.coeffs[3:6]      #sets an initial point for the line to start at
         #self.point changed to the 'starting' point of the line
 
     def distance(self, point):
@@ -323,7 +323,7 @@ class Line:
 
     def ray_intersection(self, ray_point, ray_vec):
         ray_vec /= norm(ray_vec)
-        if np.dot(self.normal, ray_vec) == 0:
+        if np.dot(self.direction, ray_vec) == 0:
             return None
         num = np.dot(self.direction, self.point) - np.dot(self.direction, ray_point)
         den = np.dot(self.direction, ray_vec)
