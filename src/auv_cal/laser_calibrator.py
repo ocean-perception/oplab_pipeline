@@ -19,7 +19,7 @@ import yaml
 
 from auv_cal.camera_calibrator import resize_with_padding
 from auv_cal.plane_fitting import Plane
-from auv_cal.plot_points_and_planes import plot_pointcloud_and_planes
+#from auv_cal.plot_points_and_planes import plot_pointcloud_and_planes
 from auv_nav.parsers.parse_biocam_images import biocam_timestamp_from_filename
 from oplab import Console, StereoCamera, get_processed_folder
 
@@ -174,8 +174,9 @@ def findLaserInImage(
     else:
         columns = [i[1] for i in prior]
 
-    columns = round(width/2)    #makes the function return a single coordinate, from the centre column
-    
+    column = round(width/2)    #makes the function return a single coordinate, from the centre column
+    columns = [column]    
+
     for u in columns:
         gmax = 0
         vw = start_row
@@ -781,27 +782,27 @@ class LaserCalibrator:
         -------
         String
             Plane parameters of the mean plane and a set of uncertainty
-            bounding planes of the point cloud in yaml-file format.
+            bounding lines of the point cloud in yaml-file format.
         """
 
         total_no_points = len(cloud)
 
-        # Fit mean plane
+        # Fit mean line
         Console.info("Fitting a line to", total_no_points, "points...")
         l = Line([1, 0, 0, 1.5, 0.0, 0.0])
         mean_line, self.inliers_cloud_list = l.fit(cloud, self.mdt)
         # p.plot(cloud=cloud)
 
         filename = time.strftime("pointclouds_and_best_model_%Y%m%d_%H%M%S.html")
-        plot_pointcloud_and_planes(
+        plot_pointcloud_and_lines(
             [np.array(cloud), np.array(self.inliers_cloud_list)],
-            [np.array(mean_plane)],
+            [np.array(mean_line)],
             str(processed_folder / filename),
         )
         
-        scale = 1.0 / mean_plane[0]
-        mean_plane = np.array(mean_plane) * scale
-        mean_plane = mean_plane.tolist()
+        scale = 1.0 / mean_line[0]
+        mean_line = np.array(mean_line) * scale
+        mean_line = mean_line.tolist()
 
         Console.info("Least squares found", len(self.inliers_cloud_list), "inliers")
 
@@ -810,7 +811,7 @@ class LaserCalibrator:
             Console.warn(" * Expected inliers:", len(cloud) * self.gip)
             Console.warn(" * Found inliers:", len(self.inliers_cloud_list))
             Console.warn(
-                "Check the output cloud to see if the found plane makes sense."
+                "Check the output cloud to see if the found line makes sense."
             )
             Console.warn("Try to increase your distance threshold.")
 
@@ -835,18 +836,18 @@ class LaserCalibrator:
         min_sin_angle = 0.866  # = sin(60°)
 
         # Append 1 to the points, so they can be multiplied (dot product) with
-        # plane paramters to find out if they are in front, behind or on a
-        # plane.
+        # line paramters to find out if they are in front, behind or on a
+        # line.
         self.inliers_1 = np.concatenate(
             [inliers_cloud, np.ones((inliers_cloud.shape[0], 1))], axis=1
         )
 
-        Console.info("Generating", self.num_uncert_planes, "uncertainty planes...")
-        generate_planes_start = time.time()
+        Console.info("Generating", self.num_uncert_lines, "uncertainty lines...")
+        generate_lines_start = time.time()
         tries = 0
         failed_distance = 0
         failed_angle = 0
-        while len(self.uncertainty_planes) < self.num_uncert_planes:
+        while len(self.uncertainty_lines) < self.num_uncert_lines:
             tries += 1
             point_cloud_local = random.sample(self.inliers_cloud_list, 3)
 
@@ -888,12 +889,12 @@ class LaserCalibrator:
                     )
                 continue
 
-            # Compute plane through the 3 points and append to list
+            # Compute line through the 2 points and append to list
             self.triples.append(np.array(point_cloud_local))
-            self.uncertainty_planes.append(plane_through_3_points(point_cloud_local))
+            self.uncertainty_lines.append(line_through_3_points(point_cloud_local))
             Console.info_verbose(
-                "Number of planes: ",
-                len(self.uncertainty_planes),
+                "Number of lines: ",
+                len(self.uncertainty_lines),
                 ", " "Number of tries so far: ",
                 tries,
                 ".",
@@ -906,31 +907,31 @@ class LaserCalibrator:
                 "times",
             )
 
-        elapsed = time.time() - generate_planes_start
+        elapsed = time.time() - generate_lines_start
         elapsed_formatted = timedelta(seconds=elapsed)
         Console.info(
-            f"... finished generating {len(self.uncertainty_planes)} uncertainty planes in {elapsed_formatted}"
+            f"... finished generating {len(self.uncertainty_lines)} uncertainty lines in {elapsed_formatted}"
         )
 
         filename = time.strftime(
-            "pointclouds_and_uncertainty_planes_all_" "%Y%m%d_%H%M%S.html"
+            "pointclouds_and_uncertainty_lines_all_" "%Y%m%d_%H%M%S.html"
         )
-        plot_pointcloud_and_planes(
+        plot_pointcloud_and_lines(
             self.triples + [np.array(cloud), inliers_cloud],
-            self.uncertainty_planes,
+            self.uncertainty_lines,
             str(processed_folder / filename),
         )
         # uncomment to save for debugging
         # np.save('inliers_cloud.npy', inliers_cloud)
-        # for i, plane in enumerate(self.uncertainty_planes):
-        #     np.save('plane' + str(i) + '.npy', plane)
+        # for i, line in enumerate(self.uncertainty_lines):
+        #     np.save('line' + str(i) + '.npy', line)
 
         filename = time.strftime(
-            "pointclouds_and_uncertainty_planes_%Y%m%d_" "%H%M%S.html"
+            "pointclouds_and_uncertainty_lines_%Y%m%d_" "%H%M%S.html"
         )
-        plot_pointcloud_and_planes(
+        plot_pointcloud_and_lines(
             self.triples + [np.array(cloud), inliers_cloud],
-            self.uncertainty_planes,
+            self.uncertainty_lines,
             str(processed_folder / filename),
         )
 
@@ -938,16 +939,16 @@ class LaserCalibrator:
             "mean_xyz_m: "
             + str(mean_xyz.tolist())
             + "\n"
-            + "mean_plane: "
-            + str(mean_plane)
+            + "mean_line: "
+            + str(mean_line)
             + "\n"
         )
 
-        if len(self.uncertainty_planes) > 0:
-            uncertainty_planes_str = "uncertainty_planes:\n"
-            for i, up in enumerate(self.uncertainty_planes):
-                uncertainty_planes_str += "  - " + str(up.tolist()) + "\n"
-            yaml_msg += uncertainty_planes_str
+        if len(self.uncertainty_lines) > 0:
+            uncertainty_lines_str = "uncertainty_lines:\n"
+            for i, up in enumerate(self.uncertainty_lines):
+                uncertainty_lines_str += "  - " + str(up.tolist()) + "\n"
+            yaml_msg += uncertainty_lines_str
 
         yaml_msg += (
             'date: "'
