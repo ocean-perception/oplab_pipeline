@@ -49,7 +49,7 @@ def run_ransac(
     for i in range(max_iterations):
         inliers = []
         s = random.sample(data, int(sample_size))
-        m = fit_plane(s)
+        m = estimate(s)
         ic = 0
         for j in range(len(data)):
             if is_inlier(m, data[j]):
@@ -66,7 +66,7 @@ def run_ransac(
             if ic > goal_inliers and stop_at_goal:
                 break
     # estimate final model using all inliers
-    best_model = fit_plane(inliers)
+    best_model = estimate(inliers)
     return best_model, inliers, i
 
 
