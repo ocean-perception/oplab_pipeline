@@ -46,12 +46,18 @@ def fit_line(xyzs, debug=False):
     dir_z, pz = np.polyfit(t, z_list, 1)
 
     m = np.array([dir_x, dir_y, dir_z, px, py, pz], dtype = np.float64)  
-    
     if debug==True:
         print(m)
-        
     return m  #return line vector equation [direction vector,point on line]
 
+def is_inlier_line(coeffs, xyz, threshold):
+    PointOnLine = coeffs[3:]
+    direction = coeffs[:3]
+    selfpoint2point = xyz - PointOnLine
+    d_numerator = np.abs(np.cross(selfpoint2point,direction))
+    d_denominator = np.abs(direction)
+    d = d_numerator/d_denominator
+    return d < threshold
 
 def run_ransac(
     data,
