@@ -131,7 +131,7 @@ def plane_fitting_ransac(
         from mpl_toolkits.mplot3d import Axes3D
 
         fig = plt.figure()
-        ax = Axes3D(fig)
+        ax = Axes3D(fig)                                             # <------- this line of code is bad, it did not work on ipynb or spyder, possibly needs to be changed to plotly or otherwise
         # min_x, max_x, min_y, max_y = bounding_box(cloud_xyz[:, 0:2])
         xx, yy, zz = plot_plane(a, b, c, d)  # , min_x, max_x, min_y, max_y)
         ax.plot_surface(xx, yy, zz, color=(0, 1, 0, 0.5))
@@ -189,7 +189,7 @@ def line_fitting_ransac(
         from mpl_toolkits.mplot3d import Axes3D
         
         fig = plt.figure()
-        ax = Axes3D(fig)
+        ax = Axes3D(fig)               # <------- this line of code is bad, it did not work on ipynb or spyder, possibly needs to be changed to plotly or otherwise
         xx, yy, zz = plot_line( a, b, c, x0, y0, z0)
         ax.plot3D(xx, yy, zz)
         ax.scatter3D(cloud_xyz.T[0], cloud_xyz.T[1], cloud_xyz.T[2], s=1)
