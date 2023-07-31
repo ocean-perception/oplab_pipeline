@@ -109,48 +109,6 @@ def plot_plane(a, b, c, d):
     yy, zz = np.mgrid[-6:7, 4:15]
     return (-d - c * zz - b * yy) / a, yy, zz
 
-
-def line_fitting_ransac(
-    cloud_xyz,
-    min_distance_threshold,
-    sample_size,
-    goal_inliers,
-    max_iterations,
-    plot=False,
-):
-    model, inliers, iterations = run_ransac(
-        cloud_xyz,
-        fit_plane,
-        lambda x, y: is_inlier_line(x, y, min_distance_threshold),
-        sample_size,
-        goal_inliers,
-        max_iterations,
-    )
-    a, b, c, d = model
-    if plot:
-        import matplotlib.pyplot as plt
-        from mpl_toolkits.mplot3d import Axes3D
-
-        fig = plt.figure()
-        ax = Axes3D(fig)
-        # min_x, max_x, min_y, max_y = bounding_box(cloud_xyz[:, 0:2])
-        xx, yy, zz = plot_plane(a, b, c, d)  # , min_x, max_x, min_y, max_y)
-        ax.plot_surface(xx, yy, zz, color=(0, 1, 0, 0.5))
-        ax.scatter3D(cloud_xyz.T[0], cloud_xyz.T[1], cloud_xyz.T[2], s=1)
-        ax.set_xlabel("$X$")
-        ax.set_ylabel("$Y$")
-        ax.set_zlabel("$Z$")
-        plt.show()
-    Console.info(
-        "RANSAC took",
-        iterations + 1,
-        " iterations. Best model:",
-        model,
-        "explains:",
-        len(inliers),
-    )
-    return (a, b, c, d), inliers
-
 def plane_fitting_ransac(
     cloud_xyz,
     min_distance_threshold,
@@ -192,6 +150,62 @@ def plane_fitting_ransac(
     )
     return (a, b, c, d), inliers
 
+def plot_line(a, b, c, x0, y0, z0):
+    #x are values on the line already, trying to find the y & z value of line
+    direction = np.array([a,b,c], dtype = np.float64)
+    point = np.array([x0,y0,z0], dtype = np.float64)
+    x_list = [i for i in range(-5,15)]
+    y_list  = []
+    z_list = []
+    for  x in x_list:
+        t = (x - point[0]) / coeffs[0]
+        y = point[1] + t*direction[1]
+        z = point[2] + t*direction[2]
+        y_list.append(y)
+        z_list.append(z)
+    return x_list, y_list, z_list
+
+
+def line_fitting_ransac(
+    cloud_xyz,
+    min_distance_threshold,
+    sample_size,
+    goal_inliers,
+    max_iterations,
+    plot=False,
+):
+    model, inliers, iterations = run_ransac(
+        cloud_xyz,
+        fit_plane,
+        lambda x, y: is_inlier_line(x, y, min_distance_threshold),
+        sample_size,
+        goal_inliers,
+        max_iterations,
+    )
+    a, b, c, x0, y0, z0 = model                                    #attributes the direction vector coeffs to a,b and c and point on the line to x0,y0 and z0
+    
+    if plot:
+        import matplotlib.pyplot as plt
+        from mpl_toolkits.mplot3d import Axes3D
+        
+        fig = plt.figure()
+        ax = Axes3D(fig)
+        xx, yy, zz = plot_line( a, b, c, x0, y0, z0)
+        ax.plot3D(xx, yy, zz)
+        ax.scatter3D(cloud_xyz.T[0], cloud_xyz.T[1], cloud_xyz.T[2], s=1)
+        ax.set_xlabel("$X$")
+        ax.set_ylabel("$Y$")
+        ax.set_zlabel("$Z$")
+        plt.show()
+    Console.info(
+        "RANSAC took",
+        iterations + 1,
+        " iterations. Best model:",
+        model,
+        "explains:",
+        len(inliers),
+    )
+    return (a, b, c, x0, y0, z0), inliers
 
 
 if __name__ == "__main__":
