@@ -31,6 +31,28 @@ def is_inlier(coeffs, xyz, threshold):
     return np.abs(coeffs.dot(augment([xyz]).T)) < threshold          #calculates distance from plane 'coeffs' to the point 'xyz', returns true or false
 
 
+def fit_line(xyzs, debug=False):  
+    x_list = []
+    y_list = []
+    z_list = []
+    for x,y,z in xyzs:
+        x_list.append(x)                      #split into seperate lists so that np.polyfit can be used
+        y_list.append(y)                      #there is likely to be a better way to do this but this was the method chosen
+        z_list.append(z)
+        
+    t = np.arange(len(z_list))  #use of 4th dimension 't' to give a common axis for x,y and z
+    dir_x, px = np.polyfit(t, x_list, 1)
+    dir_y, py = np.polyfit(t, y_list, 1)
+    dir_z, pz = np.polyfit(t, z_list, 1)
+
+    m = np.array([dir_x, dir_y, dir_z, px, py, pz], dtype = np.float64)  
+    
+    if debug==True:
+        print(m)
+        
+    return m  #return line vector equation [direction vector,point on line]
+
+
 def run_ransac(
     data,
     estimate,
