@@ -230,7 +230,7 @@ if __name__ == "__main__":
         ) / TARGET_C + np.random.normal(scale=NOISE)
 
     # RANSAC
-    m, inliers = plane_fitting_ransac(
+    m, inliers = line_fitting_ransac(
         xyzs, 0.01, 3, GOAL_INLIERS, MAX_ITERATIONS, plot=True
     )
     scale = TARGET_D / m[3]
