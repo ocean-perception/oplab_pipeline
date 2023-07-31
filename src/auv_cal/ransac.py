@@ -14,21 +14,21 @@ from oplab import Console
 
 
 def augment(xyzs):
-    axyz = np.ones((len(xyzs), 4))
-    axyz[:, :3] = xyzs
+    axyz = np.ones((len(xyzs), 4))                  #converts a 3x1 matrix to a 4x1, by adding a 1 value at the end.
+    axyz[:, :3] = xyzs                              #used for following functions as the matrices need to be same size
     return axyz
 
 
-def fit_plane(xyzs):
-    axyz = augment(xyzs[:3])
-    m = np.linalg.svd(axyz)[-1][-1, :]
-    if m[0] < 0:
+def fit_plane(xyzs):                                #accepts 3D points
+    axyz = augment(xyzs[:3])                        #converts them to a 4x1 matrix
+    m = np.linalg.svd(axyz)[-1][-1, :]              #solves points to find plane parameters
+    if m[0] < 0:                                    #ensures that the a coefficient is positive
         m = m * (-1)
-    return m
+    return m                                        #returns plane coefficients
 
 
 def is_inlier(coeffs, xyz, threshold):
-    return np.abs(coeffs.dot(augment([xyz]).T)) < threshold
+    return np.abs(coeffs.dot(augment([xyz]).T)) < threshold          #calculates distance from plane 'coeffs' to the point 'xyz', returns true or false
 
 
 def run_ransac(
