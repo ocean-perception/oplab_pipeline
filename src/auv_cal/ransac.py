@@ -48,11 +48,11 @@ def run_ransac(
     data = list(data)
     for i in range(max_iterations):
         inliers = []
-        s = random.sample(data, int(sample_size))
-        m = estimate(s)
+        s = random.sample(data, int(sample_size))      #pulls out a random set of points from the data set
+        m = estimate(s)                                #run a function to estimate a plane to fit to the points that were sampled (line directly above)
         ic = 0
         for j in range(len(data)):
-            if is_inlier(m, data[j]):
+            if is_inlier(m, data[j]):                   
                 ic += 1
                 inliers.append(data[j])
 
