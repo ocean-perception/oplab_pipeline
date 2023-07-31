@@ -50,9 +50,9 @@ def run_ransac(
         inliers = []
         s = random.sample(data, int(sample_size))      #pulls out a random set of points from the data set
         m = estimate(s)                                #run a function to estimate a plane to fit to the points that were sampled (line directly above)
-        ic = 0
-        for j in range(len(data)):
-            if is_inlier(m, data[j]):                   
+        ic = 0                                         # ic = inlier count?
+        for j in range(len(data)):                     #checks if data point is an inlier (within acceptable distance from the plane)
+            if is_inlier(m, data[j]):                  # m is plane coefficients, no threshold value???
                 ic += 1
                 inliers.append(data[j])
 
@@ -60,11 +60,11 @@ def run_ransac(
         # print('estimate:', m,)
         # print('# inliers:', ic)
 
-        if ic > best_ic:
-            best_ic = ic
-            best_model = m
-            if ic > goal_inliers and stop_at_goal:
-                break
+        if ic > best_ic:                               # checks if current iteration has a higher inlier count than previous iteration
+            best_ic = ic                               # if so, set current as the current best (to test later iterations against)
+            best_model = m                             
+            if ic > goal_inliers and stop_at_goal:     # checks if current amount of inliers is within the accepted number
+                break                                  # if so stops iterations and returns best plane estimate
     # estimate final model using all inliers
     best_model = estimate(inliers)
     return best_model, inliers, i
