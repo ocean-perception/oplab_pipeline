@@ -72,6 +72,7 @@ class CameraEntry:
         self.type = None
         self.path = None
         self.timeoffset = None
+        self.timeoffset_s = None
         if node is not None:
             self.name = node["name"]
             if "type" in node:
@@ -95,6 +96,9 @@ class CameraEntry:
             if "timeoffset" in node:
                 self.timeoffset = node["timeoffset"]
             self.records_laser = node.get("records_laser", False)
+            if "timeoffset_s" in node:
+                self.timeoffset_s = node["timeoffset_s"]
+
 
     def write(self, node):
         node["name"] = self.name
