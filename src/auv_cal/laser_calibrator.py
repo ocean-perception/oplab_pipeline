@@ -84,6 +84,30 @@ def plane_through_3_points(points):
 
     return plane_parametrization
 
+def Line_through_2_points(points):
+    """Compute Line passing through 2 points
+
+    Parameters
+    ----------
+    points : list np.ndarray
+        (list of length 2 of ndarray vectors of length 3) coordinates of points
+
+    Returns
+    -------
+    np.ndarray
+        (vector of length 6) Parametrisation of line defined by [x, y, z].T = [x0, y0, z0] + t[a, b, c]
+        result appears as [a, b, c, x0, y0, z0] --->> [direction vector, point]
+    """
+
+    assert len(points) == 2
+
+    
+    a, b, c = points[1] - points[0]
+    x0, y0, z0 = points[0]
+    line_parametrization = np.array([a, b, c, x0, y0, z0])
+
+    return line_parametrization
+
 
 def opencv_to_ned(xyz):
     new_point = np.zeros((3, 1), dtype=np.float32)
@@ -789,7 +813,7 @@ class LaserCalibrator:
 
         # Fit mean line
         Console.info("Fitting a line to", total_no_points, "points...")
-        l = Line([1, 0, 0, 1.5, 0.0, 0.0])
+        l = Line([0, 1, 0, 0, 1.5, 0 ])
         mean_line, self.inliers_cloud_list = l.fit(cloud, self.mdt)
         # p.plot(cloud=cloud)
 
@@ -849,7 +873,7 @@ class LaserCalibrator:
         failed_angle = 0
         while len(self.uncertainty_lines) < self.num_uncert_lines:
             tries += 1
-            point_cloud_local = random.sample(self.inliers_cloud_list, 3)
+            point_cloud_local = random.sample(self.inliers_cloud_list, 2)
 
             # Check if the points are sufficiently far apart and not aligned
             p0p1 = point_cloud_local[1][1:3] - point_cloud_local[0][1:3]
@@ -891,7 +915,7 @@ class LaserCalibrator:
 
             # Compute line through the 2 points and append to list
             self.triples.append(np.array(point_cloud_local))
-            self.uncertainty_lines.append(line_through_3_points(point_cloud_local))
+            self.uncertainty_lines.append(Line_through_2_points(point_cloud_local))
             Console.info_verbose(
                 "Number of lines: ",
                 len(self.uncertainty_lines),
