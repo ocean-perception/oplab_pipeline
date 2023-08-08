@@ -10,8 +10,10 @@ from pathlib import Path
 
 import numpy as np
 import plotly.graph_objects as go
+import plotly.express as px
 from plyfile import PlyData
 
+import pandas as pd
 import matplotlib.pyplot as plt
 
 def read_ply(filename):
@@ -187,8 +189,26 @@ def plot_pointcloud_and_lines(pointclouds, lines, plot_path=None):
     -------
         None
     """
+    
 
     fig = go.Figure()
+
+    # cmin = 0
+    # cmax = len(lines) - 1
+    # colorscale = "rainbow"
+
+    # print("kaboom", len(lines))
+
+    scalar = 1   #t value
+    X1, Y1, Z1 = lines[0][3:6]
+    X2, Y2, Z2 = scalar*lines[0][0] , scalar*lines[0][1], scalar*lines[0][2]  
+
+    X_list = np.array([X1, X2])
+    Y_list = np.array([Y1, Y2])
+    Z_list = np.array([Z1, Z2])
+    df_line = pd.DataFrame({"x": X_list, "y":Y_list, "z":Z_list})
+
+    fig = px.line_3d(df_line, x="x", y="y", z="z" )
 
     for i, pc in enumerate(pointclouds):
         sample_size = min(10000, pc.shape[0])
@@ -208,21 +228,15 @@ def plot_pointcloud_and_lines(pointclouds, lines, plot_path=None):
                 name="pointcloud" + str(i),
             )
         )
-    cmin = 0
-    cmax = len(lines) - 1
-    colorscale = "rainbow"
-    for i, line in enumerate(lines):
-        scalar = 5   #t value
-        X1, Y1, Z1 = line[3:6]
-        X2, Y2, Z2 = scalar*line[0] , scalar*line[1], scalar*line[2]  
-        fig.quiver(X1, Y1, Z1, X2, Y2, Z2, arrow_length_ratio=0.0)
-        
+    
     now = datetime.now()
     fig.update_layout(title="Pointcloud and Line(s) generated on " + str(now))
     if plot_path is None:
         fig.show()
     else:
         fig.write_html(plot_path, auto_open=True)
+
+    
 
 
 if __name__ == "__main__":
