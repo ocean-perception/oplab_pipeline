@@ -229,8 +229,9 @@ class Line:
     def distance(self, point):
         """Compute distance from point to line"""
         selfpoint2point = point - self.point
-        d_numerator = np.abs(np.cross(selfpoint2point,self.direction))
-        d_denominator = np.abs(self.direction)
+        d_numerator_vector = np.cross(selfpoint2point,self.direction)
+        d_numerator = ((d_numerator_vector[0])**2 + (d_numerator_vector[1])**2 + (d_numerator_vector[2])**2)**0.5
+        d_denominator = ((self.direction[0])**2 + (self.direction[1])**2 + (self.direction[2])**2)**0.5
         return d_numerator/d_denominator
 
     def residuals(self, coeffs, points):
@@ -263,24 +264,34 @@ class Line:
         """
 
         # Coeffs: apex(x, y, z), axis(x, y, z) and theta
-        coefficients = np.array([1, 0, 0, -1.5], dtype=np.float64)
-        bounds = ([-1.0, -1.0, -1.0, -np.inf], [1.0, 1.0, 1.0, np.inf])
+        coefficients = np.array([0, 0, 0, 0, 0, 0], dtype=np.float64)
+        # bounds = ([-1.0, -1.0, -1.0, -np.inf, -np.inf, -np.inf], [1.0, 1.0, 1.0, np.inf, np.inf, np.inf])
         if verbose:
             verb_level = 2
         else:
             verb_level = 0
-        ret = least_squares(
-            self.residuals,
-            coefficients,
-            bounds=bounds,
-            args=([points]),
-            ftol=None,
-            xtol=1e-9,
-            loss="soft_l1",
-            verbose=verb_level,
-            max_nfev=5000,
-        )
-        self.from_coeffs(ret.x)
+        
+        #print(points)
+        #print(points[0][0], "kapow")
+
+        x_list = []
+        y_list = []
+        z_list = []
+    
+        for i in range(len(points)):
+            x_list.append(points[i][0])
+            y_list.append(points[i][1])
+            z_list.append(points[i][2])
+    
+        t = np.arange(len(points))  # simple assumption that data was sampled in regular steps
+
+        dir_x, px = np.polyfit(t, x_list, 1)
+        dir_y, py = np.polyfit(t, y_list, 1)
+        dir_z, pz = np.polyfit(t, z_list, 1)
+    
+        m = np.array([dir_x, dir_y, dir_z, px, py, pz], dtype = np.float64)
+
+        self.from_coeffs(m)
 
         inliers = None
         if output_inliers:
@@ -290,7 +301,7 @@ class Line:
                     inliers.append(p)
 
         if verbose:
-            print("Fitted plane with:")
+            print("Fitted line with:")
             print("\t Coefficients:", self.coeffs)
             print("\t With", len(inliers), "inliers")
             pitch_offset_deg = atan2(self.coeffs[2], self.coeffs[0]) * 180 / pi
