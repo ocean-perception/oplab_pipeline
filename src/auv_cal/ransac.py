@@ -54,10 +54,12 @@ def is_inlier_line(coeffs, xyz, threshold):
     PointOnLine = coeffs[3:]
     direction = coeffs[:3]
     selfpoint2point = xyz - PointOnLine
-    d_numerator = np.abs(np.cross(selfpoint2point,direction))
-    d_denominator = np.abs(direction)
+    d_numerator_vector = np.cross(selfpoint2point,direction)
+    d_numerator = ((d_numerator_vector[0])**2 + (d_numerator_vector[1])**2 + (d_numerator_vector[2])**2)**0.5
+    d_denominator = ((direction[0])**2 + (direction[1])**2 + (direction[2])**2)**0.5
     d = d_numerator/d_denominator
     return d < threshold
+
 
 def run_ransac(
     data,
@@ -131,8 +133,7 @@ def plane_fitting_ransac(
         from mpl_toolkits.mplot3d import Axes3D
 
         fig = plt.figure()
-        ax = Axes3D(fig)                                             # <------- this line of code is bad, it did not work on ipynb or spyder, possibly needs to be changed to plotly or otherwise
-        # min_x, max_x, min_y, max_y = bounding_box(cloud_xyz[:, 0:2])
+        ax = plt.axes(projection='3d')              #replace Axes3D as it would not function on ipynb or spyder (didn't test it in code)
         xx, yy, zz = plot_plane(a, b, c, d)  # , min_x, max_x, min_y, max_y)
         ax.plot_surface(xx, yy, zz, color=(0, 1, 0, 0.5))
         ax.scatter3D(cloud_xyz.T[0], cloud_xyz.T[1], cloud_xyz.T[2], s=1)
@@ -154,14 +155,14 @@ def plot_line(a, b, c, x0, y0, z0):
     #x are values on the line already, trying to find the y & z value of line
     direction = np.array([a,b,c], dtype = np.float64)
     point = np.array([x0,y0,z0], dtype = np.float64)
-    x_list = [i for i in range(-5,15)]
-    y_list  = []
+    x_list = []
+    y_list  = [i for i in range(0,15)]
     z_list = []
-    for  x in x_list:
-        t = (x - point[0]) / coeffs[0]
-        y = point[1] + t*direction[1]
+    for  y in y_list:
+        t = (y - point[0]) / direction[1]
+        x = point[1] + t*direction[0]
         z = point[2] + t*direction[2]
-        y_list.append(y)
+        x_list.append(x)
         z_list.append(z)
     return x_list, y_list, z_list
 
@@ -176,7 +177,7 @@ def line_fitting_ransac(
 ):
     model, inliers, iterations = run_ransac(
         cloud_xyz,
-        fit_plane,
+        fit_line,
         lambda x, y: is_inlier_line(x, y, min_distance_threshold),
         sample_size,
         goal_inliers,
@@ -186,10 +187,10 @@ def line_fitting_ransac(
     
     if plot:
         import matplotlib.pyplot as plt
-        from mpl_toolkits.mplot3d import Axes3D
+        from mpl_toolkits.mplot3d import Axes3D  # not effective in producing a 3D plot.
         
         fig = plt.figure()
-        ax = Axes3D(fig)               # <------- this line of code is bad, it did not work on ipynb or spyder, possibly needs to be changed to plotly or otherwise
+        ax = plt.axes(projection='3d')              
         xx, yy, zz = plot_line( a, b, c, x0, y0, z0)
         ax.plot3D(xx, yy, zz)
         ax.scatter3D(cloud_xyz.T[0], cloud_xyz.T[1], cloud_xyz.T[2], s=1)
@@ -205,7 +206,7 @@ def line_fitting_ransac(
         "explains:",
         len(inliers),
     )
-    return (a, b, c, x0, y0, z0), inliers
+    return model, inliers
 
 
 if __name__ == "__main__":
