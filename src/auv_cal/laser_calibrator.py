@@ -19,12 +19,15 @@ import yaml
 
 from auv_cal.camera_calibrator import resize_with_padding
 from auv_cal.plane_fitting import Plane
-#from auv_cal.plot_points_and_planes import plot_pointcloud_and_planes
+from auv_cal.plot_points_and_planes import plot_pointcloud_and_planes
 from auv_nav.parsers.parse_biocam_images import biocam_timestamp_from_filename
 from oplab import Console, StereoCamera, get_processed_folder
 
 from auv_cal.plane_fitting import Line
 from auv_cal.plot_points_and_planes import plot_pointcloud_and_lines
+
+from auv_cal.ransac import line_fitting_ransac
+
 
 def build_plane(pitch, yaw, point):
     """Compute plane parametrisation given a point and 2 angles
@@ -198,10 +201,80 @@ def findLaserInImage(
     else:
         columns = [i[1] for i in prior]
 
-    column = round(width/2)    #makes the function return a single coordinate, from the centre column
-    columns = [column]    
+    for u in columns:             #changed to columns2 for use of centre pixels
+        gmax = 0
+        vw = start_row
+        while vw < end_row - k:
+            gt = 0
+            gt_m = 0
+            gt_mv = 0
+            v = vw
+            while v < vw + k:
+                weight = 1 - 2 * abs(vw + float(k - 1) / 2.0 - v) / k
+                intensity = img[v, u]
+                gt += weight * intensity
+                gt_m += intensity
+                gt_mv += (v - vw) * intensity
+                v += 1
+            if gt > gmax:
+                gmax = gt  # gmax:  highest integrated green value
+                vgmax = vw + (
+                    gt_mv / gt_m
+                )  # vgmax: v value in image, where gmax occurrs
+            vw += 1
+        if (
+            gmax > min_green_ratio * img_max_value
+        ):  # If `true`, there is a point in the current column, which
+            # presumably belongs to the laser line
+            peaks.append([vgmax, u])
+    return np.array(peaks)
 
-    for u in columns:
+def findLaserPointInImage(
+    img, min_green_ratio, k, num_columns, start_row=0, end_row=-1, prior=None
+):
+    """Find laser line projection in image
+
+    For each column of the image, find the coordinate (y-value) where the laser
+    line passes, provided the laser is visible in that column. The laser
+    position is calculated with sub-pixel resolution (-> y value is not an
+    integer).
+
+    Returns
+    -------
+    np.ndarray
+        (n x 2) array of y and x values of detected laser pixels
+    """
+
+    img_max_value = 0
+    if img.dtype.type is np.float32 or img.dtype.type is np.float64:
+        img_max_value = 1.0
+    elif img.dtype.type is np.uint8:
+        img_max_value = 255
+    elif img.dtype.type is np.uint16:
+        img_max_value = 65535
+    elif img.dtype.type is np.uint32:
+        img_max_value = 4294967295
+    else:
+        Console.quit("Image bit depth not supported")
+
+    height, width = img.shape
+    peaks = []
+    width_array = np.array(range(80, width - 80))
+
+    if end_row == -1:
+        end_row = height
+
+    if prior is None:
+        if num_columns > 0:
+            incr = int(len(width_array) / num_columns) - 1
+            incr = max(incr, 1)
+            columns = [width_array[i] for i in range(0, len(width_array), incr)]
+        else:
+            columns = width_array
+    else:
+        columns = [i[1] for i in prior]
+
+    for u in columns:            
         gmax = 0
         vw = start_row
         while vw < end_row - k:
@@ -514,6 +587,7 @@ def get_laser_pixels_in_image_pair(
                 r = yaml.safe_load(f)
             if r is not None:
                 a1 = r["top"]
+                #print(a1)
                 if "bottom" in r:
                     a1b = r["bottom"]
                 else:
@@ -660,7 +734,7 @@ class LaserCalibrator:
         self.max_points_per_bin = stratify.get("max_bin_elements", 300)
 
         self.max_point_cloud_size = ransac.get("max_cloud_size", 10000)
-        self.mdt = ransac.get("min_distance_threshold", 0.002)
+        self.mdt = ransac.get("min_distance_threshold", 0.05)  #changed from 0.002 
         self.ssp = ransac.get("sample_size_ratio", 0.8)
         self.gip = ransac.get("goal_inliers_ratio", 0.999)
         self.max_iterations = ransac.get("max_iterations", 5000)
@@ -775,7 +849,6 @@ class LaserCalibrator:
             if abs(pk2[i2][1] - pk1[i1][1]) < 1.0:
                 # Triangulate using Least Squares
                 p = triangulate_lst(pk1[i1], pk2[i2], self.sc.left.P, self.sc.right.P)
-
                 # Remove rectification rotation
                 if self.remap:
                     p_unrec = self.sc.left.R.T @ p
@@ -805,17 +878,21 @@ class LaserCalibrator:
         Returns
         -------
         String
-            Plane parameters of the mean plane and a set of uncertainty
+            Line parameters of the mean Line and a set of uncertainty
             bounding lines of the point cloud in yaml-file format.
         """
 
         total_no_points = len(cloud)
+        # print(cloud)
 
         # Fit mean line
         Console.info("Fitting a line to", total_no_points, "points...")
-        l = Line([0, 1, 0, 0, 1.5, 0 ])
-        mean_line, self.inliers_cloud_list = l.fit(cloud, self.mdt)
+        l = Line([0, 0, 0, 0, 0, 0])
+        mean_line, self.inliers_cloud_list = line_fitting_ransac(cloud, self.mdt,sample_size=self.ssp*total_no_points,
+                                                                  goal_inliers=total_no_points*self.gip, max_iterations=self.max_iterations,plot=False)
         # p.plot(cloud=cloud)
+
+        # print(mean_line, "mean line")
 
         filename = time.strftime("pointclouds_and_best_model_%Y%m%d_%H%M%S.html")
         plot_pointcloud_and_lines(
@@ -824,9 +901,10 @@ class LaserCalibrator:
             str(processed_folder / filename),
         )
         
-        scale = 1.0 / mean_line[0]
-        mean_line = np.array(mean_line) * scale
-        mean_line = mean_line.tolist()
+        if mean_line[2] != 1:
+            mean_line[0] /= mean_line[2]
+            mean_line[1] /= mean_line[2]
+            mean_line[2] /= mean_line[2]
 
         Console.info("Least squares found", len(self.inliers_cloud_list), "inliers")
 
