@@ -130,7 +130,7 @@ class CameraConfig:
 
         imagefilelist_parse = "none"
         imagefilelist_process = "none"
-        if "image_file_list" in node:
+        if "image_file_list" in node and node["image_file_list"] is not None:
             imagefilelist_parse = node.get("image_file_list", {}).get("parse", "none")
             imagefilelist_process = node.get("image_file_list", {}).get(
                 "process", "none"
