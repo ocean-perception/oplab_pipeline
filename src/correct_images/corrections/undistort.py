@@ -12,7 +12,7 @@ from oplab import MonoCamera
 
 
 # correct image for distortions using camera calibration parameters
-def distortion_correct(camera_params_file_path, image):
+def distortion_correct(camera_params_file_path, image, monocam=None):
     """Perform distortion correction for images
 
     Parameters
@@ -30,7 +30,8 @@ def distortion_correct(camera_params_file_path, image):
         Image
     """
 
-    monocam = MonoCamera(camera_params_file_path)
+    if monocam is None:
+        monocam = MonoCamera(camera_params_file_path)
     map_x, map_y = monocam.rectification_maps
     # ret_image = np.clip(image, 0, 2 ** dst_bit - 1)
     ret_image = cv2.remap(image, map_x, map_y, cv2.INTER_LINEAR)
