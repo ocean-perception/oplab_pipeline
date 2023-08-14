@@ -19,7 +19,7 @@ class MonoCamera:
     Reads and writes calibration.yaml files
     """
 
-    def __init__(self, filename=None):
+    def __init__(self, filename=None, downsize_ratio=None):
         self.K = np.zeros((3, 3))
         self.d = np.zeros((5, 1))
         self.R = np.eye(3)
@@ -27,11 +27,23 @@ class MonoCamera:
         self.image_width = 0
         self.image_height = 0
         self.name = ""
+        self.downsize_ratio = downsize_ratio
 
         if filename is not None:
             filename = Path(filename)
             fs = cv2.FileStorage(str(filename), cv2.FILE_STORAGE_READ)
             self.from_node(fs)
+
+            if self.downsize_ratio is not None:
+                # Scale camera matrix and projection matrix
+                self.K[0, 0] *= self.downsize_ratio
+                self.K[1, 1] *= self.downsize_ratio
+                self.K[0, 2] *= self.downsize_ratio
+                self.K[1, 2] *= self.downsize_ratio
+                self.P[0, 0] *= self.downsize_ratio
+                self.P[1, 1] *= self.downsize_ratio
+                self.P[0, 2] *= self.downsize_ratio
+                self.P[1, 2] *= self.downsize_ratio
 
     @property
     def aspect_ratio(self):
@@ -219,9 +231,9 @@ class StereoCamera:
     Reads and writes calibration yaml files
     """
 
-    def __init__(self, filename=None, left=None, right=None):
-        self.left = MonoCamera(left)
-        self.right = MonoCamera(right)
+    def __init__(self, filename=None, left=None, right=None, downsize_ratio=None):
+        self.left = MonoCamera(left, downsize_ratio)
+        self.right = MonoCamera(right, downsize_ratio)
         self.R = np.eye(3)
         self.t = np.zeros((3, 1))
         self.E = np.zeros((3, 3))
