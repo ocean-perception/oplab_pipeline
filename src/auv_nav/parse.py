@@ -34,6 +34,7 @@ from auv_nav.parsers.parse_rdi import parse_rdi
 from auv_nav.parsers.parse_rosbag import parse_rosbag, parse_rosbag_extracted_images
 from auv_nav.parsers.parse_seaxerocks_images import parse_seaxerocks_images
 from auv_nav.parsers.parse_stereo_gopro import parse_stereo_gopro_images
+from auv_nav.parsers.parse_voyis import parse_voyis_images
 from auv_nav.parsers.parse_tide_CTI import parse_tide_CTI
 from auv_nav.parsers.parse_usbl_dump import parse_usbl_dump
 
@@ -295,6 +296,13 @@ def parse_single(filepath, force_overwrite):
             pool_list.append(
                 pool.apply_async(
                     parse_stereo_gopro_images,
+                    [mission, vehicle, "images", ftype, outpath],
+                )
+            )
+        elif mission.image.format == "voyis":
+            pool_list.append(
+                pool.apply_async(
+                    parse_voyis_images,
                     [mission, vehicle, "images", ftype, outpath],
                 )
             )

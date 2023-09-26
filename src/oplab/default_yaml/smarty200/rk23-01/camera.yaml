@@ -1,0 +1,16 @@
+camera_system: voyis
+cameras:
+  - name: stills
+    type: rggb
+    bit_depth: 16
+    path: 'image/stills/*'
+    extension: tif   
+                    # raw_stills_raw_PPS_2023-09-22T170755.009700_2.tif
+    filename_to_date: xxxxxxxxxxxxxxxxxxxYYYYxMMxDDxhhmmssxfffuuuxx.xxx
+  - name: laser
+    type: grayscale
+    bit_depth: 16
+    path: 'image/laser/*'
+    extension: tif
+                    # laser_laser_raw_PPS_2023-09-22T170757.005600_4.tif
+    filename_to_date: xxxxxxxxxxxxxxxxxxxxYYYYxMMxDDxhhmmssxfffuuuxx.xxx

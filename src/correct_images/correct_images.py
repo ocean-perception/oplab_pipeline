@@ -382,6 +382,7 @@ def load_configuration_and_camera_system(path, suffix=None):
         stereo_gopro_camera_file = (
             "auv_nav/default_yaml/smarty200/stereo_gopro/camera.yaml"
         )
+        voyis_camera_file = "auv_nav/default_yaml/smarty200/voyis/camera.yaml"
         rosbag_camera_file = "auv_nav/default_yaml/rosbag/grassmap/camera.yaml"
 
         acfr_std_correct_config_file = (
@@ -405,6 +406,7 @@ def load_configuration_and_camera_system(path, suffix=None):
         stereo_gopro_std_correct_config_file = (
             "correct_images/default_yaml/stereo_gopro/correct_images.yaml"
         )
+        voyis_std_correct_config_file = "correct_images/default_yaml/voyis/correct_images.yaml"
         rosbag_std_correct_config_file = (
             "correct_images/default_yaml/rosbag/correct_images.yaml"
         )
@@ -433,6 +435,11 @@ def load_configuration_and_camera_system(path, suffix=None):
             camera_yaml_path = root / stereo_gopro_camera_file
             default_file_path_correct_config = (
                 root / stereo_gopro_std_correct_config_file
+            )
+        elif mission.image.format == "voyis":
+            camera_yaml_path = root / voyis_camera_file
+            default_file_path_correct_config = (
+                root / voyis_std_correct_config_file
             )
         elif mission.image.format == "rosbag":
             camera_yaml_path = root / rosbag_camera_file

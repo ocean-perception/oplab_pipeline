@@ -1,0 +1,60 @@
+#YAML 1.0
+version: 1
+
+origin:
+  latitude: 50.64532243162125
+  longitude: -1.9350623196398757
+  coordinate_reference_system: wgs84
+  date: 2023/09/22
+
+velocity:
+  format: rosbag
+  filepath: nav/bagfiles/
+  filename: sparus2_2022-09-21-07-54-27_0.bag
+  topic: /sparus2/sonardyne_sprintnav_ins/hnav
+  timezone: 1
+  timeoffset: 0.0
+
+orientation:
+  format: rosbag
+  filepath: nav/bagfiles/
+  filename: sparus2_2022-09-21-07-54-27_0.bag
+  topic: /sparus2/sonardyne_sprintnav_ins/hnav
+  timezone: 1
+  timeoffset: 0.0
+
+depth:
+  format: rosbag
+  filepath: nav/bagfiles/
+  filename: sparus2_2022-09-21-07-54-27_0.bag
+  topic: /sparus2/sonardyne_sprintnav_ins/hnav
+  timezone: 1
+  timeoffset: 0.0
+
+altitude:
+  format: rosbag
+  filepath: nav/bagfiles/
+  filename: sparus2_2022-09-21-07-54-27_0.bag
+  topic: /sparus2/sonardyne_sprintnav_ins/hnav
+  timezone: 1
+  timeoffset: 0.0
+
+usbl:
+  format: rosbag
+  filepath: nav/bagfiles/
+  filename: sparus2_2022-07-19-08-06-44_0.bag
+  topic: /sparus2/navigator/gps
+  timezone: 1
+  timeoffset: 0.0
+
+image:
+  format: voyis
+  cameras:
+    - name: stills
+      type: rggb
+      path: image/stills
+    - name: laser
+      type: mono
+      path: image/laser
+  timezone: utc
+  timeoffset: 0.0

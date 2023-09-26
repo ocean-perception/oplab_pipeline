@@ -1,0 +1,48 @@
+# Yaml 1.0
+version: 2
+
+method: 'colour_correction'
+
+colour_correction :
+  # Distance metric can be
+  #  uniform: assumes constant altitude
+  #  altitude: assumes a flat seafloor
+  #  depth_map: assumes 3d structure respectively
+  # If using depth_maps, they need to be stored at a subdirectory called "depth_map" in
+  # the dive processed folder with the same filename as the images
+  distance_metric : 'altitude'
+  metric_path : 'json_renav_*' # json nav path in case of altitude / depth map
+  altitude_filter :
+    parse : # only use images in the altitude range below to calculate attenuation_modelling parameters. Look at the histogram of the bins when running `correct_images parse` and use range where bins contain at least ~20 samples.
+      min_m : 0.8
+      max_m : 2.5
+    process : # only convert the images in the altitude range below
+      min_m : 0.8
+      max_m : 2.5
+  smoothing : 'median' # 'mean' / 'median' / 'mean_trimmed' sampling colour intensity values from window_size to develop model
+  window_size : 3 # increase if the attenuation correction parameter looks noisy.
+
+cameras :
+  - camera_name : 'stills' #in line with vehicle.yaml
+    image_file_list :
+      parse : 'none' # Path of file in configuration folder containing list of images to be used. Only indicate this if you want to limit the images used, 'none' otherwise.
+      process : 'none'
+    colour_correction :
+      brightness : 25 # % target across dataset
+      contrast : 7 # % target accross dataset
+    manual_balance :
+      subtractors_rgb : [0, 0, 0] # -c values (zero capped)
+      colour_gain_matrix_rgb : [[1, 0, 0], [0, 1, 0], [0, 0, 1]] # diagonal terms corresponding to r gain, g gain, b gain
+
+output_settings :
+  undistort : False
+  compression_parameter : 'png' # 'tiff'
+
+rescale :
+  - camera_name : 'stills'
+    path : # path to images relative to processed folder
+    distance_path : # path to json_renav* folder for auv_ekf_<cameraname>.csv file
+    interpolate_method : 'bicubic' # bicubic, nearest_neighbour, bilinear, lanczos
+    target_pixel_size : 0.01 # in meters
+    maintain_pixels : True
+    output_folder : # output path relative to processed images
