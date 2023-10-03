@@ -27,8 +27,7 @@ from auv_nav.parsers.parse_NOC_nmea import parse_NOC_nmea
 from auv_nav.parsers.parse_NOC_polpred import parse_NOC_polpred
 from auv_nav.parsers.parse_ntnu_dvl import parse_ntnu_dvl
 from auv_nav.parsers.parse_ntnu_stereo import parse_ntnu_stereo_images
-
-# sys.path.append("..")
+from auv_nav.parsers.parse_sonardyne_mrt import parse_sonardyne_mrt
 from auv_nav.parsers.parse_phins import parse_phins
 from auv_nav.parsers.parse_rdi import parse_rdi
 from auv_nav.parsers.parse_rosbag import parse_rosbag, parse_rosbag_extracted_images
@@ -357,6 +356,13 @@ def parse_single(filepath, force_overwrite):
                 pool.apply_async(
                     parse_alr,
                     [mission, vehicle, "usbl", ftype, outpath, True],
+                )
+            )
+        elif mission.usbl.format == "sonardyne_mrt":
+            pool_list.append(
+                pool.apply_async(
+                    parse_sonardyne_mrt,
+                    [mission, vehicle, "usbl", ftype, outpath],
                 )
             )
         else:
