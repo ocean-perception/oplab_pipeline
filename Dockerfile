@@ -11,7 +11,7 @@ FROM python:3.11-slim-bookworm AS base
 # Get requirements out of the way first
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --extra-index-url https://rospypi.github.io/simple/ rosbag && \
+    pip install --extra-index-url https://rospypi.github.io/simple/ rosbag roslz4 && \
     pip install --no-cache-dir -r requirements.txt
 RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
 
