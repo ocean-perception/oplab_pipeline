@@ -368,7 +368,7 @@ def find_closest_observations(observations):
 
 
 def parse_sonardyne_mrt(mission, vehicle, category, ftype, outpath):
-    Console.info("  Parsing Sonardyne MRT data...")
+    Console.info("... parsing Sonardyne MRT")
 
     # parser meta data
     class_string = "measurement"
@@ -388,8 +388,21 @@ def parse_sonardyne_mrt(mission, vehicle, category, ftype, outpath):
 
     # parse data
     filename = get_raw_folder(outpath / ".." / filepath / filename)
-    observations = parse_mrt_csv(filename)
-    auv_observations = find_closest_observations(observations)
+
+    # Find all files with the same filename ending in "_1, _2, _3, etc"
+    filename = Path(filename)
+    if not filename.exists():
+        Console.error(f"File {filename} does not exist")
+        return None
+    base_name = filename.stem
+    files = filename.parent.glob(base_name + "_*")
+    files = sorted(files)
+
+    all_observations = []
+    for filename in files:
+        observations = parse_mrt_csv(filename)
+        all_observations.extend(observations)
+    auv_observations = find_closest_observations(all_observations)
 
     data_list = []
 
