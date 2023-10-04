@@ -6,12 +6,12 @@
 # docker run -e USER=$(whoami) -h $HOSTNAME --user $(id -u):$(id -g) -v /etc/passwd:/etc/passwd:ro --rm -it --ipc=private --name=oplab_pipeline_$(whoami)_$(date +%Y%m%d_%H%M%S) -v HOST_FOLDER:/data oceanperception/oplab_pipeline
 
 
-FROM python:3.11-slim-bookworm AS base
+FROM python:3.10-slim-bookworm AS base
 
 # Get requirements out of the way first
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --extra-index-url https://rospypi.github.io/simple/ rosbag roslz4 && \
+    pip install rosbag --extra-index-url https://rospypi.github.io/simple/ && \
     pip install --no-cache-dir -r requirements.txt
 RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
 
