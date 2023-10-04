@@ -41,7 +41,6 @@ def find_image_path(
 
 
 if __name__ == "__main__":
-
     base = "/media/oplab-source/processed/2019/koyo19-01/ae2000f/"
     dives = [
         "20190903_094907_ae2000f_sx3",

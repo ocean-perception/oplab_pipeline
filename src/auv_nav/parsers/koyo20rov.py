@@ -403,7 +403,7 @@ class RovParser:
                 timestr[0],
             ).epoch_timestamp
             for i, this_date in enumerate(date):
-                if type(this_date) is not str:
+                if not isinstance(this_date, str):
                     continue
                 elif len(this_date) < 8:
                     continue

@@ -12,7 +12,6 @@ from geographiclib.geodesic import Geodesic
 
 
 def latlon_to_metres(latitude, longitude, latitude_reference, longitude_reference):
-
     ret = Geodesic.WGS84.Inverse(
         latitude_reference, longitude_reference, latitude, longitude
     )

@@ -202,7 +202,8 @@ def call_parse(args):
         for cs in camerasystem_list:
             # the first entry will be repeated, no problem with that
             # TODO: Extend is_equivalent() method allowing checking cameras in different orders
-            # WARNING: We decide not to use equivalent() here, because it is not robust enough. Enforce same camera order
+            # WARNING: We decide not to use equivalent() here, because it is not robust enough.
+            # Enforce same camera order
             if not camera_system.camera_system == cs.camera_system:
                 Console.error("Camera systems differ!")
                 Console.error(
@@ -239,7 +240,9 @@ def call_parse(args):
             Console.info("Parsing for camera", camera.name)
             # Create a Corrector object for each camera with empty configuration
             # The configuration and the paths will be populated later on a per-dive basis
-            corrector = Corrector("parse", args.force, args.suffix, camera, correct_config=None)
+            corrector = Corrector(
+                "parse", args.force, args.suffix, camera, correct_config=None
+            )
             # call new list-compatible implementation of parse()
             corrector.parse(path_list, correct_config_list)
             corrector.cleanup()
@@ -279,7 +282,9 @@ def call_process(args):
             Console.info("No images found for the camera at the path provided")
             continue
         else:
-            corrector = Corrector("process", args.force, args.suffix, camera, correct_config, path)
+            corrector = Corrector(
+                "process", args.force, args.suffix, camera, correct_config, path
+            )
             if corrector.camera_found:
                 corrector.process()
     Console.info("Process completed for all cameras")
@@ -406,7 +411,9 @@ def load_configuration_and_camera_system(path, suffix=None):
         stereo_gopro_std_correct_config_file = (
             "correct_images/default_yaml/stereo_gopro/correct_images.yaml"
         )
-        voyis_std_correct_config_file = "correct_images/default_yaml/voyis/correct_images.yaml"
+        voyis_std_correct_config_file = (
+            "correct_images/default_yaml/voyis/correct_images.yaml"
+        )
         rosbag_std_correct_config_file = (
             "correct_images/default_yaml/rosbag/correct_images.yaml"
         )
@@ -438,9 +445,7 @@ def load_configuration_and_camera_system(path, suffix=None):
             )
         elif mission.image.format == "voyis":
             camera_yaml_path = root / voyis_camera_file
-            default_file_path_correct_config = (
-                root / voyis_std_correct_config_file
-            )
+            default_file_path_correct_config = root / voyis_std_correct_config_file
         elif mission.image.format == "rosbag":
             camera_yaml_path = root / rosbag_camera_file
             default_file_path_correct_config = root / rosbag_std_correct_config_file
@@ -508,14 +513,24 @@ def load_configuration_and_camera_system(path, suffix=None):
                 found = True
                 if camera.type is not None and camera.type != camera2.type:
                     Console.quit(
-                        "Camera", camera.name, "is indicated as type", camera.type,
-                        "in the mission.yaml file, but as type", camera2.type,
-                        "in the camera.yaml file at", camera_yaml_path, "."
+                        "Camera",
+                        camera.name,
+                        "is indicated as type",
+                        camera.type,
+                        "in the mission.yaml file, but as type",
+                        camera2.type,
+                        "in the camera.yaml file at",
+                        camera_yaml_path,
+                        ".",
                     )
         if not found:
             Console.warn(
-                "Camera", camera.name, "indicated in mission.yaml is missing in the",
-                "camera.yaml file (", camera_yaml_path, ")."
+                "Camera",
+                camera.name,
+                "indicated in mission.yaml is missing in the",
+                "camera.yaml file (",
+                camera_yaml_path,
+                ").",
             )
 
     # Copy configuration file to log folder

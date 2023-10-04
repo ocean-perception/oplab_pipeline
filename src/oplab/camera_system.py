@@ -8,10 +8,10 @@ See LICENSE.md file in the project root for full license information.
 
 from pathlib import Path
 
-import imageio
-import yaml
-import numpy as np
 import cv2
+import imageio
+import numpy as np
+import yaml
 
 from .console import Console
 from .filename_to_date import FilenameToDate

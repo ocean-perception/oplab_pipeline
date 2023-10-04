@@ -1163,7 +1163,7 @@ class StereoCalibrator(Calibrator):
         list of pairs.
         """
         self.good_corners = []
-        for (i, j) in zip(limages_list, rimages_list):
+        for i, j in zip(limages_list, rimages_list):
             lgray = cv2.imread(str(i))
             rgray = cv2.imread(str(j))
             if self.resize_right:
@@ -1238,9 +1238,9 @@ class StereoCalibrator(Calibrator):
             raise CalibrationException("No corners found in images!")
 
     def cal_fromcorners(self, iteration=0):
-        lipts = [l for (l, _, _) in self.good_corners]
-        ripts = [r for (_, r, _) in self.good_corners]
-        boards = [b for (_, _, b) in self.good_corners]
+        lipts = [lipt for (lipt, _, _) in self.good_corners]
+        ripts = [ript for (_, ript, _) in self.good_corners]
+        boards = [board for (_, _, board) in self.good_corners]
 
         opts = self.mk_object_points(boards)
 
@@ -1303,7 +1303,7 @@ class StereoCalibrator(Calibrator):
         self.calibrations[iteration] = calibration
 
         epipolar_error = []
-        for (params, lgray, rgray) in self.db:
+        for params, lgray, rgray in self.db:
             error = self.epipolar_error_from_images(lgray, rgray)
             print("stereo error:", error)
             if error is not None:

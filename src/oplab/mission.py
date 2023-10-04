@@ -99,7 +99,6 @@ class CameraEntry:
             if "timeoffset_s" in node:
                 self.timeoffset_s = node["timeoffset_s"]
 
-
     def write(self, node):
         node["name"] = self.name
         node["origin"] = self.origin

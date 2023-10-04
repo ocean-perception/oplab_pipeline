@@ -47,7 +47,6 @@ from auv_nav.sensors import (
     Depth,
     InertialVelocity,
     Orientation,
-    Payload,
     SyncedOrientationBodyVelocity,
     Usbl,
 )
@@ -65,9 +64,9 @@ from oplab import (
     Console,
     Mission,
     Vehicle,
-    get_raw_folder,
     get_config_folder,
     get_processed_folder,
+    get_raw_folder,
     valid_dive,
 )
 
@@ -395,13 +394,13 @@ def process(
     ]
 
     if mission.image.format == "biocam":
-        if mission.image.cameras[0].records_laser == True:
+        if mission.image.cameras[0].records_laser is True:
             camera3_offsets = [
                 vehicle.camera1.surge,
                 vehicle.camera1.sway,
                 vehicle.camera1.heave,
             ]
-        elif mission.image.cameras[1].records_laser == True:
+        elif mission.image.cameras[1].records_laser is True:
             camera3_offsets = [
                 vehicle.camera2.surge,
                 vehicle.camera2.sway,
@@ -667,10 +666,13 @@ def process(
     for i in non_processed_altitude_index_list:
         altitude_list[i].seafloor_depth = altitude_list[i + 1].seafloor_depth
 
-    # # if velocity_body_list is empty, then estimate it from velocity_inertial_list and orientation_list
+    # # if velocity_body_list is empty, then estimate it from velocity_inertial_list
+    # # and orientation_list
     # if len(velocity_body_list) == 0:
-    #     Console.info("velocity_body_list is empty, estimating it from velocity_inertial_list and orientation_list")
-    #     # check if velocity_inertial_list and orientation_list are non-empty. Exit otherwise
+    #     Console.info("velocity_body_list is empty,",
+    #                  "estimating it from velocity_inertial_list and orientation_list")
+    #     # check if velocity_inertial_list and orientation_list are non-empty.
+    #     # Exit otherwise
     #     if len(velocity_inertial_list) == 0:
     #         Console.error("velocity_inertial_list is empty")
     #         Console.quit("auv_nav process failed")
@@ -716,13 +718,15 @@ def process(
     #                 vx = velocity_inertial_list[i].east_velocity
     #                 vy = velocity_inertial_list[i].north_velocity
     #                 vz = velocity_inertial_list[i].down_velocity
-    #                 # calculate the [vx, vy, vz] in body frame from [vx, vy, vz] in inertial frame and roll, pitch and yaw
-    #                 [vx, vy, vz] = inertial_to_body(0, 0, yaw, vx, vy, vz) # heading only correction
+    #                 # calculate the [vx, vy, vz] in body frame from [vx, vy, vz]
+    #                 # in inertial frame and roll, pitch and yaw
+    #                 # heading only correction
+    #                 [vx, vy, vz] = inertial_to_body(0, 0, yaw, vx, vy, vz)
     #                 # create a new BodyVelocity object
     #                 velocity_body_item = BodyVelocity()
     #                 # populate it with the timestamp, the [vx, vy, vz] and the std
-    #                 velocity_body_item.epoch_timestamp = velocity_inertial_list[i].epoch_timestamp
-    #                 velocity_body_item.epoch_timestamp_dvl = velocity_inertial_list[i].epoch_timestamp
+    #                 velocity_body_item.epoch_timestamp = velocity_inertial_list[i].epoch_timestamp  # NOQA E501
+    #                 velocity_body_item.epoch_timestamp_dvl = velocity_inertial_list[i].epoch_timestamp    # NOQA E501
     #                 velocity_body_item.x_velocity = vx
     #                 velocity_body_item.y_velocity = vy
     #                 velocity_body_item.z_velocity = vz
@@ -781,7 +785,6 @@ def process(
 
     # time_velocity_body)):
     for i in range(start_interpolate_index, len(orientation_list)):
-
         # interpolate to find the appropriate dvl time for the orientation
         # measurements
         if orientation_list[i].epoch_timestamp > velocity_body_list[-1].epoch_timestamp:
@@ -971,7 +974,6 @@ def process(
 
     # remove first term if first time_orientation is < velocity_body time
     if interpolate_remove_flag:
-
         # del time_orientation[0]
         del dead_reckoning_centre_list[0]
         del dead_reckoning_dvl_list[0]
@@ -1551,9 +1553,11 @@ def process(
         )
 
         _temp_ekf = []
-        # Let's remove every row that has a None entry for [depth] - ALR missing engineering logs affecting laser_bathymetry
+        # Let's remove every row that has a None entry for [depth] -
+        #  ALR missing engineering logs affecting laser_bathymetry
         for c in range(len(camera3_ekf_list_at_dvl)):
-            # append to the temp empty list. [remove] or[pop] or [del] will fail because list index is updated
+            # append to the temp empty list. [remove] or[pop] or [del] will fail
+            # because list index is updated
             if camera3_ekf_list_at_dvl[c].depth is not None:
                 _temp_ekf.append(camera3_ekf_list_at_dvl[c])
         # Deep-copy of the temporal list
@@ -1574,7 +1578,7 @@ def process(
             interpolate_sensor_list(
                 payload_dict[key],
                 key,
-                payload_offset[key.replace("_pf","")],
+                payload_offset[key.replace("_pf", "")],
                 origin_offsets,
                 latlon_reference,
                 pf_fusion_centre_list,
@@ -1583,7 +1587,7 @@ def process(
             interpolate_sensor_list(
                 payload_dict[key],
                 key,
-                payload_offset[key.replace("_ekf","")],
+                payload_offset[key.replace("_ekf", "")],
                 origin_offsets,
                 latlon_reference,
                 ekf_list,
@@ -1932,7 +1936,9 @@ def process(
                         args=[
                             ekfcsvpath,
                             camera3_ekf_list_at_dvl,
-                            "auv_ekf_" + mission.image.cameras[2].name + "_laser_at_dvl",
+                            "auv_ekf_"
+                            + mission.image.cameras[2].name
+                            + "_laser_at_dvl",
                             csv_ekf_camera_3,
                         ],
                     )

@@ -127,7 +127,6 @@ class Graph(object):
 
 
 if __name__ == "__main__":
-
     g = {
         "origin": ["cameras", "dvl", "imu", "depth", "altitude"],
         "cameras": ["LM165", "Xviii3", "Xviii5"],

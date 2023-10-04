@@ -435,7 +435,6 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
                 data_list += data
 
             if category == "depth":
-
                 depth = float(df["Depth"][row_index])
                 # write out in the required format interlace at end
                 data = (

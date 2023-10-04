@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from numba import njit
 from scipy import optimize
+
 from oplab import Console
 
 
@@ -67,7 +68,7 @@ def curve_fitting(
     intensities: np.ndarray,
     x: int,
     y: int,
-    figure_path: Optional[Path]
+    figure_path: Optional[Path],
 ) -> np.ndarray:
     """Compute attenuation coefficients with respect to distance values
 
@@ -95,17 +96,27 @@ def curve_fitting(
     if altitudes.size == 0:
         Console.warn(
             "Empty non-nan altitudes in curve fitting at pixel position",
-            "x:", x, ", y:", y,
-            "\n altitudes: ", altitudes,
-            "\nintensities: ", intensities
+            "x:",
+            x,
+            ", y:",
+            y,
+            "\n altitudes: ",
+            altitudes,
+            "\nintensities: ",
+            intensities,
         )
         return np.array([1, 0, 0])
     if intensities.size == 0:
         Console.warn(
             "Empty non-nan intensities in curve fitting at pixel position",
-            "x:", x, ", y:", y,
-            "\naltitudes: ", altitudes,
-            "\nintensities: ", intensities
+            "x:",
+            x,
+            ", y:",
+            y,
+            "\naltitudes: ",
+            altitudes,
+            "\nintensities: ",
+            intensities,
         )
         return np.array([1, 0, 0])
 
@@ -120,7 +131,10 @@ def curve_fitting(
         if not altitudes_filt:
             Console.warn(
                 "Altitudes are negative or zero in curve fitting at pixel position",
-                "x:", x, ", y:", y,
+                "x:",
+                x,
+                ", y:",
+                y,
                 "\naltitudes: ",
                 altitudes,
                 "\nintensities: ",
@@ -133,7 +147,10 @@ def curve_fitting(
         if not intensities_filt:
             Console.warn(
                 "Intensities are negative or zero in curve fitting at pixel position",
-                "x:", x, ", y:", y,
+                "x:",
+                x,
+                ", y:",
+                y,
                 "\naltitudes: ",
                 altitudes,
                 "\nintensities: ",

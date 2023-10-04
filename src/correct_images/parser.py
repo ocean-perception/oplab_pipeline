@@ -202,7 +202,6 @@ class OutputSettings:
     """
 
     def __init__(self, node):
-
         """__init__ is the constructor function
 
         Parameters
@@ -226,7 +225,6 @@ class RescaleImage:
         maintain_pixels,
         output_folder,
     ):
-
         self.camera_name = camera_name
         self.path = path
         self.distance_path = distance_path
@@ -280,7 +278,6 @@ class CorrectConfig:
     """
 
     def __init__(self, filename=None):
-
         """__init__ is the constructor function
 
         Parameters

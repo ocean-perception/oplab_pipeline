@@ -1,15 +1,14 @@
-from auv_nav.sensors import Payload
-from oplab.console import Console
-from oplab.filename_to_date import FilenameToDate
-
 import pandas as pd
+
+from auv_nav.sensors import Payload
+
 
 def generic_csv_payload_parser(filepath, columns_dict, timeoffset_s=0):
     data_list = []
     # Use FilenameToDate just to get the timestamp
     # TODO: Make a generic timestamp parser out of FilenameToDate
-    #f2d = FilenameToDate(None, filepath, columns_dict)
-    #df = f2d.df
+    # f2d = FilenameToDate(None, filepath, columns_dict)
+    # df = f2d.df
 
     df = pd.read_csv(filepath)
     df["epoch_timestamp"] = df["corrected_timestamp"]

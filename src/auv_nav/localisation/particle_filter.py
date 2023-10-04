@@ -289,7 +289,6 @@ class ParticleFilter:
         def measurement_update(
             N, usbl_measurement, particles_list, resample_flag=True
         ):  # updates weights of particles and resamples them # USBL uncertainty follow the readings (0.06/100* depth)! assuming noise of northing = easting # noqa
-
             # Update weights (particle weighting)
             for i in particles_list[-1]:
                 weight = i.measurement_prob(

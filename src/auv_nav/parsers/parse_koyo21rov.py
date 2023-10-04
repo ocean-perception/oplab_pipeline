@@ -64,21 +64,21 @@ def parse_koyo21rov(mission, vehicle, category, ftype, outpath):
     # The second one is for USBL (filtered position). The raw Lat/lot is the same
 
     # this is a sample of the raw data (Hypack/21TAKUYO5HR02_H1_1117.csv)
-    #     Date	Time	LatD	LatM	LatS		LonD	LonM	LonS		North	East	Roll	Pich	Hedding	Depth(ROV)	ALT
-    # 2021/11/17	19:30:16	22	51	25.5777	N	153	21	7.0884	E	2527744.54	536108.34	-0.7	1.3	94.9	1164.1	10
-    # 2021/11/17	19:30:17	22	51	25.5707	N	153	21	7.1194	E	2527744.33	536109.22	-0.5	1.1	95.3	1164.2	10
+    #     Date	Time	LatD	LatM	LatS		LonD	LonM	LonS		North	East	Roll	Pich	Hedding	Depth(ROV)	ALT   # noqa: E501
+    # 2021/11/17	19:30:16	22	51	25.5777	N	153	21	7.0884	E	2527744.54	536108.34	-0.7	1.3	94.9	1164.1	10   # noqa: E501
+    # 2021/11/17	19:30:17	22	51	25.5707	N	153	21	7.1194	E	2527744.33	536109.22	-0.5	1.1	95.3	1164.2	10   # noqa: E501
 
     # Sample of the filtered position (posfilter/pos_filter_1117_v2_HR02.csv)
-    #   timestamp	        Hedding	Lat	                Lon	                Depth(ROV)	ALT	dist	            Lat_flt             Lon_flt	            calc_depth
-    # 6	2021-11-17 19:30:22	94.9	22.8570923055556	153.352005388889	1164.1	    10	0	                22.8570888333333	153.352009166667	1166.70630851544
-    # 7	2021-11-17 19:30:23	95	    22.85709	        153.352007888889	1164.2	    10	0.806001183909315	22.8570960833333	153.352009041667	1166.80630851544
-    # 8	2021-11-17 19:30:24	94.9	22.8570923611111	153.352009111111	1164.2	    10	1.61200236781863	22.8571033333333	153.352008916667	1166.80630851544
+    #   timestamp	        Hedding	Lat	                Lon	                Depth(ROV)	ALT	dist	            Lat_flt             Lon_flt	            calc_depth   # noqa: E501
+    # 6	2021-11-17 19:30:22	94.9	22.8570923055556	153.352005388889	1164.1	    10	0	                22.8570888333333	153.352009166667	1166.70630851544   # noqa: E501
+    # 7	2021-11-17 19:30:23	95	    22.85709	        153.352007888889	1164.2	    10	0.806001183909315	22.8570960833333	153.352009041667	1166.80630851544   # noqa: E501
+    # 8	2021-11-17 19:30:24	94.9	22.8570923611111	153.352009111111	1164.2	    10	1.61200236781863	22.8571033333333	153.352008916667	1166.80630851544   # noqa: E501
 
     # The most important difference comes from the timestamp format (two columns vs one)
-    # The filtered position has a timestamp column, while the raw data has two columns (Date and Time)
+    # The filtered position has a timestamp column, while the raw data has two columns (Date and Time)   # noqa: E501
     # Switch according to the type of source we are using
 
-    # We need to create a new column for the epoch time called epoch_timestamp from the 'Date' and 'Time' or 'timestamp'
+    # We need to create a new column for the epoch time called epoch_timestamp from the 'Date' and 'Time' or 'timestamp'   # noqa: E501
     # columns and add the resulting epoch_timestamp to the dataframe
     if "timestamp" in mission_data.columns:
         # filtered position. Convert on the fly using a lambda function

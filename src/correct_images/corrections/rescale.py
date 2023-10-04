@@ -11,9 +11,10 @@ from pathlib import Path
 
 try:
     # Try using the v2 API directly to avoid a warning from imageio >= 2.16.2
-    from imageio.v2 import imwrite, imread
+    from imageio.v2 import imread, imwrite
 except ImportError:
     from imageio import imwrite, imread
+
 import numpy as np
 import pandas as pd
 from PIL import Image

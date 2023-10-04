@@ -2133,18 +2133,23 @@ class Payload(SyncedOrientationBodyVelocity):
         elif isinstance(self.data, dict):
             str_to_write += ",".join(self.data.keys()) + "\n"
         else:
-            #str_to_write = str_to_write.replace("\n", ",data\n")
+            # str_to_write = str_to_write.replace("\n", ",data\n")
             str_to_write += "data\n"
 
         return str_to_write
 
     def to_csv_row(self):
         str_to_write = (
-            str(self.northings) + ","
-            + str(self.eastings) + ","
-            + str(self.depth) + ","
-            + str(self.altitude) + ","
-            + str(self.latitude) + ","
+            str(self.northings)
+            + ","
+            + str(self.eastings)
+            + ","
+            + str(self.depth)
+            + ","
+            + str(self.altitude)
+            + ","
+            + str(self.latitude)
+            + ","
             + str(self.longitude)
         )
         if isinstance(self.data, pd.DataFrame):

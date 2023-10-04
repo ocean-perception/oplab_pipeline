@@ -24,7 +24,6 @@ from oplab import Console, get_raw_folder
 
 
 def parse_gaps(mission, vehicle, category, ftype, outpath):
-
     Console.info("  Parsing GAPS data...")
 
     # parser meta data
@@ -159,7 +158,6 @@ def parse_gaps(mission, vehicle, category, ftype, outpath):
 
                     if line_split_no_checksum[6] == "0":
                         if flag_got_time < 3:
-
                             # read in date
 
                             yyyy = int(line_split_no_checksum[5])
@@ -232,7 +230,6 @@ def parse_gaps(mission, vehicle, category, ftype, outpath):
 
                         elif flag_got_time >= 3:
                             if line_split_no_checksum[6] == "0":
-
                                 # read in date
                                 yyyy = int(line_split_no_checksum[5])
                                 mm = int(line_split_no_checksum[4])
@@ -302,7 +299,6 @@ def parse_gaps(mission, vehicle, category, ftype, outpath):
                             flag_got_time = flag_got_time + 1
 
                     else:
-
                         heading_ship_posterior = float(line_split_no_checksum[1])
                         flag_got_time = flag_got_time + 1
 
@@ -380,7 +376,6 @@ def parse_gaps(mission, vehicle, category, ftype, outpath):
                     )
 
                     if not broken_packet_flag:
-
                         if ftype == "oplab" and category == Category.USBL:
                             data = {
                                 "epoch_timestamp": float(epoch_timestamp),

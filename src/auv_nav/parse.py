@@ -27,15 +27,15 @@ from auv_nav.parsers.parse_NOC_nmea import parse_NOC_nmea
 from auv_nav.parsers.parse_NOC_polpred import parse_NOC_polpred
 from auv_nav.parsers.parse_ntnu_dvl import parse_ntnu_dvl
 from auv_nav.parsers.parse_ntnu_stereo import parse_ntnu_stereo_images
-from auv_nav.parsers.parse_sonardyne_mrt import parse_sonardyne_mrt
 from auv_nav.parsers.parse_phins import parse_phins
 from auv_nav.parsers.parse_rdi import parse_rdi
 from auv_nav.parsers.parse_rosbag import parse_rosbag, parse_rosbag_extracted_images
 from auv_nav.parsers.parse_seaxerocks_images import parse_seaxerocks_images
+from auv_nav.parsers.parse_sonardyne_mrt import parse_sonardyne_mrt
 from auv_nav.parsers.parse_stereo_gopro import parse_stereo_gopro_images
-from auv_nav.parsers.parse_voyis import parse_voyis_images
 from auv_nav.parsers.parse_tide_CTI import parse_tide_CTI
 from auv_nav.parsers.parse_usbl_dump import parse_usbl_dump
+from auv_nav.parsers.parse_voyis import parse_voyis_images
 
 # from lib_sensors.parse_chemical import parse_chemical
 from auv_nav.plot.plot_parse_data import plot_parse_data

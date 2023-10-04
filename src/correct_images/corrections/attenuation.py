@@ -108,7 +108,6 @@ def calculate_correction_gains(
     )
 
     for i_channel in range(image_channels):
-
         # attenuation_parameters = attenuation_parameters.squeeze()
         correction_gains = (
             attenuation_parameters[i_channel, :, :, 0]
@@ -155,7 +154,7 @@ def calculate_attenuation_parameters(
     mem = psutil.virtual_memory()
     available_bytes = mem.available  # in bytes
     required_bytes = image_channels * image_height * image_width * 4 * len(images)
-    num_jobs = int(available_bytes / required_bytes)*2
+    num_jobs = int(available_bytes / required_bytes) * 2
 
     # Keep one alive!
     cpus = psutil.cpu_count() - 1
@@ -190,12 +189,12 @@ def calculate_attenuation_parameters(
                     # Not on diagonal -> don't output figure / generate path for file
                     figure_paths.append(None)
         with tqdm_joblib(
-                 tqdm(
-                     desc="Curve fitting",
-                     total=image_height * image_width,
-                     dynamic_ncols=True
-                     )
-             ):
+            tqdm(
+                desc="Curve fitting",
+                total=image_height * image_width,
+                dynamic_ncols=True,
+            )
+        ):
             results = joblib.Parallel(n_jobs=num_jobs, verbose=0)(
                 [
                     joblib.delayed(curve_fitting)(

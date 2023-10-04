@@ -57,7 +57,6 @@ class TestEkf(unittest.TestCase):
         }
 
     def test_ekf(self):
-
         c = SyncedOrientationBodyVelocity()
         c.northings = 0.0
         c.eastings = 0.0

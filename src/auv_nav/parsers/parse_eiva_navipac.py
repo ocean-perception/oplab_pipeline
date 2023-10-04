@@ -53,7 +53,6 @@ def parse_eiva_navipac(mission, vehicle, category, output_format, outpath):
     for log_file in log_file_path.glob("*_G.NPD"):
         # Open the log file
         with log_file.open("r", encoding="utf-8", errors="ignore") as filein:
-
             if category == Category.ORIENTATION:
                 Console.info("... parsing orientation")
                 # For each line in the file

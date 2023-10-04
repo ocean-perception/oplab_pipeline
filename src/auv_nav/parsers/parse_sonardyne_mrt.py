@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from pathlib import Path
-from dataclasses import dataclass, field
 import datetime
 import math
-from auv_nav.tools.latlon_wgs84 import latlon_to_metres, metres_to_latlon
+from dataclasses import dataclass, field
+from pathlib import Path
+
 from auv_nav.sensors import Category
+from auv_nav.tools.latlon_wgs84 import latlon_to_metres, metres_to_latlon
 from oplab import Console, get_raw_folder
 
 

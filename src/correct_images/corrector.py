@@ -303,7 +303,8 @@ class Corrector:
                 "parameters",
             )
 
-        # Show the total number of images after filtering + merging the dives. It should match the sum of the filtered images of each dive.
+        # Show the total number of images after filtering + merging the dives.
+        # It should match the sum of the filtered images of each dive.
         if len(path_list) > 1:
             Console.info(
                 "Total number of images after merging dives:",
@@ -633,7 +634,8 @@ class Corrector:
                 Console.error("You may need to reprocess the dive with auv_nav")
                 Console.quit("No images were found.")
 
-            # WARNING: what happens in a multidive setup when the current dive has no images (but the rest of the dive does)?
+            # WARNING: what happens in a multidive setup when the current dive has no
+            # images (but the rest of the dive does)?
             Console.info(
                 len(self.altitude_list),
                 "of",
@@ -1057,10 +1059,10 @@ class Corrector:
         )
         for i_channel in range(self.image_channels):
             with tqdm(
-                     desc="Attenuation plot",
-                     total=len(pixel_range),
-                     dynamic_ncols=True,
-                 ) as pbar:
+                desc="Attenuation plot",
+                total=len(pixel_range),
+                dynamic_ncols=True,
+            ) as pbar:
                 for i_pixel in pixel_range:
                     i_pixel_height = i_pixel // self.image_width
                     i_pixel_width = i_pixel % self.image_width
@@ -1231,7 +1233,7 @@ class Corrector:
             tqdm(
                 desc="Correcting images",
                 total=len(self.camera_image_list),
-                dynamic_ncols=True
+                dynamic_ncols=True,
             )
         ):
             self.processed_image_list = joblib.Parallel(n_jobs=-2, verbose=0)(

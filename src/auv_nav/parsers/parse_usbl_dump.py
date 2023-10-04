@@ -52,12 +52,10 @@ def parse_usbl_dump(mission, vehicle, category, ftype, outpath):
         data_list = ""
     usbl_file = filepath / filename
     with usbl_file.open("r", encoding="utf-8", errors="ignore") as filein:
-
         for line in filein.readlines():
             line_split = line.strip().split(",")
 
             if line_split[2] == label:
-
                 date = line_split[0].split("-")
 
                 # read in date
@@ -82,7 +80,6 @@ def parse_usbl_dump(mission, vehicle, category, ftype, outpath):
                 epoch_timestamp = epoch_time + msec / 1000 + timeoffset
 
                 if line_split[6] != "":
-
                     # get position
                     latitude_full = line_split[6].split(" ")
                     latitude_list = latitude_full[0].split("-")

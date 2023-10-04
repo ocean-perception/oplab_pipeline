@@ -107,9 +107,16 @@ def run_setup():
         with open(".oplab_pipeline_commit_hash", "w") as f:
             f.write(commit_hash_header + "\n")
             f.write(sha1 + "\n")
-            print("Written .oplab_pipeline_commit_hash with the hash", commit_hash_header, "\n", sha1)
+            print(
+                "Written .oplab_pipeline_commit_hash with the hash",
+                commit_hash_header,
+                "\n",
+                sha1,
+            )
     else:
-        print("No .git repository was found. Will not be able to retrieve the version number.")
+        print(
+            "No .git repository was found. Will not be able to retrieve the version number."
+        )
     oplab_pipeline_version = return_version()
     setup(
         name="oplab_pipeline",
@@ -118,7 +125,7 @@ def run_setup():
         author_email="miquel.massot-campos@soton.ac.uk",
         description="Toolchain for AUV dive processing, camera calibration and image correction",  # noqa
         long_description=long_description,
-        long_description_content_type='text/markdown',
+        long_description_content_type="text/markdown",
         url="https://github.com/ocean-perception/oplab_pipeline",
         packages=find_packages(where="src"),
         package_dir={"": "src"},

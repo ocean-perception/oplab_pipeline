@@ -192,7 +192,7 @@ class Vehicle:
                     self.camera3.load(self.data[camera_name])
                 if "chemical" in self.data:
                     Console.warn(
-                        "The node \"chemical\" is deprecated. "
+                        'The node "chemical" is deprecated. '
                         "Please define a payload instead."
                     )
                 if "payloads" in self.data:

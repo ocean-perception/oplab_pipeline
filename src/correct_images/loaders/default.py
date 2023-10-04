@@ -39,13 +39,13 @@ def loader(image_filepath, image_width=None, image_height=None, src_bit=8):
 
     # Check bit depth
     read_bit_depth = None
-    if image.dtype == 'uint8':
+    if image.dtype == "uint8":
         read_bit_depth = 8
-    elif image.dtype == 'uint16':
+    elif image.dtype == "uint16":
         read_bit_depth = 16
-    elif image.dtype == 'uint32':
+    elif image.dtype == "uint32":
         read_bit_depth = 32
-    elif image.dtype == 'uint64':
+    elif image.dtype == "uint64":
         read_bit_depth = 64
     else:
         Console.quit("Image dtype not implemented:", image.dtype)
@@ -56,5 +56,5 @@ def loader(image_filepath, image_width=None, image_height=None, src_bit=8):
     else:
         image = image.astype(np.float32)
     image = image * 2 ** (-src_bit)
-    #print("Image min/max: ", np.min(image), np.max(image), np.min(image2), np.max(image2), src_bit)
+    # print("Image min/max: ", np.min(image), np.max(image), np.min(image2), np.max(image2), src_bit)
     return image

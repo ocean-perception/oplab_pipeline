@@ -15,7 +15,6 @@ from oplab import Console, get_raw_folder
 
 
 def parse_rdi(mission, vehicle, category, ftype, outpath):
-
     # parser meta data
     sensor_string = "rdi"
     output_format = ftype
@@ -72,7 +71,6 @@ def parse_rdi(mission, vehicle, category, ftype, outpath):
                 ot.pitch = math.radians(float(parts[1]))
                 ot.yaw = math.radians(float(parts[3]))
             elif parts[0] == ":TS" and len(parts) == 7:
-
                 # Every time a new TimeStamp is received, send the previous
                 # data packet
                 if category == Category.VELOCITY:
