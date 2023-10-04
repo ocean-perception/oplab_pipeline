@@ -7,6 +7,7 @@ from pathlib import Path
 
 from auv_nav.sensors import Category
 from auv_nav.tools.latlon_wgs84 import latlon_to_metres, metres_to_latlon
+from auv_nav.tools.time_conversions import read_timezone
 from oplab import Console, get_raw_folder
 
 
@@ -309,6 +310,9 @@ def parse_mrt_csv(filename):
                 obs = Alarm(*values[1:])
             elif values[0] == "AlarmStateChange":
                 obs = AlarmStateChange(*values[1:])
+            elif values[0] == "JobData":
+                # Ignore this
+                pass
             else:
                 print(f"Unknown observation type: {values[0]}")
                 continue
@@ -375,8 +379,12 @@ def parse_sonardyne_mrt(mission, vehicle, category, ftype, outpath):
     sensor_string = "sonardyne_mrt"
     frame_string = "inertial"
 
-    # timezone = mission.usbl.timezone
-    # timeoffset = mission.usbl.timeoffset_s
+    timezone = mission.usbl.timezone
+    timeoffset = mission.usbl.timeoffset_s
+
+    timezone_offset_h = read_timezone(timezone)
+    timeoffset_s = -timezone_offset_h * 60 * 60 + timeoffset
+
     filepath = mission.usbl.filepath
     filename = mission.usbl.filename
     # usbl_id = mission.usbl.label
@@ -458,7 +466,7 @@ def parse_sonardyne_mrt(mission, vehicle, category, ftype, outpath):
         longitude_std = abs(abs(longitude) - longitude_offset)
 
         data = {
-            "epoch_timestamp": auv_obs.epoch_timestamp,
+            "epoch_timestamp": auv_obs.epoch_timestamp + timeoffset_s,
             "class": class_string,
             "sensor": sensor_string,
             "frame": frame_string,
