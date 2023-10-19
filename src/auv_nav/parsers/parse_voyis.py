@@ -18,8 +18,8 @@ def parse_voyis_images(mission, vehicle, category, ftype, outpath):
     frame_string = "body"
     sensor_string = "voyis"
 
-    stills_filepath = Path(outpath + "/../" + mission.image.cameras[0].path)
-    laser_filepath = Path(outpuath + "/../" + mission.image.cameras[1].path)
+    stills_filepath = outpath.parent / Path(mission.image.cameras[0].path)
+    laser_filepath = outpath.parent / Path(mission.image.cameras[1].path)
 
     stills_format = "xxxxxxxxxxxxxxxxxxxYYYYxMMxDDxhhmmssxfffuuuxx.xxx"
     laser_format = "xxxxxxxxxxxxxxxxxxxxYYYYxMMxDDxhhmmssxfffuuuxx.xxx"
