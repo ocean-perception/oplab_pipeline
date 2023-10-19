@@ -33,8 +33,8 @@ def parse_voyis_images(mission, vehicle, category, ftype, outpath):
     stills_image_list = glob.glob(str(stills_filepath) + "/**/*.tif", recursive=True)
     laser_image_list = glob.glob(str(laser_filepath) + "/**/*.tif", recursive=True)
 
-    Console.info(" .. found {len(stills_image_list)} stills images")
-    Console.info(" .. found {len(laser_image_list)} laser images")
+    Console.info(f" .. found {len(stills_image_list)} stills images")
+    Console.info(f" .. found {len(laser_image_list)} laser images")
 
     data_list = []
     for img in stills_image_list:
