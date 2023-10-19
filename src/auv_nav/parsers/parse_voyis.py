@@ -9,7 +9,7 @@ See LICENSE.md file in the project root for full license information.
 import glob
 from pathlib import Path
 
-from oplab import Console, FilenameToDate
+from oplab import Console, FilenameToDate, get_raw_folder
 
 
 def parse_voyis_images(mission, vehicle, category, ftype, outpath):
@@ -18,8 +18,8 @@ def parse_voyis_images(mission, vehicle, category, ftype, outpath):
     frame_string = "body"
     sensor_string = "voyis"
 
-    stills_filepath = outpath.parent / Path(mission.image.cameras[0].path)
-    laser_filepath = outpath.parent / Path(mission.image.cameras[1].path)
+    stills_filepath = get_raw_folder(outpath.parent) / Path(mission.image.cameras[0].path)
+    laser_filepath = get_raw_folder(outpath.parent) / Path(mission.image.cameras[1].path)
 
     stills_format = "xxxxxxxxxxxxxxxxxxxYYYYxMMxDDxhhmmssxfffuuuxx.xxx"
     laser_format = "xxxxxxxxxxxxxxxxxxxxYYYYxMMxDDxhhmmssxfffuuuxx.xxx"
