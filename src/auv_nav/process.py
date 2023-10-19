@@ -491,7 +491,7 @@ def process(
                 # LC
                 camera1.from_json(parsed_json_data[i], "camera1")
                 camera1_list.append(camera1)
-                if len(mission.image.cameras) > 1:
+                if len(mission.image.cameras) > 1 and parsed_json_data[i]["category"] != "laser":
                     camera2 = Camera()
                     camera2.from_json(parsed_json_data[i], "camera2")
                     camera2_list.append(camera2)
