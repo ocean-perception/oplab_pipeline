@@ -38,7 +38,7 @@ def parse_voyis_images(mission, vehicle, category, ftype, outpath):
 
     data_list = []
     for img in stills_image_list:
-        epoch = stills_filename_to_date(str(img.name))
+        epoch = stills_filename_to_date(str(Path(img).name))
         data = {
             "epoch_timestamp": float(epoch),
             "class": class_string,
@@ -54,7 +54,7 @@ def parse_voyis_images(mission, vehicle, category, ftype, outpath):
         }
         data_list.append(data)
     for img in laser_image_list:
-        epoch = laser_filename_to_date(str(img.name))
+        epoch = laser_filename_to_date(str(Path(img).name))
         data = {
             "epoch_timestamp": float(epoch),
             "class": class_string,
