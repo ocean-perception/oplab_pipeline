@@ -18,8 +18,8 @@ def parse_voyis_images(mission, vehicle, category, ftype, outpath):
     frame_string = "body"
     sensor_string = "voyis"
 
-    stills_filepath = Path(mission.image.cameras[0].path)
-    laser_filepath = Path(mission.image.cameras[1].path)
+    stills_filepath = Path(outpath + "/../" + mission.image.cameras[0].path)
+    laser_filepath = Path(outpuath + "/../" + mission.image.cameras[1].path)
 
     stills_format = "xxxxxxxxxxxxxxxxxxxYYYYxMMxDDxhhmmssxfffuuuxx.xxx"
     laser_format = "xxxxxxxxxxxxxxxxxxxxYYYYxMMxDDxhhmmssxfffuuuxx.xxx"
@@ -32,6 +32,10 @@ def parse_voyis_images(mission, vehicle, category, ftype, outpath):
     # Find all *.tif images in stills_filepath and subfolders
     stills_image_list = glob.glob(str(stills_filepath) + "/**/*.tif", recursive=True)
     laser_image_list = glob.glob(str(laser_filepath) + "/**/*.tif", recursive=True)
+
+    Console.info(" .. found {len(stills_image_list)} stills images")
+    Console.info(" .. found {len(laser_image_list)} laser images")
+
     data_list = []
     for img in stills_image_list:
         epoch = stills_filename_to_date(str(img.name))
