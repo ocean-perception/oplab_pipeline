@@ -75,7 +75,7 @@ def git_pep440_version():
     except OSError:
         print("The command git --version was not successful. Is git installed?")
         return None
-    version_full = git_command(["describe", "--tags", "--dirty=+dirty"])
+    version_full = git_command(["describe", "--tags", "--dirty=.dirty"])
     version_tag = git_command(["describe", "--tags", "--abbrev=0"])
     version_tail = version_full[len(version_tag) :]  # noqa
     return version_tag + version_tail.replace("-", ".dev", 1).replace("-", "+", 1)
