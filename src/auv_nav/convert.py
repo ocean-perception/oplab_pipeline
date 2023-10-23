@@ -129,6 +129,9 @@ def acfr_to_oplab(args):
         Console.info("Vehicle pose provided! Converting it to DR CSV...")
         vpp = AcfrVehiclePoseParser(args.vehicle_pose)
         dr = vpp.get_dead_reckoning()
+
+        print("Found", len(dr), "dr entries")
+
         csv_filename = "auv_acfr_centre.csv"
 
         if (csv_filepath / csv_filename).exists() and not force_overwite:

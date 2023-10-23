@@ -169,6 +169,7 @@ class AcfrVehiclePoseParser:
                 self.origin_longitude = float(line.split()[1])
             if i > 45:
                 self._entries.append(AcfrVehiclePose(line))
+        print("Parsed", len(self._entries), "entries")
 
     def __call__(self, index):
         return self._entries[index]
@@ -192,7 +193,7 @@ class AcfrVehiclePoseParser:
             dr.x_velocity = 0
             dr.y_velocity = 0
             dr.z_velocity = 0
-
+            dr_list.append(dr)
         return dr_list
 
 
