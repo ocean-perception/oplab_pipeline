@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2020, University of Southampton
+Copyright (c) 2023, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -36,7 +36,7 @@ def parse_NOC_polpred(mission, vehicle, category, ftype, outpath):
 
         data_list = []
 
-        Console.info("... parsing NOC tide data")
+        Console.info("Parsing NOC tide data...")
         # Data format sample
         #  Date      Time      Level     Speed    Direc'n
         #                         m        m/s       deg
@@ -64,4 +64,5 @@ def parse_NOC_polpred(mission, vehicle, category, ftype, outpath):
 
                     data = tide.export(output_format)
                     data_list.append(data)
+        Console.info("...done parsing NOC tide data")
         return data_list

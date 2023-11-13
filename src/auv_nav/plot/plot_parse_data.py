@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2020, University of Southampton
+Copyright (c) 2023, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -19,6 +19,7 @@ from auv_nav.tools.time_conversions import (
     epoch_to_utctime,
     get_localtimezone,
 )
+from oplab import Console
 
 """
 This looks at nav_standard.json file stored in the format of
@@ -132,7 +133,7 @@ def plot_parse_data(filepath, ftype="oplab"):
     category/frame, need to expand code to check for variations in them too.
     """
     if ftype == "oplab":
-        print("Loading json file")
+        Console.info("Loading json file")
         # Contains all the 'category' in the json file.
         ct_lst = []  # category_list
         # Contains the same number of elements as <category_list>, each
@@ -163,7 +164,7 @@ def plot_parse_data(filepath, ftype="oplab"):
                     else:
                         if not fdt_lst[ct_lst.index(i["category"])][2]:
                             fdt_lst[ct_lst.index(i["category"])][2].append(i)
-                            print(
+                            Console.warn(
                                 "Warning: %s"
                                 "s frame contains something \
                                   different than body or inertial --> %s"
@@ -178,7 +179,7 @@ def plot_parse_data(filepath, ftype="oplab"):
                             if flag_same_frame == 0:
                                 fdt_lst[ct_lst.index(i["category"])].append([])
                                 fdt_lst[ct_lst.index(i["category"])][-1].append(i)
-                                print(
+                                Console.warn(
                                     "Warning: %s"
                                     "s frame contains more than \
                                       1 different obeject other than body and \
@@ -196,7 +197,7 @@ def plot_parse_data(filepath, ftype="oplab"):
                         fdt_lst[ct_lst.index(i["category"])][1].append(i)
                     else:
                         fdt_lst[ct_lst.index(i["category"])][2].append(i)
-                        print(
+                        Console.warn(
                             "Warning: %s"
                             "s frame contains something \
                               different than body or inertial --> %s"
@@ -207,7 +208,7 @@ def plot_parse_data(filepath, ftype="oplab"):
         # additional approximation of how frequent the sensors collects data
         # through calculating the difference between the first two
         # epoch_timestamp.
-        print("Creating table")
+        Console.info("Creating table")
         t = PrettyTable(["Category", "No. of data", "Details", "Sample Value"])
         epoch_timestamp_data_points = []
         titles = []
@@ -375,8 +376,8 @@ def plot_parse_data(filepath, ftype="oplab"):
 
         t.align["Sample Value"] = "l"
         t.hrules = ALL
-        print(start_end_text)
-        print(t)
-        print("Outputs saved to {}".format(filepath))
+        Console.info(start_end_text)
+        Console.info(t)
+        Console.info("Outputs saved to {}".format(filepath))
     else:
-        print("ACFR ftype to be done")
+        Console.info("ACFR ftype to be done")

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2021, University of Southampton
+Copyright (c) 2023, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -78,7 +78,7 @@ def parse_alr(mission, vehicle, category, ftype, outpath):
 
     data_list = []
     if category == Category.VELOCITY:
-        Console.info("Parsing alr velocity...")
+        Console.info("Parsing ALR velocity...")
         previous_timestamp = 0
         for i in range(len(mission_data["epoch_timestamp"])):
             if mission_data[dvl_down_bt_key][i] == 1:
@@ -149,7 +149,7 @@ def parse_alr(mission, vehicle, category, ftype, outpath):
         Console.info("...done parsing ALR altitude")
 
     if category == Category.USBL:
-        Console.info("Parsing GPS data as USBL")
+        Console.info("Parsing GPS data as USBL...")
         previous_timestamp = 0
         total = 0
         for i in range(len(mission_data["epoch_timestamp"])):  # for each entry
@@ -171,6 +171,6 @@ def parse_alr(mission, vehicle, category, ftype, outpath):
                 else:
                     data_list[-1] = data
                 previous_timestamp = t
-        Console.info("...done parsing ALR USBL. Total: ", total)
+        Console.info("...done parsing ALR GPS data as USBL. Number of readings:", total)
 
     return data_list

@@ -314,8 +314,8 @@ class Mission:
             Console.error("The file vehicle.yaml could not be found at the location:")
             Console.error(vehicle_file)
             Console.error(
-                "In order to load a mission.yaml file, a corresponding \
-                vehicle.yaml files needs to be present in the same folder."
+                "In order to load a mission.yaml file, a corresponding "
+                "vehicle.yaml files needs to be present in the same folder."
             )
             Console.quit("vehicle.yaml not provided")
         except PermissionError:

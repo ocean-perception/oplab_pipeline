@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2020, University of Southampton
+Copyright (c) 2023, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -97,8 +97,8 @@ def usbl_filter(usbl_list, depth_list, sigma_factor, max_auv_speed):
             continue
         else:
             usbl_filtered_list.append(usbl_list[i])
-    print("Total removed pre DR: ", pre)
-    print("Total removed post DR: ", post)
+    Console.info("Total USBL measurements removed pre DR: ", pre)
+    Console.info("Total USBL measurements removed post DR: ", post)
     usbl_list = usbl_filtered_list
     usbl_filtered_list = []
     Console.info(

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2020, University of Southampton
+Copyright (c) 2023, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -131,7 +131,7 @@ def parse_biocam_images(mission, vehicle, category, ftype, outpath):
     # convert to seconds from utc
     # timeoffset = -timezone_offset*60*60 + timeoffset
 
-    Console.info("... parsing " + sensor_string + " images")
+    Console.info("Parsing " + sensor_string + " images...")
 
     # determine file paths
     base_path = get_raw_folder(outpath / ".." / filepath)
@@ -259,6 +259,9 @@ def parse_biocam_images(mission, vehicle, category, ftype, outpath):
             ],
         }
         data_list.append(data)
+
+    Console.info("...done parsing " + sensor_string + " images.")
+
     return data_list
 
 
