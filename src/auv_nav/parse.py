@@ -649,8 +649,6 @@ def parse_single(filepath, force_overwrite):
         correcting_timestamps = False
     for i in pool_list:
         results = i.get()
-        # If current retrieved data is DEPTH
-        # and if TIDE data is available
         if len(results) < 1:
             continue
         if results[0] is None:
@@ -668,18 +666,28 @@ def parse_single(filepath, force_overwrite):
         ):
             if not mission.tide.empty():
                 # proceed to tidal correction
-                Console.info("Tidal correction of depth vector...")
+                if results[0]["category"] == Category.DEPTH:
+                    sensor = "depth sensor"
+                elif results[0]["category"] == Category.USBL:
+                    sensor = "USBL"
+                Console.info(f"Tidal correction of {sensor} data...")
                 # Offset depth to acknowledge for tides
+                missing_tide_data_before = False
+                missing_tide_data_after = False
                 j = 0
                 for k in range(len(results)):
                     while (
-                        j < len(tide_list)
+                        j < len(tide_list)-2
                         and tide_list[j]["epoch_timestamp"]
                         < results[k]["epoch_timestamp"]
                     ):
                         j = j + 1
 
-                    if j >= 1:
+                    if j is 0:
+                        missing_tide_data_before = True
+                    elif (
+                        results[k]["epoch_timestamp"] <= tide_list[j]["epoch_timestamp"]
+                    ):
                         _result = interpolate(
                             results[k]["epoch_timestamp"],
                             tide_list[j - 1]["epoch_timestamp"],
@@ -695,6 +703,26 @@ def parse_single(filepath, force_overwrite):
                             results[k]["data_target"][4]["depth"] = (
                                 results[k]["data_target"][4]["depth"] - _result
                             )
+                    else:
+                        missing_tide_data_after = True
+
+                if missing_tide_data_before:
+                    Console.warn(
+                        f"Tide data is missing for beginning of {sensor} data series. "
+                        f"First {sensor} data at epoch {results[0]['epoch_timestamp']}. "
+                        f"First tide data at epoch {tide_list[0]['epoch_timestamp']}. "
+                        f"{sensor} data recorded before this time will not be corrected."
+                    )
+                if missing_tide_data_after:
+                    Console.warn(
+                        f"Tide data is missing at end of {sensor} data series. "
+                        f"Last tide data at epoch {tide_list[-1]['epoch_timestamp']}. "
+                        f"Last {sensor} data at epoch {results[-1]['epoch_timestamp']}. "
+                        f"{sensor} data recorded after last tide data will not be "
+                        "corrected."
+                    )
+
+                Console.info(f"...done tidal correction of {sensor} data.")
         data_list.append(results)
 
     Console.info("...done compiling data list.")
