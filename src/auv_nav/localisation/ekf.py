@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2021, University of Southampton
+Copyright (c) 2023, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -479,7 +479,7 @@ class EkfImpl(object):
             summands = []
             for i in range(len(innovation)):
                 summands.append((innovation[i] * ici[i]).item(0))
-            Console.warn(
+            Console.warn_verbose(
                 "Mahalanobis dist > threshold ({} time(s) so far in this "
                 "dataset) for measurement at t={} of variable(s) with "
                 "index(es): {}\nInnovation:\n{}\nMahalanobis distance: {} "
@@ -493,7 +493,7 @@ class EkfImpl(object):
                     str(summands).replace("\n", ""),
                 )
             )
-            # Console.warn("innovation_cov:\n{}".format(
+            # Console.warn_verbose("innovation_cov:\n{}".format(
             #    str(innovation_cov).replace('\n', '').replace(']', ']\n'))
             # )
             return False
@@ -1031,6 +1031,18 @@ class ExtendedKalmanFilter(object):
                 timestamp_list_idx += 1
 
         self.ekf.smooth(enable=self.activate_smoother)
+        if self.ekf.nb_exceeded_mahalanobis > 0:
+            Console.warn(
+                "Mahalanobis distance threshold exceeded "
+                f"{self.ekf.nb_exceeded_mahalanobis} time(s) in this dataset. If this "
+                "number is high, this can indicate that the pose measurements contain "
+                "outliers (-> nothing to worry about, Mahalanobis threshold is doing "
+                "what it is supposed to do) or that you set the measurement or process "
+                "noises to too low values, in which case they should be adjusted in "
+                "the auv_nav.yaml configuration file. To display each occurrence of "
+                "the Mahalanobis distance threshold being exceeded, run auv_nav in "
+                "verbose mode."
+            )
         self.ekf.print_report()
 
     def get_result(self):
