@@ -50,7 +50,7 @@ class MonoCamera:
     @property
     def rectification_maps(self):
         self.new_K, self.roi = cv2.getOptimalNewCameraMatrix(
-            self.K, self.d,, self.size, 0)
+            self.K, self.d, self.size, 0)
         mapx, mapy = cv2.initUndistortRectifyMap(
             self.K,
             self.d,
