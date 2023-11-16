@@ -7,6 +7,7 @@ See LICENSE.md file in the project root for full license information.
 """
 
 from pathlib import Path
+import math
 
 import cv2
 import numpy as np
@@ -26,6 +27,8 @@ class MonoCamera:
         self.P = np.zeros((3, 4))
         self.image_width = 0
         self.image_height = 0
+        self.roi = None
+        self.new_K = None
         self.name = ""
         self.downsize_ratio = downsize_ratio
 
@@ -36,26 +39,23 @@ class MonoCamera:
 
             if self.downsize_ratio is not None:
                 # Scale camera matrix and projection matrix
-                self.K[0, 0] *= self.downsize_ratio
-                self.K[1, 1] *= self.downsize_ratio
-                self.K[0, 2] *= self.downsize_ratio
-                self.K[1, 2] *= self.downsize_ratio
-                self.P[0, 0] *= self.downsize_ratio
-                self.P[1, 1] *= self.downsize_ratio
-                self.P[0, 2] *= self.downsize_ratio
-                self.P[1, 2] *= self.downsize_ratio
-
+                self.K *= self.downsize_ratio
+                self.P *= self.downsize_ratio
+                self.image_width = math.floor(self.image_width*self.downsize_ratio)
+                self.image_height = math.floor(self.image_height*self.downsize_ratio)
     @property
     def aspect_ratio(self):
         return float(self.image_width) / float(self.image_height)
 
     @property
     def rectification_maps(self):
+        self.new_K, self.roi = cv2.getOptimalNewCameraMatrix(
+            self.K, self.d,, self.size, 0)
         mapx, mapy = cv2.initUndistortRectifyMap(
             self.K,
             self.d,
             self.R,
-            self.P,
+            self.new_K,
             self.size,
             cv2.CV_32FC1,
         )
