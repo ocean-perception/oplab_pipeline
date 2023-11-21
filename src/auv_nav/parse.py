@@ -683,7 +683,7 @@ def parse_single(filepath, force_overwrite):
                     ):
                         j = j + 1
 
-                    if j is 0:
+                    if j == 0:
                         missing_tide_data_before = True
                     elif (
                         results[k]["epoch_timestamp"] <= tide_list[j]["epoch_timestamp"]
