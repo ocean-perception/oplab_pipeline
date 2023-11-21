@@ -669,7 +669,7 @@ class Corrector:
             return
         elif self.distance_metric == "depth_map":
             # Load depth maps
-            path_depth = self.path_processed / "3d_reconstruction" / "depth_maps"
+            path_depth = self.path_processed/"3d_reconstruction/depth_maps/gp_smoothed"
             if not path_depth.exists():
                 Console.quit("Depth maps folder", path_depth, "does not exist.")
             images_to_drop = []
