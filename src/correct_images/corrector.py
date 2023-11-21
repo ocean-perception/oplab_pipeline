@@ -1213,7 +1213,7 @@ class Corrector:
         # check for calibration file if distortion correction needed
         if self.undistort:
             camera_params_folder = Path(self.path_processed).parents[0] / "calibration"
-            camera_params_filename = "mono" + self.camera_name + ".yaml"
+            camera_params_filename = "mono_" + self.camera_name + ".yaml"
             camera_params_file_path = camera_params_folder / camera_params_filename
 
             if not camera_params_file_path.exists():
