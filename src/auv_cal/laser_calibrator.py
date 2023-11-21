@@ -23,6 +23,11 @@ from auv_cal.plot_points_and_planes import plot_pointcloud_and_planes
 from auv_nav.parsers.parse_biocam_images import biocam_timestamp_from_filename
 from oplab import Console, StereoCamera, get_processed_folder
 
+from auv_cal.plane_fitting import Line
+from auv_cal.plot_points_and_planes import plot_pointcloud_and_lines
+
+from auv_cal.ransac import line_fitting_ransac
+
 
 def build_plane(pitch, yaw, point):
     """Compute plane parametrisation given a point and 2 angles
@@ -82,6 +87,30 @@ def plane_through_3_points(points):
 
     return plane_parametrization
 
+def Line_through_2_points(points):
+    """Compute Line passing through 2 points
+
+    Parameters
+    ----------
+    points : list np.ndarray
+        (list of length 2 of ndarray vectors of length 3) coordinates of points
+
+    Returns
+    -------
+    np.ndarray
+        (vector of length 6) Parametrisation of line defined by [x, y, z].T = [x0, y0, z0] + t[a, b, c]
+        result appears as [a, b, c, x0, y0, z0] --->> [direction vector, point]
+    """
+
+    assert len(points) == 2
+
+    
+    a, b, c = points[1] - points[0]
+    x0, y0, z0 = points[0]
+    line_parametrization = np.array([a, b, c, x0, y0, z0])
+
+    return line_parametrization
+
 
 def opencv_to_ned(xyz):
     new_point = np.zeros((3, 1), dtype=np.float32)
@@ -126,7 +155,6 @@ def get_angles(normal):
         yaw_angle += 180.0
 
     return plane_angle, pitch_angle, yaw_angle
-
 
 def findLaserInImage(
     img, min_green_ratio, k, num_columns, start_row=0, end_row=-1, prior=None
@@ -173,7 +201,80 @@ def findLaserInImage(
     else:
         columns = [i[1] for i in prior]
 
-    for u in columns:
+    for u in columns:             #changed to columns2 for use of centre pixels
+        gmax = 0
+        vw = start_row
+        while vw < end_row - k:
+            gt = 0
+            gt_m = 0
+            gt_mv = 0
+            v = vw
+            while v < vw + k:
+                weight = 1 - 2 * abs(vw + float(k - 1) / 2.0 - v) / k
+                intensity = img[v, u]
+                gt += weight * intensity
+                gt_m += intensity
+                gt_mv += (v - vw) * intensity
+                v += 1
+            if gt > gmax:
+                gmax = gt  # gmax:  highest integrated green value
+                vgmax = vw + (
+                    gt_mv / gt_m
+                )  # vgmax: v value in image, where gmax occurrs
+            vw += 1
+        if (
+            gmax > min_green_ratio * img_max_value
+        ):  # If `true`, there is a point in the current column, which
+            # presumably belongs to the laser line
+            peaks.append([vgmax, u])
+    return np.array(peaks)
+
+def findLaserPointInImage(
+    img, min_green_ratio, k, num_columns, start_row=0, end_row=-1, prior=None
+):
+    """Find laser line projection in image
+
+    For each column of the image, find the coordinate (y-value) where the laser
+    line passes, provided the laser is visible in that column. The laser
+    position is calculated with sub-pixel resolution (-> y value is not an
+    integer).
+
+    Returns
+    -------
+    np.ndarray
+        (n x 2) array of y and x values of detected laser pixels
+    """
+
+    img_max_value = 0
+    if img.dtype.type is np.float32 or img.dtype.type is np.float64:
+        img_max_value = 1.0
+    elif img.dtype.type is np.uint8:
+        img_max_value = 255
+    elif img.dtype.type is np.uint16:
+        img_max_value = 65535
+    elif img.dtype.type is np.uint32:
+        img_max_value = 4294967295
+    else:
+        Console.quit("Image bit depth not supported")
+
+    height, width = img.shape
+    peaks = []
+    width_array = np.array(range(80, width - 80))
+
+    if end_row == -1:
+        end_row = height
+
+    if prior is None:
+        if num_columns > 0:
+            incr = int(len(width_array) / num_columns) - 1
+            incr = max(incr, 1)
+            columns = [width_array[i] for i in range(0, len(width_array), incr)]
+        else:
+            columns = width_array
+    else:
+        columns = [i[1] for i in prior]
+
+    for u in columns:            
         gmax = 0
         vw = start_row
         while vw < end_row - k:
@@ -486,6 +587,7 @@ def get_laser_pixels_in_image_pair(
                 r = yaml.safe_load(f)
             if r is not None:
                 a1 = r["top"]
+                #print(a1)
                 if "bottom" in r:
                     a1b = r["bottom"]
                 else:
@@ -632,7 +734,7 @@ class LaserCalibrator:
         self.max_points_per_bin = stratify.get("max_bin_elements", 300)
 
         self.max_point_cloud_size = ransac.get("max_cloud_size", 10000)
-        self.mdt = ransac.get("min_distance_threshold", 0.002)
+        self.mdt = ransac.get("min_distance_threshold", 0.05)  #changed from 0.002 
         self.ssp = ransac.get("sample_size_ratio", 0.8)
         self.gip = ransac.get("goal_inliers_ratio", 0.999)
         self.max_iterations = ransac.get("max_iterations", 5000)
@@ -747,7 +849,6 @@ class LaserCalibrator:
             if abs(pk2[i2][1] - pk1[i1][1]) < 1.0:
                 # Triangulate using Least Squares
                 p = triangulate_lst(pk1[i1], pk2[i2], self.sc.left.P, self.sc.right.P)
-
                 # Remove rectification rotation
                 if self.remap:
                     p_unrec = self.sc.left.R.T @ p
@@ -763,6 +864,213 @@ class LaserCalibrator:
                     cloud.append(p_unrec)
             i += 1
         return cloud, count, count_inversed
+
+    def fit_and_save_line(self, cloud, processed_folder):
+        """Fit mean Line and uncertainty bounding Line to point cloud
+
+        Parameters
+        ----------
+        cloud : ndarray of shape (nx3)
+            Point cloud
+        processed_folder : Path
+            Path of the processed folder where outputs are written
+
+        Returns
+        -------
+        String
+            Line parameters of the mean Line and a set of uncertainty
+            bounding lines of the point cloud in yaml-file format.
+        """
+
+        total_no_points = len(cloud)
+        # print(cloud)
+
+        # Fit mean line
+        Console.info("Fitting a line to", total_no_points, "points...")
+        l = Line([0, 0, 0, 0, 0, 0])
+        mean_line, self.inliers_cloud_list = line_fitting_ransac(cloud, self.mdt,sample_size=self.ssp*total_no_points,
+                                                                  goal_inliers=total_no_points*self.gip, max_iterations=self.max_iterations,plot=False)
+        # p.plot(cloud=cloud)
+
+        # print(mean_line, "mean line")
+
+        filename = time.strftime("pointclouds_and_best_model_%Y%m%d_%H%M%S.html")
+        plot_pointcloud_and_lines(
+            [np.array(cloud), np.array(self.inliers_cloud_list)],
+            [np.array(mean_line)],
+            str(processed_folder / filename),
+        )
+        
+        if mean_line[2] != 1:
+            mean_line[0] /= mean_line[2]
+            mean_line[1] /= mean_line[2]
+            mean_line[2] /= mean_line[2]
+
+        Console.info("Least squares found", len(self.inliers_cloud_list), "inliers")
+
+        if len(self.inliers_cloud_list) < 0.5 * len(cloud) * self.gip:
+            Console.warn("The number of inliers found are off from what you expected.")
+            Console.warn(" * Expected inliers:", len(cloud) * self.gip)
+            Console.warn(" * Found inliers:", len(self.inliers_cloud_list))
+            Console.warn(
+                "Check the output cloud to see if the found line makes sense."
+            )
+            Console.warn("Try to increase your distance threshold.")
+
+        inliers_cloud = np.array(self.inliers_cloud_list)
+        mean_x = np.mean(inliers_cloud[:, 0])
+        mean_y = np.mean(inliers_cloud[:, 1])
+        mean_z = np.mean(inliers_cloud[:, 2])
+        mean_xyz = np.array([mean_x, mean_y, mean_z])
+
+        # Determine minimum distance between points as function of inlier
+        # point cloud size
+        std_y = np.std(inliers_cloud[:, 1])
+        std_z = np.std(inliers_cloud[:, 2])
+        # print("Min y: " + str(np.min(inliers_cloud[:, 1])))
+        # print("Max y: " + str(np.max(inliers_cloud[:, 1])))
+        # print("Std y: " + str(std_y))
+        # print("Min z: " + str(np.min(inliers_cloud[:, 2])))
+        # print("Max z: " + str(np.max(inliers_cloud[:, 2])))
+        # print("Std z: " + str(std_z))
+        min_dist = 2 * math.sqrt(std_y**2 + std_z**2)
+        Console.info("Minimum distance for poisson disc sampling: {}".format(min_dist))
+        min_sin_angle = 0.866  # = sin(60°)
+
+        # Append 1 to the points, so they can be multiplied (dot product) with
+        # line paramters to find out if they are in front, behind or on a
+        # line.
+        self.inliers_1 = np.concatenate(
+            [inliers_cloud, np.ones((inliers_cloud.shape[0], 1))], axis=1
+        )
+
+        Console.info("Generating", self.num_uncert_lines, "uncertainty lines...")
+        generate_lines_start = time.time()
+        tries = 0
+        failed_distance = 0
+        failed_angle = 0
+        while len(self.uncertainty_lines) < self.num_uncert_lines:
+            tries += 1
+            point_cloud_local = random.sample(self.inliers_cloud_list, 2)
+
+            # Check if the points are sufficiently far apart and not aligned
+            p0p1 = point_cloud_local[1][1:3] - point_cloud_local[0][1:3]
+            p0p2 = point_cloud_local[2][1:3] - point_cloud_local[0][1:3]
+            p1p2 = point_cloud_local[2][1:3] - point_cloud_local[1][1:3]
+            p0p1_norm = np.linalg.norm(p0p1)
+            p0p2_norm = np.linalg.norm(p0p2)
+            p1p2_norm = np.linalg.norm(p1p2)
+
+            # Poisson disc sampling: reject points that are too close together
+            if p0p1_norm < min_dist or p0p2_norm < min_dist or p1p2_norm < min_dist:
+                failed_distance += 1
+                if failed_distance % 100000 == 0:
+                    Console.info_verbose(
+                        "Combinations rejected due to distance criterion",
+                        "(Poisson disk sampling):",
+                        failed_distance,
+                        "times,",
+                        "due to angle criterion:",
+                        failed_angle,
+                        "times",
+                    )
+                continue
+
+            # Reject points that are too closely aligned
+            if abs(np.cross(p0p1, p0p2)) / (p0p1_norm * p0p2_norm) < min_sin_angle:
+                failed_angle += 1
+                if failed_angle % 100000 == 0:
+                    Console.info_verbose(
+                        "Combinations rejected due to distance criterion",
+                        "(Poisson disk sampling):",
+                        failed_distance,
+                        "times,",
+                        "due to angle criterion:",
+                        failed_angle,
+                        "times",
+                    )
+                continue
+
+            # Compute line through the 2 points and append to list
+            self.triples.append(np.array(point_cloud_local))
+            self.uncertainty_lines.append(Line_through_2_points(point_cloud_local))
+            Console.info_verbose(
+                "Number of lines: ",
+                len(self.uncertainty_lines),
+                ", " "Number of tries so far: ",
+                tries,
+                ".",
+                "Combinations rejected due to distance criterion",
+                "(Poisson disk sampling):",
+                failed_distance,
+                "times,",
+                "due to angle criterion:",
+                failed_angle,
+                "times",
+            )
+
+        elapsed = time.time() - generate_lines_start
+        elapsed_formatted = timedelta(seconds=elapsed)
+        Console.info(
+            f"... finished generating {len(self.uncertainty_lines)} uncertainty lines in {elapsed_formatted}"
+        )
+
+        filename = time.strftime(
+            "pointclouds_and_uncertainty_lines_all_" "%Y%m%d_%H%M%S.html"
+        )
+        plot_pointcloud_and_lines(
+            self.triples + [np.array(cloud), inliers_cloud],
+            self.uncertainty_lines,
+            str(processed_folder / filename),
+        )
+        # uncomment to save for debugging
+        # np.save('inliers_cloud.npy', inliers_cloud)
+        # for i, line in enumerate(self.uncertainty_lines):
+        #     np.save('line' + str(i) + '.npy', line)
+
+        filename = time.strftime(
+            "pointclouds_and_uncertainty_lines_%Y%m%d_" "%H%M%S.html"
+        )
+        plot_pointcloud_and_lines(
+            self.triples + [np.array(cloud), inliers_cloud],
+            self.uncertainty_lines,
+            str(processed_folder / filename),
+        )
+
+        yaml_msg = (
+            "mean_xyz_m: "
+            + str(mean_xyz.tolist())
+            + "\n"
+            + "mean_line: "
+            + str(mean_line)
+            + "\n"
+        )
+
+        if len(self.uncertainty_lines) > 0:
+            uncertainty_lines_str = "uncertainty_lines:\n"
+            for i, up in enumerate(self.uncertainty_lines):
+                uncertainty_lines_str += "  - " + str(up.tolist()) + "\n"
+            yaml_msg += uncertainty_lines_str
+
+        yaml_msg += (
+            'date: "'
+            + Console.get_date()
+            + '" \n'
+            + 'user: "'
+            + Console.get_username()
+            + '" \n'
+            + 'host: "'
+            + Console.get_hostname()
+            + '" \n'
+            + 'version: "'
+            + Console.get_version()
+            + '" \n'
+        )
+
+        return yaml_msg
+
+
+    
 
     def fit_and_save(self, cloud, processed_folder):
         """Fit mean plane and uncertainty bounding planes to point cloud
@@ -960,9 +1268,10 @@ class LaserCalibrator:
             + Console.get_version()
             + '" \n'
         )
-
+        
         return yaml_msg
 
+       
     def cal(self, limages, rimages, processed_folder):
         """Main function that is called by the code using the LaserCalibrator
             class to trigger the computation of laser plane parameters
@@ -1169,8 +1478,8 @@ class LaserCalibrator:
         point_cloud_rs = point_cloud_rs.reshape(-1, 3)
         point_cloud_filt = np.array(point_cloud_filt)
         point_cloud_filt = point_cloud_filt.reshape(-1, 3)
-        # self.yaml_msg = self.fit_and_save(point_cloud_rs)
-        self.yaml_msg = self.fit_and_save(point_cloud_filt, processed_folder)
+        # self.yaml_msg = self.fit_and_save_line(point_cloud_rs)
+        self.yaml_msg = self.fit_and_save_line(point_cloud_filt, processed_folder)
 
         if self.two_lasers:
             Console.info("Fitting a plane to second line...")
@@ -1191,8 +1500,8 @@ class LaserCalibrator:
             point_cloud_b_rs = point_cloud_b_rs.reshape(-1, 3)
             point_cloud_b_filt = np.array(point_cloud_b_filt)
             point_cloud_b_filt = point_cloud_b_filt.reshape(-1, 3)
-            # self.yaml_msg_b = self.fit_and_save(point_cloud_b_rs)
-            self.yaml_msg_b = self.fit_and_save(point_cloud_b_filt, processed_folder)
+            # self.yaml_msg_b = self.fit_and_save_line(point_cloud_b_rs)
+            self.yaml_msg_b = self.fit_and_save_line(point_cloud_b_filt, processed_folder)
 
     def yaml(self):
         return self.yaml_msg

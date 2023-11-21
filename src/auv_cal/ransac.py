@@ -14,21 +14,51 @@ from oplab import Console
 
 
 def augment(xyzs):
-    axyz = np.ones((len(xyzs), 4))
-    axyz[:, :3] = xyzs
+    axyz = np.ones((len(xyzs), 4))                  #converts a 3x1 matrix to a 4x1, by adding a 1 value at the end.
+    axyz[:, :3] = xyzs                              #used for following functions as the matrices need to be same size
     return axyz
 
 
-def fit_plane(xyzs):
-    axyz = augment(xyzs[:3])
-    m = np.linalg.svd(axyz)[-1][-1, :]
-    if m[0] < 0:
+def fit_plane(xyzs):                                #accepts 3D points
+    axyz = augment(xyzs[:3])                        #converts them to a 4x1 matrix
+    m = np.linalg.svd(axyz)[-1][-1, :]              #solves points to find plane parameters
+    if m[0] < 0:                                    #ensures that the a coefficient is positive
         m = m * (-1)
-    return m
+    return m                                        #returns plane coefficients
 
 
 def is_inlier(coeffs, xyz, threshold):
-    return np.abs(coeffs.dot(augment([xyz]).T)) < threshold
+    return np.abs(coeffs.dot(augment([xyz]).T)) < threshold          #calculates distance from plane 'coeffs' to the point 'xyz', returns true or false
+
+
+def fit_line(xyzs, debug=False):  
+    x_list = []
+    y_list = []
+    z_list = []
+    for x,y,z in xyzs:
+        x_list.append(x)                      #split into seperate lists so that np.polyfit can be used
+        y_list.append(y)                      #there is likely to be a better way to do this but this was the method chosen
+        z_list.append(z)
+        
+    t = np.arange(len(z_list))  #use of 4th dimension 't' to give a common axis for x,y and z
+    dir_x, px = np.polyfit(t, x_list, 1)
+    dir_y, py = np.polyfit(t, y_list, 1)
+    dir_z, pz = np.polyfit(t, z_list, 1)
+
+    m = np.array([dir_x, dir_y, dir_z, px, py, pz], dtype = np.float64)  
+    if debug==True:
+        print(m)
+    return m  #return line vector equation [direction vector,point on line]
+
+def is_inlier_line(coeffs, xyz, threshold):
+    PointOnLine = coeffs[3:]
+    direction = coeffs[:3]
+    selfpoint2point = xyz - PointOnLine
+    d_numerator_vector = np.cross(selfpoint2point,direction)
+    d_numerator = ((d_numerator_vector[0])**2 + (d_numerator_vector[1])**2 + (d_numerator_vector[2])**2)**0.5
+    d_denominator = ((direction[0])**2 + (direction[1])**2 + (direction[2])**2)**0.5
+    d = d_numerator/d_denominator
+    return d < threshold
 
 
 def run_ransac(
@@ -48,11 +78,11 @@ def run_ransac(
     data = list(data)
     for i in range(max_iterations):
         inliers = []
-        s = random.sample(data, int(sample_size))
-        m = fit_plane(s)
-        ic = 0
-        for j in range(len(data)):
-            if is_inlier(m, data[j]):
+        s = random.sample(data, int(sample_size))      #pulls out a random set of points from the data set
+        m = estimate(s)                                #run a function to estimate a plane to fit to the points that were sampled (line directly above)
+        ic = 0                                         # ic = inlier count?
+        for j in range(len(data)):                     #checks if data point is an inlier (within acceptable distance from the plane)
+            if is_inlier(m, data[j]):                  # m is plane coefficients, no threshold value???
                 ic += 1
                 inliers.append(data[j])
 
@@ -60,13 +90,13 @@ def run_ransac(
         # print('estimate:', m,)
         # print('# inliers:', ic)
 
-        if ic > best_ic:
-            best_ic = ic
-            best_model = m
-            if ic > goal_inliers and stop_at_goal:
-                break
+        if ic > best_ic:                               # checks if current iteration has a higher inlier count than previous iteration
+            best_ic = ic                               # if so, set current as the current best (to test later iterations against)
+            best_model = m                             
+            if ic > goal_inliers and stop_at_goal:     # checks if current amount of inliers is within the accepted number
+                break                                  # if so stops iterations and returns best plane estimate
     # estimate final model using all inliers
-    best_model = fit_plane(inliers)
+    best_model = estimate(inliers)
     return best_model, inliers, i
 
 
@@ -80,7 +110,6 @@ def bounding_box(iterable):
 def plot_plane(a, b, c, d):
     yy, zz = np.mgrid[-6:7, 4:15]
     return (-d - c * zz - b * yy) / a, yy, zz
-
 
 def plane_fitting_ransac(
     cloud_xyz,
@@ -104,8 +133,7 @@ def plane_fitting_ransac(
         from mpl_toolkits.mplot3d import Axes3D
 
         fig = plt.figure()
-        ax = Axes3D(fig)
-        # min_x, max_x, min_y, max_y = bounding_box(cloud_xyz[:, 0:2])
+        ax = plt.axes(projection='3d')              #replace Axes3D as it would not function on ipynb or spyder (didn't test it in code)
         xx, yy, zz = plot_plane(a, b, c, d)  # , min_x, max_x, min_y, max_y)
         ax.plot_surface(xx, yy, zz, color=(0, 1, 0, 0.5))
         ax.scatter3D(cloud_xyz.T[0], cloud_xyz.T[1], cloud_xyz.T[2], s=1)
@@ -122,6 +150,63 @@ def plane_fitting_ransac(
         len(inliers),
     )
     return (a, b, c, d), inliers
+
+def plot_line(a, b, c, x0, y0, z0):
+    #x are values on the line already, trying to find the y & z value of line
+    direction = np.array([a,b,c], dtype = np.float64)
+    point = np.array([x0,y0,z0], dtype = np.float64)
+    x_list = []
+    y_list  = [i for i in range(0,15)]
+    z_list = []
+    for  y in y_list:
+        t = (y - point[0]) / direction[1]
+        x = point[1] + t*direction[0]
+        z = point[2] + t*direction[2]
+        x_list.append(x)
+        z_list.append(z)
+    return x_list, y_list, z_list
+
+
+def line_fitting_ransac(
+    cloud_xyz,
+    min_distance_threshold,
+    sample_size,
+    goal_inliers,
+    max_iterations,
+    plot=False,
+):
+    model, inliers, iterations = run_ransac(
+        cloud_xyz,
+        fit_line,
+        lambda x, y: is_inlier_line(x, y, min_distance_threshold),
+        sample_size,
+        goal_inliers,
+        max_iterations,
+    )
+    a, b, c, x0, y0, z0 = model                                    #attributes the direction vector coeffs to a,b and c and point on the line to x0,y0 and z0
+    
+    if plot:
+        import matplotlib.pyplot as plt
+        from mpl_toolkits.mplot3d import Axes3D  # not effective in producing a 3D plot.
+        
+        fig = plt.figure()
+        ax = plt.axes(projection='3d')              
+        xx, yy, zz = plot_line( a, b, c, x0, y0, z0)
+        ax.plot3D(xx, yy, zz)
+        ax.scatter3D(cloud_xyz.T[0], cloud_xyz.T[1], cloud_xyz.T[2], s=1)
+        ax.set_xlabel("$X$")
+        ax.set_ylabel("$Y$")
+        ax.set_zlabel("$Z$")
+        plt.show()
+    Console.info(
+        "RANSAC took",
+        iterations + 1,
+        " iterations. Best model:",
+        model,
+        "explains:",
+        len(inliers),
+    )
+    return model, inliers
 
 
 if __name__ == "__main__":
@@ -146,7 +231,7 @@ if __name__ == "__main__":
         ) / TARGET_C + np.random.normal(scale=NOISE)
 
     # RANSAC
-    m, inliers = plane_fitting_ransac(
+    m, inliers = line_fitting_ransac(
         xyzs, 0.01, 3, GOAL_INLIERS, MAX_ITERATIONS, plot=True
     )
     scale = TARGET_D / m[3]
