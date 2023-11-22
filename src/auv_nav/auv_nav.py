@@ -166,14 +166,10 @@ def main(args=None):
         help="Converts an already processed dive to ACFR format",
     )
     subparser_oplab_to_acfr.add_argument(
-        "-d",
-        "--dive-folder",
         dest="dive_folder",
         help="Input dive path.",
     )
     subparser_oplab_to_acfr.add_argument(
-        "-o",
-        "--output-folder",
         dest="output_folder",
         help="Path where results will be written.",
     )
