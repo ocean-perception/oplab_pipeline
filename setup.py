@@ -78,6 +78,8 @@ def git_pep440_version():
     version_full = git_command(["describe", "--tags", "--dirty=.dirty"])
     version_tag = git_command(["describe", "--tags", "--abbrev=0"])
     version_tail = version_full[len(version_tag) :]  # noqa
+    if version_tail == ".dirty":
+        version_tail = "+dirty"
     return version_tag + version_tail.replace("-", ".dev", 1).replace("-", "+", 1)
 
 
