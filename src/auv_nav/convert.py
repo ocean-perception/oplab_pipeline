@@ -29,7 +29,7 @@ from auv_nav.tools.time_conversions import (
     epoch_to_datetime,
     string_to_epoch,
 )
-from oplab import Console, Mission, Vehicle, get_processed_folder
+from oplab import Console, Mission, Vehicle, get_raw_folder, get_processed_folder
 
 # fmt: on
 
@@ -221,16 +221,17 @@ def oplab_to_acfr(args):
         Console.quit("Default behaviour: not to overwrite results")
 
     Console.info("Loading mission.yaml")
-    path_processed = get_processed_folder(args.dive_folder)
-    mission_file = path_processed / "mission.yaml"
+    path_raw = get_raw_folder(args.dive_folder)
+    mission_file = path_raw / "mission.yaml"
     mission = Mission(mission_file)
 
-    vehicle_file = path_processed / "vehicle.yaml"
+    vehicle_file = path_raw / "vehicle.yaml"
     vehicle = Vehicle(vehicle_file)
 
     origin_lat = mission.origin.latitude
     origin_lon = mission.origin.longitude
 
+    path_processed = get_processed_folder(args.dive_folder)
     json_list = list(path_processed.glob("json_*"))
     if len(json_list) == 0:
         Console.quit(
