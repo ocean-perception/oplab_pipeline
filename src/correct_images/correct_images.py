@@ -369,6 +369,51 @@ def load_configuration_and_camera_system(path, suffix=None):
     camera_yaml_path = None
     default_file_path_correct_config = None
 
+    acfr_std_correct_config_file = (
+        "correct_images/default_yaml/acfr/correct_images.yaml"
+    )
+    sx3_std_correct_config_file = "correct_images/default_yaml/sx3/correct_images.yaml"
+    biocam_std_correct_config_file = (
+        "correct_images/default_yaml/biocam/correct_images.yaml"
+    )
+    biocam4000_15c_std_correct_config_file = (
+        "correct_images/default_yaml/biocam4000_15c/correct_images.yaml"
+    )
+    hybis_std_correct_config_file = (
+        "correct_images/default_yaml/hybis/correct_images.yaml"
+    )
+    ntnu_std_correct_config_file = (
+        "correct_images/default_yaml/ntnu_stereo/correct_images.yaml"
+    )
+    stereo_gopro_std_correct_config_file = (
+        "correct_images/default_yaml/stereo_gopro/correct_images.yaml"
+    )
+    voyis_std_correct_config_file = (
+        "correct_images/default_yaml/voyis/correct_images.yaml"
+    )
+    rosbag_std_correct_config_file = (
+        "correct_images/default_yaml/rosbag/correct_images.yaml"
+    )
+    root = Path(__file__).resolve().parents[1]
+    if mission.image.format == "acfr_standard":
+        default_file_path_correct_config = root / acfr_std_correct_config_file
+    elif mission.image.format == "seaxerocks_3":
+        default_file_path_correct_config = root / sx3_std_correct_config_file
+    elif mission.image.format == "biocam":
+        default_file_path_correct_config = root / biocam_std_correct_config_file
+    elif mission.image.format == "biocam4000_15c":
+        default_file_path_correct_config = root / biocam4000_15c_std_correct_config_file
+    elif mission.image.format == "hybis":
+        default_file_path_correct_config = root / hybis_std_correct_config_file
+    elif mission.image.format == "ntnu_stereo":
+        default_file_path_correct_config = root / ntnu_std_correct_config_file
+    elif mission.image.format == "stereo_gopro":
+        default_file_path_correct_config = root / stereo_gopro_std_correct_config_file
+    elif mission.image.format == "voyis":
+        default_file_path_correct_config = root / voyis_std_correct_config_file
+    elif mission.image.format == "rosbag":
+        default_file_path_correct_config = root / rosbag_std_correct_config_file
+
     if not camera_yaml_raw_path.exists() and not camera_yaml_config_path.exists():
         Console.info(
             "camera.yaml file not found neither in /raw nor in /config folder.",
@@ -376,8 +421,6 @@ def load_configuration_and_camera_system(path, suffix=None):
             mission.image.format,
         )
         # find out default yaml paths
-        root = Path(__file__).resolve().parents[1]
-
         acfr_std_camera_file = "auv_nav/default_yaml/ts1/SSK17-01/camera.yaml"
         sx3_camera_file = "auv_nav/default_yaml/ae2000/YK17-23C/camera.yaml"
         biocam_camera_file = "auv_nav/default_yaml/as6/DY109/camera.yaml"
@@ -390,65 +433,24 @@ def load_configuration_and_camera_system(path, suffix=None):
         voyis_camera_file = "auv_nav/default_yaml/smarty200/voyis/camera.yaml"
         rosbag_camera_file = "auv_nav/default_yaml/rosbag/grassmap/camera.yaml"
 
-        acfr_std_correct_config_file = (
-            "correct_images/default_yaml/acfr/correct_images.yaml"
-        )
-        sx3_std_correct_config_file = (
-            "correct_images/default_yaml/sx3/correct_images.yaml"
-        )
-        biocam_std_correct_config_file = (
-            "correct_images/default_yaml/biocam/correct_images.yaml"
-        )
-        biocam4000_15c_std_correct_config_file = (
-            "correct_images/default_yaml/biocam4000_15c/correct_images.yaml"
-        )
-        hybis_std_correct_config_file = (
-            "correct_images/default_yaml/hybis/correct_images.yaml"
-        )
-        ntnu_std_correct_config_file = (
-            "correct_images/default_yaml/ntnu_stereo/correct_images.yaml"
-        )
-        stereo_gopro_std_correct_config_file = (
-            "correct_images/default_yaml/stereo_gopro/correct_images.yaml"
-        )
-        voyis_std_correct_config_file = (
-            "correct_images/default_yaml/voyis/correct_images.yaml"
-        )
-        rosbag_std_correct_config_file = (
-            "correct_images/default_yaml/rosbag/correct_images.yaml"
-        )
-
         if mission.image.format == "acfr_standard":
             camera_yaml_path = root / acfr_std_camera_file
-            default_file_path_correct_config = root / acfr_std_correct_config_file
         elif mission.image.format == "seaxerocks_3":
             camera_yaml_path = root / sx3_camera_file
-            default_file_path_correct_config = root / sx3_std_correct_config_file
         elif mission.image.format == "biocam":
             camera_yaml_path = root / biocam_camera_file
-            default_file_path_correct_config = root / biocam_std_correct_config_file
         elif mission.image.format == "biocam4000_15c":
             camera_yaml_path = root / biocam4000_15c_camera_file
-            default_file_path_correct_config = (
-                root / biocam4000_15c_std_correct_config_file
-            )
         elif mission.image.format == "hybis":
             camera_yaml_path = root / hybis_camera_file
-            default_file_path_correct_config = root / hybis_std_correct_config_file
         elif mission.image.format == "ntnu_stereo":
             camera_yaml_path = root / ntnu_camera_file
-            default_file_path_correct_config = root / ntnu_std_correct_config_file
         elif mission.image.format == "stereo_gopro":
             camera_yaml_path = root / stereo_gopro_camera_file
-            default_file_path_correct_config = (
-                root / stereo_gopro_std_correct_config_file
-            )
         elif mission.image.format == "voyis":
             camera_yaml_path = root / voyis_camera_file
-            default_file_path_correct_config = root / voyis_std_correct_config_file
         elif mission.image.format == "rosbag":
             camera_yaml_path = root / rosbag_camera_file
-            default_file_path_correct_config = root / rosbag_std_correct_config_file
             camera_yaml_path.copy(camera_yaml_config_path)
             Console.info("Copied camera.yaml file to config folder. Please edit it.")
             Console.info("The file is located at", camera_yaml_config_path)
