@@ -276,7 +276,11 @@ class Corrector:
         else:
             self.loader.set_loader("default")
 
-    def parse(self, path_list, correct_config_list):
+    def parse(
+        self, path_list, correct_config_list, memmap_location=".", memmap_size_gb=50.0
+    ):
+        self.memmap_location = memmap_location
+        self.memmap_size_gb = memmap_size_gb
         # both path_list and correct_config_list are assumed to be valid + equivalent
         for i in range(len(path_list)):  # for each dive
             path = path_list[i]
@@ -669,7 +673,9 @@ class Corrector:
             return
         elif self.distance_metric == "depth_map":
             # Load depth maps
-            path_depth = self.path_processed/"3d_reconstruction/depth_maps/gp_smoothed"
+            path_depth = (
+                self.path_processed / "3d_reconstruction/depth_maps/gp_smoothed"
+            )
             if not path_depth.exists():
                 Console.quit("Depth maps folder", path_depth, "does not exist.")
             images_to_drop = []
@@ -747,8 +753,7 @@ class Corrector:
             * 4.0
             / (1024.0**3)
         )
-        max_bin_size_gb = 50.0
-        max_bin_size = int(max_bin_size_gb / image_size_gb)
+        max_bin_size = int(self.memmap_size_gb / image_size_gb)
 
         self.bin_band = 0.1
         hist_bins = np.arange(
@@ -831,7 +836,7 @@ class Corrector:
                         images_map,
                         distances_map,
                         max_bin_size,
-                        max_bin_size_gb,
+                        self.memmap_size_gb,
                         distance_vector,
                     )
                     for idx_bin in range(hist_bins.size - 1)
@@ -1143,6 +1148,7 @@ class Corrector:
                 memmap_filename, memmap_handle = create_memmap(
                     bin_images,
                     dimensions,
+                    self.memmap_location,
                     loader=self.loader,
                 )
                 self.memmaps_to_remove.append(memmap_filename)
@@ -1153,6 +1159,7 @@ class Corrector:
                 memmap_filename, memmap_handle = create_memmap(
                     bin_images,
                     dimensions,
+                    self.memmap_location,
                     loader=self.loader,
                 )
                 self.memmaps_to_remove.append(memmap_filename)
@@ -1163,6 +1170,7 @@ class Corrector:
                 memmap_filename, memmap_handle = create_memmap(
                     bin_images,
                     dimensions,
+                    self.memmap_location,
                     loader=self.loader,
                 )
                 self.memmaps_to_remove.append(memmap_filename)

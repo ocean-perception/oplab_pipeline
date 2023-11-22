@@ -89,6 +89,19 @@ def main(args=None):
         default="",
         help="Expected suffix for correct_images configuration and output folders.",
     )
+    subparser_parse.add_argument(
+        "--memmap-location",
+        dest="memmap_location",
+        default=".",
+        help="Location for memmap files. Defaults to current directory.",
+    )
+    subparser_parse.add_argument(
+        "--memmap-size-gb",
+        dest="memmap_size_gb",
+        default=50,
+        type=int,
+        help="Size of individual memmap files in GB. Defaults to 50.",
+    )
     subparser_parse.set_defaults(func=call_parse)
 
     # subparser process
@@ -244,7 +257,12 @@ def call_parse(args):
                 "parse", args.force, args.suffix, camera, correct_config=None
             )
             # call new list-compatible implementation of parse()
-            corrector.parse(path_list, correct_config_list)
+            corrector.parse(
+                path_list,
+                correct_config_list,
+                args.memmap_location,
+                args.memmap_size_gb,
+            )
             corrector.cleanup()
 
     Console.info(

@@ -8,6 +8,7 @@ See LICENSE.md file in the project root for full license information.
 
 import uuid
 from datetime import datetime
+from pathlib import Path
 
 import cv2
 import numpy as np
@@ -17,7 +18,7 @@ from oplab import Console
 from ..loaders import default
 
 
-def create_memmap_name() -> str:
+def create_memmap_name(memmap_location) -> str:
     filename_map = (
         "memmap_"
         + datetime.now().strftime("%Y%m%d_%H%M%S_")
@@ -27,11 +28,15 @@ def create_memmap_name() -> str:
         + str(uuid.uuid4())
         + ".map"
     )
-    return filename_map
+    memmap_location = Path(memmap_location)
+    if not memmap_location.exists():
+        memmap_location.mkdir(parents=True)
+    filename_map = memmap_location / filename_map
+    return str(filename_map)
 
 
-def create_memmap(image_list, dimensions, loader=default.loader):
-    filename_map = create_memmap_name()
+def create_memmap(image_list, dimensions, memmap_location, loader=default.loader):
+    filename_map = create_memmap_name(memmap_location)
     Console.info("Creating memmap at", filename_map)
     # If only 1 channel, do not create a 3D array
     if dimensions[-1] == 1:
@@ -55,15 +60,15 @@ def create_memmap(image_list, dimensions, loader=default.loader):
     return filename_map, image_memmap
 
 
-def open_memmap(shape, dtype):
-    filename_map = create_memmap_name()
+def open_memmap(shape, dtype, memmap_location):
+    filename_map = create_memmap_name(memmap_location)
     Console.info("Creating memmap (open_memmap) at", filename_map)
     image_memmap = np.memmap(filename=filename_map, mode="w+", shape=shape, dtype=dtype)
     return filename_map, image_memmap
 
 
-def convert_to_memmap(array, loader=default.loader):
-    filename_map = create_memmap_name()
+def convert_to_memmap(array, memmap_location, loader=default.loader):
+    filename_map = create_memmap_name(memmap_location)
     Console.info("Creating memmap (convert_to_memmap) at", filename_map)
     image_memmap = np.memmap(
         filename=filename_map, mode="w+", shape=array.shape, dtype=array.dtype
