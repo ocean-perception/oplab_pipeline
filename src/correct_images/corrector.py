@@ -811,12 +811,14 @@ class Corrector:
                     self.image_channels,
                 ),
                 dtype=np.float32,
+                memmap_location=self.memmap_location,
             )
             self.memmaps_to_remove.append(images_fn)
 
             distances_fn, distances_map = open_memmap(
                 shape=(len(hist_bins) - 1, self.image_height * self.image_width),
                 dtype=np.float32,
+                memmap_location=self.memmap_location,
             )
             self.memmaps_to_remove.append(distances_fn)
 
@@ -923,6 +925,7 @@ class Corrector:
                     self.image_channels,
                 ),
                 dtype=np.float32,
+                memmap_location=self.memmap_location,
             )
             """
 
