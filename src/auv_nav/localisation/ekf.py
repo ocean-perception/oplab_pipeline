@@ -8,6 +8,7 @@ See LICENSE.md file in the project root for full license information.
 
 import copy
 import math
+from datetime import datetime, timezone
 from typing import List, Optional
 
 import numpy as np
@@ -1144,7 +1145,13 @@ def update_camera_list(
                 Console.error(
                     "There is a camera entry with index",
                     c_idx,
-                    "that is not updated to EKF...",
+                    "at epoch time",
+                    camera_list[c_idx].epoch_timestamp,
+                    "(UTC:",
+                    datetime.fromtimestamp(
+                        camera_list[c_idx].epoch_timestamp, tz=timezone.utc
+                    ).strftime("%Y/%m/%d %H:%M:%S.%f")[:-3],
+                    ") that is not updated to EKF",
                 )
             c_idx += 1
         elif cam_ts > ekf_ts:
