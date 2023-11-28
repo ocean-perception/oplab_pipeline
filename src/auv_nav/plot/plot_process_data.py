@@ -213,12 +213,12 @@ def plot_velocity_vs_time(
     fig.append_trace(tr_dr_x, 1, 2)
     fig.append_trace(tr_dr_y, 2, 2)
     fig.append_trace(tr_dr_z, 3, 2)
-    fig["layout"]["xaxis1"].update(title="Epoch time, s", tickformat=".3f")
-    fig["layout"]["xaxis2"].update(title="Epoch time, s", tickformat=".3f")
-    fig["layout"]["xaxis3"].update(title="Epoch time, s", tickformat=".3f")
-    fig["layout"]["xaxis4"].update(title="Epoch time, s", tickformat=".3f")
-    fig["layout"]["xaxis5"].update(title="Epoch time, s", tickformat=".3f")
-    fig["layout"]["xaxis6"].update(title="Epoch time, s", tickformat=".3f")
+    fig["layout"]["xaxis1"].update(title="Epoch time, s", tickformat=".f")
+    fig["layout"]["xaxis2"].update(title="Epoch time, s", tickformat=".f")
+    fig["layout"]["xaxis3"].update(title="Epoch time, s", tickformat=".f")
+    fig["layout"]["xaxis4"].update(title="Epoch time, s", tickformat=".f")
+    fig["layout"]["xaxis5"].update(title="Epoch time, s", tickformat=".f")
+    fig["layout"]["xaxis6"].update(title="Epoch time, s", tickformat=".f")
 
     fig["layout"]["yaxis1"].update(title="Velocity, m/s")
     fig["layout"]["yaxis2"].update(title="Velocity, m/s")
@@ -350,10 +350,10 @@ def plot_deadreckoning_vs_time(
         fig.append_trace(tr_vi_northings, 1, 1)
         fig.append_trace(tr_vi_eastings, 1, 2)
 
-    fig["layout"]["xaxis1"].update(title="Epoch time, s", tickformat=".3f")
-    fig["layout"]["xaxis2"].update(title="Epoch time, s", tickformat=".3f")
-    fig["layout"]["xaxis3"].update(title="Epoch time, s", tickformat=".3f")
-    fig["layout"]["xaxis4"].update(title="Epoch time, s", tickformat=".3f")
+    fig["layout"]["xaxis1"].update(title="Epoch time, s", tickformat=".f")
+    fig["layout"]["xaxis2"].update(title="Epoch time, s", tickformat=".f")
+    fig["layout"]["xaxis3"].update(title="Epoch time, s", tickformat=".f")
+    fig["layout"]["xaxis4"].update(title="Epoch time, s", tickformat=".f")
     fig["layout"]["yaxis1"].update(title="Northing, m")
     fig["layout"]["yaxis2"].update(title="Easting, m")
     fig["layout"]["yaxis3"].update(title="Depth, m", autorange="reversed")
@@ -394,7 +394,7 @@ def plot_pf_uncertainty(
     layout = go.Layout(
         title="Particle Filter Uncertainty Plot",
         hovermode="closest",
-        xaxis=dict(title="Epoch time, s", tickformat=".3f"),
+        xaxis=dict(title="Epoch time, s", tickformat=".f"),
         yaxis=dict(title="Degrees or Metres"),
         dragmode="pan",
     )
@@ -1271,12 +1271,12 @@ def plot_sensor_uncertainty(
     fig.append_trace(tr_n, 2, 3)
     fig.append_trace(tr_e, 2, 3)
 
-    fig["layout"]["xaxis1"].update(title="Epoch time, s", tickformat=".3f")
-    fig["layout"]["xaxis2"].update(title="Epoch time, s", tickformat=".3f")
-    fig["layout"]["xaxis3"].update(title="Epoch time, s", tickformat=".3f")
-    fig["layout"]["xaxis4"].update(title="Epoch time, s", tickformat=".3f")
-    fig["layout"]["xaxis5"].update(title="Epoch time, s", tickformat=".3f")
-    fig["layout"]["xaxis6"].update(title="Epoch time, s", tickformat=".3f")
+    fig["layout"]["xaxis1"].update(title="Epoch time, s", tickformat=".f")
+    fig["layout"]["xaxis2"].update(title="Epoch time, s", tickformat=".f")
+    fig["layout"]["xaxis3"].update(title="Epoch time, s", tickformat=".f")
+    fig["layout"]["xaxis4"].update(title="Epoch time, s", tickformat=".f")
+    fig["layout"]["xaxis5"].update(title="Epoch time, s", tickformat=".f")
+    fig["layout"]["xaxis6"].update(title="Epoch time, s", tickformat=".f")
     fig["layout"]["yaxis1"].update(title="Angle, degrees")
     fig["layout"]["yaxis2"].update(title="Velocity, m/s")
     fig["layout"]["yaxis3"].update(title="LatLong, degrees")
@@ -1357,6 +1357,13 @@ def plot_2d_deadreckoning(
                 [float(j.eastings) for j in i[1]],
                 [float(j.northings) for j in i[1]],
                 visibility=i[2],
+                hoverinfo="x+y+text",
+                hovertext=[
+                    time.strftime(
+                        "%Y/%m/%d %H:%M:%S.%f", time.gmtime(j.epoch_timestamp)
+                    )[:-3]
+                    for j in i[1]
+                ],
             )
         except TypeError:
             Console.error("TypeError in plotting ", i[0])
@@ -1370,7 +1377,7 @@ def plot_2d_deadreckoning(
             visibility="legendonly",
             hoverinfo="x+y+text",
             hovertext=[
-                time.strftime("%H:%M:%S", time.localtime(i.epoch_timestamp))
+                time.strftime("%H:%M:%S", time.gmtime(i.epoch_timestamp))
                 for i in camera1_pf_list
             ],
         )
@@ -1389,7 +1396,7 @@ def plot_2d_deadreckoning(
             visibility=True,
             hoverinfo="x+y+text",
             hovertext=[
-                time.strftime("%H:%M:%S", time.localtime(i.epoch_timestamp))
+                time.strftime("%H:%M:%S", time.gmtime(i.epoch_timestamp))
                 for i in pf_fusion_dvl_list
             ],
         )
