@@ -3,13 +3,13 @@ cameras:
   - name: cam61003146
     type: rggb
     bit_depth: 16
-    path: 'image/cam61003146_strobed'
+    path: 'image/cam61003146_strobe'
     extension: tif
     filename_to_date: YYYYMMDDxhhmmssxfffuuuxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxx
   - name: cam61004444
     type: grayscale
     bit_depth: 16
-    path: 'image/cam61004444_strobed'
+    path: 'image/cam61004444_strobe'
     extension: tif
     filename_to_date: 'YYYYMMDDxhhmmssxfffuuuxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxx'
   - name: cam61004444_laser

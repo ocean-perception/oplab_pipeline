@@ -200,7 +200,7 @@ class TestCameraSystem(unittest.TestCase):
         self.assertEqual(cs.cameras[0].bit_depth, 16, "Wrong camera bit_depth")
         self.assertEqual(
             cs.cameras[0].path,
-            "image/cam61003146_strobed",
+            "image/cam61003146_strobe",
             "Wrong camera path",
         )
         self.assertEqual(cs.cameras[0].extension, "tif", "Wrong camera extension")
@@ -215,7 +215,7 @@ class TestCameraSystem(unittest.TestCase):
         self.assertEqual(cs.cameras[1].bit_depth, 16, "Wrong camera bit_depth")
         self.assertEqual(
             cs.cameras[1].path,
-            "image/cam61004444_strobed",
+            "image/cam61004444_strobe",
             "Wrong camera path",
         )
         self.assertEqual(cs.cameras[1].extension, "tif", "Wrong camera extension")
