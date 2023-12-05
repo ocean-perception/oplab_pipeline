@@ -11,9 +11,10 @@ from pathlib import Path
 
 try:
     # Try using the v2 API directly to avoid a warning from imageio >= 2.16.2
-    from imageio.v2 import imwrite
+    from imageio.v2 import imread, imwrite
 except ImportError:
-    from imageio import imwrite
+    from imageio import imread, imwrite
+
 import joblib
 import numpy as np
 import pandas as pd
@@ -132,5 +133,27 @@ def write_output_image(image, filename, dest_path, dest_format):
     ch = image.shape[0]
     if ch == 3:
         image = image.transpose((1, 2, 0))
-    imwrite(file_path, image)
+
+    image_written_ok = False
+    i = 0
+    max_tries = 5
+    while image_written_ok is False and i < max_tries:
+        imwrite(file_path, image)
+        # Read image back to check if it was written correctly
+        try:
+            image = imread(file_path)
+        except Exception:
+            i += 1
+        else:
+            image_written_ok = True
+
+    if i >= max_tries:
+        Console.error(
+            f"Failed to write image {file_path} after {max_tries} unsuccessful attempts"
+        )
+    elif i > 0:
+        Console.warning(
+            f"Image {file_path} was written successfully after {i} failed attempt(s)"
+        )
+
     return file_path
