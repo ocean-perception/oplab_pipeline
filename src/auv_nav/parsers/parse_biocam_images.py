@@ -135,15 +135,19 @@ def parse_biocam_images(mission, vehicle, category, ftype, outpath):
 
     # determine file paths
     base_path = get_raw_folder(outpath / ".." / filepath)
-    filepath1 = base_path / str(camera1_label + "_strobe/*.*")
-    filepath1b = base_path / str(camera1_label + "_laser/**/*.*")
-    filepath2 = base_path / str(camera2_label + "_strobe/*.*")
-    filepath2b = base_path / str(camera2_label + "_laser/**/*.*")
+    filepath1a = base_path / str(camera1_label + "_strobe/*.tif")
+    filepath1b = base_path / str(camera1_label + "_laser/**/*.jpg")
+    filepath1c = base_path / str(camera1_label + "_laser/*.tif")  # laser calibration
+    filepath2a = base_path / str(camera2_label + "_strobe/*.tif")
+    filepath2b = base_path / str(camera2_label + "_laser/**/*.jpg")
+    filepath2c = base_path / str(camera2_label + "_laser/*.tif")  # laser calibration
 
-    camera1_list = glob.glob(str(filepath1))
+    camera1_list = glob.glob(str(filepath1a))
     camera1_list.extend(glob.glob(str(filepath1b), recursive=True))
-    camera2_list = glob.glob(str(filepath2))
+    camera1_list.extend(glob.glob(str(filepath1c), recursive=True))
+    camera2_list = glob.glob(str(filepath2a))
     camera2_list.extend(glob.glob(str(filepath2b), recursive=True))
+    camera2_list.extend(glob.glob(str(filepath2c), recursive=True))
 
     camera1_filename = [
         line for line in camera1_list if ".txt" not in line and "._" not in line
