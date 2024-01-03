@@ -128,38 +128,20 @@ def curve_fitting(
             intensities_filt.append(intensity)
 
     if not altitudes_filt or not intensities_filt:
-        if not altitudes_filt:
-            Console.warn(
-                "Altitudes are negative or zero in curve fitting at pixel position",
-                "x:",
-                x,
-                ", y:",
-                y,
-                "\naltitudes: ",
-                altitudes,
-                "\nintensities: ",
-                intensities,
-                "\naltitudes_filt: ",
-                altitudes_filt,
-                "\nintensities_filt: ",
-                intensities_filt,
+        note = ""
+        if x < 14 and y == 0:
+            note = (
+                ". This is expected for the first 14 pixels of the first row of BioCam "
+                "images."
             )
-        if not intensities_filt:
-            Console.warn(
-                "Intensities are negative or zero in curve fitting at pixel position",
-                "x:",
-                x,
-                ", y:",
-                y,
-                "\naltitudes: ",
-                altitudes,
-                "\nintensities: ",
-                intensities,
-                "\naltitudes_filt: ",
-                altitudes_filt,
-                "\nintensities_filt: ",
-                intensities_filt,
-            )
+        Console.warn(
+            "No valid altitudes or intensities in curve fitting at pixel position "
+            f"x: {x}, y: {y}{note}\n",
+            f"altitudes: {altitudes}\n",
+            f"intensities: {intensities}\n",
+            f"altitudes_filt: {altitudes_filt}\n",
+            f"intensities_filt: {intensities_filt}\n",
+        )
         return np.array([1, 0, 0])
 
     altitudes_filt = np.array(altitudes_filt)

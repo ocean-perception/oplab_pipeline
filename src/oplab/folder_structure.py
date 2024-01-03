@@ -54,11 +54,13 @@ def get_folder(path: Union[str, Path], name: str) -> Optional[Path]:
         return change_subfolder(path, "raw", name)
     elif "configuration" in path.parts:
         return change_subfolder(path, "configuration", name)
+    elif not path.exists():
+        Console.quit(f"Folder {str(path)} does not exist.")
     else:
         Console.quit(
             "The folder",
             str(path),
-            "does not belong to any dataset",
+            "does not belong to a raw/configuration/processed dataset",
             "folder structure.",
         )
 

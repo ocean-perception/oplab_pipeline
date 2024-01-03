@@ -549,6 +549,11 @@ class Corrector:
                         "No navigation solution could be found. Please run ",
                         "auv_nav parse and process first",
                     )
+                elif len(json_list) > 1:
+                    Console.warn(
+                        "Multiple navigation solutions found. Using the first one:",
+                        json_list[0],
+                    )
                 self.distance_path = json_list[0]
                 Console.info("JSON:", self.distance_path)
             metric_path = self.path_processed / self.distance_path
@@ -571,6 +576,11 @@ class Corrector:
 
             # read dataframe for corresponding distance csv path
             dataframe = pd.read_csv(self.altitude_csv_path)
+            if len(dataframe) == 0:
+                Console.quit(
+                    f"Empty navigation csv file at {self.altitude_csv_path}. Please "
+                    "check file and rerun auv_nav if necessary."
+                )
 
             # get imagelist for given camera object
             if self.user_specified_image_list != "none":
@@ -578,15 +588,17 @@ class Corrector:
                 trimmed_csv_file = "trimmed_csv_" + self.camera_name + ".csv"
                 self.trimmed_csv_path = Path(self.path_config) / trimmed_csv_file
 
-                if not self.altitude_csv_path.exists():
-                    message = "Path to " + metric_file + " does not exist..."
-                    Console.quit(message)
-                else:
-                    # create trimmed csv based on user's  list of images
-                    dataframe = trim_csv_files(
-                        path_file_list,
-                        self.altitude_csv_path,
-                        self.trimmed_csv_path,
+                # create trimmed csv based on user's  list of images
+                dataframe = trim_csv_files(
+                    path_file_list,
+                    self.altitude_csv_path,
+                    self.trimmed_csv_path,
+                )
+                if len(dataframe) == 0:
+                    Console.quit(
+                        "No images left after filtering list of image altitudes from "
+                        f"{self.altitude_csv_path} with image file list provided at "
+                        f"{path_file_list}. Check both files."
                     )
 
             # Check images exist:
@@ -603,6 +615,12 @@ class Corrector:
                     im_path = self.path_raw / entry
                     if im_path.exists():
                         valid_idx.append(idx)
+            if len(valid_idx) == 0:
+                Console.quit(
+                    "None of the images whose relative paths are provided in the "
+                    "navigation file exist. Check the images exits and that the "
+                    f"indicated paths are correct. Last image path checked: {im_path}"
+                )
             filtered_dataframe = dataframe.iloc[valid_idx]
             filtered_dataframe.reset_index(drop=True)
             # WARNING: if the column does not contain any 'None' entry, it will be
