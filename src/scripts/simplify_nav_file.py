@@ -5,7 +5,7 @@ relevant for typical users.
 The output navigation file only covers the images that are in the image folder.
 
 Usage:
-simplify_nav_file.py [-h] [-o OUTPUT] [-f] nav_file image_folder
+simplify_nav_file.py [-h] [-i IMAGE_FOLDER] [-o OUTPUT] [-f] nav_file
 
 positional arguments:
   nav_file              Navigation file (input; e.g. EKF based nav)
@@ -30,7 +30,7 @@ from pathlib import Path
 import pandas as pd
 
 
-def simplify_nav_file(nav_file, image_folder, output, force):
+def simplify_nav_file(nav_file, image_folder, output, short, force):
     if Path(output).exists() and not force:
         print(f"Output file {output} exists. Use -f to overwrite.")
         return
@@ -46,47 +46,68 @@ def simplify_nav_file(nav_file, image_folder, output, force):
         return
     print(f"Number of entries in navigation file: {len(df)}")
 
-    # Check filename extension
-    print("Checking filename extension")
-    fn_extension = None
-    if len([p for p in Path(image_folder).glob("*.png")]) > 0:
-        print("Image folder contains png files")
-        fn_extension = ".png"
-    if len([p for p in Path(image_folder).glob("*.jpg")]) > 0:
-        print("Image folder contains jpg files")
-        if fn_extension is not None:
-            print("ERROR: Image folder contains both png and jpg files")
+    if image_folder is None:
+        print("Generating filename column")
+        df["filename"] = df["relative_path"].apply(lambda x: Path(x).name)
+    else:
+        # Check filename extension
+        print("Checking filename extension")
+        fn_extension = None
+        if len([p for p in Path(image_folder).glob("*.png")]) > 0:
+            print("Image folder contains png files")
+            fn_extension = ".png"
+        if len([p for p in Path(image_folder).glob("*.jpg")]) > 0:
+            print("Image folder contains jpg files")
+            if fn_extension is not None:
+                print("ERROR: Image folder contains both png and jpg files")
+                return
+            fn_extension = ".jpg"
+        if not fn_extension:
+            print("ERROR: Image folder does not contain png or jpg files")
             return
-        fn_extension = ".jpg"
-    if not fn_extension:
-        print("ERROR: Image folder does not contain png or jpg files")
-        return
 
-    # Get file list for the image folder
-    print("Gathering image file list")
-    image_files = [f for f in Path(image_folder).glob("*" + fn_extension)]
+        # Get file list for the image folder
+        print("Gathering image file list")
+        image_files = [f for f in Path(image_folder).glob("*" + fn_extension)]
 
-    # Only keep the stem from the column relative_path
-    print("Generating filename column")
-    df["filename"] = df["relative_path"].apply(lambda x: Path(x).stem + fn_extension)
+        # Only keep the stem from the column relative_path
+        print("Generating filename column")
+        df["filename"] = df["relative_path"].apply(
+            lambda x: Path(x).stem + fn_extension
+        )
 
-    # Filter out the images that are not in the image folder
-    print("Filtering out images that are not in the image folder")
-    df = df[(df["filename"]).isin([f.name for f in image_files])]
-    if len(df) == 0:
-        print("ERROR: No images of input navigation file are in the image folder")
-        return
+        # Filter out the images that are not in the image folder
+        print("Filtering out images that are not in the image folder")
+        df = df[(df["filename"]).isin([f.name for f in image_files])]
+        if len(df) == 0:
+            print("ERROR: No images of input navigation file are in the image folder")
+            return
+
+        # Sanity check data
+        print(
+            "Sanity check data by comparing number of image files to entries in nav file"
+        )
+        print(f"Number of images in generated nav file: {len(df)}")
+        print(f"Number of images in image folder:       {len(image_files)}")
+        if len(df) != len(image_files):
+            print(
+                "WARNING: Number of images in nav file does not match number of images "
+                "in image folder"
+            )
 
     print("Sorting dataframe")
     # Sort the dataframe by timestamp
     df = df.sort_values(by="timestamp [s]")
 
     # Write output file
-    print("Writing simplified and filtered nav file to disk")
-    df.to_csv(
-        output,
-        index=False,
-        columns=[
+    if short:
+        cols = [
+            "filename",
+            "latitude [deg]",
+            "longitude [deg]",
+        ]
+    else:
+        cols = [
             "filename",
             "northing [m]",
             "easting [m]",
@@ -98,18 +119,13 @@ def simplify_nav_file(nav_file, image_folder, output, force):
             "timestamp [s]",
             "latitude [deg]",
             "longitude [deg]",
-        ],
+        ]
+    print("Writing simplified and filtered nav file to disk")
+    df.to_csv(
+        output,
+        index=False,
+        columns=cols,
     )
-
-    # Sanity check data
-    print("Sanity check data by comparing number of image files to entries in nav file")
-    print(f"Number of images in generated nav file: {len(df)}")
-    print(f"Number of images in image folder:       {len(image_files)}")
-    if len(df) != len(image_files):
-        print(
-            "WARNING: Number of images in nav file does not match number of images in "
-            "image folder"
-        )
 
     print("All done!")
 
@@ -123,7 +139,14 @@ if __name__ == "__main__":
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument("nav_file", help="Navigation file (input; e.g. EKF based nav)")
-    parser.add_argument("image_folder", help="Path to image folder")
+    parser.add_argument(
+        "-i",
+        "--image_folder",
+        help="Path to image folder. If provided, only rows in the nav file "
+        "corresponding to an image in this folder will be output. Otherwise all lines "
+        "will be output.",
+        default=None,
+    )
     parser.add_argument(
         "-o",
         "--output",
@@ -131,8 +154,14 @@ if __name__ == "__main__":
         default="navigation_data.csv",
     )
     parser.add_argument(
+        "-s",
+        "--short",
+        help="Only output filename, latitude and longitude columns",
+        action="store_true",
+    )
+    parser.add_argument(
         "-f", "--force", help="Overwrite output file if it exists", action="store_true"
     )
-    args = parser.parse_args()
+    a = parser.parse_args()
 
-    simplify_nav_file(args.nav_file, args.image_folder, args.output, args.force)
+    simplify_nav_file(a.nav_file, a.image_folder, a.output, a.short, a.force)
