@@ -74,6 +74,10 @@ class TimeCorrector:
                     timestamps_alr_ms.append(int(line.split(",")[5]))
                     timestamps_bc_1_ms.append(int(line.split(",")[7]))
         
+        if len(timestamps_bc_0_ms) == 0:
+            print("No time poll lines found in the serial log. Aborting.")
+            quit()
+
         if timestamps_bc_0_ms != sorted(timestamps_bc_0_ms):
             print(
                 "Timestamps are not sorted. Please indicate BioCam serial losg in "
