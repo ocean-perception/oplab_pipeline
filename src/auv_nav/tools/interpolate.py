@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2020, University of Southampton
+Copyright (c) 2024, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
+
+import time
 
 import numpy as np
 
@@ -339,7 +341,11 @@ def interpolate_sensor_list(
                         len(sensor_list),
                         "entries from sensor",
                         sensor_name,
-                        ". Reason: data before start of mission",
+                        ". Reason: data before start of mission (epoch:",
+                        start_time,
+                        "; UTC:",
+                        time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(start_time)),
+                        ")",
                     )
                     del sensor_list[:i]
                 break
@@ -354,7 +360,11 @@ def interpolate_sensor_list(
                         len(sensor_list),
                         "entries from sensor",
                         sensor_name,
-                        ". Reason: data after end of mission",
+                        ". Reason: data after end of mission (epoch:",
+                        end_time,
+                        "; UTC:",
+                        time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(end_time)),
+                        ")",
                     )
                     del sensor_list[i:]
                 sensor_overlap_flag = 1
