@@ -115,8 +115,7 @@ class FilenameToDate:
                     have a length of 3"
             else:
                 usecond = "0"
-
-            print('hour',hour,'minute',minute,'second', second,'msecond',msecond)
+        
             microsecond = int(msecond) * 1000 + int(usecond)
 
             date = datetime(

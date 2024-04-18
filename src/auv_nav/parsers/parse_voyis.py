@@ -95,7 +95,6 @@ def parse_voyis_images(mission, vehicle, category, ftype, outpath):
                     "filename": str(laser_image_list_rel[i]),
                 }
             ],
-        }
-        print(str(laser_image_list_rel[i]))
+        }        
         data_list.append(data)
     return data_list
