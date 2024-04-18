@@ -32,11 +32,19 @@ def parse_voyis_images(mission, vehicle, category, ftype, outpath):
     stills_filepath = dive_folder / Path(mission.image.cameras[0].path)
     laser_filepath = dive_folder / Path(mission.image.cameras[1].path)
 
-    stills_format = "xxxxxxxxxxxxxxxxxxxYYYYxMMxDDxhhmmssxfffuuuxx.xxx"
-    laser_format = "xxxxxxxxxxxxxxxxxxxxYYYYxMMxDDxhhmmssxfffuuuxx.xxx"
+    stills_format_PPS = "xxxxxxxxxxxxxxxNNNxYYYYxMMxDDxhhmmssxfffuuuxx.xxx"                            
+    stills_format_SYS = "xxxxxxxxxxxxxxxNNNNNNxYYYYxMMxDDxhhmmssxfffuuuxx.xxx"                     
 
-    stills_filename_to_date = FilenameToDate(stills_format)
-    laser_filename_to_date = FilenameToDate(laser_format)
+    laser_format_PPS  = "xxxxxxxxxxxxxxxxNNNxYYYYxMMxDDxhhmmssxfffuuuxx.xxx"
+    laser_format_SYS  = "xxxxxxxxxxxxxxxxNNNNNNxYYYYxMMxDDxhhmmssxfffuuuxx.xxx"
+
+
+
+    stills_filename_to_date_PPS = FilenameToDate(stills_format_PPS)
+    laser_filename_to_date_PPS = FilenameToDate(laser_format_PPS)
+
+    stills_filename_to_date_SYS = FilenameToDate(stills_format_SYS)
+    laser_filename_to_date_SYS = FilenameToDate(laser_format_SYS)
 
     Console.info("... parsing " + sensor_string + " images")
 
@@ -52,6 +60,7 @@ def parse_voyis_images(mission, vehicle, category, ftype, outpath):
 
     data_list = []
     for i, img in enumerate(stills_image_list):
+        print(str(Path(img).name)[15:18])
         epoch = stills_filename_to_date(str(Path(img).name))
         data = {
             "epoch_timestamp": float(epoch),
@@ -68,6 +77,7 @@ def parse_voyis_images(mission, vehicle, category, ftype, outpath):
         }
         data_list.append(data)
     for img in laser_image_list:
+        print(str(Path(img).name[16:19]))
         epoch = laser_filename_to_date(str(Path(img).name))
         data = {
             "epoch_timestamp": float(epoch),
@@ -82,5 +92,6 @@ def parse_voyis_images(mission, vehicle, category, ftype, outpath):
                 }
             ],
         }
+        print(str(laser_image_list_rel[i]))
         data_list.append(data)
     return data_list
