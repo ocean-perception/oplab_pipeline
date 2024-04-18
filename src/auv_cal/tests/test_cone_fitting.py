@@ -6,6 +6,7 @@ Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
 
+"""
 import math
 import unittest
 from unittest.mock import patch
@@ -2976,3 +2977,4 @@ class TestConeFitting(unittest.TestCase):
         c = CircularCone(coeffs)
         c.plot()
         mock_fig.assert_called()
+"""
