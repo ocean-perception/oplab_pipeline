@@ -60,9 +60,10 @@ def parse_voyis_images(mission, vehicle, category, ftype, outpath):
 
     data_list = []
     for i, img in enumerate(stills_image_list):
-        print(str(Path(img).name)[15:18]=='PPS')
-        print(str(Path(img).name)[15:18]=='SYSTEM')        
-        epoch = stills_filename_to_date(str(Path(img).name))
+        if str(Path(img).name)[15:18]=='PPS':
+            epoch = stills_filename_to_date_PPS(str(Path(img).name))
+        elif str(Path(img).name)[15:18]=='SYSTEM':
+            epoch = stills_filename_to_date_SYS(str(Path(img).name))
         data = {
             "epoch_timestamp": float(epoch),
             "class": class_string,
@@ -78,9 +79,10 @@ def parse_voyis_images(mission, vehicle, category, ftype, outpath):
         }
         data_list.append(data)
     for img in laser_image_list:
-        print(str(Path(img).name[16:19])=='PPS')
-        print(str(Path(img).name[16:19])=='SYSTEM')        
-        epoch = laser_filename_to_date(str(Path(img).name))
+        if str(Path(img).name[16:19])=='PPS':
+            epoch = laser_filename_to_date_PPS(str(Path(img).name))
+        elif str(Path(img).name[16:19])=='SYSTEM':
+            epoch = laser_filename_to_date_SYS(str(Path(img).name))        
         data = {
             "epoch_timestamp": float(epoch),
             "class": class_string,
