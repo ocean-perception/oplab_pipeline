@@ -33,8 +33,7 @@ def parse_voyis_images(mission, vehicle, category, ftype, outpath):
     laser_filepath = dive_folder / Path(mission.image.cameras[1].path)
 
     stills_format = "xxxxxxxxxxxxxxxxxxxYYYYxMMxDDxhhmmssxfffuuuxx.xxx"
-    #laser_format = "xxxxxxxxxxxxxxxxxxxxYYYYxMMxDDxhhmmssxfffuuuxx.xxx"
-    laser_format = "xxxxxxxxxxxxxxxxxxxxYYYYxMMxDDxhhmmssxfffuuuxxxxx.xxx"
+    laser_format = "xxxxxxxxxxxxxxxxxxxxYYYYxMMxDDxhhmmssxfffuuuxx.xxx"
 
     stills_filename_to_date = FilenameToDate(stills_format)
     laser_filename_to_date = FilenameToDate(laser_format)

@@ -116,7 +116,7 @@ class FilenameToDate:
             else:
                 usecond = "0"
 
-            print('stamp_format',stamp_format, 'msecond',msecond)
+            print('hour',hour,'minute',minute,'second', second,'msecond',msecond)
             microsecond = int(msecond) * 1000 + int(usecond)
 
             date = datetime(
