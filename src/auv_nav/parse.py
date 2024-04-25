@@ -31,7 +31,7 @@ from auv_nav.parsers.parse_phins import parse_phins
 from auv_nav.parsers.parse_rdi import parse_rdi
 from auv_nav.parsers.parse_rosbag import parse_rosbag, parse_rosbag_extracted_images
 from auv_nav.parsers.parse_seaxerocks_images import parse_seaxerocks_images
-from auv_nav.parsers.parse_sonardyne_mrt import parse_sonardyne_mrt
+from auv_nav.parsers.parse_sonardyne_mrt import parse_sonardyne_mrt, parse_sonardyne_gga
 from auv_nav.parsers.parse_stereo_gopro import parse_stereo_gopro_images
 from auv_nav.parsers.parse_tide_CTI import parse_tide_CTI
 from auv_nav.parsers.parse_usbl_dump import parse_usbl_dump
@@ -362,6 +362,13 @@ def parse_single(filepath, force_overwrite):
             pool_list.append(
                 pool.apply_async(
                     parse_sonardyne_mrt,
+                    [mission, vehicle, "usbl", ftype, outpath],
+                )
+            )
+        elif mission.usbl.format == "sonardyne_gga":
+            pool_list.append(
+                pool.apply_async(
+                    parse_sonardyne_gga,
                     [mission, vehicle, "usbl", ftype, outpath],
                 )
             )

@@ -4,7 +4,8 @@ import datetime
 import math
 from dataclasses import dataclass, field
 from pathlib import Path
-
+import pandas as pd
+import re
 from auv_nav.sensors import Category
 from auv_nav.tools.latlon_wgs84 import latlon_to_metres, metres_to_latlon
 from auv_nav.tools.time_conversions import read_timezone
@@ -238,6 +239,67 @@ class EstimateTrackerMetrics(MRTBase):
     mde: str
     w_test: str
 
+def parse_gga_txt(filename):
+    df= pd.read_csv(filename,dtype=str)
+    observations = []
+    timestamp =[]
+    lat = []
+    long = []
+    df_header = df.columns.values
+    data_timestamp = re.split(" ",df_header[0])
+    timestamp.append(data_timestamp[1])
+    lat.append(float(df_header[2][:2])+ float(df_header[2][2:])/60)
+    long.append(float(df_header[4][:3])+ float(df_header[4][3:])/60)
+    obs = USBLVectorObs(
+        obs_uid = "",
+        source_uid = "",
+        source_name = "",
+        parent_uid = "",
+        parent_name =  "",
+        assoc_uid = "",
+        time_stamp = timestamp[-1],
+        filter_uid = "",
+        fix_number = "",
+        jx = long[-1],
+        jy = lat[-1],
+        jz = 0.0,
+        valid_jx = False,
+        valid_jy = False,
+        valid_jz = False,
+        frequency = 0,
+        qj_sum = 0,
+        n_good_samples = 0,
+        direction_sd = 0.0, )
+    observations.append(obs)
+    for i in range(df.shape[0]-1):
+        data = df.iloc[i,:].values
+        data_timestamp = re.split(" ", data[0])
+        timestamp.append(data_timestamp[1])
+        lat.append(float(data[2][:2]) + float(data[2][2:]) / 60)
+        long.append(float(data[4][:3]) + float(data[4][3:]) / 60)
+        obs = USBLVectorObs(
+            obs_uid="",
+            source_uid="",
+            source_name="",
+            parent_uid="",
+            parent_name="",
+            assoc_uid="",
+            time_stamp=timestamp[-1],
+            filter_uid="",
+            fix_number="",
+            jx=long[-1],
+            jy=lat[-1],
+            jz=0.0,
+            valid_jx=False,
+            valid_jy=False,
+            valid_jz=False,
+            frequency=0,
+            qj_sum=0,
+            n_good_samples=0,
+            direction_sd=0.0, )
+        observations.append(obs)
+    return observations
+
 
 def parse_mrt_csv(filename):
     filename = Path(filename)
@@ -409,6 +471,149 @@ def parse_sonardyne_mrt(mission, vehicle, category, ftype, outpath):
     all_observations = []
     for filename in files:
         observations = parse_mrt_csv(filename)
+        all_observations.extend(observations)
+    auv_observations = find_closest_observations(all_observations)
+
+    data_list = []
+
+    # Calculate the distance between the two
+    for auv_obs in auv_observations:
+        latitude = float(auv_obs.latitude)
+        longitude = float(auv_obs.longitude)
+        depth = -float(auv_obs.altitude)
+        latitude_ship = float(auv_obs.closest_ship_obs.latitude)
+        longitude_ship = float(auv_obs.closest_ship_obs.longitude)
+        lateral_distance, bearing = latlon_to_metres(
+            latitude, longitude, latitude_ship, longitude_ship
+        )
+        distance = math.sqrt(lateral_distance * lateral_distance + depth * depth)
+
+        # calculate in metres from reference
+        lateral_distance_ship, bearing_ship = latlon_to_metres(
+            latitude_ship,
+            longitude_ship,
+            latitude_reference,
+            longitude_reference,
+        )
+        eastings_ship = math.sin(bearing_ship * math.pi / 180.0) * lateral_distance_ship
+        northings_ship = (
+            math.cos(bearing_ship * math.pi / 180.0) * lateral_distance_ship
+        )
+
+        # calculate in metres from reference
+        lateral_distance_ship, bearing_ship = latlon_to_metres(
+            latitude,
+            longitude,
+            latitude_reference,
+            longitude_reference,
+        )
+        eastings_target = (
+            math.sin(bearing_ship * math.pi / 180.0) * lateral_distance_ship
+        )
+        northings_target = (
+            math.cos(bearing_ship * math.pi / 180.0) * lateral_distance_ship
+        )
+
+        distance_std = distance_std_factor * distance + distance_std_offset
+
+        # determine uncertainty in terms of latitude and longitude
+        latitude_offset, longitude_offset = metres_to_latlon(
+            abs(latitude),
+            abs(longitude),
+            distance_std,
+            distance_std,
+        )
+
+        latitude_std = abs(abs(latitude) - latitude_offset)
+        longitude_std = abs(abs(longitude) - longitude_offset)
+
+        data = {
+            "epoch_timestamp": auv_obs.epoch_timestamp + timeoffset_s,
+            "class": class_string,
+            "sensor": sensor_string,
+            "frame": frame_string,
+            "category": Category.USBL,
+            "data_ship": [
+                {
+                    "latitude": float(latitude_ship),
+                    "longitude": float(longitude_ship),
+                },
+                {
+                    "northings": float(northings_ship),
+                    "eastings": float(eastings_ship),
+                },
+                {"heading": float(auv_obs.closest_heading_obs.heading)},
+            ],
+            "data_target": [
+                {
+                    "latitude": float(latitude),
+                    "latitude_std": float(latitude_std),
+                },
+                {
+                    "longitude": float(longitude),
+                    "longitude_std": float(longitude_std),
+                },
+                {
+                    "northings": float(northings_target),
+                    "northings_std": float(distance_std),
+                },
+                {
+                    "eastings": float(eastings_target),
+                    "eastings_std": float(distance_std),
+                },
+                {
+                    "depth": float(depth),
+                    "depth_std": float(distance_std),
+                },
+                {"distance_to_ship": float(distance)},
+            ],
+        }
+        data_list.append(data)
+    return data_list
+
+def parse_sonardyne_gga(mission, vehicle, category, ftype, outpath):
+    Console.info("... parsing Sonardyne GGA")
+
+    # parser meta data
+    class_string = "measurement"
+    sensor_string = "sonardyne_gga"
+    frame_string = "inertial"
+
+    timezone = mission.usbl.timezone
+    timeoffset = mission.usbl.timeoffset_s
+
+    timezone_offset_h = read_timezone(timezone)
+    timeoffset_s = -timezone_offset_h * 60 * 60 + timeoffset
+
+    filepath = mission.usbl.filepath
+    filename = mission.usbl.filename
+    # usbl_id = mission.usbl.label
+    latitude_reference = mission.origin.latitude
+    longitude_reference = mission.origin.longitude
+
+    distance_std_factor = mission.usbl.std_factor
+    distance_std_offset = mission.usbl.std_offset
+
+    # parse data
+    Console.info(f"Filename {filename}")
+    print(filename)
+    Console.info(f"Filepath {filepath}")
+    print(filepath)
+    filename = get_raw_folder(outpath / ".." / filepath / filename)
+    Console.info(f"Filename_full {filename}")
+    print(filename)
+    # Find all files with the same filename ending in "_1, _2, _3, etc"
+    filename = Path(filename)
+    if not filename.exists():
+        Console.error(f"File {filename} does not exist")
+        return None
+    base_name = filename.stem
+    files = filename.parent.glob(base_name + "[0-9]*")
+    files = sorted(files)
+
+    all_observations = []
+    for filename in files:
+        observations = parse_gga_txt(filename) 
         all_observations.extend(observations)
     auv_observations = find_closest_observations(all_observations)
 
