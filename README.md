@@ -27,6 +27,10 @@ For __development__, clone the repository, navigate to the oplab-pipeline folder
 pip install -U --user -e .
 ```
 
+Notes:
+
+To import rosbag, using `pip install baypy`. (see the docs: https://jmscslgroup.github.io/bagpy/)
+
 ## Documentation
 The documentation is hosted in [read the docs](https://oplab-pipeline.readthedocs.io).
 
