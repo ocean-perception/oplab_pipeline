@@ -100,6 +100,7 @@ def merge_json_files(json_file_list):
 def parse(filepath, force_overwrite, merge):
     # Filepath is a list. Get the first element by default
     for p in filepath:
+        Console.info(f"...Parsing {p}")
         parse_single(p, force_overwrite)
 
     if merge and len(filepath) > 1:
@@ -753,7 +754,7 @@ def parse_single(filepath, force_overwrite):
     Console.info("Interlacing data...")
     parse_interlacer(outpath, filename)
     Console.info("...done interlacing data. Output saved to", outpath / filename)
-    plot_parse_data(outpath, ftype)
+    plot_parse_data(outpath, ftype) # it makes the program stuck with unknown reasons
     Console.info("Complete parse data")
 
 
