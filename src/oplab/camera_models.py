@@ -12,7 +12,7 @@ import math
 import cv2
 import numpy as np
 
-from .console import Console  # noqa
+from oplab.console import Console  # noqa
 
 
 class MonoCamera:

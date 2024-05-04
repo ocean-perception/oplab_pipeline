@@ -440,6 +440,7 @@ def process(
             continue
         epoch_timestamp = parsed_json_data[i]["epoch_timestamp"]
         if epoch_timestamp >= epoch_start_time and epoch_timestamp <= epoch_finish_time:
+        # if epoch_timestamp >= epoch_start_time or epoch_timestamp <= epoch_finish_time:
             if "velocity" in parsed_json_data[i]["category"]:
                 if "body" in parsed_json_data[i]["frame"]:
                     # to check for corrupted data point which have inertial
@@ -498,7 +499,7 @@ def process(
 
             if "laser" in parsed_json_data[i]["category"]:
                 camera3 = Camera()
-                camera3.from_json(parsed_json_data[i], "camera3")
+                camera3.from_json(parsed_json_data[i], "camera1")
                 camera3_list.append(camera3)
 
     camera1_dr_list = copy.deepcopy(camera1_list)
@@ -1235,7 +1236,7 @@ def process(
             latlon_reference,
             dead_reckoning_centre_list,
         )
-    if len(camera3_dr_list) > 1:
+    if len(camera3_dr_list) > 1 and camera3_dr_list[0].epoch_timestamp is not None:
         if len(mission.image.cameras) > 2:
             interpolate_sensor_list(
                 camera3_dr_list,

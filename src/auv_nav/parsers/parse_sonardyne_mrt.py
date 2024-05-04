@@ -240,64 +240,55 @@ class EstimateTrackerMetrics(MRTBase):
     w_test: str
 
 def parse_gga_txt(filename):
-    df= pd.read_csv(filename,dtype=str)
+    """
+    for gga txt, there are only lot, long and time_stamp that are useful.
+    """
     observations = []
-    timestamp =[]
-    lat = []
-    long = []
-    df_header = df.columns.values
-    data_timestamp = re.split(" ",df_header[0])
-    timestamp.append(data_timestamp[1])
-    lat.append(float(df_header[2][:2])+ float(df_header[2][2:])/60)
-    long.append(float(df_header[4][:3])+ float(df_header[4][3:])/60)
-    obs = USBLVectorObs(
-        obs_uid = "",
-        source_uid = "",
-        source_name = "",
-        parent_uid = "",
-        parent_name =  "",
-        assoc_uid = "",
-        time_stamp = timestamp[-1],
-        filter_uid = "",
-        fix_number = "",
-        jx = long[-1],
-        jy = lat[-1],
-        jz = 0.0,
-        valid_jx = False,
-        valid_jy = False,
-        valid_jz = False,
-        frequency = 0,
-        qj_sum = 0,
-        n_good_samples = 0,
-        direction_sd = 0.0, )
-    observations.append(obs)
-    for i in range(df.shape[0]-1):
-        data = df.iloc[i,:].values
-        data_timestamp = re.split(" ", data[0])
-        timestamp.append(data_timestamp[1])
-        lat.append(float(data[2][:2]) + float(data[2][2:]) / 60)
-        long.append(float(data[4][:3]) + float(data[4][3:]) / 60)
-        obs = USBLVectorObs(
-            obs_uid="",
-            source_uid="",
-            source_name="",
-            parent_uid="",
-            parent_name="",
-            assoc_uid="",
-            time_stamp=timestamp[-1],
-            filter_uid="",
-            fix_number="",
-            jx=long[-1],
-            jy=lat[-1],
-            jz=0.0,
-            valid_jx=False,
-            valid_jy=False,
-            valid_jz=False,
-            frequency=0,
-            qj_sum=0,
-            n_good_samples=0,
-            direction_sd=0.0, )
-        observations.append(obs)
+    with open(filename, "r") as file:
+        try:
+            data_list = file.readlines()
+        except:
+            Console.error("file_errors: ", str(filename))
+            return []
+
+    data_list = [re.split(",| |\*", data_list[i]) for i in range(len(data_list))]
+    for data in data_list:
+        try:
+            lat_sign = 1
+            long_sign = 1
+            if data[6] == "S":
+                lat_sign = -1
+            if data[8] == "W":
+                long_sign = -1
+            lat = float(data[5][:2]) + float(data[5][2:]) / 60
+            long = float(data[7][:3]) + float(data[7][3:]) / 60
+            lat *= lat_sign
+            long *= long_sign
+            time_stamp = filename.stem[0:4] + "-" + filename.stem[4:6] + "-" + filename.stem[6:8] + " " + data[1]
+
+            obs = USBLVectorObs(
+                obs_uid = "",
+                source_uid = "",
+                source_name = "",
+                parent_uid = "",
+                parent_name =  "",
+                assoc_uid = "",
+                time_stamp = time_stamp,
+                filter_uid = "",
+                fix_number = "",
+                jx = long,
+                jy = lat,
+                jz = 0.0,
+                valid_jx = False,
+                valid_jy = False,
+                valid_jz = False,
+                frequency = 0,
+                qj_sum = 0,
+                n_good_samples = 0,
+                direction_sd = 0.0, )
+            observations.append(obs)
+        except:
+            Console.error("data error: ", data)
     return observations
 
 
@@ -572,6 +563,10 @@ def parse_sonardyne_mrt(mission, vehicle, category, ftype, outpath):
     return data_list
 
 def parse_sonardyne_gga(mission, vehicle, category, ftype, outpath):
+    """
+    copied from def parse_sonardyne_mrt so there are a lot of variables we don't need.
+    you are free to delete or modify.
+    """
     Console.info("... parsing Sonardyne GGA")
 
     # parser meta data
@@ -608,42 +603,28 @@ def parse_sonardyne_gga(mission, vehicle, category, ftype, outpath):
         Console.error(f"File {filename} does not exist")
         return None
     base_name = filename.stem
-    files = filename.parent.glob(base_name + "[0-9]*")
+    files = filename.glob("*GGA*.txt")
     files = sorted(files)
-
+    date_prefix = []
     all_observations = []
     for filename in files:
         observations = parse_gga_txt(filename) 
         all_observations.extend(observations)
-    auv_observations = find_closest_observations(all_observations)
 
+    """
+    for the gga data, we could only get the lat, long and timestamp so couldn't calcute 
+    the closest_observation like mrc_csv"""
+
+    # auv_observations = find_closest_observations(all_observations)
+    auv_observations = all_observations
     data_list = []
 
     # Calculate the distance between the two
     for auv_obs in auv_observations:
-        latitude = float(auv_obs.latitude)
-        longitude = float(auv_obs.longitude)
-        depth = -float(auv_obs.altitude)
-        latitude_ship = float(auv_obs.closest_ship_obs.latitude)
-        longitude_ship = float(auv_obs.closest_ship_obs.longitude)
-        lateral_distance, bearing = latlon_to_metres(
-            latitude, longitude, latitude_ship, longitude_ship
-        )
-        distance = math.sqrt(lateral_distance * lateral_distance + depth * depth)
+        latitude = float(auv_obs.jy)
+        longitude = float(auv_obs.jx)
+        depth = -float(auv_obs.jz)
 
-        # calculate in metres from reference
-        lateral_distance_ship, bearing_ship = latlon_to_metres(
-            latitude_ship,
-            longitude_ship,
-            latitude_reference,
-            longitude_reference,
-        )
-        eastings_ship = math.sin(bearing_ship * math.pi / 180.0) * lateral_distance_ship
-        northings_ship = (
-            math.cos(bearing_ship * math.pi / 180.0) * lateral_distance_ship
-        )
-
-        # calculate in metres from reference
         lateral_distance_ship, bearing_ship = latlon_to_metres(
             latitude,
             longitude,
@@ -651,64 +632,52 @@ def parse_sonardyne_gga(mission, vehicle, category, ftype, outpath):
             longitude_reference,
         )
         eastings_target = (
-            math.sin(bearing_ship * math.pi / 180.0) * lateral_distance_ship
+                math.sin(bearing_ship * math.pi / 180.0) * lateral_distance_ship
         )
         northings_target = (
-            math.cos(bearing_ship * math.pi / 180.0) * lateral_distance_ship
+                math.cos(bearing_ship * math.pi / 180.0) * lateral_distance_ship
         )
-
-        distance_std = distance_std_factor * distance + distance_std_offset
-
-        # determine uncertainty in terms of latitude and longitude
-        latitude_offset, longitude_offset = metres_to_latlon(
-            abs(latitude),
-            abs(longitude),
-            distance_std,
-            distance_std,
-        )
-
-        latitude_std = abs(abs(latitude) - latitude_offset)
-        longitude_std = abs(abs(longitude) - longitude_offset)
 
         data = {
-            "epoch_timestamp": auv_obs.epoch_timestamp + timeoffset_s,
+            "epoch_timestamp": datetime.datetime.strptime(auv_obs.time_stamp, "%Y-%m-%d %H:%M:%S.%f"
+        ).timestamp() + timeoffset_s,
             "class": class_string,
             "sensor": sensor_string,
             "frame": frame_string,
             "category": Category.USBL,
             "data_ship": [
                 {
-                    "latitude": float(latitude_ship),
-                    "longitude": float(longitude_ship),
+                    "latitude": "",
+                    "longitude": "",
                 },
                 {
-                    "northings": float(northings_ship),
-                    "eastings": float(eastings_ship),
+                    "northings": "",
+                    "eastings": "",
                 },
-                {"heading": float(auv_obs.closest_heading_obs.heading)},
+                {"heading": ""},
             ],
             "data_target": [
                 {
                     "latitude": float(latitude),
-                    "latitude_std": float(latitude_std),
+                    "latitude_std": "",
                 },
                 {
                     "longitude": float(longitude),
-                    "longitude_std": float(longitude_std),
+                    "longitude_std": "",
                 },
                 {
-                    "northings": float(northings_target),
-                    "northings_std": float(distance_std),
+                    "northings": northings_target,
+                    "northings_std": 5.0,
                 },
                 {
-                    "eastings": float(eastings_target),
-                    "eastings_std": float(distance_std),
+                    "eastings": eastings_target,
+                    "eastings_std": 5.0,
                 },
                 {
                     "depth": float(depth),
-                    "depth_std": float(distance_std),
+                    "depth_std": 0.0,
                 },
-                {"distance_to_ship": float(distance)},
+                {"distance_to_ship": ""},
             ],
         }
         data_list.append(data)

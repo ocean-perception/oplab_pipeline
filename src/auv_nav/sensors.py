@@ -1298,6 +1298,14 @@ class Usbl(OutputFormat):
         self.depth = depth
         self.fill_from_lat_lon_depth()
 
+    def from_gga(self, time, lat, lon, depth):
+        self.sensor_string = "gga"
+        self.epoch_timestamp = time
+        self.latitude = lat
+        self.longitude = lon
+        self.depth = depth
+        self.fill_from_lat_lon_depth()
+
     def fill_from_lat_lon_depth(self):
         # calculate in meters from reference
         lateral_distance, bearing = latlon_to_metres(

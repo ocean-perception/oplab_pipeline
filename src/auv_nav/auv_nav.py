@@ -10,9 +10,8 @@ import argparse
 import os
 import sys
 import time
-
 import argcomplete
-
+sys.path.insert(0, '/home/cl24n22/git/oplab_pipeline/src/')
 from auv_nav.convert import (
     acfr_to_oplab,
     hybis_to_oplab,
@@ -332,4 +331,7 @@ def call_process_data(args):
 
 
 if __name__ == "__main__":
+    # sys.argv = ["auv_nav", "process", "/media/hdd20/cable_data/processed/ss24-01/20240417_120721_smarty200_denseA","-F"]
+    # sys.argv = ["auv_nav", "parse", "/media/hdd20/cable_data/raw/ss24-01/20240418_120317_smarty200_denseB/",
+    #             "-F"]
     main()
