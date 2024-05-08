@@ -62,18 +62,21 @@ def rosbag_topic_worker(
     if wanted_topic is None:
         Console.quit("data_method for bagfile is not specified for topic", wanted_topic)
     for bagfile in bagfile_list:
-        bag = rosbag.Bag(bagfile, "r")
-        for topic, msg, _ in bag.read_messages(topics=[wanted_topic]):
-            if topic == wanted_topic:
-                func = getattr(data_object, "from_ros")
-                type_str = str(type(msg))
-                # rosbag library does not store a clean message type,
-                # so we need to make it ourselves from a dirty string
-                msg_type = type_str.split(".")[1][1:-2].replace("__", "/")
-                func(msg, msg_type, output_dir)
-                if data_object.valid():
-                    data = data_object.export(output_format)
-                    data_list.append(data)
+        try:
+            bag = rosbag.Bag(bagfile, "r")
+            for topic, msg, _ in bag.read_messages(topics=[wanted_topic]):
+                if topic == wanted_topic:
+                    func = getattr(data_object, "from_ros")
+                    type_str = str(type(msg))
+                    # rosbag library does not store a clean message type,
+                    # so we need to make it ourselves from a dirty string
+                    msg_type = type_str.split(".")[1][1:-2].replace("__", "/")
+                    func(msg, msg_type, output_dir)
+                    if data_object.valid():
+                        data = data_object.export(output_format)
+                        data_list.append(data)
+        except:
+            Console.error(f"{bagfile} is unable to read!")
     return data_list
 
 
