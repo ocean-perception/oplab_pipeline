@@ -177,31 +177,31 @@ def parse_rosbag(mission, vehicle, category, output_format, outpath):
     if category == Category.ORIENTATION:
         Console.info("... parsing orientation")
         filepath = raw_path / mission.orientation.filepath
-        bagfile = mission.orientation.filename
+        bagfile = "*.bag"
         wanted_topic = mission.orientation.topic
         data_object = orientation
     elif category == Category.VELOCITY:
         Console.info("... parsing velocity")
         filepath = raw_path / mission.velocity.filepath
-        bagfile = mission.velocity.filename
+        bagfile = "*.bag"
         wanted_topic = mission.velocity.topic
         data_object = body_velocity
     elif category == Category.DEPTH:
         Console.info("... parsing depth")
         filepath = raw_path / mission.depth.filepath
-        bagfile = mission.depth.filename
+        bagfile = "*.bag"
         wanted_topic = mission.depth.topic
         data_object = depth
     elif category == Category.ALTITUDE:
         Console.info("... parsing altitude")
         filepath = raw_path / mission.altitude.filepath
-        bagfile = mission.altitude.filename
+        bagfile = "*.bag"
         wanted_topic = mission.altitude.topic
         data_object = altitude
     elif category == Category.USBL:
         Console.info("... parsing position")
         filepath = raw_path / mission.usbl.filepath
-        bagfile = mission.usbl.filename
+        bagfile = "*.bag"
         wanted_topic = mission.usbl.topic
         data_object = usbl
     elif category == Category.IMAGES:

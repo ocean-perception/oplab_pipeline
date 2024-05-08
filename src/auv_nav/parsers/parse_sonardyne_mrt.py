@@ -239,7 +239,7 @@ class EstimateTrackerMetrics(MRTBase):
     mde: str
     w_test: str
 
-def parse_gga_txt(filename):
+def parse_gga_txt(filename, field_id:int):
     """
     for gga txt, there are only lot, long and time_stamp that are useful.
     """
@@ -252,7 +252,9 @@ def parse_gga_txt(filename):
             return []
 
     data_list = [re.split(",| |\*", data_list[i]) for i in range(len(data_list))]
-    for data in data_list:
+    for idx, data in enumerate(data_list):
+        if int(data[9])!=field_id:
+            continue
         try:
             lat_sign = 1
             long_sign = 1
@@ -288,7 +290,7 @@ def parse_gga_txt(filename):
                 direction_sd = 0.0, )
             observations.append(obs)
         except:
-            Console.error("data error: ", data)
+            Console.warn(f"errors exist in {idx} row, already ignore it")
     return observations
 
 
@@ -588,6 +590,7 @@ def parse_sonardyne_gga(mission, vehicle, category, ftype, outpath):
 
     distance_std_factor = mission.usbl.std_factor
     distance_std_offset = mission.usbl.std_offset
+    field_id = int(mission.usbl.field_id)
 
     # parse data
     Console.info(f"Filename {filename}")
@@ -603,12 +606,12 @@ def parse_sonardyne_gga(mission, vehicle, category, ftype, outpath):
         Console.error(f"File {filename} does not exist")
         return None
     base_name = filename.stem
-    files = filename.glob("*GGA*.txt")
+    files = filename.glob("*GGAlsq*.txt")
     files = sorted(files)
     date_prefix = []
     all_observations = []
     for filename in files:
-        observations = parse_gga_txt(filename) 
+        observations = parse_gga_txt(filename,field_id)
         all_observations.extend(observations)
 
     """
@@ -647,23 +650,23 @@ def parse_sonardyne_gga(mission, vehicle, category, ftype, outpath):
             "category": Category.USBL,
             "data_ship": [
                 {
-                    "latitude": "",
-                    "longitude": "",
+                    "latitude": 0,
+                    "longitude": 0,
                 },
                 {
-                    "northings": "",
-                    "eastings": "",
+                    "northings": 0,
+                    "eastings": 0,
                 },
-                {"heading": ""},
+                {"heading": 0},
             ],
             "data_target": [
                 {
                     "latitude": float(latitude),
-                    "latitude_std": "",
+                    "latitude_std": 0.0001,
                 },
                 {
                     "longitude": float(longitude),
-                    "longitude_std": "",
+                    "longitude_std": 0.0001,
                 },
                 {
                     "northings": northings_target,

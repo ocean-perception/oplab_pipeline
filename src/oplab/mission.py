@@ -241,6 +241,7 @@ class DefaultEntry(TimeZoneEntry):
         self.label = 0
         self.std_factor = 0.0
         self.std_offset = 0.0
+        self.field_id = 0 # for usbl to recognise auv
         self._empty = True
         self.topic = None
 
@@ -267,6 +268,8 @@ class DefaultEntry(TimeZoneEntry):
             self.origin = node["origin"]
         if "topic" in node:
             self.topic = node["topic"]
+        if "field_id" in node:
+            self.field_id = node["field_id"]
 
     def write(self, node):
         super().write(node)
