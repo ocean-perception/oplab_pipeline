@@ -440,7 +440,6 @@ def process(
             continue
         epoch_timestamp = parsed_json_data[i]["epoch_timestamp"]
         if epoch_timestamp >= epoch_start_time and epoch_timestamp <= epoch_finish_time:
-        # if epoch_timestamp >= epoch_start_time or epoch_timestamp <= epoch_finish_time:
             if "velocity" in parsed_json_data[i]["category"]:
                 if "body" in parsed_json_data[i]["frame"]:
                     # to check for corrupted data point which have inertial
