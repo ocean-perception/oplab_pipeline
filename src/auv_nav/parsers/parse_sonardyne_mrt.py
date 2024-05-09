@@ -253,9 +253,9 @@ def parse_gga_txt(filename, field_id:int):
 
     data_list = [re.split(",| |\*", data_list[i]) for i in range(len(data_list))]
     for idx, data in enumerate(data_list):
-        if int(data[9])!=field_id:
-            continue
         try:
+            if int(data[9]) != field_id:
+                continue
             lat_sign = 1
             long_sign = 1
             if data[6] == "S":
@@ -580,7 +580,7 @@ def parse_sonardyne_gga(mission, vehicle, category, ftype, outpath):
     timeoffset = mission.usbl.timeoffset_s
 
     timezone_offset_h = read_timezone(timezone)
-    timeoffset_s = -timezone_offset_h * 60 * 60 + timeoffset
+    timeoffset_s = -timezone_offset_h * 60 * 60 - timeoffset
 
     filepath = mission.usbl.filepath
     filename = mission.usbl.filename
