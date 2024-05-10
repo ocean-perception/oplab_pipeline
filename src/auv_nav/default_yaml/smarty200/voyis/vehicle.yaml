@@ -1,0 +1,67 @@
+#YAML 1.0
+
+# Smarty200 AUV with the voyis payload and extensions at aft and back.
+
+origin:
+  surge_m: 0
+  sway_m: 0
+  heave_m: 0
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 0
+
+gps:
+  surge_m: -0.39
+  sway_m: 0
+  heave_m: -0.36
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 0
+
+dvl:
+  surge_m: 0
+  sway_m: 0
+  heave_m: 0
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 0
+
+ins:
+  surge_m: 0
+  sway_m: 0
+  heave_m: 0
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 0
+
+depth:
+  surge_m: 0
+  sway_m: 0
+  heave_m: 0
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 0
+
+stills:
+  surge_m: -0.39  # Tape measure
+  sway_m: 0
+  heave_m: 0.07  # Tape measure
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 180
+
+laser:
+  surge_m: -0.61  # Tape measure
+  sway_m: 0
+  heave_m: 0.09  # Tape measure
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 0
+
+usbl:
+  surge_m: 0.72  # Tape measure
+  sway_m: 0
+  heave_m: -0.15  # Tape measure
+  roll_deg: 0
+  pitch_deg: 0
+  yaw_deg: 0
