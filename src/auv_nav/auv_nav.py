@@ -332,6 +332,6 @@ def call_process_data(args):
 
 if __name__ == "__main__":
     # sys.argv = ["auv_nav", "process", "/media/hdd20/cable_data/processed/ss24-01/20240417_120721_smarty200_denseA","-F"]
-    # sys.argv = ["auv_nav", "parse", "/media/hdd20/cable_data/raw/ss24-01/20240417_085437_smarty200_sparseA",
+    # sys.argv = ["auv_nav", "parse", "/media/hdd20/cable_data/raw/ss24-01/20240417_085437_smarty200_sparseA_basic_as_well",
     #             "-F"]
     main()

@@ -242,6 +242,8 @@ class DefaultEntry(TimeZoneEntry):
         self.std_factor = 0.0
         self.std_offset = 0.0
         self.field_id = 0 # for usbl to recognise auv
+        self.apply_depth_filter = True # for usbl to filter info using depth in usbl_filter.py
+        self.apply_north_east_filter = True # for usbl to filter info using north and east in usbl_filter.py
         self._empty = True
         self.topic = None
 
@@ -270,6 +272,10 @@ class DefaultEntry(TimeZoneEntry):
             self.topic = node["topic"]
         if "field_id" in node:
             self.field_id = node["field_id"]
+        if "apply_depth_filter" in node:
+            self.apply_depth_filter = node["apply_depth_filter"]
+        if "apply_north_east_filter" in node:
+            self.apply_north_east_filter = node["apply_north_east_filter"]
 
     def write(self, node):
         super().write(node)
