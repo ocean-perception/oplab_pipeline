@@ -752,8 +752,8 @@ def process(
     if usbl_filter_activate:
         usbl_list_no_dist_filter, usbl_list = usbl_filter(
             usbl_list, depth_list, sigma_factor, max_auv_speed,
-            apply_depth_filter=mission.apply_depth_filter,
-            apply_north_east_filter = mission.apply_north_east_filter
+            apply_depth_filter=mission.usbl.apply_depth_filter,
+            apply_north_east_filter = mission.usbl.apply_north_east_filter
         )
         if len(usbl_list) == 0:
             Console.warn("Filtering USBL measurements lead to an empty list. ")
