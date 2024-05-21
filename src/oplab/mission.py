@@ -37,7 +37,42 @@ def error_and_exit():
     Console.error("sensors: dvl ins depth usbl")
     Console.error("cameras: use the same name in mission.yaml and in vehicle.yaml")
     Console.quit("Inconsistency between mission.yaml and vehicle.yaml")
+class TimeZoneEntry:
+    def __init__(self):
+        self.timezone = 0
+        self.offset_s = 0
+        self.timeoffset_s = 0
+        self.timezone_s = 0
 
+    def load(self, node):
+        self.timezone = node.get("timezone", 0)
+        # read in timezone
+        if isinstance(self.timezone, str):
+            if self.timezone == "utc" or self.timezone == "UTC":
+                self.timezone = 0
+            elif self.timezone == "jst" or self.timezone == "JST":
+                self.timezone = 9
+            elif self.timezone == "CET" or self.timezone == "cet":
+                self.timezone = 1
+            else:
+                try:
+                    self.timezone = float(self.timezone)
+                except ValueError:
+                    Console.quit(
+                        "Error: timezone",
+                        self.timezone,
+                        "in mission.yaml not recognised,",
+                        " please enter value from UTC in",
+                        " hours",
+                    )
+
+        self.timeoffset_s = node.get("timeoffset", 0)
+        self.timezone_s = self.timezone * 60 * 60
+        self.offset_s = self.timezone_s + self.timeoffset_s
+
+    def write(self, node):
+        node["timezone"] = self.timezone
+        node["timeoffset"] = self.timeoffset_s
 
 class OriginEntry:
     def __init__(self):
@@ -109,42 +144,7 @@ class CameraEntry:
             node["timeoffset"] = self.timeoffset
 
 
-class TimeZoneEntry:
-    def __init__(self):
-        self.timezone = 0
-        self.offset_s = 0
-        self.timeoffset_s = 0
-        self.timezone_s = 0
 
-    def load(self, node):
-        self.timezone = node.get("timezone", 0)
-        # read in timezone
-        if isinstance(self.timezone, str):
-            if self.timezone == "utc" or self.timezone == "UTC":
-                self.timezone = 0
-            elif self.timezone == "jst" or self.timezone == "JST":
-                self.timezone = 9
-            elif self.timezone == "CET" or self.timezone == "cet":
-                self.timezone = 1
-            else:
-                try:
-                    self.timezone = float(self.timezone)
-                except ValueError:
-                    Console.quit(
-                        "Error: timezone",
-                        self.timezone,
-                        "in mission.yaml not recognised,",
-                        " please enter value from UTC in",
-                        " hours",
-                    )
-
-        self.timeoffset_s = node.get("timeoffset", 0)
-        self.timezone_s = self.timezone * 60 * 60
-        self.offset_s = self.timezone_s + self.timeoffset_s
-
-    def write(self, node):
-        node["timezone"] = self.timezone
-        node["timeoffset"] = self.timeoffset_s
 
 
 class PayloadEntry(TimeZoneEntry):
@@ -241,6 +241,9 @@ class DefaultEntry(TimeZoneEntry):
         self.label = 0
         self.std_factor = 0.0
         self.std_offset = 0.0
+        self.field_id = 0 # for usbl to recognise auv
+        self.apply_depth_filter = True # for usbl to filter info using depth in usbl_filter.py
+        self.apply_north_east_filter = True # for usbl to filter info using north and east in usbl_filter.py
         self._empty = True
         self.topic = None
 
@@ -267,6 +270,12 @@ class DefaultEntry(TimeZoneEntry):
             self.origin = node["origin"]
         if "topic" in node:
             self.topic = node["topic"]
+        if "field_id" in node:
+            self.field_id = node["field_id"]
+        if "apply_depth_filter" in node:
+            self.apply_depth_filter = node["apply_depth_filter"]
+        if "apply_north_east_filter" in node:
+            self.apply_north_east_filter = node["apply_north_east_filter"]
 
     def write(self, node):
         super().write(node)

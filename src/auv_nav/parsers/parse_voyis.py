@@ -10,7 +10,7 @@ import glob
 from pathlib import Path
 
 from oplab import Console, FilenameToDate, get_raw_folder
-
+from auv_nav.tools.time_conversions import read_timezone
 
 def pathlist_relativeto(input_pathlist, base_path):                   
     out_list = []                                                       
@@ -59,20 +59,25 @@ def parse_voyis_images(mission, vehicle, category, ftype, outpath):
     Console.info(f" .. found {len(laser_image_list)} laser images in {laser_filepath}")
 
     data_list = []
+    timezone = mission.image.timezone
+    timeoffset = mission.image.timeoffset_s
+
+    timezone_offset_h = read_timezone(timezone)
+    timeoffset_s = -timezone_offset_h * 60 * 60 - timeoffset
     for i, img in enumerate(stills_image_list):
         if str(Path(img).name)[15:18]=='PPS':
             epoch = stills_filename_to_date_PPS(str(Path(img).name))
         elif str(Path(img).name)[15:18]=='SYSTEM':
             epoch = stills_filename_to_date_SYS(str(Path(img).name))
         data = {
-            "epoch_timestamp": float(epoch),
+            "epoch_timestamp": float(epoch)+timeoffset_s,
             "class": class_string,
             "sensor": sensor_string,
             "frame": frame_string,
             "category": "image",
             "camera1": [
                 {
-                    "epoch_timestamp": float(epoch),
+                    "epoch_timestamp": float(epoch)+timeoffset_s,
                     "filename": str(stills_image_list_rel[i]),
                 }
             ],
@@ -84,14 +89,14 @@ def parse_voyis_images(mission, vehicle, category, ftype, outpath):
         elif str(Path(img).name[16:19])=='SYSTEM':
             epoch = laser_filename_to_date_SYS(str(Path(img).name))        
         data = {
-            "epoch_timestamp": float(epoch),
+            "epoch_timestamp": float(epoch)+timeoffset_s,
             "class": class_string,
             "sensor": sensor_string,
             "frame": frame_string,
             "category": "laser",
             "camera1": [
                 {
-                    "epoch_timestamp": float(epoch),
+                    "epoch_timestamp": float(epoch)+timeoffset_s,
                     "filename": str(laser_image_list_rel[i]),
                 }
             ],

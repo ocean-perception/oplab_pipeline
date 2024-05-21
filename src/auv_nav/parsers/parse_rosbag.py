@@ -62,18 +62,21 @@ def rosbag_topic_worker(
     if wanted_topic is None:
         Console.quit("data_method for bagfile is not specified for topic", wanted_topic)
     for bagfile in bagfile_list:
-        bag = rosbag.Bag(bagfile, "r")
-        for topic, msg, _ in bag.read_messages(topics=[wanted_topic]):
-            if topic == wanted_topic:
-                func = getattr(data_object, "from_ros")
-                type_str = str(type(msg))
-                # rosbag library does not store a clean message type,
-                # so we need to make it ourselves from a dirty string
-                msg_type = type_str.split(".")[1][1:-2].replace("__", "/")
-                func(msg, msg_type, output_dir)
-                if data_object.valid():
-                    data = data_object.export(output_format)
-                    data_list.append(data)
+        try:
+            bag = rosbag.Bag(bagfile, "r")
+            for topic, msg, _ in bag.read_messages(topics=[wanted_topic]):
+                if topic == wanted_topic:
+                    func = getattr(data_object, "from_ros")
+                    type_str = str(type(msg))
+                    # rosbag library does not store a clean message type,
+                    # so we need to make it ourselves from a dirty string
+                    msg_type = type_str.split(".")[1][1:-2].replace("__", "/")
+                    func(msg, msg_type, output_dir)
+                    if data_object.valid():
+                        data = data_object.export(output_format)
+                        data_list.append(data)
+        except:
+            Console.error(f"{bagfile} is unable to read!")
     return data_list
 
 
@@ -143,26 +146,26 @@ def parse_rosbag(mission, vehicle, category, output_format, outpath):
     altitude.sensor_string = "rosbag"
     usbl.sensor_string = "rosbag"
 
-    # Adjust timezone offsets
+    # Adjust timezone offsets,
     body_velocity.tz_offset_s = (
-        read_timezone(mission.velocity.timezone) * 60 + mission.velocity.offset_s
+        read_timezone(mission.velocity.timezone) *60 + mission.velocity.offset_s
     )
     orientation.tz_offset_s = (
-        read_timezone(mission.orientation.timezone) * 60 + mission.orientation.offset_s
+        read_timezone(mission.orientation.timezone) *60 + mission.orientation.offset_s
     )
     depth.tz_offset_s = (
-        read_timezone(mission.depth.timezone) * 60 + mission.depth.offset_s
+        read_timezone(mission.depth.timezone) *60 + mission.depth.offset_s
     )
     altitude.tz_offset_s = (
-        read_timezone(mission.altitude.timezone) * 60 + mission.altitude.offset_s
+        read_timezone(mission.altitude.timezone) *60 + mission.altitude.offset_s
     )
-    usbl.tz_offset_s = read_timezone(mission.usbl.timezone) * 60 + mission.usbl.offset_s
+    usbl.tz_offset_s = read_timezone(mission.usbl.timezone) *60+ mission.usbl.offset_s
 
     if len(mission.image.cameras) > 0:
         camera = Camera()
         camera.sensor_string = mission.image.cameras[0].name
         camera.tz_offset_s = (
-            read_timezone(mission.image.timezone) * 60 + mission.image.offset_s
+            read_timezone(mission.image.timezone) *60 + mission.image.offset_s
         )
 
     data_list = []
@@ -177,31 +180,31 @@ def parse_rosbag(mission, vehicle, category, output_format, outpath):
     if category == Category.ORIENTATION:
         Console.info("... parsing orientation")
         filepath = raw_path / mission.orientation.filepath
-        bagfile = mission.orientation.filename
+        bagfile = "*.bag"
         wanted_topic = mission.orientation.topic
         data_object = orientation
     elif category == Category.VELOCITY:
         Console.info("... parsing velocity")
         filepath = raw_path / mission.velocity.filepath
-        bagfile = mission.velocity.filename
+        bagfile = "*.bag"
         wanted_topic = mission.velocity.topic
         data_object = body_velocity
     elif category == Category.DEPTH:
         Console.info("... parsing depth")
         filepath = raw_path / mission.depth.filepath
-        bagfile = mission.depth.filename
+        bagfile = "*.bag"
         wanted_topic = mission.depth.topic
         data_object = depth
     elif category == Category.ALTITUDE:
         Console.info("... parsing altitude")
         filepath = raw_path / mission.altitude.filepath
-        bagfile = mission.altitude.filename
+        bagfile = "*.bag"
         wanted_topic = mission.altitude.topic
         data_object = altitude
     elif category == Category.USBL:
         Console.info("... parsing position")
         filepath = raw_path / mission.usbl.filepath
-        bagfile = mission.usbl.filename
+        bagfile = "*.bag"
         wanted_topic = mission.usbl.topic
         data_object = usbl
     elif category == Category.IMAGES:
