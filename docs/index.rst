@@ -22,6 +22,7 @@ User's Guide
    file_format_definitions
    auv_nav
    correct_images
+   auv_cal
    example
    docker_and_singularity
 
