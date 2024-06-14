@@ -9,7 +9,7 @@ Welcome to Ocean Perception's pipeline
     :align: center
 
 This is a toolchain for AUV dive processing, camera calibration and image correction.
-Three main tools are used to get from the raw data to geolocalised and colour-corrected images for a particular dataset: `auv_nav <pages/auv_nav>`_, `auv_cal <pages/auv_cal>`_ and `correct_images <pages/correct_images>`_.
+Three main tools are used to get from the raw data to geolocalised and colour-corrected images for a particular dataset: `auv_nav <auv_nav.html>`_, `auv_cal <auv_cal.html>`_ and `correct_images <correct_images.html>`_.
 
 User's Guide
 ------------
