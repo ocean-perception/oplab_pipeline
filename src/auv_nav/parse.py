@@ -36,7 +36,8 @@ from auv_nav.parsers.parse_stereo_gopro import parse_stereo_gopro_images
 from auv_nav.parsers.parse_tide_CTI import parse_tide_CTI
 from auv_nav.parsers.parse_usbl_dump import parse_usbl_dump
 from auv_nav.parsers.parse_voyis import parse_voyis_images
-
+from auv_nav.parsers.parse_from_csv import parse_from_csv
+from auv_nav.parsers.parse_images_template import parse_images
 # from lib_sensors.parse_chemical import parse_chemical
 from auv_nav.plot.plot_parse_data import plot_parse_data
 from auv_nav.sensors import Category
@@ -306,6 +307,13 @@ def parse_single(filepath, force_overwrite):
                     [mission, vehicle, "images", ftype, outpath],
                 )
             )
+        elif mission.image.format == "template":
+            pool_list.append(
+                pool.apply_async(
+                    parse_images,
+                    [mission, vehicle, "images", ftype, outpath],
+                )
+            )
         else:
             Console.quit("Mission image format", mission.image.format, "not supported.")
     if not mission.usbl.empty():
@@ -431,6 +439,13 @@ def parse_single(filepath, force_overwrite):
                     [mission, vehicle, "velocity", ftype, outpath],
                 )
             )
+        elif mission.velocity.format == "from_csv":
+            pool_list.append(
+                pool.apply_async(
+                    parse_from_csv,
+                    [mission, vehicle, "velocity", ftype, outpath],
+                )
+            )
         else:
             Console.quit(
                 "Mission velocity format",
@@ -495,6 +510,13 @@ def parse_single(filepath, force_overwrite):
                     [mission, vehicle, "orientation", ftype, outpath],
                 )
             )
+        elif mission.orientation.format == "from_csv":
+            pool_list.append(
+                pool.apply_async(
+                    parse_from_csv,
+                    [mission, vehicle, "orientation", ftype, outpath],
+                )
+            )
         else:
             Console.quit(
                 "Mission orientation format",
@@ -548,6 +570,13 @@ def parse_single(filepath, force_overwrite):
             pool_list.append(
                 pool.apply_async(
                     parse_rosbag,
+                    [mission, vehicle, "depth", ftype, outpath],
+                )
+            )
+        elif mission.depth.format == "from_csv":
+            pool_list.append(
+                pool.apply_async(
+                    parse_from_csv,
                     [mission, vehicle, "depth", ftype, outpath],
                 )
             )
@@ -606,6 +635,13 @@ def parse_single(filepath, force_overwrite):
             pool_list.append(
                 pool.apply_async(
                     parse_rosbag,
+                    [mission, vehicle, "altitude", ftype, outpath],
+                )
+            )
+        elif mission.altitude.format == "from_csv":
+            pool_list.append(
+                pool.apply_async(
+                    parse_from_csv,
                     [mission, vehicle, "altitude", ftype, outpath],
                 )
             )

@@ -15,7 +15,7 @@ import pandas as pd
 
 from .console import Console
 from .folder_structure import get_raw_folder
-
+import pandas as pd
 
 def resolve(filename, folder):
     workdir = get_raw_folder(folder)
@@ -38,15 +38,24 @@ class FilenameToDate:
             self.path = Path.cwd()
         if filename is not None and columns is not None:
             self.filename = resolve(filename, self.path)
-            self.read_timestamp_file(self.filename, columns)
+            #self.read_timestamp_file(self.filename, columns)
+            self.read_timestamp_from_csv(self.filename,columns)
 
     # Make the object callable  (e.g. operator() )
     def __call__(self, filename: str):
         # Get the name without extension
         filename = Path(filename)
+
         if self.stamp_format == "m":
             modification_time = os.stat(str(filename)).st_mtime
             return modification_time
+        elif self.df is not None: # delete after using
+            epoch_time = self.df.loc[self.df["Image_Name"].str.endswith(str(filename.name)),"epoch_timestamp"]
+            if not epoch_time.empty:
+                epoch_time = epoch_time.iloc[0]
+            else:
+                epoch_time=None
+            return epoch_time
         else:
             stamp_format = Path(self.stamp_format)
             filename = filename.stem
@@ -196,3 +205,17 @@ class FilenameToDate:
         if df_index_name:
             df[df_index_name] = df[df_index_name].astype(int)
             self.df = df.set_index(df_index_name)
+
+    def read_timestamp_from_csv(self, filename, columns):
+        """we have a csv file containing all images name or path,"""
+        Console.info(f"...test: {filename}")
+        file = Path(filename)
+        if not file.exists():
+            Console.quit(f"Timestamp file {filename} doesn't exist!")
+        self.df = pd.read_csv(filename)
+
+        # TODO: we could correct following codes to get the timestamp for differnt csv files
+        self.df["epoch_timestamp"] = self.df.apply(
+            lambda row: datetime.strptime(row[columns], "%Y %m %d %H:%M:%S.%f").timestamp(),
+            axis=1
+        )  # be carefult about the time format in csv files

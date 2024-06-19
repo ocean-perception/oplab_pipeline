@@ -5,17 +5,19 @@ All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
-
+import sys
+sys.path.insert(0, '/home/cl24n22/git/oplab_pipeline/src/')
 
 import argparse
 import os
 import string
-import sys
+
 import time
 from pathlib import Path
 
 import imageio
-
+import sys
+sys.path.append("/home/cl24n22/git/oplab_pipeline/src/")
 from correct_images import corrections
 from correct_images.corrector import Corrector
 from correct_images.parser import CorrectConfig
@@ -191,14 +193,15 @@ def call_parse(args):
         / ("log/" + time_string + "_correct_images_parse.log")
     )
 
-    # Populating the configuration and camerasystem lists for each dive path
+
+    #-------------------------------code area -------------------------------------------
+    # Load the correct_images.yaml and camera.yaml and then check they are good to use
     # The camera system is pulled first from <config> folder if available, if not from <raw> folder
     correct_config_list, camerasystem_list = zip(
         *[load_configuration_and_camera_system(path, args.suffix) for path in path_list]
     )
     # correct_config <--- from correct_images.yaml  (<config> folder)
     # camerasystem   <--- from camera.yaml          (<config> folder or from <raw> folder)
-
     # Let's check that both lists have the same length and are not empty (same number of dives)
     if len(correct_config_list) != len(camerasystem_list):
         Console.error("Number of [camerasystem] and [configuration] differ!")
@@ -237,6 +240,8 @@ def call_parse(args):
     else:
         # only one element in the list, copy it for single dive mode (this could be moved outside)
         correct_config = correct_config_list[0]
+    # -------------------------------code area -----------------------------------------------------
+
 
     camerasystem = camerasystem_list[0]
     for camera in camerasystem.cameras:
@@ -431,6 +436,8 @@ def load_configuration_and_camera_system(path, suffix=None):
         default_file_path_correct_config = root / voyis_std_correct_config_file
     elif mission.image.format == "rosbag":
         default_file_path_correct_config = root / rosbag_std_correct_config_file
+    elif mission.image.format == "template": # process other unkown images
+        default_file_path_correct_config = root / voyis_std_correct_config_file
 
     if not camera_yaml_raw_path.exists() and not camera_yaml_config_path.exists():
         Console.info(
@@ -505,6 +512,7 @@ def load_configuration_and_camera_system(path, suffix=None):
         )
     # check for correct_config yaml path
     path_correct_images = None
+
     if suffix == "" or suffix is None:
         path_correct_images = path_config_folder / "correct_images.yaml"
     else:
@@ -564,4 +572,6 @@ def load_configuration_and_camera_system(path, suffix=None):
 
 
 if __name__ == "__main__":
+    # sys.argv = ["python", "/home/cl24n22/git/oplab_pipeline/src/correct_images/correct_images.py",
+    #             "-F", "/media/hdd20/bt1a15/data/raw/2023/accelerate/gavia"]
     main()

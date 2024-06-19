@@ -117,6 +117,7 @@ class CameraEntry:
             self.timestamp_file = node.get("timestamp_file", None)
             self.columns = node.get("columns", None)
             self.filename_to_date = node.get("filename_to_date", None)
+
             if self.extension == "bag":
                 return
             if self.timestamp_file is None and self.filename_to_date is None:
@@ -137,6 +138,7 @@ class CameraEntry:
                 )
                 Console.error("Find examples in default_yaml folder.")
                 Console.quit("Missing timestamp format for a camera.")
+            Console.info(f"...Test: {self.filename_to_date}")
             self.convert_filename = FilenameToDate(
                 self.filename_to_date,
                 self.timestamp_file,
@@ -303,6 +305,7 @@ class CameraSystem:
         return msg
 
     def _parse(self, node):
+        Console.info("...Test: _parse")
         if "camera_system" not in node:
             Console.error("The camera.yaml file is missing the camera_system entry.")
             Console.quit("Wrong camera.yaml format or content.")
