@@ -58,17 +58,11 @@ image_dir="$(pwd)"
 
 # Generate thumbnails
 echo "Converting images..."
-find -maxdepth 1 -name '*.png' | parallel --eta mogrify -resize 400X338 -format jpg {} ||\
+thumbnail_dir="$(pwd)_thumbnails"
+mkdir -p "${thumbnail_dir}" &&\
+find -maxdepth 1 -name '*.png' | parallel --eta mogrify -resize 400X338 -format jpg -path "${thumbnail_dir}" {} ||\
     { echo "ERROR: Something went wrong while attempting to convert pngs to jpgs."; cd $original_dir; exit 1; }
 echo "...done converting images."
-
-# Move thumbnails to new folder
-echo "Move converted images to thumbnail folder..."
-thumbnail_dir="$(pwd)_thumbnails" &&\
-mkdir -p "${thumbnail_dir}" &&\
-echo *.jpg | xargs mv -t "${thumbnail_dir}" -- &&\
-echo "...done moving images to thumbnail folder (${thumbnail_dir})." ||\
-    { echo "ERROR: Something went wrong while attempting to move jpgs to thumbnails folder (${thumbnail_dir})."; cd $original_dir; exit 1; }
 
 echo "Renaming thumbnails..."
 cd $thumbnail_dir
