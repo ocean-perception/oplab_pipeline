@@ -30,7 +30,11 @@ from pathlib import Path
 import pandas as pd
 
 
-def simplify_nav_file(nav_file, image_folder, output, short, force):
+def simplify_nav_file(nav_file, image_folder, output, short, long, force):
+    if short and long:
+        print("ERROR: Cannot use both short and long options")
+        return
+
     if Path(output).exists() and not force:
         print(f"Output file {output} exists. Use -f to overwrite.")
         return
@@ -106,19 +110,31 @@ def simplify_nav_file(nav_file, image_folder, output, short, force):
             "latitude [deg]",
             "longitude [deg]",
         ]
-    else:
+    elif long:
         cols = [
             "filename",
-            "northing [m]",
-            "easting [m]",
-            "depth [m]",
-            "roll [deg]",
-            "pitch [deg]",
-            "heading [deg]",
-            "altitude [m]",
             "timestamp [s]",
             "latitude [deg]",
             "longitude [deg]",
+            "depth [m]",
+            "altitude [m]",
+            "roll [deg]",
+            "pitch [deg]",
+            "heading [deg]",
+            "northing [m]",
+            "easting [m]",
+        ]
+    else:
+        cols = [
+            "filename",
+            "timestamp [s]",
+            "latitude [deg]",
+            "longitude [deg]",
+            "depth [m]",
+            "altitude [m]",
+            "roll [deg]",
+            "pitch [deg]",
+            "heading [deg]",
         ]
     print("Writing simplified and filtered nav file to disk")
     df.to_csv(
@@ -160,8 +176,14 @@ if __name__ == "__main__":
         action="store_true",
     )
     parser.add_argument(
+        "-l",
+        "--long",
+        help="Also output northings and eastings",
+        action="store_true",
+    )
+    parser.add_argument(
         "-f", "--force", help="Overwrite output file if it exists", action="store_true"
     )
     a = parser.parse_args()
 
-    simplify_nav_file(a.nav_file, a.image_folder, a.output, a.short, a.force)
+    simplify_nav_file(a.nav_file, a.image_folder, a.output, a.short, a.long, a.force)
