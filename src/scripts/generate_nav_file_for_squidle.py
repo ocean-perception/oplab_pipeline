@@ -55,8 +55,8 @@ def generate_nav_file_for_squidle(nav_file, image_folder, output, force):
 
     # Get file list for the image folder
     print("Gathering image file list")
-    png_files = [f for f in Path(image_folder).glob("*.png")]
-    jpg_files = [f for f in Path(image_folder).glob("*.jpg")]
+    png_files = list(Path(image_folder).glob('*.png'))
+    jpg_files = list(Path(image_folder).glob('*.jpg'))
     if len(png_files) == 0 and len(jpg_files) == 0:
         print("ERROR: No jpg or png files in image folder")
         return
