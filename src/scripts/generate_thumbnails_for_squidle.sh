@@ -52,7 +52,6 @@ fi
 # Remember where we are, then `cd` into target directory
 original_dir="$(pwd)"
 cd $d;
-image_dir="$(pwd)"
 
 # Generate thumbnails
 echo "Converting images..."
