@@ -55,11 +55,25 @@ def generate_nav_file_for_squidle(nav_file, image_folder, output, force):
 
     # Get file list for the image folder
     print("Gathering image file list")
-    image_files = [f for f in Path(image_folder).glob("*.png")]
+    png_files = [f for f in Path(image_folder).glob("*.png")]
+    jpg_files = [f for f in Path(image_folder).glob("*.jpg")]
+    if len(png_files) == 0 and len(jpg_files) == 0:
+        print("ERROR: No jpg or png files in image folder")
+        return
+    if len(png_files) > 0 and len(jpg_files) > 0:
+        print("ERROR: Image folder contains both png and jpg files. Please use only one.")
+        return
+
+    if len(png_files) > 0:
+        image_files = png_files
+        extension = ".png"
+    else:
+        image_files = jpg_files
+        extension = ".jpg"
 
     # Filter out the images that are not in the image folder
     print("Filtering out images that are not in the image folder")
-    df = df[(df["key"] + ".png").isin([f.name for f in image_files])]
+    df = df[(df["key"] + extension).isin([f.name for f in image_files])]
     if len(df) == 0:
         print("ERROR: No images in navigation file are in the image folder")
         return
