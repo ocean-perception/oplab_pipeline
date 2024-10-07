@@ -1,13 +1,13 @@
 #/bin/bash/
 
-# This script generates thumbnails for all png images in a given directory and moves 
+# This script generates thumbnails for all images (jpg or png) in a directory and writes 
 # them to a folder next to the original folder, ending in _thumbnails.
 # Requires ImageMagick to be installed.
 #
 # Usage: ./generate_thumbnails_for_squidle.sh PATH_TO_FOLDER_WITH_IMAGES
 #
 #
-# Copyright (c) 2023, University of Southampton
+# Copyright (c) 2024, University of Southampton
 # All rights reserved.
 # Licensed under the BSD 3-Clause License.
 # See LICENSE.md file in the project root for full license information.
@@ -51,7 +51,7 @@ fi
 
 # Remember where we are, then `cd` into target directory
 original_dir="$(pwd)"
-cd $d;
+cd $d
 
 # Generate thumbnails
 echo "Converting images..."
