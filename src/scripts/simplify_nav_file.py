@@ -30,6 +30,16 @@ from pathlib import Path
 import pandas as pd
 
 
+def deg_to_deg_min(deg):
+    sign = 1 if (deg >= 0) else -1
+    deg *= sign
+    deg = float(deg)
+    d = int(deg)
+    m = sign * (deg - d) * 60
+    d = sign * d
+    return f"{d}° {m:.3f}'"
+
+
 def simplify_nav_file(nav_file, image_folder, output, short, long, force):
     if short and long:
         print("ERROR: Cannot use both short and long options")
@@ -141,6 +151,14 @@ def simplify_nav_file(nav_file, image_folder, output, short, long, force):
         output,
         index=False,
         columns=cols,
+    )
+
+    print(
+        "Bounding box:\n"
+        f"N: {df['latitude [deg]'].max()}° ({deg_to_deg_min(df['latitude [deg]'].max())})\n"
+        f"S: {df['latitude [deg]'].min()}° ({deg_to_deg_min(df['latitude [deg]'].min())})\n"
+        f"E: {df['longitude [deg]'].max()}° ({deg_to_deg_min(df['longitude [deg]'].max())})\n"
+        f"W: {df['longitude [deg]'].min()}° ({deg_to_deg_min(df['longitude [deg]'].min())})\n"
     )
 
     print("All done!")
