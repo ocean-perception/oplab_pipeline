@@ -29,6 +29,8 @@ def parse_voyis_images(mission, vehicle, category, ftype, outpath):
 
     dive_folder = get_raw_folder(outpath.parent)
 
+    print('mission.image.cameras[0].path',mission.image.cameras[0].path)
+    print('mission.image.cameras[1].path',mission.image.cameras[1].path)
     stills_filepath = dive_folder / Path(mission.image.cameras[0].path)
     laser_filepath = dive_folder / Path(mission.image.cameras[1].path)
 
@@ -83,7 +85,7 @@ def parse_voyis_images(mission, vehicle, category, ftype, outpath):
             ],
         }
         data_list.append(data)
-    for img in laser_image_list:
+    for i, img in enumerate(laser_image_list):
         if str(Path(img).name[16:19])=='PPS':
             epoch = laser_filename_to_date_PPS(str(Path(img).name))
         elif str(Path(img).name[16:19])=='SYSTEM':
