@@ -29,8 +29,6 @@ def parse_voyis_images(mission, vehicle, category, ftype, outpath):
 
     dive_folder = get_raw_folder(outpath.parent)
 
-    print('mission.image.cameras[0].path',mission.image.cameras[0].path)
-    print('mission.image.cameras[1].path',mission.image.cameras[1].path)
     stills_filepath = dive_folder / Path(mission.image.cameras[0].path)
     laser_filepath = dive_folder / Path(mission.image.cameras[1].path)
 
