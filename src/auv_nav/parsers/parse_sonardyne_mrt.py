@@ -293,6 +293,64 @@ def parse_gga_txt(filename, field_id:int):
             Console.warn(f"errors exist in {idx} row, already ignore it")
     return observations
 
+def parse_gga2_txt(filename, field_id:int):
+    """
+    for gga txt, there are only lot, long and time_stamp that are useful.
+    """
+    observations = []
+    with open(filename, "r") as file:
+        try:
+            data_list = file.readlines()
+        except:
+            Console.error("file_errors: ", str(filename))
+            return []
+
+    data_list = [re.split(",| |\*", data_list[i]) for i in range(len(data_list))]
+
+    for idx, data in enumerate(data_list):
+        try:               
+            if int(data[19]) != field_id:
+                continue
+            
+            lat_sign = 1
+            long_sign = 1
+            if data[9] == "S":
+                lat_sign = -1
+            if data[11] == "W":
+                long_sign = -1
+
+            lat = float(data[8][:2]) + float(data[8][2:]) / 60
+            long = float(data[10][:3]) + float(data[10][3:]) / 60
+            lat *= lat_sign
+            long *= long_sign            
+            
+            time_stamp = data[0][0:4] + "-" + data[0][5:7] + "-" + data[0][8:10] + " " + data[1][0:2] + ":" + data[1][3:5] + ":" + data[1][6:8] + "." + data[1][9:]            
+            
+            obs = USBLVectorObs(
+                obs_uid = "",
+                source_uid = "",
+                source_name = "",
+                parent_uid = "",
+                parent_name =  "",
+                assoc_uid = "",
+                time_stamp = time_stamp,
+                filter_uid = "",
+                fix_number = "",
+                jx = long,
+                jy = lat,
+                jz = 0.0,
+                valid_jx = False,
+                valid_jy = False,
+                valid_jz = False,
+                frequency = 0,
+                qj_sum = 0,
+                n_good_samples = 0,
+                direction_sd = 0.0, )
+            
+            observations.append(obs)
+        except:
+            Console.warn(f"errors exist in {idx} row, already ignore it")
+    return observations
 
 def parse_mrt_csv(filename):
     filename = Path(filename)
@@ -612,6 +670,129 @@ def parse_sonardyne_gga(mission, vehicle, category, ftype, outpath):
     all_observations = []
     for filename in files:
         observations = parse_gga_txt(filename,field_id)
+        all_observations.extend(observations)
+
+    """
+    for the gga data, we could only get the lat, long and timestamp so couldn't calcute 
+    the closest_observation like mrc_csv"""
+
+    # auv_observations = find_closest_observations(all_observations)
+    auv_observations = all_observations
+    data_list = []
+
+    # Calculate the distance between the two
+    for auv_obs in auv_observations:
+        latitude = float(auv_obs.jy)
+        longitude = float(auv_obs.jx)
+        depth = -float(auv_obs.jz)
+
+        lateral_distance_ship, bearing_ship = latlon_to_metres(
+            latitude,
+            longitude,
+            latitude_reference,
+            longitude_reference,
+        )
+        eastings_target = (
+                math.sin(bearing_ship * math.pi / 180.0) * lateral_distance_ship
+        )
+        northings_target = (
+                math.cos(bearing_ship * math.pi / 180.0) * lateral_distance_ship
+        )
+
+        data = {
+            "epoch_timestamp": datetime.datetime.strptime(auv_obs.time_stamp, "%Y-%m-%d %H:%M:%S.%f"
+        ).timestamp() + timeoffset_s,
+            "class": class_string,
+            "sensor": sensor_string,
+            "frame": frame_string,
+            "category": Category.USBL,
+            "data_ship": [
+                {
+                    "latitude": 0,
+                    "longitude": 0,
+                },
+                {
+                    "northings": 0,
+                    "eastings": 0,
+                },
+                {"heading": 0},
+            ],
+            "data_target": [
+                {
+                    "latitude": float(latitude),
+                    "latitude_std": 0.0001,
+                },
+                {
+                    "longitude": float(longitude),
+                    "longitude_std": 0.0001,
+                },
+                {
+                    "northings": northings_target,
+                    "northings_std": 5.0,
+                },
+                {
+                    "eastings": eastings_target,
+                    "eastings_std": 5.0,
+                },
+                {
+                    "depth": float(depth),
+                    "depth_std": 0.0,
+                },
+                {"distance_to_ship": ""},
+            ],
+        }
+        data_list.append(data)
+    return data_list
+
+def parse_sonardyne_gga2(mission, vehicle, category, ftype, outpath):
+    """
+    copied from def parse_sonardyne_mrt so there are a lot of variables we don't need.
+    you are free to delete or modify.
+    """
+    Console.info("... parsing Sonardyne GGA2")
+
+    # parser meta data
+    class_string = "measurement"
+    sensor_string = "sonardyne_gga2"
+    frame_string = "inertial"
+
+    timezone = mission.usbl.timezone
+    timeoffset = mission.usbl.timeoffset_s
+
+    timezone_offset_h = read_timezone(timezone)
+    timeoffset_s = -timezone_offset_h * 60 * 60 - timeoffset
+
+    filepath = mission.usbl.filepath
+    filename = mission.usbl.filename
+    # usbl_id = mission.usbl.label
+    latitude_reference = mission.origin.latitude
+    longitude_reference = mission.origin.longitude
+
+    distance_std_factor = mission.usbl.std_factor
+    distance_std_offset = mission.usbl.std_offset
+    field_id = int(mission.usbl.field_id)
+
+    # parse data
+    Console.info(f"Filename {filename}")
+    print(filename)
+    Console.info(f"Filepath {filepath}")
+    print(filepath)
+    filename = get_raw_folder(outpath / ".." / filepath / filename)
+    Console.info(f"Filename_full {filename}")
+    print(filename)
+    # Find all files with the same filename ending in "_1, _2, _3, etc"
+    filename = Path(filename)
+    if not filename.exists():
+        Console.error(f"File {filename} does not exist")
+        return None
+    base_name = filename.stem    
+    files = filename.glob("CommsLog_GNSS*.txt")
+    files = sorted(files)
+
+    date_prefix = []
+    all_observations = []
+    for filename in files:        
+        observations = parse_gga2_txt(filename,field_id)
         all_observations.extend(observations)
 
     """
