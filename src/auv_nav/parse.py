@@ -157,10 +157,13 @@ def parse(filepath, force_overwrite, merge):
         # process step
         mission_processed = get_processed_folder(filepath[0]) / "mission.yaml"
         vehicle_processed = get_processed_folder(filepath[0]) / "vehicle.yaml"
+        camera_processed = get_processed_folder(filepath[0]) / "camera.yaml"
         mission_merged = processed_path / foldername / "mission.yaml"
         vehicle_merged = processed_path / foldername / "vehicle.yaml"
+        camera_merged = processed_path / foldername / "camera.yaml"
         mission_processed.copy(mission_merged)
         vehicle_processed.copy(vehicle_merged)
+        camera_processed.copy(camera_merged)
 
         # interlace the data based on timestamps
         Console.info("Interlacing merged data...")
@@ -199,8 +202,10 @@ def parse_single(filepath, force_overwrite):
 
     mission_file = filepath / "mission.yaml"
     vehicle_file = filepath / "vehicle.yaml"
+    camera_file = filepath / "camera.yaml"
     mission_file = get_raw_folder(mission_file)
     vehicle_file = get_raw_folder(vehicle_file)
+    camera_file = get_raw_folder(camera_file)
     Console.info("Loading mission.yaml at", mission_file)
     mission = Mission(mission_file)
 
@@ -210,8 +215,10 @@ def parse_single(filepath, force_overwrite):
     time_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
     mission_log = get_processed_folder(filepath) / "log" / (time_str + "_mission.yaml")
     vehicle_log = get_processed_folder(filepath) / "log" / (time_str + "_vehicle.yaml")
+    camera_log = get_processed_folder(filepath) / "log" / (time_str + "_camera.yaml")
     mission_file.copy(mission_log)
     vehicle_file.copy(vehicle_log)
+    camera_file.copy(camera_log)
 
     # check for recognised formats and create nav file
     outpath = get_processed_folder(filepath)
@@ -783,6 +790,7 @@ def check_output_files_exist(processed_dataset_folder):
     """Check if any of the files exist, which `auv_nav parse` writes to disk"""
     mission_file = processed_dataset_folder / "mission.yaml"
     vehicle_file = processed_dataset_folder / "vehicle.yaml"
+    camera_file = processed_dataset_folder / ""
     nav_file = processed_dataset_folder / "nav" / "nav_standard.json"
     data_plot_file = processed_dataset_folder / "nav" / "json_data_info.html"
     history_plot_file = processed_dataset_folder / "nav" / "timestamp_history.html"
@@ -792,6 +800,8 @@ def check_output_files_exist(processed_dataset_folder):
         existing_files += str(mission_file) + "\n"
     if vehicle_file.exists():
         existing_files += str(vehicle_file) + "\n"
+    if camera_file.exists():
+        existing_files += str(camera_file) + "\n"
     if nav_file.exists():
         existing_files += str(nav_file) + "\n"
     if data_plot_file.exists():
