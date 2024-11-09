@@ -65,22 +65,22 @@ def parse_voyis_images(mission, vehicle, category, ftype, outpath):
         for i, img in enumerate(stills_image_list):
             if str(Path(img).name)[15:18]=='PPS':
                 epoch = stills_filename_to_date_PPS(str(Path(img).name))
-            elif str(Path(img).name)[15:18]=='SYSTEM':
-                epoch = stills_filename_to_date_SYS(str(Path(img).name))
-            data = {
-                "epoch_timestamp": float(epoch)+timeoffset_s,
-                "class": class_string,
-                "sensor": sensor_string,
-                "frame": frame_string,
-                "category": "image",
-                "camera1": [
-                    {
-                        "epoch_timestamp": float(epoch)+timeoffset_s,
-                        "filename": str(stills_image_list_rel[i]),
-                    }
-                ],
-            }
-        data_list.append(data)
+            #elif str(Path(img).name)[15:18]=='SYSTEM':
+            #    epoch = stills_filename_to_date_SYS(str(Path(img).name))
+                data = {
+                    "epoch_timestamp": float(epoch)+timeoffset_s,
+                    "class": class_string,
+                    "sensor": sensor_string,
+                    "frame": frame_string,
+                    "category": "image",
+                    "camera1": [
+                        {
+                            "epoch_timestamp": float(epoch)+timeoffset_s,
+                            "filename": str(stills_image_list_rel[i]),
+                        }
+                    ],
+                }
+            data_list.append(data)
 
 
 
@@ -92,22 +92,22 @@ def parse_voyis_images(mission, vehicle, category, ftype, outpath):
         for i, img in enumerate(laser_image_list):
             if str(Path(img).name[16:19])=='PPS':
                 epoch = laser_filename_to_date_PPS(str(Path(img).name))
-            elif str(Path(img).name[16:19])=='SYSTEM':
-                epoch = laser_filename_to_date_SYS(str(Path(img).name))        
-            data = {
-                "epoch_timestamp": float(epoch)+timeoffset_s,
-                "class": class_string,
-                "sensor": sensor_string,
-                "frame": frame_string,
-                "category": "laser",
-                "camera1": [
-                    {
-                        "epoch_timestamp": float(epoch)+timeoffset_s,
-                        "filename": str(laser_image_list_rel[i]),
-                    }
-                ],
-            }        
-        data_list.append(data)
+            #elif str(Path(img).name[16:19])=='SYSTEM':
+            #    epoch = laser_filename_to_date_SYS(str(Path(img).name))        
+                data = {
+                    "epoch_timestamp": float(epoch)+timeoffset_s,
+                    "class": class_string,
+                    "sensor": sensor_string,
+                    "frame": frame_string,
+                    "category": "laser",
+                    "camera1": [
+                        {
+                            "epoch_timestamp": float(epoch)+timeoffset_s,
+                            "filename": str(laser_image_list_rel[i]),
+                        }
+                    ],
+                }        
+            data_list.append(data)
 
 
         
