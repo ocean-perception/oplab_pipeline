@@ -11,7 +11,7 @@ from numba import njit
 
 
 # read binary raw image files for xviii camera
-@njit
+
 def load_xviii_bayer_from_binary(binary_data, image_height, image_width):
     """Read XVIII binary images into bayer array
 
@@ -59,6 +59,7 @@ def load_xviii_bayer_from_binary(binary_data, image_height, image_width):
 
     bayer_img = bayer_img.astype(np.float32)
     return bayer_img
+
 
 
 def loader(raw_filename, image_width=1280, image_height=1024, src_bit=18):

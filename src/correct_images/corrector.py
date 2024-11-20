@@ -1423,3 +1423,5 @@ class Corrector:
             self.output_images_folder,
             self.output_format,
         )
+
+

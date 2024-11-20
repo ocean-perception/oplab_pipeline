@@ -124,11 +124,11 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
 
         if ftype == "oplab":
             if category == "velocity":
-                if math.isnan(df["dvl_validBottom"][row_index]):
-                    print("dvl_validBottom is NaN in row ", row_index)
-                    continue
-                if int(df["dvl_validBottom"][row_index]) != 1:
-                    continue
+                # if math.isan(df["dvl_validBottom"][row_index]):
+                #     print("dvl_validBottom is NaN in row ", row_index)
+                #     continue
+                # if int(df["dvl_validBottom"][row_index]) != 1:
+                #     continue
 
                 frame_string = "body"
 
@@ -137,12 +137,12 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
                 heading_offset = vehicle.dvl.yaw
 
                 # DVL convention is +ve aft to forward
-                x_velocity = float(df["dvl_surgeVelBottom"][row_index]) / 1000.0
+                x_velocity = float(df["vx"][row_index])
 
                 # DVL convention is +ve port to starboard
-                y_velocity = float(df["dvl_swayVelBottom"][row_index]) / 1000.0
+                y_velocity = float(df["vy"][row_index])
                 # DVL convention is bottom to top +ve
-                z_velocity = float(df["dvl_heaveVelBottom"][row_index]) / 1000.0
+                z_velocity = float(df["vz"][row_index])
 
                 # account for sensor rotational offset
                 [x_velocity, y_velocity, z_velocity] = body_to_inertial(
@@ -197,9 +197,9 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
             if category == "orientation":
                 frame_string = "body"
 
-                roll = float(df["roll"][row_index])
-                pitch = float(df["pitch"][row_index])
-                heading = float(df["yaw"][row_index])
+                roll = float(df["Roll"][row_index])
+                pitch = float(df["Pitch"][row_index])
+                heading = float(df["Yaw"][row_index])
 
                 heading_std = (
                     mission.orientation.std_factor * abs(heading)
@@ -305,13 +305,13 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
                 data_list.append(data)
 
             if category == "altitude":
-                if math.isnan(df["dvl_validBottom"][row_index]):
-                    print("dvl_validBottom is NaN in row ", row_index)
-                    continue
-                if int(df["dvl_validBottom"][row_index]) != 1:
-                    continue
+                # if math.isnan(df["dvl_validBottom"][row_index]):
+                #     print("dvl_validBottom is NaN in row ", row_index)
+                #     continue
+                # if int(df["dvl_validBottom"][row_index]) != 1:
+                #     continue
                 frame_string = "body"
-                altitude = float(df["dvl_rangeBottom"][row_index])
+                altitude = float(df["Height"][row_index])
                 altitude_std = (
                     altitude * mission.altitude.std_factor + mission.altitude.std_offset
                 )

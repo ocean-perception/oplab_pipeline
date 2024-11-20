@@ -242,7 +242,6 @@ def call_parse(args):
         correct_config = correct_config_list[0]
     # -------------------------------code area -----------------------------------------------------
 
-
     camerasystem = camerasystem_list[0]
     for camera in camerasystem.cameras:
         # check if the camera also exists in the configuration
@@ -387,6 +386,7 @@ def load_configuration_and_camera_system(path, suffix=None):
 
     # resolve path to camera.yaml file
     camera_yaml_raw_path = path_raw_folder / "camera.yaml"
+    print(f"...test:{camera_yaml_raw_path}")
     camera_yaml_config_path = path_config_folder / "camera.yaml"
 
     camera_yaml_path = None
@@ -572,6 +572,5 @@ def load_configuration_and_camera_system(path, suffix=None):
 
 
 if __name__ == "__main__":
-    # sys.argv = ["python", "/home/cl24n22/git/oplab_pipeline/src/correct_images/correct_images.py",
-    #             "-F", "/media/hdd20/bt1a15/data/raw/2023/accelerate/gavia"]
+    # sys.argv = ["/home/cl24n22/git/oplab_pipeline/src/correct_images/correct_images.py","parse", "-F", "/media/hdd22/cl24n22/data/raw/yk17-23c/20171123_cal"]
     main()

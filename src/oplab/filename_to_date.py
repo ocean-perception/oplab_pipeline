@@ -38,8 +38,8 @@ class FilenameToDate:
             self.path = Path.cwd()
         if filename is not None and columns is not None:
             self.filename = resolve(filename, self.path)
-            #self.read_timestamp_file(self.filename, columns)
-            self.read_timestamp_from_csv(self.filename,columns)
+            self.read_timestamp_file(self.filename, columns)
+            # self.read_timestamp_from_csv(self.filename,columns)
 
     # Make the object callable  (e.g. operator() )
     def __call__(self, filename: str):

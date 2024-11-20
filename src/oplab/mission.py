@@ -200,14 +200,17 @@ class ImageEntry(TimeZoneEntry):
                 self.cameras[0].origin = "camera1"
                 self.cameras[0].path = node["filepath"] + node["camera1"]
                 self.cameras[0].timeoffset = 0.0
+                self.cameras[0].timeoffset_s = 0.0
                 self.cameras[1].name = "aft"
                 self.cameras[1].origin = "camera2"
                 self.cameras[1].path = node["filepath"] + node["camera2"]
                 self.cameras[1].timeoffset = 0.0
+                self.cameras[1].timeoffset_s = 0.0
                 self.cameras[2].name = "laser"
                 self.cameras[2].origin = "camera3"
                 self.cameras[2].path = node["filepath"] + node["camera3"]
                 self.cameras[2].timeoffset = 0.0
+                self.cameras[2].timeoffset_s = 0.0
             elif self.format == "acfr_standard":
                 self.cameras[0].name = node["camera1"]
                 self.cameras[0].origin = "camera1"
