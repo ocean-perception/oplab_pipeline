@@ -339,6 +339,7 @@ class Corrector:
             Console.info("run process for manual_balance")
 
     def process(self):
+        print("test: process")
         # Set the user specified list if any
         self.user_specified_image_list = self.user_specified_image_list_process
 
@@ -738,7 +739,7 @@ class Corrector:
                 "parameters...",
             )
 
-        # create empty matrices to store image correction parameters
+        # TODO: create empty matrices to store image correction parameters
         self.image_raw_mean = np.empty(
             (self.image_channels, self.image_height, self.image_width),
             dtype=np.float32,
@@ -764,6 +765,7 @@ class Corrector:
             dtype=np.float32,
         )
 
+        # 计算单张图像在内存中的大小
         image_size_gb = (
             self.image_channels
             * self.image_height
@@ -771,6 +773,7 @@ class Corrector:
             * 4.0
             / (1024.0**3)
         )
+        # 确定每个直方图Bin能容纳的最大图像数
         max_bin_size = int(self.memmap_size_gb / image_size_gb)
 
         self.bin_band = 0.1
@@ -797,15 +800,16 @@ class Corrector:
                     )
                     distance_vector[i] = dm_np.mean()
                     pbar.update(1)
-
+        # 目前大多数distance_metric 是altitude
         elif self.altitude_list and self.distance_metric == "altitude":
             Console.info("Computing altitude histogram with", hist_bins.size, "bins")
             distance_vector = np.array(self.altitude_list)
 
         if distance_vector is not None:
+            # np.digitize 是 NumPy 提供的一个函数，用于将一组数值（例如数据点）归类到预先定义的区间（bins）中，并返回每个数值对应的区间索引
             idxs = np.digitize(distance_vector, hist_bins) - 1
 
-            # Display histogram in console
+            # Display histogram in console.显示大概在每个altitude区间内，有多少张图像
             for idx_bin in range(hist_bins.size - 1):
                 tmp_idxs = np.where(idxs == idx_bin)[0]
                 Console.info(

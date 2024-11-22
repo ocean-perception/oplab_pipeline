@@ -170,12 +170,15 @@ class CameraEntry:
             for i in img_dir.rglob("*." + self.extension):
                 self._image_list.append(str(i))
         elif len(split_glob) == 3:
+            # path = "images/*/stills/*"
+            # split_glob = ['images/', '/stills/', '']
             pre_glob = split_glob[0] + "*"
             glob_vec = raw_dir.glob(pre_glob)
             img_dirs = [k for k in glob_vec]
             img_dir = Path(str(img_dirs[0]))
-            for i in img_dir.glob("*" + split_glob[2] + "." + self.extension):
+            for i in img_dir.rglob("*" + split_glob[2] + "." + self.extension):
                 self._image_list.append(str(i))
+        # no idea how to use followings
         elif len(split_glob) == 4:  # path/i*/*LC*
             # split = ['path/i', '/', 'LC]
             pre_glob = split_glob[0] + "*"
@@ -305,7 +308,6 @@ class CameraSystem:
         return msg
 
     def _parse(self, node):
-        Console.info("...Test: _parse")
         if "camera_system" not in node:
             Console.error("The camera.yaml file is missing the camera_system entry.")
             Console.quit("Wrong camera.yaml format or content.")

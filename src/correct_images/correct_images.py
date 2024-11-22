@@ -386,7 +386,6 @@ def load_configuration_and_camera_system(path, suffix=None):
 
     # resolve path to camera.yaml file
     camera_yaml_raw_path = path_raw_folder / "camera.yaml"
-    print(f"...test:{camera_yaml_raw_path}")
     camera_yaml_config_path = path_config_folder / "camera.yaml"
 
     camera_yaml_path = None
