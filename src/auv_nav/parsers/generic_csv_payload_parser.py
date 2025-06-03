@@ -10,8 +10,13 @@ def generic_csv_payload_parser(filepath, columns_dict, timeoffset_s=0):
     # f2d = FilenameToDate(None, filepath, columns_dict)
     # df = f2d.df
 
-    df = pd.read_csv(filepath)
-    df["epoch_timestamp"] = df["corrected_timestamp"]
+    df = pd.read_csv(filepath, header=None)
+    df.columns = [col["name"] for col in columns_dict]
+    
+#    df["epoch_timestamp"] = df["corrected_timestamp"]
+
+#    if "epoch_timestamp" in df.columns:
+#            df["epoch_timestamp"] = df["epoch_timestamp"] / 1e6
 
     for index, row in df.iterrows():
         data = Payload()

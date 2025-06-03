@@ -31,7 +31,7 @@ from auv_nav.parsers.parse_phins import parse_phins
 from auv_nav.parsers.parse_rdi import parse_rdi
 from auv_nav.parsers.parse_rosbag import parse_rosbag, parse_rosbag_extracted_images
 from auv_nav.parsers.parse_seaxerocks_images import parse_seaxerocks_images
-from auv_nav.parsers.parse_sonardyne_mrt import parse_sonardyne_mrt, parse_sonardyne_gga, parse_sonardyne_gga2, parse_sonardyne_gga3, parse_sonardyne_gga4
+from auv_nav.parsers.parse_sonardyne_mrt import parse_sonardyne_mrt, parse_sonardyne_gga, parse_sonardyne_gga2, parse_sonardyne_gga3, parse_sonardyne_gga4, parse_sonardyne_gga5
 from auv_nav.parsers.parse_stereo_gopro import parse_stereo_gopro_images
 from auv_nav.parsers.parse_tide_CTI import parse_tide_CTI
 from auv_nav.parsers.parse_usbl_dump import parse_usbl_dump
@@ -400,7 +400,14 @@ def parse_single(filepath, force_overwrite):
                     parse_sonardyne_gga4,
                     [mission, vehicle, "usbl", ftype, outpath],
                 )
-            )            
+            )   
+        elif mission.usbl.format == "sonardyne_gga5":
+            pool_list.append(
+                pool.apply_async(
+                    parse_sonardyne_gga5,
+                    [mission, vehicle, "usbl", ftype, outpath],
+                )
+            )         
         else:
             Console.quit("Mission usbl format", mission.usbl.format, "not supported.")
 

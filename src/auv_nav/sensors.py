@@ -2135,6 +2135,8 @@ class Payload(SyncedOrientationBodyVelocity):
         str_to_write = (
             "northing [m],easting [m],depth [m],altitude [m],"
             "latitude [deg],longitude [deg],"
+            "roll [deg],pitch [deg],heading [deg],"
+            "timestamp [s],"
         )
         if isinstance(self.data, pd.DataFrame):
             str_to_write += ",".join(self.data.columns) + "\n"
@@ -2159,6 +2161,14 @@ class Payload(SyncedOrientationBodyVelocity):
             + str(self.latitude)
             + ","
             + str(self.longitude)
+            + ","
+            + str(self.roll)
+            + ","
+            + str(self.pitch)
+            + ","
+            + str(self.yaw)
+            + ","
+            + str(self.epoch_timestamp)
         )
         if isinstance(self.data, pd.DataFrame):
             str_to_write += ",".join(str(self.data.values)) + "\n"
