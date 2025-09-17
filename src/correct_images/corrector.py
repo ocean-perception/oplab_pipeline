@@ -1075,8 +1075,8 @@ class Corrector:
     def plot_all_attenuation_curves(self, images_map, distances_map):
         fig = plt.figure()
 
-        images_map[images_map == 0] = np.NaN
-        distances_map[distances_map == 0] = np.NaN
+        images_map[images_map == 0] = np.nan
+        distances_map[distances_map == 0] = np.nan
 
         pixel_range = range(
             0,
