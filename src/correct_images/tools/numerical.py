@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2020, University of Southampton
+Copyright (c) 2020-2025, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -13,7 +13,7 @@ from typing import Tuple
 import numba as nb
 import numpy as np
 from numba import njit, prange
-from tqdm import trange
+from tqdm import trange, tqdm
 
 from ..loaders import default
 
@@ -94,7 +94,7 @@ def running_mean_std(
     mean2 = np.zeros(dimensions, dtype=np.float32)
     std = np.zeros(dimensions, dtype=np.float32)
 
-    for item in file_list:
+    for item in tqdm(file_list, desc="Calculating mean and std of images"):
         if width is not None and height is not None:
             value = loader(item, width, height).astype(np.float32)
         else:

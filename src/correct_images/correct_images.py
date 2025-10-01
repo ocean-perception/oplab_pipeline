@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2023, University of Southampton
+Copyright (c) 2023-2025, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -433,10 +433,10 @@ def load_configuration_and_camera_system(path, suffix=None):
         default_file_path_correct_config = root / rosbag_std_correct_config_file
 
     if not camera_yaml_raw_path.exists() and not camera_yaml_config_path.exists():
-        Console.info(
-            "camera.yaml file not found neither in /raw nor in /config folder.",
-            "Using default camera.yaml file for image format",
-            mission.image.format,
+        Console.warn(
+            "camera.yaml file not found neither in raw nor in config folder "
+            f"(raw: {camera_yaml_raw_path}, config: {camera_yaml_config_path}). "
+            f"Using default camera.yaml file for image format {mission.image.format}.",
         )
         # find out default yaml paths
         acfr_std_camera_file = "auv_nav/default_yaml/ts1/SSK17-01/camera.yaml"

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2020, University of Southampton
+Copyright (c) 2020-2025, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -21,15 +21,15 @@ def pixel_stat(
     Parameters
     -----------
     img : numpy.ndarray
-        image data to be corrected for target stats
+        Image data to be corrected for target stats
     img_mean : np.ndarray
-        current image mean
+        Mean image of reference image dataset
     img_std : np.ndarray
-        current image std
+        Standard deviation image of reference image dataset
     target_mean : float
-        desired mean in 0-100 scale
+        Desired mean on scale from 0 to 100
     target_std : float
-        desired std in 0-100 scale
+        Desired standard deviation on scale from 0 to 100
 
     Returns
     -------
