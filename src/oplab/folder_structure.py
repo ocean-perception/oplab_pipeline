@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2023, University of Southampton
+Copyright (c) 2023-2025, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -45,7 +45,6 @@ def change_subfolder(path: Path, prior: str, new: str) -> Path:
 
 
 def get_folder(path: Union[str, Path], name: str) -> Optional[Path]:
-    path = Path(path).resolve(strict=False)
     if name in path.parts:
         return path
     elif "processed" in path.parts:
