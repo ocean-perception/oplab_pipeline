@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2023, University of Southampton
+Copyright (c) 2023-2025, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -373,6 +373,11 @@ class Corrector:
                 self.image_corrected_mean = np.load(
                     self.corrected_mean_filepath
                 ).squeeze()
+                if (self.image_corrected_mean == 0).any():
+                    Console.warn(
+                        'Some values in image_corrected_mean.npy are 0. '
+                        'This will lead to "invalid value" warnings during processing.'
+                    )
             else:
                 if self.distance_metric != "uniform":
                     Console.quit(
@@ -391,10 +396,15 @@ class Corrector:
                     )
             if self.raw_mean_filepath.exists() and self.distance_metric == "uniform":
                 self.image_raw_mean = np.load(self.raw_mean_filepath).squeeze()
+                if (self.image_raw_mean == 0).any():
+                    Console.warn(
+                        'Some values in image_raw_mean.npy are 0. '
+                        'This will lead to "invalid value" warnings during processing.'
+                    )
             elif self.distance_metric == "uniform":
                 Console.quit(
-                    "Code does not find image_raw_mean.npy...",
-                    "Please run parse before process...",
+                    f"Cannot find {self.raw_mean_filepath}. Please run "
+                    "`correct_images parse` before running `correct_images process`.",
                 )
             if self.raw_std_filepath.exists() and self.distance_metric == "uniform":
                 self.image_raw_std = np.load(self.raw_std_filepath).squeeze()
@@ -546,8 +556,8 @@ class Corrector:
                 json_list = list(dir_.glob("json_*"))
                 if len(json_list) == 0:
                     Console.quit(
-                        "No navigation solution could be found. Please run ",
-                        "auv_nav parse and process first",
+                        f"No navigation solution could be found in {dir_}. Please run "
+                        "`auv_nav parse` and `auv_nav process` first"
                     )
                 elif len(json_list) > 1:
                     Console.warn(
@@ -575,7 +585,7 @@ class Corrector:
                 )
 
             # read dataframe for corresponding distance csv path
-            dataframe = pd.read_csv(self.altitude_csv_path)
+            dataframe = pd.read_csv(self.altitude_csv_path, comment="#")
             if len(dataframe) == 0:
                 Console.quit(
                     f"Empty navigation csv file at {self.altitude_csv_path}. Please "
@@ -618,7 +628,7 @@ class Corrector:
             if len(valid_idx) == 0:
                 Console.quit(
                     "None of the images whose relative paths are provided in the "
-                    "navigation file exist. Check the images exits and that the "
+                    "navigation file exist. Check the images exist and that the "
                     f"indicated paths are correct. Last image path checked: {im_path}"
                 )
             filtered_dataframe = dataframe.iloc[valid_idx]
@@ -1008,6 +1018,12 @@ class Corrector:
             image_corrected_std = runner.std.reshape(
                 self.image_height, self.image_width, self.image_channels
             )
+            if (image_corrected_mean == 0).any():
+                Console.warn(
+                    'Some values in image_corrected_mean are 0, which will lead to "invalid value" '
+                    'warnings during processing. Using a larger dataset for the parsing step might '
+                    'fix this issue.'
+                )
 
             # save parameters for process
             np.save(
@@ -1053,6 +1069,12 @@ class Corrector:
             image_raw_mean, image_raw_std = running_mean_std(
                 self.camera_image_list, self.loader
             )
+            if (image_raw_mean == 0).any():
+                Console.warn(
+                    'Some values in image_raw_mean are 0, which will lead to "invalid value" '
+                    'warnings during processing. Using a larger dataset for the parsing step might '
+                    'fix this issue.'
+                )
             np.save(self.raw_mean_filepath, image_raw_mean)
             np.save(self.raw_std_filepath, image_raw_std)
 
@@ -1278,7 +1300,7 @@ class Corrector:
         d = {"image_names": image_names, "relative_path": self.processed_image_list}
         dataframe = pd.DataFrame(d)
 
-        orig_dataframe = pd.read_csv(self.altitude_csv_path)
+        orig_dataframe = pd.read_csv(self.altitude_csv_path, comment="#")
         orig_dataframe["raw_relative_path"] = orig_dataframe["relative_path"]
 
         # Merge the two dataframes when image filenames are the same

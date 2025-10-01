@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2020, University of Southampton
+Copyright (c) 2020-2025, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -40,7 +40,7 @@ def trim_csv_files(image_files_paths, original_csv_path, trimmed_csv_path):
     """
 
     image_name_list = get_imagename_list(image_files_paths)
-    dataframe = pd.read_csv(original_csv_path)
+    dataframe = pd.read_csv(original_csv_path, comment="#")
     image_path_list = dataframe["relative_path"]
     trimmed_path_list = [
         path for path in image_path_list if Path(path).stem in image_name_list
