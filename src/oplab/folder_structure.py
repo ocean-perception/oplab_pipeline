@@ -45,6 +45,7 @@ def change_subfolder(path: Path, prior: str, new: str) -> Path:
 
 
 def get_folder(path: Union[str, Path], name: str) -> Optional[Path]:
+    path = Path(path)
     if name in path.parts:
         return path
     elif "processed" in path.parts:
