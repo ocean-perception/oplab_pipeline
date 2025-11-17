@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2020, University of Southampton
+Copyright (c) 2020-2025, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -33,6 +33,15 @@ def main(args=None):
     Console.banner()
     Console.info("Running auv_cal version " + str(Console.get_version()))
 
+    try:
+        parse_args_and_run(args)
+    except Exception as e:
+        Console.exception(f"An exception occurred: {e}")
+        Console.quit("auv_cal finished with errors.")
+    Console.info("auv_cal finished successfully.")
+
+
+def parse_args_and_run(args):
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
 

@@ -37,6 +37,15 @@ def main(args=None):
     Console.banner()
     Console.info("Running correct_images version " + str(Console.get_version()))
 
+    try:
+        parse_args_and_run(args)
+    except Exception as e:
+        Console.exception(f"An exception occurred: {e}")
+        Console.quit("correct_images finished with errors.")
+    Console.info("correct_images finished successfully.")
+
+
+def parse_args_and_run(args):
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
 
@@ -180,8 +189,7 @@ def call_parse(args):
         for path in path_list:
             # chec if path is valid
             if not path.exists():
-                Console.error("Path", path, "does not exist! Exiting.")  # quit
-                sys.exit(1)
+                Console.quit("Path", path, "does not exist! Exiting.")
             else:
                 Console.info("\t", path, " [OK]")
 
@@ -201,11 +209,9 @@ def call_parse(args):
 
     # Let's check that both lists have the same length and are not empty (same number of dives)
     if len(correct_config_list) != len(camerasystem_list):
-        Console.error("Number of [camerasystem] and [configuration] differ!")
-        sys.exit(1)
+        Console.quit("Number of [camerasystem] and [configuration] differ!")
     if len(correct_config_list) == 0:
-        Console.error("No valid camerasystem/configuration found!")
-        sys.exit(1)
+        Console.quit("No valid camerasystem/configuration found!")
 
     # When in multidive mode, check if all camerasystem are the same. For this we test camera_system.camera_system
     if (
@@ -223,7 +229,7 @@ def call_parse(args):
                     "\tFirst camera system (reference) ", camera_system.camera_system
                 )
                 Console.error("\tWrong camera system (current)   ", cs.camera_system)
-                sys.exit(1)
+                Console.quit("Camera systems differ between dives")
         Console.warn("Camera systems are the same for all dives.")  # so far so good
 
     # Check if the correct_config_lists elements are the same (equivalent)
