@@ -40,7 +40,7 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
         if filename[0:3] != "dvl" or len(filename) != 19:
             Console.error(
                 "Expected filename of the form dvlYYMMDDhhmmss.csv for",
-                "velocity or altitutde, but you provided",
+                "velocity or altitude, but you provided",
                 filename,
             )
         yyyy = int(filename[3:5]) + 2000
