@@ -8,6 +8,7 @@ See LICENSE.md file in the project root for full license information.
 import datetime
 import getpass
 import logging
+import traceback
 import socket
 import sys
 import timeit
@@ -99,6 +100,17 @@ class Console:
         )
         if logger is not None:
             logger.error(" ".join(map(str, args)), **kwargs)
+
+    @staticmethod
+    def exception(*args, **kwargs) -> None:
+        """Print an exception message"""
+        print(
+            BColors.FAIL + "EXCEPTION ▸ " + BColors.ENDC + " ".join(map(str, args)),
+            **kwargs
+        )
+        traceback.print_exc()
+        if logger is not None:
+            logger.exception(" ".join(map(str, args)), **kwargs)
 
     @staticmethod
     def info(*args, **kwargs) -> None:
