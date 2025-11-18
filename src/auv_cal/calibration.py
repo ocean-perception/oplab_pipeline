@@ -277,6 +277,11 @@ class Calibrator:
         self.num_uncert_planes = num_uncert_planes
         self.output_path = get_processed_folder(self.filepath.parent) / "calibration"
 
+        time_string = time.strftime("%Y%m%d_%H%M%S", time.localtime())
+        Console.set_logging_file(
+            self.output_path / "log" / (time_string + "_auv_cal.log")
+        )
+
         if self.foa:
             self.fo = True
 
@@ -313,7 +318,6 @@ class Calibrator:
             self.calibration_config = yaml.safe_load(stream)
 
         # Create the calibration folder at the same level as the dives
-        self.output_path = get_processed_folder(self.filepath.parent) / "calibration"
         if not self.output_path.exists():
             self.output_path.mkdir(parents=True)
         if not self.configuration_path.exists():
