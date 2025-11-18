@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2020, University of Southampton
+Copyright (c) 2020-2025, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -293,7 +293,7 @@ def _get_circles(img, board, pattern, invert=False):
 
 
 # TODO self.size needs to come from CameraInfo, full resolution
-class Calibrator(object):
+class CalibratorBase(object):
     """
     Base class for calibration system
     """
@@ -301,6 +301,7 @@ class Calibrator(object):
     def __init__(
         self,
         boards,
+        output_folder: Path,
         flags=0,
         pattern=Patterns.Chessboard,
         name="",
@@ -347,6 +348,7 @@ class Calibrator(object):
         self.name = name
         self.last_frame_corners = None
         self.max_chessboard_speed = max_chessboard_speed
+        self.output_folder = output_folder
 
     def get_parameters(self, corners, board, size):
         """
@@ -490,7 +492,7 @@ def resize_with_padding(img, size):
     return img
 
 
-class MonoCalibrator(Calibrator):
+class MonoCalibrator(CalibratorBase):
     """
     Calibration class for monocular cameras::
 
@@ -607,11 +609,13 @@ class MonoCalibrator(Calibrator):
                     # cv2.imshow("Monocular calibration", img)
                     # cv2.waitKey(3)
                     name = Path(i).stem
-                    filename = Path("/tmp/" + self.name + "/" + name + "_corners.png")
-                    if self.resize:
-                        filename = Path(
-                            "/tmp/" + self.name + "/resized_" + name + "_corners.png"
-                        )
+                    prefix = "resized_" if self.resize else ""
+                    filename = (
+                        self.output_folder
+                        / "detected_calibration_patterns"
+                        / self.name  # Not really needed for mono calibration, but if stereo calibration calls mono calibration it might be needed to prevent mixing of files. # noqa
+                        / f"{prefix}{name}.png"
+                    )
                     if not filename.parents[0].exists():
                         filename.parents[0].mkdir(parents=True)
                     print("Writing debug image to " + str(filename))
@@ -662,9 +666,8 @@ class MonoCalibrator(Calibrator):
 
                         if name == "":
                             name = i[2].stem
-        filename = Path("/tmp/" + self.name + "_corners.png")
-        if self.resize:
-            filename = Path("/tmp/resized_" + self.name + "_corners.png")
+        p = "_resized" if self.resize else ""
+        filename = self.output_folder / f"{self.name}{p}_all_detected_patterns.png"
         if not filename.parents[0].exists():
             filename.parents[0].mkdir(parents=True)
         print("Writing corners image to " + str(filename))
@@ -673,9 +676,8 @@ class MonoCalibrator(Calibrator):
         if not self.good_corners:
             raise CalibrationException("No corners found in images!")
         print("Using " + str(len(self.good_corners)) + " inlier files!")
-        filename = Path("/tmp/" + self.name + "/" + name + "_inliers.txt")
-        if self.resize:
-            filename = Path("/tmp/" + self.name + "/resized_" + name + "_inliers.txt")
+        postfix = "_resized" if self.resize else ""
+        filename = self.output_folder / f"{self.name}_{name}_inliers{postfix}.txt"
         if not filename.parents[0].exists():
             filename.parents[0].mkdir(parents=True)
         with filename.open("w") as f:
@@ -814,14 +816,11 @@ class MonoCalibrator(Calibrator):
                 # img = self.db[0][1]
                 img = self.remap(img)
 
-                filename = Path(
-                    "/tmp/"
-                    + self.name
-                    + "_remap/"
-                    + str(i)
-                    + "_"
-                    + self.name
-                    + "_remap.png"
+                filename = (
+                    self.output_folder
+                    / "remapped_images"
+                    / f"{self.name}"
+                    / f"{i}_remapped.png"
                 )
                 if not filename.parents[0].exists():
                     filename.parents[0].mkdir(parents=True)
@@ -1038,7 +1037,7 @@ def find_common_filenames(list1, list2):
 
 
 # TODO Replicate MonoCalibrator improvements in stereo
-class StereoCalibrator(Calibrator):
+class StereoCalibrator(CalibratorBase):
     """
     Calibration class for stereo cameras::
 
@@ -1188,7 +1187,7 @@ class StereoCalibrator(Calibrator):
                         (lgray, rgray, lcorners, lboard, rcorners, rboard)
                     )
 
-                    Console.info("Writing debug images to /tmp/")
+                    Console.info(f"Writing debug images to {self.output_folder}")
                     if self.debug:
                         limg = cv2.drawChessboardCorners(
                             lgray,
@@ -1205,19 +1204,15 @@ class StereoCalibrator(Calibrator):
                         lname = Path(i).stem
                         rname = Path(j).stem
 
-                        lfilename = Path(
-                            "/tmp/stereo_"
-                            + self.name
-                            + "/"
-                            + lname
-                            + "_left_corners.png"
+                        lfilename = (
+                            self.output_folder
+                            / f"stereo_{self.name}"
+                            / f"{lname}_left_corners.png"
                         )
-                        rfilename = Path(
-                            "/tmp/stereo_"
-                            + self.name
-                            + "/"
-                            + rname
-                            + "_right_corners.png"
+                        rfilename = (
+                            self.output_folder
+                            / f"stereo_{self.name}"
+                            / f"{rname}_right_corners.png"
                         )
                         if not lfilename.parents[0].exists():
                             lfilename.parents[0].mkdir(parents=True)
@@ -1348,7 +1343,7 @@ class StereoCalibrator(Calibrator):
 
         if self.debug:
             errors = []
-            Console.info("Writing debug images to /tmp/")
+            Console.info(f"Writing debug images to {self.output_folder}")
             for i, (params, limg, rimg) in enumerate(self.db):
                 error = self.epipolar_error_from_images(limg, rimg)
 
@@ -1373,16 +1368,11 @@ class StereoCalibrator(Calibrator):
                 # cv2.imshow('Final images', final_image)
                 # cv2.waitKey(3)
 
-                filename = Path(
-                    "/tmp/stereo_"
-                    + self.name
-                    + "_remap/stereo_"
-                    + str(i)
-                    + "_"
-                    + self.l.name
-                    + "_"
-                    + self.r.name
-                    + "_remap.png"
+                filename = (
+                    self.output_folder
+                    / "remapped_images"
+                    / f"stereo_{self.name}"
+                    / f"stereo_{i}_{self.l.name}_{self.r.name}_remap.png"
                 )
                 if not filename.parents[0].exists():
                     filename.parents[0].mkdir(parents=True)

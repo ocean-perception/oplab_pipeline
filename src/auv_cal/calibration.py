@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2022, University of Southampton
+Copyright (c) 2022-2025, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
 import json
 from pathlib import Path
+import time
 from typing import Dict
 
 import yaml
@@ -69,11 +70,11 @@ def check_pattern(config):
 
 
 def calibrate_mono(
-    name,
+    name: str,
     filepaths,
     extension,
     config,
-    output_file,
+    output_file: Path,
     fo,
     foa,
     target_width=None,
@@ -91,6 +92,7 @@ def calibrate_mono(
 
     mc = MonoCalibrator(
         boards=[ChessboardInfo(config["rows"], config["cols"], config["size"])],
+        output_folder=output_file.parent / f"debug_files_mono_{name}",
         pattern=check_pattern(config),
         invert=config["invert"],
         name=name,
@@ -115,16 +117,16 @@ def calibrate_mono(
 
 
 def calibrate_stereo(
-    left_name,
+    left_name: str,
     left_filepaths,
     left_extension,
-    left_calib,
-    right_name,
+    left_calib: Path,
+    right_name: str,
     right_filepaths,
     right_extension,
-    right_calib,
+    right_calib: Path,
     config,
-    output_file,
+    output_file: Path,
     fo,
     foa,
 ):
@@ -178,6 +180,7 @@ def calibrate_stereo(
             boards=[ChessboardInfo(config["rows"], config["cols"], config["size"])],
             pattern=check_pattern(config),
             invert=config["invert"],
+            output_folder=output_file.parent / "debug_files_stereo"
         )
         # sc.cal(left_image_list, right_image_list)
         sc.cal_from_json(
@@ -272,6 +275,7 @@ class Calibrator:
         self.foa = overwrite_all
         self.suffix = suffix
         self.num_uncert_planes = num_uncert_planes
+        self.output_path = get_processed_folder(self.filepath.parent) / "calibration"
 
         if self.foa:
             self.fo = True
