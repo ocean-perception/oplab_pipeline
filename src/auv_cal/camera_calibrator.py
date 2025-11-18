@@ -523,7 +523,7 @@ class MonoCalibrator(CalibratorBase):
         Calibrate camera from given images
         """
         self.collect_corners(images_list)
-        self.cal_fromcorners()
+        self.cal_from_corners()
         self.calibrated = True
 
     def cal_from_json(self, json_file, images_list):
@@ -556,7 +556,7 @@ class MonoCalibrator(CalibratorBase):
                     self.db.append((params, lgray))
                     self.good_corners.append((lcorners, lboard))
             print("Using " + str(len(self.good_corners)) + " inlier files!")
-            self.cal_fromcorners()
+            self.cal_from_corners()
 
     def collect_corners(self, images_list):
         """
@@ -620,9 +620,7 @@ class MonoCalibrator(CalibratorBase):
                         filename.parents[0].mkdir(parents=True)
                     print("Writing debug image to " + str(filename))
                     cv2.imwrite(str(filename), img)
-
                 return [(params, gray), (corners, board), i]
-
             else:
                 print("Image " + str(i.name) + " is blurry, discarded.")
 
@@ -633,6 +631,7 @@ class MonoCalibrator(CalibratorBase):
         name = ""
         good_corners_names = []
         all_detections = None
+        used_detections = None
         for i in result:
             if i is not None:
                 if len(i) > 2:
@@ -640,6 +639,7 @@ class MonoCalibrator(CalibratorBase):
                     (corners, board) = i[1]
                     if all_detections is None:
                         all_detections = gray.copy()
+                        used_detections = gray.copy()
                     self.json.append(
                         {
                             "file": str(i[2]),
@@ -648,7 +648,11 @@ class MonoCalibrator(CalibratorBase):
                             "size": self.size,
                         }
                     )
+                    all_detections = cv2.drawChessboardCorners(
+                        all_detections, (board.n_cols, board.n_rows), corners, True
+                    )
                     if self.is_good_sample(params, corners, self.last_frame_corners):
+                        # TODO Output overlay of calibration patterns of selected images
                         print(
                             "*** Added sample p_x = %.3f, p_y = %.3f, p_size = %.3f, skew = %.3f"  # noqa
                             % tuple(params)
@@ -657,34 +661,44 @@ class MonoCalibrator(CalibratorBase):
                         self.db.append(i[0])
                         self.good_corners.append(i[1])
                         good_corners_names.append(str(i[2]))
-                        all_detections = cv2.drawChessboardCorners(
-                            all_detections,
-                            (board.n_cols, board.n_rows),
-                            corners,
-                            True,
+                        used_detections = cv2.drawChessboardCorners(
+                            used_detections, (board.n_cols, board.n_rows), corners, True
                         )
-
                         if name == "":
                             name = i[2].stem
+        Console.info(
+            f"Processing statistics:\n"
+            f"Total number of images:          {len(images_list)}\n"
+            f"Images with detected pattern:    {len(result)}\n"
+            f"Images selected for calibration: {len(self.good_corners)}\n"
+            "Note: of the images selected for calibration, those with a large "
+            "reprojection error will still be removed in the subsequent step of "
+            "calibration, and not be used."
+        )
         p = "_resized" if self.resize else ""
-        filename = self.output_folder / f"{self.name}{p}_all_detected_patterns.png"
-        if not filename.parents[0].exists():
-            filename.parents[0].mkdir(parents=True)
-        print("Writing corners image to " + str(filename))
-        cv2.imwrite(str(filename), all_detections)
+        filename_all = self.output_folder / f"{self.name}{p}_all_detected_patterns.png"
+        filename_used = self.output_folder / f"{self.name}{p}_used_detected_patterns.png"
+        if not filename_all.parents[0].exists():
+            filename_all.parents[0].mkdir(parents=True)
+        print(
+            f"Writing overlay of all and used detected patterns to {filename_all} and "
+            f"{filename_used}. Note: even from the used patterns, some may still be "
+            "removed in the next processing step due to a high reprojection error."
+        )
+        cv2.imwrite(str(filename_all), all_detections)
+        cv2.imwrite(str(filename_used), used_detections)
 
         if not self.good_corners:
             raise CalibrationException("No corners found in images!")
         print("Using " + str(len(self.good_corners)) + " inlier files!")
-        postfix = "_resized" if self.resize else ""
-        filename = self.output_folder / f"{self.name}_{name}_inliers{postfix}.txt"
+        filename = self.output_folder / f"{self.name}_images_used_for_calibration.txt"
         if not filename.parents[0].exists():
             filename.parents[0].mkdir(parents=True)
         with filename.open("w") as f:
             for n in good_corners_names:
                 f.write("%s\n" % n)
 
-    def cal_fromcorners(self, iteration=0):
+    def cal_from_corners_recursive(self, iteration=0):
         """
         Compute intrinsic camera calibrtion parameters
 
@@ -735,7 +749,8 @@ class MonoCalibrator(CalibratorBase):
             opts, ipts, self.size, self.intrinsics, self.distortion
         )
 
-        Console.info("Per view reprojection error:\n" + str(per_view_errors))
+        if self.debug:
+            Console.info("Per view reprojection error:\n" + str(per_view_errors))
         Console.info("Average reprojection error: " + str(self.avg_reprojection_error))
         Console.info("Stdev intrinsics: " + str(self.stdev_intrinsics[:, 0].T))
 
@@ -765,51 +780,58 @@ class MonoCalibrator(CalibratorBase):
         bad_corners = per_view_errors > acceptable_reproj_err
         if sum(bad_corners) > 0:
             Console.info(
-                "Number of views exceeding reprojection error threshold ("
-                + str(acceptable_reproj_err)
-                + "): "
-                + str(sum(bad_corners)[0])
-                + " out of "
-                + str(len(per_view_errors))
-                + " calibration board views"
+                "Number of views exceeding reprojection error threshold "
+                f"({acceptable_reproj_err}): {sum(bad_corners)[0]} (out of "
+                f"{len(per_view_errors)}) calibration board views)"
             )
             if iteration == self.max_iterations - 1:
-                Console.info("but maximum number of iterations has been reached")
+                Console.warn(
+                    f"Maximum number of iterations {self.max_iterations} has been "
+                    "reached."
+                )
             else:
                 self.good_corners = [
                     c
                     for c, e in zip(self.good_corners, per_view_errors)
                     if e <= acceptable_reproj_err
                 ]
-                self.cal_fromcorners(iteration=iteration + 1)
+                self.cal_from_corners_recursive(iteration=iteration + 1)
         else:
             Console.info("All reprojection errors below throshold.")
 
-        # Find best calibration
+    def cal_from_corners(self):
+        self.cal_from_corners_recursive()
+
+        Console.info("Identifying best calibration...")
         min_reprojection_error = np.inf
         best_idx = None
         for i, cal in enumerate(self.calibrations):
             if cal is None:
                 continue
+            Console.info(
+                f"Calibration {i}: avg reproj error = {cal['avg_reprojection_error']}"
+            )
             if cal["avg_reprojection_error"] < min_reprojection_error:
                 best_idx = i
                 min_reprojection_error = cal["avg_reprojection_error"]
 
-        if best_idx is not None:
-            # print(
-            #     "Calibration with 0-based index", best_idx, "out of",
-            #     len(self.calibrations),
-            #     "calibrations was chosen as best calibration"
-            # )  # Usually last one
-            self.distortion = self.calibrations[best_idx]["distortion"]
-            self.intrinsics = self.calibrations[best_idx]["intrinsics"]
-            self.stdev_intrinsics = self.calibrations[best_idx]["stdev_intrinsics"]
-            self.R = self.calibrations[best_idx]["R"]
-            self.P = self.calibrations[best_idx]["P"]
-            self.num_images = self.calibrations[best_idx]["num_images"]
-            self.avg_reprojection_error = self.calibrations[best_idx][
-                "avg_reprojection_error"
-            ]
+        if best_idx is None:
+            Console.quit("No valid calibration found!")
+
+        Console.info(
+            f"...best calibration is calibration number {best_idx} with an average "
+            f"reprojection error of {min_reprojection_error}"
+        )
+
+        self.distortion = self.calibrations[best_idx]["distortion"]
+        self.intrinsics = self.calibrations[best_idx]["intrinsics"]
+        self.stdev_intrinsics = self.calibrations[best_idx]["stdev_intrinsics"]
+        self.R = self.calibrations[best_idx]["R"]
+        self.P = self.calibrations[best_idx]["P"]
+        self.num_images = self.calibrations[best_idx]["num_images"]
+        self.avg_reprojection_error = self.calibrations[best_idx][
+            "avg_reprojection_error"
+        ]
 
         if self.debug:
             for i, (params, img) in enumerate(self.db):
