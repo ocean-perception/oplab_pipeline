@@ -77,6 +77,7 @@ def calibrate_mono(
     output_file: Path,
     fo,
     foa,
+    enable_debug_output: bool,
     target_width=None,
     target_height=None,
 ):
@@ -96,6 +97,7 @@ def calibrate_mono(
         pattern=check_pattern(config),
         invert=config["invert"],
         name=name,
+        enable_debug_output=enable_debug_output,
         target_width=target_width,
         target_height=target_height,
     )
@@ -129,6 +131,7 @@ def calibrate_stereo(
     output_file: Path,
     fo,
     foa,
+    enable_debug_output: bool,
 ):
     if not check_dirs_exist(left_filepaths):
         left_filepaths = get_raw_folders(left_filepaths)
@@ -166,6 +169,7 @@ def calibrate_stereo(
                     right_calib,
                     fo,
                     foa,
+                    enable_debug_output=enable_debug_output,
                     target_width=model.left.image_width,
                     target_height=model.left.image_height,
                 )
@@ -180,7 +184,8 @@ def calibrate_stereo(
             boards=[ChessboardInfo(config["rows"], config["cols"], config["size"])],
             pattern=check_pattern(config),
             invert=config["invert"],
-            output_folder=output_file.parent / "debug_files_stereo"
+            output_folder=output_file.parent / "debug_files_stereo",
+            enable_debug_output=enable_debug_output,
         )
         # sc.cal(left_image_list, right_image_list)
         sc.cal_from_json(
@@ -268,6 +273,7 @@ class Calibrator:
         overwrite_all: bool = False,
         suffix: str = "",
         num_uncert_planes: int = 300,
+        enable_debug_output: bool = False,
     ):
         filepath = Path(filepath).resolve()
         self.filepath = get_raw_folder(filepath)
@@ -276,6 +282,7 @@ class Calibrator:
         self.suffix = suffix
         self.num_uncert_planes = num_uncert_planes
         self.output_path = get_processed_folder(self.filepath.parent) / "calibration"
+        self.enable_debug_output = enable_debug_output
 
         time_string = time.strftime("%Y%m%d_%H%M%S", time.localtime())
         Console.set_logging_file(
@@ -362,6 +369,7 @@ class Calibrator:
                     calibration_file,
                     self.fo,
                     self.foa,
+                    enable_debug_output=self.enable_debug_output,
                 )
 
     def stereo(self):
@@ -459,6 +467,7 @@ class Calibrator:
                 calibration_file,
                 self.fo,
                 self.foa,
+                enable_debug_output=self.enable_debug_output,
             )
         # Check for a second stereo pair
         if len(self.calibration_config["cameras"]) > 2:
@@ -541,6 +550,7 @@ class Calibrator:
                 calibration_file,
                 self.fo,
                 self.foa,
+                enable_debug_output=self.enable_debug_output,
             )
 
             calibration_file = self.output_path / str(
@@ -560,6 +570,7 @@ class Calibrator:
                 calibration_file,
                 self.fo,
                 self.foa,
+                enable_debug_output=self.enable_debug_output,
             )
 
     def laser(self):

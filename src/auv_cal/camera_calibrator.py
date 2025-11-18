@@ -308,6 +308,7 @@ class CalibratorBase(object):
         checkerboard_flags=cv2.CALIB_CB_FAST_CHECK,
         max_chessboard_speed=-1.0,
         invert=False,
+        enable_debug_output=False,
     ):
         # Ordering the dimensions for the different detectors is actually a
         # minefield...
@@ -332,7 +333,7 @@ class CalibratorBase(object):
 
         # Set to true after we perform calibration
         self.calibrated = False
-        self.debug = False
+        self.debug = enable_debug_output
         self.calib_flags = flags
         self.checkerboard_flags = checkerboard_flags
         self.pattern = pattern

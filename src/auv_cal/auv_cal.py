@@ -66,6 +66,13 @@ def parse_args_and_run(args):
     subparser_mono.add_argument(
         "-s", "--suffix", default="", help="Suffix added to mono calibration file name."
     )
+    subparser_mono.add_argument(
+        "-d",
+        "--debug",
+        dest="debug",
+        action="store_true",
+        help="Output debug files.",
+    )
     subparser_mono.set_defaults(func=call_calibrate_mono)
 
     subparser_stereo = subparsers.add_parser(
@@ -94,6 +101,13 @@ def parse_args_and_run(args):
         default="",
         help="Suffix added to stereo calibration file name. Note: the mono calibration files that are ingested for \
               this processing step must not contain any suffix.",
+    )
+    subparser_stereo.add_argument(
+        "-d",
+        "--debug",
+        dest="debug",
+        action="store_true",
+        help="Output debug files.",
     )
     subparser_stereo.set_defaults(func=call_calibrate_stereo)
 
@@ -144,12 +158,16 @@ def parse_args_and_run(args):
 
 
 def call_calibrate_mono(args):
-    c = Calibrator(args.path, args.force, args.force2, args.suffix)
+    c = Calibrator(
+        args.path, args.force, args.force2, args.suffix, enable_debug_output=args.debug
+    )
     c.mono()
 
 
 def call_calibrate_stereo(args):
-    c = Calibrator(args.path, args.force, args.force2, args.suffix)
+    c = Calibrator(
+        args.path, args.force, args.force2, args.suffix, enable_debug_output=args.debug
+    )
     c.stereo()
 
 
