@@ -100,7 +100,7 @@ def merge_json_files(json_file_list):
 def parse(filepath, force_overwrite, merge):
     # Filepath is a list. Get the first element by default
     for p in filepath:
-        Console.info(f"...Parsing {p}")
+        Console.info(f"Parsing {p}")
         parse_single(p, force_overwrite)
 
     if merge and len(filepath) > 1:
@@ -788,20 +788,11 @@ def parse_single(filepath, force_overwrite):
 
 def check_output_files_exist(processed_dataset_folder):
     """Check if any of the files exist, which `auv_nav parse` writes to disk"""
-    mission_file = processed_dataset_folder / "mission.yaml"
-    vehicle_file = processed_dataset_folder / "vehicle.yaml"
-    camera_file = processed_dataset_folder / ""
     nav_file = processed_dataset_folder / "nav" / "nav_standard.json"
     data_plot_file = processed_dataset_folder / "nav" / "json_data_info.html"
     history_plot_file = processed_dataset_folder / "nav" / "timestamp_history.html"
 
     existing_files = ""
-    if mission_file.exists():
-        existing_files += str(mission_file) + "\n"
-    if vehicle_file.exists():
-        existing_files += str(vehicle_file) + "\n"
-    if camera_file.exists():
-        existing_files += str(camera_file) + "\n"
     if nav_file.exists():
         existing_files += str(nav_file) + "\n"
     if data_plot_file.exists():
