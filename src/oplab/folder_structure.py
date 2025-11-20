@@ -22,11 +22,11 @@ def valid_dive(p):
 
 
 def change_subfolder(path: Path, prior: str, new: str) -> Path:
-    # path = path.resolve(strict=False)
     index = path.parts.index(prior)
     parts = list(path.parts)
     parts[index] = new
     new_path = Path(*parts)
+    new_path = new_path.resolve(strict=False)
     if new_path.is_dir():
         if not new_path.exists():
             dummy_path = Path(*parts[:-1])
