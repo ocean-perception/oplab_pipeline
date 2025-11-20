@@ -428,13 +428,13 @@ class EkfImpl(object):
         return self.state
 
     def set_process_noise_covariance(self, pnc):
-        self.process_noise_covariance = copy.deepcopy(np.mat(pnc).astype(float))
+        self.process_noise_covariance = copy.deepcopy(np.asmatrix(pnc).astype(float))
 
     def set_last_update_time(self, time):
         self.last_update_time = time
 
     def set_covariance(self, cov):
-        self.covariance = copy.deepcopy(np.mat(cov).astype(float))
+        self.covariance = copy.deepcopy(np.asmatrix(cov).astype(float))
 
     def wrap_state_angles(self):
         self.state[Index.ROLL] = self.clamp_rotation(self.state[Index.ROLL])
