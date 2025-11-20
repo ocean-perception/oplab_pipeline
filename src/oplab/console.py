@@ -78,7 +78,7 @@ class Console:
             **kwargs
         )
         if logger is not None:
-            logger.warn(" ".join(map(str, args)), **kwargs)
+            logger.warning(" ".join(map(str, args)), **kwargs)
 
     @staticmethod
     def warn_verbose(*args, **kwargs) -> None:
@@ -89,7 +89,7 @@ class Console:
                 **kwargs
             )
         if logger is not None:
-            logger.warn(" ".join(map(str, args)), **kwargs)
+            logger.warning(" ".join(map(str, args)), **kwargs)
 
     @staticmethod
     def error(*args, **kwargs) -> None:
@@ -147,7 +147,7 @@ class Console:
             **kwargs
         )
         if logger is not None:
-            logger.warn(" ".join(map(str, args)), **kwargs)
+            logger.warning(" ".join(map(str, args)), **kwargs)
         sys.exit(1)
 
     @staticmethod
@@ -288,6 +288,7 @@ class Console:
 
     @staticmethod
     def set_logging_file(filename):
+        Console.info(f"Logging to file: {filename}")
         global logger
         folder_path = Path(filename).parent
         if not folder_path.exists():
