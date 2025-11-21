@@ -32,6 +32,7 @@ from auv_nav.plot.plot_process_data import (
     plot_2d_deadreckoning,
     plot_cameras_vs_time,
     plot_deadreckoning_vs_time,
+    plot_positions_vs_time,
     plot_ekf_rejected_measurements,
     plot_ekf_states_and_std_vs_time,
     plot_orientation_vs_time,
@@ -1637,6 +1638,18 @@ def process(
                     altitude_list,
                     depth_list,
                     mission.velocity.format,
+                    plotlypath,
+                ],
+            )
+            t.start()
+            threads.append(t)
+            t = threading.Thread(
+                target=plot_positions_vs_time,
+                args=[
+                    usbl_list,
+                    dead_reckoning_dvl_list,
+                    ekf_list,
+                    camera1_ekf_list,
                     plotlypath,
                 ],
             )

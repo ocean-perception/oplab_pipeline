@@ -12,6 +12,7 @@ import time
 from pathlib import Path
 from typing import List, Optional
 
+import datetime
 import plotly.graph_objs as go
 import plotly.offline as py
 from plotly import subplots
@@ -378,6 +379,123 @@ def plot_deadreckoning_vs_time(
     )
 
     Console.info("... done plotting deadreckoning_vs_time.")
+
+
+def plot_positions_vs_time(
+    usbl_list,
+    dead_reckoning_dvl_list,
+    ekf_list,
+    camera1_ekf_list,
+    output_folder: Path,
+):
+    Console.info("Plotting positions_vs_time...")
+
+    usbl_t = [datetime.datetime.fromtimestamp(t.epoch_timestamp, datetime.timezone.utc) for t in usbl_list]
+    usbl_n = [i.northings for i in usbl_list]
+    usbl_e = [i.eastings for i in usbl_list]
+    usbl_d = [i.depth for i in usbl_list]
+
+    dr_t = [datetime.datetime.fromtimestamp(t.epoch_timestamp, datetime.timezone.utc) for t in dead_reckoning_dvl_list]
+    dr_n = [i.northings for i in dead_reckoning_dvl_list]
+    dr_e = [i.eastings for i in dead_reckoning_dvl_list]
+    dr_d = [i.depth for i in dead_reckoning_dvl_list]
+
+    ekf_t = [datetime.datetime.fromtimestamp(t.epoch_timestamp, datetime.timezone.utc) for t in ekf_list]
+    ekf_n = [i.northings for i in ekf_list]
+    ekf_e = [i.eastings for i in ekf_list]
+    ekf_d = [i.depth for i in ekf_list]
+
+    cam1_te = [i.epoch_timestamp for i in camera1_ekf_list]
+    cam1_t = [datetime.datetime.fromtimestamp(t, datetime.timezone.utc) for t in cam1_te]
+    cam1_n = [i.northings for i in camera1_ekf_list]
+    cam1_e = [i.eastings for i in camera1_ekf_list]
+    cam1_d = [i.depth for i in camera1_ekf_list]
+    cam1_filenames = [i.filename for i in camera1_ekf_list]
+
+    tr_usbl_n = create_trace(usbl_t, usbl_n, "USBL", "pink", legendgroup="group_usbl")
+    tr_usbl_e = create_trace(usbl_t, usbl_e, "USBL", "pink", legendgroup="group_usbl", showlegend=False)
+    tr_usbl_d = create_trace(usbl_t, usbl_d, "USBL", "pink", legendgroup="group_usbl", showlegend=False)
+    tr_dr_n = create_trace(dr_t, dr_n, "DVL Dead Reckoning", "purple", legendgroup="group_dr")
+    tr_dr_e = create_trace(dr_t, dr_e, "DVL Dead Reckoning", "purple", legendgroup="group_dr", showlegend=False)
+    tr_dr_d = create_trace(dr_t, dr_d, "DVL Dead Reckoning", "purple", legendgroup="group_dr", showlegend=False)
+    tr_ekf_n = create_trace(ekf_t, ekf_n, "EKF", "orange", legendgroup="group_ekf")
+    tr_ekf_e = create_trace(ekf_t, ekf_e, "EKF", "orange", legendgroup="group_ekf", showlegend=False)
+    tr_ekf_d = create_trace(ekf_t, ekf_d, "EKF", "orange", legendgroup="group_ekf", showlegend=False)
+    hoverinfo = "x+y+text"
+    cam1_hovertext = [
+        f"timestamp: {t} (epoch)<br>"
+        f"timestamp: {time.strftime('%Y/%m/%d %H:%M:%S.%f', epoch_to_utctime(t))[:-3]} (UTC)<br>"
+        f"Filename: {f}"
+        for t, f in zip(cam1_te, cam1_filenames)
+    ]
+    tr_cam1_ekf_n = create_trace(
+        cam1_t,
+        cam1_n,
+        "Camera1 EKF",
+        "red",
+        legendgroup="group_cam1_ekf",
+        hoverinfo=hoverinfo,
+        hovertext=cam1_hovertext,
+    )
+    tr_cam1_ekf_e = create_trace(
+        cam1_t,
+        cam1_e,
+        "Camera1 EKF",
+        "red",
+        legendgroup="group_cam1_ekf",
+        hoverinfo=hoverinfo,
+        hovertext=cam1_hovertext,
+        showlegend=False)
+    tr_cam1_ekf_d = create_trace(
+        cam1_t,
+        cam1_d,
+        "Camera1 EKF",
+        "red",
+        legendgroup="group_cam1_ekf",
+        hoverinfo=hoverinfo,
+        hovertext=cam1_hovertext,
+        showlegend=False
+    )
+
+    fig = subplots.make_subplots(
+        rows=2,
+        cols=2,
+        subplot_titles=("Northing", "Easting", "Depth"),
+        print_grid=False,
+    )
+    fig.append_trace(tr_usbl_n, 1, 1)
+    fig.append_trace(tr_dr_n, 1, 1)
+    fig.append_trace(tr_ekf_n, 1, 1)
+    fig.append_trace(tr_cam1_ekf_n, 1, 1)
+
+    fig.append_trace(tr_usbl_e, 1, 2)
+    fig.append_trace(tr_dr_e, 1, 2)
+    fig.append_trace(tr_ekf_e, 1, 2)
+    fig.append_trace(tr_cam1_ekf_e, 1, 2)
+
+    fig.append_trace(tr_usbl_d, 2, 1)
+    fig.append_trace(tr_dr_d, 2, 1)
+    fig.append_trace(tr_ekf_d, 2, 1)
+    fig.append_trace(tr_cam1_ekf_d, 2, 1)
+
+    fig["layout"]["xaxis1"].update(title="Date - Time (UTC)")
+    fig["layout"]["xaxis2"].update(title="Date - Time (UTC)")
+    fig["layout"]["xaxis3"].update(title="Date - Time (UTC)")
+    fig["layout"]["yaxis1"].update(title="Northing, m")
+    fig["layout"]["yaxis2"].update(title="Easting, m")
+    fig["layout"]["yaxis3"].update(title="Depth, m", autorange="reversed")
+    fig["layout"].update(
+        title="Position vs. Time",
+        dragmode="pan",
+        hovermode="closest",
+    )
+
+    config = {"scrollZoom": True}
+    output_folder.mkdir(parents=True, exist_ok=True)
+    filename = str(output_folder / "positions_vs_time.html")
+    py.plot(fig, config=config, filename=filename, auto_open=False)
+
+    Console.info("... done plotting positions_vs_time.")
 
 
 # pf uncertainty plotly
