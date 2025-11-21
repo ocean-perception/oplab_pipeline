@@ -636,7 +636,7 @@ class EkfImpl(object):
         self.smoothed_states_vector = copy.deepcopy(self.states_vector)
         if enable:
             for i in range(ns - 1):
-                Console.progress(ns + i, 2 * ns)
+                Console.progress(ns + i + 1, 2 * ns - 1, "Running EKF (smoothing)")
                 sf = self.smoothed_states_vector[ns - 1 - i]
                 s = self.states_vector[ns - 2 - i]
                 x_prior, p_prior = s.get()
@@ -947,7 +947,9 @@ class ExtendedKalmanFilter(object):
                 + timestamp_list_idx
             )
             Console.progress(
-                sum_indexes - sum_start_indexes, number_timestamps_to_process
+                sum_indexes - sum_start_indexes,
+                number_timestamps_to_process,
+                "Running EKF (forward)  ",
             )
 
             # Find next timestamp to predict to
