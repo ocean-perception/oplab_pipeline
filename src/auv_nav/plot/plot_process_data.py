@@ -31,13 +31,18 @@ def create_trace(
     fill="none",
     is_std_bound=False,
     is_2nd_line=False,
+    showlegend=None,
+    hoverinfo=None,
+    hovertext=None,
+    legendgroup=None,
 ):
     dash = "dash" if is_2nd_line else "solid"
     line = dict(width=0) if is_std_bound else dict(color=trace_color, dash=dash)
-    showlegend = False if is_std_bound else True
+    if showlegend is None:
+        showlegend = False if is_std_bound else True
     mode = "lines" if is_std_bound or is_2nd_line else "lines+markers"
     trace = go.Scattergl(
-        x=[float(i) for i in x_list],
+        x=x_list,
         y=[float(i) for i in y_list],
         visible=visibility,  # True | False | legendonly
         name=trace_name,
@@ -47,6 +52,9 @@ def create_trace(
         fillcolor="rgba(200, 200, 200, 1)",
         fill=fill,
         showlegend=showlegend,
+        hoverinfo=hoverinfo,
+        hovertext=hovertext,
+        legendgroup=legendgroup,
     )
     return trace
 
