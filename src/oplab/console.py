@@ -252,7 +252,7 @@ class Console:
         iteration,
         total,
         prefix="Progress:",
-        suffix="Complete",
+        suffix="complete",
         length=50,
         decimals=1,
         fill="█",
@@ -282,9 +282,14 @@ class Console:
         filledLength = int(length * iteration // total)
         bar = fill * filledLength + "-" * (length - filledLength)
         print("\r%s |%s| %s%% %s" % (prefix, bar, percent, suffix), end="\r")
-        # Print New Line on Complete
-        if iteration >= total - 1:
-            print()
+        if iteration >= total:
+            print("")  # Print New Line on Complete
+            if logger is not None:
+                logger.info(f"{prefix} {percent}% {suffix}")
+                if iteration > total:
+                    logger.debug(
+                        f"Progress iteration ({iteration}) greater than total ({total})"
+                    )
 
     @staticmethod
     def set_logging_file(filename):
