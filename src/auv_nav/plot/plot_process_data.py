@@ -1349,7 +1349,7 @@ def plot_2d_deadreckoning(
     figure["layout"]["dragmode"] = "pan"
 
     for i in plotly_list_static:
-        print("Processing ", i[0])
+        Console.info(f"Processing {i[0]} ({len(i[1])} entries)")
         try:
             make_data(
                 figure,
@@ -1359,11 +1359,15 @@ def plot_2d_deadreckoning(
                 visibility=i[2],
                 hoverinfo="x+y+text",
                 hovertext=[
-                    time.strftime(
+                    f"timestamp: {j.epoch_timestamp} (epoch)<br>"
+                    + "timestamp: "
+                    + time.strftime(
                         "%Y/%m/%d %H:%M:%S.%f", time.gmtime(j.epoch_timestamp)
                     )[:-3]
+                    + " (UTC)"
+                    + (f"<br>filename: {j.filename}" if hasattr(j, "filename") else "")
                     for j in i[1]
-                ],
+                ]
             )
         except TypeError:
             Console.error("TypeError in plotting ", i[0])
