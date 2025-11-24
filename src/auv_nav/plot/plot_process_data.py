@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2022, University of Southampton
+Copyright (c) 2022-2025, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -83,8 +83,6 @@ def make_data(
     hovertext="",
     opacity=1,
 ):
-    if "usbl" in name:
-        mode = "lines+markers"
     data_dict = {
         "x": eastings,
         "y": northings,
@@ -1476,12 +1474,17 @@ def plot_2d_deadreckoning(
 
     for i in plotly_list_static:
         Console.info(f"Processing {i[0]} ({len(i[1])} entries)")
+        if ("usbl" in i[0]) or ("camera" in i[0]):
+            mode = "lines+markers"
+        else:
+            mode = "lines"
         try:
             make_data(
                 figure,
                 i[0],
                 [float(j.eastings) for j in i[1]],
                 [float(j.northings) for j in i[1]],
+                mode=mode,
                 visibility=i[2],
                 hoverinfo="x+y+text",
                 hovertext=[
@@ -1491,6 +1494,7 @@ def plot_2d_deadreckoning(
                         "%Y/%m/%d %H:%M:%S.%f", time.gmtime(j.epoch_timestamp)
                     )[:-3]
                     + " (UTC)"
+                    + f"<br>depth: {j.depth} m"
                     + (f"<br>filename: {j.filename}" if hasattr(j, "filename") else "")
                     for j in i[1]
                 ]
