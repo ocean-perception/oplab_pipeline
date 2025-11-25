@@ -1651,6 +1651,7 @@ def process(
                     ekf_list,
                     camera1_ekf_list,
                     plotlypath,
+                    filepath.name,
                 ],
             )
             t.start()
@@ -1711,6 +1712,7 @@ def process(
                     usbl_list_no_dist_filter,
                     usbl_list,
                     plotlypath,
+                    filepath.name,
                 ],
             )
             t.start()

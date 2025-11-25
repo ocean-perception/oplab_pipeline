@@ -385,6 +385,7 @@ def plot_positions_vs_time(
     ekf_list,
     camera1_ekf_list,
     output_folder: Path,
+    title: Optional[str] = None,
 ):
     Console.info("Plotting positions_vs_time...")
 
@@ -397,17 +398,20 @@ def plot_positions_vs_time(
     dr_n = [i.northings for i in dead_reckoning_dvl_list]
     dr_e = [i.eastings for i in dead_reckoning_dvl_list]
     dr_d = [i.depth for i in dead_reckoning_dvl_list]
+    dr_a = [i.altitude for i in dead_reckoning_dvl_list]
 
     ekf_t = [datetime.datetime.fromtimestamp(t.epoch_timestamp, datetime.timezone.utc) for t in ekf_list]
     ekf_n = [i.northings for i in ekf_list]
     ekf_e = [i.eastings for i in ekf_list]
     ekf_d = [i.depth for i in ekf_list]
+    ekf_a = [i.altitude for i in ekf_list]
 
     cam1_te = [i.epoch_timestamp for i in camera1_ekf_list]
     cam1_t = [datetime.datetime.fromtimestamp(t, datetime.timezone.utc) for t in cam1_te]
     cam1_n = [i.northings for i in camera1_ekf_list]
     cam1_e = [i.eastings for i in camera1_ekf_list]
     cam1_d = [i.depth for i in camera1_ekf_list]
+    cam1_a = [i.altitude for i in camera1_ekf_list]
     cam1_filenames = [i.filename for i in camera1_ekf_list]
 
     tr_usbl_n = create_trace(usbl_t, usbl_n, "USBL", "pink", legendgroup="group_usbl")
@@ -416,9 +420,11 @@ def plot_positions_vs_time(
     tr_dr_n = create_trace(dr_t, dr_n, "DVL Dead Reckoning", "purple", legendgroup="group_dr")
     tr_dr_e = create_trace(dr_t, dr_e, "DVL Dead Reckoning", "purple", legendgroup="group_dr", showlegend=False)
     tr_dr_d = create_trace(dr_t, dr_d, "DVL Dead Reckoning", "purple", legendgroup="group_dr", showlegend=False)
+    tr_dr_a = create_trace(dr_t, dr_a, "DVL Dead Reckoning", "purple", legendgroup="group_dr", showlegend=False)
     tr_ekf_n = create_trace(ekf_t, ekf_n, "EKF", "orange", legendgroup="group_ekf")
     tr_ekf_e = create_trace(ekf_t, ekf_e, "EKF", "orange", legendgroup="group_ekf", showlegend=False)
     tr_ekf_d = create_trace(ekf_t, ekf_d, "EKF", "orange", legendgroup="group_ekf", showlegend=False)
+    tr_ekf_a = create_trace(ekf_t, ekf_a, "EKF", "orange", legendgroup="group_ekf", showlegend=False)
     hoverinfo = "x+y+text"
     cam1_hovertext = [
         f"timestamp: {t} (epoch)<br>"
@@ -454,11 +460,21 @@ def plot_positions_vs_time(
         hovertext=cam1_hovertext,
         showlegend=False
     )
+    tr_cam1_ekf_a = create_trace(
+        cam1_t,
+        cam1_a,
+        "Camera1 EKF",
+        "red",
+        legendgroup="group_cam1_ekf",
+        hoverinfo=hoverinfo,
+        hovertext=cam1_hovertext,
+        showlegend=False
+    )
 
     fig = subplots.make_subplots(
         rows=2,
         cols=2,
-        subplot_titles=("Northing", "Easting", "Depth"),
+        subplot_titles=("Northing", "Easting", "Depth", "Altitude"),
         print_grid=False,
     )
     fig.append_trace(tr_usbl_n, 1, 1)
@@ -476,14 +492,20 @@ def plot_positions_vs_time(
     fig.append_trace(tr_ekf_d, 2, 1)
     fig.append_trace(tr_cam1_ekf_d, 2, 1)
 
+    fig.append_trace(tr_dr_a, 2, 2)
+    fig.append_trace(tr_ekf_a, 2, 2)
+    fig.append_trace(tr_cam1_ekf_a, 2, 2)
+
     fig["layout"]["xaxis1"].update(title="Date - Time (UTC)")
     fig["layout"]["xaxis2"].update(title="Date - Time (UTC)")
     fig["layout"]["xaxis3"].update(title="Date - Time (UTC)")
+    fig["layout"]["xaxis4"].update(title="Date - Time (UTC)")
     fig["layout"]["yaxis1"].update(title="Northing, m")
     fig["layout"]["yaxis2"].update(title="Easting, m")
     fig["layout"]["yaxis3"].update(title="Depth, m", autorange="reversed")
+    fig["layout"]["yaxis4"].update(title="Altitude, m")
     fig["layout"].update(
-        title="Position vs. Time",
+        title=(title + " " if title is not None else "") + "Position vs. Time",
         dragmode="pan",
         hovermode="closest",
     )
@@ -1433,6 +1455,7 @@ def plot_2d_deadreckoning(
     usbl_list_no_dist_filter,
     usbl_list,
     plotlypath,
+    title: Optional[str] = None,
 ):
     # DR plotly slider *include toggle button that switches between lat lon
     # and north east
@@ -1467,8 +1490,9 @@ def plot_2d_deadreckoning(
     figure = {"data": [], "layout": {}, "frames": []}
 
     # fill in most of layout
-    figure["layout"]["xaxis"] = {"title": "Eastings,m"}
-    figure["layout"]["yaxis"] = {"title": "Northings,m", "scaleanchor": "x"}
+    figure["layout"]["title"] = title + " AUV Path" if title else "AUV Path"
+    figure["layout"]["xaxis"] = {"title": "Eastings, m"}
+    figure["layout"]["yaxis"] = {"title": "Northings, m", "scaleanchor": "x"}
     figure["layout"]["hovermode"] = "closest"
     figure["layout"]["dragmode"] = "pan"
 
@@ -1495,6 +1519,7 @@ def plot_2d_deadreckoning(
                     )[:-3]
                     + " (UTC)"
                     + f"<br>depth: {j.depth} m"
+                    + ("" if "usbl" in i[0] else f"<br>altitude: {j.altitude} m")
                     + (f"<br>filename: {j.filename}" if hasattr(j, "filename") else "")
                     for j in i[1]
                 ]
