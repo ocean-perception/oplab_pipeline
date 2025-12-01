@@ -665,9 +665,9 @@ class EkfImpl(object):
                 )
 
     def compute_transfer_function(self, delta, state):
-        roll = state[Index.ROLL]
-        pitch = state[Index.PITCH]
-        yaw = state[Index.YAW]
+        roll = state[Index.ROLL, 0]
+        pitch = state[Index.PITCH, 0]
+        yaw = state[Index.YAW, 0]
 
         cr = math.cos(roll)
         sr = math.sin(roll)
@@ -698,14 +698,14 @@ class EkfImpl(object):
         return f
 
     def compute_transfer_function_jacobian(self, delta, state, f):
-        roll = state[Index.ROLL]
-        pitch = state[Index.PITCH]
-        yaw = state[Index.YAW]
-        vx = state[Index.VX]
-        vy = state[Index.VY]
-        vz = state[Index.VZ]
-        vpitch = state[Index.VPITCH]
-        vyaw = state[Index.VYAW]
+        roll = state[Index.ROLL, 0]
+        pitch = state[Index.PITCH, 0]
+        yaw = state[Index.YAW, 0]
+        vx = state[Index.VX, 0]
+        vy = state[Index.VY, 0]
+        vz = state[Index.VZ, 0]
+        vpitch = state[Index.VPITCH, 0]
+        vyaw = state[Index.VYAW, 0]
 
         cr = math.cos(roll)
         sr = math.sin(roll)
@@ -1013,9 +1013,9 @@ class ExtendedKalmanFilter(object):
 
             if depth_stamp == current_stamp:
                 orientation_deg = [
-                    math.degrees(self.ekf.state[Index.ROLL]),
-                    math.degrees(self.ekf.state[Index.PITCH]),
-                    math.degrees(self.ekf.state[Index.YAW]),
+                    math.degrees(self.ekf.state[Index.ROLL, 0]),
+                    math.degrees(self.ekf.state[Index.PITCH, 0]),
+                    math.degrees(self.ekf.state[Index.YAW, 0]),
                 ]
                 m = Measurement(self.sensors_std)
                 m.from_depth(

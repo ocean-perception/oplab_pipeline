@@ -84,7 +84,7 @@ def plane_through_3_points(points):
 
 
 def opencv_to_ned(xyz):
-    new_point = np.zeros((3, 1), dtype=np.float32)
+    new_point = np.zeros(3, dtype=np.float32)
     new_point[0] = -xyz[1]
     new_point[1] = xyz[0]
     new_point[2] = xyz[2]
