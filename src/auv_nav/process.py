@@ -590,6 +590,27 @@ def process(
     Console.info("\t* Altitude: {} elements".format(len(altitude_list)))
     Console.info("\t* Usbl: {} elements".format(len(usbl_list)))
 
+    if len(usbl_list) > 0:
+        avg_usb_northing = 0.0
+        avg_usb_easting = 0.0
+        for usbl in usbl_list:
+            avg_usb_northing += usbl.northings
+            avg_usb_easting += usbl.eastings
+        avg_usb_northing /= len(usbl_list)
+        avg_usb_easting /= len(usbl_list)
+
+        Console.info(
+            f"Average USBL position is Northing: {avg_usb_northing:.3f} m, "
+            f"Easting: {avg_usb_easting:.3f} m (with respect to mission origin)."
+        )
+        avg_usb_distance = np.sqrt(avg_usb_northing**2 + avg_usb_easting**2)
+        if avg_usb_distance > 10000:
+            Console.warn(
+                "Average USBL position is more than 10 km from origin. "
+                "Check that the origin latitude and longitude are set correctly "
+                "in mission.yaml."
+            )
+
     Console.info("Writing outputs to: {}".format(renavpath))
     raw_sensor_path = renavpath / "csv" / "sensor_values_and_uncertainties"
 
