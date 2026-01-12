@@ -102,13 +102,42 @@ def parse_ae2000(mission: Mission, vehicle: Vehicle, category, ftype, outpath):
                 "is NaN. Ignoring line and continuing.",
             )
             continue
-        datetime = datetime_column[row_index].split(" ")
-        date = datetime[0].split("/")
+        datetime_sp = datetime_column[row_index].split(" ")
+        if len(datetime_sp) < 2:
+            if row_index != 0 and row_index + 1 == len(datetime_column):
+                Console.warn(
+                    f"Last row in {filename} is incomplete. Ignoring and continuing."
+                )
+                continue
+            Console.warn(
+                f"Date-time field in row {row_index + 2} of {filename} is not "  # Added 2 to row_index to account for header and 0-indexing
+                "formatted as expected."
+            )
+        date = datetime_sp[0].split("/")
+        if len(date) < 3:
+            if row_index != 0 and row_index + 1 == len(datetime_column):
+                Console.warn(
+                    f"Last row in {filename} is incomplete. Ignoring and continuing."
+                )
+                continue
+            Console.quit(
+                f"Date field in row {row_index + 2} of {filename} is not formatted as "
+                "expected."
+            )
         yyyy = int(date[0])
         mm = int(date[1])
         dd = int(date[2])
-        timestamp = datetime[1].split(":")
+        timestamp = datetime_sp[1].split(":")
         if len(timestamp) < 3:
+            if row_index != 0 and row_index + 1 == len(datetime_column):
+                Console.warn(
+                    f"Last row in {filename} is incomplete. Ignoring and continuing."
+                )
+                continue
+            Console.quit(
+                f"Time field in row {row_index + 2} of {filename} is not formatted as "
+                f"expected. Skipping row."
+            )
             continue
         hour = int(timestamp[0])
         mins = int(timestamp[1])
