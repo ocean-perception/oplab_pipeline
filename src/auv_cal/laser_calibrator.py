@@ -176,25 +176,30 @@ def findLaserInImage(
         columns = [i[1] for i in prior]
 
     for u in columns:
-        gmax = 0
+        gmax = 0.0
         vw = start_row
         while vw < end_row - k:
-            gt = 0
-            gt_m = 0
-            gt_mv = 0
+            gt = 0.0
+            gt_m = 0.0  # For some reason when intialising to 0 (integer) (and not 0.0 (float)), `gt_m += intensity` does not work sometimes (gt_m remains 0) when running the code on oplab-crunch2, as of 28/1/2026. This issue does not occur when initialising to 0.0.
+            gt_mv = 0.0
             v = vw
             while v < vw + k:
                 weight = 1 - 2 * abs(vw + float(k - 1) / 2.0 - v) / k
                 intensity = img[v, u]
                 gt += weight * intensity
                 gt_m += intensity
-                gt_mv += (v - vw) * intensity
+                gt_mv += (v - vw) * float(intensity)  # For some reason when multiplying by `intensity` (integer) (and not float(intensity)), python issues a warning
                 v += 1
             if gt > gmax:
                 gmax = gt  # gmax:  highest integrated green value
                 vgmax = vw + (
                     gt_mv / gt_m
                 )  # vgmax: v value in image, where gmax occurrs
+                if vgmax < 0 or vgmax > height:
+                    raise ValueError(
+                        f"vgmax out of bounds: {vgmax}. "
+                        f"It should be between 0 and {height}"
+                    )
             vw += 1
         if (
             gmax > min_green_ratio * img_max_value
