@@ -883,6 +883,11 @@ class LaserCalibrator:
         failed_distance = 0
         failed_angle = 0
         while len(self.uncertainty_planes) < self.num_uncert_planes:
+            if tries > 10000000 and len(self.uncertainty_planes) == 0:
+                Console.quit(
+                    "Could not generate a single uncertainty plane after "
+                    "10,000,000 tries. Try to change the parameters."
+                )
             tries += 1
             point_cloud_local = random.sample(self.inliers_cloud_list, 3)
 
@@ -897,15 +902,11 @@ class LaserCalibrator:
             # Poisson disc sampling: reject points that are too close together
             if p0p1_norm < min_dist or p0p2_norm < min_dist or p1p2_norm < min_dist:
                 failed_distance += 1
-                if failed_distance % 100000 == 0:
-                    Console.info_verbose(
-                        "Combinations rejected due to distance criterion",
-                        "(Poisson disk sampling):",
-                        failed_distance,
-                        "times,",
-                        "due to angle criterion:",
-                        failed_angle,
-                        "times",
+                if failed_distance % 1000000 == 0:
+                    Console.info(
+                        f"Combinations rejected due to distance criterion "
+                        f"(Poisson disk sampling): {failed_distance} times, "
+                        f"due to angle criterion: {failed_angle} times."
                     )
                 continue
 
@@ -914,34 +915,28 @@ class LaserCalibrator:
             if abs(cross_prod / (p0p1_norm * p0p2_norm)) < min_sin_angle:
                 failed_angle += 1
                 if failed_angle % 100000 == 0:
-                    Console.info_verbose(
-                        "Combinations rejected due to distance criterion",
-                        "(Poisson disk sampling):",
-                        failed_distance,
-                        "times,",
-                        "due to angle criterion:",
-                        failed_angle,
-                        "times",
+                    Console.info(
+                        f"Combinations rejected due to distance criterion "
+                        f"(Poisson disk sampling): {failed_distance} times, "
+                        f"due to angle criterion: {failed_angle} times."
                     )
                 continue
 
             # Compute plane through the 3 points and append to list
             self.triples.append(np.array(point_cloud_local))
             self.uncertainty_planes.append(plane_through_3_points(point_cloud_local))
-            Console.info_verbose(
-                "Number of planes: ",
-                len(self.uncertainty_planes),
-                ", " "Number of tries so far: ",
-                tries,
-                ".",
-                "Combinations rejected due to distance criterion",
-                "(Poisson disk sampling):",
-                failed_distance,
-                "times,",
-                "due to angle criterion:",
-                failed_angle,
-                "times",
-            )
+            if (
+                len(self.uncertainty_planes) < 10
+                or len(self.uncertainty_planes) % 10 == 0
+                or len(self.uncertainty_planes) == self.num_uncert_planes
+            ):
+                Console.info(
+                    f"Number of planes: {len(self.uncertainty_planes)}. "
+                    f"Number of tries so far: {tries}. "
+                    f"Combinations rejected due to distance criterion "
+                    f"(Poisson disk sampling): {failed_distance} times, "
+                    f"due to angle criterion: {failed_angle} times."
+                )
 
         elapsed = time.time() - generate_planes_start
         elapsed_formatted = timedelta(seconds=elapsed)
