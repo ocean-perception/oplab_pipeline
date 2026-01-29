@@ -256,18 +256,19 @@ def draw_laser(
         None
     """
 
-    lfilename = left_image_name.name
-    rfilename = right_image_name.name
-    lprocessed_folder = get_processed_folder(left_image_name.parent)
-    rprocessed_folder = get_processed_folder(right_image_name.parent)
-    lsaving_folder = lprocessed_folder / ("laser_detection_" + camera_name)
-    rsaving_folder = rprocessed_folder / ("laser_detection_" + camera_name)
-    if not lsaving_folder.exists():
-        lsaving_folder.mkdir(parents=True, exist_ok=True)
-    if not rsaving_folder.exists():
-        rsaving_folder.mkdir(parents=True, exist_ok=True)
-    lfilename = lsaving_folder / lfilename
-    rfilename = rsaving_folder / rfilename
+    laser_detection_dir_l = (
+        get_processed_folder(left_image_name.parents[1])
+        / f"{left_image_name.parent.name}_laser_detection"
+    )
+    laser_detection_dir_l.mkdir(parents=True, exist_ok=True)
+    lfilename = laser_detection_dir_l / f"{left_image_name.stem}_laser_detection.png"
+    laser_detection_dir_r = (
+        get_processed_folder(right_image_name.parents[1])
+        / f"{right_image_name.parent.name}_laser_detection"
+    )
+    laser_detection_dir_r.mkdir(parents=True, exist_ok=True)
+    rfilename = laser_detection_dir_r / f"{right_image_name.stem}_laser_detection.png"
+
     if not lfilename.exists() or not rfilename.exists():
         limg = cv2.imread(str(left_image_name), cv2.IMREAD_ANYDEPTH)
         rimg = cv2.imread(str(right_image_name), cv2.IMREAD_ANYDEPTH)
@@ -308,13 +309,15 @@ def draw_laser(
             limg_colour = limg
             rimg_colour = rimg
         for p in top_left:
-            cv2.circle(limg_colour, (int(p[1]), int(p[0])), 1, (0, 0, 255), -1)
+            # Set pixel at (x=p[1], y=p[0]) to red
+            limg_colour[int(p[0]), int(p[1]), :] = [0, 0, 255]
         for p in top_right:
-            cv2.circle(rimg_colour, (int(p[1]), int(p[0])), 1, (255, 0, 0), -1)
+            # Set pixel at (x=p[1], y=p[0]) to blue
+            rimg_colour[int(p[0]), int(p[1]), :] = [255, 0, 0]
         for p in bottom_left:
-            cv2.circle(limg_colour, (int(p[1]), int(p[0])), 1, (255, 0, 127), -1)
+            limg_colour[int(p[0]), int(p[1]), :] = [255, 0, 127]
         for p in bottom_right:
-            cv2.circle(rimg_colour, (int(p[1]), int(p[0])), 1, (0, 255, 127), -1)
+            rimg_colour[int(p[0]), int(p[1]), :] = [0, 255, 127]
         cv2.imwrite(str(lfilename), limg_colour)
         cv2.imwrite(str(rfilename), rimg_colour)
         Console.info("Saved " + str(lfilename) + " and " + str(rfilename))
@@ -460,12 +463,12 @@ def get_laser_pixels_in_image_pair(
         points = []
         points_b = []
 
-        output_path = get_processed_folder(image_name.parent)
-        # print(str(image_name))
-        if not output_path.exists():
-            output_path.mkdir(parents=True, exist_ok=True)
-        fstem = str(image_name.stem) + "_" + camera_name + ".txt"
-        filename = output_path / fstem
+        laser_detection_dir = (
+            get_processed_folder(image_name.parents[1])
+            / f"{image_name.parent.name}_laser_detection"
+        )
+        laser_detection_dir.mkdir(parents=True, exist_ok=True)
+        filename = laser_detection_dir / f"{image_name.stem}_laser_pixels.txt"
         if overwrite or not filename.exists():
             points, points_b = find_laser_write_file(
                 filename,
