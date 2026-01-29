@@ -589,7 +589,7 @@ def save_cloud(filename, cloud):
     with filename.open("w") as f:
         f.write(header_msg)
         for p in cloud:
-            f.write("{0:.5f} {1:.5f} {2:.5f}\n".format(p[0][0], p[1][0], p[2][0]))
+            f.write("{0:.5f} {1:.5f} {2:.5f}\n".format(p[0], p[1], p[2]))
 
 
 class LaserCalibrator:
@@ -873,7 +873,8 @@ class LaserCalibrator:
                 continue
 
             # Reject points that are too closely aligned
-            if abs(np.cross(p0p1, p0p2)) / (p0p1_norm * p0p2_norm) < min_sin_angle:
+            cross_prod = p0p1[0] * p0p2[1] - p0p1[1] * p0p2[0]
+            if abs(cross_prod / (p0p1_norm * p0p2_norm)) < min_sin_angle:
                 failed_angle += 1
                 if failed_angle % 100000 == 0:
                     Console.info_verbose(
