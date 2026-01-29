@@ -686,14 +686,19 @@ class LaserCalibrator:
 
         bin_size_m = (self.max_z_m - self.min_z_m) / self.number_of_bins
         bins = [None] * self.number_of_bins
-
         # Shuffle the list in-place
         random.shuffle(cloud)
 
+        below_min = 0
+        above_max = 0
         output_cloud = []
         for p in cloud:
             z = p[2]
-            if self.min_z_m <= z and z < self.max_z_m:
+            if z < self.min_z_m:
+                below_min += 1
+            elif z >= self.max_z_m:
+                above_max += 1
+            else:
                 corresp_bin = math.floor((z - self.min_z_m) / bin_size_m)
                 if corresp_bin < len(bins):
                     if bins[corresp_bin] is None:
@@ -704,12 +709,34 @@ class LaserCalibrator:
                         output_cloud.append(p)
                 else:
                     raise IndexError("List index corresp_bin out of range")
-        Console.info("Summary for bins:")
+        Console.info("Number of points per bin:")
         for i in range(self.number_of_bins):
             if bins[i] is not None:
-                Console.info(" * bin", i, ":", len(bins[i]))
+                Console.info(
+                    f" * bin {i:>2} (["
+                    f"{self.min_z_m + i * bin_size_m}, "
+                    f"{self.min_z_m + (i + 1) * bin_size_m}[): {len(bins[i])}"
+                )
             else:
                 Console.info(" * bin", i, ": 0")
+        lb = [len(b) if b is not None else 0 for b in bins]
+        if any(l < 0.5 * self.max_points_per_bin for l in lb):
+            Console.warn(
+                "Some bins contain less than 50% of the defined (maximum) number of "
+                "points per bin. Consider adapting the stratification parameters."
+            )
+        Console.info("Points below min_z_m:", below_min)
+        Console.info("Points above max_z_m:", above_max)
+        if below_min > 0.1 * len(cloud):
+            Console.warn(
+                "More than 10% of the points are below min_z_m. Consider "
+                "adapting the min_z_m value of the stratification parameters."
+            )
+        if above_max > 0.1 * len(cloud):
+            Console.warn(
+                "More than 10% of the points are above max_z_m. Consider "
+                "adapting the max_z_m value of the stratification parameters."
+            )
 
         return output_cloud
 
