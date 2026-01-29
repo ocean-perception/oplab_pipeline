@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2020, University of Southampton
+Copyright (c) 2020-2026, University of Southampton
 All rights reserved.
 """
 
@@ -113,7 +113,7 @@ def plot_pointcloud_and_planes(pointclouds, planes, plot_path=None):
         List of (n x 3) ndarrays with coordintes of points to be plotted
     planes : list of ndarray
         List of ndarrays (vectors of length 4) containing plane parameters
-    plot_path: String or None, optional
+    plot_path: Path or None, optional
         Filename for storing plot as html. If None, plot is displayed but not
         saved. Default: None.
 
@@ -124,13 +124,20 @@ def plot_pointcloud_and_planes(pointclouds, planes, plot_path=None):
 
     fig = go.Figure()
 
+    triplet_counter = 0
+    pointcloud_counter = 0
     for i, pc in enumerate(pointclouds):
         sample_size = min(10000, pc.shape[0])
         indices = np.random.choice(pc.shape[0], sample_size, replace=False)
         pc_rs = pc[indices]
-        marker_size = 1
-        if pc_rs.shape[0] < 10:
+        if pc_rs.shape[0] == 3:
+            name = f"triplets {triplet_counter}"
             marker_size = 5
+            triplet_counter += 1
+        else:
+            name = f"pointcloud {pointcloud_counter}"
+            marker_size = 1
+            pointcloud_counter += 1
         fig.add_trace(
             go.Scatter3d(
                 x=pc_rs.T[0],
@@ -139,7 +146,7 @@ def plot_pointcloud_and_planes(pointclouds, planes, plot_path=None):
                 mode="markers",
                 marker=dict(size=marker_size),
                 showlegend=True,
-                name="pointcloud" + str(i),
+                name=name,
             )
         )
     cmin = 0
@@ -154,7 +161,7 @@ def plot_pointcloud_and_planes(pointclouds, planes, plot_path=None):
                 x=x,
                 y=y,
                 z=z,
-                name="plane" + str(i),
+                name=f"plane {i}",
                 surfacecolor=surfacecolor,
                 cmin=cmin,
                 cmax=cmax,
@@ -168,6 +175,7 @@ def plot_pointcloud_and_planes(pointclouds, planes, plot_path=None):
     if plot_path is None:
         fig.show()
     else:
+        plot_path.parent.mkdir(parents=True, exist_ok=True)
         fig.write_html(plot_path, auto_open=True)
 
 

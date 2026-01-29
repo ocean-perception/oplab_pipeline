@@ -821,11 +821,13 @@ class LaserCalibrator:
         mean_plane, self.inliers_cloud_list = p.fit(cloud, self.mdt)
         # p.plot(cloud=cloud)
 
-        filename = time.strftime("pointclouds_and_best_model_%Y%m%d_%H%M%S.html")
+        filename = time.strftime(
+            "%Y%m%d_%H%M%S_auv_cal_laser_pointcloud_and_best_plane.html"
+        )
         plot_pointcloud_and_planes(
             [np.array(cloud), np.array(self.inliers_cloud_list)],
             [np.array(mean_plane)],
-            str(processed_folder / filename),
+            processed_folder / "log" / filename,
         )
 
         scale = 1.0 / mean_plane[0]
@@ -947,26 +949,18 @@ class LaserCalibrator:
             f"... finished generating {len(self.uncertainty_planes)} uncertainty planes in {elapsed_formatted}"
         )
 
-        filename = time.strftime(
-            "pointclouds_and_uncertainty_planes_all_" "%Y%m%d_%H%M%S.html"
-        )
-        plot_pointcloud_and_planes(
-            self.triples + [np.array(cloud), inliers_cloud],
-            self.uncertainty_planes,
-            str(processed_folder / filename),
-        )
         # uncomment to save for debugging
         # np.save('inliers_cloud.npy', inliers_cloud)
         # for i, plane in enumerate(self.uncertainty_planes):
         #     np.save('plane' + str(i) + '.npy', plane)
 
         filename = time.strftime(
-            "pointclouds_and_uncertainty_planes_%Y%m%d_" "%H%M%S.html"
+            "%Y%m%d_%H%M%S_auv_cal_laser_pointclouds_and_uncertainty_planes.html"
         )
         plot_pointcloud_and_planes(
             self.triples + [np.array(cloud), inliers_cloud],
             self.uncertainty_planes,
-            str(processed_folder / filename),
+            processed_folder / "log" / filename,
         )
 
         yaml_msg = (
@@ -1186,13 +1180,14 @@ class LaserCalibrator:
             )
         Console.info("Converted points to NED")
 
+        filename_start = time.strftime(f"%Y%m%d_%H%M%S_auv_cal_laser_calibration_points")
         save_cloud(
-            processed_folder / ("points_" + self.camera_name + ".ply"),
+            processed_folder / "log" / f"{filename_start}_{self.camera_name}.ply",
             point_cloud_ned,
         )
         if self.two_lasers:
             save_cloud(
-                processed_folder / ("points_b_" + self.camera_name + ".ply"),
+                processed_folder / "log" / f"{filename_start}_b_{self.camera_name}.ply",
                 point_cloud_ned_b,
             )
         Console.info("Saved cloud to ply")
@@ -1207,7 +1202,7 @@ class LaserCalibrator:
         rs_size = min(rss_after, self.max_point_cloud_size)
         point_cloud_rs = random.sample(point_cloud_filt, rs_size)
         save_cloud(
-            processed_folder / ("points_rs_" + self.camera_name + ".ply"),
+            processed_folder / "log" / f"{filename_start}_rs_{self.camera_name}.ply",
             point_cloud_rs,
         )
         point_cloud_rs = np.array(point_cloud_rs)
@@ -1229,7 +1224,7 @@ class LaserCalibrator:
             rs_size = min(rss_after, self.max_point_cloud_size)
             point_cloud_b_rs = random.sample(point_cloud_b_filt, rs_size)
             save_cloud(
-                processed_folder / ("points_b_rs_" + self.camera_name + ".ply"),
+                processed_folder / "log" / f"{filename_start}_b_rs_{self.camera_name}.ply",
                 point_cloud_b_rs,
             )
             point_cloud_b_rs = np.array(point_cloud_b_rs)
