@@ -832,11 +832,21 @@ class LaserCalibrator:
         Console.info("Least squares found", len(self.inliers_cloud_list), "inliers")
 
         if len(self.inliers_cloud_list) < 0.5 * len(cloud) * self.gip:
-            Console.warn("The number of inliers found are off from what you expected.")
-            Console.warn(" * Expected inliers:", len(cloud) * self.gip)
+            Console.warn(
+                "There are fewer than half the number of expected inliers after "
+                "fitting a plane to the point cloud representing the laser plane."
+            )
+            Console.warn(" * Expected number of inliers:", len(cloud) * self.gip)
             Console.warn(" * Found inliers:", len(self.inliers_cloud_list))
             Console.warn(
                 "Check the output cloud to see if the found plane makes sense."
+            )
+            Console.warn(
+                "Also check the laser line detection images to see if the laser line "
+                "has been detected correctly and there are not many false detections. "
+                "Adapt the detection parameters in calibration.yaml if necessary. "
+                "Note: If you update the detection parameters you need to delete the "
+                "laser detection folders in the processed folder to force re-detection."
             )
             Console.warn("Try to increase your distance threshold.")
 
