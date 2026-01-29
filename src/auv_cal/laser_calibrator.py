@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2020, University of Southampton
+Copyright (c) 2020-2026, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -15,6 +15,7 @@ from typing import Dict
 import cv2
 import joblib
 import numpy as np
+from tqdm import tqdm
 import yaml
 
 from auv_cal.camera_calibrator import resize_with_padding
@@ -22,6 +23,7 @@ from auv_cal.plane_fitting import Plane
 from auv_cal.plot_points_and_planes import plot_pointcloud_and_planes
 from auv_nav.parsers.parse_biocam_images import biocam_timestamp_from_filename
 from oplab import Console, StereoCamera, get_processed_folder
+from correct_images.tools.joblib_tqdm import tqdm_joblib
 
 
 def build_plane(pitch, yaw, point):
@@ -1039,28 +1041,35 @@ class LaserCalibrator:
             rimages_rs = rimages
 
         Console.info("Processing", str(len(limages_sync)), "synchronised images...")
-        result = joblib.Parallel(n_jobs=-1)(
-            [
-                joblib.delayed(get_laser_pixels_in_image_pair)(
-                    i,
-                    self.left_maps,
-                    j,
-                    self.right_maps,
-                    self.min_greenness_ratio,
-                    self.k,
-                    self.num_columns,
-                    self.start_row,
-                    self.end_row,
-                    self.start_row_b,
-                    self.end_row_b,
-                    self.two_lasers,
-                    self.remap,
-                    self.overwrite,
-                    self.camera_name,
-                )
-                for i, j in zip(limages_rs, rimages_rs)
-            ]
-        )
+        with tqdm_joblib(
+            tqdm(
+                desc="Getting laser pixels in image pairs",
+                total=len(limages_rs),
+                dynamic_ncols=True,
+            )
+        ):
+            result = joblib.Parallel(n_jobs=-1)(
+                [
+                    joblib.delayed(get_laser_pixels_in_image_pair)(
+                        i,
+                        self.left_maps,
+                        j,
+                        self.right_maps,
+                        self.min_greenness_ratio,
+                        self.k,
+                        self.num_columns,
+                        self.start_row,
+                        self.end_row,
+                        self.start_row_b,
+                        self.end_row_b,
+                        self.two_lasers,
+                        self.remap,
+                        self.overwrite,
+                        self.camera_name,
+                    )
+                    for i, j in zip(limages_rs, rimages_rs)
+                ]
+            )
 
         # Lists of (rectified) coordinates of laser detections stored in
         # ndarrays, where each entry contains the detections of one image.
