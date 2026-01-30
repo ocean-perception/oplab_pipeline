@@ -1137,6 +1137,37 @@ class LaserCalibrator:
             Console.info("Found {} bottom peaks in camera 1!".format(str(count1lb)))
             Console.info("Found {} bottom peaks in camera 2!".format(str(count2lb)))
 
+        # Generate laser detection heat maps
+        ts = time.strftime("%Y%m%d_%H%M%S")
+        size_l = (self.sc.left.image_height, self.sc.left.image_width)
+        size_r = (self.sc.right.image_height, self.sc.right.image_width)
+        output_path = (
+            get_processed_folder(limages[0].parents[1])
+            / f"{limages[0].parent.name}_laser_detection"
+            / f"{ts}_laser_detection_heatmap.png"
+        )
+        self.generate_detection_heat_map(peaks1, size_l, output_path)
+        output_path = (
+            get_processed_folder(rimages[0].parents[1])
+            / f"{rimages[0].parent.name}_laser_detection"
+            / f"{ts}_laser_detection_heatmap.png"
+        )
+        self.generate_detection_heat_map(peaks2, size_r, output_path)
+        if self.two_lasers:
+            output_path = (
+                get_processed_folder(limages[0].parents[1])
+                / f"{limages[0].parent.name}_laser_detection"
+                / f"{ts}_laser_detection_heatmap_bottom.png"
+            )
+            self.generate_detection_heat_map(peaks1b, size_l, output_path)
+            output_path = (
+                get_processed_folder(rimages[0].parents[1])
+                / f"{rimages[0].parent.name}_laser_detection"
+                / f"{ts}_laser_detection_heatmap_bottom.png"
+            )
+            self.generate_detection_heat_map(peaks2b, size_r, output_path)
+
+        # Triangulate point cloud from laser detections
         point_cloud = []
         point_cloud_b = []
 
@@ -1238,6 +1269,35 @@ class LaserCalibrator:
             point_cloud_b_filt = point_cloud_b_filt.reshape(-1, 3)
             # self.yaml_msg_b = self.fit_and_save(point_cloud_b_rs)
             self.yaml_msg_b = self.fit_and_save(point_cloud_b_filt, processed_folder)
+
+    def generate_detection_heat_map(self, laser_detections, image_size, output_path):
+        """Generate heat map of laser detections for debugging purposes"""
+
+        heat_map = np.zeros(image_size, dtype=np.uint16)
+        for frame in laser_detections:
+            for p in frame:
+                row = int(round(p[0]))
+                col = int(round(p[1]))
+                if 0 <= row < image_size[0] and 0 <= col < image_size[1]:
+                    heat_map[row, col] += 1
+
+        heat_map_normalized = cv2.normalize(
+            heat_map,
+            None,
+            alpha=0,
+            beta=255,
+            norm_type=cv2.NORM_MINMAX,
+            dtype=cv2.CV_8U,
+        )
+
+        heat_map_jet = cv2.applyColorMap(heat_map_normalized, cv2.COLORMAP_JET)
+        # Make pixels with no detections black
+        no_detections = np.where(heat_map == 0)
+        heat_map_jet[no_detections] = [0, 0, 0]
+
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        cv2.imwrite(str(output_path), heat_map_jet)
+        Console.info(f"Saved laser detection heat map to {output_path}")
 
     def yaml(self):
         return self.yaml_msg
