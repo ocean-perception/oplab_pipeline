@@ -176,19 +176,19 @@ def findLaserInImage(
         columns = [i[1] for i in prior]
 
     for u in columns:
-        gmax = 0.0
+        gmax = 0
         vw = start_row
         while vw < end_row - k:
-            gt = 0.0
-            gt_m = 0.0  # For some reason when intialising to 0 (integer) (and not 0.0 (float)), `gt_m += intensity` does not work sometimes (gt_m remains 0) when running the code on oplab-crunch2, as of 28/1/2026. This issue does not occur when initialising to 0.0.
-            gt_mv = 0.0
+            gt = 0
+            gt_m = 0
+            gt_mv = 0
             v = vw
             while v < vw + k:
                 weight = 1 - 2 * abs(vw + float(k - 1) / 2.0 - v) / k
-                intensity = img[v, u]
+                intensity = int(img[v, u])  # img[v, u] is numpy.uint8. For some reason, when not converting to plain int, the results of arithmetic operations with integers (e.g gt_m += intensity returns 0 or (v - vw) * intensity, where gt_m, v and vw are of class 'int') occasionally (not always) are incorrect (addition) or issues warnings (multiplication). This has been observed on oplab-crunch2, as of 30/1/2026, running in docker, using python version 3.10.19, opencv version 4.13.0, numpy version 2.2.6, thogh rolling back the python, opencv and numpy versions (separately) did not fix the issue. Converting to plain int fixes the issue.
                 gt += weight * intensity
                 gt_m += intensity
-                gt_mv += (v - vw) * float(intensity)  # For some reason when multiplying by `intensity` (integer) (and not float(intensity)), python issues a warning
+                gt_mv += (v - vw) * intensity
                 v += 1
             if gt > gmax:
                 gmax = gt  # gmax:  highest integrated green value
