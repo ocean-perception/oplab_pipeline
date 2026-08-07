@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2022, University of Southampton
+Copyright (c) 2022-2026, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -77,6 +77,14 @@ def epoch_from_json(json):
 
 def epoch_to_datetime(epoch_timestamp):
     return time.strftime("%Y%m%d%H%M%S", time.gmtime(epoch_timestamp))
+
+
+def epoch_to_datetime_ms(epoch_timestamp):
+    to_datetime_ms = (
+        time.strftime("%Y/%m/%d %H:%M:%S.", time.gmtime(epoch_timestamp))
+        + f"{int((epoch_timestamp % 1) * 1000):03d}"
+    )
+    return to_datetime_ms
 
 
 def read_timezone(timezone):
