@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2020-2025, University of Southampton
+Copyright (c) 2020-2026, University of Southampton
 All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
@@ -8,10 +8,10 @@ See LICENSE.md file in the project root for full license information.
 import datetime
 import getpass
 import logging
-import traceback
 import socket
 import sys
 import timeit
+import traceback
 from pathlib import Path
 
 try:
@@ -164,7 +164,7 @@ class Console:
             + " University of Southampton"
         )
         print(" ")
-        print(" Copyright (C) 2025 University of Southampton   ")
+        print(" Copyright (C) 2026 University of Southampton   ")
         print(" This program comes with ABSOLUTELY NO WARRANTY.")
         print(" This is free software, and you are welcome to  ")
         print(" redistribute it.                               ")
