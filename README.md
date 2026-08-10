@@ -29,7 +29,8 @@ pip install -U --user -e .
 
 Notes:
 
-To import rosbag, using `pip install baypy`. (see the docs: https://jmscslgroup.github.io/bagpy/)
+- The `-e` (or `--editable`) flag enables "editable" or "development" mode. Any changes made to the code take effect immediately without needing a reinstall. However, it does not not update the version string. Make sure to run `pip install -U --user -e .` again once you are done modifying files to avoid an out-of-date version string being displayed or written to the log files.
+- To import rosbag, using `pip install baypy`. (see the docs: https://jmscslgroup.github.io/bagpy/)
 
 ## Documentation
 The documentation is hosted in [read the docs](https://oplab-pipeline.readthedocs.io).
