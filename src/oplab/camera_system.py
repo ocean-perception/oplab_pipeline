@@ -120,30 +120,43 @@ class CameraEntry:
             if self.extension == "bag":
                 return
             if self.timestamp_file is None and self.filename_to_date is None:
-                Console.error(
-                    "The camera ",
-                    self.name,
-                    " is missing its timestamp format",
-                )
-                Console.error("You can provide it by means of filename:")
-                Console.error(
-                    "e.g. PR_20180811_153729_762_RC16.tif ->",
-                    "xxxYYYYMMDDxhhmmssxfffxxxxx.xxx",
-                )
-                Console.error("or using a separate timestamp file:")
-                Console.error(
-                    "e.g. FileTime.csv, where separate columns z define",
-                    "the date.",
-                )
-                Console.error("Find examples in default_yaml folder.")
-                Console.quit("Missing timestamp format for a camera.")
+
+                # print(str(self.raw_folder)+self.path+'.tif')
+                #print(list(Path(self.raw_folder).glob(self.path+'/*.tif'))[0])
+                # print(str(list(Path(self.raw_folder).glob(self.path+'.tif'))[0]))
+                # Console.quit()
+
+                if node.get("filename_to_date_pps", None) is not None:
+                    if self.name == 'stills':
+                        #print(self.raw_folder,self.path)
+                        if 'PPS' in str(list(Path(self.raw_folder).glob(self.path+'.tif'))[0]):
+                            self.filename_to_date = node.get("filename_to_date_pps")
+                        elif 'SYSTEM' in str(list(Path(self.raw_folder).glob(self.path+'.tif'))[0]):
+                            self.filename_to_date = node.get("filename_to_date_system")
+                else:
+                    Console.error(
+                        "The camera ",
+                        self.name,
+                        " is missing its timestamp format",
+                    )
+                    Console.error("You can provide it by means of filename:")
+                    Console.error(
+                        "e.g. PR_20180811_153729_762_RC16.tif ->",
+                        "xxxYYYYMMDDxhhmmssxfffxxxxx.xxx",
+                    )
+                    Console.error("or using a separate timestamp file:")
+                    Console.error(
+                        "e.g. FileTime.csv, where separate columns z define",
+                        "the date.",
+                    )
+                    Console.error("Find examples in default_yaml folder.")
+                    Console.quit("Missing timestamp format for a camera.")
             self.convert_filename = FilenameToDate(
                 self.filename_to_date,
                 self.timestamp_file,
                 self.columns,
                 self.raw_folder,
             )
-
     def write(self, node):
         pass
 
@@ -160,6 +173,7 @@ class CameraEntry:
         raw_dir = get_raw_folder(self.raw_folder)
 
         split_glob = str(self.path).split("*")
+        #print(split_glob)
         img_dir = ""
         if len(split_glob) == 2:
             pre_glob = split_glob[0] + "*"
@@ -172,7 +186,12 @@ class CameraEntry:
             pre_glob = split_glob[0] + "*"
             glob_vec = raw_dir.glob(pre_glob)
             img_dirs = [k for k in glob_vec]
-            img_dir = Path(str(img_dirs[0]))
+            if len([x for x in img_dirs if 'stills/raw' in str(x)]) > 0:
+            	img_dir = Path(str([x for x in img_dirs if 'stills/raw' in str(x)][0]))
+            else:
+            	img_dir = Path(str(img_dirs[0]))
+            #print(img_dir)
+            #print("*" + split_glob[2] + "." + self.extension)
             for i in img_dir.glob("*" + split_glob[2] + "." + self.extension):
                 self._image_list.append(str(i))
         elif len(split_glob) == 4:  # path/i*/*LC*

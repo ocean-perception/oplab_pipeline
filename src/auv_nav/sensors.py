@@ -1242,7 +1242,7 @@ class Usbl(OutputFormat):
                 self.fill_from_lat_lon_depth()
 
         elif msg_type == "sensor_msgs/NavSatFix":
-            if msg.status.status == 0:
+            if msg.status.status == 1:
                 self.latitude = msg.latitude
                 self.longitude = msg.longitude
                 self.depth = 0.0  # GPS measurement
@@ -1264,6 +1264,43 @@ class Usbl(OutputFormat):
                 self.eastings,
                 self.northings,
             )
+        elif msg_type == "nmea_gps/GPSData":
+            if msg.fix_quality == 2:
+                self.latitude = msg.latitude
+                self.longitude = msg.longitude
+                self.depth = -msg.altitude
+
+                # calculate in meters from reference
+                lateral_distance, bearing = latlon_to_metres(
+                    self.latitude,
+                    self.longitude,
+                    self.latitude_reference,
+                    self.longitude_reference,
+                )
+                self.distance_to_ship = -1.0
+                self.eastings = sin(bearing * pi / 180.0) * lateral_distance
+                self.northings = cos(bearing * pi / 180.0) * lateral_distance
+                self.eastings_std = self.std_factor * self.depth + self.std_offset
+                self.northings_std = self.std_factor * self.depth + self.std_offset
+                self.depth_std = self.std_factor * self.depth + self.std_offset
+                # If your displacements aren't too great (less than a few kilometers)
+                # and you're not right at the poles, use the quick and dirty estimate
+                # that 111,111 meters (111.111 km) in the y direction is 1 degree (of
+                # latitude) and 111,111 * cos(latitude) meters in the x direction is
+                # 1 degree (of longitude).
+                self.latitude_std = self.depth / 111.111e3
+                self.longitude_std = self.latitude_std * cos(self.latitude * pi / 180.0)
+
+        # elif msg_type == "sonardyne_sprintnav_ins/HNav":
+        #     self.latitude = msg.latitude
+        #     self.longitude = msg.longitude
+        #     self.depth = msg.depth
+
+        #     self.fill_from_lat_lon_depth()
+
+        #     self.eastings_std = msg.position_quality_cep50
+        #     self.northings_std = msg.position_quality_cep50
+        #     # self.depth_std = self.std_factor * self.depth + self.std_offset
 
         else:
             Console.quit("USBL ROS parser for", msg_type, "not supported.")

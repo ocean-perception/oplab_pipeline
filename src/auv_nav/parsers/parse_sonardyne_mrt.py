@@ -472,6 +472,291 @@ def parse_gga4_txt(filename, field_id:int):
             Console.warn(f"errors exist in {idx} row, already ignore it")
     return observations
 
+def parse_gga5_txt(filename, field_id:int):
+    """
+    for gga txt, there are only lot, long and time_stamp that are useful.
+    """
+    observations = []
+    if 'Dive' in str(filename):
+
+        with open(filename, "r") as file:
+            try:
+                data_list = file.readlines()
+            except:
+                print("file_errors: ", str(filename))
+                return []
+        
+        data_list = [re.split(",| |\*", data_list[i]) for i in range(len(data_list))]
+        for idx, data in enumerate(data_list):        
+            try:
+                if int(data[-2]) != field_id:
+                    continue
+                # check GPS quality
+                if int(data[8]) != 2:
+                    if int(data[8]) == 0:
+                        continue
+                    else:
+                        Console.warn(f"GPS quality in {idx} row indicated as not Differential GPS fix, row ignored")
+                        continue
+                lat_sign = 1
+                long_sign = 1
+                if data[5] == "S":
+                    lat_sign = -1
+                if data[7] == "W":
+                    long_sign = -1
+                lat = float(data[4][:2]) + float(data[4][2:]) / 60
+                long = float(data[6][:3]) + float(data[6][3:]) / 60
+                lat *= lat_sign
+                long *= long_sign
+                depth = float(data[11])
+
+                time_stamp = '-'.join(data[0].split('/')[::-1]) + " " + data[1]
+                
+
+                obs = USBLVectorObs(
+                    obs_uid = "",
+                    source_uid = "",
+                    source_name = "",
+                    parent_uid = "",
+                    parent_name =  "",
+                    assoc_uid = "",
+                    time_stamp = time_stamp,
+                    filter_uid = "",
+                    fix_number = "",
+                    jx = long,
+                    jy = lat,
+                    jz = depth,
+                    valid_jx = False,
+                    valid_jy = False,
+                    valid_jz = False,
+                    frequency = 0,
+                    qj_sum = 0,
+                    n_good_samples = 0,
+                    direction_sd = 0.0, )
+                observations.append(obs)
+            except:
+                print(f"errors exist in {idx} row, already ignore it")
+
+    else:
+        with open(filename, "r") as file:
+            try:
+                data_list = file.readlines()
+            except:
+                Console.error("file_errors: ", str(filename))
+                # return []
+
+        data_list = [re.split(",| |\*", data_list[i]) for i in range(len(data_list))]
+        for idx, data in enumerate(data_list):        
+            try:
+                if int(data[-2]) != field_id:
+                    continue
+                lat_sign = 1
+                long_sign = 1
+                if data[6] == "S":
+                    lat_sign = -1
+                if data[8] == "W":
+                    long_sign = -1
+                lat = float(data[5][:2]) + float(data[5][2:]) / 60
+                long = float(data[7][:3]) + float(data[7][3:]) / 60
+                lat *= lat_sign
+                long *= long_sign
+                depth = float(data[12])
+                time_stamp = filename.stem[0:4] + "-" + filename.stem[4:6] + "-" + filename.stem[6:8] + " " + data[1]
+
+                obs = USBLVectorObs(
+                    obs_uid = "",
+                    source_uid = "",
+                    source_name = "",
+                    parent_uid = "",
+                    parent_name =  "",
+                    assoc_uid = "",
+                    time_stamp = time_stamp,
+                    filter_uid = "",
+                    fix_number = "",
+                    jx = long,
+                    jy = lat,
+                    jz = depth,
+                    valid_jx = False,
+                    valid_jy = False,
+                    valid_jz = False,
+                    frequency = 0,
+                    qj_sum = 0,
+                    n_good_samples = 0,
+                    direction_sd = 0.0, )
+                observations.append(obs)
+            except:
+                Console.warn(f"errors exist in {idx} row, already ignore it")
+
+    return observations
+
+def parse_gga6_txt(filename):
+    """
+    for gga txt, there are only lot, long and time_stamp that are useful.
+    """
+    observations = []
+    with open(filename, "r") as file:
+        try:
+            data_list = file.readlines()
+        except:
+            Console.error("file_errors: ", str(filename))
+            return []
+    
+    data_list = [re.split(",| |\*", data_list[i]) for i in range(len(data_list))]
+    for idx, data in enumerate(data_list):        
+        
+        try:
+            if int(data[9]) != 2:
+                if int(data[9]) == 0:
+                    continue
+                # elif int(data[9]) == 1:
+                #     Console.warn(f"GPS quality in {idx} row indicated as Standard GPS fix, may not be as accurate")
+                else:
+                    Console.warn(f"GPS quality in {idx} row indicated as not Differential GPS fix, row ignored")
+                    continue
+            lat_sign = 1
+            long_sign = 1
+            if data[6] == "S":
+                lat_sign = -1
+            if data[8] == "W":
+                long_sign = -1
+            lat = float(data[5][:2]) + float(data[5][2:]) / 60
+            long = float(data[7][:3]) + float(data[7][3:]) / 60
+            lat *= lat_sign
+            long *= long_sign
+
+            time_stamp = filename.stem[0:4] + "-" + filename.stem[4:6] + "-" + filename.stem[6:8] + " " + data[4][:2] + ':' + data[4][2:4] + ':' + data[4][4:]
+            
+
+            obs = USBLVectorObs(
+                obs_uid = "",
+                source_uid = "",
+                source_name = "",
+                parent_uid = "",
+                parent_name =  "",
+                assoc_uid = "",
+                time_stamp = time_stamp,
+                filter_uid = "",
+                fix_number = "",
+                jx = long,
+                jy = lat,
+                jz = 0.0,
+                valid_jx = False,
+                valid_jy = False,
+                valid_jz = False,
+                frequency = 0,
+                qj_sum = 0,
+                n_good_samples = 0,
+                direction_sd = 0.0, )
+            observations.append(obs)
+        except:
+            Console.warn(f"errors exist in {idx} row, already ignore it")
+    return observations
+
+def parse_mrt_txt(filename):
+    observations = []
+    with open(filename, "r") as file:
+        try:
+            data_list = file.readlines()
+        except:
+            Console.error("file_errors: ", str(filename))
+            return []
+        
+    data_list = [x for x in data_list if 'SMS:3003' in x]
+    
+    for idx, data in enumerate(data_list):  
+
+        try:
+            if '(T)' in data and 'SPOS' in data:
+                data = re.split(",| |\* |;", data)
+
+                time_stamp = filename.stem[0:4] + "-" + filename.stem[4:6] + "-" + filename.stem[6:8] + " " + data[1]
+
+                obs = LatLongObs(
+                    obs_uid = "",
+                    source_uid = "",
+                    source_name = "GNSS 1",
+                    parent_uid = "",
+                    parent_name =  "",
+                    assoc_uid = "",
+                    time_stamp = time_stamp,
+                    filter_uid = "",
+                    fix_number = "",
+                    latitude =  data[15],
+                    longitude =  data[16],
+                    altitude =  '',
+                    latitude_valid =  '',
+                    longitude_valid = '',
+                    altitude_valid = ''
+                )
+                observations.append(obs)
+
+                obs = LatLongObs(
+                    obs_uid = "",
+                    source_uid = "",
+                    source_name = "AUV 1",
+                    parent_uid = "",
+                    parent_name =  "",
+                    assoc_uid = "",
+                    time_stamp = filename.stem[0:4] + "-" + filename.stem[4:6] + "-" + filename.stem[6:8] + ' ' + data[18][:2]+':'+ data[18][2:4]+':'+ data[18][4:],
+                    filter_uid = "",
+                    fix_number = "",
+                    latitude =  data[19],
+                    longitude =  data[20],
+                    altitude =  data[21],
+                    latitude_valid =  '',
+                    longitude_valid = '',
+                    altitude_valid = ''
+                )
+                observations.append(obs)
+
+            elif '(2)' in data:
+                data = re.split(",| |\* |;", data)
+                time_stamp = filename.stem[0:4] + "-" + filename.stem[4:6] + "-" + filename.stem[6:8] + " " + data[1]
+
+                obs = USBLVectorObs(
+                    obs_uid = "",
+                    source_uid = "",
+                    source_name = "",
+                    parent_uid = "",
+                    parent_name =  "",
+                    assoc_uid = "",
+                    time_stamp = time_stamp,
+                    filter_uid = "",
+                    fix_number = "",
+                    jx = float(data[7].replace('JX','')),
+                    jy =  float(data[8].replace('JY','')),
+                    jz =  float(data[9].replace('JZ','')),
+                    valid_jx = False,
+                    valid_jy = False,
+                    valid_jz = False,
+                    frequency = float(data[15].replace('AT','').replace('[XC','')),
+                    qj_sum =  float(data[11].replace('QJ','')),
+                    n_good_samples = 0,
+                    direction_sd = 0.0, )
+                observations.append(obs)
+
+                obs = PitchRollHeadingObs(
+                    obs_uid = "",
+                    source_uid = "",
+                    source_name = "MRT-USBL",
+                    parent_uid = "",
+                    parent_name =  "",
+                    assoc_uid = "",
+                    time_stamp = time_stamp,
+                    filter_uid = "",
+                    fix_number = "",
+                    pitch = float(data[14].replace('AP','')),
+                    roll = float(data[13].replace('AR','')),
+                    heading = float(data[12].replace('AH','')),
+                    pitch_valid = '',
+                    roll_valid = '',
+                    heading_valid = '',
+                )
+                observations.append(obs)
+
+        except:
+            Console.warn(f"errors exist in {idx} row, already ignore it")
+    return observations
 
 def parse_mrt_csv(filename):
     filename = Path(filename)
@@ -636,14 +921,24 @@ def parse_sonardyne_mrt(mission, vehicle, category, ftype, outpath):
     if not filename.exists():
         Console.error(f"File {filename} does not exist")
         return None
-    base_name = filename.stem
-    files = filename.parent.glob(base_name + "_*")
-    files = sorted(files)
-
-    all_observations = []
-    for filename in files:
-        observations = parse_mrt_csv(filename)
+    
+    if '.txt' in str(filename):
+        all_observations = []
+        observations = parse_mrt_txt(filename)
         all_observations.extend(observations)
+
+    else:
+        base_name = filename.stem
+        files = filename.parent.glob(base_name + "_*")
+        files = sorted(files)
+        if len(files) <1:
+            Console.error(f'No files')
+
+        all_observations = []
+        for filename in files:
+            observations = parse_mrt_csv(filename)
+            all_observations.extend(observations)
+
     auv_observations = find_closest_observations(all_observations)
 
     data_list = []
@@ -1160,6 +1455,252 @@ def parse_sonardyne_gga4(mission, vehicle, category, ftype, outpath):
     all_observations = []
     for filename in files:        
         observations = parse_gga4_txt(filename,field_id)
+        all_observations.extend(observations)
+
+    """
+    for the gga data, we could only get the lat, long and timestamp so couldn't calcute 
+    the closest_observation like mrc_csv"""
+
+    # auv_observations = find_closest_observations(all_observations)
+    auv_observations = all_observations
+    data_list = []
+
+    # Calculate the distance between the two
+    for auv_obs in auv_observations:
+        latitude = float(auv_obs.jy)
+        longitude = float(auv_obs.jx)
+        depth = -float(auv_obs.jz)
+
+        lateral_distance_ship, bearing_ship = latlon_to_metres(
+            latitude,
+            longitude,
+            latitude_reference,
+            longitude_reference,
+        )
+        eastings_target = (
+                math.sin(bearing_ship * math.pi / 180.0) * lateral_distance_ship
+        )
+        northings_target = (
+                math.cos(bearing_ship * math.pi / 180.0) * lateral_distance_ship
+        )
+
+        data = {
+            "epoch_timestamp": datetime.datetime.strptime(auv_obs.time_stamp, "%Y-%m-%d %H:%M:%S.%f"
+        ).timestamp() + timeoffset_s,
+            "class": class_string,
+            "sensor": sensor_string,
+            "frame": frame_string,
+            "category": Category.USBL,
+            "data_ship": [
+                {
+                    "latitude": 0,
+                    "longitude": 0,
+                },
+                {
+                    "northings": 0,
+                    "eastings": 0,
+                },
+                {"heading": 0},
+            ],
+            "data_target": [
+                {
+                    "latitude": float(latitude),
+                    "latitude_std": 0.0001,
+                },
+                {
+                    "longitude": float(longitude),
+                    "longitude_std": 0.0001,
+                },
+                {
+                    "northings": northings_target,
+                    "northings_std": 5.0,
+                },
+                {
+                    "eastings": eastings_target,
+                    "eastings_std": 5.0,
+                },
+                {
+                    "depth": float(depth),
+                    "depth_std": 0.0,
+                },
+                {"distance_to_ship": ""},
+            ],
+        }
+        data_list.append(data)
+    return data_list
+
+def parse_sonardyne_gga5(mission, vehicle, category, ftype, outpath):
+    """
+    copied from def parse_sonardyne_mrt so there are a lot of variables we don't need.
+    you are free to delete or modify.
+    """
+    Console.info("... parsing Sonardyne GGA5")
+
+    # parser meta data
+    class_string = "measurement"
+    sensor_string = "sonardyne_gga5"
+    frame_string = "inertial"
+
+    timezone = mission.usbl.timezone
+    timeoffset = mission.usbl.timeoffset_s
+
+    timezone_offset_h = read_timezone(timezone)
+    timeoffset_s = -timezone_offset_h * 60 * 60 - timeoffset
+
+    filepath = mission.usbl.filepath
+    filename = mission.usbl.filename
+    # usbl_id = mission.usbl.label
+    latitude_reference = mission.origin.latitude
+    longitude_reference = mission.origin.longitude
+
+    distance_std_factor = mission.usbl.std_factor
+    distance_std_offset = mission.usbl.std_offset
+    field_id = int(mission.usbl.field_id)
+
+    # parse data
+    Console.info(f"Filename {filename}")
+    print(filename)
+    Console.info(f"Filepath {filepath}")
+    print(filepath)
+    filename = get_raw_folder(outpath / ".." / filepath / filename)
+    Console.info(f"Filename_full {filename}")
+    print(filename)
+    # Find all files with the same filename ending in "_1, _2, _3, etc"
+    filename = Path(filename)
+    if not filename.exists():
+        Console.error(f"File {filename} does not exist")
+        return None
+    base_name = filename.stem    
+    files = filename.glob("*USBL*.txt")
+    files = sorted(files)
+
+    date_prefix = []
+    all_observations = []
+    for filename in files:        
+        observations = parse_gga5_txt(filename,field_id)
+        all_observations.extend(observations)
+
+    """
+    for the gga data, we could only get the lat, long and timestamp so couldn't calcute 
+    the closest_observation like mrc_csv"""
+
+    # auv_observations = find_closest_observations(all_observations)
+    auv_observations = all_observations
+    data_list = []
+
+    # Calculate the distance between the two
+    for auv_obs in auv_observations:
+        latitude = float(auv_obs.jy)
+        longitude = float(auv_obs.jx)
+        depth = -float(auv_obs.jz)
+
+        lateral_distance_ship, bearing_ship = latlon_to_metres(
+            latitude,
+            longitude,
+            latitude_reference,
+            longitude_reference,
+        )
+        eastings_target = (
+                math.sin(bearing_ship * math.pi / 180.0) * lateral_distance_ship
+        )
+        northings_target = (
+                math.cos(bearing_ship * math.pi / 180.0) * lateral_distance_ship
+        )
+
+        data = {
+            "epoch_timestamp": datetime.datetime.strptime(auv_obs.time_stamp, "%Y-%m-%d %H:%M:%S.%f"
+        ).timestamp() + timeoffset_s,
+            "class": class_string,
+            "sensor": sensor_string,
+            "frame": frame_string,
+            "category": Category.USBL,
+            "data_ship": [
+                {
+                    "latitude": 0,
+                    "longitude": 0,
+                },
+                {
+                    "northings": 0,
+                    "eastings": 0,
+                },
+                {"heading": 0},
+            ],
+            "data_target": [
+                {
+                    "latitude": float(latitude),
+                    "latitude_std": 0.0001,
+                },
+                {
+                    "longitude": float(longitude),
+                    "longitude_std": 0.0001,
+                },
+                {
+                    "northings": northings_target,
+                    "northings_std": 5.0,
+                },
+                {
+                    "eastings": eastings_target,
+                    "eastings_std": 5.0,
+                },
+                {
+                    "depth": float(depth),
+                    "depth_std": 1.0,
+                },
+                {"distance_to_ship": ""},
+            ],
+        }
+        data_list.append(data)
+    return data_list
+
+def parse_sonardyne_gga6(mission, vehicle, category, ftype, outpath):
+    """
+    copied from def parse_sonardyne_mrt so there are a lot of variables we don't need.
+    you are free to delete or modify.
+    """
+    Console.info("... parsing Sonardyne GGA6")
+
+    # parser meta data
+    class_string = "measurement"
+    sensor_string = "sonardyne_gga6"
+    frame_string = "inertial"
+
+    timezone = mission.usbl.timezone
+    timeoffset = mission.usbl.timeoffset_s
+
+    timezone_offset_h = read_timezone(timezone)
+    timeoffset_s = -timezone_offset_h * 60 * 60 - timeoffset
+
+    filepath = mission.usbl.filepath
+    filename = mission.usbl.filename
+    # usbl_id = mission.usbl.label
+    latitude_reference = mission.origin.latitude
+    longitude_reference = mission.origin.longitude
+
+    distance_std_factor = mission.usbl.std_factor
+    distance_std_offset = mission.usbl.std_offset
+    #field_id = int(mission.usbl.field_id)
+
+    # parse data
+    Console.info(f"Filename {filename}")
+    print(filename)
+    Console.info(f"Filepath {filepath}")
+    print(filepath)
+    filename = get_raw_folder(outpath / ".." / filepath / filename)
+    Console.info(f"Filename_full {filename}")
+    print(filename)
+    # Find all files with the same filename ending in "_1, _2, _3, etc"
+    filename = Path(filename)
+    if not filename.exists():
+        Console.error(f"File {filename} does not exist")
+        return None
+    base_name = filename.stem    
+    files = filename.glob("20*GGA*.txt")
+    files = sorted(files)
+
+    date_prefix = []
+    all_observations = []
+    for filename in files:        
+        observations = parse_gga6_txt(filename)
         all_observations.extend(observations)
 
     """

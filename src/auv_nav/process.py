@@ -807,6 +807,7 @@ def process(
     if start_interpolate_index == 1:
         interpolate_remove_flag = True
 
+    n_skip = 0
     # time_velocity_body)):
     for i in range(start_interpolate_index, len(orientation_list)):
         # interpolate to find the appropriate dvl time for the orientation
@@ -878,6 +879,9 @@ def process(
             dead_reckoning_dvl.z_velocity,
         ]
         angular_speeds = compute_angular_speeds(orientation_list, i)
+        if angular_speeds is None:
+            n_skip+=1
+            continue
         dvl_pos_on_vehicle = [
             vehicle.dvl.surge,
             vehicle.dvl.sway,
@@ -950,7 +954,8 @@ def process(
             depth_list[k].depth_std,
         )
         dead_reckoning_dvl_list.append(dead_reckoning_dvl)
-
+    Console.warn(f"Interpolation skipped {n_skip} times due to no change in timestamps")
+    
     # dead reckoning solution
     dead_reckoning_dvl_list[0].northings = 0.0
     dead_reckoning_dvl_list[0].eastings = 0.0

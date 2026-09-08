@@ -22,6 +22,9 @@ from auv_nav.tools.time_conversions import read_timezone
 from oplab import Console
 from oplab.folder_structure import get_raw_folder
 
+import numpy as np
+import sys
+
 # fmt: off
 ROSBAG_IS_AVAILABLE = False
 try:
@@ -33,7 +36,7 @@ except ImportError:
 
 
 def rosbag_topic_worker(
-    bagfile_list, wanted_topic, data_object, data_list, output_format, output_dir
+    bagfile_list, wanted_topic, data_object, data_list, output_format, output_dir, category
 ):
     """Process a topic from a rosbag calling a method from an object
 
@@ -64,8 +67,14 @@ def rosbag_topic_worker(
     for bagfile in bagfile_list:
         try:
             bag = rosbag.Bag(bagfile, "r")
-            for topic, msg, _ in bag.read_messages(topics=[wanted_topic]):
-                if topic == wanted_topic:
+            if wanted_topic == 'mixed_sparus':
+                if category == Category.ORIENTATION:
+                    wanted_topics = ['sonardyne_sprintnav_ins/HNav','/sparus2/navigator/imu']
+                else:
+                    wanted_topics = ['sonardyne_sprintnav_ins/HNav','/sparus2/navigator/navigation_throttle']
+                for topic, msg, _ in bag.read_messages(topics=wanted_topics):
+                    if msg == None:
+                        continue
                     func = getattr(data_object, "from_ros")
                     type_str = str(type(msg))
                     # rosbag library does not store a clean message type,
@@ -74,8 +83,28 @@ def rosbag_topic_worker(
                     func(msg, msg_type, output_dir)
                     if data_object.valid():
                         data = data_object.export(output_format)
+                        if category == Category.VELOCITY:
+                            if type_str == 'cola2_msgs/NavSts':
+                                data.x_velocity_std = np.mean([d.x_velocity_std for d in data_list if category == Category.VELOCITY])
+                                data.y_velocity_std = np.mean([d.y_velocity_std for d in data_list if category == Category.VELOCITY])
+                                data.z_velocity_std = np.mean([d.z_velocity_std for d in data_list if category == Category.VELOCITY])
                         data_list.append(data)
+
+            else:
+                for topic, msg, _ in bag.read_messages(topics=[wanted_topic]):
+                    if topic == wanted_topic:
+                        func = getattr(data_object, "from_ros")
+                        type_str = str(type(msg))
+                        # rosbag library does not store a clean message type,
+                        # so we need to make it ourselves from a dirty string
+                        msg_type = type_str.split(".")[1][1:-2].replace("__", "/")
+                        func(msg, msg_type, output_dir)
+                        if data_object.valid():
+                            data = data_object.export(output_format)
+                            data_list.append(data)
         except:
+        # except Exception as e:
+            # Console.error(f"{e}, at line {sys.exc_info()[-1].tb_lineno} for topic {category}")
             Console.error(f"{bagfile} is unable to read!")
     return data_list
 
@@ -219,7 +248,7 @@ def parse_rosbag(mission, vehicle, category, output_format, outpath):
     bagfile_list = list(filepath.glob(bagfile))
     outpath = Path(outpath).parent
     data_list = rosbag_topic_worker(
-        bagfile_list, wanted_topic, data_object, data_list, output_format, outpath
+        bagfile_list, wanted_topic, data_object, data_list, output_format, outpath, category
     )
     Console.info("... parsed " + str(len(data_list)) + " " + category + " entries")
     return data_list

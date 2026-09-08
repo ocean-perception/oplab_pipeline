@@ -54,6 +54,9 @@ def compute_angular_speeds(orientation_vec, i):
         print("ERROR: CONDITION NOT TAKEN INTO ACCOUNT")
 
     dt = o2.epoch_timestamp - o1.epoch_timestamp
+    if dt == 0:
+        # print('ERROR: NO TIME DIFFERENCE TO CALCULATE CHANGE OVER, SKIP')
+        return None
     droll = o2.roll - o1.roll
     dpitch = o2.pitch - o1.pitch
     dyaw = o2.yaw - o1.yaw
