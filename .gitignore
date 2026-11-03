@@ -21,3 +21,7 @@ docs/_build/
 # due to using tox and pytest
 .tox
 .cache
+
+# pixi environments
+.pixi/*
+!.pixi/config.toml
