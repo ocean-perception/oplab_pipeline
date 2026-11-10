@@ -672,7 +672,7 @@ def parse_sonardyne_mrt(mission, vehicle, category, ftype, outpath):
         observations = parse_mrt_csv(mrt_file)
         all_observations.extend(observations)
 
-    auv_observations = find_closest_observations(observations  = all_observations,
+    auv_observations = find_closest_observations(observations   = all_observations,
                                                  auv_source     = auv_source,
                                                  ship_source    = ship_source,
                                                  heading_source = heading_source)
