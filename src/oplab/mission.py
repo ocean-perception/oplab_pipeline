@@ -292,22 +292,48 @@ class DefaultEntry(TimeZoneEntry):
         node["std_offset"] = self.std_offset
 
 
+class USBLEntry(DefaultEntry):
+    def __init__(self):
+        super().__init__()
+
+        self.auv_source     = "AUV 1"
+        self.ship_source    = "GNSS 1"
+        self.heading_source = "MRT-USBL"
+
+
+    def load(self, node):
+        super().load(node)
+
+        self.auv_source     = node.get("auv_source", self.auv_source)
+        self.ship_source    = node.get("ship_source", self.ship_source)
+        self.heading_source = node.get("heading_source", self.heading_source)
+
+
+    def write(self, node):
+        super().write(node)
+
+        if self.format == "sonardyne_mrt":
+            node["auv_source"]     = self.auv_source
+            node["ship_source"]    = self.ship_source
+            node["heading_source"] = self.heading_source
+
+
 class Mission:
     """Mission class that parses and writes mission.yaml"""
 
     def __init__(self, filename=None):
-        self.version = 0
-        self.origin = OriginEntry()
-        self.velocity = DefaultEntry()
-        self.orientation = DefaultEntry()
-        self.depth = DefaultEntry()
-        self.altitude = DefaultEntry()
-        self.usbl = DefaultEntry()
-        self.tide = DefaultEntry()
+        self.version        = 0
+        self.origin         = OriginEntry()
+        self.velocity       = DefaultEntry()
+        self.orientation    = DefaultEntry()
+        self.depth          = DefaultEntry()
+        self.altitude       = DefaultEntry()
+        self.usbl           = USBLEntry()
+        self.tide           = DefaultEntry()
         self.dead_reckoning = DefaultEntry()
-        self.image = ImageEntry()
-        self.payloads = {}
-        self.filename = None
+        self.image          = ImageEntry()
+        self.payloads       = {}
+        self.filename       = None
 
         if filename is None:
             return
