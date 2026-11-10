@@ -544,12 +544,13 @@ def parse_mrt_csv(filename):
                 obs = Alarm(*values[1:])
             elif values[0] == "AlarmStateChange":
                 obs = AlarmStateChange(*values[1:])
-            elif values[0] == "JobData":
-                # Ignore this
-                pass
-            else:
-                print(f"Unknown observation type: {values[0]}")
+            elif values[0] in ("JobData",
+                               "RFMParentOffsetUpdate"):
                 continue
+            else:
+                Console.warn(f"Unknown observation type: {values[0]}")
+                continue
+
             observations.append(obs)
         return observations
 
