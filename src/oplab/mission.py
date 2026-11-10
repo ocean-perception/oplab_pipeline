@@ -293,6 +293,8 @@ class DefaultEntry(TimeZoneEntry):
 
 
 class USBLEntry(DefaultEntry):
+    """Mission configuration entry for USBL data sources."""
+
     def __init__(self):
         super().__init__()
 
@@ -302,6 +304,7 @@ class USBLEntry(DefaultEntry):
 
 
     def load(self, node):
+        """Load USBL configuration from a mission YAML node."""
         super().load(node)
 
         self.auv_source     = node.get("auv_source", self.auv_source)
@@ -310,6 +313,7 @@ class USBLEntry(DefaultEntry):
 
 
     def write(self, node):
+        """Write USBL configuration to a mission YAML node."""
         super().write(node)
 
         if self.format == "sonardyne_mrt":
