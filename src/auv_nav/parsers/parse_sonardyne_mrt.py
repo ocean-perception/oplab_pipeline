@@ -666,11 +666,6 @@ def parse_sonardyne_mrt(mission, vehicle, category, ftype, outpath):
     files = [filename, *filename.parent.glob(f"{base_name}_*{suffix}")]
     files = sorted(set(files))
 
-    Console.info(f"Found {len(files)} Sonardyne MRT files")
-
-    for mrt_file in files:
-        Console.info(f"  {mrt_file.name}")
-
     all_observations = []
 
     for mrt_file in files:
