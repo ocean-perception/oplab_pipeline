@@ -580,9 +580,9 @@ def find_closest_observations(observations,
                 heading_observations.append(observation)
 
 
-    Console.info(f"AUV positions [{auv_source}]: {len(auv_observations)}")
-    Console.info(f"Ship positions [{ship_source}]: {len(ship_observations)}")
-    Console.info(f"Ship headings [{heading_source}]: {len(heading_observations)}")
+    Console.info(f" .. found {len(auv_observations)} AUV positions from {auv_source}")
+    Console.info(f" .. found {len(ship_observations)} ship positions from {ship_source}")
+    Console.info(f" .. found {len(heading_observations)} ship headings from {heading_source}")
 
     auv_observations.sort(key=lambda x: x.epoch_timestamp)
     ship_observations.sort(key=lambda x: x.epoch_timestamp)
