@@ -208,10 +208,11 @@ class Corrector:
         self.process_altitude_max = (
             self.correct_config.color_correction.process_altitude_max
         )
-        self.smoothing = self.correct_config.color_correction.smoothing
-        self.window_size = self.correct_config.color_correction.window_size
+        self.smoothing     = self.correct_config.color_correction.smoothing
+        self.window_size   = self.correct_config.color_correction.window_size
+        self.fit_stride    = self.correct_config.color_correction.fit_stride
         self.cameraconfigs = self.correct_config.configs.camera_configs
-        self.undistort = self.correct_config.output_settings.undistort_flag
+        self.undistort     = self.correct_config.output_settings.undistort_flag
         self.output_format = self.correct_config.output_settings.compression_parameter
 
         # Load camera parameters
@@ -885,6 +886,7 @@ class Corrector:
                     self.image_width,
                     self.image_channels,
                     self.attenuation_parameters_folder,
+                    self.fit_stride,
                 )
             )
 

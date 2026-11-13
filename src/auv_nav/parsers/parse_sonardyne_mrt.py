@@ -544,65 +544,84 @@ def parse_mrt_csv(filename):
                 obs = Alarm(*values[1:])
             elif values[0] == "AlarmStateChange":
                 obs = AlarmStateChange(*values[1:])
-            elif values[0] == "JobData":
-                # Ignore this
-                pass
-            else:
-                print(f"Unknown observation type: {values[0]}")
+            elif values[0] in ("JobData",
+                               "RFMParentOffsetUpdate"):
                 continue
+            else:
+                Console.warn(f"Unknown observation type: {values[0]}")
+                continue
+
             observations.append(obs)
         return observations
 
 
-def find_closest_observations(observations):
-    auv_observations = []
-    ship_observations = []
+def find_closest_observations(observations,
+                              auv_source     : str = "AUV 1",
+                              ship_source    : str = "GNSS 1",
+                              heading_source : str = "MRT-USBL"):
+    
+    auv_observations     = []
+    ship_observations    = []
     heading_observations = []
 
-    for obs in observations:
-        if type(obs) == LatLongObs:
-            if obs.source_name == "AUV 1":
-                auv_observations.append(obs)
-            elif obs.source_name == "GNSS 1":
-                ship_observations.append(obs)
-        elif type(obs) == PitchRollHeadingObs:
-            if obs.source_name == "MRT-USBL":
-                heading_observations.append(obs)
+    for observation in observations:
 
-    # Sort the observations by time
+        if isinstance(observation, LatLongObs):
+
+            if observation.source_name == auv_source:
+                auv_observations.append(observation)
+
+            elif observation.source_name == ship_source:
+                ship_observations.append(observation)
+
+        elif isinstance(observation, PitchRollHeadingObs):
+
+            if observation.source_name == heading_source:
+                heading_observations.append(observation)
+
+
+    Console.info(f" .. found {len(auv_observations)} AUV positions [{auv_source}]")
+    Console.info(f" .. found {len(ship_observations)} ship positions [{ship_source}]")
+    Console.info(f" .. found {len(heading_observations)} ship headings [{heading_source}]")
+
     auv_observations.sort(key=lambda x: x.epoch_timestamp)
     ship_observations.sort(key=lambda x: x.epoch_timestamp)
     heading_observations.sort(key=lambda x: x.epoch_timestamp)
 
-    # Find the closest ship observation to each AUV observation
+    if not auv_observations:
+        Console.error(f"No AUV observations found for '{auv_source}'")
+        return []
 
-    ship_idx = 0
-    hdg_idx = 0
+    if not ship_observations:
+        Console.error(f"No ship observations found for '{ship_source}'")
+        return []
+
+    if not heading_observations:
+        Console.error(f"No heading observations found for '{heading_source}'")
+        return []
+
+
+    ship_idx             = 0
+    heading_idx          = 0
+    matched_observations = []
 
     for auv_obs in auv_observations:
         stamp = auv_obs.epoch_timestamp
 
-        if ship_idx >= len(ship_observations):
-            break
-        if hdg_idx >= len(heading_observations):
-            break
-
-        ship_stamp = ship_observations[ship_idx].epoch_timestamp
-        hdg_stamp = heading_observations[hdg_idx].epoch_timestamp
-
-        while ship_stamp < stamp and ship_idx < len(ship_observations) - 1:
+        while (ship_idx < len(ship_observations) - 1 and 
+               ship_observations[ship_idx].epoch_timestamp < stamp):
             ship_idx += 1
-            ship_stamp = ship_observations[ship_idx].epoch_timestamp
 
-        while hdg_stamp < stamp and hdg_idx < len(heading_observations) - 1:
-            hdg_idx += 1
-            hdg_stamp = heading_observations[hdg_idx].epoch_timestamp
+        while (heading_idx < len(heading_observations) - 1 and 
+               heading_observations[heading_idx].epoch_timestamp < stamp):
+            heading_idx += 1
 
-        if ship_idx < len(ship_observations):
-            auv_obs.closest_ship_obs = ship_observations[ship_idx]
-        if hdg_idx < len(heading_observations):
-            auv_obs.closest_heading_obs = heading_observations[hdg_idx]
-    return auv_observations
+        auv_obs.closest_ship_obs    = ship_observations[ship_idx]
+        auv_obs.closest_heading_obs = heading_observations[heading_idx]
+
+        matched_observations.append(auv_obs)
+
+    return matched_observations
 
 
 def parse_sonardyne_mrt(mission, vehicle, category, ftype, outpath):
@@ -621,6 +640,11 @@ def parse_sonardyne_mrt(mission, vehicle, category, ftype, outpath):
 
     filepath = mission.usbl.filepath
     filename = mission.usbl.filename
+
+    auv_source     = mission.usbl.auv_source
+    ship_source    = mission.usbl.ship_source
+    heading_source = mission.usbl.heading_source
+
     # usbl_id = mission.usbl.label
     latitude_reference = mission.origin.latitude
     longitude_reference = mission.origin.longitude
@@ -630,21 +654,28 @@ def parse_sonardyne_mrt(mission, vehicle, category, ftype, outpath):
 
     # parse data
     filename = get_raw_folder(outpath / ".." / filepath / filename)
-
-    # Find all files with the same filename ending in "_1, _2, _3, etc"
     filename = Path(filename)
+
     if not filename.exists():
         Console.error(f"File {filename} does not exist")
         return None
+
     base_name = filename.stem
-    files = filename.parent.glob(base_name + "_*")
-    files = sorted(files)
+    suffix    = filename.suffix
+
+    files = [filename, *filename.parent.glob(f"{base_name}_*{suffix}")]
+    files = sorted(set(files))
 
     all_observations = []
-    for filename in files:
-        observations = parse_mrt_csv(filename)
+
+    for mrt_file in files:
+        observations = parse_mrt_csv(mrt_file)
         all_observations.extend(observations)
-    auv_observations = find_closest_observations(all_observations)
+
+    auv_observations = find_closest_observations(observations   = all_observations,
+                                                 auv_source     = auv_source,
+                                                 ship_source    = ship_source,
+                                                 heading_source = heading_source)
 
     data_list = []
 
@@ -763,6 +794,7 @@ def parse_sonardyne_gga(mission, vehicle, category, ftype, outpath):
 
     filepath = mission.usbl.filepath
     filename = mission.usbl.filename
+
     # usbl_id = mission.usbl.label
     latitude_reference = mission.origin.latitude
     longitude_reference = mission.origin.longitude

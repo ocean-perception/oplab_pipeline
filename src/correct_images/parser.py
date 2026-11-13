@@ -95,7 +95,10 @@ class ColourCorrection:
             )
         self.smoothing = node["smoothing"]
         self.window_size = node["window_size"]
+        self.fit_stride  = node.get("fit_stride", 1)
 
+        if self.fit_stride < 1:
+            Console.quit("fit_stride must be greater than or equal to 1.")
 
 class CameraConfig:
     """class Config creates an object for camera specific configuration

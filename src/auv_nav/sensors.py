@@ -1242,7 +1242,7 @@ class Usbl(OutputFormat):
                 self.fill_from_lat_lon_depth()
 
         elif msg_type == "sensor_msgs/NavSatFix":
-            if msg.status.status == 0:
+            if msg.status.status >= 0:
                 self.latitude = msg.latitude
                 self.longitude = msg.longitude
                 self.depth = 0.0  # GPS measurement
