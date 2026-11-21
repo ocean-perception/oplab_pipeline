@@ -1859,20 +1859,10 @@ def process(
 
         if (mission.image.format == "voyis" and ekf_activate and len(voyis_laser_ekf_list) > 0):
 
-            laser_camera = next((camera for camera in mission.image.cameras
-                                if camera.records_laser is True),
-                                None)
-
-            if laser_camera is None:
-                Console.quit("Voyis format is expected to have one camera where "
-                             "`records_laser` is set to `True`.")
-
             t = threading.Thread(target  = write_csv,
                                 args    = [ekfcsvpath,
                                             voyis_laser_ekf_list,
-                                            "auv_ekf_"        + 
-                                            laser_camera.name + 
-                                            "_laser_at_dvl",
+                                            "auv_ekf_laser_at_dvl",
                                             True])
             
             t.start()
