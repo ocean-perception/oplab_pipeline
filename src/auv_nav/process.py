@@ -439,7 +439,7 @@ def process(
     else:
         epoch_finish_time = string_to_epoch(finish_datetime)
 
-
+    Console.info("Loading Voyis laser observations")
     if mission.image.format == "voyis":
         voyis_laser = VoyisLaser(filepath            / 
                                  "3d_reconstruction" / 
