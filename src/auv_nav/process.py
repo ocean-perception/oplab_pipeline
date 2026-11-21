@@ -1860,7 +1860,7 @@ def process(
         if (mission.image.format == "voyis" and ekf_activate and len(voyis_laser_ekf_list) > 0):
 
             t = threading.Thread(target  = write_csv,
-                                args    = [ekfcsvpath,
+                                 args    = [ekfcsvpath,
                                             voyis_laser_ekf_list,
                                             "auv_ekf_laser_at_dvl",
                                             True])
