@@ -6,6 +6,7 @@ from oplab import Console
 
 
 class VoyisLaser:
+    """Load timestamped Voyis laser detections for navigation processing."""
 
     def __init__(self,
                  detection_path : Path) -> None:
@@ -15,6 +16,7 @@ class VoyisLaser:
 
     @staticmethod
     def _timestamp(path : Path) -> float:
+        """Convert a timestamped Voyis .pix filename to Unix epoch time."""
 
         timestamp = datetime.strptime(path.stem, 
                                       "%Y%m%d_%H%M%S_%f").replace(tzinfo = timezone.utc)
@@ -25,7 +27,8 @@ class VoyisLaser:
     def observations(self,
                      start_time : float,
                      end_time   : float) -> list[Camera]:
-
+        """Load Voyis laser detections within the requested time interval."""
+        
         observations = []
 
         if not self.detection_path.is_dir():
