@@ -378,10 +378,11 @@ def process(
     laser_camera = None
     if mission.image.format == "voyis":
         laser_camera = next((camera for camera in mission.image.cameras
-                             if camera.name == "laser"),None,)
+                             if camera.records_laser), None)
 
         if laser_camera is None:
-            Console.quit("Voyis format is expected to define a camera named `laser`.")
+            Console.quit("Voyis format is expected to define a camera where "
+                         "`records_laser` is `true`.")
 
 
     time_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
@@ -455,7 +456,7 @@ def process(
         voyis_detections = VoyisLaserDetections(filepath            / 
                                                 "3d_reconstruction" / 
                                                 "detections"        /
-                                                "laser")
+                                                laser_camera.name)
 
         voyis_detection_list = voyis_detections.observations(start_time = epoch_start_time,
                                                              end_time   = epoch_finish_time)
