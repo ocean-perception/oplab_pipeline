@@ -5,7 +5,7 @@ from auv_nav.sensors import Camera
 from oplab import Console
 
 
-class VoyisLaser:
+class VoyisLaserDetections:
     """Load timestamped Voyis laser detections for navigation processing."""
 
     def __init__(self,
@@ -14,10 +14,16 @@ class VoyisLaser:
         self.detection_path = Path(detection_path)
 
 
+    @property
+    def name(self) -> str:
+        """Return the name of the laser detection stream."""
+
+        return self.detection_path.name
+
+
     @staticmethod
     def _timestamp(path : Path) -> float:
         """Convert a timestamped Voyis .pix filename to Unix epoch time."""
-
         timestamp = datetime.strptime(path.stem, 
                                       "%Y%m%d_%H%M%S_%f").replace(tzinfo = timezone.utc)
 
@@ -28,7 +34,6 @@ class VoyisLaser:
                      start_time : float,
                      end_time   : float) -> list[Camera]:
         """Load Voyis laser detections within the requested time interval."""
-        
         observations = []
 
         if not self.detection_path.is_dir():

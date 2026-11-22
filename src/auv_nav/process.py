@@ -51,7 +51,7 @@ from auv_nav.sensors import (
     SyncedOrientationBodyVelocity,
     Usbl,
 )
-from auv_nav.tools.voyis_laser import VoyisLaser
+from auv_nav.tools.voyis_laser_detections import VoyisLaserDetections
 from auv_nav.tools.body_to_inertial import body_to_inertial
 from auv_nav.tools.csv_tools import load_states, spp_csv, write_csv, write_sidescan_csv
 from auv_nav.tools.dvl_level_arm import compute_angular_speeds, correct_lever_arm
@@ -138,8 +138,8 @@ def process(
     camera3_pf_list = []
 
     # Voyis laser profiles at DVL position
-    voyis_laser_list     = []
-    voyis_laser_ekf_list = []
+    voyis_detection_list     = []
+    voyis_detection_ekf_list = []
 
     ekf_list = []
 
@@ -374,6 +374,16 @@ def process(
     mission_file = get_raw_folder(mission_file)
     mission = Mission(mission_file)
 
+
+    laser_camera = None
+    if mission.image.format == "voyis":
+        laser_camera = next((camera for camera in mission.image.cameras
+                             if camera.name == "laser"),None,)
+
+        if laser_camera is None:
+            Console.quit("Voyis format is expected to define a camera named `laser`.")
+
+
     time_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
     mission_log = get_processed_folder(filepath) / "log" / (time_str + "_mission.yaml")
     vehicle_log = get_processed_folder(filepath) / "log" / (time_str + "_vehicle.yaml")
@@ -439,14 +449,16 @@ def process(
     else:
         epoch_finish_time = string_to_epoch(finish_datetime)
 
-    Console.info("Loading Voyis laser observations")
     if mission.image.format == "voyis":
-        voyis_laser = VoyisLaser(filepath            / 
-                                 "3d_reconstruction" / 
-                                 "detections")
+        Console.info("Loading Voyis laser observations")
 
-        voyis_laser_list = voyis_laser.observations(start_time = epoch_start_time,
-                                                    end_time   = epoch_finish_time)
+        voyis_detections = VoyisLaserDetections(filepath            / 
+                                                "3d_reconstruction" / 
+                                                "detections"        /
+                                                "laser")
+
+        voyis_detection_list = voyis_detections.observations(start_time = epoch_start_time,
+                                                             end_time   = epoch_finish_time)
         
 
     # read in data from json file
@@ -555,7 +567,7 @@ def process(
         camera3_ekf_list = copy.deepcopy(camera3_list)
         camera3_ekf_list_at_dvl = copy.deepcopy(camera3_list)
 
-        voyis_laser_ekf_list = copy.deepcopy(voyis_laser_list)
+        voyis_detection_ekf_list = copy.deepcopy(voyis_detection_list)
 
         ekf_payload_dict = {}
         for key in payload_dict:
@@ -1433,9 +1445,9 @@ def process(
         if camera3_ekf_list:
             camera3_timestamp_list = [x.epoch_timestamp for x in camera3_ekf_list]
             ekf_timestamps += camera3_timestamp_list
-        if voyis_laser_ekf_list:
-            voyis_laser_timestamp_list = [x.epoch_timestamp for x in voyis_laser_ekf_list]
-            ekf_timestamps += voyis_laser_timestamp_list
+        if voyis_detection_ekf_list:
+            voyis_detection_timestamp_list = [x.epoch_timestamp for x in voyis_detection_ekf_list]
+            ekf_timestamps += voyis_detection_timestamp_list
 
         if payload_dict:
             for key in payload_dict:
@@ -1610,15 +1622,15 @@ def process(
         camera3_ekf_list_at_dvl = copy.deepcopy(_temp_ekf)
 
 
-    if (mission.image.format == "voyis" and ekf_activate and len(voyis_laser_ekf_list) > 0):
+    if (mission.image.format == "voyis" and ekf_activate and len(voyis_detection_ekf_list) > 0):
 
-        voyis_laser_ekf_list = update_camera_list(voyis_laser_ekf_list,
-                                                  ekf_list_dvl,
-                                                  [0, 0, 0],
-                                                  [0, 0, 0],
-                                                  latlon_reference)
+        voyis_detection_ekf_list = update_camera_list(voyis_detection_ekf_list,
+                                                      ekf_list_dvl,
+                                                      [0, 0, 0],
+                                                      [0, 0, 0],
+                                                      latlon_reference)
 
-        voyis_laser_ekf_list = [x for x in voyis_laser_ekf_list if x.depth is not None]
+        voyis_detection_ekf_list = [x for x in voyis_detection_ekf_list if x.depth is not None]
         
 
     # Interpolate state data to payload time stamps for DR, EKF and PF
@@ -1857,12 +1869,12 @@ def process(
         threads.append(t)
 
 
-        if (mission.image.format == "voyis" and ekf_activate and len(voyis_laser_ekf_list) > 0):
-
+        if (mission.image.format == "voyis" and ekf_activate and len(voyis_detection_ekf_list) > 0):
+            
             t = threading.Thread(target  = write_csv,
                                  args    = [ekfcsvpath,
-                                            voyis_laser_ekf_list,
-                                            "auv_ekf_laser_at_dvl",
+                                            voyis_detection_ekf_list,
+                                            f"auv_ekf_{laser_camera.name}_laser_at_dvl",
                                             True])
             
             t.start()
