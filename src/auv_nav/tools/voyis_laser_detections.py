@@ -17,7 +17,6 @@ class VoyisLaserDetections:
     @property
     def name(self) -> str:
         """Return the name of the laser detection stream."""
-
         return self.detection_path.name
 
 
