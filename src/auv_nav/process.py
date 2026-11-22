@@ -1624,6 +1624,7 @@ def process(
 
     if (mission.image.format == "voyis" and ekf_activate and len(voyis_detection_ekf_list) > 0):
 
+        # Populate the Voyis detections with EKF poses at the DVL
         voyis_detection_ekf_list = update_camera_list(voyis_detection_ekf_list,
                                                       ekf_list_dvl,
                                                       [0, 0, 0],
