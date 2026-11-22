@@ -137,7 +137,7 @@ def process(
     camera3_ekf_list = []
     camera3_pf_list = []
 
-    # Voyis laser profiles at DVL position
+    # Voyis laser detections used to request EKF states at their timestamps
     voyis_detection_list     = []
     voyis_detection_ekf_list = []
 
